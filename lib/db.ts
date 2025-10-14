@@ -1,11 +1,15 @@
 import { Pool, QueryResult } from 'pg';
 
+// Determine SSL config based on DATABASE_URL
+const databaseUrl = process.env.DATABASE_URL;
+const isHeroku = databaseUrl && databaseUrl.includes('amazonaws.com');
+
 // Create connection pool
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
+  connectionString: databaseUrl,
+  ssl: isHeroku ? {
     rejectUnauthorized: false // Required for Heroku Postgres
-  },
+  } : false,
   max: 20,                    // Maximum connections in pool
   idleTimeoutMillis: 30000,   // Close idle clients after 30s
   connectionTimeoutMillis: 2000, // Timeout after 2s

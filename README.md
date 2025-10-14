@@ -1,338 +1,228 @@
-# 🚗 Walla Walla Travel - Driver Management App
+# Walla Walla Travel - Driver Management System
 
-**Mobile-first transportation management system for wine tour operations with FMCSA compliance.**
+Mobile-first transportation management system for wine tour operations.
 
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)]()
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)]()
-[![Next.js](https://img.shields.io/badge/Next.js-15.5-black)]()
-[![Foundation](https://img.shields.io/badge/foundation-7%2F10-yellow)]()
-
----
-
-## 🎯 Overview
-
-Walla Walla Travel is a mobile-optimized driver workflow application designed for wine tour transportation companies. It handles the complete driver workflow from clock-in to clock-out, with FMCSA-compliant vehicle inspections, digital signatures, and Hours of Service (HOS) tracking.
-
-**Current Status:** Development phase - foundation complete, ready for feature build-out.
-
----
-
-## ✨ Key Features
-
-### ✅ Implemented:
-- **Cookie-based Authentication** - Secure, httpOnly sessions
-- **Mobile-First UI** - 48px touch targets, one-thumb operation, haptic feedback
-- **Pre-Trip Inspections** - FMCSA-compliant vehicle checklists
-- **Workflow Tracking** - 6-step driver daily workflow
-- **Component Library** - Production-ready mobile UI components
-
-### 🚧 In Progress:
-- Database integration (PostgreSQL)
-- Security hardening (CSRF, rate limiting, password hashing)
-- Expanded test coverage
-- Error handling improvements
-
-### 📋 Planned:
-- Post-Trip Inspections with DVIR
-- Digital signature capture
-- Unified compliance dashboard
-- HOS (Hours of Service) tracking
-- Document upload system
-- Real-time notifications
+**USDOT:** 3603851 | **Status:** Active Development | **Last Updated:** October 13, 2025
 
 ---
 
 ## 🚀 Quick Start
 
-### Prerequisites:
-- Node.js 20+
-- npm 10+
-
-### Installation:
 ```bash
-# Navigate to project
-cd /Users/temp/walla-walla-final
-
 # Install dependencies
 npm install
 
 # Start development server
 npm run dev
 
-# Visit: http://localhost:3000/login
+# Verify database connection
+npm run db:verify
 ```
 
-### Test Credentials:
+**Visit:** http://localhost:3000/time-clock/dashboard
+
+---
+
+## 📊 Current Status
+
+### ✅ Completed (Phases A, B, C)
+- **Database:** Heroku Postgres configured with 8 tables
+- **Mobile Components:** 5 production-ready components
+- **Time Clock UI:** Clock in page + unified dashboard
+- **Compliance:** FMCSA passenger carrier rules implemented
+
+### 🚧 In Progress
+- Backend APIs to connect UI to database
+- Clock out page with digital signature
+- HOS visual dashboard
+- Distance tracking (150-mile exemption)
+
+**Full status:** See `PROJECT_STATUS.md`
+
+---
+
+## 🎯 Project Goals
+
+Build a mobile-first driver management system that:
+- ✅ Tracks hours of service (10 driving / 15 on-duty / 8 off-duty)
+- ✅ Monitors 150 air-mile exemption (8-day rule)
+- ✅ Manages pre-trip and post-trip inspections
+- ✅ Provides digital signature capture
+- ✅ Generates compliance reports
+- 🚧 Creates PDF time cards
+- 🚧 Tracks GPS distance from base
+
+---
+
+## 📱 Pages Available
+
+1. **Unified Dashboard** - `/time-clock/dashboard`
+   - Today's status, compliance overview, quick actions
+   
+2. **Clock In** - `/time-clock/clock-in`
+   - Driver/vehicle selection, GPS capture, compliance reminders
+   
+3. **Pre-Trip Inspection** - `/inspections/pre-trip`
+   - Mobile-optimized inspection checklist
+   
+4. **Post-Trip Inspection** - `/inspections/post-trip`
+   - End-of-day vehicle check + DVIR
+
+---
+
+## 🎨 Mobile Components
+
+```tsx
+import {
+  TouchButton,
+  BottomActionBar,
+  SignatureCanvas,
+  MobileCard,
+  AlertBanner,
+} from '@/components/mobile';
 ```
-Email: driver@test.com
-Password: test123456
+
+All components optimized for:
+- Touch targets ≥ 48px (WCAG compliance)
+- One-thumb usability
+- Haptic feedback
+- Safe area insets (notch, home indicator)
+
+---
+
+## 🗂️ Fleet & Drivers
+
+### Vehicles
+- **Sprinter 1:** Mercedes-Benz Sprinter 2025 (11 passengers)
+- **Sprinter 2:** Mercedes-Benz Sprinter 2025 (14 passengers)
+- **Sprinter 3:** Mercedes-Benz Sprinter 2025 (14 passengers)
+
+### Drivers
+- Owner (owner@wallawallatravel.com)
+- Eric Critchlow (eric@wallawallatravel.com)
+- Janine Bergevin (janine@wallawallatravel.com)
+
+---
+
+## 📋 FMCSA Compliance
+
+### Passenger Carrier Rules
+- **Max Driving:** 10 hours per day
+- **Max On-Duty:** 15 hours per day
+- **Min Off-Duty:** 8 consecutive hours
+- **Weekly Limits:** 60 hours / 7 days (or 70 hours / 8 days)
+
+### 150 Air-Mile Exemption
+- Can use simple time cards instead of ELD
+- Must stay within 150 air-miles of base
+- If exceed 150 miles > 8 days in 30-day period → must use ELD
+
+---
+
+## 🗄️ Database
+
+**Platform:** Heroku Postgres  
+**App:** walla-walla-travel
+
+### Tables
+- `users` - Drivers
+- `vehicles` - Fleet
+- `time_cards` - Daily time tracking
+- `daily_trips` - Distance tracking
+- `monthly_exemption_status` - 150-mile rule tracking
+- `weekly_hos` - Hours of service
+- `company_info` - USDOT #3603851
+- `inspections` - Vehicle inspections
+
+### Setup
+```bash
+npm run db:setup    # Apply schema
+npm run db:verify   # Verify setup
 ```
 
-**For detailed setup instructions, see [docs/SETUP.md](docs/SETUP.md)**
+---
+
+## 🔧 Configuration
+
+### Environment Variables
+Create `.env.local` with:
+```
+DATABASE_URL="postgres://..."
+```
+
+Get from Heroku:
+```bash
+heroku config:get DATABASE_URL -a walla-walla-travel
+```
 
 ---
 
-## 📱 Mobile Testing
+## 📖 Documentation
 
-The app is designed for mobile devices. To test on your phone:
+**Start Here:**
+- `PROJECT_STATUS.md` - Current project status
+- `HANDOFF_PROMPT.md` - For starting new Claude chats
+- `PHASES_ABC_COMPLETE.md` - Detailed completion status
 
-1. **Get your computer's IP:**
-   ```bash
-   # Mac/Linux
-   ipconfig getifaddr en0
-   ```
+**Guides:**
+- `IMPLEMENTATION_COMPLETE_GUIDE.md` - Step-by-step implementation
+- `DATABASE_SETUP_FIXED.md` - Database configuration
+- `FMCSA_COMPLIANCE_GUIDE.md` - Passenger carrier compliance
 
-2. **Ensure same WiFi network**
-
-3. **Visit on phone:**
-   ```
-   http://YOUR_IP:3000/login
-   ```
+**Troubleshooting:**
+- `SSL_FIX.md` - Database connection issues
 
 ---
 
-## 📚 Documentation
+## 🎯 Next Steps
 
-### Core Documentation:
-- **[MASTER_STATUS.md](MASTER_STATUS.md)** - Current project state (single source of truth)
-- **[REVIEW_SUMMARY.md](REVIEW_SUMMARY.md)** - Executive summary & foundation score
-- **[CONTEXT_CARD.md](CONTEXT_CARD.md)** - Quick start for new Claude sessions
-
-### Technical Documentation:
-- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** - System design & decisions
-- **[SETUP.md](docs/SETUP.md)** - Installation & running guide
-- **[CODE_REVIEW.md](docs/CODE_REVIEW.md)** - Complete technical audit
-- **[MOBILE_COMPONENTS.md](docs/MOBILE_COMPONENTS.md)** - Mobile UI component guide
-- **[TESTING.md](docs/TESTING.md)** - Testing guide
-- **[API.md](docs/API.md)** - API documentation
-- **[DEPLOYMENT.md](docs/DEPLOYMENT.md)** - Deployment guide
-- **[TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)** - Common issues & solutions
+1. **Build Backend APIs** - Connect UI to database
+2. **Clock Out Page** - With signature and hour calculation
+3. **HOS Dashboard** - Visual compliance tracking
+4. **Distance Tracking** - GPS waypoints for 150-mile rule
+5. **PDF Generation** - Time cards and reports
 
 ---
 
-## 🏗️ Tech Stack
+## 🚀 Deployment
 
-- **Frontend:** Next.js 15.5.2 (App Router), React 19.1.0
-- **Styling:** Tailwind CSS 4
-- **Language:** TypeScript 5 (strict mode)
-- **Authentication:** Cookie-based sessions
-- **Database:** PostgreSQL (in progress)
-- **Testing:** Jest 30.1.3, React Testing Library
-- **Deployment:** Vercel (planned)
-
-**What we're NOT using:**
-- ❌ Supabase (fully removed)
-- ❌ Python API
-- ❌ External auth providers
-
----
-
-## 🎨 Mobile UI Components
-
-Built-in mobile-optimized component library:
-
-- **MobileButton** - 48-64px touch targets, haptic feedback
-- **MobileCheckbox** - Large, accessible checkboxes
-- **MobileInput** - 16px font (prevents iOS zoom)
-- **BottomActionBar** - Sticky bottom actions (thumb reach)
-- **Design System** - WCAG AAA compliant
-
-**See [docs/MOBILE_COMPONENTS.md](docs/MOBILE_COMPONENTS.md) for details.**
-
----
-
-## 📊 Project Status
-
-**Foundation Quality:** 7/10
-
-| Category | Score | Status |
-|----------|-------|--------|
-| Type Safety | 85% | 🟡 Good |
-| Test Coverage | 30% | 🔴 Needs work |
-| Documentation | 90% | 🟢 Excellent |
-| Security | 40% | 🔴 Needs work |
-| Performance | 70% | 🟡 Good |
-
-**Verdict:** Solid foundation for development, needs hardening for production.
-
----
-
-## 🎯 Roadmap
-
-### Phase 1: Database (THIS WEEK)
-- Connect PostgreSQL
-- Replace mock functions
-- Enable real data persistence
-
-### Phase 2: Security (THIS WEEK)
-- Password hashing (bcrypt)
-- CSRF protection
-- Rate limiting
-- Security headers
-
-### Phase 3: Error Handling (NEXT WEEK)
-- Error boundaries
-- Input validation (Zod)
-- Logging system
-
-### Phase 4: Testing (NEXT WEEK)
-- Server action tests
-- Component tests
-- 80% coverage goal
-
-### Phase 5: Production (WEEK 3)
-- Performance optimization
-- Staging deployment
-- User acceptance testing
-- Production launch
-
-**See [MASTER_STATUS.md](MASTER_STATUS.md) for detailed status.**
-
----
-
-## 🧪 Testing
+**Platform:** Vercel  
+**Database:** Heroku Postgres  
+**Repository:** (To be initialized)
 
 ```bash
-# Run all tests
-npm test
+# Initialize Git
+chmod +x setup-github.sh
+./setup-github.sh
 
-# Watch mode
-npm run test:watch
-
-# Coverage report
-npm run test:coverage
-
-# Security tests
-npm run test:security
+# Create repo at: https://github.com/WallaWallaTravel/walla-walla-travel
+# Then push
 ```
 
 ---
 
-## 🏗️ Building
+## 🆘 Need Help?
 
-```bash
-# Production build
-npm run build
+**Starting a new Claude chat?**
+1. Copy contents of `HANDOFF_PROMPT.md`
+2. Paste into new chat
+3. Claude will read the project files and continue where you left off
 
-# Start production server
-npm run start
-```
-
-**Expected:** Build completes in ~4.5s with 0 errors
-
----
-
-## 🐛 Troubleshooting
-
-### Port Already in Use
-```
-⚠ Port 3000 in use, using port 3001 instead
-```
-**Solution:** Use whatever port Next.js assigns
-
-### Can't Access from Phone
-**Solutions:**
-- Check same WiFi network
-- Disable VPN
-- Use computer's IP, not localhost
-- Check firewall settings
-
-### Login Doesn't Work
-**Check:**
-- Correct credentials (driver@test.com / test123456)
-- Server is running
-- Clear browser cookies
-
-**For more solutions, see [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)**
+**Questions?**
+- Check `PROJECT_STATUS.md` for current state
+- Run `npm run db:verify` to test database
+- Check `.env.local` for configuration
 
 ---
 
-## 📂 Project Structure
+## 📞 Contact
 
-```
-/Users/temp/walla-walla-final/
-├── app/                    ← Next.js App Router
-│   ├── actions/           ← Server actions
-│   ├── login/             ← Login page
-│   ├── workflow/          ← Driver workflow
-│   └── inspections/       ← Vehicle inspections
-├── components/
-│   └── mobile/            ← Mobile UI library
-├── lib/                   ← Utilities
-│   ├── auth.ts           ← Authentication
-│   └── security.ts       ← Security utilities
-├── docs/                  ← Documentation
-└── __tests__/             ← Test suite
-```
+**Company:** Walla Walla Travel  
+**USDOT:** 3603851  
+**Location:** Walla Walla, WA  
+**GitHub:** WallaWallaTravel
 
 ---
 
-## 🔐 Security
-
-### Current Measures:
-- ✅ httpOnly cookies (prevents XSS)
-- ✅ Input sanitization
-- ✅ XSS prevention (DOMPurify)
-- ✅ sameSite cookies (CSRF protection)
-
-### Planned Additions:
-- 🚧 CSRF tokens
-- 🚧 Rate limiting
-- 🚧 Password hashing
-- 🚧 Security headers
-- 🚧 File upload validation
-
-**See [docs/CODE_REVIEW.md](docs/CODE_REVIEW.md) for security audit.**
-
----
-
-## 🤝 Contributing
-
-This is a private project. For questions or issues, consult:
-1. [MASTER_STATUS.md](MASTER_STATUS.md) - Current state
-2. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) - System design
-3. [docs/CODE_REVIEW.md](docs/CODE_REVIEW.md) - Technical details
-
----
-
-## 📝 License
-
-Private project - All rights reserved
-
----
-
-## 🆘 Getting Help
-
-### For Setup Issues:
-1. Read [docs/SETUP.md](docs/SETUP.md)
-2. Check [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
-3. Run `npm run build` to see all errors
-
-### For Development:
-1. Read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) - Understand system design
-2. Read [MASTER_STATUS.md](MASTER_STATUS.md) - Check current state
-3. Read [docs/CODE_REVIEW.md](docs/CODE_REVIEW.md) - Known issues & gaps
-
-### For New Claude Sessions:
-```
-Read these 3 docs:
-1. /MASTER_STATUS.md
-2. /REVIEW_SUMMARY.md
-3. /docs/ARCHITECTURE.md
-
-Current phase: [phase you're working on]
-```
-
----
-
-## 🎉 Acknowledgments
-
-- Built with [Next.js](https://nextjs.org/)
-- Styled with [Tailwind CSS](https://tailwindcss.com/)
-- Tested with [Jest](https://jestjs.io/)
-
----
-
-**Last Updated:** October 12, 2025  
-**Foundation Score:** 7/10  
-**Status:** Active Development
+**Built with:** Next.js 15, React 19, TypeScript, Tailwind CSS, Heroku Postgres  
+**License:** Private (Business Application)
