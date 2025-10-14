@@ -1,8 +1,10 @@
 import '@testing-library/jest-dom'
 
 // Mock environment variables
-process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co'
-process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key'
+process.env.DATABASE_URL = 'postgresql://test@localhost:5432/test_db'
+process.env.NEXT_PUBLIC_APP_URL = 'http://localhost:3000'
+process.env.NODE_ENV = 'test'
+process.env.SESSION_SECRET = 'test-secret-key-for-testing'
 
 // Mock next/navigation
 jest.mock('next/navigation', () => ({
@@ -14,61 +16,39 @@ jest.mock('next/navigation', () => ({
   }),
 }))
 
-// Mock Supabase client
-jest.mock('@supabase/supabase-js', () => ({
-  createClient: jest.fn(() => ({
-    from: jest.fn(() => ({
-      select: jest.fn(() => ({
-        eq: jest.fn(() => ({
-          single: jest.fn(() => Promise.resolve({ data: null, error: null })),
-        })),
-      })),
-      insert: jest.fn(() => ({
-        select: jest.fn(() => ({
-          single: jest.fn(() => Promise.resolve({ data: null, error: null })),
-        })),
-      })),
-      upsert: jest.fn(() => Promise.resolve({ data: null, error: null })),
-    })),
-    auth: {
-      signInWithPassword: jest.fn(() => Promise.resolve({ data: null, error: null })),
-      getSession: jest.fn(() => Promise.resolve({ data: { session: null } })),
-    },
+// Mock database module
+jest.mock('@/lib/db', () => ({
+  query: jest.fn(),
+  queryOne: jest.fn(),
+  getPool: jest.fn(() => ({
+    query: jest.fn(),
+    end: jest.fn()
+  })),
+  healthCheck: jest.fn(() => Promise.resolve(true)),
+  closePool: jest.fn(),
+}))
+
+// Mock session module
+jest.mock('@/lib/session', () => ({
+  getSession: jest.fn(() => Promise.resolve({
+    userId: 'test-user-id',
+    email: 'test@example.com',
+    role: 'driver',
+    isLoggedIn: true,
+    save: jest.fn(),
+    destroy: jest.fn(),
+  })),
+  getCurrentUser: jest.fn(() => Promise.resolve({
+    id: 'test-user-id',
+    email: 'test@example.com',
+    name: 'Test User',
+    role: 'driver',
   })),
 }))
 
-// Mock Supabase auth helpers
-jest.mock('@supabase/auth-helpers-nextjs', () => ({
-  createServerComponentClient: jest.fn(() => ({
-    auth: {
-      getSession: jest.fn(() => Promise.resolve({ data: { session: null } })),
-    },
-    from: jest.fn(() => ({
-      select: jest.fn(() => ({
-        eq: jest.fn(() => ({
-          single: jest.fn(() => Promise.resolve({ data: null, error: null })),
-        })),
-      })),
-    })),
-  })),
-  createClientComponentClient: jest.fn(() => ({
-    from: jest.fn(() => ({
-      select: jest.fn(() => ({
-        eq: jest.fn(() => ({
-          single: jest.fn(() => Promise.resolve({ data: null, error: null })),
-        })),
-      })),
-      insert: jest.fn(() => ({
-        select: jest.fn(() => ({
-          single: jest.fn(() => Promise.resolve({ data: null, error: null })),
-        })),
-      })),
-      upsert: jest.fn(() => Promise.resolve({ data: null, error: null })),
-    })),
-    auth: {
-      signInWithPassword: jest.fn(() => Promise.resolve({ data: null, error: null })),
-      getSession: jest.fn(() => Promise.resolve({ data: { session: null } })),
-    },
-  })),
-  createMiddlewareClient: jest.fn(),
-}))
+// Global test utilities
+global.console = {
+  ...console,
+  error: jest.fn(),
+  warn: jest.fn(),
+}

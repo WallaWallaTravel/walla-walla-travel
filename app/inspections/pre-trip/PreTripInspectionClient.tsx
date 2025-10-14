@@ -3,6 +3,17 @@
 import { useState } from 'react'
 import { saveInspectionAction } from '@/app/actions/inspections'
 import { sanitizeText, sanitizeNumber, patterns } from '@/lib/security'
+import {
+  TouchButton,
+  BottomActionBar,
+  BottomActionBarSpacer,
+  SignatureCanvas,
+  MobileCard,
+  AlertBanner,
+  MobileCheckbox,
+  MobileInput,
+  haptics
+} from '@/components/mobile'
 
 interface Props {
   driver: {
@@ -12,11 +23,14 @@ interface Props {
   }
 }
 
-export default function PreTripInspectionClient({ driver }: Props) {
+export function PreTripInspectionClient({ driver }: Props) {
+  const [currentStep, setCurrentStep] = useState<'mileage' | 'inspection' | 'signature'>('mileage')
   const [beginningMileage, setBeginningMileage] = useState('')
   const [notes, setNotes] = useState('')
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({})
+  const [signature, setSignature] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const inspectionItems = {
     exterior: [
@@ -57,22 +71,57 @@ export default function PreTripInspectionClient({ driver }: Props) {
     setCheckedItems(prev => ({ ...prev, [key]: !prev[key] }))
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleMileageNext = () => {
+    if (!patterns.mileage.test(beginningMileage)) {
+      setError('Invalid mileage format')
+      haptics.error()
+      return
+    }
+    
+    const mileage = sanitizeNumber(beginningMileage)
+    if (!mileage || mileage < 0 || mileage > 9999999) {
+      setError('Mileage must be between 0 and 9,999,999')
+      haptics.error()
+      return
+    }
+
+    haptics.success()
+    setError(null)
+    setCurrentStep('inspection')
+  }
+
+  const handleInspectionNext = () => {
+    const totalItems = Object.values(inspectionItems).reduce((acc, items) => acc + items.length, 0)
+    const checkedCount = Object.values(checkedItems).filter(Boolean).length
+    
+    if (checkedCount !== totalItems) {
+      setError(`Please complete all inspection items (${checkedCount}/${totalItems} checked)`)
+      haptics.error()
+      return
+    }
+
+    haptics.success()
+    setError(null)
+    setCurrentStep('signature')
+  }
+
+  const handleSignatureClear = () => {
+    setSignature(null)
+    haptics.light()
+  }
+
+  const handleSubmit = async () => {
+    if (!signature) {
+      setError('Please sign the inspection form')
+      haptics.error()
+      return
+    }
+
     setSubmitting(true)
+    setError(null)
 
     try {
-      // Validate mileage
-      if (!patterns.mileage.test(beginningMileage)) {
-        throw new Error('Invalid mileage format')
-      }
-      
       const mileage = sanitizeNumber(beginningMileage)
-      if (!mileage || mileage < 0 || mileage > 9999999) {
-        throw new Error('Mileage must be between 0 and 9,999,999')
-      }
-
-      // Sanitize notes
       const sanitizedNotes = sanitizeText(notes)
 
       // Save inspection using server action
@@ -82,121 +131,232 @@ export default function PreTripInspectionClient({ driver }: Props) {
         type: 'pre_trip',
         items: checkedItems,
         notes: sanitizedNotes || null,
-        beginningMileage: mileage
+        beginningMileage: mileage,
+        signature
       })
 
       if (!result.success) {
         throw new Error(result.error || 'Failed to save inspection')
       }
 
+      haptics.success()
       // Redirect to next workflow step
       window.location.href = '/workflow/daily'
       
     } catch (error) {
       console.error('Submission error:', error)
-      alert(error instanceof Error ? error.message : 'Error saving inspection')
+      setError(error instanceof Error ? error.message : 'Error saving inspection')
+      haptics.error()
       setSubmitting(false)
     }
   }
 
-  const allItemsChecked = Object.values(checkedItems).filter(Boolean).length === 
-    Object.values(inspectionItems).reduce((acc, items) => acc + items.length, 0)
+  const totalItems = Object.values(inspectionItems).reduce((acc, items) => acc + items.length, 0)
+  const checkedCount = Object.values(checkedItems).filter(Boolean).length
+  const allItemsChecked = checkedCount === totalItems
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6">Pre-Trip Inspection</h1>
-        
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="mb-4">
-            <p className="text-sm text-gray-600">Driver: {driver.name}</p>
-            <p className="text-sm text-gray-600">Date: {new Date().toLocaleDateString()}</p>
-          </div>
+    <div className="min-h-screen bg-gray-100">
+      {/* Header */}
+      <div className="bg-white border-b px-4 py-3">
+        <h1 className="text-xl font-semibold">Pre-Trip Inspection</h1>
+        <p className="text-sm text-gray-600">Driver: {driver.name}</p>
+        <p className="text-sm text-gray-600">Date: {new Date().toLocaleDateString()}</p>
+      </div>
 
-          <form onSubmit={handleSubmit}>
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Beginning Mileage
-              </label>
-              <input
-                type="text"
-                inputMode="numeric"
-                pattern="\d{1,7}"
-                value={beginningMileage}
-                onChange={(e) => setBeginningMileage(e.target.value.replace(/\D/g, ''))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                required
-                maxLength={7}
-              />
-            </div>
+      {/* Progress indicator */}
+      <div className="flex justify-between px-4 py-3 bg-white border-b">
+        <div className={`flex-1 text-center py-2 ${currentStep === 'mileage' ? 'text-blue-600 font-medium' : 'text-gray-400'}`}>
+          <div className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center mb-1 ${
+            currentStep === 'mileage' ? 'bg-blue-600 text-white' : 'bg-gray-300 text-white'
+          }`}>1</div>
+          <span className="text-xs">Mileage</span>
+        </div>
+        <div className={`flex-1 text-center py-2 ${currentStep === 'inspection' ? 'text-blue-600 font-medium' : 'text-gray-400'}`}>
+          <div className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center mb-1 ${
+            currentStep === 'inspection' ? 'bg-blue-600 text-white' : 
+            checkedCount === totalItems ? 'bg-green-600 text-white' : 'bg-gray-300 text-white'
+          }`}>2</div>
+          <span className="text-xs">Inspection</span>
+        </div>
+        <div className={`flex-1 text-center py-2 ${currentStep === 'signature' ? 'text-blue-600 font-medium' : 'text-gray-400'}`}>
+          <div className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center mb-1 ${
+            currentStep === 'signature' ? 'bg-blue-600 text-white' :
+            signature ? 'bg-green-600 text-white' : 'bg-gray-300 text-white'
+          }`}>3</div>
+          <span className="text-xs">Signature</span>
+        </div>
+      </div>
 
+      {/* Error banner */}
+      {error && (
+        <AlertBanner
+          type="error"
+          message={error}
+          onDismiss={() => setError(null)}
+        />
+      )}
+
+      {/* Step content */}
+      <div className="p-4">
+        {/* Step 1: Mileage */}
+        {currentStep === 'mileage' && (
+          <MobileCard>
+            <h2 className="text-lg font-medium mb-4">Enter Beginning Mileage</h2>
+            <MobileInput
+              label="Vehicle Mileage"
+              type="text"
+              inputMode="numeric"
+              pattern="\d{1,7}"
+              value={beginningMileage}
+              onChange={(e) => setBeginningMileage(e.target.value.replace(/\D/g, ''))}
+              placeholder="Enter current mileage"
+              maxLength={7}
+              hint="Enter the current odometer reading"
+            />
+          </MobileCard>
+        )}
+
+        {/* Step 2: Inspection */}
+        {currentStep === 'inspection' && (
+          <>
             {Object.entries(inspectionItems).map(([category, items]) => (
-              <div key={category} className="mb-6">
-                <h2 className="text-xl font-semibold mb-3 capitalize">
+              <MobileCard key={category} className="mb-4">
+                <h2 className="text-lg font-medium mb-3 capitalize">
                   {category.replace('_', ' ')} Inspection
                 </h2>
-                <div className="space-y-2">
+                <div className="space-y-1">
                   {items.map((item, index) => (
-                    <label key={index} className="flex items-center p-3 bg-gray-50 rounded">
-                      <input
-                        type="checkbox"
-                        checked={checkedItems[`${category}-${index}`] || false}
-                        onChange={() => handleItemToggle(category, index)}
-                        className="mr-3 h-5 w-5 text-blue-600"
-                      />
-                      <span>{item}</span>
-                    </label>
+                    <MobileCheckbox
+                      key={index}
+                      label={item}
+                      checked={checkedItems[`${category}-${index}`] || false}
+                      onChange={() => handleItemToggle(category, index)}
+                    />
                   ))}
                 </div>
-              </div>
+              </MobileCard>
             ))}
 
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Additional Notes
-              </label>
+            <MobileCard>
+              <h3 className="text-lg font-medium mb-3">Additional Notes</h3>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="w-full px-4 py-3 min-h-[100px] text-base border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
                 rows={4}
                 maxLength={500}
                 placeholder="Note any issues or concerns..."
+                style={{ fontSize: '16px' }}
               />
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-gray-500 mt-2">
                 {notes.length}/500 characters
               </p>
-            </div>
-
-            <div className="flex justify-between">
-              <a
-                href="/workflow/daily"
-                className="text-blue-600 hover:text-blue-800"
-              >
-                ← Back to Workflow
-              </a>
-              
-              <button
-                type="submit"
-                disabled={submitting || !allItemsChecked || !beginningMileage}
-                className={`px-6 py-2 rounded-md text-white font-medium
-                  ${submitting || !allItemsChecked || !beginningMileage
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-700'
-                  }`}
-              >
-                {submitting ? 'Submitting...' : 'Complete Inspection'}
-              </button>
-            </div>
+            </MobileCard>
             
-            {!allItemsChecked && (
-              <p className="text-sm text-red-600 text-center mt-4">
-                Please check all inspection items before submitting.
-              </p>
+            <div className="mt-4 text-center text-sm text-gray-600">
+              <p className="font-medium">{checkedCount} of {totalItems} items checked</p>
+              {checkedCount === totalItems && (
+                <p className="text-green-600 mt-1">✓ All items inspected</p>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* Step 3: Signature */}
+        {currentStep === 'signature' && (
+          <MobileCard>
+            <h2 className="text-lg font-medium mb-4">Driver Signature</h2>
+            <p className="text-sm text-gray-600 mb-4">
+              By signing below, you confirm that you have completed the pre-trip inspection
+              and the vehicle is safe to operate.
+            </p>
+            
+            <SignatureCanvas
+              onSignature={setSignature}
+              onClear={handleSignatureClear}
+            />
+            
+            {signature && (
+              <p className="text-sm text-green-600 mt-2">✓ Signature captured</p>
             )}
-          </form>
-        </div>
+          </MobileCard>
+        )}
       </div>
+
+      {/* Bottom action bar with spacer */}
+      <BottomActionBarSpacer />
+      
+      <BottomActionBar>
+        <div className="flex gap-3">
+          {/* Back button */}
+          {currentStep !== 'mileage' && (
+            <TouchButton
+              variant="secondary"
+              onClick={() => {
+                haptics.light()
+                if (currentStep === 'inspection') setCurrentStep('mileage')
+                if (currentStep === 'signature') setCurrentStep('inspection')
+              }}
+              className="flex-1"
+            >
+              Back
+            </TouchButton>
+          )}
+          
+          {/* Cancel button (only on first step) */}
+          {currentStep === 'mileage' && (
+            <TouchButton
+              variant="secondary"
+              onClick={() => {
+                haptics.light()
+                window.location.href = '/workflow/daily'
+              }}
+              className="flex-1"
+            >
+              Cancel
+            </TouchButton>
+          )}
+          
+          {/* Next/Submit button */}
+          {currentStep === 'mileage' && (
+            <TouchButton
+              variant="primary"
+              onClick={handleMileageNext}
+              disabled={!beginningMileage}
+              className="flex-1"
+            >
+              Next
+            </TouchButton>
+          )}
+          
+          {currentStep === 'inspection' && (
+            <TouchButton
+              variant="primary"
+              onClick={handleInspectionNext}
+              disabled={checkedCount !== totalItems}
+              className="flex-1"
+            >
+              Next ({checkedCount}/{totalItems})
+            </TouchButton>
+          )}
+          
+          {currentStep === 'signature' && (
+            <TouchButton
+              variant="primary"
+              onClick={handleSubmit}
+              disabled={!signature || submitting}
+              loading={submitting}
+              className="flex-1"
+            >
+              {submitting ? 'Submitting...' : 'Complete Inspection'}
+            </TouchButton>
+          )}
+        </div>
+      </BottomActionBar>
     </div>
   )
 }
+
+// Default export for backward compatibility
+export default PreTripInspectionClient
