@@ -18,7 +18,8 @@ interface TodayStatus {
   vehicleNumber?: string;
   drivingHours: number;
   onDutyHours: number;
-  preTrip Completed: boolean;
+  preTripCompleted: boolean;
+  weeklyHours: number;
 }
 
 interface ComplianceAlert {
@@ -35,34 +36,67 @@ export default function UnifiedDashboard() {
     drivingHours: 0,
     onDutyHours: 0,
     preTripCompleted: false,
+    weeklyHours: 0,
   });
   const [alerts, setAlerts] = useState<ComplianceAlert[]>([]);
   const [loading, setLoading] = useState(true);
+  const [driverId] = useState(1); // Default to driver 1 (Owner) - will add user selection later
 
   useEffect(() => {
     loadDashboardData();
+    // Refresh every 30 seconds
+    const interval = setInterval(loadDashboardData, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const loadDashboardData = async () => {
     setLoading(true);
     try {
-      // Mock data - will connect to real API
-      setTodayStatus({
-        isClockedIn: false,
-        drivingHours: 0,
-        onDutyHours: 0,
-        preTripCompleted: false,
-      });
+      // Load today's status
+      const todayResponse = await fetch(`/api/time-clock/today?driverId=${driverId}`);
+      const todayData = await todayResponse.json();
 
-      // Mock alerts
-      setAlerts([
-        {
-          type: 'info',
-          message: 'Good morning! Ready to start your day?',
-        },
-      ]);
+      if (todayData.success) {
+        const status = todayData.status;
+        
+        setTodayStatus({
+          isClockedIn: status.isClockedIn,
+          clockInTime: status.timeCard?.clock_in_time 
+            ? new Date(status.timeCard.clock_in_time).toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+              })
+            : undefined,
+          driverName: status.timeCard?.driver_name,
+          vehicleNumber: status.timeCard?.vehicle_number,
+          drivingHours: status.timeCard?.hours_worked || 0,
+          onDutyHours: status.timeCard?.hours_worked || 0,
+          preTripCompleted: status.hasPreTrip,
+          weeklyHours: status.weeklyHours || 0,
+        });
+
+        // Convert API alerts to dashboard alerts
+        const dashboardAlerts: ComplianceAlert[] = (status.alerts || []).map((alert: any) => ({
+          type: alert.type,
+          message: alert.message,
+        }));
+
+        // Add welcome message if no alerts
+        if (dashboardAlerts.length === 0 && !status.isClockedIn) {
+          dashboardAlerts.push({
+            type: 'info',
+            message: 'Good morning! Ready to start your day?',
+          });
+        }
+
+        setAlerts(dashboardAlerts);
+      }
     } catch (err) {
       console.error('Error loading dashboard:', err);
+      setAlerts([{
+        type: 'error',
+        message: 'Failed to load dashboard data',
+      }]);
     } finally {
       setLoading(false);
     }
@@ -83,6 +117,17 @@ export default function UnifiedDashboard() {
       minute: '2-digit',
     });
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 pb-8">
@@ -213,7 +258,10 @@ export default function UnifiedDashboard() {
             </div>
             <div className="flex items-center justify-between">
               <span className="text-gray-700">HOS Compliance</span>
-              <StatusIndicator status="complete" label="Within Limits" />
+              <StatusIndicator 
+                status={todayStatus.drivingHours >= 10 ? 'error' : todayStatus.drivingHours >= 9 ? 'warning' : 'complete'} 
+                label="Within Limits" 
+              />
             </div>
             <div className="flex items-center justify-between">
               <span className="text-gray-700">150-Mile Exemption</span>
@@ -226,16 +274,16 @@ export default function UnifiedDashboard() {
         <MobileCard title="This Week" variant="bordered">
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-600">Total Driving:</span>
-              <span className="font-semibold">0.0 / 60.0 hrs</span>
+              <span className="text-gray-600">Total Hours:</span>
+              <span className="font-semibold">{todayStatus.weeklyHours.toFixed(1)} / 60.0 hrs</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Total On-Duty:</span>
-              <span className="font-semibold">0.0 / 60.0 hrs</span>
+              <span className="text-gray-600">Today:</span>
+              <span className="font-semibold">{todayStatus.drivingHours.toFixed(1)} hrs</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Days Worked:</span>
-              <span className="font-semibold">0 / 7 days</span>
+              <span className="text-gray-600">Remaining:</span>
+              <span className="font-semibold">{Math.max(0, 60 - todayStatus.weeklyHours).toFixed(1)} hrs</span>
             </div>
           </div>
         </MobileCard>

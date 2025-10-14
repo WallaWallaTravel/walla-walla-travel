@@ -43,20 +43,22 @@ export default function ClockInPage() {
 
   const loadData = async () => {
     try {
-      // Mock data for now - will connect to real API
-      setDrivers([
-        { id: 1, name: 'Owner', email: 'owner@wallawallatravel.com' },
-        { id: 2, name: 'Eric Critchlow', email: 'eric@wallawallatravel.com' },
-        { id: 3, name: 'Janine Bergevin', email: 'janine@wallawallatravel.com' },
-      ]);
+      // Load drivers from API
+      const driversResponse = await fetch('/api/drivers');
+      const driversData = await driversResponse.json();
+      if (driversData.success) {
+        setDrivers(driversData.drivers);
+      }
 
-      setVehicles([
-        { id: 1, vehicle_number: 'Sprinter 1', capacity: 11, make: 'Mercedes-Benz', model: 'Sprinter' },
-        { id: 2, vehicle_number: 'Sprinter 2', capacity: 14, make: 'Mercedes-Benz', model: 'Sprinter' },
-        { id: 3, vehicle_number: 'Sprinter 3', capacity: 14, make: 'Mercedes-Benz', model: 'Sprinter' },
-      ]);
+      // Load vehicles from API
+      const vehiclesResponse = await fetch('/api/vehicles');
+      const vehiclesData = await vehiclesResponse.json();
+      if (vehiclesData.success) {
+        setVehicles(vehiclesData.vehicles);
+      }
     } catch (err) {
       console.error('Error loading data:', err);
+      setError('Failed to load drivers and vehicles');
     }
   };
 
@@ -99,11 +101,27 @@ export default function ClockInPage() {
     setError('');
 
     try {
-      // Mock success for now
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      alert('Clock in successful! (API to be connected)');
-      router.push('/time-clock/daily-summary');
+      // Call the real clock-in API
+      const response = await fetch('/api/time-clock/clock-in', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          driverId: selectedDriver,
+          vehicleId: selectedVehicle,
+          location,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Success! Redirect to dashboard
+        router.push('/time-clock/dashboard');
+      } else {
+        setError(data.error || 'Failed to clock in');
+      }
     } catch (err) {
+      console.error('Clock in error:', err);
       setError('Network error. Please try again.');
     } finally {
       setLoading(false);
