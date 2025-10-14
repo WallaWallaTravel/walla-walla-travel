@@ -5,7 +5,8 @@ export { TouchButton } from './TouchButton';
 export { TouchButton as MobileButton } from './TouchButton'; // Alias for tests
 export { BottomActionBar, BottomActionBarSpacer } from './BottomActionBar';
 export { SignatureCanvas } from './SignatureCanvas';
-export { MobileCard, MobileCardGrid, StatusIndicator } from './MobileCard';
+export { MobileCard, MobileCardGrid } from './MobileCard';
+export { StatusIndicator } from './StatusIndicator';
 export { AlertBanner, AlertStack, FixedAlert } from './AlertBanner';
 export { MobileCheckbox } from './MobileCheckbox';
 export { MobileInput } from './MobileInput';
