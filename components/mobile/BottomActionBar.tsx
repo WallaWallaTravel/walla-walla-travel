@@ -54,7 +54,7 @@ export function BottomActionBar({ children, className = '' }: BottomActionBarPro
  * 
  * Usage:
  * <div className="overflow-y-auto">
- *   {/* Your content */}
+ *   Your content
  *   <BottomActionBarSpacer />
  * </div>
  * <BottomActionBar>
