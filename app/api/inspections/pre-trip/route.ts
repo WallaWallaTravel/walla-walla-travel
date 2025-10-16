@@ -106,11 +106,11 @@ export async function POST(request: NextRequest) {
         vehicle_id,
         time_card_id,
         type,
-        mileage,
-        checklist,
+        start_mileage,
+        inspection_data,
         created_at
       ) VALUES ($1, $2, $3, $4, $5, $6, NOW())
-      RETURNING id, driver_id, vehicle_id, time_card_id, type, mileage, checklist, created_at
+      RETURNING id, driver_id, vehicle_id, time_card_id, type, start_mileage, inspection_data, created_at
     `, [
       driverId,
       body.vehicleId,

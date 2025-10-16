@@ -96,15 +96,14 @@ export async function POST(request: NextRequest) {
         vehicle_id,
         time_card_id,
         type,
-        mileage,
-        checklist,
-        notes,
-        signature,
+        end_mileage,
+        inspection_data,
+        issues_description,
         defects_found,
         defect_severity,
         defect_description,
         created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
       RETURNING id
     `, [
       driverId,
@@ -114,7 +113,6 @@ export async function POST(request: NextRequest) {
       endMileage,
       JSON.stringify(items),
       notes,
-      signature,
       defectsFound,
       defectSeverity,
       defectDescription
