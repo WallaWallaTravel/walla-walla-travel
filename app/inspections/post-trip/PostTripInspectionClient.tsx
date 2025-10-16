@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import { saveInspectionAction } from '@/app/actions/inspections'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import api from '@/lib/api-client'
 import { sanitizeText, sanitizeNumber, patterns } from '@/lib/security'
 import {
   TouchButton,
@@ -31,7 +32,16 @@ interface Defect {
   photo?: string
 }
 
+interface Vehicle {
+  id: number
+  vehicle_number: string
+  make: string
+  model: string
+  current_mileage: number
+}
+
 export function PostTripInspectionClient({ driver, beginningMileage = 0 }: Props) {
+  const router = useRouter()
   const [currentStep, setCurrentStep] = useState<'mileage' | 'inspection' | 'defects' | 'dvir'>('mileage')
   const [endingMileage, setEndingMileage] = useState('')
   const [fuelLevel, setFuelLevel] = useState('')
@@ -48,6 +58,56 @@ export function PostTripInspectionClient({ driver, beginningMileage = 0 }: Props
   const [notes, setNotes] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [vehicle, setVehicle] = useState<Vehicle | null>(null)
+  const [loadingVehicle, setLoadingVehicle] = useState(true)
+
+  useEffect(() => {
+    loadVehicleAndStatus()
+  }, [])
+
+  async function loadVehicleAndStatus() {
+    try {
+      // Load vehicle from active time card (the one the driver is currently clocked into)
+      const clockStatusResponse = await fetch('/api/workflow/clock', {
+        method: 'GET',
+        credentials: 'include',
+      })
+
+      if (clockStatusResponse.ok) {
+        const clockData = await clockStatusResponse.json()
+        if (clockData.success && clockData.data?.status === 'clocked_in') {
+          const timeCard = clockData.data.timeCard
+
+          // Extract vehicle info from the active time card
+          if (timeCard?.vehicle_id) {
+            const vehicleData = {
+              id: timeCard.vehicle_id,
+              vehicle_number: timeCard.vehicle_number,
+              make: timeCard.make,
+              model: timeCard.model,
+              current_mileage: timeCard.current_mileage || 0
+            }
+            setVehicle(vehicleData)
+
+            // Use vehicle's current mileage as minimum
+            if (!beginningMileage && vehicleData.current_mileage) {
+              setEndingMileage(vehicleData.current_mileage.toString())
+            }
+          } else {
+            setError('No vehicle found in active shift. Please contact your supervisor.')
+          }
+        } else {
+          setError('You must be clocked in to complete post-trip inspection.')
+        }
+      } else {
+        setError('Failed to load active shift information.')
+      }
+    } catch (err) {
+      setError('Failed to load vehicle information')
+    } finally {
+      setLoadingVehicle(false)
+    }
+  }
 
   const inspectionItems = {
     vehicle_condition: [
@@ -70,12 +130,6 @@ export function PostTripInspectionClient({ driver, beginningMileage = 0 }: Props
       'Interior lighting working',
       'First aid kit present',
       'Fire extinguisher accessible'
-    ],
-    accessibility: [
-      'Wheelchair lift/ramp secured',
-      'Tie-downs properly stored',
-      'Accessibility equipment functional',
-      'Passenger assists working'
     ]
   }
 
@@ -211,6 +265,12 @@ export function PostTripInspectionClient({ driver, beginningMileage = 0 }: Props
       return
     }
 
+    if (!vehicle) {
+      setError('No vehicle assigned')
+      haptics.error()
+      return
+    }
+
     if (hasDefects && !vehicleSafe && !mechanicSignature) {
       setError('Mechanic signature required when vehicle is unsafe')
       haptics.error()
@@ -224,29 +284,49 @@ export function PostTripInspectionClient({ driver, beginningMileage = 0 }: Props
       const mileage = sanitizeNumber(endingMileage)
       const sanitizedNotes = sanitizeText(notes)
 
-      // Save inspection using server action
-      const result = await saveInspectionAction({
-        driverId: driver.id,
-        vehicleId: 'a76d7f02-1802-4cf2-9afc-3a66a788ff95', // TODO: Dynamic vehicle selection
-        type: 'post_trip',
-        items: checkedItems,
-        notes: sanitizedNotes || null,
-        endingMileage: mileage,
-        signature: driverSignature,
-        // Additional post-trip specific data
-        fuelLevel,
-        defects: defects.length > 0 ? JSON.stringify(defects) : null,
-        vehicleSafe,
-        mechanicSignature: mechanicSignature || null
-      } as any)
+      // Determine overall defect severity (highest severity wins)
+      const hasCriticalDefect = defects.some(d => d.severity === 'critical')
+      const defectSeverity = hasDefects === false ? 'none' :
+                            hasCriticalDefect ? 'critical' : 'minor'
+
+      // Combine all defect descriptions
+      const defectDescription = defects.length > 0
+        ? defects.map(d => `[${d.severity.toUpperCase()}] ${d.description}`).join('\n\n')
+        : null
+
+      // Save inspection using API
+      const result = await api.inspection.submitPostTrip({
+        vehicleId: vehicle.id,
+        endMileage: mileage || 0,
+        inspectionData: {
+          items: checkedItems,
+          notes: sanitizedNotes || '',
+          fuelLevel,
+          signature: driverSignature,
+          defects: defects.length > 0 ? defects : [],
+          vehicleSafe,
+          mechanicSignature: mechanicSignature || null,
+          // New defect tracking fields
+          defectsFound: hasDefects || false,
+          defectSeverity: defectSeverity,
+          defectDescription: defectDescription
+        }
+      })
 
       if (!result.success) {
         throw new Error(result.error || 'Failed to save inspection')
       }
 
       haptics.success()
-      // Redirect to workflow
-      window.location.href = '/workflow/daily'
+
+      // Show confirmation message for critical defects
+      if (defectSeverity === 'critical') {
+        // Critical defect notification will be handled by backend
+        alert('✅ Post-trip inspection submitted\n⚠️ Critical defect reported - Supervisor notified\n🚫 Vehicle marked out of service\n\nYour supervisor has been notified via text and email about the critical issue you reported. Thank you for keeping everyone safe!')
+      }
+
+      // Redirect back to workflow
+      router.push('/workflow')
       
     } catch (error) {
       console.error('Submission error:', error)
@@ -262,39 +342,52 @@ export function PostTripInspectionClient({ driver, beginningMileage = 0 }: Props
 
   const needsMechanicSignature = hasDefects && !vehicleSafe
 
+  if (loadingVehicle) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-800">Loading vehicle information...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header */}
       <div className="bg-white border-b px-4 py-3">
-        <h1 className="text-xl font-semibold">Post-Trip Inspection (DVIR)</h1>
-        <p className="text-sm text-gray-600">Driver: {driver.name}</p>
-        <p className="text-sm text-gray-600">Date: {new Date().toLocaleDateString()}</p>
+        <h1 className="text-xl font-semibold text-gray-900">Post-Trip Inspection (DVIR)</h1>
+        <p className="text-sm text-gray-800">Driver: {driver.name}</p>
+        {vehicle && (
+          <p className="text-sm text-gray-800">Vehicle: {vehicle.vehicle_number} ({vehicle.make} {vehicle.model})</p>
+        )}
+        <p className="text-sm text-gray-800">Date: {new Date().toLocaleDateString()}</p>
       </div>
 
       {/* Progress indicator */}
       <div className="flex justify-between px-4 py-3 bg-white border-b">
-        <div className={`flex-1 text-center py-2 ${currentStep === 'mileage' ? 'text-blue-600 font-medium' : 'text-gray-400'}`}>
+        <div className={`flex-1 text-center py-2 ${currentStep === 'mileage' ? 'text-blue-600 font-medium' : 'text-gray-800'}`}>
           <div className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center mb-1 ${
             currentStep === 'mileage' ? 'bg-blue-600 text-white' : 
             endingMileage && fuelLevel ? 'bg-green-600 text-white' : 'bg-gray-300 text-white'
           }`}>1</div>
           <span className="text-xs">Mileage</span>
         </div>
-        <div className={`flex-1 text-center py-2 ${currentStep === 'inspection' ? 'text-blue-600 font-medium' : 'text-gray-400'}`}>
+        <div className={`flex-1 text-center py-2 ${currentStep === 'inspection' ? 'text-blue-600 font-medium' : 'text-gray-800'}`}>
           <div className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center mb-1 ${
             currentStep === 'inspection' ? 'bg-blue-600 text-white' : 
             allItemsChecked ? 'bg-green-600 text-white' : 'bg-gray-300 text-white'
           }`}>2</div>
           <span className="text-xs">Inspection</span>
         </div>
-        <div className={`flex-1 text-center py-2 ${currentStep === 'defects' ? 'text-blue-600 font-medium' : 'text-gray-400'}`}>
+        <div className={`flex-1 text-center py-2 ${currentStep === 'defects' ? 'text-blue-600 font-medium' : 'text-gray-800'}`}>
           <div className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center mb-1 ${
             currentStep === 'defects' ? 'bg-blue-600 text-white' : 
             hasDefects !== null ? 'bg-green-600 text-white' : 'bg-gray-300 text-white'
           }`}>3</div>
           <span className="text-xs">Defects</span>
         </div>
-        <div className={`flex-1 text-center py-2 ${currentStep === 'dvir' ? 'text-blue-600 font-medium' : 'text-gray-400'}`}>
+        <div className={`flex-1 text-center py-2 ${currentStep === 'dvir' ? 'text-blue-600 font-medium' : 'text-gray-800'}`}>
           <div className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center mb-1 ${
             currentStep === 'dvir' ? 'bg-blue-600 text-white' :
             driverSignature ? 'bg-green-600 text-white' : 'bg-gray-300 text-white'
@@ -318,7 +411,7 @@ export function PostTripInspectionClient({ driver, beginningMileage = 0 }: Props
         {currentStep === 'mileage' && (
           <>
             <MobileCard>
-              <h2 className="text-lg font-medium mb-4">Vehicle Status</h2>
+              <h2 className="text-lg font-medium text-gray-900 mb-4">Vehicle Status</h2>
               
               <MobileInput
                 label="Ending Mileage"
@@ -339,7 +432,7 @@ export function PostTripInspectionClient({ driver, beginningMileage = 0 }: Props
                 <select 
                   value={fuelLevel}
                   onChange={(e) => setFuelLevel(e.target.value)}
-                  className="w-full px-4 py-3 min-h-[48px] text-base border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+                  className="w-full px-4 py-3 min-h-[48px] text-base border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-80"
                   style={{ fontSize: '16px' }}
                 >
                   <option value="">Select fuel level</option>
@@ -364,7 +457,7 @@ export function PostTripInspectionClient({ driver, beginningMileage = 0 }: Props
           <>
             {Object.entries(inspectionItems).map(([category, items]) => (
               <MobileCard key={category} className="mb-4">
-                <h2 className="text-lg font-medium mb-3 capitalize">
+                <h2 className="text-lg font-medium text-gray-900 mb-3 capitalize">
                   {category.replace(/_/g, ' ')} Check
                 </h2>
                 <div className="space-y-1">
@@ -381,22 +474,22 @@ export function PostTripInspectionClient({ driver, beginningMileage = 0 }: Props
             ))}
 
             <MobileCard>
-              <h3 className="text-lg font-medium mb-3">Additional Notes</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-3">Additional Notes</h3>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="w-full px-4 py-3 min-h-[100px] text-base border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+                className="w-full px-4 py-3 min-h-[100px] text-base text-gray-900 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-80 placeholder:text-gray-600"
                 rows={4}
                 maxLength={500}
                 placeholder="Any observations or concerns..."
                 style={{ fontSize: '16px' }}
               />
-              <p className="text-sm text-gray-500 mt-2">
+              <p className="text-sm text-gray-700 mt-2">
                 {notes.length}/500 characters
               </p>
             </MobileCard>
             
-            <div className="mt-4 text-center text-sm text-gray-600">
+            <div className="mt-4 text-center text-sm text-gray-800">
               <p className="font-medium">{checkedCount} of {totalItems} items checked</p>
               {allItemsChecked && (
                 <p className="text-green-600 mt-1">✓ All items inspected</p>
@@ -409,7 +502,7 @@ export function PostTripInspectionClient({ driver, beginningMileage = 0 }: Props
         {currentStep === 'defects' && (
           <>
             <MobileCard>
-              <h2 className="text-lg font-medium mb-4">Report Defects</h2>
+              <h2 className="text-lg font-medium text-gray-900 mb-4">Report Defects</h2>
               
               {hasDefects === null ? (
                 <div className="space-y-3">
@@ -441,7 +534,7 @@ export function PostTripInspectionClient({ driver, beginningMileage = 0 }: Props
                     <textarea
                       value={currentDefect.description || ''}
                       onChange={(e) => setCurrentDefect(prev => ({ ...prev, description: e.target.value }))}
-                      className="w-full px-4 py-3 min-h-[100px] text-base border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+                      className="w-full px-4 py-3 min-h-[100px] text-base text-gray-900 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-80 placeholder:text-gray-600"
                       placeholder="Describe the defect..."
                       style={{ fontSize: '16px' }}
                     />
@@ -449,29 +542,28 @@ export function PostTripInspectionClient({ driver, beginningMileage = 0 }: Props
 
                   <div className="mb-4">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Severity
+                      What is the severity?
                     </label>
-                    <div className="flex gap-2">
+                    <div className="space-y-2">
                       <TouchButton
                         variant={currentDefect.severity === 'minor' ? 'primary' : 'secondary'}
                         onClick={() => setCurrentDefect(prev => ({ ...prev, severity: 'minor' }))}
-                        className="flex-1"
+                        className="w-full text-left"
                       >
-                        Minor
-                      </TouchButton>
-                      <TouchButton
-                        variant={currentDefect.severity === 'major' ? 'primary' : 'secondary'}
-                        onClick={() => setCurrentDefect(prev => ({ ...prev, severity: 'major' }))}
-                        className="flex-1 bg-orange-600"
-                      >
-                        Major
+                        <div>
+                          <div className="font-medium">Minor</div>
+                          <div className="text-sm opacity-80">Vehicle still safe to drive, can be addressed later</div>
+                        </div>
                       </TouchButton>
                       <TouchButton
                         variant={currentDefect.severity === 'critical' ? 'primary' : 'secondary'}
                         onClick={() => setCurrentDefect(prev => ({ ...prev, severity: 'critical' }))}
-                        className="flex-1 bg-red-600"
+                        className="w-full text-left bg-red-600"
                       >
-                        Critical
+                        <div>
+                          <div className="font-medium">Critical</div>
+                          <div className="text-sm opacity-80">Vehicle unsafe, needs immediate attention</div>
+                        </div>
                       </TouchButton>
                     </div>
                   </div>
@@ -512,17 +604,16 @@ export function PostTripInspectionClient({ driver, beginningMileage = 0 }: Props
                             <div className="flex-1">
                               <span className={`inline-block px-2 py-1 text-xs rounded ${
                                 defect.severity === 'critical' ? 'bg-red-100 text-red-800' :
-                                defect.severity === 'major' ? 'bg-orange-100 text-orange-800' :
                                 'bg-yellow-100 text-yellow-800'
                               }`}>
                                 {defect.severity.toUpperCase()}
                               </span>
-                              <p className="mt-1">{defect.description}</p>
-                              {defect.photo && <span className="text-sm text-gray-500">📷 Photo attached</span>}
+                              <p className="mt-1 text-gray-900">{defect.description}</p>
+                              {defect.photo && <span className="text-sm text-gray-700">📷 Photo attached</span>}
                             </div>
                             <button
                               onClick={() => handleRemoveDefect(defect.id)}
-                              className="ml-2 text-red-600"
+                              className="ml-2 text-red-600 font-bold text-xl"
                             >
                               ✕
                             </button>
@@ -585,12 +676,12 @@ export function PostTripInspectionClient({ driver, beginningMileage = 0 }: Props
         {currentStep === 'dvir' && (
           <>
             <MobileCard>
-              <h2 className="text-lg font-medium mb-4">Driver Vehicle Inspection Report</h2>
+              <h2 className="text-lg font-medium text-gray-900 mb-4">Driver Vehicle Inspection Report</h2>
               
               {/* Summary */}
               <div className="bg-blue-50 p-3 rounded-lg mb-4">
-                <h3 className="font-medium mb-2">Inspection Summary</h3>
-                <ul className="text-sm space-y-1">
+                <h3 className="font-medium text-gray-900 mb-2">Inspection Summary</h3>
+                <ul className="text-sm text-gray-800 space-y-1">
                   <li>• Ending Mileage: {endingMileage}</li>
                   <li>• Fuel Level: {fuelLevel}</li>
                   <li>• Items Inspected: {checkedCount}/{totalItems}</li>
@@ -610,8 +701,7 @@ export function PostTripInspectionClient({ driver, beginningMileage = 0 }: Props
                 </p>
                 
                 <SignatureCanvas
-                  label="Driver Signature"
-                  onSignature={setDriverSignature}
+                  onSave={setDriverSignature}
                   onClear={handleDriverSignatureClear}
                 />
                 
@@ -633,8 +723,7 @@ export function PostTripInspectionClient({ driver, beginningMileage = 0 }: Props
                   </p>
                   
                   <SignatureCanvas
-                    label="Mechanic Signature"
-                    onSignature={setMechanicSignature}
+                    onSave={setMechanicSignature}
                     onClear={handleMechanicSignatureClear}
                   />
                   
@@ -677,7 +766,7 @@ export function PostTripInspectionClient({ driver, beginningMileage = 0 }: Props
               variant="secondary"
               onClick={() => {
                 haptics.light()
-                window.location.href = '/workflow/daily'
+                router.push('/workflow')
               }}
               className="flex-1"
             >
