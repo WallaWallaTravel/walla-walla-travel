@@ -23,8 +23,8 @@ export * from './inspection';
 // Client service types
 export * from './client-service';
 
-// API types (coming soon)
-// export * from './api';
+// API types
+export * from './api';
 
-// Database types (coming soon)
-// export * from './database';
+// Database types
+export * from './database';
