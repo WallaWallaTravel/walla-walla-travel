@@ -189,19 +189,56 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // 3. Check vehicle selection
-      console.log(`🚐 Clock-in request - Driver ${driverId}, VehicleID: ${body.vehicleId || 'NONE'}`);
+      // 3. Check vehicle selection (allow null for non-driving shifts)
+      console.log(`🚐 Clock-in request - Driver ${driverId}, VehicleID: ${body.vehicleId || 'NONE (non-driving shift)'}`);
 
+      // Allow null vehicleId for non-driving tasks (office work, loading, etc.)
       if (!body.vehicleId) {
-        console.error(`❌ No vehicle ID provided for driver ${driverId}`);
+        console.log(`✅ Non-driving shift - no vehicle required for driver ${driverId}`);
+
+        // Create time card without vehicle (non-driving shift)
+        const workLocation = body.location
+          ? `Lat: ${body.location.latitude.toFixed(4)}, Lng: ${body.location.longitude.toFixed(4)}`
+          : 'Location not provided';
+
+        const result = await query(`
+          INSERT INTO time_cards (
+            driver_id,
+            vehicle_id,
+            date,
+            work_reporting_location,
+            work_reporting_lat,
+            work_reporting_lng,
+            clock_in_time,
+            status,
+            created_at,
+            updated_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, 'on_duty', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+          RETURNING *
+        `, [
+          driverId,
+          null, // No vehicle for non-driving shift
+          today,
+          workLocation,
+          body.location?.latitude || null,
+          body.location?.longitude || null
+        ]);
+
+        console.log(`✅ Driver ${driverId} clocked in for non-driving shift:`);
+        console.log(`   Time Card ID: ${result.rows[0].id}`);
+        console.log(`   Vehicle ID: NULL (non-driving task)`);
+        console.log(`   Clock In Time: ${result.rows[0].clock_in_time}`);
+
         return successResponse({
-          status: 'vehicle_required',
-          message: 'Please select a vehicle to clock in',
-          suggestions: [
-            'Select an available vehicle from the list',
-            'Contact dispatch if no vehicles are available'
+          status: 'success',
+          timeCard: result.rows[0],
+          vehicle: null,
+          message: `Successfully clocked in for non-driving shift at ${formatTime(now)}`,
+          reminders: [
+            'Non-driving shift - No vehicle inspections required',
+            'Complete your assigned tasks safely'
           ]
-        }, 'Vehicle selection required');
+        }, 'Successfully clocked in (non-driving)');
       }
 
       // 4. Verify vehicle exists and is available
