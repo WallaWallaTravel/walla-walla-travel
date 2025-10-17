@@ -225,7 +225,6 @@ SELECT
   v.capacity,
   v.status,
   v.license_plate,
-  v.current_mileage,
   v.defect_notes,
   tc.id AS active_time_card_id,
   tc.driver_id AS current_driver_id,
@@ -252,6 +251,34 @@ ORDER BY
     ELSE 5
   END,
   v.vehicle_number;
+
+-- ==========================================
+-- PART 8: Update Ryan Madsen to admin role
+-- ==========================================
+
+-- Update Ryan's account to admin role
+UPDATE users
+SET role = 'admin'
+WHERE email = 'madsry@gmail.com'
+  AND is_active = true;
+
+-- Verify Ryan's role update
+DO $$
+DECLARE
+  ryan_role TEXT;
+BEGIN
+  SELECT role INTO ryan_role
+  FROM users
+  WHERE email = 'madsry@gmail.com' AND is_active = true;
+
+  IF ryan_role = 'admin' THEN
+    RAISE NOTICE '';
+    RAISE NOTICE '✅ Ryan Madsen successfully updated to admin role';
+    RAISE NOTICE '';
+  ELSE
+    RAISE WARNING 'Failed to update Ryan Madsen to admin role (current: %)', COALESCE(ryan_role, 'user not found');
+  END IF;
+END $$;
 
 -- ==========================================
 -- VERIFICATION

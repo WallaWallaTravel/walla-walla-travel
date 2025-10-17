@@ -64,7 +64,6 @@ export async function GET(request: NextRequest) {
         capacity,
         status,
         license_plate,
-        current_mileage,
         defect_notes,
         active_time_card_id,
         current_driver_id,

@@ -35,7 +35,6 @@ interface FleetVehicle {
   capacity: number;
   status: string;
   license_plate: string;
-  current_mileage: number;
   defect_notes: string | null;
   current_driver_name: string | null;
   in_use_since: string | null;
