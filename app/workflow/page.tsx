@@ -58,6 +58,7 @@ export default function WorkflowPage() {
   const [vehicleDocs, setVehicleDocs] = useState<any>(null);
   const [showVehicleSelector, setShowVehicleSelector] = useState(false);
   const [selectedVehicleId, setSelectedVehicleId] = useState<number | null>(null);
+  const [isNonDrivingShift, setIsNonDrivingShift] = useState(false); // Track "No Vehicle" selection
   const [preTripCompleted, setPreTripCompleted] = useState(false);
   const [postTripCompleted, setPostTripCompleted] = useState(false);
 
@@ -189,6 +190,7 @@ export default function WorkflowPage() {
 
   async function handleVehicleSelected(vehicleId: number | null) {
     setSelectedVehicleId(vehicleId);
+    setIsNonDrivingShift(vehicleId === null); // Track if user chose "No Vehicle"
     setShowVehicleSelector(false);
     setClockingIn(true);
     setStatusMessage(null);
@@ -243,6 +245,7 @@ export default function WorkflowPage() {
             message: data.message,
             suggestions: data.reminders,
           });
+          setIsNonDrivingShift(false); // Reset after successful clock-in
           await loadDashboardData();
         } else {
           // Handle other statuses
@@ -609,12 +612,22 @@ export default function WorkflowPage() {
             >
               {clockingIn ? 'Clocking In...' : 'Clock In to Start Shift'}
             </button>
-            {!vehicle && (
-              <p style={{ 
-                marginTop: '0.5rem', 
-                fontSize: '0.9rem', 
+            {isNonDrivingShift ? (
+              <p style={{
+                marginTop: '0.5rem',
+                fontSize: '0.9rem',
+                color: '#059669',
+                textAlign: 'center',
+                fontWeight: 600
+              }}>
+                🏢 Non-driving shift - No vehicle required
+              </p>
+            ) : !vehicle && (
+              <p style={{
+                marginTop: '0.5rem',
+                fontSize: '0.9rem',
                 color: '#d97706',
-                textAlign: 'center' 
+                textAlign: 'center'
               }}>
                 ⚠️ No vehicle assigned - will need assignment from supervisor
               </p>
@@ -1103,6 +1116,7 @@ export default function WorkflowPage() {
           onCancel={() => {
             setShowVehicleSelector(false);
             setClockingIn(false);
+            setIsNonDrivingShift(false); // Reset if canceled
           }}
           selectedVehicleId={selectedVehicleId}
         />
