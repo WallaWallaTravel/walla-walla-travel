@@ -1,13 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { loginAction } from '@/app/actions/auth'
+import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('driver@test.com')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const router = useRouter()
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -15,13 +16,26 @@ export default function LoginPage() {
     setError('')
 
     try {
-      const result = await loginAction(email, password)
-      if (result?.error) {
-        setError(result.error)
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        // Successful login - redirect to workflow
+        router.push('/workflow')
+      } else {
+        // Login failed
+        setError(data.error || 'Invalid email or password')
         setLoading(false)
       }
-      // If successful, loginAction will redirect to /workflow
     } catch (err) {
+      console.error('Login error:', err)
       setError('An unexpected error occurred')
       setLoading(false)
     }
@@ -56,7 +70,7 @@ export default function LoginPage() {
 
         <form onSubmit={handleLogin}>
           <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{ 
+            <label htmlFor="email" style={{ 
               display: 'block', 
               fontSize: '1rem', 
               fontWeight: 600, 
@@ -66,6 +80,7 @@ export default function LoginPage() {
               Email
             </label>
             <input
+              id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -83,7 +98,7 @@ export default function LoginPage() {
           </div>
 
           <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{ 
+            <label htmlFor="password" style={{ 
               display: 'block', 
               fontSize: '1rem', 
               fontWeight: 600, 
@@ -93,6 +108,7 @@ export default function LoginPage() {
               Password
             </label>
             <input
+              id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -143,24 +159,6 @@ export default function LoginPage() {
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
-
-        <div style={{
-          marginTop: '2rem',
-          padding: '1rem',
-          backgroundColor: '#f3f4f6',
-          borderRadius: '8px',
-          border: '2px solid #e5e7eb',
-        }}>
-          <p style={{ margin: 0, fontWeight: 700, marginBottom: '0.75rem', fontSize: '0.95rem', color: '#1a1a1a' }}>
-            Test Credentials:
-          </p>
-          <p style={{ margin: 0, marginBottom: '0.5rem', fontSize: '0.95rem', color: '#374151' }}>
-            <strong>Email:</strong> driver@test.com
-          </p>
-          <p style={{ margin: 0, fontSize: '0.95rem', color: '#374151' }}>
-            <strong>Password:</strong> test123456
-          </p>
-        </div>
       </div>
     </div>
   )

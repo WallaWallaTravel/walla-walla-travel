@@ -123,7 +123,7 @@ export default function UnifiedDashboard() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+          <p className="mt-4 text-gray-800">Loading dashboard...</p>
         </div>
       </div>
     );
@@ -135,7 +135,7 @@ export default function UnifiedDashboard() {
         {/* Header */}
         <div className="text-center py-6">
           <h1 className="text-3xl font-bold text-gray-900">Walla Walla Travel</h1>
-          <p className="text-gray-600 mt-1">{getCurrentDate()}</p>
+          <p className="text-gray-800 mt-1">{getCurrentDate()}</p>
           <p className="text-2xl font-semibold text-blue-600 mt-1">{getCurrentTime()}</p>
         </div>
 
@@ -161,26 +161,26 @@ export default function UnifiedDashboard() {
               <StatusIndicator status="in-progress" label="Clocked In" />
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Driver:</span>
+                  <span className="text-gray-800">Driver:</span>
                   <span className="font-semibold">{todayStatus.driverName}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Vehicle:</span>
+                  <span className="text-gray-800">Vehicle:</span>
                   <span className="font-semibold">{todayStatus.vehicleNumber}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Clock In:</span>
+                  <span className="text-gray-800">Clock In:</span>
                   <span className="font-semibold">{todayStatus.clockInTime}</span>
                 </div>
                 <div className="h-px bg-gray-200 my-2" />
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Driving Hours:</span>
+                  <span className="text-gray-800">Driving Hours:</span>
                   <span className="font-semibold">
                     {todayStatus.drivingHours.toFixed(1)} / 10.0 hrs
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">On-Duty Hours:</span>
+                  <span className="text-gray-800">On-Duty Hours:</span>
                   <span className="font-semibold">
                     {todayStatus.onDutyHours.toFixed(1)} / 15.0 hrs
                   </span>
@@ -190,7 +190,7 @@ export default function UnifiedDashboard() {
           ) : (
             <div className="text-center py-4">
               <StatusIndicator status="pending" label="Not Clocked In" />
-              <p className="text-gray-600 mt-2">Start your day by clocking in</p>
+              <p className="text-gray-800 mt-2">Start your day by clocking in</p>
             </div>
           )}
         </MobileCard>
@@ -274,22 +274,22 @@ export default function UnifiedDashboard() {
         <MobileCard title="This Week" variant="bordered">
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-600">Total Hours:</span>
+              <span className="text-gray-800">Total Hours:</span>
               <span className="font-semibold">{todayStatus.weeklyHours.toFixed(1)} / 60.0 hrs</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Today:</span>
+              <span className="text-gray-800">Today:</span>
               <span className="font-semibold">{todayStatus.drivingHours.toFixed(1)} hrs</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Remaining:</span>
+              <span className="text-gray-800">Remaining:</span>
               <span className="font-semibold">{Math.max(0, 60 - todayStatus.weeklyHours).toFixed(1)} hrs</span>
             </div>
           </div>
         </MobileCard>
 
         {/* Company Info */}
-        <div className="text-center text-sm text-gray-500 py-4">
+        <div className="text-center text-sm text-gray-700 py-4">
           <p>Walla Walla Travel</p>
           <p>USDOT #3603851</p>
         </div>

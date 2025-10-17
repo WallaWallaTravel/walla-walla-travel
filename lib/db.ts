@@ -1,4 +1,5 @@
 import { Pool, QueryResult } from 'pg';
+import { logDbError, logInfo, logDebug } from './logger';
 
 // Determine SSL config based on DATABASE_URL
 const databaseUrl = process.env.DATABASE_URL;
@@ -31,10 +32,23 @@ export async function query(text: string, params?: any[]): Promise<QueryResult> 
   try {
     const res = await pool.query(text, params);
     const duration = Date.now() - start;
-    console.log('📊 Query executed', { text, duration, rows: res.rowCount });
+    
+    // Log successful queries in debug mode
+    logDebug('Database', `Query executed in ${duration}ms`, {
+      sql: text,
+      params,
+      rows: res.rowCount,
+      duration
+    });
+    
     return res;
-  } catch (error) {
-    console.error('❌ Database query error:', error);
+  } catch (error: any) {
+    // Log database errors with full details
+    const errorId = logDbError('Database', text, params || [], error);
+    
+    // Add errorId to the error object for tracking
+    error.errorId = errorId;
+    
     throw error;
   }
 }
@@ -243,6 +257,39 @@ export async function createClientNote(data: {
   } catch (error) {
     console.error('❌ Error creating client note:', error);
     throw new Error('Failed to create client note');
+  }
+}
+
+// Vehicle documents functions
+export async function getVehicleDocuments(vehicleId: number) {
+  const text = `
+    SELECT 
+      id,
+      vehicle_id,
+      document_type,
+      document_name,
+      document_url,
+      expiry_date,
+      is_active,
+      created_at
+    FROM vehicle_documents
+    WHERE vehicle_id = $1 AND is_active = true
+    ORDER BY 
+      CASE document_type 
+        WHEN 'registration' THEN 1
+        WHEN 'insurance' THEN 2
+        WHEN 'inspection' THEN 3
+        WHEN 'maintenance' THEN 4
+        ELSE 5
+      END
+  `;
+  
+  try {
+    const result = await query(text, [vehicleId]);
+    return result.rows;
+  } catch (error) {
+    console.error('❌ Error fetching vehicle documents:', error);
+    throw new Error('Failed to fetch vehicle documents');
   }
 }
 

@@ -56,3 +56,9 @@ temp/
 # Backup files
 *.backup
 *.bak
+
+# Sensitive production files
+migrations/PRODUCTION-CREDENTIALS.md
+**/PRODUCTION-CREDENTIALS.md
+SEND-TO-DRIVERS.txt
+scripts/check-database-data.cjs

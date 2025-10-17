@@ -1,27 +1,84 @@
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 
-// Simple mock login for testing UI
+// Login function that calls the real API
 export async function login(email: string, password: string) {
-  // Test credentials
-  if (email === 'driver@test.com' && password === 'test123456') {
-    // Set a simple session cookie
-    const cookieStore = await cookies()
-    cookieStore.set('session', JSON.stringify({ 
-      email, 
-      userId: 'test-driver-1',
-      name: 'Test Driver'
-    }), {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7 // 7 days
-    })
+  try {
+    // Determine the API URL based on environment
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 
+      (process.env.NODE_ENV === 'production' 
+        ? 'https://walla-walla-final.vercel.app' 
+        : 'http://localhost:3000');
+
+    // Call the login API endpoint
+    const response = await fetch(`${apiUrl}/api/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
+      // Important: include credentials to handle cookies
+      credentials: 'include',
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      return { 
+        success: false, 
+        error: data.error || 'Login failed. Please try again.' 
+      };
+    }
+
+    // The API sets the session cookie, but we need to set it on the server side too
+    // since this is a server action
+    if (data.data) {
+      const cookieStore = await cookies();
+      cookieStore.set('session', JSON.stringify({
+        email: data.data.email,
+        userId: data.data.id.toString(),
+        name: data.data.name,
+      }), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+        path: '/',
+      });
+    }
+
+    return { success: true, user: data.data };
+
+  } catch (error) {
+    console.error('Login error:', error);
     
-    return { success: true }
+    // Check if it's a network error
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      // Fallback to mock login for development if API is not available
+      if (process.env.NODE_ENV === 'development' && 
+          email === 'driver@test.com' && 
+          password === 'test123456') {
+        const cookieStore = await cookies();
+        cookieStore.set('session', JSON.stringify({
+          email,
+          userId: '1',
+          name: 'Test Driver',
+        }), {
+          httpOnly: true,
+          secure: false,
+          sameSite: 'lax',
+          maxAge: 60 * 60 * 24 * 7,
+          path: '/',
+        });
+        return { success: true };
+      }
+    }
+    
+    return { 
+      success: false, 
+      error: 'Unable to connect to server. Please try again later.' 
+    };
   }
-  
-  return { success: false, error: 'Invalid email or password' }
 }
 
 export async function getServerSession() {
@@ -57,6 +114,23 @@ export async function getUser() {
 }
 
 export async function logout() {
-  const cookieStore = await cookies()
-  cookieStore.delete('session')
+  try {
+    // Call the logout API endpoint
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 
+      (process.env.NODE_ENV === 'production' 
+        ? 'https://walla-walla-final.vercel.app' 
+        : 'http://localhost:3000');
+
+    await fetch(`${apiUrl}/api/auth/logout`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+  } catch (error) {
+    // Continue with logout even if API call fails
+    console.error('Logout API error:', error);
+  }
+
+  // Always clear the session cookie locally
+  const cookieStore = await cookies();
+  cookieStore.delete('session');
 }

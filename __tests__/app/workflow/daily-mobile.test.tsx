@@ -199,7 +199,7 @@ describe('Daily Workflow Mobile UI', () => {
       const cards = screen.getAllByTestId('mobile-card')
       
       // First card should be enabled
-      expect(cards[0]).not.toHaveClass('opacity-50')
+      expect(cards[0]).not.toHaveClass('opacity-80')
       
       // Others should be disabled-looking
       for (let i = 1; i < cards.length; i++) {

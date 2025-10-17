@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "jest",
+    "test:api": "jest --config jest.config.api.cjs",
     "test:watch": "jest --watch",
     "test:security": "jest __tests__/security",
     "test:coverage": "jest --coverage",
@@ -49,6 +50,7 @@
     "jest-environment-jsdom": "^30.1.2",
     "lint-staged": "^16.1.6",
     "tailwindcss": "^4",
+    "ts-jest": "^29.4.5",
     "typescript": "^5"
   },
   "husky": {

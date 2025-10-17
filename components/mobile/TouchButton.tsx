@@ -53,7 +53,7 @@ export function TouchButton({
   };
 
   // Base styles (always applied)
-  const baseStyles = 'font-semibold rounded-lg transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed';
+  const baseStyles = 'font-semibold rounded-lg transition-all duration-200 active:scale-95 disabled:opacity-80 disabled:cursor-not-allowed';
   
   // Size variants
   const sizeStyles = {

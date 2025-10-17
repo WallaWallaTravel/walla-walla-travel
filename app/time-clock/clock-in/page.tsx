@@ -134,7 +134,7 @@ export default function ClockInPage() {
         {/* Header */}
         <div className="text-center py-6">
           <h1 className="text-3xl font-bold text-gray-900">Clock In</h1>
-          <p className="text-gray-600 mt-2">
+          <p className="text-gray-800 mt-2">
             {new Date().toLocaleDateString('en-US', {
               weekday: 'long',
               year: 'numeric',

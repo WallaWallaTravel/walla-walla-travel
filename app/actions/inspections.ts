@@ -9,6 +9,31 @@ interface InspectionData {
   mileage: number
   checklist: Record<string, boolean>
   notes?: string
+  timeCardId?: number
+}
+
+/**
+ * Get the active time card for the current user
+ * This links inspections to specific shifts
+ */
+export async function getActiveTimeCardId(): Promise<number | null> {
+  try {
+    const user = await getCurrentUser()
+    if (!user) return null
+
+    const result = await query(`
+      SELECT id FROM time_cards
+      WHERE driver_id = $1
+        AND clock_out_time IS NULL
+      ORDER BY clock_in_time DESC
+      LIMIT 1
+    `, [user.id])
+
+    return result.rows[0]?.id || null
+  } catch (error) {
+    console.error('Get active time card error:', error)
+    return null
+  }
 }
 
 export async function savePreTripInspection(data: InspectionData) {
@@ -28,11 +53,14 @@ export async function savePreTripInspection(data: InspectionData) {
       return { success: false, error: 'Valid mileage required' }
     }
 
-    // Save to database
+    // Get active time card ID if not provided
+    const timeCardId = data.timeCardId || await getActiveTimeCardId()
+
+    // Save to database (with time_card_id for per-shift tracking)
     const result = await query(
-      `INSERT INTO inspections 
-       (driver_id, vehicle_id, type, mileage, checklist, notes, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, NOW())
+      `INSERT INTO inspections
+       (driver_id, vehicle_id, type, mileage, checklist, notes, time_card_id, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
        RETURNING id`,
       [
         user.id,
@@ -40,7 +68,8 @@ export async function savePreTripInspection(data: InspectionData) {
         'pre_trip',
         data.mileage,
         JSON.stringify(data.checklist),
-        data.notes || ''
+        data.notes || '',
+        timeCardId
       ]
     )
 
@@ -48,8 +77,17 @@ export async function savePreTripInspection(data: InspectionData) {
       success: true,
       inspectionId: result.rows[0].id
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Save pre-trip inspection error:', error)
+
+    // Handle missing column error (migration not run yet)
+    if (error.code === '42703') {
+      return {
+        success: false,
+        error: 'Database schema update required. Please contact administrator.'
+      }
+    }
+
     return {
       success: false,
       error: 'Failed to save inspection'
@@ -66,6 +104,7 @@ export async function saveInspectionAction(data: {
   beginningMileage?: number
   endingMileage?: number
   signature?: string | null
+  timeCardId?: number
 }) {
   try {
     // Get current user
@@ -84,11 +123,14 @@ export async function saveInspectionAction(data: {
       return { success: false, error: 'Valid mileage required' }
     }
 
-    // Save to database
+    // Get active time card ID if not provided
+    const timeCardId = data.timeCardId || await getActiveTimeCardId()
+
+    // Save to database (with time_card_id for per-shift tracking)
     const result = await query(
-      `INSERT INTO inspections 
-       (driver_id, vehicle_id, type, mileage, checklist, notes, signature, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+      `INSERT INTO inspections
+       (driver_id, vehicle_id, type, mileage, checklist, notes, signature, time_card_id, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
        RETURNING id`,
       [
         user.id,
@@ -97,7 +139,8 @@ export async function saveInspectionAction(data: {
         mileage,
         JSON.stringify(data.items),
         data.notes || '',
-        data.signature || null
+        data.signature || null,
+        timeCardId
       ]
     )
 
@@ -105,8 +148,17 @@ export async function saveInspectionAction(data: {
       success: true,
       inspectionId: result.rows[0].id
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Save inspection error:', error)
+
+    // Handle missing column error (migration not run yet)
+    if (error.code === '42703') {
+      return {
+        success: false,
+        error: 'Database schema update required. Please contact administrator.'
+      }
+    }
+
     return {
       success: false,
       error: 'Failed to save inspection'
@@ -131,11 +183,14 @@ export async function savePostTripInspection(data: InspectionData & { signature?
       return { success: false, error: 'Valid mileage required' }
     }
 
-    // Save to database
+    // Get active time card ID if not provided
+    const timeCardId = data.timeCardId || await getActiveTimeCardId()
+
+    // Save to database (with time_card_id for per-shift tracking)
     const result = await query(
-      `INSERT INTO inspections 
-       (driver_id, vehicle_id, type, mileage, checklist, notes, signature, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+      `INSERT INTO inspections
+       (driver_id, vehicle_id, type, mileage, checklist, notes, signature, time_card_id, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
        RETURNING id`,
       [
         user.id,
@@ -144,7 +199,8 @@ export async function savePostTripInspection(data: InspectionData & { signature?
         data.mileage,
         JSON.stringify(data.checklist),
         data.notes || '',
-        data.signature || null
+        data.signature || null,
+        timeCardId
       ]
     )
 
@@ -152,8 +208,17 @@ export async function savePostTripInspection(data: InspectionData & { signature?
       success: true,
       inspectionId: result.rows[0].id
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Save post-trip inspection error:', error)
+
+    // Handle missing column error (migration not run yet)
+    if (error.code === '42703') {
+      return {
+        success: false,
+        error: 'Database schema update required. Please contact administrator.'
+      }
+    }
+
     return {
       success: false,
       error: 'Failed to save inspection'

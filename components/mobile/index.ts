@@ -10,6 +10,7 @@ export { StatusIndicator } from './StatusIndicator';
 export { AlertBanner, AlertStack, FixedAlert } from './AlertBanner';
 export { MobileCheckbox } from './MobileCheckbox';
 export { MobileInput } from './MobileInput';
+export { VehicleSelector } from './VehicleSelector';
 export { haptics } from './haptics';
 
 /**

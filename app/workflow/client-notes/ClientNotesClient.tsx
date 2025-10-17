@@ -164,7 +164,7 @@ export default function ClientNotesClient({ driver }: Props) {
             </button>
             <div>
               <h1 className="text-xl font-bold">Client Notes</h1>
-              <p className="text-sm text-gray-300">
+              <p className="text-sm text-gray-800">
                 {currentScreen === 'quick' ? 'Quick Entry' : 'Detailed Notes (Optional)'}
               </p>
             </div>
@@ -208,7 +208,7 @@ export default function ClientNotesClient({ driver }: Props) {
             {/* Winery Quick Ratings */}
             <div className="bg-white rounded-lg p-4 mb-4">
               <h3 className="font-semibold text-gray-900 mb-3">Quick Stop Ratings</h3>
-              <p className="text-sm text-gray-600 mb-3">Rate today&apos;s scheduled stops</p>
+              <p className="text-sm text-gray-800 mb-3">Rate today&apos;s scheduled stops</p>
               <div className="space-y-3">
                 {itineraryWineries.map(winery => (
                   <div key={winery} className="flex items-center justify-between">
@@ -224,7 +224,7 @@ export default function ClientNotesClient({ driver }: Props) {
                           className={`text-xl p-1 ${
                             (quickData.wineryRatings[winery] || 0) >= star 
                               ? 'text-yellow-500' 
-                              : 'text-gray-300'
+                              : 'text-gray-800'
                           }`}
                         >
                           ⭐
@@ -240,7 +240,7 @@ export default function ClientNotesClient({ driver }: Props) {
                         className={`ml-3 px-3 py-1 rounded text-sm ${
                           quickData.purchases.includes(winery)
                             ? 'bg-green-600 text-white'
-                            : 'bg-gray-200 text-gray-600'
+                            : 'bg-gray-200 text-gray-800'
                         }`}
                       >
                         💰 Purchased
@@ -325,7 +325,7 @@ export default function ClientNotesClient({ driver }: Props) {
 
             <button 
               onClick={handleSkipDetailed}
-              className="w-full py-3 text-gray-600 mt-3"
+              className="w-full py-3 text-gray-800 mt-3"
             >
               Skip - Save Quick Notes Only
             </button>
@@ -337,18 +337,18 @@ export default function ClientNotesClient({ driver }: Props) {
             {/* Additional Observations */}
             <div className="bg-white rounded-lg p-4 mb-4">
               <h3 className="font-semibold text-gray-900 mb-3">Additional Observations (Optional)</h3>
-              <p className="text-sm text-gray-600 mb-3">
+              <p className="text-sm text-gray-800 mb-3">
                 Add any other details about the tour that might be helpful
               </p>
               <textarea
                 value={detailedNotes}
                 onChange={(e) => setDetailedNotes(e.target.value.substring(0, 1000))}
-                className="w-full p-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500"
+                className="w-full p-3 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-700"
                 rows={4}
                 maxLength={1000}
                 placeholder="Example: Client mentioned wanting to explore Rhone varietals next time, very interested in wine education, celebrating 25th anniversary..."
               />
-              <p className="text-sm text-gray-500 mt-1">{detailedNotes.length}/1000 characters</p>
+              <p className="text-sm text-gray-700 mt-1">{detailedNotes.length}/1000 characters</p>
             </div>
 
             {/* Marketing Interests */}
@@ -387,7 +387,7 @@ export default function ClientNotesClient({ driver }: Props) {
               disabled={submitting}
               className={`w-full py-4 rounded-lg text-lg font-medium ${
                 submitting
-                  ? 'bg-gray-300 text-gray-500' 
+                  ? 'bg-gray-300 text-gray-700' 
                   : 'bg-green-600 text-white'
               }`}
             >
@@ -396,7 +396,7 @@ export default function ClientNotesClient({ driver }: Props) {
 
             <button 
               onClick={handleSkipDetailed}
-              className="w-full py-3 text-gray-600 mt-3"
+              className="w-full py-3 text-gray-800 mt-3"
             >
               Skip Details - Save Quick Notes Only
             </button>

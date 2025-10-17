@@ -30,7 +30,7 @@ export const MobileCheckbox: React.FC<MobileCheckboxProps> = ({
       className={`
         flex items-center gap-3 p-3 min-h-[48px]
         cursor-pointer select-none
-        ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
+        ${disabled ? 'opacity-80 cursor-not-allowed' : ''}
         ${className}
       `}
       onClick={(e) => e.stopPropagation()}

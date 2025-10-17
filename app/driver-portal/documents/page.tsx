@@ -35,7 +35,7 @@ export default function DriverDocuments() {
             <div className="flex justify-between items-start mb-3">
               <div>
                 <h3 className="font-semibold text-gray-900">{doc.name}</h3>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-800">
                   Expires: {new Date(doc.expires).toLocaleDateString()}
                 </p>
               </div>

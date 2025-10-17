@@ -20,7 +20,7 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
   };
 
   const statusClasses = {
-    pending: 'bg-gray-100 text-gray-600 border border-gray-300',
+    pending: 'bg-gray-100 text-gray-800 border border-gray-300',
     active: 'bg-blue-100 text-blue-700 border border-blue-300 animate-pulse',
     completed: 'bg-green-100 text-green-700 border border-green-300',
     error: 'bg-red-100 text-red-700 border border-red-300',

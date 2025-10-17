@@ -86,7 +86,7 @@ export function MobileCard({
                 </h3>
               )}
               {subtitle && (
-                <p className="text-sm text-gray-600 mt-0.5">
+                <p className="text-sm text-gray-800 mt-0.5">
                   {subtitle}
                 </p>
               )}

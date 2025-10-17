@@ -265,6 +265,63 @@ export const vehicleApi = {
 // Separate vehicles export for backward compatibility
 export const vehiclesApi = vehicleApi;
 
+// Admin APIs
+export const adminApi = {
+  async getDashboard() {
+    return apiRequest('/admin/dashboard');
+  },
+
+  async assignVehicle(data: {
+    timeCardId: number;
+    vehicleId: number;
+    clientName: string;
+    hourlyRate: number;
+    notes?: string;
+    clientPhone?: string;
+    clientEmail?: string;
+  }) {
+    return apiRequest('/admin/assign-vehicle', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+};
+
+// Client Service APIs (Driver)
+export const clientServiceApi = {
+  async logPickup(data: {
+    clientServiceId: number;
+    pickupLocation: string;
+    pickupLat?: number;
+    pickupLng?: number;
+  }) {
+    return apiRequest('/driver/client-pickup', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async getCurrentService() {
+    return apiRequest('/driver/client-pickup');
+  },
+
+  async logDropoff(data: {
+    clientServiceId: number;
+    dropoffLocation: string;
+    dropoffLat?: number;
+    dropoffLng?: number;
+  }) {
+    return apiRequest('/driver/client-dropoff', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async getServiceForDropoff() {
+    return apiRequest('/driver/client-dropoff');
+  },
+};
+
 // Export all APIs
 export default {
   auth: authApi,
@@ -272,4 +329,6 @@ export default {
   workflow: workflowApi,
   vehicle: vehicleApi,
   vehicles: vehicleApi, // Alias for convenience
+  admin: adminApi,
+  clientService: clientServiceApi,
 };

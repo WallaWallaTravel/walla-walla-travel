@@ -165,7 +165,7 @@ export function SignatureCanvas({
       </div>
 
       {/* Helper text */}
-      <p className="text-sm text-gray-600 text-center">
+      <p className="text-sm text-gray-800 text-center">
         {isEmpty ? 'Sign above with your finger or stylus' : 'Signature captured'}
       </p>
 

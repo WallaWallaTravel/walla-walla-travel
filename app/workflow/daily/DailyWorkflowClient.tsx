@@ -235,7 +235,7 @@ export function DailyWorkflowClient({ user, userEmail }: Props) {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-100 flex justify-center items-center">
-        <div className="text-gray-600">Loading workflow...</div>
+        <div className="text-gray-800">Loading workflow...</div>
       </div>
     )
   }
@@ -245,7 +245,7 @@ export function DailyWorkflowClient({ user, userEmail }: Props) {
       {/* Header */}
       <div className="bg-white border-b px-4 py-3 sticky top-0 z-10">
         <h1 className="text-xl font-semibold">Daily Workflow</h1>
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-gray-800">
           {user?.name || 'Driver'} • {new Date().toLocaleDateString()}
         </p>
       </div>
@@ -284,7 +284,7 @@ export function DailyWorkflowClient({ user, userEmail }: Props) {
         </div>
         
         {estimatedTimeRemaining > 0 && !showCompletion && (
-          <p className="text-xs text-gray-500 mt-2">
+          <p className="text-xs text-gray-700 mt-2">
             Estimated time remaining: {estimatedTimeRemaining} minutes
           </p>
         )}
@@ -318,7 +318,7 @@ export function DailyWorkflowClient({ user, userEmail }: Props) {
             <MobileCard
               key={step.id}
               className={`transition-all ${
-                isDisabled ? 'opacity-50 bg-gray-50' : ''
+                isDisabled ? 'opacity-80 bg-gray-50' : ''
               } ${
                 status === 'active' ? 'ring-2 ring-blue-500' : ''
               }`}
@@ -338,7 +338,7 @@ export function DailyWorkflowClient({ user, userEmail }: Props) {
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-1">
                     <h3 className={`font-medium text-lg ${
-                      isDisabled ? 'text-gray-400' : 'text-gray-900'
+                      isDisabled ? 'text-gray-800' : 'text-gray-900'
                     }`}>
                       {step.title}
                     </h3>
@@ -346,7 +346,7 @@ export function DailyWorkflowClient({ user, userEmail }: Props) {
                   </div>
                   
                   <p className={`text-sm mb-3 ${
-                    isDisabled ? 'text-gray-400' : 'text-gray-600'
+                    isDisabled ? 'text-gray-800' : 'text-gray-800'
                   }`}>
                     {step.description}
                   </p>
@@ -386,7 +386,7 @@ export function DailyWorkflowClient({ user, userEmail }: Props) {
                   )}
                   
                   {status === 'pending' && index === currentStep + 1 && (
-                    <div className="text-center text-sm text-gray-500 py-3 bg-gray-100 rounded-lg">
+                    <div className="text-center text-sm text-gray-700 py-3 bg-gray-100 rounded-lg">
                       Complete previous step first
                     </div>
                   )}
@@ -395,7 +395,7 @@ export function DailyWorkflowClient({ user, userEmail }: Props) {
               
               {/* Estimated Time */}
               {status === 'pending' && step.estimatedMinutes && (
-                <div className="mt-2 text-xs text-gray-500 text-right">
+                <div className="mt-2 text-xs text-gray-700 text-right">
                   ~{step.estimatedMinutes} min
                 </div>
               )}

@@ -64,7 +64,7 @@ export default function Dashboard() {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-xl font-bold">Walla Walla Travel</h1>
-            <p className="text-sm text-gray-300">Welcome, {driver?.name || 'Driver'}</p>
+            <p className="text-sm text-gray-800">Welcome, {driver?.name || 'Driver'}</p>
           </div>
           <button 
             onClick={handleLogout}
@@ -87,19 +87,19 @@ export default function Dashboard() {
       {/* Quick Stats Grid */}
       <div className="grid grid-cols-2 gap-3 p-4">
         <div className="bg-white rounded-lg p-4 shadow border border-gray-200">
-          <p className="text-gray-600 text-xs font-medium">Active Trips</p>
+          <p className="text-gray-800 text-xs font-medium">Active Trips</p>
           <p className="text-2xl font-bold text-gray-900">{stats.activeDrivers}</p>
         </div>
         <div className="bg-white rounded-lg p-4 shadow border border-gray-200">
-          <p className="text-gray-600 text-xs font-medium">Pending Docs</p>
+          <p className="text-gray-800 text-xs font-medium">Pending Docs</p>
           <p className="text-2xl font-bold text-amber-600">{stats.pendingDocs}</p>
         </div>
         <div className="bg-white rounded-lg p-4 shadow border border-gray-200">
-          <p className="text-gray-600 text-xs font-medium">Today&apos;s Bookings</p>
+          <p className="text-gray-800 text-xs font-medium">Today&apos;s Bookings</p>
           <p className="text-2xl font-bold text-gray-900">{stats.todaysBookings}</p>
         </div>
         <div className="bg-white rounded-lg p-4 shadow border border-gray-200">
-          <p className="text-gray-600 text-xs font-medium">Expiring Soon</p>
+          <p className="text-gray-800 text-xs font-medium">Expiring Soon</p>
           <p className="text-2xl font-bold text-red-600">{stats.expiringDocs}</p>
         </div>
       </div>

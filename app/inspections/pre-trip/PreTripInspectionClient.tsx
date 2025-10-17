@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import { saveInspectionAction } from '@/app/actions/inspections'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import api from '@/lib/api-client'
 import { sanitizeText, sanitizeNumber, patterns } from '@/lib/security'
 import {
   TouchButton,
@@ -23,7 +24,15 @@ interface Props {
   }
 }
 
+interface Vehicle {
+  id: number
+  vehicle_number: string
+  make: string
+  model: string
+}
+
 export function PreTripInspectionClient({ driver }: Props) {
+  const router = useRouter()
   const [currentStep, setCurrentStep] = useState<'mileage' | 'inspection' | 'signature'>('mileage')
   const [beginningMileage, setBeginningMileage] = useState('')
   const [notes, setNotes] = useState('')
@@ -31,6 +40,63 @@ export function PreTripInspectionClient({ driver }: Props) {
   const [signature, setSignature] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [vehicle, setVehicle] = useState<Vehicle | null>(null)
+  const [loadingVehicle, setLoadingVehicle] = useState(true)
+  const [sendingHelp, setSendingHelp] = useState(false)
+  const [helpSent, setHelpSent] = useState(false)
+
+  useEffect(() => {
+    loadAssignedVehicle()
+  }, [])
+
+  async function loadAssignedVehicle() {
+    try {
+      const result = await api.vehicle.getAssignedVehicle()
+      if (result.success && result.data) {
+        setVehicle(result.data)
+      } else {
+        setError('No vehicle assigned. Please contact your supervisor.')
+      }
+    } catch (err) {
+      setError('Failed to load vehicle information')
+    } finally {
+      setLoadingVehicle(false)
+    }
+  }
+
+  async function handleRequestHelp() {
+    setSendingHelp(true)
+    try {
+      const response = await fetch('/api/emergency/supervisor-help', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          reason: 'No vehicle assigned for pre-trip inspection',
+          timeCardId: null
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setHelpSent(true)
+        setError(null)
+        haptics.success()
+        setTimeout(() => {
+          router.push('/workflow')
+        }, 3000)
+      } else {
+        setError('Failed to send help request. Please call supervisor directly.')
+        haptics.error()
+      }
+    } catch (err) {
+      setError('Unable to send help request. Please call supervisor.')
+      haptics.error()
+    } finally {
+      setSendingHelp(false)
+    }
+  }
 
   const inspectionItems = {
     exterior: [
@@ -56,13 +122,6 @@ export function PreTripInspectionClient({ driver }: Props) {
       'Windshield wipers - Functioning',
       'Fluids - Check oil, coolant, washer fluid',
       'Engine - No unusual noises or warning lights'
-    ],
-    accessibility: [
-      'Wheelchair lift/ramp - Operates properly',
-      'Tie-downs - Present and in good condition',
-      'Wheelchair positions - Clear and accessible',
-      'Safety equipment - All present',
-      'Communication devices - Working'
     ]
   }
 
@@ -117,6 +176,12 @@ export function PreTripInspectionClient({ driver }: Props) {
       return
     }
 
+    if (!vehicle) {
+      setError('No vehicle assigned')
+      haptics.error()
+      return
+    }
+
     setSubmitting(true)
     setError(null)
 
@@ -124,15 +189,15 @@ export function PreTripInspectionClient({ driver }: Props) {
       const mileage = sanitizeNumber(beginningMileage)
       const sanitizedNotes = sanitizeText(notes)
 
-      // Save inspection using server action
-      const result = await saveInspectionAction({
-        driverId: driver.id,
-        vehicleId: 'a76d7f02-1802-4cf2-9afc-3a66a788ff95', // TODO: Dynamic vehicle selection
-        type: 'pre_trip',
-        items: checkedItems,
-        notes: sanitizedNotes || null,
-        beginningMileage: mileage,
-        signature
+      // Save inspection using API
+      const result = await api.inspection.submitPreTrip({
+        vehicleId: vehicle.id,
+        startMileage: mileage || 0,
+        inspectionData: {
+          items: checkedItems,
+          notes: sanitizedNotes || '',
+          signature: signature
+        }
       })
 
       if (!result.success) {
@@ -140,8 +205,8 @@ export function PreTripInspectionClient({ driver }: Props) {
       }
 
       haptics.success()
-      // Redirect to next workflow step
-      window.location.href = '/workflow/daily'
+      // Redirect back to workflow
+      router.push('/workflow')
       
     } catch (error) {
       console.error('Submission error:', error)
@@ -155,31 +220,122 @@ export function PreTripInspectionClient({ driver }: Props) {
   const checkedCount = Object.values(checkedItems).filter(Boolean).length
   const allItemsChecked = checkedCount === totalItems
 
+  if (loadingVehicle) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-800">Loading vehicle information...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show emergency help screen if no vehicle assigned
+  if (!vehicle && !loadingVehicle) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6">
+          <div className="text-center mb-6">
+            <div className="text-6xl mb-4">⚠️</div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">No Vehicle Assigned</h1>
+            <p className="text-gray-800">
+              You need a vehicle assignment to complete the pre-trip inspection.
+            </p>
+          </div>
+
+          {helpSent ? (
+            <div className="bg-green-50 border-2 border-green-500 rounded-lg p-6 text-center">
+              <div className="text-5xl mb-3">✅</div>
+              <h2 className="text-xl font-bold text-green-800 mb-2">Help Request Sent!</h2>
+              <p className="text-green-700 mb-4">
+                Your supervisor has been notified and will assign you a vehicle soon.
+              </p>
+              <p className="text-sm text-green-600">
+                Returning to dashboard in 3 seconds...
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-4 mb-6">
+                <button
+                  onClick={handleRequestHelp}
+                  disabled={sendingHelp}
+                  className="w-full py-4 px-6 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white font-bold rounded-lg text-lg flex items-center justify-center gap-3 transition-colors"
+                >
+                  {sendingHelp ? (
+                    <>
+                      <span className="animate-spin">⏳</span>
+                      <span>Sending Request...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>🆘</span>
+                      <span>Request Supervisor Help</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => router.push('/workflow')}
+                  className="w-full py-3 px-6 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition-colors"
+                >
+                  Return to Dashboard
+                </button>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
+                <p className="text-blue-800 font-medium mb-2">What happens when you request help?</p>
+                <ul className="text-blue-700 space-y-1 list-disc list-inside">
+                  <li>Supervisor receives SMS notification</li>
+                  <li>Supervisor receives email with details</li>
+                  <li>You'll be assigned a vehicle promptly</li>
+                  <li>You can return and complete inspection</li>
+                </ul>
+              </div>
+
+              {error && (
+                <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
+                  <p className="text-red-800 font-medium">{error}</p>
+                  <p className="text-red-600 text-sm mt-1">
+                    Emergency Contact: evcritchlow@gmail.com
+                  </p>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header */}
       <div className="bg-white border-b px-4 py-3">
-        <h1 className="text-xl font-semibold">Pre-Trip Inspection</h1>
-        <p className="text-sm text-gray-600">Driver: {driver.name}</p>
-        <p className="text-sm text-gray-600">Date: {new Date().toLocaleDateString()}</p>
+        <h1 className="text-xl font-semibold text-gray-900">Pre-Trip Inspection</h1>
+        <p className="text-sm text-gray-800">Driver: {driver.name}</p>
+        {vehicle && (
+          <p className="text-sm text-gray-800">Vehicle: {vehicle.vehicle_number} ({vehicle.make} {vehicle.model})</p>
+        )}
+        <p className="text-sm text-gray-800">Date: {new Date().toLocaleDateString()}</p>
       </div>
 
       {/* Progress indicator */}
       <div className="flex justify-between px-4 py-3 bg-white border-b">
-        <div className={`flex-1 text-center py-2 ${currentStep === 'mileage' ? 'text-blue-600 font-medium' : 'text-gray-400'}`}>
+        <div className={`flex-1 text-center py-2 ${currentStep === 'mileage' ? 'text-blue-600 font-medium' : 'text-gray-800'}`}>
           <div className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center mb-1 ${
             currentStep === 'mileage' ? 'bg-blue-600 text-white' : 'bg-gray-300 text-white'
           }`}>1</div>
           <span className="text-xs">Mileage</span>
         </div>
-        <div className={`flex-1 text-center py-2 ${currentStep === 'inspection' ? 'text-blue-600 font-medium' : 'text-gray-400'}`}>
+        <div className={`flex-1 text-center py-2 ${currentStep === 'inspection' ? 'text-blue-600 font-medium' : 'text-gray-800'}`}>
           <div className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center mb-1 ${
             currentStep === 'inspection' ? 'bg-blue-600 text-white' : 
             checkedCount === totalItems ? 'bg-green-600 text-white' : 'bg-gray-300 text-white'
           }`}>2</div>
           <span className="text-xs">Inspection</span>
         </div>
-        <div className={`flex-1 text-center py-2 ${currentStep === 'signature' ? 'text-blue-600 font-medium' : 'text-gray-400'}`}>
+        <div className={`flex-1 text-center py-2 ${currentStep === 'signature' ? 'text-blue-600 font-medium' : 'text-gray-800'}`}>
           <div className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center mb-1 ${
             currentStep === 'signature' ? 'bg-blue-600 text-white' :
             signature ? 'bg-green-600 text-white' : 'bg-gray-300 text-white'
@@ -202,7 +358,7 @@ export function PreTripInspectionClient({ driver }: Props) {
         {/* Step 1: Mileage */}
         {currentStep === 'mileage' && (
           <MobileCard>
-            <h2 className="text-lg font-medium mb-4">Enter Beginning Mileage</h2>
+            <h2 className="text-lg font-medium text-gray-900 mb-4">Enter Beginning Mileage</h2>
             <MobileInput
               label="Vehicle Mileage"
               type="text"
@@ -222,7 +378,7 @@ export function PreTripInspectionClient({ driver }: Props) {
           <>
             {Object.entries(inspectionItems).map(([category, items]) => (
               <MobileCard key={category} className="mb-4">
-                <h2 className="text-lg font-medium mb-3 capitalize">
+                <h2 className="text-lg font-medium text-gray-900 mb-3 capitalize">
                   {category.replace('_', ' ')} Inspection
                 </h2>
                 <div className="space-y-1">
@@ -239,22 +395,22 @@ export function PreTripInspectionClient({ driver }: Props) {
             ))}
 
             <MobileCard>
-              <h3 className="text-lg font-medium mb-3">Additional Notes</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-3">Additional Notes</h3>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="w-full px-4 py-3 min-h-[100px] text-base border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+                className="w-full px-4 py-3 min-h-[100px] text-base text-gray-900 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-80 placeholder:text-gray-600"
                 rows={4}
                 maxLength={500}
                 placeholder="Note any issues or concerns..."
                 style={{ fontSize: '16px' }}
               />
-              <p className="text-sm text-gray-500 mt-2">
+              <p className="text-sm text-gray-700 mt-2">
                 {notes.length}/500 characters
               </p>
             </MobileCard>
             
-            <div className="mt-4 text-center text-sm text-gray-600">
+            <div className="mt-4 text-center text-sm text-gray-800">
               <p className="font-medium">{checkedCount} of {totalItems} items checked</p>
               {checkedCount === totalItems && (
                 <p className="text-green-600 mt-1">✓ All items inspected</p>
@@ -266,14 +422,14 @@ export function PreTripInspectionClient({ driver }: Props) {
         {/* Step 3: Signature */}
         {currentStep === 'signature' && (
           <MobileCard>
-            <h2 className="text-lg font-medium mb-4">Driver Signature</h2>
-            <p className="text-sm text-gray-600 mb-4">
+            <h2 className="text-lg font-medium text-gray-900 mb-4">Driver Signature</h2>
+            <p className="text-sm text-gray-800 mb-4">
               By signing below, you confirm that you have completed the pre-trip inspection
               and the vehicle is safe to operate.
             </p>
             
             <SignatureCanvas
-              onSignature={setSignature}
+              onSave={setSignature}
               onClear={handleSignatureClear}
             />
             
@@ -310,7 +466,7 @@ export function PreTripInspectionClient({ driver }: Props) {
               variant="secondary"
               onClick={() => {
                 haptics.light()
-                window.location.href = '/workflow/daily'
+                router.push('/workflow')
               }}
               className="flex-1"
             >

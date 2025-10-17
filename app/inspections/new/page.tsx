@@ -78,7 +78,7 @@ export default function VehicleInspection() {
         <div className="bg-white p-4 rounded-lg border border-gray-200">
           <label className="block text-sm font-medium text-gray-700 mb-2">Driver Signature</label>
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-            <button type="button" className="text-gray-600">
+            <button type="button" className="text-gray-800">
               Tap to Sign
             </button>
           </div>
