@@ -220,11 +220,14 @@ export default function WorkflowPage() {
             suggestions: [...(data.details ? [data.details] : []), ...data.suggestions],
           });
         } else if (data.status === 'no_vehicle' || data.status === 'vehicle_required') {
-          setStatusMessage({
-            type: 'warning',
-            message: data.message,
-            suggestions: data.suggestions,
-          });
+          // Don't show warning if user deliberately chose "No Vehicle" for non-driving shift
+          if (!isNonDrivingShift) {
+            setStatusMessage({
+              type: 'warning',
+              message: data.message,
+              suggestions: data.suggestions,
+            });
+          }
         } else if (data.status === 'vehicle_in_use' || data.status === 'vehicle_inactive' || data.status === 'invalid_vehicle') {
           setStatusMessage({
             type: 'warning',
