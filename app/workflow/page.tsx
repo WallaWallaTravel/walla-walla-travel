@@ -5,45 +5,12 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import api from '@/lib/api-client'
 import { VehicleSelector } from '@/components/mobile'
-
-interface ClockStatus {
-  status: 'not_clocked_in' | 'clocked_in' | 'clocked_out' | 'already_clocked_in' | 'already_clocked_out';
-  message: string;
-  canClockIn: boolean;
-  canClockOut: boolean;
-  timeCard?: any;
-  vehicle?: string;
-  hoursWorked?: string;
-  lastShift?: {
-    clockIn: string;
-    clockOut: string;
-    totalHours: string;
-    vehicle: string;
-  };
-}
-
-interface UserProfile {
-  name: string;
-  email: string;
-  id: number;
-}
-
-interface AssignedVehicle {
-  id: number;
-  vehicle_number: string;
-  make: string;
-  model: string;
-  year?: number;
-  vin?: string;
-  license_plate?: string;
-  current_mileage?: number;
-}
-
-interface StatusMessage {
-  type: 'info' | 'warning' | 'error' | 'success';
-  message: string;
-  suggestions?: string[];
-}
+import type {
+  ClockStatus,
+  UserProfile,
+  AssignedVehicle,
+  StatusMessage,
+} from '@/lib/types'
 
 export default function WorkflowPage() {
   const router = useRouter();
@@ -435,38 +402,62 @@ export default function WorkflowPage() {
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <h1 style={{ 
-              fontSize: '1.75rem', 
-              fontWeight: 700, 
+            <h1 style={{
+              fontSize: '1.75rem',
+              fontWeight: 700,
               margin: 0,
-              color: '#1f2937' 
+              color: '#1f2937'
             }}>
               Welcome, {user?.name || 'Driver'}!
             </h1>
             <p style={{ margin: '0.25rem 0 0 0', color: '#6b7280', fontSize: '0.95rem' }}>
-              {new Date().toLocaleDateString('en-US', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
+              {new Date().toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
               })}
             </p>
           </div>
-          <button
-            onClick={handleLogout}
-            style={{
-              padding: '0.5rem 1rem',
-              backgroundColor: '#ef4444',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '6px',
-              fontSize: '0.95rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            Logout
-          </button>
+          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+            {user?.role === 'admin' && (
+              <Link href="/admin/dashboard" style={{ textDecoration: 'none' }}>
+                <button
+                  style={{
+                    padding: '0.5rem 1rem',
+                    backgroundColor: '#8b5cf6',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '0.95rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                  }}
+                >
+                  <span>📊</span>
+                  <span>Supervisor</span>
+                </button>
+              </Link>
+            )}
+            <button
+              onClick={handleLogout}
+              style={{
+                padding: '0.5rem 1rem',
+                backgroundColor: '#ef4444',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '0.95rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              Logout
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1034,7 +1025,32 @@ export default function WorkflowPage() {
         <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem', color: '#1f2937' }}>
           Quick Links
         </h2>
-        
+
+        {/* Admin Dashboard Button - Full Width, Prominent */}
+        {user?.role === 'admin' && (
+          <Link href="/admin/dashboard" style={{ textDecoration: 'none', display: 'block', marginBottom: '1rem' }}>
+            <button style={{
+              width: '100%',
+              padding: '1rem',
+              backgroundColor: '#8b5cf6',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '1.05rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.75rem',
+              boxShadow: '0 2px 8px rgba(139, 92, 246, 0.3)',
+            }}>
+              <span style={{ fontSize: '1.5rem' }}>📊</span>
+              <span>Supervisor Dashboard</span>
+            </button>
+          </Link>
+        )}
+
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
           <Link href="/vehicles" style={{ textDecoration: 'none' }}>
             <button style={{
