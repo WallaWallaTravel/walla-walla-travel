@@ -15,6 +15,7 @@ import {
   MobileInput,
   haptics
 } from '@/components/mobile'
+import type { Vehicle } from '@/lib/types'
 
 interface Props {
   driver: {
@@ -30,14 +31,6 @@ interface Defect {
   description: string
   severity: 'minor' | 'major' | 'critical'
   photo?: string
-}
-
-interface Vehicle {
-  id: number
-  vehicle_number: string
-  make: string
-  model: string
-  current_mileage: number
 }
 
 export function PostTripInspectionClient({ driver, beginningMileage = 0 }: Props) {

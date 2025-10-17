@@ -15,6 +15,7 @@ import {
   MobileInput,
   haptics
 } from '@/components/mobile'
+import type { Vehicle } from '@/lib/types'
 
 interface Props {
   driver: {
@@ -22,13 +23,6 @@ interface Props {
     name: string
     email: string
   }
-}
-
-interface Vehicle {
-  id: number
-  vehicle_number: string
-  make: string
-  model: string
 }
 
 export function PreTripInspectionClient({ driver }: Props) {
