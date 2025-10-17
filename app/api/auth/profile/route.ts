@@ -1,14 +1,12 @@
 import { NextRequest } from 'next/server';
-import { 
-  successResponse, 
-  errorResponse, 
+import {
+  successResponse,
+  errorResponse,
   requireAuth,
-  parseRequestBody,
-  sanitizeInput,
-  isValidPhone,
   logApiRequest
 } from '@/app/api/utils';
 import { getUserByEmail, query } from '@/lib/db';
+import { validate, profileUpdateSchema } from '@/lib/validation';
 
 export async function GET(request: NextRequest) {
   try {
@@ -55,32 +53,13 @@ export async function PUT(request: NextRequest) {
 
     logApiRequest('PUT', '/api/auth/profile', session.userId);
 
-    // Parse request body
-    const body = await parseRequestBody<{
-      name?: string;
-      phone?: string;
-    }>(request);
-
-    if (!body) {
-      return errorResponse('Invalid request body', 400);
+    // Validate request body with Zod schema
+    const validation = await validate(request, profileUpdateSchema);
+    if (!validation.success) {
+      return validation.error;
     }
 
-    // Sanitize inputs
-    const updates: { name?: string; phone?: string } = {};
-    
-    if (body.name !== undefined) {
-      updates.name = sanitizeInput(body.name);
-      if (updates.name.length < 2) {
-        return errorResponse('Name must be at least 2 characters', 400);
-      }
-    }
-
-    if (body.phone !== undefined) {
-      updates.phone = body.phone.trim();
-      if (updates.phone && !isValidPhone(updates.phone)) {
-        return errorResponse('Invalid phone number format', 400);
-      }
-    }
+    const updates = validation.data;
 
     // Build update query
     const updateFields: string[] = [];
@@ -93,9 +72,27 @@ export async function PUT(request: NextRequest) {
       paramCount++;
     }
 
+    if (updates.email !== undefined) {
+      updateFields.push(`email = $${paramCount}`);
+      values.push(updates.email);
+      paramCount++;
+    }
+
     if (updates.phone !== undefined) {
       updateFields.push(`phone = $${paramCount}`);
       values.push(updates.phone || null);
+      paramCount++;
+    }
+
+    if (updates.emergency_contact_name !== undefined) {
+      updateFields.push(`emergency_contact_name = $${paramCount}`);
+      values.push(updates.emergency_contact_name || null);
+      paramCount++;
+    }
+
+    if (updates.emergency_contact_phone !== undefined) {
+      updateFields.push(`emergency_contact_phone = $${paramCount}`);
+      values.push(updates.emergency_contact_phone || null);
       paramCount++;
     }
 
@@ -107,10 +104,10 @@ export async function PUT(request: NextRequest) {
     values.push(session.userId);
 
     const updateQuery = `
-      UPDATE users 
+      UPDATE users
       SET ${updateFields.join(', ')}, updated_at = CURRENT_TIMESTAMP
       WHERE id = $${paramCount}
-      RETURNING id, email, name, phone, role, created_at, last_login
+      RETURNING id, email, name, phone, role, created_at, last_login, emergency_contact_name, emergency_contact_phone
     `;
 
     const result = await query(updateQuery, values);
@@ -129,6 +126,8 @@ export async function PUT(request: NextRequest) {
       role: updatedUser.role,
       created_at: updatedUser.created_at,
       last_login: updatedUser.last_login,
+      emergency_contact_name: updatedUser.emergency_contact_name,
+      emergency_contact_phone: updatedUser.emergency_contact_phone,
     }, 'Profile updated successfully');
 
   } catch (error) {
