@@ -17,8 +17,8 @@ export * from './vehicle';
 // Time card types
 export * from './timecard';
 
-// Inspection types (coming soon)
-// export * from './inspection';
+// Inspection types
+export * from './inspection';
 
 // Client service types (coming soon)
 // export * from './client-service';
