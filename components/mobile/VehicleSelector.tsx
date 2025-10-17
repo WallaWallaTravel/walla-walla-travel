@@ -22,7 +22,7 @@ interface Vehicle {
 }
 
 interface VehicleSelectorProps {
-  onSelect: (vehicleId: number) => void;
+  onSelect: (vehicleId: number | null) => void;
   onCancel: () => void;
   selectedVehicleId?: number | null;
 }
@@ -37,6 +37,7 @@ export function VehicleSelector({ onSelect, onCancel, selectedVehicleId }: Vehic
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<number | null>(selectedVehicleId || null);
+  const [hasSelection, setHasSelection] = useState(false); // Track if user made a choice
 
   useEffect(() => {
     loadVehicles();
@@ -65,12 +66,13 @@ export function VehicleSelector({ onSelect, onCancel, selectedVehicleId }: Vehic
     }
   }
 
-  const handleSelectVehicle = (vehicleId: number) => {
+  const handleSelectVehicle = (vehicleId: number | null) => {
     setSelectedId(vehicleId);
+    setHasSelection(true);
   };
 
   const handleConfirm = () => {
-    if (selectedId) {
+    if (hasSelection) {
       onSelect(selectedId);
     }
   };
@@ -99,6 +101,46 @@ export function VehicleSelector({ onSelect, onCancel, selectedVehicleId }: Vehic
               className="mb-4"
             />
           )}
+
+          {/* No Vehicle Option (for non-driving tasks) */}
+          <div className="mb-6">
+            <button
+              onClick={() => handleSelectVehicle(null)}
+              className={`
+                w-full p-4 rounded-lg border-2 text-left transition-all
+                ${selectedId === null && hasSelection
+                  ? 'border-orange-500 bg-orange-50'
+                  : 'border-gray-300 bg-white hover:border-gray-400'
+                }
+              `}
+            >
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">🏢</span>
+                    <span className="font-semibold text-gray-900">
+                      No Vehicle - Non-Driving Task
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-700 mt-2">
+                    Select this for office work, loading, or other non-driving tasks
+                  </p>
+                  <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded">
+                    <p className="text-xs text-blue-800">
+                      ℹ️ Pre-trip and post-trip inspections will not be required
+                    </p>
+                  </div>
+                </div>
+                {selectedId === null && hasSelection && (
+                  <div className="ml-2">
+                    <svg className="w-6 h-6 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+            </button>
+          </div>
 
           {/* Assigned Vehicles */}
           {vehicles.assigned.length > 0 && (
@@ -171,7 +213,7 @@ export function VehicleSelector({ onSelect, onCancel, selectedVehicleId }: Vehic
             <TouchButton
               variant="primary"
               onClick={handleConfirm}
-              disabled={!selectedId}
+              disabled={!hasSelection}
               className="flex-1"
             >
               Confirm Selection
@@ -184,16 +226,16 @@ export function VehicleSelector({ onSelect, onCancel, selectedVehicleId }: Vehic
 }
 
 // Vehicle option component
-function VehicleOption({ 
-  vehicle, 
-  isSelected, 
-  onSelect, 
+function VehicleOption({
+  vehicle,
+  isSelected,
+  onSelect,
   isRecommended = false,
-  disabled = false 
+  disabled = false
 }: {
   vehicle: Vehicle;
   isSelected: boolean;
-  onSelect: (id: number) => void;
+  onSelect: (id: number | null) => void;
   isRecommended?: boolean;
   disabled?: boolean;
 }) {
