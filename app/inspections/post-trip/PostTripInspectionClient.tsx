@@ -429,18 +429,18 @@ export function PostTripInspectionClient({ driver, beginningMileage = 0 }: Props
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Fuel Level
                 </label>
-                <select 
+                <select
                   value={fuelLevel}
                   onChange={(e) => setFuelLevel(e.target.value)}
-                  className="w-full px-4 py-3 min-h-[48px] text-base border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-80"
+                  className="w-full px-4 py-3 min-h-[48px] text-base text-gray-900 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-80"
                   style={{ fontSize: '16px' }}
                 >
-                  <option value="">Select fuel level</option>
-                  <option value="Full">Full</option>
-                  <option value="3/4">3/4 Tank</option>
-                  <option value="1/2">1/2 Tank</option>
-                  <option value="1/4">1/4 Tank ⚠️</option>
-                  <option value="Empty">Empty 🚨</option>
+                  <option value="" className="text-gray-900">Select fuel level</option>
+                  <option value="Full" className="text-gray-900">Full</option>
+                  <option value="3/4" className="text-gray-900">3/4 Tank</option>
+                  <option value="1/2" className="text-gray-900">1/2 Tank</option>
+                  <option value="1/4" className="text-gray-900">1/4 Tank ⚠️</option>
+                  <option value="Empty" className="text-gray-900">Empty 🚨</option>
                 </select>
                 {(fuelLevel === '1/4' || fuelLevel === 'Empty') && (
                   <p className="text-sm text-orange-600 mt-2">

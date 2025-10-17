@@ -142,25 +142,73 @@ export async function GET(request: NextRequest) {
     }
     const session = authResult;
 
+    const driverId = parseInt(session.userId);
+
     logApiRequest('GET', '/api/inspections/pre-trip', session.userId);
 
-    // Query for today's pre-trip inspection (Pacific Time)
-    const result = await query(`
-      SELECT i.*, v.vehicle_number, v.make, v.model 
-      FROM inspections i 
-      JOIN vehicles v ON i.vehicle_id = v.id 
-      WHERE i.driver_id = $1 
-        AND i.type = 'pre_trip'
-        AND DATE(i.created_at AT TIME ZONE 'America/Los_Angeles') = DATE(NOW() AT TIME ZONE 'America/Los_Angeles')
-      ORDER BY i.created_at DESC 
+    // SMART PRE-TRIP REQUIREMENT CHECK:
+    // Get driver's current vehicle from active time card
+    const timeCardResult = await query(`
+      SELECT vehicle_id FROM time_cards
+      WHERE driver_id = $1 AND clock_out_time IS NULL
+      ORDER BY clock_in_time DESC
       LIMIT 1
-    `, [parseInt(session.userId)]);
+    `, [driverId]);
 
-    if (result.rows.length === 0) {
-      return successResponse(null, 'No pre-trip inspection found for today');
+    if (timeCardResult.rows.length === 0) {
+      return successResponse(null, 'No active shift found');
     }
 
-    return successResponse(result.rows[0], 'Pre-trip inspection retrieved');
+    const vehicleId = timeCardResult.rows[0].vehicle_id;
+
+    if (!vehicleId) {
+      return successResponse(null, 'No vehicle assigned to current shift');
+    }
+
+    // Check if pre-trip exists for THIS VEHICLE today (not THIS DRIVER)
+    const preTripToday = await query(`
+      SELECT i.*, v.vehicle_number, v.make, v.model
+      FROM inspections i
+      JOIN vehicles v ON i.vehicle_id = v.id
+      WHERE i.vehicle_id = $1
+        AND i.type = 'pre_trip'
+        AND DATE(i.created_at AT TIME ZONE 'America/Los_Angeles') = DATE(NOW() AT TIME ZONE 'America/Los_Angeles')
+      ORDER BY i.created_at DESC
+      LIMIT 1
+    `, [vehicleId]);
+
+    // Check if last post-trip for THIS VEHICLE reported defects
+    const lastPostTrip = await query(`
+      SELECT defects_found, defect_severity
+      FROM inspections
+      WHERE vehicle_id = $1
+        AND type = 'post_trip'
+      ORDER BY created_at DESC
+      LIMIT 1
+    `, [vehicleId]);
+
+    const preTripExistsToday = preTripToday.rows.length > 0;
+    const lastPostTripHadDefects =
+      lastPostTrip.rows.length > 0 &&
+      lastPostTrip.rows[0].defects_found === true &&
+      lastPostTrip.rows[0].defect_severity !== 'none';
+
+    // Pre-trip NOT required if:
+    // - Pre-trip exists today for this vehicle AND
+    // - Last post-trip had no defects (or no post-trip exists)
+    if (preTripExistsToday && !lastPostTripHadDefects) {
+      console.log(`✅ Pre-trip NOT required for vehicle ${vehicleId}`);
+      console.log(`   Reason: Pre-trip completed today, no defects reported`);
+      return successResponse(preTripToday.rows[0], 'Pre-trip completed for this vehicle today');
+    }
+
+    // Pre-trip IS required if:
+    // - No pre-trip today for this vehicle, OR
+    // - Last post-trip reported defects
+    console.log(`⚠️ Pre-trip IS required for vehicle ${vehicleId}`);
+    console.log(`   Pre-trip exists today: ${preTripExistsToday}`);
+    console.log(`   Last post-trip had defects: ${lastPostTripHadDefects}`);
+    return successResponse(null, preTripExistsToday ? 'Pre-trip required due to previous defects' : 'Pre-trip required for first shift of day');
 
   } catch (error) {
     console.error('Get pre-trip inspection error:', error);
