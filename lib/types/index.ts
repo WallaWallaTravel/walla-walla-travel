@@ -20,8 +20,8 @@ export * from './timecard';
 // Inspection types
 export * from './inspection';
 
-// Client service types (coming soon)
-// export * from './client-service';
+// Client service types
+export * from './client-service';
 
 // API types (coming soon)
 // export * from './api';
