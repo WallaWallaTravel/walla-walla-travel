@@ -8,10 +8,45 @@ const { Client } = require('pg');
 const fs = require('fs');
 const path = require('path');
 
+// Try to load .env.local file if it exists
+try {
+  const envPath = path.join(__dirname, '../.env.local');
+  if (fs.existsSync(envPath)) {
+    const envContent = fs.readFileSync(envPath, 'utf8');
+    envContent.split('\n').forEach(line => {
+      const match = line.match(/^([^=]+)=(.*)$/);
+      if (match && !process.env[match[1]]) {
+        process.env[match[1]] = match[2].replace(/^["']|["']$/g, '');
+      }
+    });
+    console.log('📄 Loaded environment from .env.local\n');
+  }
+} catch (error) {
+  // Silent fail - .env.local is optional
+}
+
 async function runMigration() {
+  // Check if DATABASE_URL is set
+  if (!process.env.DATABASE_URL) {
+    console.error('❌ ERROR: DATABASE_URL environment variable is not set!\n');
+    console.error('Please set DATABASE_URL using one of these methods:\n');
+    console.error('1. Export it in your shell:');
+    console.error('   export DATABASE_URL="postgres://user:pass@host:5432/dbname"\n');
+    console.error('2. Create .env.local file with:');
+    console.error('   DATABASE_URL=postgres://user:pass@host:5432/dbname\n');
+    console.error('3. Get from Heroku:');
+    console.error('   heroku config:get DATABASE_URL --app walla-walla-travel\n');
+    process.exit(1);
+  }
+
+  // Mask DATABASE_URL for security (show only host)
+  const dbUrl = new URL(process.env.DATABASE_URL);
+  console.log(`🔗 Database: ${dbUrl.host}${dbUrl.pathname}`);
+  console.log(`👤 User: ${dbUrl.username}\n`);
+
   const client = new Client({
     connectionString: process.env.DATABASE_URL,
-    ssl: process.env.DATABASE_URL?.includes('amazonaws.com') ? {
+    ssl: process.env.DATABASE_URL.includes('amazonaws.com') ? {
       rejectUnauthorized: false
     } : false
   });
