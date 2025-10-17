@@ -14,8 +14,8 @@ export * from './user';
 // Vehicle types
 export * from './vehicle';
 
-// Time card types (coming soon)
-// export * from './timecard';
+// Time card types
+export * from './timecard';
 
 // Inspection types (coming soon)
 // export * from './inspection';
