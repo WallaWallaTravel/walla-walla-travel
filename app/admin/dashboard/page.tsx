@@ -2,45 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { MobileCard, TouchButton, AlertBanner } from '@/components/mobile';
-
-interface ActiveShift {
-  time_card_id: number;
-  driver_id: number;
-  driver_name: string;
-  driver_email: string;
-  vehicle_id: number | null;
-  vehicle_number: string | null;
-  make: string | null;
-  model: string | null;
-  clock_in_time: string;
-  shift_status: string;
-  work_reporting_location: string;
-  client_service_id: number | null;
-  client_name: string | null;
-  hourly_rate: number | null;
-  service_status: string | null;
-  pickup_time: string | null;
-  dropoff_time: string | null;
-  service_hours: number | null;
-  total_cost: number | null;
-  assigned_by_name: string | null;
-}
-
-interface FleetVehicle {
-  vehicle_id: number;
-  vehicle_number: string;
-  make: string;
-  model: string;
-  year: number;
-  capacity: number;
-  status: string;
-  license_plate: string;
-  defect_notes: string | null;
-  current_driver_name: string | null;
-  in_use_since: string | null;
-  current_client: string | null;
-  availability_status: 'available' | 'in_use' | 'out_of_service';
-}
+import type { ActiveShift, FleetVehicle } from '@/lib/types';
 
 interface Statistics {
   shifts: {
