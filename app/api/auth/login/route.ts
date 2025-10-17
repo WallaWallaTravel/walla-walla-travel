@@ -1,16 +1,14 @@
 import { NextRequest } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
-import { 
-  successResponse, 
-  errorResponse, 
-  parseRequestBody, 
-  validateRequiredFields,
+import {
+  successResponse,
+  errorResponse,
   checkRateLimit,
-  isValidEmail,
   logApiRequest
 } from '@/app/api/utils';
 import { getUserByEmail, updateUserLastLogin } from '@/lib/db';
+import { validate, loginSchema } from '@/lib/validation';
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,34 +18,25 @@ export async function POST(request: NextRequest) {
       return errorResponse('Too many login attempts. Please try again later.', 429);
     }
 
-    // Parse request body
-    const body = await parseRequestBody<{ email: string; password: string }>(request);
-    if (!body) {
-      return errorResponse('Invalid request body', 400);
+    // Validate request body with Zod schema
+    const validation = await validate(request, loginSchema);
+    if (!validation.success) {
+      return validation.error;
     }
 
-    // Validate required fields
-    const validationError = validateRequiredFields(body, ['email', 'password']);
-    if (validationError) {
-      return errorResponse(validationError, 400);
-    }
-
-    // Validate email format
-    if (!isValidEmail(body.email)) {
-      return errorResponse('Invalid email format', 400);
-    }
+    const { email, password } = validation.data;
 
     // Log the request
-    logApiRequest('POST', '/api/auth/login', undefined, { email: body.email });
+    logApiRequest('POST', '/api/auth/login', undefined, { email });
 
     // Get user from database
-    const user = await getUserByEmail(body.email);
+    const user = await getUserByEmail(email);
     if (!user) {
       return errorResponse('Invalid email or password', 401);
     }
 
     // Verify password
-    const passwordValid = await bcrypt.compare(body.password, user.password_hash);
+    const passwordValid = await bcrypt.compare(password, user.password_hash);
     if (!passwordValid) {
       return errorResponse('Invalid email or password', 401);
     }
