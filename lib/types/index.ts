@@ -28,3 +28,6 @@ export * from './api';
 
 // Database types
 export * from './database';
+
+// Booking system types (Phase 2)
+export * from './booking';
