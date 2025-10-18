@@ -282,3 +282,4 @@ export function isValid<T>(data: unknown, schema: ZodSchema<T>): boolean {
 
 // Re-export validation schemas for convenience
 export * from './schemas/auth';
+export * from './schemas/booking';
