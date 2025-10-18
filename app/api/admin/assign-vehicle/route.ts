@@ -118,7 +118,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 3. Update time card with vehicle assignment
+    // CRITICAL CHECK: Prevent mid-shift vehicle assignment to non-driving shifts
+    // If the time card started without a vehicle (vehicle_id is NULL), the driver is on a non-driving shift.
+    // Assigning a vehicle mid-shift creates an impossible state:
+    // - System will require post-trip inspection before clock-out
+    // - But pre-trip inspection was never done (because there was no vehicle at clock-in)
+    // - Driver gets STUCK and cannot clock out!
+    if (timeCard.vehicle_id === null) {
+      return errorResponse(
+        'Cannot assign vehicle to a shift that started without a vehicle (non-driving shift). ' +
+        'Driver must clock out and clock in again with a vehicle for driving shifts.',
+        400
+      );
+    }
+
+    // 3. Update time card with vehicle assignment (only if shift already had a vehicle)
     await query(`
       UPDATE time_cards
       SET vehicle_id = $1, updated_at = CURRENT_TIMESTAMP

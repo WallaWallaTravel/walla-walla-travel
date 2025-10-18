@@ -1052,7 +1052,7 @@ export default function WorkflowPage() {
         )}
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-          <Link href="/vehicles" style={{ textDecoration: 'none' }}>
+          <Link href="/admin/dashboard" style={{ textDecoration: 'none' }}>
             <button style={{
               width: '100%',
               padding: '0.75rem',
