@@ -20,30 +20,30 @@ export interface AdminSession {
  */
 export async function requireAdmin(): Promise<AdminSession | Response> {
   try {
-    // Get session token from cookies
+    // Get session from cookie (same as regular auth)
     const cookieStore = await cookies();
-    const token = cookieStore.get('session_token');
+    const sessionCookie = cookieStore.get('session');
 
-    if (!token) {
+    if (!sessionCookie) {
       return errorResponse('Unauthorized - Please log in', 401);
     }
 
-    // Get user from session
-    const sessionResult = await query(
-      'SELECT user_id FROM sessions WHERE token = $1 AND expires_at > NOW()',
-      [token.value]
-    );
-
-    if (sessionResult.rows.length === 0) {
-      return errorResponse('Invalid or expired session', 401);
+    // Parse session cookie
+    let session;
+    try {
+      session = JSON.parse(sessionCookie.value);
+    } catch {
+      return errorResponse('Invalid session format', 401);
     }
 
-    const userId = sessionResult.rows[0].user_id;
+    if (!session.userId) {
+      return errorResponse('Invalid session data', 401);
+    }
 
-    // Get user details and check role
+    // Get user details and check role from database
     const userResult = await query(
       'SELECT id, email, name, role FROM users WHERE id = $1 AND is_active = true',
-      [userId]
+      [parseInt(session.userId)]
     );
 
     if (userResult.rows.length === 0) {
@@ -95,24 +95,27 @@ export async function requireAdminOnly(): Promise<AdminSession | Response> {
 export async function getCurrentUserRole(): Promise<string | null> {
   try {
     const cookieStore = await cookies();
-    const token = cookieStore.get('session_token');
+    const sessionCookie = cookieStore.get('session');
 
-    if (!token) {
+    if (!sessionCookie) {
       return null;
     }
 
-    const sessionResult = await query(
-      'SELECT user_id FROM sessions WHERE token = $1 AND expires_at > NOW()',
-      [token.value]
-    );
+    // Parse session cookie
+    let session;
+    try {
+      session = JSON.parse(sessionCookie.value);
+    } catch {
+      return null;
+    }
 
-    if (sessionResult.rows.length === 0) {
+    if (!session.userId) {
       return null;
     }
 
     const userResult = await query(
       'SELECT role FROM users WHERE id = $1 AND is_active = true',
-      [sessionResult.rows[0].user_id]
+      [parseInt(session.userId)]
     );
 
     if (userResult.rows.length === 0) {
