@@ -9,22 +9,15 @@ import { query } from '@/lib/db';
  */
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const active_only = searchParams.get('active') === 'true';
-
-    let sql = `
+    const sql = `
       SELECT
         id, name, slug, address, city, state, zip_code,
         phone, email, website, tasting_fee, reservation_required,
-        specialties, description, hours, active, position
+        specialties, description, hours_of_operation,
+        short_description, average_visit_duration
       FROM wineries
+      ORDER BY name ASC
     `;
-
-    if (active_only) {
-      sql += ' WHERE active = true';
-    }
-
-    sql += ' ORDER BY position ASC, name ASC';
 
     const result = await query(sql, []);
 
@@ -42,10 +35,9 @@ export async function GET(request: NextRequest) {
       tasting_fee: parseFloat(row.tasting_fee || '0'),
       reservation_required: row.reservation_required,
       specialties: row.specialties || [],
-      description: row.description,
-      hours: row.hours,
-      active: row.active,
-      position: row.position
+      description: row.description || row.short_description,
+      hours: row.hours_of_operation,
+      average_visit_duration: row.average_visit_duration || 60
     }));
 
     return successResponse(wineries, 'Wineries retrieved successfully');
