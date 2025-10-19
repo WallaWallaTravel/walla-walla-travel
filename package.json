@@ -19,6 +19,7 @@
     "db:verify": "node scripts/verify-database.js"
   },
   "dependencies": {
+    "@stripe/stripe-js": "^8.1.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/dompurify": "^3.0.5",
     "@types/pg": "^8.15.5",
@@ -31,6 +32,7 @@
     "pg": "^8.16.3",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "stripe": "^19.1.0",
     "zod": "^4.1.12"
   },
   "devDependencies": {
@@ -44,6 +46,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/stripe": "^8.0.416",
     "eslint": "^9.35.0",
     "eslint-config-next": "^15.5.2",
     "husky": "^9.1.7",
