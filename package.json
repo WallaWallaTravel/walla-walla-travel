@@ -19,6 +19,7 @@
     "db:verify": "node scripts/verify-database.js"
   },
   "dependencies": {
+    "@stripe/react-stripe-js": "^5.2.0",
     "@stripe/stripe-js": "^8.1.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/dompurify": "^3.0.5",
