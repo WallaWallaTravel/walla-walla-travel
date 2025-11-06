@@ -1,163 +1,83 @@
-import { NextRequest } from 'next/server';
-import { validate, calculatePriceSchema } from '@/lib/validation';
-import { successResponse, errorResponse } from '@/app/api/utils';
-import { query } from '@/lib/db';
+import { NextResponse } from 'next/server';
+import { withErrorHandling, BadRequestError } from '@/lib/api-errors';
+import { calculatePrice, validatePricingRequest } from '@/lib/pricing-engine';
 
 /**
  * POST /api/bookings/calculate-price
- *
- * Calculate detailed pricing for booking parameters.
- * Returns pricing breakdown with all fees and charges.
+ * Calculate detailed pricing for booking parameters
+ * 
+ * Body: {
+ *   date: string (YYYY-MM-DD),
+ *   duration_hours: number (4, 6, or 8),
+ *   party_size: number (1-14),
+ *   vehicle_type?: string (sedan, sprinter, luxury)
+ * }
  */
-export async function POST(request: NextRequest) {
-  try {
-    // Validate request body
-    const validation = await validate(request, calculatePriceSchema);
-    if (!validation.success) {
-      return validation.error;
-    }
+export const POST = withErrorHandling(async (request: Request) => {
+  const body = await request.json();
+  const { date, duration_hours, party_size, vehicle_type } = body;
 
-    const { date, duration_hours, party_size, vehicle_type, winery_count } = validation.data;
+  // Validate required fields
+  if (!date || !duration_hours || !party_size) {
+    throw new BadRequestError('Missing required fields: date, duration_hours, and party_size are required');
+  }
 
-    // Determine vehicle type based on party size if not specified
-    const selectedVehicleType = vehicle_type || (party_size <= 4 ? 'luxury_sedan' : 'sprinter');
+  // Validate pricing request
+  const validation = validatePricingRequest({
+    date,
+    duration_hours,
+    party_size,
+    vehicle_type
+  });
 
-    // Determine if weekend
-    const tourDate = new Date(date);
-    const dayOfWeek = tourDate.getDay();
-    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6; // Sunday or Saturday
+  if (!validation.valid) {
+    throw new BadRequestError(validation.errors.join(', '));
+  }
 
-    // Get pricing rule from database
-    const pricingResult = await query(
-      `SELECT
-        base_price,
-        price_per_hour,
-        price_per_person,
-        minimum_price,
-        maximum_price,
-        weekend_multiplier,
-        holiday_multiplier
-       FROM pricing_rules
-       WHERE vehicle_type = $1
-       AND duration_hours = $2
-       AND is_active = true
-       AND (valid_from IS NULL OR valid_from <= $3)
-       AND (valid_until IS NULL OR valid_until >= $3)
-       ORDER BY priority DESC, is_weekend DESC
-       LIMIT 1`,
-      [selectedVehicleType, duration_hours, date]
-    );
+  // Determine vehicle type based on party size if not specified
+  const selectedVehicleType = vehicle_type || (party_size > 4 ? 'sprinter' : 'sedan');
 
-    let basePrice = 0;
-    let pricingRule = null;
+  // Calculate pricing
+  const pricing = calculatePrice({
+    date,
+    duration_hours,
+    party_size,
+    vehicle_type: selectedVehicleType
+  });
 
-    if (pricingResult.rows.length > 0) {
-      pricingRule = pricingResult.rows[0];
-      basePrice = parseFloat(pricingRule.base_price);
+  // Calculate final payment date (48 hours before tour)
+  const tourDate = new Date(date);
+  const finalPaymentDate = new Date(tourDate);
+  finalPaymentDate.setHours(finalPaymentDate.getHours() - 48);
 
-      // Apply weekend multiplier if applicable
-      if (isWeekend && pricingRule.weekend_multiplier) {
-        basePrice *= parseFloat(pricingRule.weekend_multiplier);
-      }
-
-      // Apply per-hour pricing if configured
-      if (pricingRule.price_per_hour) {
-        basePrice += parseFloat(pricingRule.price_per_hour) * duration_hours;
-      }
-
-      // Apply per-person pricing if configured
-      if (pricingRule.price_per_person) {
-        basePrice += parseFloat(pricingRule.price_per_person) * party_size;
-      }
-
-      // Apply minimum/maximum constraints
-      if (pricingRule.minimum_price && basePrice < parseFloat(pricingRule.minimum_price)) {
-        basePrice = parseFloat(pricingRule.minimum_price);
-      }
-      if (pricingRule.maximum_price && basePrice > parseFloat(pricingRule.maximum_price)) {
-        basePrice = parseFloat(pricingRule.maximum_price);
-      }
-    } else {
-      // Fallback pricing if no rule found
-      const basePrices: Record<string, Record<number, number>> = {
-        sprinter: {
-          4.0: isWeekend ? 720 : 600,
-          6.0: isWeekend ? 960 : 800,
-          8.0: isWeekend ? 1200 : 1000
-        },
-        luxury_sedan: {
-          4.0: isWeekend ? 480 : 400,
-          6.0: isWeekend ? 640 : 533,
-          8.0: isWeekend ? 800 : 667
-        },
-        suv: {
-          4.0: isWeekend ? 600 : 500,
-          6.0: isWeekend ? 800 : 667,
-          8.0: isWeekend ? 1000 : 833
-        }
-      };
-      basePrice = basePrices[selectedVehicleType]?.[duration_hours] || 800;
-    }
-
-    // Calculate additional fees
-    const gratuity = basePrice * 0.15; // 15% suggested gratuity
-    const taxes = basePrice * 0.09; // 9% sales tax (Walla Walla County rate)
-
-    // Optional: Add winery tasting fees estimate
-    const averageTastingFee = 20; // Average tasting fee per winery
-    const estimatedTastingFees = winery_count ? winery_count * averageTastingFee * party_size : 0;
-
-    // Calculate totals
-    const subtotal = basePrice;
-    const totalFees = gratuity + taxes;
-    const totalPrice = subtotal + totalFees;
-    const depositAmount = totalPrice * 0.5; // 50% deposit
-    const balanceDue = totalPrice - depositAmount;
-
-    // Calculate final payment date (48 hours before tour)
-    const finalPaymentDate = new Date(tourDate);
-    finalPaymentDate.setHours(finalPaymentDate.getHours() - 48);
-
-    return successResponse({
+  return NextResponse.json({
+    success: true,
+    data: {
       pricing: {
-        base_price: Math.round(basePrice * 100) / 100,
-        subtotal: Math.round(subtotal * 100) / 100,
-        fees: {
-          gratuity: Math.round(gratuity * 100) / 100,
-          gratuity_percentage: 15,
-          taxes: Math.round(taxes * 100) / 100,
-          tax_rate: 9
-        },
-        total: Math.round(totalPrice * 100) / 100,
-        deposit: {
-          amount: Math.round(depositAmount * 100) / 100,
-          percentage: 50,
-          due_at: 'booking_confirmation'
-        },
-        balance: {
-          amount: Math.round(balanceDue * 100) / 100,
-          due_date: finalPaymentDate.toISOString().split('T')[0],
-          due_description: '48 hours before tour'
-        }
+        base_price: pricing.base_price,
+        subtotal: pricing.subtotal,
+        weekend_surcharge: pricing.weekend_surcharge,
+        holiday_surcharge: pricing.holiday_surcharge,
+        large_group_discount: pricing.large_group_discount,
+        taxes: pricing.taxes,
+        total: pricing.total,
+        deposit_required: pricing.deposit_required,
+        estimated_gratuity: pricing.estimated_gratuity,
+        breakdown: pricing.breakdown
       },
-      estimates: {
-        tasting_fees: winery_count ? {
-          per_winery: averageTastingFee,
-          total_per_person: winery_count * averageTastingFee,
-          total_group: Math.round(estimatedTastingFees * 100) / 100,
-          note: 'Tasting fees are paid directly to wineries and not included in tour price'
-        } : null,
-        total_experience_cost: winery_count ?
-          Math.round((totalPrice + estimatedTastingFees) * 100) / 100 :
-          Math.round(totalPrice * 100) / 100
+      deposit: {
+        amount: pricing.deposit_required,
+        percentage: 50,
+        due_at: 'booking_confirmation'
       },
-      breakdown: {
-        vehicle_type: selectedVehicleType,
-        duration_hours: duration_hours,
-        party_size: party_size,
-        is_weekend: isWeekend,
-        day_of_week: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][dayOfWeek],
-        winery_count: winery_count || null
+      balance: {
+        amount: pricing.total - pricing.deposit_required,
+        due_date: finalPaymentDate.toISOString().split('T')[0],
+        due_description: '48 hours before tour'
+      },
+      vehicle: {
+        type: selectedVehicleType,
+        recommended: party_size > 4 ? 'sprinter' : 'sedan'
       },
       policies: {
         cancellation: {
@@ -166,14 +86,10 @@ export async function POST(request: NextRequest) {
           'less_than_24_hours': 'No refund'
         },
         payment_schedule: {
-          deposit: 'Due at booking',
-          final_payment: 'Auto-charged 48 hours before tour'
+          deposit: 'Due at booking (50%)',
+          final_payment: 'Auto-charged 48 hours before tour (50%)'
         }
       }
-    });
-
-  } catch (error) {
-    console.error('❌ Calculate price error:', error);
-    return errorResponse('Failed to calculate pricing. Please try again.', 500);
-  }
-}
+    }
+  });
+});

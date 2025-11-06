@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { BottomNav, BottomNavSpacer } from "@/components/ui/bottom-nav";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -40,6 +41,31 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
+        <BottomNavSpacer />
+        <BottomNav
+          items={[
+            {
+              label: 'Home',
+              icon: '🏠',
+              href: '/driver-portal/unified-dashboard'
+            },
+            {
+              label: 'Schedule',
+              icon: '📅',
+              href: '/calendar'
+            },
+            {
+              label: 'Bookings',
+              icon: '📝',
+              href: '/bookings/new'
+            },
+            {
+              label: 'Test',
+              icon: '🧪',
+              href: '/test-mobile'
+            }
+          ]}
+        />
       </body>
     </html>
   );

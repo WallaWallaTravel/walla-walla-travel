@@ -3,10 +3,10 @@ import { query } from '@/lib/db';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { booking_id: string } }
+  { params }: { params: Promise<{ booking_id: string }> }
 ) {
   try {
-    const bookingId = params.booking_id;
+    const { booking_id: bookingId } = await params;
 
     const result = await query(`
       SELECT
@@ -56,10 +56,10 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { booking_id: string } }
+  { params }: { params: Promise<{ booking_id: string }> }
 ) {
   try {
-    const bookingId = params.booking_id;
+    const { booking_id: bookingId } = await params;
     const body = await request.json();
 
     // First get the itinerary ID for this booking
@@ -105,10 +105,10 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { booking_id: string } }
+  { params }: { params: Promise<{ booking_id: string }> }
 ) {
   try {
-    const bookingId = params.booking_id;
+    const { booking_id: bookingId } = await params;
 
     await query('DELETE FROM itineraries WHERE booking_id = $1', [bookingId]);
 

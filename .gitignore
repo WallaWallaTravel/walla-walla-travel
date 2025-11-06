@@ -62,3 +62,5 @@ migrations/PRODUCTION-CREDENTIALS.md
 **/PRODUCTION-CREDENTIALS.md
 SEND-TO-DRIVERS.txt
 scripts/check-database-data.cjs
+
+/lib/generated/prisma

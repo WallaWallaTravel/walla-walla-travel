@@ -1,0 +1,71 @@
+{
+  "restaurantId": 34,
+  "restaurantName": "Wine Country Store",
+  "categories": ["Focaccia Sandwiches", "Sides"],
+  "items": [
+    {
+      "id": "italian-gambino",
+      "name": "Italian Gambino",
+      "description": "Assorted Italian meats, arugula, Walla Walla sweets, banana peppers, EVOO vinaigrette, mayo",
+      "price": 12.00,
+      "category": "Focaccia Sandwiches"
+    },
+    {
+      "id": "daddy-o",
+      "name": "The Daddy-O",
+      "description": "Assorted Italian meats, shredded lettuce, tomato, onion, secret sauce",
+      "price": 14.00,
+      "category": "Focaccia Sandwiches"
+    },
+    {
+      "id": "muffuletta",
+      "name": "Muffuletta (but Betta)",
+      "description": "Assorted Italian meats, brie, olive salad",
+      "price": 14.00,
+      "category": "Focaccia Sandwiches"
+    },
+    {
+      "id": "turkey-pimento",
+      "name": "Turkey and Pimento Cheese",
+      "description": "Sweet Grass Dairy pimento cheese, roast turkey, mayo, shredded lettuce, Walla Walla sweets",
+      "price": 12.00,
+      "category": "Focaccia Sandwiches"
+    },
+    {
+      "id": "christmas-carol",
+      "name": "Christmas Carol",
+      "description": "Turkey, cranberry, brie, honey mustard, arugula",
+      "price": 12.00,
+      "category": "Focaccia Sandwiches"
+    },
+    {
+      "id": "terra",
+      "name": "The Terra",
+      "description": "Brie, fig jam, arugula",
+      "price": 12.00,
+      "category": "Focaccia Sandwiches"
+    },
+    {
+      "id": "jimtown",
+      "name": "The Jimtown",
+      "description": "Brie, olive salad, arugula",
+      "price": 12.00,
+      "category": "Focaccia Sandwiches"
+    },
+    {
+      "id": "saint-james",
+      "name": "Saint James",
+      "description": "Pesto, salami, tomato, burrata, arugula",
+      "price": 12.00,
+      "category": "Focaccia Sandwiches"
+    },
+    {
+      "id": "kettle-chips",
+      "name": "Kettle Chips",
+      "description": "Crispy kettle-cooked chips",
+      "price": 2.69,
+      "category": "Sides"
+    }
+  ]
+}
+

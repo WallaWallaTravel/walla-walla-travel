@@ -1,119 +1,135 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { successResponse, errorResponse } from '@/app/api/utils';
-import { query } from '@/lib/db';
+import { withErrorHandling, BadRequestError, NotFoundError, InternalServerError } from '@/lib/api-errors';
+import { queryOne, insertOne } from '@/lib/db-helpers';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2024-12-18.acacia',
-});
+// Initialize Stripe
+const stripe = process.env.STRIPE_SECRET_KEY
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2024-12-18.acacia',
+    })
+  : null;
+
+interface Booking {
+  id: number;
+  booking_number: string;
+  customer_email: string;
+  customer_name: string;
+  total_price: string;
+  deposit_amount: string;
+  final_payment_amount: string;
+}
 
 /**
  * POST /api/payments/create-intent
- *
- * Create a Stripe payment intent for booking deposit or final payment.
- * This endpoint initializes the Stripe payment process and returns
- * a client secret for use with Stripe Elements on the frontend.
+ * Create a Stripe payment intent for booking deposit or final payment
+ * 
+ * Body: {
+ *   booking_number: string,
+ *   amount: number,
+ *   payment_type: 'deposit' | 'final_payment'
+ * }
  */
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const { booking_number, amount, payment_type = 'deposit' } = body;
+export const POST = withErrorHandling(async (request: NextRequest) => {
+  // Check if Stripe is configured
+  if (!stripe) {
+    throw new InternalServerError('Payment processing not configured. Please contact support.');
+  }
 
-    // Validate input
-    if (!booking_number || !amount) {
-      return errorResponse('Missing required fields: booking_number and amount', 400);
-    }
+  const body = await request.json();
+  const { booking_number, amount, payment_type = 'deposit' } = body;
 
-    if (amount <= 0) {
-      return errorResponse('Amount must be greater than 0', 400);
-    }
+  // Validate input
+  if (!booking_number || !amount) {
+    throw new BadRequestError('Missing required fields: booking_number and amount');
+  }
 
-    // Get booking details
-    const bookingResult = await query(
-      `SELECT id, booking_number, customer_email, customer_name, total_price, deposit_amount, final_payment_amount
-       FROM bookings
-       WHERE booking_number = $1`,
-      [booking_number]
+  if (amount <= 0) {
+    throw new BadRequestError('Amount must be greater than 0');
+  }
+
+  if (!['deposit', 'final_payment'].includes(payment_type)) {
+    throw new BadRequestError('Payment type must be either "deposit" or "final_payment"');
+  }
+
+  // Get booking details
+  const booking = await queryOne<Booking>(
+    `SELECT id, booking_number, customer_email, customer_name, total_price, deposit_amount, final_payment_amount
+     FROM bookings
+     WHERE booking_number = $1`,
+    [booking_number]
+  );
+
+  if (!booking) {
+    throw new NotFoundError('Booking');
+  }
+
+  // Validate amount matches expected payment
+  const expectedAmount = payment_type === 'deposit'
+    ? parseFloat(booking.deposit_amount)
+    : parseFloat(booking.final_payment_amount);
+
+  if (Math.abs(amount - expectedAmount) > 0.01) {
+    throw new BadRequestError(
+      `Amount mismatch. Expected $${expectedAmount.toFixed(2)} for ${payment_type}`
     );
+  }
 
-    if (bookingResult.rows.length === 0) {
-      return errorResponse('Booking not found', 404);
-    }
+  // Create Stripe payment intent
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount: Math.round(amount * 100), // Convert to cents
+    currency: 'usd',
+    metadata: {
+      booking_id: booking.id.toString(),
+      booking_number: booking.booking_number,
+      payment_type: payment_type,
+      customer_email: booking.customer_email,
+    },
+    description: `Walla Walla Travel - ${payment_type === 'deposit' ? 'Deposit' : 'Final Payment'} for booking ${booking.booking_number}`,
+    receipt_email: booking.customer_email,
+    automatic_payment_methods: {
+      enabled: true,
+    },
+  });
 
-    const booking = bookingResult.rows[0];
+  // Store payment intent in database
+  await insertOne(
+    `INSERT INTO payments (
+      booking_id,
+      customer_id,
+      amount,
+      currency,
+      payment_type,
+      payment_method,
+      stripe_payment_intent_id,
+      status,
+      created_at,
+      updated_at
+    ) VALUES (
+      $1,
+      (SELECT id FROM customers WHERE email = $2 LIMIT 1),
+      $3, $4, $5, 'card', $6, $7, NOW(), NOW()
+    ) RETURNING id`,
+    [
+      booking.id,
+      booking.customer_email,
+      amount,
+      'USD',
+      payment_type,
+      paymentIntent.id,
+      paymentIntent.status,
+    ]
+  );
 
-    // Validate amount matches expected payment
-    const expectedAmount = payment_type === 'deposit'
-      ? parseFloat(booking.deposit_amount)
-      : parseFloat(booking.final_payment_amount);
-
-    if (Math.abs(amount - expectedAmount) > 0.01) {
-      return errorResponse(
-        `Amount mismatch. Expected $${expectedAmount} for ${payment_type}`,
-        400
-      );
-    }
-
-    // Create Stripe payment intent
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100), // Convert to cents
-      currency: 'usd',
-      metadata: {
-        booking_id: booking.id.toString(),
-        booking_number: booking.booking_number,
-        payment_type: payment_type,
-        customer_email: booking.customer_email,
-      },
-      description: `Walla Walla Travel - ${payment_type} for booking ${booking.booking_number}`,
-      receipt_email: booking.customer_email,
-      automatic_payment_methods: {
-        enabled: true,
-      },
-    });
-
-    // Store payment intent in database
-    await query(
-      `INSERT INTO payment_intents (
-        stripe_payment_intent_id,
-        booking_id,
-        amount,
-        currency,
-        status,
-        customer_email,
-        metadata,
-        created_at,
-        updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())`,
-      [
-        paymentIntent.id,
-        booking.id,
-        amount,
-        'usd',
-        paymentIntent.status,
-        booking.customer_email,
-        JSON.stringify({
-          payment_type,
-          booking_number: booking.booking_number,
-        }),
-      ]
-    );
-
-    return successResponse({
+  return NextResponse.json({
+    success: true,
+    data: {
       client_secret: paymentIntent.client_secret,
       payment_intent_id: paymentIntent.id,
       amount: amount,
       payment_type: payment_type,
       booking_number: booking.booking_number,
-    }, 'Payment intent created successfully');
-
-  } catch (error: any) {
-    console.error('❌ Create payment intent error:', error);
-
-    // Handle Stripe-specific errors
-    if (error.type === 'StripeInvalidRequestError') {
-      return errorResponse(`Stripe error: ${error.message}`, 400);
-    }
-
-    return errorResponse('Failed to create payment intent. Please try again.', 500);
-  }
-}
+    },
+    message: 'Payment intent created successfully'
+  });
+});

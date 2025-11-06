@@ -3,10 +3,10 @@ import { query } from '@/lib/db';
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { booking_id: string } }
+  { params }: { params: Promise<{ booking_id: string }> }
 ) {
   try {
-    const bookingId = params.booking_id;
+    const { booking_id: bookingId } = await params;
     const { stops } = await request.json();
 
     // Get itinerary ID for this booking

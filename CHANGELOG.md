@@ -1,179 +1,171 @@
-# 📝 CHANGELOG
-**Purpose:** Track what changed and when
+# 📝 Changelog
 
-All notable changes to this project will be documented in this file.
-
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+All notable changes to the Walla Walla Travel project will be documented in this file.
 
 ---
 
 ## [Unreleased]
 
-### Planned
-- PostgreSQL database integration
-- Password hashing with bcrypt
-- CSRF protection
-- Rate limiting
-- Signature component for DVIRs
-- Unified admin dashboard
+### Added
+- Offline support infrastructure (PWA manifest, offline storage library)
+- Voice inspection roadmap and planning
+
+### Changed
+- Documentation structure (consolidated status files, created START_HERE.md)
 
 ---
 
-## [0.2.0] - 2025-10-12 - DOCUMENTATION OVERHAUL
+## [0.5.0] - 2025-11-05
 
 ### Added
-- ✅ Created comprehensive documentation system
-- ✅ MASTER_STATUS.md - Single source of truth for project state
-- ✅ REVIEW_SUMMARY.md - Executive summary of current state
-- ✅ docs/ARCHITECTURE.md - System design and technical decisions
-- ✅ docs/CODE_REVIEW.md - Complete technical audit
-- ✅ docs/SETUP.md - Installation and running guide
-- ✅ docs/TESTING.md - Testing guide and best practices
-- ✅ docs/DECISIONS.md - Architecture Decision Records (ADRs)
-- ✅ docs/TROUBLESHOOTING.md - Common issues and solutions
-- ✅ docs/CHANGELOG.md - This file
-- ✅ Cleanup script for old documentation
-
-### Changed
-- 📋 Consolidated 23 scattered markdown files into organized structure
-- 📋 Archived historical documentation to docs/archive/
-- 📋 Updated README.md to point to documentation
-
-### Removed
-- ❌ Deleted 12 outdated/duplicate documentation files
-- ❌ Removed conflicting STATUS files
-
-### Documentation
-- Foundation score: 7/10
-- Documentation score: 90% (was ~40%)
-- Clear handoff process established
-
----
-
-## [0.1.0] - 2025-10-12 - FOUNDATION COMPLETE
-
-### Added
-- ✅ Complete mobile UI component library
-  - MobileButton, MobileInput, MobileTextArea
-  - MobileCard, MobileNavigation
-  - All components meet 48px minimum touch target
-  - Haptic feedback on interactions
-  - High contrast (WCAG AAA compliant)
-- ✅ Cookie-based authentication system
-  - Login page at /login
-  - Session management in lib/auth.ts
-  - Protected routes via middleware
-- ✅ Driver workflow structure
-  - Clock in/out
-  - Pre-trip inspection form
-  - Post-trip inspection form
-  - Client pickup/dropoff tracking
-- ✅ Testing infrastructure
-  - Jest + React Testing Library
-  - Security utility tests
-  - 30% code coverage baseline
-
-### Changed
-- 🔄 Removed ALL Supabase dependencies (see ADR-001)
-  - Removed @supabase/supabase-js
-  - Removed @supabase/ssr
-  - Removed 16 Supabase packages total
-- 🔄 Migrated to server actions (see ADR-005)
-  - Created app/actions/auth.ts
-  - Created app/actions/inspections.ts
-  - All data mutations use server actions now
+- **Invoicing System** - Complete with hour sync, admin dashboard, customer tip UI
+- Database migration for invoices and tour offers
+- Automatic invoice numbering (INV-YYYY-0001)
+- Hour sync trigger function (time_cards → bookings)
+- Admin pending invoices dashboard (`/admin/invoices`)
+- Customer final invoice payment page with tip selection (`/payment/final/[booking_id]`)
+- Beautiful invoice email template (Resend integration)
+- API endpoint: GET `/api/admin/pending-invoices`
+- API endpoint: POST `/api/admin/approve-invoice/[booking_id]`
 
 ### Fixed
-- 🐛 Build now passes successfully (4.5s compile time)
-- 🐛 Login works on mobile devices
-- 🐛 Redirect after login works correctly
-- 🐛 No more Supabase errors
+- Hour sync function now correctly uses `driving_hours` and `on_duty_hours`
+- Time card schema validation in test scripts
+- Database connection issues with Heroku Postgres
 
-### Security
-- ⚠️ Using hardcoded credentials (TEMPORARY - see TODO)
-- ⚠️ No password hashing yet (MUST FIX before production)
-- ⚠️ No CSRF protection (MUST FIX before production)
-- ⚠️ No rate limiting (MUST FIX before production)
-
-### Technical
-- Build: ✅ Passing (0 errors, 18 routes)
-- Tests: ✅ Passing (20/20 tests)
-- Coverage: 30% (target: 60% for MVP, 80% for production)
-- Type Safety: 85% (some 'any' types remain)
+### Tested
+- Hour sync with 7.5 hour test case ✅
+- Full invoicing workflow from booking to payment ✅
 
 ---
 
-## [0.0.1] - 2025-10-10 - INITIAL SETUP
+## [0.4.0] - 2025-11-01
 
 ### Added
-- ✅ Next.js 14 project scaffolding
-- ✅ TypeScript configuration
-- ✅ Tailwind CSS setup
-- ✅ Initial project structure
-- ✅ Basic README
+- **Enhanced Proposal Builder** - Multi-service proposals with flexible pricing
+- **Media Library System** - Upload, tag, categorize photos/videos
+- **Rate Configuration System** - Centralized pricing management
+- Three pricing models: calculated, hourly, flat rate
+- Service types: wine tours, airport transfers, local, custom
+- Discount system with reasons
+- Gratuity configuration (% or fixed)
+- Client proposal view with digital signatures
+- Multi-step acceptance flow
+- Proposal number generation (PROP-YYYY-0001)
 
-### Known Issues
-- ⚠️ Build fails due to Supabase errors
-- ⚠️ Login page not functional
-- ⚠️ No documentation structure
+### Designed (not yet implemented)
+- A/B Testing Dashboard specification
+- Competitor Monitoring System specification
+- Lead Generation & Outreach System specification
+- Social Media Marketing Module specification
+- Smart Proposal Generator with AI
+
+### Changed
+- Proposal system upgraded from v1.0 to v2.0
+- Database schema enhanced with JSONB service objects
+- UI completely redesigned with Tailwind CSS
+
+---
+
+## [0.3.0] - 2025-10-31
+
+### Added
+- Payment system with Stripe integration
+- Multiple payment methods (Card, ACH, Check)
+- Dynamic fee calculation
+- Optional tip system
+- Admin payment settings panel
+- Payment intent creation and confirmation
+
+### Changed
+- Booking flow now includes payment step
+- Admin dashboard shows payment status
+
+---
+
+## [0.2.0] - 2025-10-13
+
+### Added
+- **Time Clock & HOS Tracking** - Clock in/out with GPS location
+- **Pre-Trip Inspections** - Mobile-optimized checklist with digital signature
+- **Post-Trip Inspections** - DVIR generation with defect tracking
+- **Driver Portal** - Dark theme, mobile-first dashboard
+- Hours of Service (HOS) compliance monitoring
+- 10/15/8 hour rules enforcement
+- 150-mile short-haul exemption tracking
+- Digital signature capture for inspections
+- Photo upload for defects
+
+### Changed
+- Driver interface completely redesigned for mobile
+- Touch targets increased to 48px minimum
+- Dark theme as default for driver-facing pages
+
+---
+
+## [0.1.0] - 2025-10-01
+
+### Added
+- **Booking System** - Create and manage bookings
+- **Calendar View** - Visual booking calendar with color-coded statuses
+- **Itinerary Builder** - Drag-and-drop winery ordering with time calculations
+- **Vehicle Management** - 3 Mercedes Sprinters (WWTVAN01, WWTVAN02, WWTVAN03)
+- **Driver Management** - Driver profiles and assignment
+- Database schema with 41 tables (Prisma)
+- Basic admin dashboard
+- Basic client portal
+
+### Infrastructure
+- Next.js 15 with App Router
+- TypeScript
+- Tailwind CSS
+- Heroku Postgres database
+- Vercel deployment (planned)
+
+---
+
+## Development Setup
+
+### Initial Setup - 2025-09-25
+- Project initialization
+- Next.js 15 installation
+- Database design
+- Authentication planning
+- UI/UX wireframes
 
 ---
 
 ## Version Format
 
-```
-[X.Y.Z] - YYYY-MM-DD - TITLE
-
-X = Major version (breaking changes)
-Y = Minor version (new features)
-Z = Patch version (bug fixes)
-```
-
-### Categories
-- **Added** - New features
-- **Changed** - Changes to existing features
-- **Deprecated** - Features that will be removed
-- **Removed** - Removed features
-- **Fixed** - Bug fixes
-- **Security** - Security-related changes
-- **Documentation** - Documentation changes
-- **Technical** - Build, dependencies, infrastructure
+We follow [Semantic Versioning](https://semver.org/):
+- **MAJOR.MINOR.PATCH**
+  - MAJOR: Breaking changes
+  - MINOR: New features (backwards compatible)
+  - PATCH: Bug fixes (backwards compatible)
 
 ---
 
-## How to Update This File
+## Categories
 
-### When Making Changes:
-
-1. **Add entry to [Unreleased] section:**
-   ```markdown
-   ### Added
-   - ✅ New feature description
-   ```
-
-2. **When releasing version:**
-   - Move [Unreleased] items to new version section
-   - Update version number
-   - Add date
-   - Add title summarizing release
-
-3. **Commit with changelog:**
-   ```bash
-   git add CHANGELOG.md
-   git commit -m "chore: update changelog for v0.2.0"
-   ```
+- **Added**: New features
+- **Changed**: Changes to existing features
+- **Deprecated**: Soon-to-be removed features
+- **Removed**: Removed features
+- **Fixed**: Bug fixes
+- **Security**: Security improvements
+- **Performance**: Performance improvements
+- **Tested**: New test coverage
 
 ---
 
 ## Links
 
-- [Unreleased]: https://github.com/walla-walla-travel/compare/v0.2.0...HEAD
-- [0.2.0]: https://github.com/walla-walla-travel/compare/v0.1.0...v0.2.0
-- [0.1.0]: https://github.com/walla-walla-travel/compare/v0.0.1...v0.1.0
-- [0.0.1]: https://github.com/walla-walla-travel/releases/tag/v0.0.1
+- [Current Status](./CURRENT_STATUS.md)
+- [TODO List](./TODO.md)
+- [Start Here](./START_HERE.md)
+- [API Documentation](./API_DOCUMENTATION.md)
 
 ---
 
-**Last Updated:** October 12, 2025  
-**Next Release:** v0.3.0 (Database integration + Security hardening)
+**Maintained By:** Development Team  
+**Last Updated:** November 5, 2025

@@ -1,0 +1,243 @@
+/**
+ * Proposal Utilities
+ * Shared functions for proposal management
+ */
+
+import { Pool } from 'pg';
+
+export interface ServiceItem {
+  id: string;
+  service_type: 'wine_tour' | 'airport_transfer' | 'local_transfer' | 'wait_time' | 'custom';
+  name: string;
+  description: string;
+  date: string;
+  start_time: string;
+  party_size: number;
+  
+  // Wine tour specific
+  duration_hours?: 4 | 6 | 8;
+  selected_wineries?: Array<{
+    id: number;
+    name: string;
+    city: string;
+    display_order: number;
+    estimated_time?: string;
+  }>;
+  
+  // Transfer specific
+  transfer_type?: 'seatac_to_walla' | 'walla_to_seatac' | 'pasco_to_walla' | 'walla_to_pasco' | 'local';
+  pickup_location?: string;
+  dropoff_location?: string;
+  miles?: number;
+  
+  // Wait time specific
+  wait_hours?: number;
+  
+  // Pricing
+  pricing_type: 'calculated' | 'hourly' | 'flat';
+  hourly_rate?: number;
+  flat_rate?: number;
+  calculated_price: number;
+}
+
+export interface ProposalData {
+  // Client Information
+  client_name: string;
+  client_email: string;
+  client_phone: string;
+  client_company?: string;
+  
+  // Editable Text Fields
+  proposal_title: string;
+  introduction: string;
+  wine_tour_description?: string;
+  transfer_description?: string;
+  wait_time_description?: string;
+  special_notes?: string;
+  cancellation_policy?: string;
+  footer_notes?: string;
+  
+  // Service Items
+  service_items: ServiceItem[];
+  
+  // Discount
+  discount_percentage: number;
+  discount_reason?: string;
+  
+  // Gratuity
+  include_gratuity_request: boolean;
+  suggested_gratuity_percentage: number;
+  gratuity_optional: boolean;
+  
+  // Pricing
+  subtotal: number;
+  discount_amount: number;
+  total: number;
+  
+  // Proposal Details
+  valid_until: string;
+  
+  // Modules (optional)
+  modules?: {
+    corporate?: boolean;
+    multi_day?: boolean;
+    b2b?: boolean;
+    special_event?: boolean;
+    group_coordination?: boolean;
+  };
+  corporate_details?: any;
+  multi_day_itinerary?: any;
+  b2b_details?: any;
+  special_event_details?: any;
+  group_coordination?: any;
+}
+
+export interface Proposal extends ProposalData {
+  id: number;
+  proposal_number: string;
+  uuid: string;
+  status: 'draft' | 'sent' | 'viewed' | 'accepted' | 'declined' | 'expired' | 'converted';
+  created_at: string;
+  updated_at: string;
+  sent_at?: string;
+  viewed_at?: string;
+  accepted_at?: string;
+  view_count: number;
+}
+
+/**
+ * Generate unique proposal number
+ */
+export function generateProposalNumber(): string {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+  
+  return `PROP-${year}${month}${day}-${random}`;
+}
+
+/**
+ * Get default proposal text from template
+ */
+export async function getDefaultProposalText(pool: Pool, templateName: string = 'default') {
+  const result = await pool.query(
+    'SELECT * FROM proposal_text_templates WHERE template_name = $1',
+    [templateName]
+  );
+  
+  if (result.rows.length === 0) {
+    // Return hardcoded defaults if no template found
+    return {
+      title: 'Walla Walla Wine Country Experience',
+      introduction: 'Thank you for your interest in Walla Walla Travel! We are excited to create a memorable wine country experience for you and your guests.',
+      wine_tour_description: 'Visit 3 premier wineries in the Walla Walla Valley. Your private guide will provide insights into the region\'s rich wine-making heritage while ensuring a comfortable and memorable experience.',
+      transfer_description: 'Professional transportation service with experienced drivers and comfortable, well-maintained vehicles.',
+      wait_time_description: 'Professional wait time service while you attend meetings, events, or other activities.',
+      terms_and_conditions: 'Full payment is required 48 hours before the tour date. Cancellations made 7+ days before the tour date will receive a full refund minus a 10% processing fee. Cancellations made 3-6 days before will receive a 50% refund. Cancellations made less than 3 days before are non-refundable.',
+      cancellation_policy: 'Cancellations made 7+ days in advance: Full refund minus 10% processing fee. 3-6 days: 50% refund. Less than 3 days: Non-refundable.',
+      footer_notes: 'Looking forward to hosting you!'
+    };
+  }
+  
+  return result.rows[0];
+}
+
+/**
+ * Calculate proposal totals
+ */
+export function calculateProposalTotals(data: Partial<ProposalData>) {
+  const servicesSubtotal = (data.service_items || []).reduce(
+    (sum, item) => sum + item.calculated_price,
+    0
+  );
+  
+  const subtotal = servicesSubtotal;
+  const discountPercentage = data.discount_percentage || 0;
+  const discountAmount = subtotal * (discountPercentage / 100);
+  const afterDiscount = subtotal - discountAmount;
+  
+  // Tax rate from config
+  const taxRate = 0.089; // 8.9%
+  const taxAmount = afterDiscount * taxRate;
+  
+  const total = afterDiscount + taxAmount;
+  
+  // Deposit (50%)
+  const depositAmount = total * 0.5;
+  const balanceAmount = total - depositAmount;
+  
+  return {
+    servicesSubtotal,
+    subtotal,
+    discountAmount,
+    afterDiscount,
+    taxAmount,
+    total,
+    depositAmount,
+    balanceAmount
+  };
+}
+
+/**
+ * Validate proposal data
+ */
+export function validateProposalData(data: Partial<ProposalData>): string[] {
+  const errors: string[] = [];
+  
+  if (!data.client_name?.trim()) {
+    errors.push('Client name is required');
+  }
+  
+  if (!data.client_email?.trim()) {
+    errors.push('Client email is required');
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.client_email)) {
+    errors.push('Invalid email format');
+  }
+  
+  if (!data.client_phone?.trim()) {
+    errors.push('Client phone is required');
+  }
+  
+  if (!data.service_items || data.service_items.length === 0) {
+    errors.push('At least one service item is required');
+  }
+  
+  if (!data.valid_until) {
+    errors.push('Valid until date is required');
+  }
+  
+  // Validate service items
+  data.service_items?.forEach((item, index) => {
+    if (!item.date) {
+      errors.push(`Service item ${index + 1}: Date is required`);
+    }
+    if (!item.party_size || item.party_size < 1) {
+      errors.push(`Service item ${index + 1}: Party size must be at least 1`);
+    }
+    if (item.calculated_price < 0) {
+      errors.push(`Service item ${index + 1}: Price cannot be negative`);
+    }
+  });
+  
+  return errors;
+}
+
+/**
+ * Log proposal activity
+ */
+export async function logProposalActivity(
+  pool: Pool,
+  proposalId: number,
+  activityType: string,
+  description: string,
+  metadata?: any
+) {
+  await pool.query(
+    `INSERT INTO proposal_activity_log (proposal_id, activity_type, description, metadata)
+     VALUES ($1, $2, $3, $4)`,
+    [proposalId, activityType, description, metadata ? JSON.stringify(metadata) : null]
+  );
+}
+

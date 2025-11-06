@@ -24,3 +24,81 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Make placeholder text more visible across the entire app */
+input::placeholder,
+textarea::placeholder {
+  color: #4b5563; /* gray-600 - darker */
+  opacity: 1;
+  font-weight: 500;
+}
+
+input::-webkit-input-placeholder,
+textarea::-webkit-input-placeholder {
+  color: #4b5563;
+  opacity: 1;
+  font-weight: 500;
+}
+
+input::-moz-placeholder,
+textarea::-moz-placeholder {
+  color: #4b5563;
+  opacity: 1;
+  font-weight: 500;
+}
+
+/* Make ALL text inputs darker and more visible */
+input[type="text"],
+input[type="email"],
+input[type="tel"],
+input[type="number"],
+input[type="date"],
+input[type="time"],
+textarea,
+select {
+  color: #111827 !important; /* gray-900 - very dark */
+  font-weight: 600 !important;
+}
+
+/* Make all labels darker */
+label {
+  color: #111827 !important; /* gray-900 */
+  font-weight: 700 !important;
+}
+
+/* Make all body text darker */
+p, span, div {
+  color: #1f2937; /* gray-800 - darker default */
+}
+
+/* Specific overrides for gray text that should be darker */
+.text-gray-500 {
+  color: #6b7280 !important; /* Darker gray-500 */
+}
+
+.text-gray-600 {
+  color: #4b5563 !important; /* Darker gray-600 */
+}
+
+.text-gray-700 {
+  color: #374151 !important; /* Darker gray-700 */
+}
+
+/* Custom scrollbar for better aesthetics */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #c4b5fd;
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #a78bfa;
+}

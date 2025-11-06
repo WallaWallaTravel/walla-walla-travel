@@ -1,165 +1,123 @@
-import { NextRequest } from 'next/server';
-import { successResponse, errorResponse } from '@/app/api/utils';
-import { query } from '@/lib/db';
+import { NextRequest, NextResponse } from 'next/server';
+import { Pool } from 'pg';
 
-/**
- * POST /api/itineraries
- *
- * Create a new itinerary with stops for a booking
- */
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
+
+// GET /api/itineraries - List all itineraries
+export async function GET(request: NextRequest) {
+  try {
+    const client = await pool.connect();
+
+    try {
+      const result = await client.query(
+        `SELECT 
+          i.*,
+          COUNT(DISTINCT d.id) as day_count,
+          COUNT(a.id) as activity_count
+        FROM itineraries i
+        LEFT JOIN itinerary_days d ON i.id = d.itinerary_id
+        LEFT JOIN itinerary_activities a ON d.id = a.itinerary_day_id
+        GROUP BY i.id
+        ORDER BY i.created_at DESC`
+      );
+
+      return NextResponse.json({ itineraries: result.rows });
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    console.error('Error fetching itineraries:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch itineraries' },
+      { status: 500 }
+    );
+  }
+}
+
+// POST /api/itineraries - Create new itinerary
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const {
       booking_id,
-      template_name,
-      is_template = false,
-      pickup_location,
-      pickup_time,
-      dropoff_location,
-      estimated_dropoff_time,
+      proposal_id,
+      title,
+      client_name,
+      client_email,
+      party_size,
+      start_date,
+      end_date,
       internal_notes,
-      driver_notes,
-      stops = []
+      client_notes
     } = body;
 
-    // Validation
-    if (!booking_id) {
-      return errorResponse('booking_id is required', 400);
-    }
-
-    if (!stops || stops.length === 0) {
-      return errorResponse('At least one stop is required', 400);
-    }
-
-    // Verify booking exists
-    const bookingResult = await query(
-      `SELECT id FROM bookings WHERE id = $1`,
-      [booking_id]
-    );
-
-    if (bookingResult.rows.length === 0) {
-      return errorResponse('Booking not found', 404);
-    }
-
-    // Calculate total drive time
-    const totalDriveTime = stops.reduce((sum: number, stop: any) => {
-      return sum + (parseInt(stop.drive_time_to_next_minutes) || 0);
-    }, 0);
-
-    // Start transaction
-    await query('BEGIN', []);
+    const client = await pool.connect();
 
     try {
+      await client.query('BEGIN');
+
       // Create itinerary
-      const itineraryResult = await query(
-        `INSERT INTO itineraries (
-          booking_id,
-          template_name,
-          is_template,
-          pickup_location,
-          pickup_time,
-          dropoff_location,
-          estimated_dropoff_time,
-          total_drive_time_minutes,
-          internal_notes,
-          driver_notes,
-          created_at,
-          updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
-        RETURNING *`,
+      const itineraryResult = await client.query(
+        `INSERT INTO itineraries 
+         (booking_id, proposal_id, title, client_name, client_email, party_size, 
+          start_date, end_date, status, internal_notes, client_notes)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'draft', $9, $10)
+         RETURNING *`,
         [
           booking_id,
-          template_name,
-          is_template,
-          pickup_location,
-          pickup_time,
-          dropoff_location,
-          estimated_dropoff_time,
-          totalDriveTime,
+          proposal_id,
+          title,
+          client_name,
+          client_email,
+          party_size,
+          start_date,
+          end_date,
           internal_notes,
-          driver_notes
+          client_notes
         ]
       );
 
       const itinerary = itineraryResult.rows[0];
 
-      // Create stops
-      const stopPromises = stops.map((stop: any, index: number) => {
-        return query(
-          `INSERT INTO itinerary_stops (
-            itinerary_id,
-            winery_id,
-            stop_order,
-            arrival_time,
-            departure_time,
-            duration_minutes,
-            drive_time_to_next_minutes,
-            stop_type,
-            reservation_confirmed,
-            special_notes,
-            created_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
-          RETURNING *`,
+      // Create default days based on date range
+      const startDateObj = new Date(start_date);
+      const endDateObj = new Date(end_date);
+      const dayCount = Math.ceil((endDateObj.getTime() - startDateObj.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+      for (let i = 0; i < dayCount; i++) {
+        const dayDate = new Date(startDateObj);
+        dayDate.setDate(startDateObj.getDate() + i);
+
+        await client.query(
+          `INSERT INTO itinerary_days 
+           (itinerary_id, day_number, date, title, display_order)
+           VALUES ($1, $2, $3, $4, $5)`,
           [
             itinerary.id,
-            stop.winery_id,
-            stop.stop_order || index + 1,
-            stop.arrival_time,
-            stop.departure_time,
-            stop.duration_minutes || 60,
-            stop.drive_time_to_next_minutes || 0,
-            stop.stop_type || 'winery',
-            stop.reservation_confirmed || false,
-            stop.special_notes
+            i + 1,
+            dayDate.toISOString().split('T')[0],
+            `Day ${i + 1}`,
+            i
           ]
         );
-      });
+      }
 
-      const stopsResults = await Promise.all(stopPromises);
-      const createdStops = stopsResults.map(result => result.rows[0]);
+      await client.query('COMMIT');
 
-      // Create booking timeline event
-      await query(
-        `INSERT INTO booking_timeline (
-          booking_id,
-          event_type,
-          event_description,
-          event_data,
-          created_at
-        ) VALUES ($1, $2, $3, $4, NOW())`,
-        [
-          booking_id,
-          'itinerary_created',
-          'Itinerary created with ' + stops.length + ' stops',
-          JSON.stringify({
-            itinerary_id: itinerary.id,
-            stops_count: stops.length,
-            total_drive_time: totalDriveTime
-          })
-        ]
-      );
-
-      // Commit transaction
-      await query('COMMIT', []);
-
-      return successResponse(
-        {
-          itinerary: {
-            ...itinerary,
-            stops: createdStops
-          }
-        },
-        'Itinerary created successfully'
-      );
-
+      return NextResponse.json({ itinerary });
     } catch (error) {
-      await query('ROLLBACK', []);
+      await client.query('ROLLBACK');
       throw error;
+    } finally {
+      client.release();
     }
-
-  } catch (error: any) {
-    console.error('❌ Create itinerary error:', error);
-    return errorResponse('Failed to create itinerary. Please try again.', 500);
+  } catch (error) {
+    console.error('Error creating itinerary:', error);
+    return NextResponse.json(
+      { error: 'Failed to create itinerary' },
+      { status: 500 }
+    );
   }
 }

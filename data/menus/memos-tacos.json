@@ -1,0 +1,162 @@
+{
+  "restaurantId": 35,
+  "restaurantName": "Memo's Tacos",
+  "categories": ["Tortas", "Burritos", "Plates", "Tacos"],
+  "items": [
+    {
+      "id": "carnitas-torta",
+      "name": "Carnitas Torta",
+      "description": "Guacamole, carnitas, refried beans, pico de gallo",
+      "price": 11.50,
+      "category": "Tortas"
+    },
+    {
+      "id": "birria-torta",
+      "name": "Birria Torta",
+      "description": "Marinated pulled beef, refried beans, cilantro, onion",
+      "price": 11.50,
+      "category": "Tortas"
+    },
+    {
+      "id": "asada-torta",
+      "name": "Asada Torta",
+      "description": "Asada meat, guacamole, onion, green bell peppers, cheese, lettuce, tomato",
+      "price": 11.50,
+      "category": "Tortas"
+    },
+    {
+      "id": "al-pastor-torta",
+      "name": "Al Pastor Torta",
+      "description": "Al pastor meat, refried beans, lettuce, tomato",
+      "price": 11.50,
+      "category": "Tortas"
+    },
+    {
+      "id": "special-burrito",
+      "name": "Special Burrito",
+      "description": "Carnitas, chilaquiles (green or red), refried beans, rice",
+      "price": 11.50,
+      "category": "Burritos"
+    },
+    {
+      "id": "birria-burrito",
+      "name": "Birria Burrito",
+      "description": "Marinated pulled beef, onion, cilantro, rice, beans",
+      "price": 11.50,
+      "category": "Burritos"
+    },
+    {
+      "id": "asada-burrito",
+      "name": "Asada Burrito",
+      "description": "Asada meat, cheese, lettuce, tomato, rice, beans, sour cream",
+      "price": 11.50,
+      "category": "Burritos"
+    },
+    {
+      "id": "al-pastor-burrito",
+      "name": "Al Pastor Burrito",
+      "description": "Marinated pork, lettuce, tomato, rice, beans, sour cream",
+      "price": 11.50,
+      "category": "Burritos"
+    },
+    {
+      "id": "chicken-burrito",
+      "name": "Chicken Burrito",
+      "description": "Chicken, onion, green bell peppers, lettuce, tomato, rice, beans, sour cream",
+      "price": 11.50,
+      "category": "Burritos"
+    },
+    {
+      "id": "breakfast-burrito",
+      "name": "Breakfast Burrito",
+      "description": "Scrambled eggs, cheese, tomato, onion, jalapeño, cilantro",
+      "price": 11.50,
+      "category": "Burritos"
+    },
+    {
+      "id": "carnitas-plate",
+      "name": "Carnitas Plate",
+      "description": "Carnitas, pico de gallo, guacamole, rice and beans",
+      "price": 15.00,
+      "category": "Plates"
+    },
+    {
+      "id": "birria-plate",
+      "name": "Birria Plate",
+      "description": "Marinated pulled beef, consommé, onion, cilantro, rice and beans",
+      "price": 15.00,
+      "category": "Plates"
+    },
+    {
+      "id": "carnitas-taco",
+      "name": "Carnitas Taco",
+      "description": "Carnitas pork, pico de gallo",
+      "price": 3.75,
+      "category": "Tacos"
+    },
+    {
+      "id": "birria-taco",
+      "name": "Birria Taco",
+      "description": "Marinated pulled beef, onion, cilantro",
+      "price": 3.75,
+      "category": "Tacos"
+    },
+    {
+      "id": "asada-taco",
+      "name": "Asada Taco",
+      "description": "Asada meat, onion, cilantro",
+      "price": 3.75,
+      "category": "Tacos"
+    },
+    {
+      "id": "al-pastor-taco",
+      "name": "Al Pastor Taco",
+      "description": "Al pastor meat, pineapple, onion, cilantro",
+      "price": 3.75,
+      "category": "Tacos"
+    },
+    {
+      "id": "chicken-taco",
+      "name": "Chicken Taco",
+      "description": "Chicken, onion, green bell pepper, cilantro",
+      "price": 3.75,
+      "category": "Tacos"
+    },
+    {
+      "id": "shrimp-taco",
+      "name": "Shrimp Taco",
+      "description": "Cabbage, lime, cilantro dressing",
+      "price": 3.75,
+      "category": "Tacos"
+    },
+    {
+      "id": "mushroom-taco",
+      "name": "Mushroom Taco",
+      "description": "Onion, green bell peppers, cheese",
+      "price": 3.75,
+      "category": "Tacos"
+    },
+    {
+      "id": "breakfast-taco",
+      "name": "Breakfast Mexican Taco",
+      "description": "Scrambled eggs, cooked tomato, onion, jalapeño, cilantro",
+      "price": 3.75,
+      "category": "Tacos"
+    },
+    {
+      "id": "quesabirria",
+      "name": "Quesabirria",
+      "description": "Cheese, marinated pulled beef, onion, cilantro",
+      "price": 4.00,
+      "category": "Tacos"
+    },
+    {
+      "id": "mulitas",
+      "name": "Mulitas",
+      "description": "Beef, guacamole, cheese, tomato, onion, cilantro",
+      "price": 3.50,
+      "category": "Tacos"
+    }
+  ]
+}
+

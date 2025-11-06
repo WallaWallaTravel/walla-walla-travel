@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "dev-server": {
+      "command": "node",
+      "args": ["/Users/temp/walla-walla-final/.cursor/mcp-server-dev.js"],
+      "description": "Development server control for Walla Walla Travel",
+      "capabilities": [
+        "server.start",
+        "server.stop",
+        "server.status",
+        "server.logs",
+        "server.restart",
+        "server.check"
+      ]
+    }
+  }
+}
+
+
