@@ -32,30 +32,16 @@ export function VoiceInspector({
   const [showConfirmation, setShowConfirmation] = useState(false)
   const [showHelp, setShowHelp] = useState(false)
 
-  const voice = useVoiceRecognition({
-    continuous: false,
-    interimResults: true,
-    onTranscript: handleTranscript,
-    onError: (error) => console.error('Voice error:', error),
-  })
+  const currentItem = items[currentIndex]
+  const progress = Math.round((currentIndex / items.length) * 100)
+  const isComplete = currentIndex >= items.length
 
   const tts = useTextToSpeech({
     rate: 0.9,
     pitch: 1.0,
   })
 
-  const currentItem = items[currentIndex]
-  const progress = Math.round((currentIndex / items.length) * 100)
-  const isComplete = currentIndex >= items.length
-
-  // Speak current item when it changes
-  useEffect(() => {
-    if (currentItem && !tts.isSpeaking && !showConfirmation) {
-      speakCurrentItem()
-    }
-  }, [currentIndex])
-
-  const speakCurrentItem = async () => {
+  const speakCurrentItem = useCallback(async () => {
     if (!currentItem) return
     
     try {
@@ -64,12 +50,114 @@ export function VoiceInspector({
     } catch (error) {
       console.error('TTS error:', error)
     }
-  }
+  }, [currentItem, tts])
 
-  function handleTranscript(transcript: string, isFinal: boolean) {
+  // Speak current item when it changes
+  useEffect(() => {
+    if (currentItem && !tts.isSpeaking && !showConfirmation) {
+      speakCurrentItem()
+    }
+  }, [currentItem, tts.isSpeaking, showConfirmation, speakCurrentItem])
+
+  const voice = useVoiceRecognition({
+    continuous: false,
+    interimResults: true,
+    onError: (error) => console.error('Voice error:', error),
+  })
+
+  // Define these first to avoid circular dependencies
+  const goToNext = useCallback(() => {
+    voice.stopListening()
+    voice.resetTranscript()
+    setShowConfirmation(false)
+    setLastCommand(null)
+
+    if (currentIndex < items.length - 1) {
+      setCurrentIndex(prev => prev + 1)
+    }
+  }, [voice, currentIndex, items.length])
+
+  const handleInspectionCommand = useCallback((command: InspectionCommand) => {
+    if (!currentItem) return
+    if (command.type !== 'PASS' && command.type !== 'FAIL') return
+
+    const status = command.type === 'PASS' ? 'pass' : 'fail'
+    const note = command.type === 'FAIL' ? command.note : undefined
+
+    setResults(prev => ({
+      ...prev,
+      [currentItem.id]: { status, note },
+    }))
+
+    // Speak confirmation
+    const confirmText = status === 'pass' ? 'Passed' : note ? `Failed: ${note}` : 'Failed'
+    tts.speak(confirmText).catch(err => console.error('TTS error:', err))
+
+    // Move to next item
+    setTimeout(() => {
+      if (currentIndex >= items.length - 1) {
+        // Complete inspection
+        handleComplete()
+      } else {
+        goToNext()
+      }
+    }, 1000)
+  }, [currentItem, tts, currentIndex, items.length, goToNext])
+
+  const goToPrevious = useCallback(() => {
+    if (currentIndex > 0) {
+      voice.stopListening()
+      voice.resetTranscript()
+      setShowConfirmation(false)
+      setLastCommand(null)
+      setCurrentIndex(prev => prev - 1)
+    }
+  }, [voice, currentIndex])
+
+  const handleComplete = useCallback(async () => {
+    voice.stopListening()
+    try {
+      await tts.speak('Inspection complete. Good job!')
+    } catch (err) {
+      console.error('TTS error:', err)
+    }
+    setTimeout(() => {
+      onComplete(results)
+    }, 2000)
+  }, [voice, tts, onComplete, results])
+
+  const handleCancel = useCallback(() => {
+    voice.stopListening()
+    tts.stop()
+    onCancel()
+  }, [voice, tts, onCancel])
+
+  const handleConfirmCommand = useCallback(() => {
+    if (lastCommand && (lastCommand.type === 'PASS' || lastCommand.type === 'FAIL')) {
+      handleInspectionCommand(lastCommand)
+      setShowConfirmation(false)
+    }
+  }, [lastCommand, handleInspectionCommand])
+
+  const handleRetry = useCallback(() => {
+    setShowConfirmation(false)
+    setLastCommand(null)
+    voice.resetTranscript()
+  }, [voice])
+
+  const toggleListening = useCallback(() => {
+    if (voice.isListening) {
+      voice.stopListening()
+    } else {
+      voice.startListening()
+    }
+  }, [voice])
+
+  // Handle transcript with all dependencies now defined
+  const handleTranscript = useCallback((transcript: string, isFinal: boolean) => {
     if (!isFinal) return
 
-    const command = parseCommand(transcript, voice.confidence)
+    const command = parseCommand(transcript, voice.confidence || 1.0)
     setLastCommand(command)
 
     // Handle command based on type
@@ -94,7 +182,7 @@ export function VoiceInspector({
               note: command.text,
             },
           }))
-          tts.speak('Note added')
+          tts.speak('Note added').catch(err => console.error('TTS error:', err))
         }
         break
 
@@ -115,91 +203,17 @@ export function VoiceInspector({
         break
 
       case 'UNKNOWN':
-        tts.speak('I didn\'t understand. Say pass, fail, or help.')
+        tts.speak('I didn\'t understand. Say pass, fail, or help.').catch(err => console.error('TTS error:', err))
         break
     }
-  }
+  }, [currentItem, tts, speakCurrentItem, voice.confidence, handleInspectionCommand, goToNext, handleCancel])
 
-  const handleInspectionCommand = (command: InspectionCommand) => {
-    if (!currentItem) return
-    if (command.type !== 'PASS' && command.type !== 'FAIL') return
-
-    const status = command.type === 'PASS' ? 'pass' : 'fail'
-    const note = command.type === 'FAIL' ? command.note : undefined
-
-    setResults(prev => ({
-      ...prev,
-      [currentItem.id]: { status, note },
-    }))
-
-    // Speak confirmation
-    const confirmText = status === 'pass' ? 'Passed' : note ? `Failed: ${note}` : 'Failed'
-    tts.speak(confirmText)
-
-    // Move to next item
-    setTimeout(() => {
-      goToNext()
-    }, 1000)
-  }
-
-  const handleConfirmCommand = () => {
-    if (lastCommand && (lastCommand.type === 'PASS' || lastCommand.type === 'FAIL')) {
-      handleInspectionCommand(lastCommand)
-      setShowConfirmation(false)
+  // Wire up the transcript handler
+  useEffect(() => {
+    if (voice.transcript) {
+      handleTranscript(voice.transcript, !voice.isListening)
     }
-  }
-
-  const handleRetry = () => {
-    setShowConfirmation(false)
-    setLastCommand(null)
-    voice.resetTranscript()
-  }
-
-  const goToNext = () => {
-    voice.stopListening()
-    voice.resetTranscript()
-    setShowConfirmation(false)
-    setLastCommand(null)
-
-    if (currentIndex < items.length - 1) {
-      setCurrentIndex(prev => prev + 1)
-    } else {
-      // Complete inspection
-      handleComplete()
-    }
-  }
-
-  const goToPrevious = () => {
-    if (currentIndex > 0) {
-      voice.stopListening()
-      voice.resetTranscript()
-      setShowConfirmation(false)
-      setLastCommand(null)
-      setCurrentIndex(prev => prev - 1)
-    }
-  }
-
-  const handleComplete = () => {
-    voice.stopListening()
-    tts.speak('Inspection complete. Good job!')
-    setTimeout(() => {
-      onComplete(results)
-    }, 2000)
-  }
-
-  const handleCancel = () => {
-    voice.stopListening()
-    tts.stop()
-    onCancel()
-  }
-
-  const toggleListening = () => {
-    if (voice.isListening) {
-      voice.stopListening()
-    } else {
-      voice.startListening()
-    }
-  }
+  }, [voice.transcript, voice.isListening, handleTranscript])
 
   if (!voice.isSupported) {
     return (
