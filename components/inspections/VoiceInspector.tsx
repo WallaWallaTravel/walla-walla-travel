@@ -1,0 +1,430 @@
+'use client'
+
+import React, { useState, useEffect, useCallback } from 'react'
+import { useVoiceRecognition } from '@/lib/hooks/useVoiceRecognition'
+import { useTextToSpeech } from '@/lib/hooks/useTextToSpeech'
+import { parseCommand, formatCommandDisplay, isConfidentCommand, getHelpText, type InspectionCommand } from '@/lib/voice/command-parser'
+
+interface InspectionItem {
+  id: string
+  label: string
+  category?: string
+}
+
+interface VoiceInspectorProps {
+  items: InspectionItem[]
+  onComplete: (results: Record<string, { status: 'pass' | 'fail'; note?: string }>) => void
+  onCancel: () => void
+  vehicleName?: string
+  inspectionType?: 'pre_trip' | 'post_trip'
+}
+
+export function VoiceInspector({
+  items,
+  onComplete,
+  onCancel,
+  vehicleName = 'Vehicle',
+  inspectionType = 'pre_trip',
+}: VoiceInspectorProps) {
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [results, setResults] = useState<Record<string, { status: 'pass' | 'fail'; note?: string }>>({})
+  const [lastCommand, setLastCommand] = useState<InspectionCommand | null>(null)
+  const [showConfirmation, setShowConfirmation] = useState(false)
+  const [showHelp, setShowHelp] = useState(false)
+
+  const voice = useVoiceRecognition({
+    continuous: false,
+    interimResults: true,
+    onTranscript: handleTranscript,
+    onError: (error) => console.error('Voice error:', error),
+  })
+
+  const tts = useTextToSpeech({
+    rate: 0.9,
+    pitch: 1.0,
+  })
+
+  const currentItem = items[currentIndex]
+  const progress = Math.round((currentIndex / items.length) * 100)
+  const isComplete = currentIndex >= items.length
+
+  // Speak current item when it changes
+  useEffect(() => {
+    if (currentItem && !tts.isSpeaking && !showConfirmation) {
+      speakCurrentItem()
+    }
+  }, [currentIndex])
+
+  const speakCurrentItem = async () => {
+    if (!currentItem) return
+    
+    try {
+      const text = `Check ${currentItem.label}. Say pass or fail.`
+      await tts.speak(text)
+    } catch (error) {
+      console.error('TTS error:', error)
+    }
+  }
+
+  function handleTranscript(transcript: string, isFinal: boolean) {
+    if (!isFinal) return
+
+    const command = parseCommand(transcript, voice.confidence)
+    setLastCommand(command)
+
+    // Handle command based on type
+    switch (command.type) {
+      case 'PASS':
+      case 'FAIL':
+        if (isConfidentCommand(command, 0.7)) {
+          handleInspectionCommand(command)
+        } else {
+          // Low confidence - ask for confirmation
+          setShowConfirmation(true)
+        }
+        break
+
+      case 'NOTE':
+        // Add note to current item
+        if (currentItem) {
+          setResults(prev => ({
+            ...prev,
+            [currentItem.id]: {
+              ...prev[currentItem.id],
+              note: command.text,
+            },
+          }))
+          tts.speak('Note added')
+        }
+        break
+
+      case 'REPEAT':
+        speakCurrentItem()
+        break
+
+      case 'SKIP':
+        goToNext()
+        break
+
+      case 'CANCEL':
+        handleCancel()
+        break
+
+      case 'HELP':
+        setShowHelp(true)
+        break
+
+      case 'UNKNOWN':
+        tts.speak('I didn\'t understand. Say pass, fail, or help.')
+        break
+    }
+  }
+
+  const handleInspectionCommand = (command: InspectionCommand) => {
+    if (!currentItem) return
+    if (command.type !== 'PASS' && command.type !== 'FAIL') return
+
+    const status = command.type === 'PASS' ? 'pass' : 'fail'
+    const note = command.type === 'FAIL' ? command.note : undefined
+
+    setResults(prev => ({
+      ...prev,
+      [currentItem.id]: { status, note },
+    }))
+
+    // Speak confirmation
+    const confirmText = status === 'pass' ? 'Passed' : note ? `Failed: ${note}` : 'Failed'
+    tts.speak(confirmText)
+
+    // Move to next item
+    setTimeout(() => {
+      goToNext()
+    }, 1000)
+  }
+
+  const handleConfirmCommand = () => {
+    if (lastCommand && (lastCommand.type === 'PASS' || lastCommand.type === 'FAIL')) {
+      handleInspectionCommand(lastCommand)
+      setShowConfirmation(false)
+    }
+  }
+
+  const handleRetry = () => {
+    setShowConfirmation(false)
+    setLastCommand(null)
+    voice.resetTranscript()
+  }
+
+  const goToNext = () => {
+    voice.stopListening()
+    voice.resetTranscript()
+    setShowConfirmation(false)
+    setLastCommand(null)
+
+    if (currentIndex < items.length - 1) {
+      setCurrentIndex(prev => prev + 1)
+    } else {
+      // Complete inspection
+      handleComplete()
+    }
+  }
+
+  const goToPrevious = () => {
+    if (currentIndex > 0) {
+      voice.stopListening()
+      voice.resetTranscript()
+      setShowConfirmation(false)
+      setLastCommand(null)
+      setCurrentIndex(prev => prev - 1)
+    }
+  }
+
+  const handleComplete = () => {
+    voice.stopListening()
+    tts.speak('Inspection complete. Good job!')
+    setTimeout(() => {
+      onComplete(results)
+    }, 2000)
+  }
+
+  const handleCancel = () => {
+    voice.stopListening()
+    tts.stop()
+    onCancel()
+  }
+
+  const toggleListening = () => {
+    if (voice.isListening) {
+      voice.stopListening()
+    } else {
+      voice.startListening()
+    }
+  }
+
+  if (!voice.isSupported) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg shadow-lg p-6 max-w-md">
+          <h2 className="text-xl font-bold text-red-600 mb-4">Voice Not Supported</h2>
+          <p className="text-gray-700 mb-4">
+            Your browser doesn't support voice recognition. Please use a modern browser like Chrome, Edge, or Safari.
+          </p>
+          <button
+            onClick={onCancel}
+            className="w-full bg-gray-600 text-white py-3 rounded-lg font-medium hover:bg-gray-700"
+          >
+            Back to Checkbox Mode
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (isComplete) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md text-center">
+          <div className="text-6xl mb-4">✅</div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Inspection Complete!</h2>
+          <p className="text-gray-600 mb-6">
+            {Object.values(results).filter(r => r.status === 'pass').length} passed, 
+            {Object.values(results).filter(r => r.status === 'fail').length} failed
+          </p>
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-sm text-gray-500 mt-4">Processing...</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-gray-100">
+      {/* Header */}
+      <div className="bg-white border-b shadow-sm px-4 py-4">
+        <div className="flex items-center justify-between mb-2">
+          <h1 className="text-lg font-bold text-gray-900">
+            {inspectionType === 'pre_trip' ? 'Pre-Trip' : 'Post-Trip'} Inspection
+          </h1>
+          <button
+            onClick={handleCancel}
+            className="text-red-600 font-medium text-sm"
+          >
+            Exit
+          </button>
+        </div>
+        <p className="text-sm text-gray-600">{vehicleName} • Voice Mode</p>
+      </div>
+
+      {/* Progress */}
+      <div className="bg-white border-b px-4 py-4">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-medium text-gray-700">
+            Progress: {currentIndex} / {items.length}
+          </span>
+          <span className="text-sm font-bold text-blue-600">{progress}%</span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-3">
+          <div
+            className="bg-blue-600 h-3 rounded-full transition-all duration-300"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="p-6">
+        {/* Current Item */}
+        <div className="bg-white rounded-2xl shadow-xl p-8 mb-6">
+          <div className="text-center mb-6">
+            <div className="text-sm text-gray-500 mb-2">Checking</div>
+            <h2 className="text-2xl font-bold text-gray-900">{currentItem?.label}</h2>
+          </div>
+
+          {/* Microphone Visualization */}
+          <div className="flex justify-center mb-6">
+            <button
+              onClick={toggleListening}
+              className={`w-32 h-32 rounded-full flex items-center justify-center transition-all transform ${
+                voice.isListening
+                  ? 'bg-red-500 scale-110 animate-pulse shadow-lg shadow-red-500/50'
+                  : 'bg-blue-500 hover:bg-blue-600 hover:scale-105'
+              }`}
+            >
+              <svg
+                className="w-16 h-16 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+                />
+              </svg>
+            </button>
+          </div>
+
+          {/* Status */}
+          <div className="text-center mb-6">
+            {voice.isListening ? (
+              <div className="space-y-2">
+                <p className="text-lg font-medium text-red-600">🎤 Listening...</p>
+                <p className="text-sm text-gray-600">Say: Pass, Fail, or Help</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-lg font-medium text-gray-700">Tap microphone to speak</p>
+                <p className="text-sm text-gray-500">or use buttons below</p>
+              </div>
+            )}
+          </div>
+
+          {/* Transcript */}
+          {(voice.transcript || voice.interimTranscript) && (
+            <div className="bg-gray-50 rounded-lg p-4 mb-4">
+              <p className="text-sm text-gray-500 mb-1">You said:</p>
+              <p className="text-lg font-medium text-gray-900">
+                {voice.transcript || voice.interimTranscript}
+              </p>
+              {voice.confidence > 0 && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Confidence: {Math.round(voice.confidence * 100)}%
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Last Command */}
+          {lastCommand && !showConfirmation && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+              <p className="text-sm text-blue-600 font-medium">
+                {formatCommandDisplay(lastCommand)}
+              </p>
+            </div>
+          )}
+
+          {/* Error */}
+          {voice.error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+              <p className="text-sm text-red-600">{voice.error}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Confirmation Modal */}
+        {showConfirmation && lastCommand && (
+          <div className="bg-white rounded-2xl shadow-xl p-6 mb-6 border-2 border-yellow-400">
+            <p className="text-lg font-medium text-gray-900 mb-4 text-center">
+              Confirm your answer:
+            </p>
+            <p className="text-2xl font-bold text-center mb-6">
+              {formatCommandDisplay(lastCommand)}
+            </p>
+            <div className="grid grid-cols-3 gap-3">
+              <button
+                onClick={handleConfirmCommand}
+                className="bg-green-500 text-white py-3 px-4 rounded-lg font-medium hover:bg-green-600"
+              >
+                ✓ Confirm
+              </button>
+              <button
+                onClick={handleRetry}
+                className="bg-yellow-500 text-white py-3 px-4 rounded-lg font-medium hover:bg-yellow-600"
+              >
+                ⟲ Retry
+              </button>
+              <button
+                onClick={goToNext}
+                className="bg-gray-500 text-white py-3 px-4 rounded-lg font-medium hover:bg-gray-600"
+              >
+                ⏭ Skip
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Help Modal */}
+        {showHelp && (
+          <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-gray-900">Voice Commands</h3>
+              <button
+                onClick={() => setShowHelp(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+            <pre className="text-sm text-gray-700 whitespace-pre-wrap">{getHelpText()}</pre>
+          </div>
+        )}
+
+        {/* Navigation Buttons */}
+        <div className="grid grid-cols-3 gap-3">
+          <button
+            onClick={goToPrevious}
+            disabled={currentIndex === 0}
+            className="bg-gray-200 text-gray-700 py-4 rounded-xl font-medium hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            ◀ Back
+          </button>
+          <button
+            onClick={() => setShowHelp(true)}
+            className="bg-blue-100 text-blue-700 py-4 rounded-xl font-medium hover:bg-blue-200"
+          >
+            ❓ Help
+          </button>
+          <button
+            onClick={goToNext}
+            className="bg-gray-200 text-gray-700 py-4 rounded-xl font-medium hover:bg-gray-300"
+          >
+            Skip ▶
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+

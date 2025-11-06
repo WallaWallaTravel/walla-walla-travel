@@ -195,7 +195,7 @@ export async function PATCH(
       UPDATE proposals 
       SET ${updateFields.join(', ')}
       WHERE id = $${paramCount}
-      RETURNING id, proposal_number, uuid, status
+      RETURNING id, proposal_number, status, title, total
     `;
     updateValues.push(currentProposal.id);
     
