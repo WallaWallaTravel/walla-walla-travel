@@ -167,7 +167,7 @@ export async function GET(request: NextRequest) {
       pagination: paginationMeta,
     };
 
-    return successResponse(responseData, 'Vehicles retrieved successfully');
+    return successResponse(responseData, 'Vehicles retrieved successfully', 30); // Cache for 30 seconds
 
   } catch (error) {
     console.error('Get vehicles error:', error);

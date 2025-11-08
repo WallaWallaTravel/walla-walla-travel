@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
       average_visit_duration: row.average_visit_duration || 60
     }));
 
-    return successResponse(wineries, 'Wineries retrieved successfully');
+    return successResponse(wineries, 'Wineries retrieved successfully', 300); // Cache for 5 minutes (static data)
 
   } catch (error: any) {
     console.error('❌ Get wineries error:', error);

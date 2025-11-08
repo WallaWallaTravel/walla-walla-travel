@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
       database: 'connected',
       version: '1.0.0',
       message: 'Travel Suite API is running'
-    }, 'API is healthy');
+    }, 'API is healthy', 10); // Cache for 10 seconds
     
   } catch (error) {
     console.error('Health check failed:', error);

@@ -19,14 +19,26 @@ interface Session {
 }
 
 // Create a success response
-export function successResponse<T>(data: T, message?: string): NextResponse {
+export function successResponse<T>(
+  data: T, 
+  message?: string,
+  cacheSeconds?: number
+): NextResponse {
   const response: ApiResponse<T> = {
     success: true,
     data,
     message,
     timestamp: new Date().toISOString(),
   };
-  return NextResponse.json(response, { status: 200 });
+  
+  const headers: HeadersInit = {};
+  
+  // Add caching headers if specified
+  if (cacheSeconds && cacheSeconds > 0) {
+    headers['Cache-Control'] = `public, s-maxage=${cacheSeconds}, stale-while-revalidate=${cacheSeconds * 5}`;
+  }
+  
+  return NextResponse.json(response, { status: 200, headers });
 }
 
 // Create an error response
