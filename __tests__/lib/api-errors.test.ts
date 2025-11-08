@@ -1,6 +1,17 @@
 /**
  * Unit Tests for API Error Handling
+ * @jest-environment node
  */
+
+// Mock NextResponse before importing api-errors
+jest.mock('next/server', () => ({
+  NextResponse: {
+    json: jest.fn((data, init) => ({
+      json: async () => data,
+      status: init?.status || 200,
+    })),
+  },
+}));
 
 import {
   ApiError,
@@ -15,18 +26,18 @@ import {
 describe('API Error Classes', () => {
   describe('ApiError', () => {
     it('should create error with correct properties', () => {
-      const error = new ApiError('Test error', 400);
+      const error = new ApiError(400, 'Test error', 'TEST_ERROR');
 
       expect(error.message).toBe('Test error');
       expect(error.statusCode).toBe(400);
-      expect(error.isOperational).toBe(true);
+      expect(error.code).toBe('TEST_ERROR');
       expect(error.name).toBe('ApiError');
     });
 
-    it('should set isOperational to false when specified', () => {
-      const error = new ApiError('Test error', 500, false);
+    it('should include details when provided', () => {
+      const error = new ApiError(500, 'Test error', 'TEST_ERROR', { foo: 'bar' });
 
-      expect(error.isOperational).toBe(false);
+      expect(error.details).toEqual({ foo: 'bar' });
     });
   });
 
@@ -111,18 +122,14 @@ describe('API Error Classes', () => {
 
       expect(error.statusCode).toBe(500);
       expect(error.message).toBe('Database connection failed');
-    });
-
-    it('should be non-operational by default', () => {
-      const error = new InternalServerError();
-
-      expect(error.isOperational).toBe(false);
+      expect(error.code).toBe('INTERNAL_ERROR');
     });
 
     it('should use default message', () => {
       const error = new InternalServerError();
 
-      expect(error.message).toBe('Internal Server Error');
+      expect(error.message).toBe('Internal server error');
+      expect(error.statusCode).toBe(500);
     });
   });
 
@@ -155,7 +162,7 @@ describe('API Error Classes', () => {
 
   describe('Error Stack Traces', () => {
     it('should capture stack traces', () => {
-      const error = new ApiError('Test', 500);
+      const error = new ApiError(500, 'Test', 'TEST_CODE');
 
       expect(error.stack).toBeDefined();
       expect(typeof error.stack).toBe('string');

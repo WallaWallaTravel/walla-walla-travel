@@ -215,7 +215,7 @@ describe('Inspection APIs', () => {
         body: JSON.stringify({
           vehicleId: 1,
           date: new Date().toISOString().split('T')[0],
-          preTrip InspectionId: 1,
+          preTripInspectionId: 1,
           postTripInspectionId: 2,
           defects: [],
           signature: 'Test Driver',

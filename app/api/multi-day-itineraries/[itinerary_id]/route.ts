@@ -5,7 +5,7 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
-// GET /api/itineraries/[itinerary_id] - Get itinerary with all days and activities
+// GET /api/multi-day-itineraries/[itinerary_id] - Get itinerary with all days and activities
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ itinerary_id: string }> }
@@ -85,7 +85,7 @@ export async function GET(
   }
 }
 
-// PUT /api/itineraries/[itinerary_id] - Update itinerary
+// PUT /api/multi-day-itineraries/[itinerary_id] - Update itinerary
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ itinerary_id: string }> }
@@ -218,7 +218,7 @@ export async function PUT(
   }
 }
 
-// DELETE /api/itineraries/[itinerary_id] - Delete itinerary
+// DELETE /api/multi-day-itineraries/[itinerary_id] - Delete itinerary
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ itinerary_id: string }> }
