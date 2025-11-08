@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { VoiceInspector } from '@/components/inspections/VoiceInspector';
+import dynamic from 'next/dynamic';
+
+// Load VoiceInspector only on client side to prevent SSR issues
+const VoiceInspector = dynamic(
+  () => import('@/components/inspections/VoiceInspector').then(mod => ({ default: mod.VoiceInspector })),
+  { ssr: false, loading: () => <div className="min-h-screen bg-gray-100 flex items-center justify-center"><div className="text-gray-600">Loading voice inspector...</div></div> }
+);
 
 const MOCK_INSPECTION_ITEMS = [
   { id: '1', label: 'Tire Pressure', category: 'tires' },
