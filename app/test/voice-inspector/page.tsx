@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { VoiceInspector } from '@/components/inspections/VoiceInspector';
 
 const MOCK_INSPECTION_ITEMS = [
@@ -12,8 +12,14 @@ const MOCK_INSPECTION_ITEMS = [
 ];
 
 export default function VoiceInspectorTestPage() {
+  const [mounted, setMounted] = useState(false);
   const [showInspector, setShowInspector] = useState(false);
   const [results, setResults] = useState<any>(null);
+
+  // Prevent hydration errors by only rendering after mount
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleComplete = (inspectionResults: any) => {
     setResults(inspectionResults);
@@ -25,6 +31,15 @@ export default function VoiceInspectorTestPage() {
     setShowInspector(false);
     console.log('❌ Inspection Cancelled');
   };
+
+  // Show loading state during hydration
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-gray-600">Loading...</div>
+      </div>
+    );
+  }
 
   if (showInspector) {
     return (
