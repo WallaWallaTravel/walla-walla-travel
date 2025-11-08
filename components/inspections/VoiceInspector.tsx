@@ -31,6 +31,7 @@ export function VoiceInspector({
   const [lastCommand, setLastCommand] = useState<InspectionCommand | null>(null)
   const [showConfirmation, setShowConfirmation] = useState(false)
   const [showHelp, setShowHelp] = useState(false)
+  const [repeatCount, setRepeatCount] = useState(0) // Track how many times prompt has been spoken
 
   const currentItem = items[currentIndex]
   const progress = Math.round((currentIndex / items.length) * 100)
@@ -43,21 +44,29 @@ export function VoiceInspector({
 
   const speakCurrentItem = useCallback(async () => {
     if (!currentItem) return
+    if (repeatCount >= 2) return // Stop after 2 repeats
     
     try {
       const text = `Check ${currentItem.label}. Say pass or fail.`
       await tts.speak(text)
+      setRepeatCount(prev => prev + 1)
     } catch (error) {
       console.error('TTS error:', error)
+      // If TTS fails, don't keep retrying
+      setRepeatCount(2) // Max out to prevent infinite retries
     }
-  }, [currentItem, tts])
+  }, [currentItem, tts, repeatCount])
 
-  // Speak current item when it changes
+  // Speak current item when it changes (max 2 times)
   useEffect(() => {
-    if (currentItem && !tts.isSpeaking && !showConfirmation) {
-      speakCurrentItem()
+    if (currentItem && !tts.isSpeaking && !showConfirmation && repeatCount < 2) {
+      const timer = setTimeout(() => {
+        speakCurrentItem()
+      }, 300) // Small delay to prevent rapid repeats
+      
+      return () => clearTimeout(timer)
     }
-  }, [currentItem, tts.isSpeaking, showConfirmation, speakCurrentItem])
+  }, [currentItem, tts.isSpeaking, showConfirmation, repeatCount, speakCurrentItem])
 
   const voice = useVoiceRecognition({
     continuous: false,
@@ -71,6 +80,7 @@ export function VoiceInspector({
     voice.resetTranscript()
     setShowConfirmation(false)
     setLastCommand(null)
+    setRepeatCount(0) // Reset repeat counter for new item
 
     if (currentIndex < items.length - 1) {
       setCurrentIndex(prev => prev + 1)
@@ -234,6 +244,9 @@ export function VoiceInspector({
     )
   }
 
+  // Show TTS warning if not supported (but allow continuing with visual-only mode)
+  const showTTSWarning = !tts.isSupported
+
   if (isComplete) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
@@ -287,11 +300,35 @@ export function VoiceInspector({
 
       {/* Main Content */}
       <div className="p-6">
+        {/* TTS Warning */}
+        {showTTSWarning && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+            <div className="flex items-start">
+              <svg className="w-5 h-5 text-yellow-600 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-yellow-800 mb-1">Voice prompts unavailable</p>
+                <p className="text-xs text-yellow-700">Your browser doesn't support text-to-speech. You can still use voice commands, but you won't hear audio prompts.</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Current Item */}
         <div className="bg-white rounded-2xl shadow-xl p-8 mb-6">
           <div className="text-center mb-6">
             <div className="text-sm text-gray-500 mb-2">Checking</div>
             <h2 className="text-2xl font-bold text-gray-900">{currentItem?.label}</h2>
+            <p className="text-sm text-gray-600 mt-2">Say: "Pass" or "Fail"</p>
+            {repeatCount < 2 && (
+              <button
+                onClick={() => speakCurrentItem()}
+                className="mt-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
+              >
+                🔊 Repeat prompt ({2 - repeatCount} left)
+              </button>
+            )}
           </div>
 
           {/* Microphone Visualization */}
