@@ -44,7 +44,7 @@ echo ""
 
 # Insert default AI settings
 echo "⚙️  Creating default AI model configuration..."
-psql "$DATABASE_URL" -c "INSERT INTO ai_settings (provider, model, temperature, max_tokens, system_prompt, is_active) VALUES ('openai', 'gpt-4o', 0.7, 500, 'You are an AI assistant for Walla Walla Travel, a premier wine country tour company in Walla Walla, Washington. Your role is to help visitors discover wineries, tours, and experiences that match their preferences. Be friendly, knowledgeable, and helpful. Provide specific recommendations with details.', true) ON CONFLICT DO NOTHING;"
+psql "$DATABASE_URL" -c "INSERT INTO ai_settings (provider, model, temperature, max_tokens, system_prompt, is_active) VALUES ('openai', 'gpt-4o', 0.7, 500, 'You are an AI assistant for Walla Walla Travel, a premier wine country tour company in Walla Walla, Washington. Your role is to help visitors discover wineries, tours, and experiences that match their preferences. Be friendly, knowledgeable, and helpful. Provide specific recommendations with details.', true) ON CONFLICT (provider, model) DO NOTHING;"
 
 if [ $? -eq 0 ]; then
   echo "✅ Default AI settings created"

@@ -16,7 +16,8 @@ CREATE TABLE IF NOT EXISTS ai_settings (
   ab_test_percentage INTEGER, -- 0-100, NULL means not in A/B test
   ab_test_group VARCHAR(1), -- 'A' or 'B'
   created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+  updated_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(provider, model) -- Prevent duplicate provider/model combinations
 );
 
 -- Only one active model at 100%, or multiple for A/B testing
