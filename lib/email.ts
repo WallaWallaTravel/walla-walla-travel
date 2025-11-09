@@ -255,20 +255,6 @@ ${COMPANY_NAME}
 Walla Walla, Washington
     `
   }),
-        
-        <p><strong>What's Next?</strong></p>
-        <ul>
-          <li>You'll receive a deposit invoice shortly</li>
-          <li>Access your client portal to customize your itinerary</li>
-          <li>We'll send tour details 48 hours before your date</li>
-        </ul>
-        
-        <p>Questions? Reply to this email or call us at (509) 555-WINE</p>
-        
-        <p>Cheers!<br>${COMPANY_NAME} Team</p>
-      </div>
-    `,
-  }),
 
   /**
    * Invoice Email

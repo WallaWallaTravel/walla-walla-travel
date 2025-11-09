@@ -1,3 +1,5 @@
+'use client'
+
 // Offline fallback page
 import React from 'react'
 
