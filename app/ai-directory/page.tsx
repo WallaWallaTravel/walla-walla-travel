@@ -1,14 +1,22 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { useAudioRecorder } from '@/lib/hooks/useAudioRecorder'
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { useAudioRecorder } from '@/lib/hooks/useAudioRecorder';
+import MessageFeedback from '@/components/ai/MessageFeedback';
+import EmailCaptureModal from '@/components/ai/EmailCaptureModal';
 
 interface Message {
-  id: string
-  type: 'user' | 'ai'
-  text: string
-  timestamp: Date
-  queryId?: number
+  id: string;
+  type: 'user' | 'ai';
+  text: string;
+  timestamp: Date;
+  queryId?: number;
+}
+
+interface Visitor {
+  visitor_uuid: string;
+  total_queries: number;
+  email?: string | null;
 }
 
 const SUGGESTED_QUESTIONS = [
@@ -18,14 +26,19 @@ const SUGGESTED_QUESTIONS = [
   "Do you provide hotel pickup?",
   "What's included in your tours?",
   "Wine tasting prices?"
-]
+];
 
-export default function AIDirectoryPage() {
-  const [messages, setMessages] = useState<Message[]>([])
-  const [inputText, setInputText] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [useVoice, setUseVoice] = useState(false)
-  const [isTranscribing, setIsTranscribing] = useState(false)
+export default function EnhancedAIDirectoryPage() {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [inputText, setInputText] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [visitor, setVisitor] = useState<Visitor | null>(null);
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [useVoice, setUseVoice] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const {
     isRecording,
@@ -34,31 +47,57 @@ export default function AIDirectoryPage() {
     error: recordingError,
     startRecording,
     stopRecording,
-    clearRecording
-  } = useAudioRecorder()
+    clearRecording,
+    permissionGranted,
+    requestPermission
+  } = useAudioRecorder();
 
+  // Auto-scroll to bottom
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, []);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, scrollToBottom]);
+
+  // Trigger email capture after 3 queries
+  useEffect(() => {
+    if (visitor && visitor.total_queries === 3 && !visitor.email) {
+      // Small delay so user can read the last response
+      const timer = setTimeout(() => {
+        setShowEmailModal(true);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [visitor]);
+
+  // Handle text submission
   const handleSubmitText = async () => {
-    if (!inputText.trim() || isLoading) return
+    if (!inputText.trim() || isLoading) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
       type: 'user',
       text: inputText,
       timestamp: new Date()
-    }
+    };
 
-    setMessages(prev => [...prev, userMessage])
-    setInputText('')
-    setIsLoading(true)
+    setMessages(prev => [...prev, userMessage]);
+    setInputText('');
+    setIsLoading(true);
+
+    // Focus input for mobile (keeps keyboard open)
+    inputRef.current?.focus();
 
     try {
       const response = await fetch('/api/ai/query', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: inputText })
-      })
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (data.success) {
         const aiMessage: Message = {
@@ -67,10 +106,15 @@ export default function AIDirectoryPage() {
           text: data.response,
           timestamp: new Date(),
           queryId: data.queryId
+        };
+        setMessages(prev => [...prev, aiMessage]);
+        
+        // Update visitor info
+        if (data.visitor) {
+          setVisitor(data.visitor);
         }
-        setMessages(prev => [...prev, aiMessage])
       } else {
-        throw new Error(data.error || 'Query failed')
+        throw new Error(data.error || 'Query failed');
       }
     } catch (error: any) {
       const errorMessage: Message = {
@@ -78,128 +122,146 @@ export default function AIDirectoryPage() {
         type: 'ai',
         text: `Sorry, I encountered an error: ${error.message}. Please try again.`,
         timestamp: new Date()
-      }
-      setMessages(prev => [...prev, errorMessage])
+      };
+      setMessages(prev => [...prev, errorMessage]);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
-  const handleTranscribeAndSubmit = async () => {
-    if (!audioBlob) return
+  // Handle voice submission
+  const handleSubmitVoice = async () => {
+    if (!audioBlob || isTranscribing) return;
 
-    setIsTranscribing(true)
+    setIsTranscribing(true);
 
     try {
       // Transcribe audio
-      const formData = new FormData()
-      formData.append('audio', audioBlob, 'recording.webm')
+      const formData = new FormData();
+      formData.append('audio', audioBlob, 'audio.webm');
 
-      const transcribeRes = await fetch('/api/voice/transcribe', {
+      const transcribeResponse = await fetch('/api/voice/transcribe', {
         method: 'POST',
         body: formData
-      })
+      });
 
-      const transcribeData = await transcribeRes.json()
-
-      if (!transcribeData.success) {
-        throw new Error('Transcription failed')
+      if (!transcribeResponse.ok) {
+        throw new Error('Transcription failed');
       }
 
-      const transcript = transcribeData.transcript
-      clearRecording()
+      const { transcription } = await transcribeResponse.json();
       
-      // Now submit as text query
-      const userMessage: Message = {
-        id: Date.now().toString(),
-        type: 'user',
-        text: transcript,
-        timestamp: new Date()
-      }
+      // Set transcribed text and submit
+      setInputText(transcription);
+      clearRecording();
+      setUseVoice(false);
+      
+      // Submit the transcribed text
+      setTimeout(() => {
+        handleSubmitText();
+      }, 100);
 
-      setMessages(prev => [...prev, userMessage])
-      setIsLoading(true)
+    } catch (error: any) {
+      console.error('Voice submission error:', error);
+      alert('Failed to process voice input. Please try again.');
+    } finally {
+      setIsTranscribing(false);
+    }
+  };
 
-      const response = await fetch('/api/ai/query', {
+  // Handle suggested question
+  const handleSuggestedQuestion = (question: string) => {
+    setInputText(question);
+    setTimeout(() => {
+      handleSubmitText();
+    }, 100);
+  };
+
+  // Handle email capture
+  const handleEmailCapture = async (email: string, name?: string) => {
+    if (!visitor) return;
+
+    try {
+      const response = await fetch('/api/visitor/capture-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: transcript })
-      })
+        body: JSON.stringify({
+          visitor_uuid: visitor.visitor_uuid,
+          email,
+          name,
+          trigger_type: 'after_queries',
+          query_count: visitor.total_queries
+        })
+      });
 
-      const data = await response.json()
-
+      const data = await response.json();
       if (data.success) {
-        const aiMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          type: 'ai',
-          text: data.response,
-          timestamp: new Date(),
-          queryId: data.queryId
-        }
-        setMessages(prev => [...prev, aiMessage])
-      } else {
-        throw new Error(data.error || 'Query failed')
+        setVisitor(data.visitor);
+        setShowEmailModal(false);
       }
-    } catch (error: any) {
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        type: 'ai',
-        text: `Sorry, I encountered an error: ${error.message}. Please try again.`,
-        timestamp: new Date()
-      }
-      setMessages(prev => [...prev, errorMessage])
-    } finally {
-      setIsTranscribing(false)
-      setIsLoading(false)
-      setUseVoice(false)
+    } catch (error) {
+      console.error('Email capture error:', error);
     }
-  }
+  };
 
-  const handleSuggestedQuestion = (question: string) => {
-    setInputText(question)
-  }
+  // Handle keyboard shortcuts
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmitText();
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="flex flex-col h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
       {/* Header */}
-      <div className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <h1 className="text-2xl font-bold text-gray-900">
-            🤖 AI Travel Assistant
-          </h1>
-          <p className="text-sm text-gray-600">
-            Ask me anything about Walla Walla wine tours!
-          </p>
+      <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
+        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div>
+            <h1 className="text-xl md:text-2xl font-bold text-gray-900">
+              🍷 Walla Walla AI Directory
+            </h1>
+            <p className="text-xs md:text-sm text-gray-500">
+              Your personal wine country guide
+            </p>
+          </div>
+          
+          {visitor && visitor.email && (
+            <div className="text-xs text-gray-500">
+              👋 {visitor.email.split('@')[0]}
+            </div>
+          )}
         </div>
-      </div>
+      </header>
 
-      {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 py-6">
-        {/* Messages */}
-        <div className="space-y-4 mb-6">
+      {/* Messages Area */}
+      <main className="flex-1 overflow-y-auto px-4 py-6">
+        <div className="max-w-4xl mx-auto space-y-6">
+          {/* Welcome message */}
           {messages.length === 0 && (
-            <div className="text-center py-12">
-              <div className="text-6xl mb-4">🍷</div>
-              <h2 className="text-2xl font-semibold text-gray-900 mb-2">
-                Welcome to Walla Walla Travel!
-              </h2>
-              <p className="text-gray-600 mb-6">
-                I'm your AI assistant. Ask me anything about wine tours, wineries, or planning your visit!
-              </p>
-              
-              {/* Suggested Questions */}
-              <div className="max-w-2xl mx-auto">
-                <p className="text-sm font-semibold text-gray-700 mb-3">
-                  Try asking:
+            <div className="text-center space-y-6 py-8">
+              <div className="text-4xl md:text-6xl">🍇</div>
+              <div>
+                <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+                  Welcome to Walla Walla!
+                </h2>
+                <p className="text-gray-600 max-w-xl mx-auto">
+                  I'm your AI guide to the best wineries, tours, and experiences in wine country. 
+                  Ask me anything!
                 </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {SUGGESTED_QUESTIONS.map((q, i) => (
+              </div>
+
+              {/* Suggested questions */}
+              <div className="space-y-3">
+                <p className="text-sm font-medium text-gray-700">Try asking:</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-w-2xl mx-auto">
+                  {SUGGESTED_QUESTIONS.map((question, index) => (
                     <button
-                      key={i}
-                      onClick={() => handleSuggestedQuestion(q)}
-                      className="px-4 py-3 bg-white border-2 border-gray-200 rounded-lg text-sm text-left hover:border-blue-400 hover:bg-blue-50 transition"
+                      key={index}
+                      onClick={() => handleSuggestedQuestion(question)}
+                      className="text-left px-4 py-3 bg-white rounded-lg shadow-sm border border-gray-200 hover:border-blue-300 hover:shadow-md transition text-sm text-gray-700 hover:text-blue-700"
                     >
-                      {q}
+                      💬 {question}
                     </button>
                   ))}
                 </div>
@@ -207,170 +269,200 @@ export default function AIDirectoryPage() {
             </div>
           )}
 
+          {/* Messages */}
           {messages.map((message) => (
             <div
               key={message.id}
               className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                className={`max-w-[85%] md:max-w-[75%] rounded-2xl px-4 py-3 shadow-sm ${
                   message.type === 'user'
                     ? 'bg-blue-600 text-white'
-                    : 'bg-white border-2 border-gray-200 text-gray-900'
+                    : 'bg-white text-gray-900 border border-gray-200'
                 }`}
               >
-                <p className="whitespace-pre-wrap">{message.text}</p>
-                <p className={`text-xs mt-1 ${message.type === 'user' ? 'text-blue-100' : 'text-gray-500'}`}>
-                  {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </p>
+                <div className="flex items-start space-x-2">
+                  {message.type === 'ai' && (
+                    <span className="text-xl flex-shrink-0">🤖</span>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm md:text-base whitespace-pre-wrap break-words">
+                      {message.text}
+                    </p>
+                    <p className={`text-xs mt-1 ${message.type === 'user' ? 'text-blue-100' : 'text-gray-400'}`}>
+                      {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Feedback for AI messages */}
+                {message.type === 'ai' && message.queryId && (
+                  <div className="mt-3 pt-3 border-t border-gray-100">
+                    <MessageFeedback queryId={message.queryId} />
+                  </div>
+                )}
               </div>
             </div>
           ))}
 
+          {/* Loading indicator */}
           {isLoading && (
             <div className="flex justify-start">
-              <div className="bg-white border-2 border-gray-200 rounded-2xl px-4 py-3">
+              <div className="bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-200">
                 <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  <span className="text-xl">🤖</span>
+                  <div className="flex space-x-1">
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                  </div>
                 </div>
               </div>
             </div>
           )}
+
+          <div ref={messagesEndRef} />
         </div>
+      </main>
 
-        {/* Input Area */}
-        <div className="border-t bg-white/80 backdrop-blur-sm fixed bottom-0 left-0 right-0 py-4">
-          <div className="max-w-4xl mx-auto px-4">
-            {/* Mode Toggle */}
-            <div className="flex justify-center mb-3">
-              <div className="inline-flex bg-gray-100 rounded-lg p-1">
-                <button
-                  onClick={() => setUseVoice(false)}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition ${
-                    !useVoice
-                      ? 'bg-white text-gray-900 shadow'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  ⌨️ Type
-                </button>
-                <button
-                  onClick={() => setUseVoice(true)}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition ${
-                    useVoice
-                      ? 'bg-white text-gray-900 shadow'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  🎤 Voice
-                </button>
-              </div>
-            </div>
-
-            {/* Text Input */}
-            {!useVoice && (
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={inputText}
-                  onChange={(e) => setInputText(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSubmitText()}
-                  placeholder="Ask me anything..."
-                  className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
-                  disabled={isLoading}
-                />
-                <button
-                  onClick={handleSubmitText}
-                  disabled={!inputText.trim() || isLoading}
-                  className={`px-6 py-3 rounded-lg font-medium transition ${
-                    inputText.trim() && !isLoading
-                      ? 'bg-blue-600 text-white hover:bg-blue-700'
-                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  }`}
-                >
-                  Send
-                </button>
-              </div>
-            )}
-
-            {/* Voice Input */}
-            {useVoice && (
-              <div className="text-center">
-                {!isRecording && !audioBlob && (
+      {/* Input Area - Fixed at bottom */}
+      <footer className="bg-white border-t border-gray-200 shadow-lg sticky bottom-0">
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          {/* Voice mode indicator */}
+          {useVoice && (
+            <div className="mb-3 p-3 bg-blue-50 rounded-lg text-sm">
+              {isRecording ? (
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center space-x-2">
+                    <span className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
+                    <span className="text-gray-700">Recording... {duration.toFixed(1)}s</span>
+                  </span>
                   <button
-                    onClick={startRecording}
-                    className="px-8 py-4 bg-red-600 text-white rounded-full font-medium hover:bg-red-700 transition"
+                    onClick={stopRecording}
+                    className="px-3 py-1 bg-red-600 text-white rounded-full text-xs font-medium hover:bg-red-700 transition"
                   >
-                    🎤 Tap to Record
+                    Stop
                   </button>
-                )}
-
-                {isRecording && (
-                  <div>
-                    <div className="flex items-center justify-center space-x-3 mb-3">
-                      <div className="w-4 h-4 bg-red-500 rounded-full animate-pulse" />
-                      <span className="text-xl font-mono text-gray-900">
-                        {Math.floor(duration / 60)}:{(duration % 60).toString().padStart(2, '0')}
-                      </span>
-                    </div>
+                </div>
+              ) : audioBlob ? (
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-700">✓ Recording ready</span>
+                  <div className="flex space-x-2">
                     <button
-                      onClick={stopRecording}
-                      className="px-8 py-4 bg-gray-900 text-white rounded-full font-medium hover:bg-gray-800 transition"
+                      onClick={clearRecording}
+                      className="px-3 py-1 bg-gray-200 text-gray-700 rounded-full text-xs font-medium hover:bg-gray-300 transition"
                     >
-                      ⏹️ Stop Recording
+                      Clear
+                    </button>
+                    <button
+                      onClick={handleSubmitVoice}
+                      disabled={isTranscribing}
+                      className="px-3 py-1 bg-blue-600 text-white rounded-full text-xs font-medium hover:bg-blue-700 transition disabled:opacity-50"
+                    >
+                      {isTranscribing ? 'Processing...' : 'Send'}
                     </button>
                   </div>
-                )}
+                </div>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-700">Tap mic to start recording</span>
+                  <button
+                    onClick={() => setUseVoice(false)}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
-                {audioBlob && !isTranscribing && (
-                  <div className="space-y-3">
-                    <p className="text-green-600 font-medium">
-                      ✓ Recording complete ({duration}s)
-                    </p>
-                    <div className="flex gap-3 justify-center">
-                      <button
-                        onClick={clearRecording}
-                        className="px-6 py-3 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 transition"
-                      >
-                        Clear
-                      </button>
-                      <button
-                        onClick={handleTranscribeAndSubmit}
-                        className="px-8 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition"
-                      >
-                        Submit
-                      </button>
-                    </div>
-                  </div>
-                )}
+          <div className="flex items-end space-x-2">
+            {/* Text input */}
+            <div className="flex-1">
+              <textarea
+                ref={inputRef}
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Ask about wineries, tours, experiences..."
+                disabled={isLoading || useVoice}
+                className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm md:text-base disabled:bg-gray-50 disabled:text-gray-500"
+                rows={1}
+                style={{
+                  minHeight: '48px',
+                  maxHeight: '120px',
+                  fontSize: '16px' // Prevents iOS zoom on focus
+                }}
+              />
+            </div>
 
-                {isTranscribing && (
-                  <div className="flex flex-col items-center">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                    </div>
-                    <p className="text-gray-600">Transcribing and processing...</p>
-                  </div>
-                )}
+            {/* Voice toggle */}
+            {!useVoice && (
+              <button
+                onClick={() => {
+                  if (!permissionGranted) {
+                    requestPermission();
+                  }
+                  setUseVoice(true);
+                  if (permissionGranted) {
+                    startRecording();
+                  }
+                }}
+                disabled={isLoading}
+                className="flex-shrink-0 p-3 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 transition disabled:opacity-50"
+                aria-label="Voice input"
+                title="Use voice input"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                </svg>
+              </button>
+            )}
 
-                {recordingError && (
-                  <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-red-800 text-sm">{recordingError}</p>
-                  </div>
-                )}
-              </div>
+            {/* Send button */}
+            {!useVoice && (
+              <button
+                onClick={handleSubmitText}
+                disabled={!inputText.trim() || isLoading}
+                className="flex-shrink-0 p-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="Send message"
+                title="Send message"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+              </button>
             )}
           </div>
-        </div>
 
-        {/* Spacer for fixed input */}
-        <div className="h-32" />
-      </div>
+          {/* Voice recording button (when in voice mode) */}
+          {useVoice && !isRecording && !audioBlob && (
+            <div className="mt-3 flex justify-center">
+              <button
+                onClick={startRecording}
+                className="p-6 bg-red-500 text-white rounded-full hover:bg-red-600 transition shadow-lg"
+                aria-label="Start recording"
+              >
+                <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+          )}
+        </div>
+      </footer>
+
+      {/* Email capture modal */}
+      <EmailCaptureModal
+        isOpen={showEmailModal}
+        onClose={() => setShowEmailModal(false)}
+        onSubmit={handleEmailCapture}
+        triggerType="after_queries"
+        queryCount={visitor?.total_queries}
+      />
     </div>
-  )
+  );
 }
 
