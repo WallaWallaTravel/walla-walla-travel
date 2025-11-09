@@ -55,9 +55,7 @@ export default function BusinessPortalPage() {
     stopRecording,
     audioBlob,
     duration,
-    error: recorderError,
-    permissionGranted,
-    requestPermission
+    error: recorderError
   } = useAudioRecorder();
   
   // Load business and questions
@@ -368,35 +366,24 @@ export default function BusinessPortalPage() {
             {/* Answer input */}
             {answerMode === 'voice' ? (
               <div className="space-y-4">
-                {!permissionGranted && (
-                  <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-4">
-                    <p className="text-yellow-700">
-                      Microphone permission required.{' '}
-                      <button
-                        onClick={requestPermission}
-                        className="underline font-medium"
-                      >
-                        Grant permission
-                      </button>
-                    </p>
-                  </div>
-                )}
-                
                 {recorderError && (
                   <div className="bg-red-50 border-l-4 border-red-500 p-4">
                     <p className="text-red-700">{recorderError}</p>
+                    <p className="text-sm text-red-600 mt-1">
+                      Please allow microphone access when prompted by your browser.
+                    </p>
                   </div>
                 )}
                 
                 <div className="text-center py-8">
                   <button
                     onClick={isRecording ? stopRecording : startRecording}
-                    disabled={!permissionGranted || submitting}
+                    disabled={submitting}
                     className={`w-32 h-32 rounded-full transition-all transform hover:scale-105 ${
                       isRecording
                         ? 'bg-red-500 hover:bg-red-600 animate-pulse'
                         : 'bg-blue-600 hover:bg-blue-700'
-                    } text-white shadow-xl disabled:opacity-50`}
+                    } text-white shadow-xl disabled:opacity-50 disabled:cursor-not-allowed`}
                   >
                     {isRecording ? (
                       <div>
@@ -410,6 +397,11 @@ export default function BusinessPortalPage() {
                   <p className="mt-4 text-gray-600">
                     {isRecording ? 'Recording... Click to stop' : 'Click to start recording'}
                   </p>
+                  {!isRecording && !audioBlob && (
+                    <p className="text-sm text-gray-500 mt-2">
+                      Your browser will ask for microphone permission
+                    </p>
+                  )}
                 </div>
                 
                 {audioBlob && !isRecording && (
