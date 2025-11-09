@@ -251,9 +251,15 @@
 - **Format:** WebM audio (16kHz, mono)
 
 ### AI/LLM
-- **Primary:** Claude 3.5 Sonnet ($0.003/1K input, $0.015/1K output)
-- **Fallback:** GPT-4 (for complex queries if needed)
+- **Primary:** Claude 3.5 Haiku ($0.001/1K input, $0.005/1K output) - 3x cheaper!
+- **Upgrade option:** Claude Sonnet for complex queries (if needed later)
 - **Context:** Business info, winery database, tour options
+
+**Why Haiku?**
+- Perfect for straightforward Q&A (wineries, tours, recommendations)
+- 3x cheaper than Sonnet ($33/mo vs $99/mo for 3K queries)
+- Fast responses (better UX)
+- Easy to upgrade to Sonnet if we need more reasoning power
 
 ### Analytics
 - **Events:** PostgreSQL events table
@@ -498,10 +504,10 @@ AI Conversion Rate: 3% (AI users → bookings)
 
 ### APIs & Services
 - [ ] Deepgram API key configured
-- [ ] Claude API key configured
+- [ ] Anthropic API key configured (for Claude Haiku)
 - [ ] Environment variables set in Vercel
 - [ ] Rate limiting configured
-- [ ] Cost alerts set up
+- [ ] Cost alerts set up (should be ~$40-70/month)
 
 ### Database
 - [ ] Analytics tables created
@@ -580,28 +586,40 @@ Before we start building, you'll need:
 
 ### API Services
 - Deepgram: ~$0-20 (likely covered by free tier)
-- Claude: ~$50-100 (moderate usage)
-- **Total: $50-120 first month**
+- Claude Haiku: ~$15-35 (moderate usage - 3x cheaper than Sonnet!)
+- **Total: $15-55 first month** 🎉
+
+**Cost savings:** Using Haiku instead of Sonnet saves ~$60-70/month!
 
 ### Next Steps
-- Month 2-3: ~$100-300 (growing usage)
+- Month 2-3: ~$40-100 (growing usage, still affordable!)
 - If successful: Scale costs, but ROI justified
 - If not: Low investment, easy to pivot
+- **Upgrade to Sonnet anytime if you need more sophisticated reasoning**
 
 ---
 
 ## Ready to Build?
 
 **I need from you:**
-1. Deepgram API key
-2. Claude API key (Anthropic)
+1. **Deepgram API key** - Voice transcription
+   - Sign up: https://deepgram.com
+   - Free $200 credit (45,000 minutes!)
+   
+2. **Anthropic API key** - Claude Haiku
+   - Sign up: https://console.anthropic.com
+   - Free $5 credit to start
+   - **We'll use Haiku (3x cheaper than Sonnet!)**
 
 **Then I'll build:**
-1. ✅ Voice system (iOS-compatible)
-2. ✅ AI Directory (conversational)
+1. ✅ Voice system (iOS-compatible, server-side)
+2. ✅ AI Directory (conversational, using Haiku)
 3. ✅ Conversion tracking (measure ROI)
 4. ✅ Analytics dashboard (see what works)
-5. ✅ Cost optimizations (built-in)
+5. ✅ Smart optimizations (caching, cost controls)
+
+**Expected monthly cost after free credits: $40-70**
+*That's just 1 booking to break even!*
 
 **Let's get those API keys and start building! 🚀**
 

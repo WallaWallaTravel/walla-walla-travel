@@ -37,9 +37,12 @@
     ]
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.68.0",
+    "@deepgram/sdk": "^4.11.2",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
+    "@google/generative-ai": "^0.24.1",
     "@stripe/react-stripe-js": "^5.2.0",
     "@stripe/stripe-js": "^8.1.0",
     "@types/bcryptjs": "^2.4.6",
@@ -52,6 +55,7 @@
     "isomorphic-dompurify": "^2.26.0",
     "jose": "^6.1.0",
     "next": "15.5.2",
+    "openai": "^6.8.1",
     "pg": "^8.16.3",
     "react": "19.1.0",
     "react-dom": "19.1.0",
