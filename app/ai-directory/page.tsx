@@ -47,9 +47,7 @@ export default function EnhancedAIDirectoryPage() {
     error: recordingError,
     startRecording,
     stopRecording,
-    clearRecording,
-    permissionGranted,
-    requestPermission
+    clearRecording
   } = useAudioRecorder();
 
   // Auto-scroll to bottom
@@ -448,13 +446,8 @@ export default function EnhancedAIDirectoryPage() {
             {!useVoice && (
               <button
                 onClick={() => {
-                  if (!permissionGranted) {
-                    requestPermission();
-                  }
                   setUseVoice(true);
-                  if (permissionGranted) {
-                    startRecording();
-                  }
+                  startRecording();
                 }}
                 disabled={isLoading}
                 className="flex-shrink-0 p-3 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 transition disabled:opacity-50"
