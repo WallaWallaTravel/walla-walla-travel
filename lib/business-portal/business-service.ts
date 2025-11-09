@@ -33,77 +33,97 @@ export interface CreateBusinessInput {
  * Create and invite a new business
  */
 export async function createBusiness(data: CreateBusinessInput): Promise<Business> {
-  // Generate slug from name
-  const slug = data.name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '');
-  
-  // Generate unique code
-  const result = await query(`
-    INSERT INTO businesses (
-      business_type,
-      name,
+  try {
+    console.log('[createBusiness] Creating business:', data.name);
+    
+    // Generate slug from name
+    const slug = data.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+    
+    console.log('[createBusiness] Generated slug:', slug);
+    
+    // Generate unique code
+    const result = await query(`
+      INSERT INTO businesses (
+        business_type,
+        name,
+        slug,
+        contact_name,
+        contact_email,
+        contact_phone,
+        website,
+        unique_code,
+        status,
+        invited_by,
+        invited_at
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, generate_business_code($2), 'invited', $8, NOW())
+      RETURNING *
+    `, [
+      data.business_type,
+      data.name,
       slug,
-      contact_name,
-      contact_email,
-      contact_phone,
-      website,
-      unique_code,
-      status,
-      invited_by,
-      invited_at
-    )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, generate_business_code($2), 'invited', $8, NOW())
-    RETURNING *
-  `, [
-    data.business_type,
-    data.name,
-    slug,
-    data.contact_name || null,
-    data.contact_email,
-    data.contact_phone || null,
-    data.website || null,
-    data.invited_by || null
-  ]);
-  
-  const business = result.rows[0];
-  
-  // Log activity
-  await logBusinessActivity(business.id, 'business_invited', 'Business invited to contribute content');
-  
-  return business;
+      data.contact_name || null,
+      data.contact_email,
+      data.contact_phone || null,
+      data.website || null,
+      data.invited_by || null
+    ]);
+    
+    const business = result.rows[0];
+    console.log('[createBusiness] Business created with code:', business.unique_code);
+    
+    // Log activity
+    await logBusinessActivity(business.id, 'business_invited', 'Business invited to contribute content');
+    
+    return business;
+  } catch (error) {
+    console.error('[createBusiness] Error:', error);
+    throw error;
+  }
 }
 
 /**
  * Get business by unique code (for portal access)
  */
 export async function getBusinessByCode(code: string): Promise<Business | null> {
-  const result = await query(
-    'SELECT * FROM businesses WHERE unique_code = $1',
-    [code]
-  );
-  
-  if (result.rows.length === 0) {
-    return null;
+  try {
+    console.log('[getBusinessByCode] Looking up code:', code);
+    
+    const result = await query(
+      'SELECT * FROM businesses WHERE unique_code = $1',
+      [code]
+    );
+    
+    console.log('[getBusinessByCode] Query result:', result.rows.length, 'rows');
+    
+    if (result.rows.length === 0) {
+      return null;
+    }
+    
+    // Update last activity and first access if needed
+    const business = result.rows[0];
+    const updates: string[] = ['last_activity_at = NOW()'];
+    
+    if (!business.first_access_at) {
+      updates.push('first_access_at = NOW()');
+      updates.push("status = 'in_progress'");
+      await logBusinessActivity(business.id, 'portal_first_access', 'First time accessing portal');
+    }
+    
+    await query(
+      `UPDATE businesses SET ${updates.join(', ')} WHERE id = $1`,
+      [business.id]
+    );
+    
+    console.log('[getBusinessByCode] Successfully retrieved business:', business.name);
+    return business;
+  } catch (error) {
+    console.error('[getBusinessByCode] Error:', error);
+    throw error;
   }
-  
-  // Update last activity and first access if needed
-  const business = result.rows[0];
-  const updates: string[] = ['last_activity_at = NOW()'];
-  
-  if (!business.first_access_at) {
-    updates.push('first_access_at = NOW()');
-    updates.push("status = 'in_progress'");
-    await logBusinessActivity(business.id, 'portal_first_access', 'First time accessing portal');
-  }
-  
-  await query(
-    `UPDATE businesses SET ${updates.join(', ')} WHERE id = $1`,
-    [business.id]
-  );
-  
-  return business;
 }
 
 /**
