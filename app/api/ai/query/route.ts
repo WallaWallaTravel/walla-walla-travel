@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getActiveModelConfig, createProviderFromSettings } from '@/lib/ai/model-manager'
-import { getCachedQuery, cacheQueryResponse, generateSystemPromptHash } from '@/lib/ai/query-cache'
+import { getCachedQuery, cacheQueryResponse, generateSystemPromptHash, generateQueryHash } from '@/lib/ai/query-cache'
 import { buildSystemPromptWithContext } from '@/lib/ai/context-builder'
 import { getOrCreateSessionId, setSessionId } from '@/lib/utils/session'
+import { logQuery, classifyQueryIntent } from '@/lib/analytics/query-logger'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -95,10 +96,31 @@ export async function POST(request: NextRequest) {
 
     const duration = Date.now() - startTime
 
+    // Log query for analytics and review
+    const queryIntent = classifyQueryIntent(query)
+    const queryHash = generateQueryHash(query, settings.model, systemPromptHash)
+    
+    const queryId = await logQuery({
+      sessionId,
+      queryText: query,
+      queryIntent,
+      queryHash,
+      provider: aiResponse.provider,
+      model: aiResponse.model,
+      systemPromptHash,
+      responseText: aiResponse.text,
+      inputTokens: aiResponse.inputTokens,
+      outputTokens: aiResponse.outputTokens,
+      totalTokens: aiResponse.inputTokens + aiResponse.outputTokens,
+      responseTimeMs: duration,
+      apiCost: aiResponse.cost
+    })
+
     console.log(
       `[AI Query] ${aiResponse.provider}:${aiResponse.model} - ` +
       `${query.substring(0, 50)}... - ` +
-      `$${aiResponse.cost.toFixed(4)} - ${duration}ms`
+      `$${aiResponse.cost.toFixed(4)} - ${duration}ms - ` +
+      `ID: ${queryId}`
     )
 
     return NextResponse.json({
@@ -112,7 +134,8 @@ export async function POST(request: NextRequest) {
       inputTokens: aiResponse.inputTokens,
       outputTokens: aiResponse.outputTokens,
       duration,
-      sessionId
+      sessionId,
+      queryId // Return queryId so client can submit feedback
     })
 
   } catch (error: any) {
