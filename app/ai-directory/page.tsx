@@ -169,12 +169,58 @@ export default function EnhancedAIDirectoryPage() {
     }
   };
 
-  // Handle suggested question
-  const handleSuggestedQuestion = (question: string) => {
-    setInputText(question);
-    setTimeout(() => {
-      handleSubmitText();
-    }, 100);
+  // Handle suggested question - submit immediately
+  const handleSuggestedQuestion = async (question: string) => {
+    // Don't set input text, just submit directly
+    if (isLoading) return;
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      type: 'user',
+      text: question,
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('/api/ai/query', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: question })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        const aiMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          type: 'ai',
+          text: data.response,
+          timestamp: new Date(),
+          queryId: data.queryId
+        };
+        setMessages(prev => [...prev, aiMessage]);
+        
+        // Update visitor info
+        if (data.visitor) {
+          setVisitor(data.visitor);
+        }
+      } else {
+        throw new Error(data.error || 'Query failed');
+      }
+    } catch (error: any) {
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        type: 'ai',
+        text: `Sorry, I encountered an error: ${error.message}. Please try again.`,
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Handle email capture
