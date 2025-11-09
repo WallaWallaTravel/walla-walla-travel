@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Diagnostics</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #1f2937;
+            color: #f9fafb;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        h1 { 
+            font-size: 1.5rem; 
+            margin-bottom: 1rem;
+            color: #60a5fa;
+        }
+        .section {
+            background: #374151;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border: 2px solid #4b5563;
+        }
+        .section h2 {
+            font-size: 1.1rem;
+            margin-bottom: 0.75rem;
+            color: #fbbf24;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #4b5563;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .label {
+            font-weight: 600;
+            color: #9ca3af;
+        }
+        .value {
+            color: #f9fafb;
+            text-align: right;
+            flex: 1;
+            margin-left: 1rem;
+        }
+        .success { color: #10b981; }
+        .error { color: #ef4444; }
+        .warning { color: #fbbf24; }
+        .code {
+            background: #1f2937;
+            padding: 0.75rem;
+            border-radius: 0.25rem;
+            font-family: monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            margin-top: 0.5rem;
+        }
+        .alert {
+            background: #7c2d12;
+            border: 2px solid #ea580c;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .alert h3 {
+            color: #fb923c;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Voice Recognition Diagnostics</h1>
+        
+        <div id="mainAlert" style="display: none;" class="alert"></div>
+
+        <div class="section">
+            <h2>Browser Information</h2>
+            <div class="info-row">
+                <span class="label">Browser</span>
+                <span class="value" id="browser"></span>
+            </div>
+            <div class="info-row">
+                <span class="label">Platform</span>
+                <span class="value" id="platform"></span>
+            </div>
+            <div class="info-row">
+                <span class="label">User Agent</span>
+                <span class="value" id="userAgent" style="font-size: 0.75rem; word-break: break-all;"></span>
+            </div>
+            <div class="info-row">
+                <span class="label">iOS Device</span>
+                <span class="value" id="isIOS"></span>
+            </div>
+            <div class="info-row">
+                <span class="label">Connection</span>
+                <span class="value" id="protocol"></span>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Speech Recognition API</h2>
+            <div class="info-row">
+                <span class="label">window.SpeechRecognition</span>
+                <span class="value" id="speechRecog"></span>
+            </div>
+            <div class="info-row">
+                <span class="label">window.webkitSpeechRecognition</span>
+                <span class="value" id="webkitRecog"></span>
+            </div>
+            <div class="info-row">
+                <span class="label">Final Status</span>
+                <span class="value" id="recogStatus"></span>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Speech Synthesis API (TTS)</h2>
+            <div class="info-row">
+                <span class="label">window.speechSynthesis</span>
+                <span class="value" id="synthesis"></span>
+            </div>
+            <div class="info-row">
+                <span class="label">Available Voices</span>
+                <span class="value" id="voiceCount"></span>
+            </div>
+            <div class="info-row">
+                <span class="label">Final Status</span>
+                <span class="value" id="ttsStatus"></span>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Media Permissions</h2>
+            <div class="info-row">
+                <span class="label">navigator.mediaDevices</span>
+                <span class="value" id="mediaDevices"></span>
+            </div>
+            <div class="info-row">
+                <span class="label">Geolocation</span>
+                <span class="value" id="geolocation"></span>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Why It's Not Working</h2>
+            <div id="diagnosis" class="code"></div>
+        </div>
+
+        <div class="section">
+            <h2>Recommended Solution</h2>
+            <div id="solution" class="code"></div>
+        </div>
+    </div>
+
+    <script>
+        // Get all browser info
+        const ua = navigator.userAgent;
+        const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+        const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
+        const isChrome = /Chrome/.test(ua) && /Google Inc/.test(navigator.vendor);
+        const isEdge = /Edg/.test(ua);
+        const isFirefox = /Firefox/.test(ua);
+        
+        let browserName = 'Unknown';
+        if (isIOS) {
+            browserName = isSafari ? 'Safari (iOS)' : 'Chrome (iOS - uses Safari engine)';
+        } else if (isChrome) {
+            browserName = 'Chrome (Android/Desktop)';
+        } else if (isSafari) {
+            browserName = 'Safari (Desktop)';
+        } else if (isEdge) {
+            browserName = 'Edge';
+        } else if (isFirefox) {
+            browserName = 'Firefox';
+        }
+
+        // Check APIs
+        const hasSpeechRecognition = 'SpeechRecognition' in window;
+        const hasWebkitRecognition = 'webkitSpeechRecognition' in window;
+        const hasAnySpeechRecog = hasSpeechRecognition || hasWebkitRecognition;
+        const hasSynthesis = 'speechSynthesis' in window;
+        const hasMediaDevices = 'mediaDevices' in navigator;
+        const hasGeolocation = 'geolocation' in navigator;
+        const isHTTPS = window.location.protocol === 'https:';
+
+        // Populate info
+        document.getElementById('browser').textContent = browserName;
+        document.getElementById('platform').textContent = navigator.platform;
+        document.getElementById('userAgent').textContent = ua;
+        document.getElementById('isIOS').innerHTML = isIOS ? '<span class="error">Yes (Voice Recognition NOT supported)</span>' : '<span class="success">No</span>';
+        document.getElementById('protocol').innerHTML = isHTTPS ? '<span class="success">HTTPS ✓</span>' : '<span class="warning">HTTP (may limit features)</span>';
+
+        document.getElementById('speechRecog').innerHTML = hasSpeechRecognition ? '<span class="success">✓ Available</span>' : '<span class="error">✗ Not Available</span>';
+        document.getElementById('webkitRecog').innerHTML = hasWebkitRecognition ? '<span class="success">✓ Available</span>' : '<span class="error">✗ Not Available</span>';
+        document.getElementById('recogStatus').innerHTML = hasAnySpeechRecog ? '<span class="success">SUPPORTED</span>' : '<span class="error">NOT SUPPORTED</span>';
+
+        document.getElementById('synthesis').innerHTML = hasSynthesis ? '<span class="success">✓ Available</span>' : '<span class="error">✗ Not Available</span>';
+        document.getElementById('ttsStatus').innerHTML = hasSynthesis ? '<span class="success">SUPPORTED</span>' : '<span class="error">NOT SUPPORTED</span>';
+
+        document.getElementById('mediaDevices').innerHTML = hasMediaDevices ? '<span class="success">✓ Available</span>' : '<span class="error">✗ Not Available</span>';
+        document.getElementById('geolocation').innerHTML = hasGeolocation ? '<span class="success">✓ Available</span>' : '<span class="error">✗ Not Available</span>';
+
+        // Voice count (load async)
+        if (hasSynthesis) {
+            const getVoices = () => {
+                const voices = window.speechSynthesis.getVoices();
+                document.getElementById('voiceCount').textContent = voices.length > 0 ? `${voices.length} voices` : 'Loading...';
+            };
+            
+            getVoices();
+            window.speechSynthesis.onvoiceschanged = getVoices;
+        } else {
+            document.getElementById('voiceCount').innerHTML = '<span class="error">N/A</span>';
+        }
+
+        // Diagnosis
+        let diagnosis = '';
+        let solution = '';
+        let alertMessage = '';
+
+        if (isIOS) {
+            diagnosis = `🚫 iOS Limitation:\n\n`;
+            diagnosis += `Apple's iOS does NOT support the Web Speech Recognition API.\n`;
+            diagnosis += `This is true for ALL browsers on iOS (Safari, Chrome, Firefox, etc.)\n`;
+            diagnosis += `because they all use Apple's WebKit engine underneath.\n\n`;
+            diagnosis += `Text-to-Speech (TTS) DOES work on iOS, but voice INPUT does not.`;
+
+            solution = `✅ Use the checkbox inspection mode instead.\n\n`;
+            solution += `The voice inspector is an OPTIONAL enhancement.\n`;
+            solution += `Drivers can complete inspections using:\n`;
+            solution += `- Checkbox mode (works everywhere)\n`;
+            solution += `- Voice mode (Chrome Android only)\n\n`;
+            solution += `For true offline voice on iOS, you would need:\n`;
+            solution += `- A native iOS app (Swift/Objective-C)\n`;
+            solution += `- Using Apple's Speech framework\n`;
+            solution += `- Submitted through the App Store`;
+
+            alertMessage = `
+                <h3>⚠️ iOS Does Not Support Voice Recognition</h3>
+                <p>This is an Apple limitation, not a bug in our app.</p>
+                <p><strong>Good news:</strong> Checkbox mode works perfectly on iOS!</p>
+            `;
+        } else if (!hasAnySpeechRecog) {
+            if (isFirefox) {
+                diagnosis = `🦊 Firefox Limitation:\n\n`;
+                diagnosis += `Firefox does not support the Web Speech Recognition API.\n`;
+                diagnosis += `This is a Mozilla policy decision.\n\n`;
+                diagnosis += `Text-to-Speech works, but voice recognition does not.`;
+
+                solution = `✅ Use checkbox mode, or switch to Chrome/Edge for voice features.`;
+            } else {
+                diagnosis = `❓ Unknown Issue:\n\n`;
+                diagnosis += `Your browser reports it doesn't support voice recognition.\n`;
+                diagnosis += `This could be due to:\n`;
+                diagnosis += `- Browser settings/restrictions\n`;
+                diagnosis += `- Corporate firewall blocking APIs\n`;
+                diagnosis += `- Outdated browser version`;
+
+                solution = `Try:\n`;
+                solution += `1. Use checkbox mode (always works)\n`;
+                solution += `2. Update your browser to the latest version\n`;
+                solution += `3. Check browser settings for disabled features\n`;
+                solution += `4. Try a different browser (Chrome recommended)`;
+            }
+        } else if (!isHTTPS) {
+            diagnosis = `⚠️ HTTP Connection:\n\n`;
+            diagnosis += `You're accessing via HTTP (not HTTPS).\n\n`;
+            diagnosis += `Some browsers require HTTPS for voice recognition to work,\n`;
+            diagnosis += `but localhost/local IPs are usually exempt from this rule.\n\n`;
+            diagnosis += `Your browser DOES support the API, so it might work anyway!`;
+
+            solution = `✅ The API is available - try it!\n\n`;
+            solution += `If it doesn't work, the production site (HTTPS) will work.\n\n`;
+            solution += `For local testing with HTTPS:\n`;
+            solution += `- Use ngrok to create HTTPS tunnel\n`;
+            solution += `- Or test on the deployed Vercel URL`;
+        } else {
+            diagnosis = `✅ Everything looks good!\n\n`;
+            diagnosis += `Your browser supports voice recognition.\n`;
+            diagnosis += `Your connection is HTTPS.\n\n`;
+            diagnosis += `Voice features should work!`;
+
+            solution = `✅ Ready to test voice recognition!\n\n`;
+            solution += `You can use the voice inspector with confidence.`;
+        }
+
+        document.getElementById('diagnosis').textContent = diagnosis;
+        document.getElementById('solution').textContent = solution;
+
+        if (alertMessage) {
+            document.getElementById('mainAlert').innerHTML = alertMessage;
+            document.getElementById('mainAlert').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
+
