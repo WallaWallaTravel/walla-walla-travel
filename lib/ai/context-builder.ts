@@ -39,43 +39,53 @@ export interface BusinessContext {
  * Get winery information for AI context
  */
 export async function getWineryContext(): Promise<WineryInfo[]> {
-  const result = await pool.query(`
-    SELECT id, name, description, location
-    FROM wineries
-    WHERE active = true
-    ORDER BY name
-    LIMIT 20
-  `)
+  try {
+    const result = await pool.query(`
+      SELECT id, name, description, location
+      FROM wineries
+      WHERE active = true
+      ORDER BY name
+      LIMIT 20
+    `)
 
-  return result.rows.map(row => ({
-    id: row.id,
-    name: row.name,
-    description: row.description,
-    features: [],
-    location: row.location
-  }))
+    return result.rows.map(row => ({
+      id: row.id,
+      name: row.name,
+      description: row.description,
+      features: [],
+      location: row.location
+    }))
+  } catch (error) {
+    console.warn('[Context Builder] Wineries table not available:', error)
+    return []
+  }
 }
 
 /**
  * Get tour information for AI context
  */
 export async function getTourContext(): Promise<TourInfo[]> {
-  const result = await pool.query(`
-    SELECT id, name, description, duration_hours, base_price, max_passengers
-    FROM tours
-    WHERE active = true
-    ORDER BY name
-    LIMIT 10
-  `)
+  try {
+    const result = await pool.query(`
+      SELECT id, name, description, duration_hours, base_price, max_passengers
+      FROM tours
+      WHERE active = true
+      ORDER BY name
+      LIMIT 10
+    `)
 
-  return result.rows.map(row => ({
-    id: row.id,
-    name: row.name,
-    description: row.description,
-    duration_hours: row.duration_hours || 4,
-    price: parseFloat(row.base_price) || 0,
-    max_guests: row.max_passengers || 14
-  }))
+    return result.rows.map(row => ({
+      id: row.id,
+      name: row.name,
+      description: row.description,
+      duration_hours: row.duration_hours || 4,
+      price: parseFloat(row.base_price) || 0,
+      max_guests: row.max_passengers || 14
+    }))
+  } catch (error) {
+    console.warn('[Context Builder] Tours table not available:', error)
+    return []
+  }
 }
 
 /**
