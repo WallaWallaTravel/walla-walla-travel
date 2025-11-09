@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getActiveModelConfig, createProviderFromSettings } from '@/lib/ai/model-manager'
 import { getCachedQuery, cacheQueryResponse, generateSystemPromptHash, generateQueryHash } from '@/lib/ai/query-cache'
 import { buildSystemPromptWithContext } from '@/lib/ai/context-builder'
-import { getOrCreateSessionId, setSessionId } from '@/lib/utils/session'
+import { getOrCreateVisitor, setVisitorCookie } from '@/lib/visitor/visitor-tracking'
 import { logQuery, classifyQueryIntent } from '@/lib/analytics/query-logger'
+import { query as dbQuery } from '@/lib/db'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -38,12 +39,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get or create session ID
-    let sessionId = await getOrCreateSessionId()
-    if (!sessionId) {
-      sessionId = `anon_${Date.now()}`
-      await setSessionId(sessionId)
-    }
+    // Get or create visitor
+    const visitor = await getOrCreateVisitor(request)
+    const sessionId = visitor.visitor_uuid
 
     // Get active model configuration
     const settings = await getActiveModelConfig()
@@ -59,9 +57,15 @@ export async function POST(request: NextRequest) {
     if (cached) {
       const duration = Date.now() - startTime
       
-      console.log(`[AI Query] CACHE HIT - ${query.substring(0, 50)}... (${duration}ms)`)
+      console.log(`[AI Query] CACHE HIT - ${query.substring(0, 50)}... (${duration}ms) - Visitor: ${visitor.visitor_uuid}`)
       
-      return NextResponse.json({
+      // Update visitor query count for cached responses too
+      await dbQuery(
+        'UPDATE visitors SET total_queries = total_queries + 1, updated_at = NOW() WHERE id = $1',
+        [visitor.id]
+      )
+      
+      const response = NextResponse.json({
         success: true,
         response: cached.response_text,
         responseData: cached.response_data,
@@ -69,8 +73,17 @@ export async function POST(request: NextRequest) {
         model: settings.model,
         provider: settings.provider,
         duration,
-        sessionId
+        sessionId,
+        visitor: {
+          visitor_uuid: visitor.visitor_uuid,
+          total_queries: visitor.total_queries + 1,
+          email: visitor.email,
+        }
       })
+      
+      // Set visitor cookie
+      setVisitorCookie(response, visitor)
+      return response
     }
 
     // Not cached - query AI model
@@ -116,14 +129,24 @@ export async function POST(request: NextRequest) {
       apiCost: aiResponse.cost
     })
 
+    // Update visitor query count and link query to visitor
+    await dbQuery(
+      'UPDATE visitors SET total_queries = total_queries + 1, updated_at = NOW() WHERE id = $1',
+      [visitor.id]
+    )
+    await dbQuery(
+      'UPDATE ai_queries SET visitor_id = $1 WHERE id = $2',
+      [visitor.id, queryId]
+    )
+
     console.log(
       `[AI Query] ${aiResponse.provider}:${aiResponse.model} - ` +
       `${query.substring(0, 50)}... - ` +
       `$${aiResponse.cost.toFixed(4)} - ${duration}ms - ` +
-      `ID: ${queryId}`
+      `ID: ${queryId} - Visitor: ${visitor.visitor_uuid}`
     )
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       response: aiResponse.text,
       responseData: null,
@@ -135,8 +158,17 @@ export async function POST(request: NextRequest) {
       outputTokens: aiResponse.outputTokens,
       duration,
       sessionId,
-      queryId // Return queryId so client can submit feedback
+      queryId, // Return queryId so client can submit feedback
+      visitor: {
+        visitor_uuid: visitor.visitor_uuid,
+        total_queries: visitor.total_queries + 1,
+        email: visitor.email,
+      }
     })
+
+    // Set visitor cookie
+    setVisitorCookie(response, visitor)
+    return response
 
   } catch (error: any) {
     console.error('AI query error:', error)
