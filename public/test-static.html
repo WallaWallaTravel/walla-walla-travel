@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Static Test</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #f3f4f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        .card {
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            max-width: 400px;
+            width: 100%;
+        }
+        h1 {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 0 0 1rem 0;
+        }
+        p {
+            color: #374151;
+            margin: 0 0 1rem 0;
+        }
+        button {
+            width: 100%;
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        button:active {
+            background: #1d4ed8;
+        }
+        .success {
+            background: #10b981;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            color: white;
+            margin-top: 1rem;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🧪 Pure Static Test</h1>
+        <p>If you can see this, the server is working perfectly!</p>
+        <p><strong>Network IP:</strong> 192.168.1.18:3000</p>
+        <p><strong>Time:</strong> <span id="time"></span></p>
+        <button onclick="showSuccess()">Test Button</button>
+        <div class="success" id="success">
+            ✅ JavaScript is working! Click count: <span id="count">0</span>
+        </div>
+    </div>
+    <script>
+        let clicks = 0;
+        document.getElementById('time').textContent = new Date().toLocaleTimeString();
+        function showSuccess() {
+            clicks++;
+            document.getElementById('success').style.display = 'block';
+            document.getElementById('count').textContent = clicks;
+        }
+    </script>
+</body>
+</html>
+
