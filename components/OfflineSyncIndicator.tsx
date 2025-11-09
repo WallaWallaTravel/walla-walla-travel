@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react'
 import { getPendingInspections, isOnline } from '@/lib/offline-storage'
 
 export function OfflineSyncIndicator() {
+  const [mounted, setMounted] = useState(false)
   const [pendingCount, setPendingCount] = useState(0)
   const [online, setOnline] = useState(true)
   const [syncing, setSyncing] = useState(false)
@@ -18,6 +19,8 @@ export function OfflineSyncIndicator() {
   }
 
   useEffect(() => {
+    // Prevent hydration errors by only running on client
+    setMounted(true)
     setOnline(isOnline())
     updatePendingCount()
 
@@ -45,6 +48,11 @@ export function OfflineSyncIndicator() {
       clearInterval(interval)
     }
   }, [])
+
+  // Don't render anything during SSR to prevent hydration errors
+  if (!mounted) {
+    return null
+  }
 
   // Don't show if online and nothing pending
   if (online && pendingCount === 0 && !syncing) {

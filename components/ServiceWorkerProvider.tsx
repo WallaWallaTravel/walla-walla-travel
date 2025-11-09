@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, ReactNode } from 'react'
+import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react'
 import { useServiceWorker } from '@/lib/hooks/useServiceWorker'
 
 interface ServiceWorkerContextType {
@@ -16,14 +16,22 @@ interface ServiceWorkerContextType {
 const ServiceWorkerContext = createContext<ServiceWorkerContextType | null>(null)
 
 export function ServiceWorkerProvider({ children }: { children: ReactNode }) {
+  const [mounted, setMounted] = useState(false)
   const serviceWorker = useServiceWorker()
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   return (
     <ServiceWorkerContext.Provider value={serviceWorker}>
       {children}
       
-      {/* Online/Offline indicator */}
-      {!serviceWorker.isOnline && (
+      {/* Only show indicators after mount to prevent hydration errors */}
+      {mounted && (
+        <>
+          {/* Online/Offline indicator */}
+          {!serviceWorker.isOnline && (
         <div className="fixed top-0 left-0 right-0 bg-yellow-500 text-white py-2 px-4 text-center text-sm font-medium z-50">
           <div className="flex items-center justify-center gap-2">
             <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
@@ -38,6 +46,8 @@ export function ServiceWorkerProvider({ children }: { children: ReactNode }) {
           <p className="font-medium">Service Worker Error</p>
           <p className="text-sm mt-1 opacity-90">{serviceWorker.error.message}</p>
         </div>
+      )}
+        </>
       )}
     </ServiceWorkerContext.Provider>
   )
