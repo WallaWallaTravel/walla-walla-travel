@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Test - Standalone</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #f3f4f6;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        .container {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 2rem;
+            max-width: 500px;
+            width: 100%;
+        }
+        h1 { font-size: 1.5rem; margin-bottom: 1rem; }
+        button {
+            width: 100%;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary { background: #2563eb; color: white; }
+        .btn-primary:hover { background: #1d4ed8; }
+        .btn-secondary { background: #6b7280; color: white; }
+        .btn-secondary:hover { background: #4b5563; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-danger { background: #ef4444; color: white; }
+        .status {
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0.5rem;
+            background: #f3f4f6;
+            text-align: center;
+        }
+        .status.listening { background: #dbeafe; color: #1e40af; }
+        .status.speaking { background: #fef3c7; color: #92400e; }
+        .transcript {
+            padding: 1rem;
+            margin: 1rem 0;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            min-height: 60px;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+        .warning {
+            background: #fef3c7;
+            border: 1px solid #fbbf24;
+            color: #92400e;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+        }
+        .info {
+            background: #dbeafe;
+            border: 1px solid #60a5fa;
+            color: #1e40af;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            margin: 0.5rem 0;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 Voice Recognition Test</h1>
+        
+        <div id="browserInfo" class="info">
+            Checking browser compatibility...
+        </div>
+
+        <div id="status" class="status">
+            Ready to test
+        </div>
+
+        <div id="transcript" class="transcript">
+            Your speech will appear here...
+        </div>
+
+        <button id="testTTS" class="btn-primary">
+            🔊 Test Text-to-Speech
+        </button>
+
+        <button id="startRecognition" class="btn-success" disabled>
+            🎤 Start Voice Recognition
+        </button>
+
+        <button id="stopRecognition" class="btn-danger" disabled>
+            ⏹️ Stop Recognition
+        </button>
+
+        <button id="testCommand" class="btn-secondary">
+            Test Command: "Pass"
+        </button>
+
+        <div class="info" style="margin-top: 2rem;">
+            <strong>Try saying:</strong>
+            <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
+                <li>"Pass"</li>
+                <li>"Fail"</li>
+                <li>"Fail - crack in windshield"</li>
+                <li>"Repeat"</li>
+                <li>"Help"</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        let recognition = null;
+        let synthesis = window.speechSynthesis;
+        let isListening = false;
+
+        // Check browser compatibility
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const hasTTS = 'speechSynthesis' in window;
+        const hasRecognition = !!SpeechRecognition;
+
+        // Update browser info
+        const browserInfo = document.getElementById('browserInfo');
+        const userAgent = navigator.userAgent;
+        let browserName = 'Unknown';
+        
+        if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) {
+            browserName = 'Safari';
+        } else if (userAgent.includes('Chrome')) {
+            browserName = 'Chrome';
+        } else if (userAgent.includes('Firefox')) {
+            browserName = 'Firefox';
+        }
+
+        let infoHTML = `<strong>Browser:</strong> ${browserName}<br>`;
+        infoHTML += `<strong>TTS:</strong> ${hasTTS ? '✅ Supported' : '❌ Not Supported'}<br>`;
+        infoHTML += `<strong>Voice Recognition:</strong> ${hasRecognition ? '✅ Supported' : '❌ Not Supported'}`;
+        
+        browserInfo.innerHTML = infoHTML;
+
+        if (!hasRecognition) {
+            browserInfo.innerHTML += '<div class="warning" style="margin-top: 1rem;">⚠️ Voice recognition not available on this browser/device. iOS Safari does not support it.</div>';
+        }
+
+        // Initialize recognition if available
+        if (hasRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+
+            recognition.onstart = () => {
+                isListening = true;
+                document.getElementById('status').innerHTML = '🎤 Listening...';
+                document.getElementById('status').className = 'status listening';
+                document.getElementById('startRecognition').disabled = true;
+                document.getElementById('stopRecognition').disabled = false;
+            };
+
+            recognition.onresult = (event) => {
+                let transcript = '';
+                for (let i = 0; i < event.results.length; i++) {
+                    transcript += event.results[i][0].transcript;
+                }
+                document.getElementById('transcript').textContent = transcript;
+                
+                // Check for commands
+                const lower = transcript.toLowerCase();
+                if (lower.includes('pass')) {
+                    speak('Passed');
+                } else if (lower.includes('fail')) {
+                    speak('Failed');
+                } else if (lower.includes('repeat')) {
+                    speak('Repeating');
+                } else if (lower.includes('help')) {
+                    speak('Say pass, fail, repeat, or help');
+                }
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Recognition error:', event.error);
+                document.getElementById('status').innerHTML = `❌ Error: ${event.error}`;
+                document.getElementById('status').className = 'status';
+                isListening = false;
+                document.getElementById('startRecognition').disabled = false;
+                document.getElementById('stopRecognition').disabled = true;
+            };
+
+            recognition.onend = () => {
+                isListening = false;
+                document.getElementById('status').innerHTML = 'Recognition ended';
+                document.getElementById('status').className = 'status';
+                document.getElementById('startRecognition').disabled = false;
+                document.getElementById('stopRecognition').disabled = true;
+            };
+
+            document.getElementById('startRecognition').disabled = false;
+        }
+
+        // TTS function
+        function speak(text) {
+            if (!hasTTS) {
+                alert('Text-to-speech not available');
+                return;
+            }
+
+            synthesis.cancel(); // Stop any ongoing speech
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 0.9;
+            utterance.pitch = 1.0;
+            
+            utterance.onstart = () => {
+                document.getElementById('status').innerHTML = '🔊 Speaking...';
+                document.getElementById('status').className = 'status speaking';
+            };
+            
+            utterance.onend = () => {
+                document.getElementById('status').innerHTML = 'Ready';
+                document.getElementById('status').className = 'status';
+            };
+            
+            utterance.onerror = (event) => {
+                console.error('TTS error:', event);
+                alert('Speech error: ' + event.error);
+            };
+            
+            synthesis.speak(utterance);
+        }
+
+        // Button handlers
+        document.getElementById('testTTS').addEventListener('click', () => {
+            speak('Text to speech is working. Check tire pressure. Say pass or fail.');
+        });
+
+        document.getElementById('startRecognition').addEventListener('click', () => {
+            if (recognition && !isListening) {
+                try {
+                    recognition.start();
+                } catch (e) {
+                    alert('Failed to start recognition: ' + e.message);
+                }
+            }
+        });
+
+        document.getElementById('stopRecognition').addEventListener('click', () => {
+            if (recognition && isListening) {
+                recognition.stop();
+            }
+        });
+
+        document.getElementById('testCommand').addEventListener('click', () => {
+            document.getElementById('transcript').textContent = 'pass';
+            speak('Passed');
+        });
+    </script>
+</body>
+</html>
+
