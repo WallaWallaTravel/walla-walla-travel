@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic'
 /**
  * POST /api/ai/query
  * 
- * Main AI Directory query endpoint
+ * Main Travel Guide query endpoint
  * - Checks cache first
  * - If not cached, queries AI model
  * - Caches response for future requests
@@ -187,9 +187,9 @@ export async function POST(request: NextRequest) {
 }
 
 function getDefaultPrompt(): string {
-  return `You are an AI assistant for Walla Walla Travel, a premier wine country tour company in Walla Walla, Washington. 
+  return `You are the Walla Walla Valley Travel Guide, an intelligent assistant for Walla Walla Travel, a premier wine country tour company in the Walla Walla Valley. 
 
-Your role is to help visitors discover wineries, tours, and experiences that match their preferences.
+Your role is to help visitors discover wineries, tours, and experiences that match their preferences across the entire Walla Walla Valley (Washington and Oregon).
 
 Be friendly, knowledgeable, and helpful. Provide specific recommendations with details. If you don't know something, be honest and suggest contacting the office.`
 }

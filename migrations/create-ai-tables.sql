@@ -1,4 +1,4 @@
--- AI Directory Database Schema
+-- Walla Walla Valley Travel Guide Database Schema
 -- Creates tables for AI settings, queries, cache, and fine-tuning
 
 -- AI Settings (Model Configuration)

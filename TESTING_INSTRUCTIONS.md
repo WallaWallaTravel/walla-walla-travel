@@ -2,7 +2,7 @@
 
 ## ✅ What We've Built (Days 1-5)
 
-The core AI Directory system is complete and working! Here's what to test:
+The core Walla Walla Valley Travel Guide is complete and working! Here's what to test:
 
 ---
 
@@ -37,7 +37,7 @@ Wait for: `✓ Ready in 2.1s`
 
 ---
 
-## 🧪 Step 3: Test the AI Directory
+## 🧪 Step 3: Test the Travel Guide
 
 ### Test 1: AI Models
 **URL:** http://localhost:3000/test/ai-models
@@ -54,7 +54,7 @@ Wait for: `✓ Ready in 2.1s`
 - Click "Stop Recording", then "Transcribe"
 - **Expected:** Deepgram transcribes your speech
 
-### Test 3: Full AI Directory
+### Test 3: Full Travel Guide
 **URL:** http://localhost:3000/ai-directory
 
 - Try text input: Type and send questions

@@ -9,7 +9,7 @@ const pool = new Pool({
 })
 
 export type EventType =
-  | 'ai_directory_visit'
+  | 'travel_guide_visit'
   | 'ai_query'
   | 'ai_result_click'
   | 'booking_started'
@@ -63,7 +63,7 @@ export async function trackAIDirectoryVisit(
 ): Promise<void> {
   await trackEvent({
     sessionId,
-    eventType: 'ai_directory_visit',
+    eventType: 'travel_guide_visit',
     eventData: { referrer }
   })
 }

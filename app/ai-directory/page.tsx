@@ -265,10 +265,10 @@ export default function EnhancedAIDirectoryPage() {
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-xl md:text-2xl font-bold text-gray-900">
-              🍷 Walla Walla AI Directory
+              🍷 Walla Walla Valley Travel Guide
             </h1>
             <p className="text-xs md:text-sm text-gray-500">
-              Your personal wine country guide
+              Your personal wine country assistant
             </p>
           </div>
           
