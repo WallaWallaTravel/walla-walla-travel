@@ -100,8 +100,8 @@ export function createProviderFromSettings(settings: AISettingsRow): AIModelProv
   return createAIProvider(settings.provider, {
     apiKey,
     model: settings.model,
-    temperature: settings.temperature,
-    maxTokens: settings.max_tokens
+    temperature: parseFloat(String(settings.temperature)),
+    maxTokens: parseInt(String(settings.max_tokens))
   })
 }
 

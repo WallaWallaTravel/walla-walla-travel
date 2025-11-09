@@ -93,8 +93,8 @@ export async function POST(request: NextRequest) {
     
     const aiResponse = await provider.generateResponse(query, {
       systemPrompt,
-      temperature: settings.temperature,
-      maxTokens: settings.max_tokens
+      temperature: parseFloat(String(settings.temperature)),
+      maxTokens: parseInt(String(settings.max_tokens))
     })
 
     // Cache the response
