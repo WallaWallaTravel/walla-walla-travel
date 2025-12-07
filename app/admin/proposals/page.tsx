@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { SendProposalModal } from '@/components/proposals/SendProposalModal';
@@ -26,7 +26,7 @@ interface Proposal {
   service_items: any[];
 }
 
-export default function ProposalsPage() {
+function ProposalsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const urlStatus = searchParams.get('status');
@@ -462,5 +462,13 @@ export default function ProposalsPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function ProposalsPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-50 flex items-center justify-center">Loading proposals...</div>}>
+      <ProposalsPageContent />
+    </Suspense>
   );
 }

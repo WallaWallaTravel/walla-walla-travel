@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 /**
@@ -11,7 +11,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
  * 
  * Drivers would bookmark this URL for daily access.
  */
-export default function DriverLoginPage() {
+
+function DriverLoginContent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -137,5 +138,13 @@ export default function DriverLoginPage() {
         <p>Need help? Contact dispatch at (509) 200-8000</p>
       </footer>
     </div>
+  );
+}
+
+export default function DriverLoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-50 flex items-center justify-center">Loading...</div>}>
+      <DriverLoginContent />
+    </Suspense>
   );
 }

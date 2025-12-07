@@ -5,7 +5,7 @@
  * Shows receipt and next steps after reservation
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 interface Reservation {
@@ -26,7 +26,7 @@ interface Reservation {
   created_at: string;
 }
 
-export default function ReservationConfirmationPage() {
+function ReservationConfirmationContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const reservationId = searchParams.get('id');
@@ -283,3 +283,10 @@ export default function ReservationConfirmationPage() {
   );
 }
 
+export default function ReservationConfirmationPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#FDF8F3] flex items-center justify-center">Loading confirmation...</div>}>
+      <ReservationConfirmationContent />
+    </Suspense>
+  );
+}

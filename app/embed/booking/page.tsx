@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 /**
@@ -46,7 +46,7 @@ const PROVIDERS: Provider[] = [
   },
 ];
 
-export default function EmbedBookingPage() {
+function EmbedBookingContent() {
   const searchParams = useSearchParams();
   const preSelectedProvider = searchParams.get('provider');
   const isMinimal = searchParams.get('minimal') === 'true';
@@ -297,3 +297,10 @@ export default function EmbedBookingPage() {
   );
 }
 
+export default function EmbedBookingPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-center">Loading...</div>}>
+      <EmbedBookingContent />
+    </Suspense>
+  );
+}

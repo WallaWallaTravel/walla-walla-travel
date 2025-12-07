@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 /**
@@ -34,7 +34,7 @@ const MOCK_RESULTS: SearchResult[] = [
   { id: '4', name: 'Foundry Vineyards', category: 'winery', description: 'Art-focused winery featuring rotating gallery exhibitions alongside tastings.', rating: 4.6 },
 ];
 
-export default function EmbedDirectoryPage() {
+function EmbedDirectoryContent() {
   const searchParams = useSearchParams();
   const categoryFilter = searchParams.get('category');
   const isMinimal = searchParams.get('minimal') === 'true';
@@ -260,3 +260,10 @@ export default function EmbedDirectoryPage() {
   );
 }
 
+export default function EmbedDirectoryPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-center">Loading...</div>}>
+      <EmbedDirectoryContent />
+    </Suspense>
+  );
+}

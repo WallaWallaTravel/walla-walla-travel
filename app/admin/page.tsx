@@ -1,15 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 /**
- * Admin Portal Login
- * 
- * Entry point for internal staff (admin, operations).
- * Redirects to /admin/dashboard after successful login.
+ * Admin Portal Login - Inner Component
  */
-export default function AdminLoginPage() {
+function AdminLoginContent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -136,5 +133,17 @@ export default function AdminLoginPage() {
         <p>Authorized personnel only</p>
       </footer>
     </div>
+  );
+}
+
+/**
+ * Admin Portal Login
+ * Wrapped in Suspense for Next.js 15 compatibility
+ */
+export default function AdminLoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-50 flex items-center justify-center">Loading...</div>}>
+      <AdminLoginContent />
+    </Suspense>
   );
 }
