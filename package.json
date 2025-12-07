@@ -17,7 +17,7 @@
     "test:security": "jest __tests__/security",
     "test:coverage": "jest --coverage",
     "test:ci": "jest --ci --coverage --maxWorkers=2",
-    "prepare": "husky",
+    "prepare": "node -e \"if(process.env.CI!=='true'&&!process.env.RAILWAY_ENVIRONMENT)require('husky')()\"",
     "db:setup": "node scripts/setup-database.js",
     "db:verify": "node scripts/verify-database.js",
     "db:studio": "npx prisma studio",
