@@ -20,6 +20,13 @@ export function useServiceWorker() {
   })
 
   useEffect(() => {
+    // Skip service worker registration in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Service Worker disabled in development mode')
+      setState(prev => ({ ...prev, isSupported: false }))
+      return
+    }
+
     // Check if service workers are supported
     if (!('serviceWorker' in navigator)) {
       setState(prev => ({ ...prev, isSupported: false }))
@@ -123,7 +130,9 @@ export function useServiceWorker() {
 
     try {
       if ('sync' in state.registration) {
-        await state.registration.sync.register(tag)
+        // SyncManager is not in standard TypeScript definitions
+        const syncManager = (state.registration as any).sync
+        await syncManager.register(tag)
         console.log('Background sync registered:', tag)
         return true
       } else {

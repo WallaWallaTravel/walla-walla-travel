@@ -4,10 +4,11 @@ import React from 'react';
 
 interface TouchButtonProps {
   children: React.ReactNode;
-  onClick?: () => void;
-  variant?: 'primary' | 'secondary' | 'danger' | 'success';
-  size?: 'small' | 'medium' | 'large';
+  onClick?: (event?: React.MouseEvent<HTMLButtonElement>) => void;
+  variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'ghost';
+  size?: 'small' | 'medium' | 'large' | 'sm' | 'md' | 'lg';
   disabled?: boolean;
+  loading?: boolean;
   fullWidth?: boolean;
   haptic?: boolean;
   type?: 'button' | 'submit' | 'reset';
@@ -35,26 +36,33 @@ export function TouchButton({
   variant = 'primary',
   size = 'large',
   disabled = false,
+  loading = false,
   fullWidth = false,
   haptic = true,
   type = 'button',
   className = '',
 }: TouchButtonProps) {
   
-  const handleClick = () => {
+  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     // Haptic feedback for mobile devices
     if (haptic && 'vibrate' in navigator) {
       navigator.vibrate(10); // Light vibration
     }
     
-    if (onClick && !disabled) {
-      onClick();
+    if (onClick && !disabled && !loading) {
+      onClick(event);
     }
   };
+  
+  // Effective disabled state includes loading
+  const isDisabled = disabled || loading;
 
   // Base styles (always applied)
   const baseStyles = 'font-semibold rounded-lg transition-all duration-200 active:scale-95 disabled:opacity-80 disabled:cursor-not-allowed';
   
+  // Normalize size aliases
+  const normalizedSize = size === 'sm' ? 'small' : size === 'md' ? 'medium' : size === 'lg' ? 'large' : size;
+
   // Size variants
   const sizeStyles = {
     small: 'px-4 py-2 text-sm min-h-[40px]',
@@ -68,6 +76,7 @@ export function TouchButton({
     secondary: 'bg-gray-200 text-gray-900 hover:bg-gray-300 active:bg-gray-400',
     danger: 'bg-red-600 text-white hover:bg-red-700 active:bg-red-800',
     success: 'bg-green-600 text-white hover:bg-green-700 active:bg-green-800',
+    ghost: 'bg-transparent text-gray-700 hover:bg-gray-100 active:bg-gray-200 border border-gray-300',
   };
   
   // Width
@@ -77,16 +86,26 @@ export function TouchButton({
     <button
       type={type}
       onClick={handleClick}
-      disabled={disabled}
+      disabled={isDisabled}
       className={`
         ${baseStyles}
-        ${sizeStyles[size]}
+        ${sizeStyles[normalizedSize]}
         ${variantStyles[variant]}
         ${widthStyle}
         ${className}
       `}
     >
-      {children}
+      {loading ? (
+        <span className="flex items-center justify-center gap-2">
+          <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          {children}
+        </span>
+      ) : (
+        children
+      )}
     </button>
   );
 }

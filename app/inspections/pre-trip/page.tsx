@@ -1,13 +1,19 @@
 import { redirect } from 'next/navigation'
-import { requireAuth, getUser } from '@/lib/auth'
+import { getSession } from '@/lib/auth/session'
 import PreTripInspectionClient from './PreTripInspectionClient'
 
 export default async function PreTripInspection() {
-  const session = await requireAuth()
-  const driver = await getUser()
+  const session = await getSession()
   
-  if (!session || !driver) {
+  if (!session) {
     redirect('/login')
+  }
+
+  // Format driver data for the client component
+  const driver = {
+    id: session.user.id.toString(),
+    name: session.user.name,
+    email: session.user.email,
   }
 
   return <PreTripInspectionClient driver={driver} />

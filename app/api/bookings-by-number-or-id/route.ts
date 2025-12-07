@@ -1,16 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { queryOne } from '@/lib/db-helpers';
-import { withErrorHandling, NotFoundError } from '@/lib/api-errors';
+import { withErrorHandling, NotFoundError, BadRequestError } from '@/lib/api-errors';
 
 /**
- * GET /api/bookings/[booking_number_or_id]
+ * GET /api/bookings-by-number-or-id?id=123 or ?booking_number=BK-2024-001
  * Get booking by booking number or ID
  */
 export const GET = withErrorHandling(async (
-  request: NextRequest,
-  { params }: { params: { booking_number_or_id: string } }
+  request: NextRequest
 ) => {
-  const identifier = params.booking_number_or_id;
+  const identifier = request.nextUrl.searchParams.get('id') || request.nextUrl.searchParams.get('booking_number');
+  
+  if (!identifier) {
+    throw new BadRequestError('Missing id or booking_number parameter');
+  }
 
   // Try as booking number first, then as ID
   let booking;

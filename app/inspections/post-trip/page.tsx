@@ -1,15 +1,21 @@
 import { redirect } from 'next/navigation'
-import { requireAuth, getUser } from '@/lib/auth'
+import { getSession } from '@/lib/auth/session'
 import { PostTripInspectionClient } from './PostTripInspectionClient'
 import { query } from '@/lib/db'
 import { formatDateForDB } from '@/app/api/utils'
 
 export default async function PostTripInspection() {
-  const session = await requireAuth()
-  const driver = await getUser()
+  const session = await getSession()
   
-  if (!session || !driver) {
+  if (!session) {
     redirect('/login')
+  }
+
+  // Format driver data for the client component
+  const driver = {
+    id: session.user.id.toString(),
+    name: session.user.name,
+    email: session.user.email,
   }
 
   // Get actual beginning mileage from today's pre-trip inspection

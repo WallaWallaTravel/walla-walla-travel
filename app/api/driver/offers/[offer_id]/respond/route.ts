@@ -30,6 +30,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { Pool } from 'pg';
+import { sendEmail, EmailTemplates } from '@/lib/email';
+import { sendDriverAssignmentToCustomer } from '@/lib/services/email-automation.service';
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -38,12 +40,13 @@ const pool = new Pool({
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { offer_id: string } }
+  { params }: { params: Promise<{ offer_id: string }> }
 ) {
   const client = await pool.connect();
   
   try {
-    const offer_id = parseInt(params.offer_id);
+    const { offer_id: offerId } = await params;
+    const offer_id = parseInt(offerId);
     const body = await request.json();
     const { action, notes } = body;
 
@@ -158,6 +161,67 @@ export async function POST(
       `, [offer.booking_id, offer_id]);
 
       await client.query('COMMIT');
+
+      // Get full booking and driver details for emails
+      const bookingDetails = await pool.query(`
+        SELECT 
+          b.*,
+          u.name as driver_name,
+          u.email as driver_email,
+          u.phone as driver_phone,
+          v.make as vehicle_make,
+          v.model as vehicle_model,
+          v.vehicle_number
+        FROM bookings b
+        LEFT JOIN users u ON b.driver_id = u.id
+        LEFT JOIN vehicles v ON v.id = $2
+        WHERE b.id = $1
+      `, [offer.booking_id, offer.vehicle_id]);
+
+      const bookingData = bookingDetails.rows[0];
+
+      // Send confirmation email to driver
+      if (bookingData?.driver_email) {
+        const template = EmailTemplates.driverAssignment({
+          driver_name: bookingData.driver_name,
+          customer_name: bookingData.customer_name,
+          booking_number: bookingData.booking_number,
+          tour_date: bookingData.tour_date,
+          start_time: bookingData.start_time,
+          pickup_location: bookingData.pickup_location || 'TBD',
+          vehicle_name: bookingData.vehicle_number ? 
+            `${bookingData.vehicle_number} (${bookingData.vehicle_make} ${bookingData.vehicle_model})` : undefined,
+        });
+
+        await sendEmail({
+          to: bookingData.driver_email,
+          ...template,
+        });
+      }
+
+      // Notify admin that driver accepted
+      const adminEmail = process.env.ADMIN_EMAIL || 'info@wallawallatravel.com';
+      await sendEmail({
+        to: adminEmail,
+        subject: `✅ Driver Accepted: ${bookingData?.booking_number || offer.booking_number}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #16a34a;">✅ Tour Offer Accepted!</h2>
+            <p><strong>${bookingData?.driver_name || 'Driver'}</strong> has accepted the tour.</p>
+            <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <p><strong>Booking:</strong> ${bookingData?.booking_number || offer.booking_number}</p>
+              <p><strong>Customer:</strong> ${bookingData?.customer_name || offer.customer_name}</p>
+              <p><strong>Date:</strong> ${bookingData?.tour_date ? new Date(bookingData.tour_date).toLocaleDateString() : 'TBD'}</p>
+            </div>
+            <p>The driver and booking have been automatically linked.</p>
+          </div>
+        `,
+      });
+
+      // Notify customer that driver has been assigned (async)
+      sendDriverAssignmentToCustomer(offer.booking_id).catch(err => {
+        console.error('[TourOffer] Failed to send customer notification:', err);
+      });
 
       return NextResponse.json({
         success: true,

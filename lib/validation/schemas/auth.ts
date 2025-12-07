@@ -43,7 +43,7 @@ const passwordSchema = z
  * User role validation
  */
 const roleSchema = z.enum(['admin', 'supervisor', 'driver'] as const, {
-  errorMap: () => ({ message: 'Role must be one of: admin, supervisor, driver' }),
+  message: 'Role must be one of: admin, supervisor, driver',
 });
 
 /**

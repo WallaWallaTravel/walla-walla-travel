@@ -21,6 +21,13 @@ interface UploadedFile {
   uploaded_at: string;
 }
 
+interface UploadProgress {
+  fileName: string;
+  status: 'uploading' | 'processing' | 'complete' | 'error';
+  progress: number;
+  error?: string;
+}
+
 export default function BusinessUploadPage() {
   const params = useParams();
   const router = useRouter();
@@ -33,6 +40,7 @@ export default function BusinessUploadPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [showCamera, setShowCamera] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress[]>([]);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -83,18 +91,60 @@ export default function BusinessUploadPage() {
     setError(null);
     setSuccess(null);
     
+    // Initialize progress for all files
+    const initialProgress: UploadProgress[] = Array.from(selectedFiles).map(file => ({
+      fileName: file.name,
+      status: 'uploading',
+      progress: 0
+    }));
+    setUploadProgress(initialProgress);
+    
     try {
+      let successCount = 0;
+      let failCount = 0;
+      
       for (let i = 0; i < selectedFiles.length; i++) {
         const file = selectedFiles[i];
-        await uploadFile(file);
+        try {
+          await uploadFile(file, i);
+          successCount++;
+          
+          // Mark as complete
+          setUploadProgress(prev => 
+            prev.map((p, idx) => 
+              idx === i ? { ...p, status: 'complete', progress: 100 } : p
+            )
+          );
+        } catch (err: any) {
+          failCount++;
+          console.error(`Upload failed for ${file.name}:`, err);
+          
+          // Mark as error
+          setUploadProgress(prev => 
+            prev.map((p, idx) => 
+              idx === i ? { ...p, status: 'error', error: err.message } : p
+            )
+          );
+        }
       }
       
-      setSuccess(`✓ Uploaded ${selectedFiles.length} file(s)`);
-      loadFiles();
+      if (successCount > 0) {
+        setSuccess(`✓ Uploaded ${successCount} file(s)${failCount > 0 ? ` (${failCount} failed)` : ''}`);
+        loadFiles();
+      }
+      
+      if (failCount === selectedFiles.length) {
+        setError('All uploads failed. Please try again.');
+      }
       
       // Clear input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
+      }
+      
+      // Clear progress after 3 seconds if all complete
+      if (failCount === 0) {
+        setTimeout(() => setUploadProgress([]), 3000);
       }
     } catch (err: any) {
       setError(err.message);
@@ -103,11 +153,18 @@ export default function BusinessUploadPage() {
     }
   };
   
-  const uploadFile = async (file: File) => {
+  const uploadFile = async (file: File, index: number) => {
     const formData = new FormData();
     formData.append('businessId', business!.id.toString());
     formData.append('file', file);
     formData.append('category', getCategoryFromFile(file));
+    
+    // Update progress to show processing
+    setUploadProgress(prev => 
+      prev.map((p, idx) => 
+        idx === index ? { ...p, status: 'processing', progress: 50 } : p
+      )
+    );
     
     const response = await fetch('/api/business-portal/upload-file', {
       method: 'POST',
@@ -116,8 +173,12 @@ export default function BusinessUploadPage() {
     
     if (!response.ok) {
       const data = await response.json();
-      throw new Error(data.error || 'Upload failed');
+      console.error('Upload API error:', data);
+      throw new Error(data.error || data.details || 'Upload failed');
     }
+    
+    const result = await response.json();
+    console.log('Upload successful:', result);
   };
   
   const getCategoryFromFile = (file: File): string => {
@@ -176,15 +237,38 @@ export default function BusinessUploadPage() {
       setError(null);
       setSuccess(null);
       
+      // Create a File from the blob
+      const file = new File([blob], `photo-${Date.now()}.jpg`, { type: 'image/jpeg' });
+      
+      // Initialize progress
+      setUploadProgress([{
+        fileName: file.name,
+        status: 'uploading',
+        progress: 0
+      }]);
+      
       try {
-        // Create a File from the blob
-        const file = new File([blob], `photo-${Date.now()}.jpg`, { type: 'image/jpeg' });
-        await uploadFile(file);
+        await uploadFile(file, 0);
+        
+        setUploadProgress([{
+          fileName: file.name,
+          status: 'complete',
+          progress: 100
+        }]);
         
         setSuccess('✓ Photo uploaded!');
         loadFiles();
         stopCamera();
+        
+        // Clear progress after 3 seconds
+        setTimeout(() => setUploadProgress([]), 3000);
       } catch (err: any) {
+        setUploadProgress([{
+          fileName: file.name,
+          status: 'error',
+          progress: 0,
+          error: err.message
+        }]);
         setError(err.message);
       } finally {
         setUploading(false);
@@ -209,17 +293,22 @@ export default function BusinessUploadPage() {
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-5xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">{business.name}</h1>
-              <p className="text-sm text-gray-600">Upload Photos & Documents</p>
-            </div>
-            <button
-              onClick={() => router.push(`/contribute/${code}`)}
-              className="text-blue-600 hover:text-blue-700 font-medium"
-            >
-              ← Back to Questions
-            </button>
-          </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">{business.name}</h1>
+                  <p className="text-sm text-gray-600">Upload Photos & Documents</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => router.push(`/contribute/${code}`)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition flex items-center gap-2"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                    Back to Interview
+                  </button>
+                </div>
+              </div>
         </div>
       </header>
       
@@ -241,6 +330,62 @@ export default function BusinessUploadPage() {
           {success && (
             <div className="bg-green-50 border-l-4 border-green-500 p-4 mb-4">
               <p className="text-green-700">{success}</p>
+            </div>
+          )}
+          
+          {/* Upload Progress Tracker */}
+          {uploadProgress.length > 0 && (
+            <div className="mb-6 space-y-3">
+              <h3 className="text-sm font-semibold text-gray-700 mb-2">Upload Progress:</h3>
+              {uploadProgress.map((progress, index) => (
+                <div key={index} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      {progress.status === 'complete' && (
+                        <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                      {progress.status === 'error' && (
+                        <svg className="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                      {(progress.status === 'uploading' || progress.status === 'processing') && (
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                      )}
+                      <span className="text-sm font-medium text-gray-900 truncate max-w-xs">
+                        {progress.fileName}
+                      </span>
+                    </div>
+                    <span className={`text-sm font-medium ${
+                      progress.status === 'complete' ? 'text-green-600' :
+                      progress.status === 'error' ? 'text-red-600' :
+                      'text-blue-600'
+                    }`}>
+                      {progress.status === 'uploading' && 'Uploading...'}
+                      {progress.status === 'processing' && 'Processing...'}
+                      {progress.status === 'complete' && 'Complete'}
+                      {progress.status === 'error' && 'Failed'}
+                    </span>
+                  </div>
+                  
+                  {/* Progress bar */}
+                  {(progress.status === 'uploading' || progress.status === 'processing') && (
+                    <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                      <div 
+                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${progress.progress}%` }}
+                      ></div>
+                    </div>
+                  )}
+                  
+                  {/* Error message */}
+                  {progress.error && (
+                    <p className="text-xs text-red-600 mt-1">{progress.error}</p>
+                  )}
+                </div>
+              ))}
             </div>
           )}
           

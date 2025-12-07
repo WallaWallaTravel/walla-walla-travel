@@ -55,10 +55,11 @@ export type ValidationResult<T> = ValidationSuccess<T> | ValidationFailure;
  * Format Zod errors into user-friendly error messages
  */
 export function formatZodErrors(error: z.ZodError): ValidationError[] {
-  return error.errors.map((err) => ({
-    field: err.path.join('.'),
-    message: err.message,
-    code: err.code,
+  // Zod v4 uses 'issues' instead of 'errors'
+  return error.issues.map((issue) => ({
+    field: issue.path.join('.'),
+    message: issue.message,
+    code: issue.code,
   }));
 }
 

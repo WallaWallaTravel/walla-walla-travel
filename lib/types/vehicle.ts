@@ -45,6 +45,10 @@ export interface Vehicle {
   capacity?: number;
   /** Current odometer reading */
   current_mileage?: number;
+  /** Next scheduled service date */
+  next_service_due?: string | null;
+  /** Last service date */
+  last_service_date?: string | null;
   /** Whether the vehicle is active */
   is_active: boolean;
   /** Current vehicle status */

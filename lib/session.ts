@@ -21,7 +21,7 @@ export interface User {
 }
 
 export async function getSession(): Promise<SessionData & { save: () => Promise<void>; destroy: () => Promise<void> }> {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const token = cookieStore.get('session')?.value
 
   let sessionData: SessionData = {

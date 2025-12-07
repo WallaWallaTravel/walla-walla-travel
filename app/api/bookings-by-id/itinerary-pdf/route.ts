@@ -1,20 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling, NotFoundError } from '@/lib/api-errors';
+import { withErrorHandling, NotFoundError, BadRequestError } from '@/lib/api-errors';
 import { queryOne, queryMany } from '@/lib/db-helpers';
 import { generateItineraryHTML, generateItineraryText } from '@/lib/pdf-generator';
 
 /**
- * GET /api/bookings/[booking_id]/itinerary-pdf
+ * GET /api/bookings-by-id/itinerary-pdf?id=123&format=html
  * Generate and download PDF itinerary
  * 
  * Query params:
+ * - id: booking ID (required)
  * - format: 'html' (default) or 'text'
  */
 export const GET = withErrorHandling(async (
-  request: NextRequest,
-  { params }: { params: { booking_id: string } }
+  request: NextRequest
 ) => {
-  const bookingId = parseInt(params.booking_id);
+  const bookingIdParam = request.nextUrl.searchParams.get('id');
+  if (!bookingIdParam) {
+    throw new BadRequestError('Missing booking id parameter');
+  }
+  const bookingId = parseInt(bookingIdParam);
   const format = request.nextUrl.searchParams.get('format') || 'html';
 
   if (isNaN(bookingId)) {

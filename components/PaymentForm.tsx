@@ -16,18 +16,20 @@ interface PaymentFormProps {
   baseAmount: number;
   depositAmount: number;
   isDeposit?: boolean;
+  passFeesToCustomer?: boolean;
+  allowFeeToggle?: boolean;
 }
 
 function calculateProcessingFee(amount: number, method: 'card' | 'ach' | 'check'): number {
   switch (method) {
-    case 'card': return (amount * 0.029) + 0.30;
+    case 'card': return (amount * 0.029); // Only pass on 2.9%, NOT the $0.30
     case 'ach': return Math.min(amount * 0.008, 5.00);
     case 'check': return 0;
-    default: return (amount * 0.029) + 0.30;
+    default: return (amount * 0.029);
   }
 }
 
-function PaymentFormInner({ bookingNumber, baseAmount, depositAmount, isDeposit = true }: PaymentFormProps) {
+function PaymentFormInner({ bookingNumber, baseAmount, depositAmount, isDeposit = true, passFeesToCustomer = true }: PaymentFormProps) {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
@@ -40,7 +42,7 @@ function PaymentFormInner({ bookingNumber, baseAmount, depositAmount, isDeposit 
   const suggestedTip = amountToPay * 0.20;
   const tipValue = parseFloat(tipAmount) || 0;
   const subtotal = amountToPay + tipValue;
-  const processingFee = calculateProcessingFee(subtotal, paymentMethod);
+  const processingFee = passFeesToCustomer ? calculateProcessingFee(subtotal, paymentMethod) : 0;
   const totalAmount = subtotal + processingFee;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -144,7 +146,7 @@ function PaymentFormInner({ bookingNumber, baseAmount, depositAmount, isDeposit 
               <input type="radio" name="payment-method" value="card" checked={paymentMethod === 'card'} onChange={() => setPaymentMethod('card')} className="mr-3 w-5 h-5" />
               <div className="flex-1">
                 <div className="font-semibold text-gray-900 text-base">Credit/Debit Card</div>
-                <div className="text-sm text-gray-700 font-medium">Processing fee: ${((subtotal * 0.029) + 0.30).toFixed(2)} (2.9% + $0.30)</div>
+                <div className="text-sm text-gray-700 font-medium">Processing fee: ${(subtotal * 0.029).toFixed(2)} (2.9%)</div>
               </div>
             </label>
             <label className="flex items-center p-4 border-2 border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 hover:border-blue-500 transition-all">
@@ -164,7 +166,7 @@ function PaymentFormInner({ bookingNumber, baseAmount, depositAmount, isDeposit 
           </div>
         </div>
 
-        {processingFee > 0 && (
+        {passFeesToCustomer && processingFee > 0 && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <div className="flex justify-between text-gray-900 font-semibold text-base">
               <span>Processing Fee:</span>

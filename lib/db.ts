@@ -1,4 +1,4 @@
-import { Pool, QueryResult } from 'pg';
+import { Pool, QueryResult, QueryResultRow } from 'pg';
 import { logDbError, logInfo, logDebug } from './logger';
 import { getDatabaseConfig } from './config/database';
 
@@ -15,11 +15,14 @@ pool.on('error', (err) => {
   process.exit(-1);
 });
 
-// Database query helper function
-export async function query(text: string, params?: any[]): Promise<QueryResult> {
+// Database query helper function with generic type support
+export async function query<T = any>(
+  text: string,
+  params?: any[]
+): Promise<QueryResult<T & QueryResultRow>> {
   const start = Date.now();
   try {
-    const res = await pool.query(text, params);
+    const res = await pool.query<T & QueryResultRow>(text, params);
     const duration = Date.now() - start;
     
     // Log successful queries in debug mode

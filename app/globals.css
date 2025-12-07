@@ -1,8 +1,44 @@
 @import "tailwindcss";
 
+/* 
+ * WALLA WALLA TRAVEL - Design System
+ * Navy & Copper Palette - Modern, Professional, Premium
+ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Primary Colors - Navy */
+  --color-primary: #1E3A5F;
+  --color-primary-50: #F0F4F8;
+  --color-primary-100: #D9E2EC;
+  --color-primary-200: #BCCCDC;
+  --color-primary-600: #334E68;
+  --color-primary-700: #1E3A5F;
+  --color-primary-800: #1A3354;
+  --color-primary-900: #0F172A;
+  
+  /* Accent Colors - Copper */
+  --color-accent: #B87333;
+  --color-accent-50: #FDF8F3;
+  --color-accent-100: #FAEDE0;
+  --color-accent-500: #B87333;
+  --color-accent-600: #A5632B;
+  
+  /* Background & Surface */
+  --background: #F8FAFC;
+  --foreground: #0F172A;
+  --surface: #FFFFFF;
+  --border: #E2E8F0;
+  
+  /* Text Colors */
+  --text-primary: #0F172A;
+  --text-secondary: #334155;
+  --text-muted: #64748B;
+  
+  /* Semantic Colors */
+  --color-success: #059669;
+  --color-warning: #D97706;
+  --color-error: #DC2626;
+  --color-info: #1E3A5F;
 }
 
 @theme inline {
@@ -12,102 +48,84 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* Make placeholder text more visible across the entire app */
+/* ============================================
+   FORM ELEMENTS - Consistent styling
+   ============================================ */
+
+/* Placeholder text */
 input::placeholder,
 textarea::placeholder {
-  color: #4b5563; /* gray-600 - darker */
+  color: var(--text-muted);
   opacity: 1;
-  font-weight: 500;
 }
 
-input::-webkit-input-placeholder,
-textarea::-webkit-input-placeholder {
-  color: #4b5563;
-  opacity: 1;
-  font-weight: 500;
-}
-
-input::-moz-placeholder,
-textarea::-moz-placeholder {
-  color: #4b5563;
-  opacity: 1;
-  font-weight: 500;
-}
-
-/* Make ALL text inputs darker and more visible */
+/* All text inputs */
 input[type="text"],
 input[type="email"],
 input[type="tel"],
 input[type="number"],
 input[type="date"],
 input[type="time"],
+input[type="password"],
 textarea,
 select {
-  color: #111827 !important; /* gray-900 - very dark */
-  font-weight: 600 !important;
+  color: var(--text-primary);
+  background: var(--surface);
+  border-color: var(--border);
 }
 
-/* Make all labels darker */
-label {
-  color: #111827 !important; /* gray-900 */
-  font-weight: 700 !important;
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--color-primary);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-primary-50);
 }
 
-/* Make all body text darker */
-p, span, div {
-  color: #1f2937; /* gray-800 - darker default */
+/* Labels on light backgrounds */
+.bg-white label,
+.bg-gray-50 label,
+form label {
+  color: var(--text-secondary);
+  font-weight: 600;
 }
 
-/* Specific overrides for gray text that should be darker */
-.text-gray-500 {
-  color: #6b7280 !important; /* Darker gray-500 */
-}
-
-.text-gray-600 {
-  color: #4b5563 !important; /* Darker gray-600 */
-}
-
-.text-gray-700 {
-  color: #374151 !important; /* Darker gray-700 */
-}
-
-/* Custom scrollbar for better aesthetics */
+/* ============================================
+   CUSTOM SCROLLBAR
+   ============================================ */
+   
 .custom-scrollbar::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: #f3f4f6;
-  border-radius: 4px;
+  background: var(--color-primary-50);
+  border-radius: 3px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #c4b5fd;
-  border-radius: 4px;
+  background: var(--color-primary-200);
+  border-radius: 3px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #a78bfa;
+  background: var(--color-primary);
 }
 
-/* Animations for AI Directory */
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+   
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -116,12 +134,14 @@ p, span, div {
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.3s ease-out;
+  animation: fadeIn 0.2s ease-out;
 }
 
-/* Mobile optimizations */
+/* ============================================
+   MOBILE OPTIMIZATIONS
+   ============================================ */
+   
 @media (max-width: 768px) {
-  /* Prevent zoom on input focus on iOS */
   input[type="text"],
   input[type="email"],
   input[type="tel"],
@@ -130,30 +150,24 @@ p, span, div {
     font-size: 16px !important;
   }
 
-  /* Better mobile touch targets */
   button, a {
     min-height: 44px;
-    min-width: 44px;
-  }
-
-  /* Mobile-friendly spacing */
-  .mobile-spacing {
-    padding: 1rem;
   }
 }
 
-/* Smooth scroll behavior */
+/* ============================================
+   ACCESSIBILITY
+   ============================================ */
+   
 html {
   scroll-behavior: smooth;
 }
 
-/* Focus visible for accessibility */
 *:focus-visible {
-  outline: 2px solid #3b82f6;
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 
-/* Reduced motion for accessibility */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -164,9 +178,73 @@ html {
   }
 }
 
-/* High contrast mode support */
-@media (prefers-contrast: high) {
-  button {
-    border: 2px solid currentColor;
-  }
+/* ============================================
+   DATE PICKER STYLING
+   ============================================ */
+   
+.react-datepicker {
+  font-family: inherit !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important;
+  overflow: hidden;
+}
+
+.react-datepicker__header {
+  background-color: var(--color-primary) !important;
+  border-bottom: none !important;
+  padding-top: 16px !important;
+  border-radius: 12px 12px 0 0 !important;
+}
+
+.react-datepicker__current-month {
+  color: white !important;
+  font-weight: 600 !important;
+  font-size: 15px !important;
+}
+
+.react-datepicker__day-name {
+  color: rgba(255, 255, 255, 0.8) !important;
+  font-weight: 500 !important;
+  width: 36px !important;
+  line-height: 36px !important;
+}
+
+.react-datepicker__day {
+  width: 36px !important;
+  line-height: 36px !important;
+  margin: 2px !important;
+  border-radius: 6px !important;
+  color: var(--text-primary) !important;
+  font-weight: 500 !important;
+  transition: all 0.15s ease !important;
+}
+
+.react-datepicker__day:hover {
+  background-color: var(--color-primary-50) !important;
+}
+
+.react-datepicker__day--selected {
+  background-color: var(--color-primary) !important;
+  color: white !important;
+}
+
+.react-datepicker__day--today {
+  font-weight: 700 !important;
+  color: var(--color-primary) !important;
+  border: 2px solid var(--color-primary) !important;
+  background-color: transparent !important;
+}
+
+.react-datepicker__navigation-icon::before {
+  border-color: white !important;
+}
+
+.react-datepicker__triangle {
+  display: none !important;
+}
+
+.react-datepicker-wrapper,
+.react-datepicker__input-container {
+  width: 100%;
 }

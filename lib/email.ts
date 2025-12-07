@@ -2,7 +2,7 @@
 /**
  * Email Service
  * Handles all email notifications for the system
- * Uses Resend API (https://resend.com)
+ * Uses Postmark API (https://postmarkapp.com)
  */
 
 interface EmailOptions {
@@ -12,37 +12,43 @@ interface EmailOptions {
   text?: string;
   from?: string;
   replyTo?: string;
+  messageStream?: 'outbound' | 'broadcast'; // Postmark message streams
 }
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const POSTMARK_API_KEY = process.env.POSTMARK_API_KEY;
 const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@wallawallatravel.com';
 const COMPANY_NAME = 'Walla Walla Travel';
 
 /**
- * Send an email using Resend API
+ * Send an email using Postmark API
  */
 export async function sendEmail(options: EmailOptions): Promise<boolean> {
-  if (!RESEND_API_KEY) {
-    console.warn('⚠️  RESEND_API_KEY not configured. Email would be sent:', options.subject);
+  if (!POSTMARK_API_KEY) {
+    console.warn('⚠️  POSTMARK_API_KEY not configured. Email would be sent:', options.subject);
     console.log('   To:', options.to);
     console.log('   Subject:', options.subject);
     return false;
   }
 
   try {
-    const response = await fetch('https://api.resend.com/emails', {
+    // Postmark expects a single recipient or comma-separated list
+    const toAddresses = Array.isArray(options.to) ? options.to.join(',') : options.to;
+    
+    const response = await fetch('https://api.postmarkapp.com/email', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        'Accept': 'application/json',
         'Content-Type': 'application/json',
+        'X-Postmark-Server-Token': POSTMARK_API_KEY,
       },
       body: JSON.stringify({
-        from: options.from || FROM_EMAIL,
-        to: Array.isArray(options.to) ? options.to : [options.to],
-        subject: options.subject,
-        html: options.html,
-        text: options.text,
-        reply_to: options.replyTo,
+        From: options.from || FROM_EMAIL,
+        To: toAddresses,
+        Subject: options.subject,
+        HtmlBody: options.html,
+        TextBody: options.text || '',
+        ReplyTo: options.replyTo,
+        MessageStream: options.messageStream || 'outbound',
       }),
     });
 
@@ -53,7 +59,7 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
     }
 
     const data = await response.json();
-    console.log('✅ Email sent:', data.id);
+    console.log('✅ Email sent via Postmark:', data.MessageID);
     return true;
 
   } catch (error) {
@@ -635,6 +641,51 @@ Walla Walla, Washington
   }),
 
   /**
+   * Driver Assignment Notification (for manual assignments)
+   */
+  driverAssignment: (data: {
+    driver_name: string;
+    customer_name: string;
+    booking_number: string;
+    tour_date: string;
+    start_time: string;
+    pickup_location: string;
+    vehicle_name?: string;
+  }) => ({
+    subject: `Tour Assigned - ${data.booking_number}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #2563eb;">🚗 Tour Assignment</h1>
+        
+        <p>Hi ${data.driver_name},</p>
+        
+        <p>You've been assigned to the following tour:</p>
+        
+        <div style="background: #dbeafe; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h2 style="margin-top: 0; color: #1e40af;">Tour Details</h2>
+          <p><strong>Booking:</strong> ${data.booking_number}</p>
+          <p><strong>Customer:</strong> ${data.customer_name}</p>
+          <p><strong>Date:</strong> ${new Date(data.tour_date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p>
+          <p><strong>Pickup Time:</strong> ${data.start_time}</p>
+          <p><strong>Pickup Location:</strong> ${data.pickup_location}</p>
+          ${data.vehicle_name ? `<p><strong>Vehicle:</strong> ${data.vehicle_name}</p>` : ''}
+        </div>
+        
+        <p><strong>Next Steps:</strong></p>
+        <ul>
+          <li>Check your driver portal for the full itinerary</li>
+          <li>Complete pre-trip inspection before pickup</li>
+          <li>Arrive 15 minutes early</li>
+        </ul>
+        
+        <p>Questions? Contact dispatch at (509) 555-WINE</p>
+        
+        <p>Safe travels!<br>${'Walla Walla Travel'} Team</p>
+      </div>
+    `,
+  }),
+
+  /**
    * Tour Assignment Confirmation to Driver
    */
   tourAssignmentConfirmation: (data: {
@@ -676,6 +727,151 @@ Walla Walla, Washington
         
         <p>Safe travels!<br>${COMPANY_NAME} Team</p>
       </div>
+    `,
+  }),
+
+  /**
+   * Reservation Confirmation Email (Reserve & Refine)
+   */
+  reservationConfirmation: (data: {
+    customer_name: string;
+    reservation_number: string;
+    party_size: number;
+    preferred_date: string;
+    event_type: string;
+    deposit_amount: number;
+    payment_method: string;
+    consultation_hours: number;
+    confirmation_url: string;
+  }) => ({
+    subject: `Reservation Confirmed! ${data.reservation_number}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+          <div style="font-size: 48px; margin-bottom: 10px;">🎉</div>
+          <h1 style="margin: 0; font-size: 28px;">Reservation Confirmed!</h1>
+          <p style="margin: 10px 0 0 0; font-size: 18px;">Your date is secured</p>
+        </div>
+        
+        <div style="background: #f9fafb; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 10px 10px;">
+          <p>Hi ${data.customer_name},</p>
+          
+          <p>Great news! Your reservation is confirmed and your date is secured.</p>
+          
+          <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #3b82f6;">
+            <h2 style="margin-top: 0; color: #1f2937;">Reservation #${data.reservation_number}</h2>
+            <p style="margin: 5px 0;"><strong>Party Size:</strong> ${data.party_size} guests</p>
+            <p style="margin: 5px 0;"><strong>Preferred Date:</strong> ${new Date(data.preferred_date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p>
+            <p style="margin: 5px 0;"><strong>Event Type:</strong> ${data.event_type.replace('_', ' ')}</p>
+            <p style="margin: 5px 0;"><strong>Deposit:</strong> $${data.deposit_amount} (${data.payment_method})</p>
+          </div>
+          
+          <h3 style="color: #1f2937;">What Happens Next?</h3>
+          
+          <div style="background: white; padding: 15px; border-radius: 8px; margin: 15px 0;">
+            <div style="display: flex; align-items: start; margin-bottom: 15px;">
+              <div style="background: #3b82f6; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 15px; flex-shrink: 0;">1</div>
+              <div>
+                <strong>Ryan Calls You</strong><br>
+                <span style="color: #6b7280; font-size: 14px;">Within ${data.consultation_hours} hours (usually same day!)</span>
+              </div>
+            </div>
+            
+            <div style="display: flex; align-items: start; margin-bottom: 15px;">
+              <div style="background: #3b82f6; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 15px; flex-shrink: 0;">2</div>
+              <div>
+                <strong>Design Your Perfect Day</strong><br>
+                <span style="color: #6b7280; font-size: 14px;">Together you'll choose wineries, timing, and special touches</span>
+              </div>
+            </div>
+            
+            <div style="display: flex; align-items: start; margin-bottom: 15px;">
+              <div style="background: #10b981; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 15px; flex-shrink: 0;">3</div>
+              <div>
+                <strong>Enjoy Your Tour!</strong><br>
+                <span style="color: #6b7280; font-size: 14px;">Relax and enjoy - we handle everything</span>
+              </div>
+            </div>
+            
+            <div style="display: flex; align-items: start;">
+              <div style="background: #3b82f6; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 15px; flex-shrink: 0;">4</div>
+              <div>
+                <strong>Final Payment</strong><br>
+                <span style="color: #6b7280; font-size: 14px;">Due 48 hours after tour to reflect actual services, lunch costs, and added features</span>
+              </div>
+            </div>
+          </div>
+          
+          ${data.payment_method === 'check' ? `
+          <div style="background: #fef3c7; padding: 15px; border-radius: 8px; border-left: 4px solid #f59e0b; margin: 20px 0;">
+            <strong>📮 Mail Your Check</strong><br>
+            <p style="margin: 10px 0 5px 0;">Please mail a check for <strong>$${data.deposit_amount}</strong> to:</p>
+            <div style="background: white; padding: 15px; border-radius: 4px; font-family: monospace; font-size: 14px;">
+              Walla Walla Travel<br>
+              [Your Address]<br>
+              Walla Walla, WA [ZIP]
+            </div>
+            <p style="margin: 10px 0 0 0; font-size: 12px; color: #92400e;">Make checks payable to "Walla Walla Travel"</p>
+          </div>
+          ` : ''}
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${data.confirmation_url}" style="background: #3b82f6; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">View Full Details</a>
+          </div>
+          
+          <p style="color: #6b7280; font-size: 14px; text-align: center; margin-top: 30px;">
+            Questions? Reply to this email or call us anytime!
+          </p>
+          
+          <p>Looking forward to showing you Walla Walla wine country!<br><br>
+          Ryan & the ${COMPANY_NAME} Team</p>
+        </div>
+      </div>
+    `,
+    text: `
+🎉 Reservation Confirmed!
+
+Hi ${data.customer_name},
+
+Great news! Your reservation is confirmed and your date is secured.
+
+Reservation #${data.reservation_number}
+- Party Size: ${data.party_size} guests
+- Preferred Date: ${new Date(data.preferred_date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+- Event Type: ${data.event_type.replace('_', ' ')}
+- Deposit: $${data.deposit_amount} (${data.payment_method})
+
+What Happens Next?
+
+1. Ryan Calls You
+   Within ${data.consultation_hours} hours (usually same day!)
+
+2. Design Your Perfect Day
+   Together you'll choose wineries, timing, and special touches
+
+3. Enjoy Your Tour!
+   Relax and enjoy - we handle everything
+
+4. Final Payment
+   Due 48 hours after tour to reflect actual services, lunch costs, and added features
+
+${data.payment_method === 'check' ? `
+📮 Mail Your Check
+Please mail a check for $${data.deposit_amount} to:
+Walla Walla Travel
+[Your Address]
+Walla Walla, WA [ZIP]
+
+Make checks payable to "Walla Walla Travel"
+` : ''}
+
+View full details: ${data.confirmation_url}
+
+Questions? Reply to this email or call us anytime!
+
+Looking forward to showing you Walla Walla wine country!
+
+Ryan & the ${COMPANY_NAME} Team
     `,
   }),
 };
@@ -724,6 +920,39 @@ export async function sendTourAssignmentConfirmation(assignment: any, driverEmai
   });
 }
 
+export async function sendReservationConfirmation(
+  reservation: any,
+  customerEmail: string,
+  brandId?: number
+) {
+  // Import brand-specific templates
+  const { brandReservationTemplates, getBrandEmailConfig } = require('./email-brands');
+  
+  // Get the appropriate template for the brand
+  const brandTemplate = brandReservationTemplates[brandId || 1];
+  if (!brandTemplate) {
+    // Fallback to default (Walla Walla Travel)
+    const template = EmailTemplates.reservationConfirmation(reservation);
+    return sendEmail({
+      to: customerEmail,
+      ...template,
+    });
+  }
+  
+  // Get brand config for from/reply-to emails
+  const brandConfig = getBrandEmailConfig(brandId);
+  
+  // Generate brand-specific template
+  const template = brandTemplate(reservation);
+  
+  return sendEmail({
+    to: customerEmail,
+    from: brandConfig.from_email,
+    replyTo: brandConfig.reply_to,
+    ...template,
+  });
+}
+
 export async function sendFinalInvoiceEmail(data: {
   customer_email: string;
   customer_name: string;
@@ -751,6 +980,118 @@ export async function sendFinalInvoiceEmail(data: {
   return sendEmail({
     to: data.customer_email,
     ...template,
+  });
+}
+
+/**
+ * Send admin notification for proposal decline
+ */
+export async function sendProposalDeclineNotification(data: {
+  proposal_number: string;
+  customer_name: string;
+  reason: string;
+  category: string;
+  desired_changes?: string;
+  open_to_counter: boolean;
+}) {
+  const adminEmail = process.env.ADMIN_EMAIL || 'info@wallawallatravel.com';
+  
+  return sendEmail({
+    to: adminEmail,
+    subject: `⚠️ Proposal Declined: ${data.proposal_number}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #fef2f2; padding: 20px; border-radius: 8px 8px 0 0; border-left: 4px solid #ef4444;">
+          <h1 style="color: #dc2626; margin: 0;">⚠️ Proposal Declined</h1>
+        </div>
+        
+        <div style="background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; border-radius: 0 0 8px 8px;">
+          <p><strong>Proposal:</strong> ${data.proposal_number}</p>
+          <p><strong>Customer:</strong> ${data.customer_name}</p>
+          <p><strong>Category:</strong> ${data.category}</p>
+          
+          <div style="background: white; padding: 15px; border-radius: 6px; margin: 15px 0; border-left: 3px solid #ef4444;">
+            <strong>Reason:</strong>
+            <p style="margin: 10px 0 0 0;">${data.reason}</p>
+          </div>
+          
+          ${data.desired_changes ? `
+          <div style="background: #eff6ff; padding: 15px; border-radius: 6px; margin: 15px 0; border-left: 3px solid #3b82f6;">
+            <strong>What Would Help:</strong>
+            <p style="margin: 10px 0 0 0;">${data.desired_changes}</p>
+          </div>
+          ` : ''}
+          
+          <div style="background: ${data.open_to_counter ? '#ecfdf5' : '#fef3c7'}; padding: 15px; border-radius: 6px; margin: 15px 0;">
+            <strong>${data.open_to_counter ? '✅ Open to Counter-Proposal' : '❌ Not Open to Counter-Proposal'}</strong>
+          </div>
+          
+          <p style="color: #6b7280; font-size: 14px; margin-top: 20px;">
+            ${data.open_to_counter ? 'Consider reaching out with an updated proposal.' : 'Client has indicated they are not interested in a counter-proposal.'}
+          </p>
+        </div>
+      </div>
+    `,
+  });
+}
+
+/**
+ * Send admin notification for new corporate request
+ */
+export async function sendCorporateRequestNotification(data: {
+  request_number: string;
+  company_name: string;
+  contact_name: string;
+  contact_email: string;
+  contact_phone?: string;
+  event_type: string;
+  description?: string;
+  budget_range?: string;
+  estimated_attendees?: number;
+}) {
+  const adminEmail = process.env.ADMIN_EMAIL || 'info@wallawallatravel.com';
+  
+  return sendEmail({
+    to: adminEmail,
+    subject: `🏢 New Corporate Request: ${data.company_name}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+          <h1 style="margin: 0;">🏢 New Corporate Request</h1>
+          <p style="margin: 10px 0 0 0; opacity: 0.9;">${data.request_number}</p>
+        </div>
+        
+        <div style="background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; border-radius: 0 0 8px 8px;">
+          <h2 style="color: #1f2937; margin-top: 0;">Company Details</h2>
+          <p><strong>Company:</strong> ${data.company_name}</p>
+          <p><strong>Contact:</strong> ${data.contact_name}</p>
+          <p><strong>Email:</strong> <a href="mailto:${data.contact_email}">${data.contact_email}</a></p>
+          ${data.contact_phone ? `<p><strong>Phone:</strong> ${data.contact_phone}</p>` : ''}
+          
+          <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+          
+          <h2 style="color: #1f2937;">Event Details</h2>
+          <p><strong>Event Type:</strong> ${data.event_type}</p>
+          ${data.estimated_attendees ? `<p><strong>Attendees:</strong> ~${data.estimated_attendees}</p>` : ''}
+          ${data.budget_range ? `<p><strong>Budget:</strong> ${data.budget_range}</p>` : ''}
+          
+          ${data.description ? `
+          <div style="background: white; padding: 15px; border-radius: 6px; margin: 15px 0;">
+            <strong>Description:</strong>
+            <p style="margin: 10px 0 0 0;">${data.description}</p>
+          </div>
+          ` : ''}
+          
+          <div style="background: #fef3c7; padding: 15px; border-radius: 6px; margin: 20px 0;">
+            <strong>⏰ Response Expected:</strong> Within 48 hours
+          </div>
+          
+          <p style="color: #6b7280; font-size: 14px;">
+            Please review and respond to this corporate inquiry promptly.
+          </p>
+        </div>
+      </div>
+    `,
   });
 }
 

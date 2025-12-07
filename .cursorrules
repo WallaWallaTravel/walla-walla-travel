@@ -1,0 +1,108 @@
+# Walla Walla Travel Project Rules
+
+## Project Overview
+This is a Next.js 15 travel management application for Walla Walla Travel, featuring:
+- Admin dashboard for bookings, proposals, and operations
+- Driver portal for tour management and inspections
+- Client portal for bookings and payments
+- Multi-brand support (subdomains)
+
+## Tech Stack
+- **Framework:** Next.js 15 (App Router)
+- **Language:** TypeScript (strict mode)
+- **Database:** PostgreSQL (Heroku)
+- **Styling:** Tailwind CSS
+- **Validation:** Zod
+- **Auth:** JWT-based sessions
+- **Payments:** Stripe
+- **Email:** Resend
+
+## Code Patterns
+
+### API Routes
+Always use the error handling wrapper:
+```typescript
+import { withErrorHandling } from '@/lib/api/middleware/error-handler';
+import { validateBody } from '@/lib/api/middleware/validation';
+
+export const POST = withErrorHandling(async (request: NextRequest) => {
+  const data = await validateBody(request, Schema);
+  // handler code
+});
+```
+
+### Services
+Extend BaseService for all business logic:
+```typescript
+import { BaseService } from './base.service';
+
+export class MyService extends BaseService {
+  protected get serviceName(): string {
+    return 'MyService';
+  }
+  // methods
+}
+```
+
+### Error Handling
+Use custom error classes:
+- `BadRequestError` - 400
+- `UnauthorizedError` - 401
+- `ForbiddenError` - 403
+- `NotFoundError` - 404
+- `ValidationError` - 422
+
+### Components
+Use TypeScript interfaces for props:
+```typescript
+interface Props {
+  data: DataType;
+  onAction?: (id: number) => void;
+}
+
+export function Component({ data, onAction }: Props) {
+  // component
+}
+```
+
+## File Naming
+- Services: `name.service.ts`
+- Schemas: `name.schemas.ts`
+- Components: `PascalCase.tsx`
+- Hooks: `use-name.ts`
+- Types: `name.ts` in lib/types/
+
+## Database
+- Use parameterized queries ($1, $2)
+- Use service layer for all database access
+- Use transactions for multi-step operations
+- Snake_case for column names
+
+## Security Requirements
+- Validate all inputs with Zod
+- Use parameterized SQL queries
+- Check authentication in middleware
+- Check authorization in handlers
+- Never expose internal errors to clients
+
+## Testing
+- Test files: `__tests__/*.test.ts`
+- Use Jest + React Testing Library
+- Mock database in tests
+- Test both happy path and errors
+
+## Documentation
+- Update CURRENT_STATUS.md for major changes
+- Update TODO.md for new tasks
+- Add JSDoc for complex functions
+- Keep CHANGELOG.md current
+
+## Preferences
+- Prefer existing patterns over new approaches
+- Keep components small and focused
+- Use early returns for validation
+- Log errors with context
+- Always provide loading states
+- Mobile-first design
+
+

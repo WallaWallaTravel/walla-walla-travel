@@ -1,68 +1,118 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react'
 
 interface LunchOrder {
-  id: number;
-  booking_id: number;
-  customer_name: string;
-  tour_date: string;
-  restaurant_name: string;
-  restaurant_email: string;
-  party_size: number;
-  total: number;
-  status: string;
-  email_body: string;
-  created_at: string;
+  id: number
+  booking_id: number
+  booking_number: string
+  customer_name: string
+  tour_date: string
+  restaurant_id: number
+  restaurant_name: string
+  restaurant_email: string
+  order_items: Array<{
+    name: string
+    quantity: number
+    price: number
+    for_person?: string
+    modifications?: string
+  }>
+  subtotal: number
+  tax: number
+  total: number
+  estimated_arrival_time: string
+  dietary_restrictions?: string
+  special_instructions?: string
+  status: string
+  created_at: string
+  approved_at?: string
+  email_sent_at?: string
+  commission_amount?: number
 }
 
 export default function AdminLunchOrdersPage() {
-  const [orders, setOrders] = useState<LunchOrder[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedOrder, setSelectedOrder] = useState<LunchOrder | null>(null);
-  const [sending, setSending] = useState(false);
+  const [orders, setOrders] = useState<LunchOrder[]>([])
+  const [loading, setLoading] = useState(true)
+  const [filter, setFilter] = useState<'pending' | 'approved' | 'all'>('pending')
+  const [approving, setApproving] = useState<number | null>(null)
+  const [selectedOrder, setSelectedOrder] = useState<LunchOrder | null>(null)
 
   useEffect(() => {
-    loadOrders();
-  }, []);
+    loadOrders()
+  }, [filter])
 
   const loadOrders = async () => {
     try {
-      const response = await fetch('/api/admin/lunch-orders');
-      const data = await response.json();
-      setOrders(data.orders || []);
+      const response = await fetch(`/api/admin/lunch-orders?status=${filter}`)
+      const data = await response.json()
+      setOrders(data.orders || [])
     } catch (error) {
-      console.error('Error loading orders:', error);
+      console.error('Error loading orders:', error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handleApprove = async (orderId: number) => {
-    if (!confirm('Approve and send this lunch order to the restaurant?')) {
-      return;
-    }
-
-    setSending(true);
+    if (!confirm('Approve this order and send to restaurant?')) return
+    
+    setApproving(orderId)
     try {
       const response = await fetch(`/api/admin/lunch-orders/${orderId}/approve`, {
         method: 'POST',
-      });
+      })
 
       if (response.ok) {
-        alert('Lunch order approved and sent to restaurant!');
-        setSelectedOrder(null);
-        loadOrders();
+        alert('✅ Order approved and email sent to restaurant!')
+        loadOrders()
+        setSelectedOrder(null)
       } else {
-        throw new Error('Failed to approve order');
+        throw new Error('Failed to approve order')
       }
     } catch (error) {
-      console.error('Error approving order:', error);
-      alert('Failed to approve order. Please try again.');
+      console.error('Error approving order:', error)
+      alert('Failed to approve order. Please try again.')
     } finally {
-      setSending(false);
+      setApproving(null)
     }
-  };
+  }
+
+  const handleReject = async (orderId: number) => {
+    const reason = prompt('Reason for rejection (optional):')
+    
+    try {
+      const response = await fetch(`/api/admin/lunch-orders/${orderId}/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason }),
+      })
+
+      if (response.ok) {
+        alert('Order rejected.')
+        loadOrders()
+        setSelectedOrder(null)
+      } else {
+        throw new Error('Failed to reject order')
+      }
+    } catch (error) {
+      console.error('Error rejecting order:', error)
+      alert('Failed to reject order.')
+    }
+  }
+
+  const getStatusBadge = (status: string) => {
+    const styles: Record<string, string> = {
+      pending_approval: 'bg-yellow-100 text-yellow-800',
+      pending: 'bg-yellow-100 text-yellow-800',
+      approved: 'bg-green-100 text-green-800',
+      sent_to_restaurant: 'bg-blue-100 text-blue-800',
+      confirmed: 'bg-purple-100 text-purple-800',
+      rejected: 'bg-red-100 text-red-800',
+      cancelled: 'bg-gray-100 text-gray-800',
+    }
+    return styles[status] || 'bg-gray-100 text-gray-800'
+  }
 
   if (loading) {
     return (
@@ -72,11 +122,8 @@ export default function AdminLunchOrdersPage() {
           <p className="mt-4 text-gray-600">Loading lunch orders...</p>
         </div>
       </div>
-    );
+    )
   }
-
-  const pendingOrders = orders.filter(o => o.status === 'pending_approval');
-  const sentOrders = orders.filter(o => o.status === 'sent');
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
@@ -85,153 +132,199 @@ export default function AdminLunchOrdersPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">🍽️ Lunch Orders</h1>
           <p className="text-gray-600 mt-2">
-            Review and approve client lunch orders
+            Review and approve lunch orders from tour clients
           </p>
         </div>
 
-        {/* Pending Orders */}
-        <div className="mb-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">
-            Pending Approval ({pendingOrders.length})
-          </h2>
-          
-          {pendingOrders.length === 0 ? (
-            <div className="bg-white rounded-lg shadow p-8 text-center text-gray-500">
-              No pending lunch orders
-            </div>
-          ) : (
-            <div className="grid gap-4">
-              {pendingOrders.map(order => (
-                <div
+        {/* Filter Tabs */}
+        <div className="flex gap-2 mb-6">
+          {(['pending', 'approved', 'all'] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setFilter(tab)}
+              className={`px-4 py-2 rounded-lg font-medium capitalize ${
+                filter === tab
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-white text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              {tab === 'pending' ? '⏳ Pending' : tab === 'approved' ? '✅ Approved' : '📋 All'}
+            </button>
+          ))}
+        </div>
+
+        {/* Orders Grid */}
+        <div className="grid lg:grid-cols-3 gap-6">
+          {/* Orders List */}
+          <div className="lg:col-span-2 space-y-4">
+            {orders.length === 0 ? (
+              <div className="bg-white rounded-lg shadow p-8 text-center text-gray-500">
+                <div className="text-4xl mb-4">🍽️</div>
+                <p>No {filter === 'all' ? '' : filter} lunch orders</p>
+              </div>
+            ) : (
+              orders.map((order) => (
+                <button
                   key={order.id}
-                  className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow"
+                  onClick={() => setSelectedOrder(order)}
+                  className={`w-full text-left bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow ${
+                    selectedOrder?.id === order.id ? 'ring-2 ring-purple-500' : ''
+                  }`}
                 >
-                  <div className="flex justify-between items-start mb-4">
+                  <div className="flex justify-between items-start mb-2">
                     <div>
-                      <h3 className="text-lg font-bold text-gray-900">
+                      <h3 className="font-semibold text-gray-900">
                         {order.customer_name}
                       </h3>
                       <p className="text-sm text-gray-600">
-                        Tour Date: {new Date(order.tour_date).toLocaleDateString()}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        Restaurant: {order.restaurant_name}
+                        {order.restaurant_name}
                       </p>
                     </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-purple-600">
-                        ${order.total.toFixed(2)}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        Party of {order.party_size}
-                      </div>
-                    </div>
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusBadge(order.status)}`}>
+                      {order.status.replace('_', ' ')}
+                    </span>
                   </div>
-
-                  <div className="flex space-x-3">
-                    <button
-                      onClick={() => setSelectedOrder(order)}
-                      className="flex-1 px-4 py-2 border-2 border-purple-600 text-purple-600 rounded-lg font-semibold hover:bg-purple-50 transition-colors"
-                    >
-                      📄 View Details
-                    </button>
-                    <button
-                      onClick={() => handleApprove(order.id)}
-                      disabled={sending}
-                      className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors disabled:opacity-50"
-                    >
-                      ✅ Approve & Send
-                    </button>
+                  
+                  <div className="flex justify-between text-sm text-gray-600">
+                    <span>
+                      {new Date(order.tour_date).toLocaleDateString()} • {order.estimated_arrival_time}
+                    </span>
+                    <span className="font-medium text-gray-900">
+                      ${order.total.toFixed(2)}
+                    </span>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Sent Orders */}
-        <div>
-          <h2 className="text-xl font-bold text-gray-900 mb-4">
-            Sent Orders ({sentOrders.length})
-          </h2>
-          
-          {sentOrders.length === 0 ? (
-            <div className="bg-white rounded-lg shadow p-8 text-center text-gray-500">
-              No sent orders yet
-            </div>
-          ) : (
-            <div className="grid gap-4">
-              {sentOrders.map(order => (
-                <div
-                  key={order.id}
-                  className="bg-white rounded-lg shadow p-6"
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-bold text-gray-900">
-                        {order.customer_name}
-                      </h3>
-                      <p className="text-sm text-gray-600">
-                        {new Date(order.tour_date).toLocaleDateString()} • {order.restaurant_name}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-bold text-gray-900">
-                        ${order.total.toFixed(2)}
-                      </div>
-                      <div className="text-xs text-green-600">✓ Sent</div>
-                    </div>
+                  
+                  <div className="mt-2 text-xs text-gray-500">
+                    {order.order_items.length} items • Booking #{order.booking_number}
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
+                </button>
+              ))
+            )}
+          </div>
 
-      {/* Order Details Modal */}
-      {selectedOrder && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-4">
-                <h2 className="text-2xl font-bold text-gray-900">
+          {/* Order Details */}
+          <div className="lg:col-span-1">
+            {selectedOrder ? (
+              <div className="bg-white rounded-lg shadow p-6 sticky top-4">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">
                   Order Details
                 </h2>
-                <button
-                  onClick={() => setSelectedOrder(null)}
-                  className="text-gray-400 hover:text-gray-600 text-2xl"
-                >
-                  ×
-                </button>
-              </div>
 
-              <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                <pre className="whitespace-pre-wrap text-sm font-mono text-gray-800">
-                  {selectedOrder.email_body}
-                </pre>
-              </div>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm text-gray-500">Customer</p>
+                    <p className="font-medium">{selectedOrder.customer_name}</p>
+                  </div>
 
-              <div className="flex space-x-3">
-                <button
-                  onClick={() => setSelectedOrder(null)}
-                  className="flex-1 px-4 py-2 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50"
-                >
-                  Close
-                </button>
-                <button
-                  onClick={() => handleApprove(selectedOrder.id)}
-                  disabled={sending}
-                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 disabled:opacity-50"
-                >
-                  {sending ? 'Sending...' : '✅ Approve & Send'}
-                </button>
+                  <div>
+                    <p className="text-sm text-gray-500">Restaurant</p>
+                    <p className="font-medium">{selectedOrder.restaurant_name}</p>
+                    <p className="text-sm text-gray-600">{selectedOrder.restaurant_email}</p>
+                  </div>
+
+                  <div>
+                    <p className="text-sm text-gray-500">Tour Date</p>
+                    <p className="font-medium">
+                      {new Date(selectedOrder.tour_date).toLocaleDateString()}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-sm text-gray-500">Arrival Time</p>
+                    <p className="font-medium">{selectedOrder.estimated_arrival_time}</p>
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <p className="text-sm text-gray-500 mb-2">Order Items</p>
+                    <div className="space-y-2">
+                      {selectedOrder.order_items.map((item, i) => (
+                        <div key={i} className="flex justify-between text-sm">
+                          <span>
+                            {item.quantity}x {item.name}
+                            {item.for_person && <span className="text-gray-500"> ({item.for_person})</span>}
+                          </span>
+                          <span>${(item.price * item.quantity).toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <div className="flex justify-between text-sm">
+                      <span>Subtotal</span>
+                      <span>${selectedOrder.subtotal.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Tax</span>
+                      <span>${selectedOrder.tax.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between font-bold mt-2">
+                      <span>Total</span>
+                      <span>${selectedOrder.total.toFixed(2)}</span>
+                    </div>
+                    {selectedOrder.commission_amount && (
+                      <div className="flex justify-between text-sm text-green-600 mt-1">
+                        <span>Commission (10%)</span>
+                        <span>${selectedOrder.commission_amount.toFixed(2)}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {selectedOrder.dietary_restrictions && (
+                    <div className="bg-yellow-50 p-3 rounded-lg">
+                      <p className="text-sm font-medium text-yellow-800">⚠️ Dietary Restrictions</p>
+                      <p className="text-sm text-yellow-700">{selectedOrder.dietary_restrictions}</p>
+                    </div>
+                  )}
+
+                  {selectedOrder.special_instructions && (
+                    <div className="bg-blue-50 p-3 rounded-lg">
+                      <p className="text-sm font-medium text-blue-800">📝 Special Instructions</p>
+                      <p className="text-sm text-blue-700">{selectedOrder.special_instructions}</p>
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  {(selectedOrder.status === 'pending' || selectedOrder.status === 'pending_approval') && (
+                    <div className="flex gap-2 mt-6">
+                      <button
+                        onClick={() => handleReject(selectedOrder.id)}
+                        className="flex-1 px-4 py-2 border-2 border-red-300 text-red-700 rounded-lg font-medium hover:bg-red-50"
+                      >
+                        Reject
+                      </button>
+                      <button
+                        onClick={() => handleApprove(selectedOrder.id)}
+                        disabled={approving === selectedOrder.id}
+                        className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 disabled:opacity-50"
+                      >
+                        {approving === selectedOrder.id ? 'Sending...' : '✅ Approve & Send'}
+                      </button>
+                    </div>
+                  )}
+
+                  {selectedOrder.approved_at && (
+                    <div className="text-center text-sm text-green-600 mt-4">
+                      ✅ Approved on {new Date(selectedOrder.approved_at).toLocaleString()}
+                    </div>
+                  )}
+
+                  {selectedOrder.email_sent_at && (
+                    <div className="text-center text-sm text-blue-600">
+                      📧 Email sent on {new Date(selectedOrder.email_sent_at).toLocaleString()}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="bg-white rounded-lg shadow p-8 text-center text-gray-500">
+                <div className="text-4xl mb-4">👈</div>
+                <p>Select an order to view details</p>
+              </div>
+            )}
           </div>
         </div>
-      )}
+      </div>
     </div>
-  );
+  )
 }
-

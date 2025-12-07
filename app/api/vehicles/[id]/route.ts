@@ -7,24 +7,23 @@ import {
 } from '@/app/api/utils';
 import { query } from '@/lib/db';
 
-interface Params {
-  params: {
-    id: string;
-  };
-}
-
 /**
  * GET /api/vehicles/:id
  * Returns detailed information about a specific vehicle
  */
-export async function GET(request: NextRequest, { params }: Params) {
+export async function GET(
+  request: NextRequest, 
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
+    const { id } = await params;
+    
     // Optional authentication
     const session = await getOptionalAuth();
-    logApiRequest('GET', `/api/vehicles/${params.id}`, session?.userId);
+    logApiRequest('GET', `/api/vehicles/${id}`, session?.userId);
 
     // Validate vehicle ID
-    const vehicleId = parseInt(params.id);
+    const vehicleId = parseInt(id);
     if (isNaN(vehicleId)) {
       return errorResponse('Invalid vehicle ID', 400);
     }

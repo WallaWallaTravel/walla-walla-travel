@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { SendProposalModal } from '@/components/proposals/SendProposalModal';
 
 interface Proposal {
@@ -26,9 +27,14 @@ interface Proposal {
 }
 
 export default function ProposalsPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const urlStatus = searchParams.get('status');
+  
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [converting, setConverting] = useState<number | null>(null);
+  const [statusFilter, setStatusFilter] = useState(urlStatus || 'all');
   const [searchTerm, setSearchTerm] = useState('');
   const [sendModalProposal, setSendModalProposal] = useState<Proposal | null>(null);
   const [pagination, setPagination] = useState({
@@ -37,6 +43,13 @@ export default function ProposalsPage() {
     offset: 0,
     hasMore: false
   });
+
+  // Update filter when URL changes
+  useEffect(() => {
+    if (urlStatus && urlStatus !== statusFilter) {
+      setStatusFilter(urlStatus);
+    }
+  }, [urlStatus]);
 
   useEffect(() => {
     loadProposals();
@@ -87,6 +100,33 @@ export default function ProposalsPage() {
     } catch (error) {
       console.error('Failed to delete proposal:', error);
       alert('Failed to delete proposal');
+    }
+  };
+
+  const convertToBooking = async (proposal: Proposal) => {
+    if (!confirm(`Convert proposal ${proposal.proposal_number} for ${proposal.client_name} to a booking?\n\nThis will create a new confirmed booking.`)) {
+      return;
+    }
+
+    setConverting(proposal.id);
+    try {
+      const response = await fetch(`/api/proposals/${proposal.id}/convert`, {
+        method: 'POST'
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        alert(`✅ Success!\n\nBooking ${result.data.booking_number} created.\n\nRedirecting to booking details...`);
+        router.push(`/admin/bookings/${result.data.booking_id}`);
+      } else {
+        alert(result.error || 'Failed to convert proposal');
+      }
+    } catch (error) {
+      console.error('Failed to convert proposal:', error);
+      alert('Failed to convert proposal to booking');
+    } finally {
+      setConverting(null);
     }
   };
 
@@ -367,10 +407,11 @@ export default function ProposalsPage() {
 
                     {proposal.status === 'accepted' && (
                       <button
-                        onClick={() => {/* TODO: Implement convert to booking */}}
-                        className="px-4 py-2 bg-purple-100 hover:bg-purple-200 text-purple-900 rounded-lg text-sm font-bold transition-colors"
+                        onClick={() => convertToBooking(proposal)}
+                        disabled={converting === proposal.id}
+                        className="px-4 py-2 bg-purple-100 hover:bg-purple-200 text-purple-900 rounded-lg text-sm font-bold transition-colors disabled:opacity-50 disabled:cursor-wait"
                       >
-                        🎉 Convert to Booking
+                        {converting === proposal.id ? '⏳ Converting...' : '🎉 Convert to Booking'}
                       </button>
                     )}
                   </div>

@@ -1,13 +1,13 @@
 import { redirect } from 'next/navigation'
-import { requireAuth } from '@/lib/auth'
+import { getSession } from '@/lib/auth/session'
 import DailyWorkflowClient from './DailyWorkflowClient'
 
 export default async function DailyWorkflow() {
-  const session = await requireAuth()
+  const session = await getSession()
   
-  if (!session || !session.user) {
+  if (!session) {
     redirect('/login')
   }
 
-  return <DailyWorkflowClient userEmail={session.user.email || ''} />
+  return <DailyWorkflowClient userEmail={session.user.email} />
 }

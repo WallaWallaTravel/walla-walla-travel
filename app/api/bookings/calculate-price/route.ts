@@ -1,17 +1,18 @@
+/**
+ * Calculate Booking Price API
+ * 
+ * ✅ REFACTORED: Uses existing pricing helpers with standardized error handling
+ */
+
 import { NextResponse } from 'next/server';
-import { withErrorHandling, BadRequestError } from '@/lib/api-errors';
+import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { calculatePrice, validatePricingRequest } from '@/lib/pricing-engine';
 
 /**
  * POST /api/bookings/calculate-price
  * Calculate detailed pricing for booking parameters
  * 
- * Body: {
- *   date: string (YYYY-MM-DD),
- *   duration_hours: number (4, 6, or 8),
- *   party_size: number (1-14),
- *   vehicle_type?: string (sedan, sprinter, luxury)
- * }
+ * ✅ REFACTORED: Standardized error handling
  */
 export const POST = withErrorHandling(async (request: Request) => {
   const body = await request.json();
@@ -90,6 +91,7 @@ export const POST = withErrorHandling(async (request: Request) => {
           final_payment: 'Auto-charged 48 hours before tour (50%)'
         }
       }
-    }
+    },
+    timestamp: new Date().toISOString(),
   });
 });

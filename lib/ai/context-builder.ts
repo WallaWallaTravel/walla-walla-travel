@@ -2,6 +2,7 @@
 // Builds rich context for AI from database
 
 import { Pool } from 'pg'
+import { searchBusinesses, formatBusinessForAI } from '@/lib/business-portal/business-knowledge'
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -152,12 +153,98 @@ export function formatContextForPrompt(context: BusinessContext): string {
 }
 
 /**
+ * Get Business Portal knowledge for AI context
+ */
+export async function getBusinessPortalContext(): Promise<string> {
+  try {
+    // Get all approved businesses from Business Portal
+    const businesses = await searchBusinesses({});
+    
+    if (businesses.length === 0) {
+      return '';
+    }
+    
+    let context = '\n\n## Curated Business Directory:\n';
+    context += '(These businesses have been personally vetted and reviewed by our tour operators)\n\n';
+    
+    businesses.slice(0, 20).forEach(business => {
+      context += formatBusinessForAI(business);
+      context += '\n---\n\n';
+    });
+    
+    return context;
+  } catch (error) {
+    console.warn('[Context Builder] Business Portal not available:', error);
+    return '';
+  }
+}
+
+/**
+ * Get pricing guidance for AI responses
+ */
+export async function getPricingGuidanceContext(): Promise<string> {
+  try {
+    const { getSetting } = await import('@/lib/settings/settings-service');
+    const settings = await getSetting('pricing_display');
+    
+    if (!settings) {
+      return '';
+    }
+    
+    const consultationUnder = settings.consultation_required_under || 4;
+    const perPersonOver = settings.per_person_ranges_over || 6;
+    
+    let guidance = '\n\n## CRITICAL: Pricing Response Guidelines\n\n';
+    
+    guidance += `**IMPORTANT:** How you quote pricing MUST vary based on group size:\n\n`;
+    
+    guidance += `### For groups of 1-${consultationUnder - 1} guests:\n`;
+    guidance += `- DO NOT quote specific prices\n`;
+    guidance += `- Pricing is too variable for small groups\n`;
+    guidance += `- Instead say: "For smaller groups, pricing varies based on your preferences and timing. I recommend talking to Ryan directly - he'll design something perfect for your needs. You can schedule a consultation here: [Link to /book path: 'talk']"\n`;
+    guidance += `- Direct them to the "Let's Talk First" booking flow\n\n`;
+    
+    guidance += `### For groups of ${consultationUnder}-${perPersonOver - 1} guests:\n`;
+    guidance += `- You CAN quote total pricing\n`;
+    guidance += `- Use conservative ranges with 10-15% buffer\n`;
+    guidance += `- Example: "For ${consultationUnder} guests, a full-day tour typically runs $650-$850 depending on duration and wineries"\n`;
+    guidance += `- Include tax in your quote (8.9%)\n`;
+    guidance += `- Direct them to "Reserve & Customize" booking flow\n\n`;
+    
+    guidance += `### For groups of ${perPersonOver}+ guests:\n`;
+    guidance += `- Use PER-PERSON pricing for clarity\n`;
+    guidance += `- Conservative ranges (15-20% buffer)\n`;
+    guidance += `- Example: "For ${perPersonOver} guests, pricing typically runs $110-$135 per person for a full-day wine country experience"\n`;
+    guidance += `- Always mention this includes transportation and a great itinerary\n`;
+    guidance += `- Include tax in per-person quote\n`;
+    guidance += `- Direct them to "Reserve & Customize" booking flow\n\n`;
+    
+    guidance += `**General Rules:**\n`;
+    guidance += `- NEVER give exact prices - always use ranges\n`;
+    guidance += `- ALWAYS be conservative (quote high)\n`;
+    guidance += `- ALWAYS include context (what's included, flexibility, etc.)\n`;
+    guidance += `- NEVER promise specific wineries without consulting Ryan\n`;
+    guidance += `- If unsure, default to "Let's Talk First" flow\n`;
+    
+    return guidance;
+  } catch (error) {
+    console.warn('[Context Builder] Could not load pricing guidance:', error);
+    return '';
+  }
+}
+
+/**
  * Build full system prompt with context
  */
 export async function buildSystemPromptWithContext(basePrompt: string): Promise<string> {
-  const context = await buildBusinessContext()
-  const contextStr = formatContextForPrompt(context)
+  const [context, businessPortalContext, pricingGuidance] = await Promise.all([
+    buildBusinessContext(),
+    getBusinessPortalContext(),
+    getPricingGuidanceContext()
+  ]);
   
-  return `${basePrompt}${contextStr}`
+  const contextStr = formatContextForPrompt(context);
+  
+  return `${basePrompt}${contextStr}${businessPortalContext}${pricingGuidance}`;
 }
 

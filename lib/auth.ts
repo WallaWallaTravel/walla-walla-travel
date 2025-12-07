@@ -5,10 +5,7 @@ import { redirect } from 'next/navigation'
 export async function login(email: string, password: string) {
   try {
     // Determine the API URL based on environment
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 
-      (process.env.NODE_ENV === 'production' 
-        ? 'https://walla-walla-final.vercel.app' 
-        : 'http://localhost:3000');
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
     // Call the login API endpoint
     const response = await fetch(`${apiUrl}/api/auth/login`, {
@@ -116,10 +113,7 @@ export async function getUser() {
 export async function logout() {
   try {
     // Call the logout API endpoint
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 
-      (process.env.NODE_ENV === 'production' 
-        ? 'https://walla-walla-final.vercel.app' 
-        : 'http://localhost:3000');
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
     await fetch(`${apiUrl}/api/auth/logout`, {
       method: 'POST',

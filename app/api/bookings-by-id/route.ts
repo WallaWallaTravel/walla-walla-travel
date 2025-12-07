@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling, NotFoundError } from '@/lib/api-errors';
+import { withErrorHandling, NotFoundError, BadRequestError } from '@/lib/api-errors';
 import { queryOne } from '@/lib/db-helpers';
 
 interface Booking {
@@ -22,11 +22,18 @@ interface Booking {
   vehicle_model?: string;
 }
 
+/**
+ * GET /api/bookings-by-id?id=123
+ * Get booking by ID using query parameter
+ */
 export const GET = withErrorHandling(async (
-  request: NextRequest,
-  { params }: { params: { booking_id: string } }
+  request: NextRequest
 ) => {
-  const booking_id = parseInt(params.booking_id);
+  const bookingIdParam = request.nextUrl.searchParams.get('id');
+  if (!bookingIdParam) {
+    throw new BadRequestError('Missing booking id parameter');
+  }
+  const booking_id = parseInt(bookingIdParam);
 
   const booking = await queryOne<Booking>(`
     SELECT 

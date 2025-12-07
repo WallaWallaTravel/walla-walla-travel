@@ -3,46 +3,19 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { use } from 'react';
-
-interface Winery {
-  id: number;
-  name: string;
-  address: string;
-  city: string;
-  tasting_fee: number;
-  average_visit_duration: number;
-}
-
-interface Stop {
-  id?: number;
-  winery_id: number;
-  winery?: Winery;
-  stop_order: number;
-  arrival_time: string;
-  departure_time: string;
-  duration_minutes: number;
-  drive_time_to_next_minutes: number;
-  reservation_confirmed: boolean;
-  special_notes: string;
-}
-
-interface Itinerary {
-  id: number;
-  booking_id: number;
-  pickup_location: string;
-  pickup_time: string;
-  dropoff_location: string;
-  estimated_dropoff_time: string;
-  driver_notes: string;
-  internal_notes: string;
-  stops: Stop[];
-}
+import { Itinerary, Winery, Stop, NewWineryData } from '../types';
+import { useItineraryTime } from '../hooks/useItineraryTime';
+import { TourStop } from '../components/TourStop';
+import { PickupDropoff } from '../components/PickupDropoff';
+import { WinerySearch } from '../components/WinerySearch';
+import { AddWineryModal } from '../components/AddWineryModal';
 
 export default function ItineraryBuilder({ params }: { params: Promise<{ booking_id: string }> }) {
   const unwrappedParams = use(params);
   const bookingId = unwrappedParams.booking_id;
-
   const router = useRouter();
+
+  // State
   const [itinerary, setItinerary] = useState<Itinerary | null>(null);
   const [wineries, setWineries] = useState<Winery[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,7 +23,33 @@ export default function ItineraryBuilder({ params }: { params: Promise<{ booking
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [cascadeAdjustments, setCascadeAdjustments] = useState<Record<number, boolean>>({});
+  const [showAddWineryForm, setShowAddWineryForm] = useState(false);
+  const [newWineryData, setNewWineryData] = useState<NewWineryData>({
+    name: '',
+    address: '',
+    city: 'Walla Walla',
+    state: 'WA',
+    zip_code: '',
+    tasting_fee: 0,
+    average_visit_duration: 75
+  });
 
+  // Custom hooks
+  const {
+    addMinutes,
+    formatTime,
+    getMinutesDifference,
+    calculateTimes,
+    isLunchTime,
+    calculateTravelTime,
+  } = useItineraryTime();
+
+  // Helper function to select all text on focus
+  const handleFocusSelect = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    e.target.select();
+  };
+
+  // Load data
   useEffect(() => {
     loadData();
   }, [bookingId]);
@@ -64,14 +63,23 @@ export default function ItineraryBuilder({ params }: { params: Promise<{ booking
 
       if (itineraryRes.ok) {
         const itineraryData = await itineraryRes.json();
-        setItinerary(itineraryData.data);
+        if (itineraryData.data) {
+          const itinerary = {
+            ...itineraryData.data,
+            stops: itineraryData.data.stops || []
+          };
+          setItinerary(itinerary);
 
-        // Initialize cascade checkboxes (all checked by default)
-        const cascadeDefaults: Record<number, boolean> = {};
-        itineraryData.data.stops.forEach((_: Stop, index: number) => {
-          cascadeDefaults[index] = true;
-        });
-        setCascadeAdjustments(cascadeDefaults);
+          // Initialize cascade checkboxes
+          const cascadeDefaults: Record<number, boolean> = {};
+          itinerary.stops.forEach((_: Stop, index: number) => {
+            cascadeDefaults[index] = true;
+          });
+          setCascadeAdjustments(cascadeDefaults);
+        }
+      } else {
+        const errorData = await itineraryRes.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('Failed to load itinerary:', errorData);
       }
 
       if (wineriesRes.ok) {
@@ -85,70 +93,23 @@ export default function ItineraryBuilder({ params }: { params: Promise<{ booking
     }
   };
 
-  const isLunchTime = (arrivalTime: string): boolean => {
-    const [hours, minutes] = arrivalTime.split(':').map(Number);
-    const totalMinutes = hours * 60 + minutes;
-    const lunchStart = 12 * 60; // 12:00 PM
-    const lunchEnd = 13 * 60 + 30; // 1:30 PM
-    return totalMinutes >= lunchStart && totalMinutes <= lunchEnd;
-  };
-
-  const calculateTimes = (stops: Stop[]) => {
-    if (stops.length === 0 || !itinerary) return stops;
-
-    let currentTime = itinerary.pickup_time;
-
-    return stops.map((stop) => {
-      const arrival = currentTime;
-      const departure = addMinutes(arrival, stop.duration_minutes);
-      const nextTime = addMinutes(departure, stop.drive_time_to_next_minutes);
-
-      currentTime = nextTime;
-
-      return {
-        ...stop,
-        arrival_time: arrival,
-        departure_time: departure
-      };
-    });
-  };
-
-  const addMinutes = (time: string, minutes: number): string => {
-    const [hours, mins] = time.split(':').map(Number);
-    const totalMinutes = hours * 60 + mins + minutes;
-    const newHours = Math.floor(totalMinutes / 60) % 24;
-    const newMins = totalMinutes % 60;
-    return `${String(newHours).padStart(2, '0')}:${String(newMins).padStart(2, '0')}`;
-  };
-
-  const formatTime = (time: string): string => {
-    const [hours, minutes] = time.split(':').map(Number);
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    const displayHours = hours % 12 || 12;
-    return `${displayHours}:${String(minutes).padStart(2, '0')} ${ampm}`;
-  };
-
+  // Winery management
   const handleAddWinery = (winery: Winery) => {
     if (!itinerary) return;
-
-    // Determine default duration based on position
-    let defaultDuration = 75;
 
     const newStop: Stop = {
       winery_id: winery.id,
       winery,
-      stop_order: itinerary.stops.length + 1,
+      stop_order: (itinerary.stops?.length || 0) + 1,
       arrival_time: '10:00',
       departure_time: '11:00',
-      duration_minutes: defaultDuration,
+      duration_minutes: 75,
       drive_time_to_next_minutes: 15,
       reservation_confirmed: false,
       special_notes: ''
     };
 
-    const updatedStops = calculateTimes([...itinerary.stops, newStop]);
-
-    // Check if any stop is now at lunch time and adjust
+    const updatedStops = calculateTimes([...itinerary.stops, newStop], itinerary.pickup_time);
     const finalStops = updatedStops.map(stop => {
       if (isLunchTime(stop.arrival_time) && stop.duration_minutes < 90) {
         return { ...stop, duration_minutes: 90 };
@@ -156,12 +117,44 @@ export default function ItineraryBuilder({ params }: { params: Promise<{ booking
       return stop;
     });
 
-    setItinerary({ ...itinerary, stops: calculateTimes(finalStops) });
-    setCascadeAdjustments({ ...cascadeAdjustments, [itinerary.stops.length]: true });
+    setItinerary({ ...itinerary, stops: calculateTimes(finalStops, itinerary.pickup_time) });
+    setCascadeAdjustments({ ...cascadeAdjustments, [finalStops.length - 1]: true });
+    setSearchTerm('');
   };
 
+  const handleCreateNewWinery = async () => {
+    try {
+      const response = await fetch('/api/wineries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newWineryData)
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const createdWinery = data.data;
+        setWineries([...wineries, createdWinery]);
+        handleAddWinery(createdWinery);
+        setShowAddWineryForm(false);
+        setNewWineryData({
+          name: '',
+          address: '',
+          city: 'Walla Walla',
+          state: 'WA',
+          zip_code: '',
+          tasting_fee: 0,
+          average_visit_duration: 75
+        });
+      }
+    } catch (error) {
+      console.error('Error creating winery:', error);
+      alert('Failed to create winery. Please try again.');
+    }
+  };
+
+  // Stop management
   const handleRemoveStop = (index: number) => {
-    if (!itinerary) return;
+    if (!itinerary || !itinerary.stops) return;
     const updatedStops = itinerary.stops
       .filter((_, i) => i !== index)
       .map((stop, i) => ({ ...stop, stop_order: i + 1 }));
@@ -170,7 +163,53 @@ export default function ItineraryBuilder({ params }: { params: Promise<{ booking
     delete newCascade[index];
     setCascadeAdjustments(newCascade);
 
-    setItinerary({ ...itinerary, stops: calculateTimes(updatedStops) });
+    setItinerary({ ...itinerary, stops: calculateTimes(updatedStops, itinerary.pickup_time) });
+  };
+
+  const handleTimeChange = (index: number, field: 'arrival_time' | 'departure_time', newTime: string) => {
+    if (!itinerary || !itinerary.stops) return;
+    const updated = [...itinerary.stops];
+    
+    updated[index][field] = newTime;
+    
+    if (field === 'departure_time' || field === 'arrival_time') {
+      const arrival = field === 'arrival_time' ? newTime : updated[index].arrival_time;
+      const departure = field === 'departure_time' ? newTime : updated[index].departure_time;
+      updated[index].duration_minutes = getMinutesDifference(arrival, departure);
+    }
+    
+    if (cascadeAdjustments[index]) {
+      setItinerary({ ...itinerary, stops: calculateTimes(updated, itinerary.pickup_time) });
+    } else {
+      setItinerary({ ...itinerary, stops: updated });
+    }
+  };
+
+  const toggleLunchStop = (index: number) => {
+    if (!itinerary || !itinerary.stops) return;
+    const updated = [...itinerary.stops];
+    
+    const isCurrentlyLunch = updated[index].is_lunch_stop;
+    
+    if (isCurrentlyLunch) {
+      updated[index].is_lunch_stop = false;
+      updated[index].duration_minutes = 75;
+    } else {
+      updated.forEach(stop => stop.is_lunch_stop = false);
+      updated[index].is_lunch_stop = true;
+      updated[index].duration_minutes = 90;
+    }
+    
+    updated[index].departure_time = addMinutes(
+      updated[index].arrival_time, 
+      updated[index].duration_minutes
+    );
+    
+    if (cascadeAdjustments[index]) {
+      setItinerary({ ...itinerary, stops: calculateTimes(updated, itinerary.pickup_time) });
+    } else {
+      setItinerary({ ...itinerary, stops: updated });
+    }
   };
 
   const nudgeDuration = (index: number, adjustment: number) => {
@@ -179,9 +218,8 @@ export default function ItineraryBuilder({ params }: { params: Promise<{ booking
     updated[index].duration_minutes = Math.max(15, updated[index].duration_minutes + adjustment);
 
     if (cascadeAdjustments[index]) {
-      setItinerary({ ...itinerary, stops: calculateTimes(updated) });
+      setItinerary({ ...itinerary, stops: calculateTimes(updated, itinerary.pickup_time) });
     } else {
-      // Only update this stop's departure time
       updated[index].departure_time = addMinutes(updated[index].arrival_time, updated[index].duration_minutes);
       setItinerary({ ...itinerary, stops: updated });
     }
@@ -193,13 +231,90 @@ export default function ItineraryBuilder({ params }: { params: Promise<{ booking
     updated[index].drive_time_to_next_minutes = Math.max(0, updated[index].drive_time_to_next_minutes + adjustment);
 
     if (cascadeAdjustments[index]) {
-      setItinerary({ ...itinerary, stops: calculateTimes(updated) });
+      setItinerary({ ...itinerary, stops: calculateTimes(updated, itinerary.pickup_time) });
     } else {
-      // Don't cascade changes
       setItinerary({ ...itinerary, stops: updated });
     }
   };
 
+  const toggleCascade = (index: number) => {
+    const newCascade = { ...cascadeAdjustments, [index]: !cascadeAdjustments[index] };
+    setCascadeAdjustments(newCascade);
+    
+    if (newCascade[index] && itinerary && itinerary.stops) {
+      setItinerary({ ...itinerary, stops: calculateTimes(itinerary.stops, itinerary.pickup_time) });
+    }
+  };
+
+  const handleCalculateTravelTime = async (fromIndex: number) => {
+    if (!itinerary || !itinerary.stops || fromIndex >= itinerary.stops.length - 1) return;
+    
+    const fromStop = itinerary.stops[fromIndex];
+    const toStop = itinerary.stops[fromIndex + 1];
+    
+    if (!fromStop.winery?.address || !toStop.winery?.address) {
+      alert('Missing address information for wineries');
+      return;
+    }
+
+    try {
+      const travelMinutes = await calculateTravelTime(fromStop.winery.address, toStop.winery.address);
+      
+      const updated = [...itinerary.stops];
+      updated[fromIndex].drive_time_to_next_minutes = travelMinutes;
+      
+      if (cascadeAdjustments[fromIndex]) {
+        setItinerary({ ...itinerary, stops: calculateTimes(updated, itinerary.pickup_time) });
+      } else {
+        setItinerary({ ...itinerary, stops: updated });
+      }
+      
+      alert(`Travel time updated: ${travelMinutes} minutes`);
+    } catch (error) {
+      console.error('Error calculating travel time:', error);
+      alert('Could not calculate travel time. Using default.');
+    }
+  };
+
+  const calculatePickupTravelTime = async () => {
+    if (!itinerary || !itinerary.stops || itinerary.stops.length === 0) return;
+    
+    const firstStop = itinerary.stops[0];
+    if (!firstStop.winery?.address) {
+      alert('Missing address information for first stop');
+      return;
+    }
+
+    try {
+      const travelMinutes = await calculateTravelTime(itinerary.pickup_location, firstStop.winery.address);
+      setItinerary({ ...itinerary, pickup_drive_time_minutes: travelMinutes });
+      alert(`Pickup travel time updated: ${travelMinutes} minutes`);
+    } catch (error) {
+      console.error('Error calculating pickup travel time:', error);
+      alert('Could not calculate pickup travel time.');
+    }
+  };
+
+  const calculateDropoffTravelTime = async () => {
+    if (!itinerary || !itinerary.stops || itinerary.stops.length === 0) return;
+    
+    const lastStop = itinerary.stops[itinerary.stops.length - 1];
+    if (!lastStop.winery?.address) {
+      alert('Missing address information for last stop');
+      return;
+    }
+
+    try {
+      const travelMinutes = await calculateTravelTime(lastStop.winery.address, itinerary.dropoff_location);
+      setItinerary({ ...itinerary, dropoff_drive_time_minutes: travelMinutes });
+      alert(`Dropoff travel time updated: ${travelMinutes} minutes`);
+    } catch (error) {
+      console.error('Error calculating dropoff travel time:', error);
+      alert('Could not calculate dropoff travel time.');
+    }
+  };
+
+  // Drag and drop
   const handleDragStart = (index: number) => {
     setDraggedIndex(index);
   };
@@ -214,7 +329,7 @@ export default function ItineraryBuilder({ params }: { params: Promise<{ booking
     stops.splice(index, 0, draggedStop);
 
     const reorderedStops = stops.map((stop, i) => ({ ...stop, stop_order: i + 1 }));
-    setItinerary({ ...itinerary!, stops: calculateTimes(reorderedStops) });
+    setItinerary({ ...itinerary!, stops: calculateTimes(reorderedStops, itinerary!.pickup_time) });
     setDraggedIndex(index);
   };
 
@@ -222,8 +337,9 @@ export default function ItineraryBuilder({ params }: { params: Promise<{ booking
     setDraggedIndex(null);
   };
 
+  // Save
   const handleSave = async () => {
-    if (!itinerary) return;
+    if (!itinerary || !itinerary.stops) return;
 
     setSaving(true);
     try {
@@ -233,8 +349,10 @@ export default function ItineraryBuilder({ params }: { params: Promise<{ booking
         body: JSON.stringify({
           pickup_location: itinerary.pickup_location,
           pickup_time: itinerary.pickup_time,
+          pickup_drive_time_minutes: itinerary.pickup_drive_time_minutes || 0,
           dropoff_location: itinerary.dropoff_location,
           estimated_dropoff_time: itinerary.estimated_dropoff_time,
+          dropoff_drive_time_minutes: itinerary.dropoff_drive_time_minutes || 0,
           driver_notes: itinerary.driver_notes,
           internal_notes: itinerary.internal_notes
         })
@@ -250,6 +368,7 @@ export default function ItineraryBuilder({ params }: { params: Promise<{ booking
             arrival_time: stop.arrival_time,
             departure_time: stop.departure_time,
             duration_minutes: stop.duration_minutes,
+            is_lunch_stop: stop.is_lunch_stop || false,
             drive_time_to_next_minutes: stop.drive_time_to_next_minutes,
             reservation_confirmed: stop.reservation_confirmed,
             special_notes: stop.special_notes
@@ -272,7 +391,7 @@ export default function ItineraryBuilder({ params }: { params: Promise<{ booking
   };
 
   const generateGoogleMapsLink = (): string => {
-    if (!itinerary || itinerary.stops.length === 0) return '';
+    if (!itinerary || !itinerary.stops || itinerary.stops.length === 0) return '';
 
     const waypoints = itinerary.stops
       .map(stop => encodeURIComponent(stop.winery?.address || ''))
@@ -281,13 +400,12 @@ export default function ItineraryBuilder({ params }: { params: Promise<{ booking
     return `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(itinerary.pickup_location)}&destination=${encodeURIComponent(itinerary.dropoff_location)}&waypoints=${waypoints}`;
   };
 
-  const filteredWineries = wineries.filter(w =>
-    w.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    w.city.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const totalDriveTime = 
+    (itinerary?.pickup_drive_time_minutes || 0) + 
+    (itinerary?.stops?.reduce((sum, stop) => sum + stop.drive_time_to_next_minutes, 0) || 0) +
+    (itinerary?.dropoff_drive_time_minutes || 0);
 
-  const totalDriveTime = itinerary?.stops.reduce((sum, stop) => sum + stop.drive_time_to_next_minutes, 0) || 0;
-
+  // Loading state
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -296,14 +414,63 @@ export default function ItineraryBuilder({ params }: { params: Promise<{ booking
     );
   }
 
+  // No itinerary state
   if (!itinerary) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-900 text-xl font-semibold">No itinerary found for this booking</div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md text-center">
+          <div className="text-6xl mb-4">📋</div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">No Itinerary Found</h2>
+          <p className="text-gray-700 mb-6">
+            There is no itinerary associated with booking #{bookingId}. 
+            This might be because the itinerary wasn't created yet or there was an error during creation.
+          </p>
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={() => router.push('/admin/bookings')}
+              className="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-900 rounded-lg font-semibold transition-colors"
+            >
+              ← Back to Bookings
+            </button>
+            <button
+              onClick={async () => {
+                try {
+                  const response = await fetch(`/api/itineraries/${bookingId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      pickup_location: 'TBD',
+                      pickup_time: '10:00',
+                      dropoff_location: 'TBD',
+                      estimated_dropoff_time: '16:00',
+                      driver_notes: '',
+                      internal_notes: ''
+                    })
+                  });
+                  
+                  if (response.ok) {
+                    alert('Itinerary created! Reloading...');
+                    await loadData();
+                  } else {
+                    const error = await response.json();
+                    alert(`Failed to create itinerary: ${error.error || 'Unknown error'}`);
+                  }
+                } catch (error) {
+                  console.error('Error creating itinerary:', error);
+                  alert('Failed to create itinerary. Please try again or contact support.');
+                }
+              }}
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors"
+            >
+              Create Itinerary Now
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
 
+  // Main render
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
@@ -317,51 +484,109 @@ export default function ItineraryBuilder({ params }: { params: Promise<{ booking
           </button>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div>
-              <label className="block text-base font-bold text-gray-900 mb-2">Pickup Location</label>
-              <input
-                type="text"
-                value={itinerary.pickup_location}
-                onChange={(e) => setItinerary({ ...itinerary, pickup_location: e.target.value })}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-gray-900 font-semibold text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-              />
-            </div>
-            <div>
-              <label className="block text-base font-bold text-gray-900 mb-2">Pickup Time</label>
-              <input
-                type="time"
-                value={itinerary.pickup_time}
-                onChange={(e) => setItinerary({ ...itinerary, pickup_time: e.target.value, stops: calculateTimes(itinerary.stops) })}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-gray-900 font-semibold text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-              />
-            </div>
-            <div>
-              <label className="block text-base font-bold text-gray-900 mb-2">Dropoff Location</label>
-              <input
-                type="text"
-                value={itinerary.dropoff_location}
-                onChange={(e) => setItinerary({ ...itinerary, dropoff_location: e.target.value })}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-gray-900 font-semibold text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-              />
-            </div>
-            <div>
-              <label className="block text-base font-bold text-gray-900 mb-2">Estimated Dropoff Time</label>
-              <input
-                type="time"
-                value={itinerary.estimated_dropoff_time}
-                onChange={(e) => setItinerary({ ...itinerary, estimated_dropoff_time: e.target.value })}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-gray-900 font-semibold text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-              />
-            </div>
+        {/* Unified Tour Stops Section */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold text-gray-900">Complete Tour Route</h2>
           </div>
 
+          {/* Winery Search */}
+          <WinerySearch
+            searchTerm={searchTerm}
+            wineries={wineries}
+            onSearchChange={setSearchTerm}
+            onWinerySelect={handleAddWinery}
+            onAddNew={() => setShowAddWineryForm(true)}
+            handleFocusSelect={handleFocusSelect}
+          />
+
+          <div className="space-y-4">
+            {/* Pickup Location */}
+            <PickupDropoff
+              type="pickup"
+              location={itinerary.pickup_location}
+              time={itinerary.pickup_time}
+              driveTime={itinerary.pickup_drive_time_minutes}
+              showDriveTime={(itinerary.stops?.length || 0) > 0}
+              onLocationChange={(value) => setItinerary({ ...itinerary, pickup_location: value })}
+              onTimeChange={(value) => setItinerary({ ...itinerary, pickup_time: value, stops: calculateTimes(itinerary.stops, value) })}
+              onCalculateDriveTime={calculatePickupTravelTime}
+              handleFocusSelect={handleFocusSelect}
+            />
+
+            {/* Tour Stops */}
+            {(itinerary.stops?.length || 0) === 0 ? (
+              <div className="bg-white rounded-lg shadow-md p-12 text-center border-2 border-dashed border-gray-300">
+                <div className="text-6xl mb-4">🍷</div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">No stops added yet</h3>
+                <p className="text-gray-700 font-medium">Use the search above to add wineries to the tour</p>
+              </div>
+            ) : (
+              itinerary.stops.map((stop, index) => (
+                <TourStop
+                  key={stop.id || index}
+                  stop={stop}
+                  index={index}
+                  cascadeEnabled={cascadeAdjustments[index] ?? true}
+                  onRemove={() => handleRemoveStop(index)}
+                  onTimeChange={(field, value) => handleTimeChange(index, field, value)}
+                  onToggleLunch={() => toggleLunchStop(index)}
+                  onNudgeDuration={(adjustment) => nudgeDuration(index, adjustment)}
+                  onNudgeDriveTime={(adjustment) => nudgeDriveTime(index, adjustment)}
+                  onToggleCascade={() => toggleCascade(index)}
+                  onReservationChange={(confirmed) => {
+                    const updated = [...itinerary.stops];
+                    updated[index].reservation_confirmed = confirmed;
+                    setItinerary({ ...itinerary, stops: updated });
+                  }}
+                  onNotesChange={(notes) => {
+                    const updated = [...itinerary.stops];
+                    updated[index].special_notes = notes ?? '';
+                    setItinerary({ ...itinerary, stops: updated });
+                  }}
+                  onDurationChange={(minutes) => {
+                    const updated = [...itinerary.stops];
+                    updated[index].duration_minutes = minutes;
+                    setItinerary({ ...itinerary, stops: cascadeAdjustments[index] ? calculateTimes(updated, itinerary.pickup_time) : updated });
+                  }}
+                  onDriveTimeChange={(minutes) => {
+                    const updated = [...itinerary.stops];
+                    updated[index].drive_time_to_next_minutes = minutes;
+                    setItinerary({ ...itinerary, stops: cascadeAdjustments[index] ? calculateTimes(updated, itinerary.pickup_time) : updated });
+                  }}
+                  onCalculateTravelTime={() => handleCalculateTravelTime(index)}
+                  onDragStart={() => handleDragStart(index)}
+                  onDragOver={(e) => handleDragOver(e, index)}
+                  onDragEnd={handleDragEnd}
+                  showAutoCalculate={index < (itinerary.stops?.length || 0) - 1}
+                  handleFocusSelect={handleFocusSelect}
+                />
+              ))
+            )}
+
+            {/* Dropoff Location */}
+            <PickupDropoff
+              type="dropoff"
+              location={itinerary.dropoff_location}
+              time={itinerary.estimated_dropoff_time}
+              driveTime={itinerary.dropoff_drive_time_minutes}
+              showDriveTime={(itinerary.stops?.length || 0) > 0}
+              onLocationChange={(value) => setItinerary({ ...itinerary, dropoff_location: value })}
+              onTimeChange={(value) => setItinerary({ ...itinerary, estimated_dropoff_time: value })}
+              onCalculateDriveTime={calculateDropoffTravelTime}
+              handleFocusSelect={handleFocusSelect}
+            />
+          </div>
+        </div>
+
+        {/* Driver Notes & Action Buttons */}
+        <div className="bg-white rounded-lg shadow-md p-6 mt-8">
           <div className="mb-6">
             <label className="block text-base font-bold text-gray-900 mb-2">Driver Notes</label>
             <textarea
               value={itinerary.driver_notes}
               onChange={(e) => setItinerary({ ...itinerary, driver_notes: e.target.value })}
+              onFocus={handleFocusSelect}
               rows={3}
               className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-gray-900 font-semibold text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
               placeholder="Notes for the driver..."
@@ -370,10 +595,10 @@ export default function ItineraryBuilder({ params }: { params: Promise<{ booking
 
           <div className="flex items-center justify-between pt-4 border-t-2 border-gray-200">
             <div className="text-gray-900 font-bold text-lg">
-              Total Drive Time: <span className="text-blue-600">{totalDriveTime} minutes</span> | Stops: <span className="text-blue-600">{itinerary.stops.length}</span>
+              Total Drive Time: <span className="text-blue-600">{totalDriveTime} minutes</span> | Stops: <span className="text-blue-600">{itinerary.stops?.length || 0}</span>
             </div>
             <div className="flex gap-3">
-              {itinerary.stops.length > 0 && (
+              {(itinerary.stops?.length || 0) > 0 && (
                 <a
                   href={generateGoogleMapsLink()}
                   target="_blank"
@@ -400,180 +625,16 @@ export default function ItineraryBuilder({ params }: { params: Promise<{ booking
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Tour Stops</h2>
-
-            {itinerary.stops.length === 0 ? (
-              <div className="bg-white rounded-lg shadow-md p-12 text-center">
-                <div className="text-6xl mb-4">🍷</div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">No stops added yet</h3>
-                <p className="text-gray-700 font-medium">Click a winery from the sidebar to add it to the tour</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {itinerary.stops.map((stop, index) => (
-                  <div
-                    key={stop.id || index}
-                    draggable
-                    onDragStart={() => handleDragStart(index)}
-                    onDragOver={(e) => handleDragOver(e, index)}
-                    onDragEnd={handleDragEnd}
-                    className="bg-white rounded-lg shadow-md p-6 cursor-move hover:shadow-lg transition-shadow border-2 border-gray-200 hover:border-blue-400"
-                  >
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-start gap-4 flex-1">
-                        <div className="w-14 h-14 bg-blue-600 text-white rounded-full flex items-center justify-center text-2xl font-bold flex-shrink-0">
-                          {stop.stop_order}
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="text-2xl font-bold text-gray-900 mb-2">{stop.winery?.name}</h3>
-                          <div className="text-2xl font-bold text-blue-600 mb-3">
-                            {formatTime(stop.arrival_time)} - {formatTime(stop.departure_time)}
-                            {isLunchTime(stop.arrival_time) && (
-                              <span className="ml-3 text-base bg-orange-100 text-orange-800 px-3 py-1 rounded-full font-semibold">🍽️ Lunch Time</span>
-                            )}
-                          </div>
-                          <div className="text-base font-semibold text-gray-700">
-                            {stop.winery?.address}, {stop.winery?.city}
-                          </div>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => handleRemoveStop(index)}
-                        className="text-red-600 hover:text-red-800 font-bold text-lg ml-4"
-                      >
-                        Remove
-                      </button>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-6 mt-4 pt-4 border-t border-gray-200">
-                      {/* Duration Controls */}
-                      <div className="space-y-3">
-                        <label className="block text-sm font-bold text-gray-900">Duration at Winery</label>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => nudgeDuration(index, -5)}
-                            className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg font-bold text-gray-900 transition-colors"
-                          >
-                            ⬇️ -5
-                          </button>
-                          <input
-                            type="number"
-                            value={stop.duration_minutes}
-                            onChange={(e) => {
-                              const updated = [...itinerary.stops];
-                              updated[index].duration_minutes = parseInt(e.target.value) || 0;
-                              setItinerary({ ...itinerary, stops: cascadeAdjustments[index] ? calculateTimes(updated) : updated });
-                            }}
-                            className="w-20 px-3 py-2 border-2 border-gray-300 rounded-lg text-center text-gray-900 font-bold text-lg focus:border-blue-500"
-                          />
-                          <span className="text-gray-700 font-semibold">min</span>
-                          <button
-                            onClick={() => nudgeDuration(index, 5)}
-                            className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg font-bold text-gray-900 transition-colors"
-                          >
-                            ⬆️ +5
-                          </button>
-                        </div>
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={cascadeAdjustments[index] ?? true}
-                            onChange={(e) => setCascadeAdjustments({ ...cascadeAdjustments, [index]: e.target.checked })}
-                            className="w-5 h-5"
-                          />
-                          <span className="text-sm font-semibold text-gray-700">Adjust following times</span>
-                        </label>
-                      </div>
-
-                      {/* Drive Time Controls */}
-                      <div className="space-y-3">
-                        <label className="block text-sm font-bold text-gray-900">Drive to Next Stop</label>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => nudgeDriveTime(index, -5)}
-                            className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg font-bold text-gray-900 transition-colors"
-                          >
-                            ⬇️ -5
-                          </button>
-                          <input
-                            type="number"
-                            value={stop.drive_time_to_next_minutes}
-                            onChange={(e) => {
-                              const updated = [...itinerary.stops];
-                              updated[index].drive_time_to_next_minutes = parseInt(e.target.value) || 0;
-                              setItinerary({ ...itinerary, stops: cascadeAdjustments[index] ? calculateTimes(updated) : updated });
-                            }}
-                            className="w-20 px-3 py-2 border-2 border-gray-300 rounded-lg text-center text-gray-900 font-bold text-lg focus:border-blue-500"
-                          />
-                          <span className="text-gray-700 font-semibold">min</span>
-                          <button
-                            onClick={() => nudgeDriveTime(index, 5)}
-                            className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg font-bold text-gray-900 transition-colors"
-                          >
-                            ⬆️ +5
-                          </button>
-                        </div>
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={cascadeAdjustments[index] ?? true}
-                            onChange={(e) => setCascadeAdjustments({ ...cascadeAdjustments, [index]: e.target.checked })}
-                            className="w-5 h-5"
-                          />
-                          <span className="text-sm font-semibold text-gray-700">Adjust following times</span>
-                        </label>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 pt-4 border-t border-gray-200">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={stop.reservation_confirmed}
-                          onChange={(e) => {
-                            const updated = [...itinerary.stops];
-                            updated[index].reservation_confirmed = e.target.checked;
-                            setItinerary({ ...itinerary, stops: updated });
-                          }}
-                          className="w-6 h-6"
-                        />
-                        <span className="text-base font-bold text-gray-900">Reservation Confirmed</span>
-                      </label>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Available Wineries</h2>
-            <div className="bg-white rounded-lg shadow-md p-4 sticky top-6">
-              <input
-                type="text"
-                placeholder="Search wineries..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg mb-4 text-gray-900 font-semibold focus:border-blue-500"
-              />
-              <div className="max-h-[600px] overflow-y-auto space-y-3">
-                {filteredWineries.map((winery) => (
-                  <div
-                    key={winery.id}
-                    onClick={() => handleAddWinery(winery)}
-                    className="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 cursor-pointer transition-all"
-                  >
-                    <h3 className="font-bold text-gray-900 text-lg">{winery.name}</h3>
-                    <p className="text-base text-gray-700 font-semibold">{winery.city}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Add New Winery Modal */}
+        <AddWineryModal
+          isOpen={showAddWineryForm}
+          wineryData={newWineryData}
+          onClose={() => setShowAddWineryForm(false)}
+          onChange={setNewWineryData}
+          onSubmit={handleCreateNewWinery}
+        />
       </div>
     </div>
   );
 }
+

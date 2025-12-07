@@ -56,9 +56,18 @@ export interface RateConfig {
     };
   };
   
-  // Wait Time
+  // Wait Time (Scales with party size like wine tours)
   wait_time: {
-    hourly_rate: number;        // $75 per hour
+    weekday_rates: {
+      '1-4': number;   // Small groups: $75/hr
+      '5-8': number;   // Medium groups: $95/hr
+      '9-14': number;  // Large groups: $110/hr
+    };
+    weekend_rates: {
+      '1-4': number;   // Small groups: $85/hr
+      '5-8': number;   // Medium groups: $105/hr
+      '9-14': number;  // Large groups: $120/hr
+    };
     minimum_hours: number;      // Minimum 1 hour
   };
   
@@ -99,7 +108,7 @@ export const defaultRates: RateConfig = {
       '9-11': 140,  // $140/hour
       '12-14': 150, // $150/hour
     },
-    minimum_hours: 5,  // 5 hour minimum
+    minimum_hours: 4,  // 4 hour minimum (Sun-Wed), 5 hour minimum (Thu-Sat) - use 4 as default
   },
   
   shared_tours: {
@@ -128,7 +137,16 @@ export const defaultRates: RateConfig = {
   },
   
   wait_time: {
-    hourly_rate: 75,          // $75 per hour
+    weekday_rates: {
+      '1-4': 75,   // Small groups: $75/hr
+      '5-8': 95,   // Medium groups: $95/hr
+      '9-14': 110, // Large groups: $110/hr
+    },
+    weekend_rates: {
+      '1-4': 85,   // Small groups: $85/hr (weekend)
+      '5-8': 105,  // Medium groups: $105/hr (weekend)
+      '9-14': 120, // Large groups: $120/hr (weekend)
+    },
     minimum_hours: 1,         // Minimum 1 hour
   },
   
@@ -293,10 +311,26 @@ export function calculateTransferPrice(
 /**
  * Calculate wait time price
  */
-export function calculateWaitTimePrice(hours: number): number {
+export function calculateWaitTimePrice(hours: number, partySize: number = 4, date: Date | string = new Date()): number {
   const rates = getRates();
   const billableHours = Math.max(hours, rates.wait_time.minimum_hours);
-  return billableHours * rates.wait_time.hourly_rate;
+  
+  // Determine if Thu-Sat
+  const tourDate = typeof date === 'string' ? new Date(date) : date;
+  const dayOfWeek = tourDate.getDay();
+  const isThuSat = dayOfWeek >= 4 && dayOfWeek <= 6;
+  
+  // Get rate based on party size and day type
+  const ratesByDay = isThuSat ? rates.wait_time.weekend_rates : rates.wait_time.weekday_rates;
+  
+  let hourlyRate = ratesByDay['1-4']; // Default
+  if (partySize >= 9) {
+    hourlyRate = ratesByDay['9-14'];
+  } else if (partySize >= 5) {
+    hourlyRate = ratesByDay['5-8'];
+  }
+  
+  return billableHours * hourlyRate;
 }
 
 /**

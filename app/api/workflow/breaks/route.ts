@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
         AND clock_out_time IS NULL
     `, [driverId, today]);
 
-    if (timeCardResult.rowCount === 0) {
+    if ((timeCardResult.rowCount ?? 0) === 0) {
       return errorResponse('Not clocked in. Please clock in before taking a break.', 400);
     }
 
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
           AND break_end IS NULL
       `, [timeCard.id]);
 
-      if (activeBreak.rowCount > 0) {
+      if ((activeBreak.rowCount ?? 0) > 0) {
         return errorResponse('Already on break. Please end current break first.', 400);
       }
 
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
           AND break_end IS NULL
       `, [timeCard.id, driverId]);
 
-      if (activeBreak.rowCount === 0) {
+      if ((activeBreak.rowCount ?? 0) === 0) {
         return errorResponse('No active break found.', 400);
       }
 

@@ -158,7 +158,7 @@ export default function UnifiedDashboard() {
         <MobileCard title="Today's Status" variant="elevated">
           {todayStatus.isClockedIn ? (
             <div className="space-y-3">
-              <StatusIndicator status="in-progress" label="Clocked In" />
+              <StatusIndicator status="active" label="Clocked In" />
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-800">Driver:</span>
@@ -253,19 +253,19 @@ export default function UnifiedDashboard() {
             <div className="flex items-center justify-between">
               <span className="text-gray-700">Today's Inspection</span>
               <StatusIndicator
-                status={todayStatus.preTripCompleted ? 'complete' : 'pending'}
+                status={todayStatus.preTripCompleted ? 'completed' : 'pending'}
               />
             </div>
             <div className="flex items-center justify-between">
               <span className="text-gray-700">HOS Compliance</span>
               <StatusIndicator 
-                status={todayStatus.drivingHours >= 10 ? 'error' : todayStatus.drivingHours >= 9 ? 'warning' : 'complete'} 
+                status={todayStatus.drivingHours >= 10 ? 'error' : todayStatus.drivingHours >= 9 ? 'warning' : 'completed'} 
                 label="Within Limits" 
               />
             </div>
             <div className="flex items-center justify-between">
               <span className="text-gray-700">150-Mile Exemption</span>
-              <StatusIndicator status="complete" label="0/8 days" />
+              <StatusIndicator status="completed" label="0/8 days" />
             </div>
           </div>
         </MobileCard>

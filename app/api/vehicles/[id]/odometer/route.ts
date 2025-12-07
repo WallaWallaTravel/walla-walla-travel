@@ -8,13 +8,8 @@ import {
   validateRequiredFields,
   logApiRequest
 } from '@/app/api/utils';
-import { query, transaction } from '@/lib/db';
-
-interface Params {
-  params: {
-    id: string;
-  };
-}
+import { query } from '@/lib/db';
+import { withTransaction } from '@/lib/db-helpers';
 
 interface OdometerUpdate {
   mileage: number;
@@ -26,8 +21,13 @@ interface OdometerUpdate {
  * PUT /api/vehicles/:id/odometer
  * Updates the vehicle's odometer reading
  */
-export async function PUT(request: NextRequest, { params }: Params) {
+export async function PUT(
+  request: NextRequest, 
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
+    const { id } = await params;
+    
     // Check authentication - required for odometer updates
     const authResult = await requireAuth();
     if ('status' in authResult) {
@@ -35,10 +35,10 @@ export async function PUT(request: NextRequest, { params }: Params) {
     }
     const session = authResult;
 
-    logApiRequest('PUT', `/api/vehicles/${params.id}/odometer`, session.userId);
+    logApiRequest('PUT', `/api/vehicles/${id}/odometer`, session.userId);
 
     // Validate vehicle ID
-    const vehicleId = parseInt(params.id);
+    const vehicleId = parseInt(id);
     if (isNaN(vehicleId)) {
       return errorResponse('Invalid vehicle ID', 400);
     }
@@ -72,7 +72,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
     const driverId = parseInt(session.userId);
 
     // Use transaction for consistency
-    const result = await transaction(async (client) => {
+    const result = await withTransaction(async (client) => {
       // Get current vehicle data
       const vehicleResult = await client.query(`
         SELECT 
@@ -186,7 +186,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
           updated_at = CURRENT_TIMESTAMP
       `, [
         vehicleId,
-        `Service required - ${Math.abs(milesUntilService)} miles overdue`,
+        `Service required - ${Math.abs(milesUntilService ?? 0)} miles overdue`,
         driverId,
       ]);
     }
@@ -204,7 +204,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
 
     let message = 'Odometer updated successfully';
     if (serviceRequired) {
-      message += `. Service is due (${Math.abs(milesUntilService)} miles overdue)`;
+      message += `. Service is due (${Math.abs(milesUntilService ?? 0)} miles overdue)`;
     } else if (milesUntilService && milesUntilService <= 500) {
       message += `. Service due in ${milesUntilService} miles`;
     }
@@ -232,14 +232,19 @@ export async function PUT(request: NextRequest, { params }: Params) {
  * GET /api/vehicles/:id/odometer
  * Gets the current odometer reading and history
  */
-export async function GET(request: NextRequest, { params }: Params) {
+export async function GET(
+  request: NextRequest, 
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
+    const { id } = await params;
+    
     // Optional authentication
     const session = await getOptionalAuth();
-    logApiRequest('GET', `/api/vehicles/${params.id}/odometer`, session?.userId);
+    logApiRequest('GET', `/api/vehicles/${id}/odometer`, session?.userId);
 
     // Validate vehicle ID
-    const vehicleId = parseInt(params.id);
+    const vehicleId = parseInt(id);
     if (isNaN(vehicleId)) {
       return errorResponse('Invalid vehicle ID', 400);
     }

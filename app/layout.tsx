@@ -1,7 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { BottomNav, BottomNavSpacer } from "@/components/ui/bottom-nav";
+import { ConditionalNavigation, ConditionalNavSpacer } from "@/components/navigation/ConditionalNav";
 import { ServiceWorkerProvider } from "@/components/ServiceWorkerProvider";
 import { OfflineSyncIndicator } from "@/components/OfflineSyncIndicator";
 
@@ -15,15 +15,21 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: "#8B1538", // Wine red
+};
+
 export const metadata: Metadata = {
-  title: "Driver Portal",
-  description: "Driver login and workflow system",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no",
-  themeColor: "#3b82f6",
+  title: "Walla Walla Travel - Operations",
+  description: "Walla Walla Travel booking and operations system",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Driver Portal"
+    title: "Walla Walla Travel"
   }
 };
 
@@ -35,11 +41,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#3b82f6" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
@@ -47,31 +51,8 @@ export default function RootLayout({
         <ServiceWorkerProvider>
           {children}
           <OfflineSyncIndicator />
-          <BottomNavSpacer />
-          <BottomNav
-            items={[
-              {
-                label: 'Home',
-                icon: '🏠',
-                href: '/driver-portal/unified-dashboard'
-              },
-              {
-                label: 'Schedule',
-                icon: '📅',
-                href: '/calendar'
-              },
-              {
-                label: 'Bookings',
-                icon: '📝',
-                href: '/bookings/new'
-              },
-              {
-                label: 'Test',
-                icon: '🧪',
-                href: '/test-mobile'
-              }
-            ]}
-          />
+          <ConditionalNavSpacer />
+          <ConditionalNavigation />
         </ServiceWorkerProvider>
       </body>
     </html>

@@ -39,9 +39,11 @@ export default function ClientNotesClient({ driver }: Props) {
           .eq('driver_id', driver.id)
           .eq('date', new Date().toDateString())
           .single()
-          
-        if (data?.wineries) {
-          setItineraryWineries(data.wineries)
+        
+        // Type assertion for Supabase response
+        const itineraryData = data as { wineries?: string[] } | null
+        if (itineraryData?.wineries) {
+          setItineraryWineries(itineraryData.wineries)
         } else {
           // Fallback data
           setItineraryWineries(['Rotie', 'Saviah', 'Zerba', 'Amavi'])

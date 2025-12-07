@@ -157,7 +157,7 @@ export default function ProposalConfirmation({ params }: { params: { proposal_id
           <div className="mt-8 pt-8 border-t text-center">
             <p className="text-gray-600 mb-2">Questions? We're here to help!</p>
             <p className="text-gray-900 font-semibold">
-              📞 (509) 123-4567 | 📧 info@wallawallatravel.com
+              📞 (509) 200-8000 | 📧 info@wallawalla.travel
             </p>
           </div>
         </div>

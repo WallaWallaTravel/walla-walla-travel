@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Pool } from 'pg';
+import { sendEmail, EmailTemplates } from '@/lib/email';
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -28,6 +29,30 @@ export async function POST(request: NextRequest) {
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + expires_in_hours);
 
+    // Get booking and driver details for email
+    const bookingResult = await pool.query(`
+      SELECT 
+        b.booking_number,
+        b.customer_name,
+        b.tour_date,
+        b.start_time,
+        b.end_time,
+        b.party_size,
+        b.pickup_location,
+        b.estimated_hours,
+        b.hourly_rate,
+        (b.estimated_hours * b.hourly_rate) as pay_amount
+      FROM bookings b
+      WHERE b.id = $1
+    `, [booking_id]);
+
+    const driverResult = await pool.query(`
+      SELECT name, email, phone FROM users WHERE id = $1
+    `, [driver_id]);
+
+    const booking = bookingResult.rows[0];
+    const driver = driverResult.rows[0];
+
     // Create tour offer
     const result = await pool.query(`
       INSERT INTO tour_offers (
@@ -50,12 +75,39 @@ export async function POST(request: NextRequest) {
       notes || null,
     ]);
 
-    // TODO: Send notification to driver (email/SMS/push)
-    console.log(`📧 Tour offer #${result.rows[0].id} sent to driver #${driver_id}`);
+    const offerId = result.rows[0].id;
+
+    // Send email notification to driver
+    if (driver?.email && booking) {
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://wallawallatravel.com';
+      const offerUrl = `${baseUrl}/driver-portal/offers`;
+      
+      const template = EmailTemplates.tourOfferToDriver({
+        driver_name: driver.name || 'Driver',
+        customer_name: booking.customer_name,
+        tour_date: booking.tour_date,
+        start_time: booking.start_time,
+        end_time: booking.end_time || '',
+        party_size: booking.party_size,
+        pickup_location: booking.pickup_location || 'TBD',
+        estimated_hours: booking.estimated_hours || 4,
+        pay_amount: parseFloat(booking.pay_amount) || 0,
+        expires_at: expiresAt.toISOString(),
+        offer_url: offerUrl,
+        notes: notes || undefined,
+      });
+
+      const emailSent = await sendEmail({
+        to: driver.email,
+        ...template,
+      });
+
+      console.log(`📧 Tour offer #${offerId} ${emailSent ? 'email sent' : 'email failed'} to ${driver.email}`);
+    }
 
     return NextResponse.json({
       success: true,
-      offer_id: result.rows[0].id,
+      offer_id: offerId,
       message: 'Tour offer created and sent to driver',
     });
 

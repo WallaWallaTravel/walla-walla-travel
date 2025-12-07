@@ -49,8 +49,8 @@ yarn-error.log*
 *.swo
 *~
 
-# Vercel
-.vercel
+# Railway
+.railway
 
 # TypeScript
 *.tsbuildinfo

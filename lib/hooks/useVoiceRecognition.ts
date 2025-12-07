@@ -2,36 +2,9 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 
-// Types for Web Speech API (not in all TypeScript definitions)
-interface SpeechRecognitionEvent extends Event {
-  results: SpeechRecognitionResultList
-  resultIndex: number
-}
-
-interface SpeechRecognitionErrorEvent extends Event {
-  error: string
-  message: string
-}
-
-interface SpeechRecognition extends EventTarget {
-  continuous: boolean
-  interimResults: boolean
-  lang: string
-  start(): void
-  stop(): void
-  abort(): void
-  onresult: ((event: SpeechRecognitionEvent) => void) | null
-  onerror: ((event: SpeechRecognitionErrorEvent) => void) | null
-  onend: (() => void) | null
-  onstart: (() => void) | null
-}
-
-declare global {
-  interface Window {
-    SpeechRecognition: new () => SpeechRecognition
-    webkitSpeechRecognition: new () => SpeechRecognition
-  }
-}
+// Types for Web Speech API - use any to avoid conflicts with built-in types
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SpeechRecognitionType = any
 
 interface VoiceRecognitionOptions {
   continuous?: boolean
@@ -69,16 +42,17 @@ export function useVoiceRecognition(options: VoiceRecognitionOptions = {}): Voic
   const [isSupported, setIsSupported] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const recognitionRef = useRef<SpeechRecognition | null>(null)
+  const recognitionRef = useRef<SpeechRecognitionType>(null)
 
   // Check browser support
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
-      setIsSupported(!!SpeechRecognition)
+      // Use window properties for cross-browser compatibility
+      const SpeechRecognitionCtor = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+      setIsSupported(!!SpeechRecognitionCtor)
 
-      if (SpeechRecognition) {
-        const recognition = new SpeechRecognition()
+      if (SpeechRecognitionCtor) {
+        const recognition = new SpeechRecognitionCtor()
         recognition.continuous = continuous
         recognition.interimResults = interimResults
         recognition.lang = lang
@@ -93,7 +67,7 @@ export function useVoiceRecognition(options: VoiceRecognitionOptions = {}): Voic
     const recognition = recognitionRef.current
     if (!recognition) return
 
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
+    recognition.onresult = (event: any) => {
       let interimText = ''
       let finalText = ''
 
@@ -120,7 +94,7 @@ export function useVoiceRecognition(options: VoiceRecognitionOptions = {}): Voic
       setInterimTranscript(interimText)
     }
 
-    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+    recognition.onerror = (event: any) => {
       console.error('Speech recognition error:', event.error, event.message)
       const errorMessage = getErrorMessage(event.error)
       setError(errorMessage)

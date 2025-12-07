@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { Pool } from 'pg';
 import { getDbConfig } from '@/lib/config/database';
 
@@ -7,15 +7,16 @@ import { getDbConfig } from '@/lib/config/database';
  * Get single media item with usage information
  */
 export async function GET(
-  request: Request,
-  { params }: { params: { media_id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ media_id: string }> }
 ) {
+  const { media_id } = await params;
   const pool = new Pool(getDbConfig());
 
   try {
     const result = await pool.query(
       `SELECT * FROM media_library WHERE id = $1 AND is_active = TRUE`,
-      [params.media_id]
+      [media_id]
     );
 
     if (result.rows.length === 0) {
@@ -36,7 +37,7 @@ export async function GET(
          JOIN proposal_media pm ON pm.proposal_id = p.id
          WHERE pm.media_id = $1
          ORDER BY p.created_at DESC`,
-        [params.media_id]
+        [media_id]
       ),
       // Wineries linked to this media
       pool.query(
@@ -44,7 +45,7 @@ export async function GET(
          FROM wineries w
          JOIN winery_media wm ON wm.winery_id = w.id
          WHERE wm.media_id = $1`,
-        [params.media_id]
+        [media_id]
       ),
       // Vehicles linked to this media
       pool.query(
@@ -52,7 +53,7 @@ export async function GET(
          FROM vehicles v
          JOIN vehicle_media vm ON vm.vehicle_id = v.id
          WHERE vm.media_id = $1`,
-        [params.media_id]
+        [media_id]
       )
     ]);
 
@@ -66,7 +67,7 @@ export async function GET(
     // Increment view count
     await pool.query(
       `UPDATE media_library SET view_count = view_count + 1 WHERE id = $1`,
-      [params.media_id]
+      [media_id]
     );
 
     return NextResponse.json({
@@ -92,9 +93,10 @@ export async function GET(
  * Update media metadata
  */
 export async function PUT(
-  request: Request,
-  { params }: { params: { media_id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ media_id: string }> }
 ) {
+  const { media_id } = await params;
   const pool = new Pool(getDbConfig());
 
   try {
@@ -133,7 +135,7 @@ export async function PUT(
         subcategory,
         is_hero,
         display_order,
-        params.media_id
+        media_id
       ]
     );
 
@@ -164,9 +166,10 @@ export async function PUT(
  * Partial update of media metadata
  */
 export async function PATCH(
-  request: Request,
-  { params }: { params: { media_id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ media_id: string }> }
 ) {
+  const { media_id } = await params;
   const pool = new Pool(getDbConfig());
 
   try {
@@ -202,7 +205,7 @@ export async function PATCH(
         category,
         subcategory,
         is_hero,
-        params.media_id
+        media_id
       ]
     );
 
@@ -233,9 +236,10 @@ export async function PATCH(
  * Soft delete media (set is_active = false)
  */
 export async function DELETE(
-  request: Request,
-  { params }: { params: { media_id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ media_id: string }> }
 ) {
+  const { media_id } = await params;
   const pool = new Pool(getDbConfig());
 
   try {
@@ -244,7 +248,7 @@ export async function DELETE(
        SET is_active = FALSE, updated_at = NOW()
        WHERE id = $1
        RETURNING id`,
-      [params.media_id]
+      [media_id]
     );
 
     if (result.rows.length === 0) {

@@ -9,11 +9,8 @@ const getApiUrl = () => {
     // Client-side
     return process.env.NEXT_PUBLIC_API_URL || '';
   }
-  // Server-side
-  return process.env.NEXT_PUBLIC_API_URL || 
-    (process.env.NODE_ENV === 'production' 
-      ? 'https://walla-walla-final.vercel.app' 
-      : 'http://localhost:3000');
+  // Server-side - uses Railway URL in production
+  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 };
 
 // Generic API request function

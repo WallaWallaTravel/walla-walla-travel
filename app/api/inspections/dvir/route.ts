@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
     console.error('DVIR creation error:', error);
     
     // If DVIR table doesn't exist, store as inspection
-    if (error.message && error.message.includes('dvir_reports')) {
+    if (error instanceof Error && error.message.includes('dvir_reports')) {
       try {
         const body = await request.json();
         const authResult = await requireAuth();

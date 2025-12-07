@@ -15,9 +15,12 @@ export const dynamic = 'force-dynamic';
  */
 export async function POST(request: NextRequest) {
   try {
+    console.log('[Business Portal Access] Received request');
     const { code } = await request.json();
+    console.log('[Business Portal Access] Code:', code);
     
     if (!code || typeof code !== 'string') {
+      console.error('[Business Portal Access] Invalid code type');
       return NextResponse.json(
         { error: 'Business code is required' },
         { status: 400 }
@@ -25,7 +28,9 @@ export async function POST(request: NextRequest) {
     }
     
     // Validate code and get business
+    console.log('[Business Portal Access] Looking up code:', code.toUpperCase());
     const business = await getBusinessByCode(code.toUpperCase());
+    console.log('[Business Portal Access] Business found:', business ? business.name : 'NOT FOUND');
     
     if (!business) {
       return NextResponse.json(

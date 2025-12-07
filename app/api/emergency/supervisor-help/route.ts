@@ -40,9 +40,10 @@ export async function POST(request: NextRequest) {
     const supervisorEmail = 'evcritchlow@gmail.com'; // Eric as supervisor
 
     // Deep link for assigning vehicle
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://wallawalla.travel';
     const deepLink = timeCardId
-      ? `https://walla-walla-final.vercel.app/admin/assign-vehicle?driver=${driverId}&timecard=${timeCardId}`
-      : `https://walla-walla-final.vercel.app/workflow`;
+      ? `${baseUrl}/admin/assign-vehicle?driver=${driverId}&timecard=${timeCardId}`
+      : `${baseUrl}/workflow`;
 
     // SMS Message
     const smsMessage = `🚨 URGENT: ${driver.name} needs vehicle assignment\nTime: ${timestamp}\nReason: ${reason || 'No vehicle assigned for pre-trip inspection'}\nLink: ${deepLink}`;

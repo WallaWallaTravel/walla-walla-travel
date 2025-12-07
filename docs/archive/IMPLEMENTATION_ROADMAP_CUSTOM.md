@@ -344,7 +344,7 @@ Reports:
 - ✅ TypeScript
 - ✅ Tailwind CSS
 - ✅ Heroku Postgres database (`lib/db.ts`)
-- ✅ Deployed on Vercel
+- ✅ Deployed on Railway
 
 **What We'll Add:**
 - GPS tracking (browser Geolocation API)

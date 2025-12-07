@@ -9,6 +9,7 @@ export interface NavItem {
   icon: React.ReactNode;
   href: string;
   badge?: number;
+  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void | Promise<void>;
 }
 
 export interface BottomNavProps {
@@ -36,13 +37,18 @@ export function BottomNav({ items, className }: BottomNavProps) {
     setMounted(true);
   }, []);
 
-  const handleNavigation = (href: string) => {
+  const handleNavigation = async (item: NavItem, e: React.MouseEvent<HTMLButtonElement>) => {
     // Haptic feedback
     if ('vibrate' in navigator) {
       navigator.vibrate(10);
     }
 
-    router.push(href);
+    // If custom onClick handler, use it
+    if (item.onClick) {
+      await item.onClick(e);
+    } else {
+      router.push(item.href);
+    }
   };
 
   if (!mounted) return null;
@@ -67,7 +73,7 @@ export function BottomNav({ items, className }: BottomNavProps) {
           return (
             <button
               key={item.href}
-              onClick={() => handleNavigation(item.href)}
+              onClick={(e) => handleNavigation(item, e)}
               className={cn(
                 // Base styles
                 'flex flex-col items-center justify-center',

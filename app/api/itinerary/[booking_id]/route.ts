@@ -16,9 +16,10 @@ interface ItineraryStop {
 
 export const GET = withErrorHandling(async (
   request: NextRequest,
-  { params }: { params: { booking_id: string } }
+  { params }: { params: Promise<{ booking_id: string }> }
 ) => {
-  const booking_id = parseInt(params.booking_id);
+  const { booking_id: bookingIdStr } = await params;
+  const booking_id = parseInt(bookingIdStr);
 
   const stops = await queryMany<ItineraryStop>(`
     SELECT 

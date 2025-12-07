@@ -73,12 +73,16 @@ export function PostTripInspectionClient({ driver, beginningMileage = 0 }: Props
 
           // Extract vehicle info from the active time card
           if (timeCard?.vehicle_id) {
-            const vehicleData = {
-              id: timeCard.vehicle_id,
-              vehicle_number: timeCard.vehicle_number,
-              make: timeCard.make,
-              model: timeCard.model,
-              current_mileage: timeCard.current_mileage || 0
+            const vehicleData: Vehicle = {
+              id: timeCard.vehicle_id as number,
+              vehicle_number: timeCard.vehicle_number as string,
+              make: timeCard.make as string,
+              model: timeCard.model as string,
+              current_mileage: (timeCard.current_mileage || 0) as number,
+              is_active: true,
+              status: 'in_use' as const,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
             }
             setVehicle(vehicleData)
 

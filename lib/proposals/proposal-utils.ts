@@ -60,6 +60,18 @@ export interface ProposalData {
   // Service Items
   service_items: ServiceItem[];
   
+  // Additional Services (e.g., lunch coordination, photography)
+  additional_services?: Array<{
+    name: string;
+    price: number;
+    quantity?: number;
+  }>;
+  
+  // Optional Services
+  lunch_coordination?: boolean;
+  lunch_coordination_count?: number;
+  photography_package?: boolean;
+  
   // Discount
   discount_percentage: number;
   discount_reason?: string;

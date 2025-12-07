@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency } from '@/lib/rate-config';
 
 interface RateConfig {
   id: number;

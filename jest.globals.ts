@@ -10,7 +10,7 @@ import { TextEncoder, TextDecoder } from 'util';
 global.Request = Request as any;
 global.Response = Response as any;
 global.Headers = Headers as any;
-global.TextEncoder = TextEncoder;
+global.TextEncoder = TextEncoder as any;
 global.TextDecoder = TextDecoder as any;
 
 // Mock FormData

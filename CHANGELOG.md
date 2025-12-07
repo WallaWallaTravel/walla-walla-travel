@@ -119,8 +119,8 @@ All notable changes to the Walla Walla Travel project will be documented in this
 - Next.js 15 with App Router
 - TypeScript
 - Tailwind CSS
-- Heroku Postgres database
-- Vercel deployment (planned)
+- PostgreSQL database
+- Railway deployment
 
 ---
 

@@ -1,59 +1,59 @@
 /**
  * Theme Configuration
- * Wine Country - Burgundy/Gold with subtle, minimal application
+ * Modern Navy & Copper - Sophisticated, trustworthy, premium travel brand
  */
 
 export const theme = {
   colors: {
-    // Primary - Deep Burgundy/Wine
+    // Primary - Deep Navy
     primary: {
-      50: '#FDF2F4',
-      100: '#FCE7EB',
-      200: '#F9CFD8',
-      300: '#F4A8B9',
-      400: '#EC7494',
-      500: '#E04370',
-      600: '#CD2456',
-      700: '#8B1538', // Main burgundy
-      800: '#7A1230',
-      900: '#67102A',
+      50: '#F0F4F8',
+      100: '#D9E2EC',
+      200: '#BCCCDC',
+      300: '#9FB3C8',
+      400: '#627D98',
+      500: '#486581',
+      600: '#334E68',
+      700: '#1E3A5F', // Main navy
+      800: '#1A3354',
+      900: '#0F172A',
     },
     
-    // Accent - Gold
+    // Accent - Warm Copper
     accent: {
-      50: '#FDFBF7',
-      100: '#FAF6ED',
-      200: '#F5EDD9',
-      300: '#EBD9B4',
-      400: '#DFC284',
-      500: '#D4AF37', // Main gold
-      600: '#C19A2E',
-      700: '#A17F26',
-      800: '#826624',
-      900: '#6B5420',
+      50: '#FDF8F3',
+      100: '#FAEDE0',
+      200: '#F5D9C0',
+      300: '#E8BA8F',
+      400: '#D49560',
+      500: '#B87333', // Main copper
+      600: '#A5632B',
+      700: '#8B5225',
+      800: '#6F421E',
+      900: '#5A3618',
     },
     
-    // Neutrals - Keep clean
+    // Neutrals - Cool slate tones
     gray: {
-      50: '#F9FAFB',
-      100: '#F3F4F6',
-      200: '#E5E7EB',
-      300: '#D1D5DB',
-      400: '#9CA3AF',
-      500: '#6B7280',
-      600: '#4B5563',
-      700: '#374151',
-      800: '#1F2937',
-      900: '#111827',
+      50: '#F8FAFC',
+      100: '#F1F5F9',
+      200: '#E2E8F0',
+      300: '#CBD5E1',
+      400: '#94A3B8',
+      500: '#64748B',
+      600: '#475569',
+      700: '#334155',
+      800: '#1E293B',
+      900: '#0F172A',
     }
   },
   
-  // Semantic colors
+  // Semantic colors - refined to match palette
   semantic: {
-    success: '#10B981',
-    warning: '#F59E0B',
-    error: '#EF4444',
-    info: '#3B82F6',
+    success: '#059669', // Emerald-600 (muted)
+    warning: '#D97706', // Amber-600 (warm)
+    error: '#DC2626',   // Red-600
+    info: '#1E3A5F',    // Use primary navy
   }
 };
 
@@ -61,31 +61,45 @@ export const theme = {
 export const themeClasses = {
   // Buttons
   button: {
-    primary: 'bg-[#8B1538] hover:bg-[#7A1230] text-white',
-    secondary: 'bg-[#D4AF37] hover:bg-[#C19A2E] text-white',
-    outline: 'border-2 border-[#8B1538] text-[#8B1538] hover:bg-[#8B1538] hover:text-white',
-    ghost: 'text-[#8B1538] hover:bg-[#FDF2F4]',
+    primary: 'bg-[#1E3A5F] hover:bg-[#334E68] text-white transition-colors',
+    secondary: 'bg-[#B87333] hover:bg-[#A5632B] text-white transition-colors',
+    outline: 'border-2 border-[#1E3A5F] text-[#1E3A5F] hover:bg-[#1E3A5F] hover:text-white transition-colors',
+    ghost: 'text-[#1E3A5F] hover:bg-[#F0F4F8] transition-colors',
   },
   
-  // Accents (use sparingly)
+  // Accents (copper - use sparingly)
   accent: {
-    badge: 'bg-[#D4AF37] text-white',
-    border: 'border-[#D4AF37]',
-    text: 'text-[#D4AF37]',
-    bgSubtle: 'bg-[#FAF6ED]',
+    badge: 'bg-[#B87333] text-white',
+    border: 'border-[#B87333]',
+    text: 'text-[#B87333]',
+    bgSubtle: 'bg-[#FDF8F3]',
   },
   
-  // Primary (main brand color)
+  // Primary (navy)
   primary: {
-    badge: 'bg-[#8B1538] text-white',
-    border: 'border-[#8B1538]',
-    text: 'text-[#8B1538]',
-    bgSubtle: 'bg-[#FDF2F4]',
+    badge: 'bg-[#1E3A5F] text-white',
+    border: 'border-[#1E3A5F]',
+    text: 'text-[#1E3A5F]',
+    bgSubtle: 'bg-[#F0F4F8]',
   },
   
   // Focus states
-  focus: 'focus:border-[#8B1538] focus:ring-4 focus:ring-[#FDF2F4]',
+  focus: 'focus:border-[#1E3A5F] focus:ring-4 focus:ring-[#F0F4F8]',
+};
+
+// CSS Custom Properties for easy theming
+export const cssVariables = {
+  '--color-primary': '#1E3A5F',
+  '--color-primary-light': '#334E68',
+  '--color-primary-dark': '#0F172A',
+  '--color-accent': '#B87333',
+  '--color-accent-light': '#D49560',
+  '--color-accent-dark': '#8B5225',
+  '--color-background': '#F8FAFC',
+  '--color-surface': '#FFFFFF',
+  '--color-text': '#0F172A',
+  '--color-text-muted': '#64748B',
+  '--color-border': '#E2E8F0',
 };
 
 export default theme;
-

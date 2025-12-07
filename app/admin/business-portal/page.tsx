@@ -1,11 +1,12 @@
 "use client";
 
 /**
- * Admin: Business Portal Management
- * Invite businesses, view submissions, track progress
+ * Admin: Business Portal Dashboard
+ * Review submissions, detect discrepancies, approve content
  */
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 interface Business {
   id: number;
@@ -13,365 +14,294 @@ interface Business {
   business_type: string;
   status: string;
   completion_percentage: number;
-  contact_email: string;
-  unique_code: string;
-  created_at: string;
+  submitted_at?: string;
+  invited_at?: string;
+  last_activity_at?: string;
+  contact_email?: string;
 }
 
-export default function AdminBusinessPortalPage() {
+interface ProcessingStats {
+  pending: number;
+  processing: number;
+  completed: number;
+  failed: number;
+}
+
+export default function BusinessPortalAdminPage() {
+  const router = useRouter();
   const [businesses, setBusinesses] = useState<Business[]>([]);
+  const [processingStats, setProcessingStats] = useState<ProcessingStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showInviteForm, setShowInviteForm] = useState(false);
+  const [processing, setProcessing] = useState(false);
   const [filter, setFilter] = useState<string>('all');
-  
-  // Form state
-  const [formData, setFormData] = useState({
-    business_type: 'winery',
-    name: '',
-    contact_name: '',
-    contact_email: '',
-    contact_phone: '',
-    website: ''
-  });
-  const [submitting, setSubmitting] = useState(false);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
   useEffect(() => {
-    loadBusinesses();
+    loadData();
   }, [filter]);
-  
-  const loadBusinesses = async () => {
+
+  const loadData = async () => {
     try {
       setLoading(true);
-      const statusParam = filter !== 'all' ? `?status=${filter}` : '';
-      const response = await fetch(`/api/admin/businesses${statusParam}`);
-      const data = await response.json();
-      setBusinesses(data.businesses || []);
-    } catch (err) {
-      console.error('Load error:', err);
+
+      // Load businesses
+      const bizResponse = await fetch('/api/admin/business-portal/businesses');
+      if (bizResponse.ok) {
+        const data = await bizResponse.json();
+        setBusinesses(data.businesses || []);
+      }
+
+      // Load processing stats
+      const statsResponse = await fetch('/api/admin/business-portal/process-jobs');
+      if (statsResponse.ok) {
+        const data = await statsResponse.json();
+        setProcessingStats(data.stats);
+      }
+
+    } catch (error: any) {
+      console.error('Failed to load data:', error);
+      setMessage({ type: 'error', text: 'Failed to load data' });
     } finally {
       setLoading(false);
     }
   };
-  
-  const handleInvite = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
-    setError(null);
-    setSuccess(null);
-    
+
+  const handleProcessJobs = async () => {
+    setProcessing(true);
+    setMessage(null);
+
     try {
-      const response = await fetch('/api/admin/businesses/invite', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+      const response = await fetch('/api/admin/business-portal/process-jobs', {
+        method: 'POST'
       });
-      
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to invite');
-      }
-      
+
+      if (!response.ok) throw new Error('Processing failed');
+
       const data = await response.json();
-      setSuccess(`✓ ${data.business.name} invited! Code: ${data.business.unique_code}`);
-      
-      // Reset form
-      setFormData({
-        business_type: 'winery',
-        name: '',
-        contact_name: '',
-        contact_email: '',
-        contact_phone: '',
-        website: ''
-      });
-      
-      // Reload list
-      loadBusinesses();
-      
-      // Hide form after 3 seconds
-      setTimeout(() => {
-        setShowInviteForm(false);
-        setSuccess(null);
-      }, 3000);
-      
-    } catch (err: any) {
-      setError(err.message);
+      setMessage({ type: 'success', text: data.message });
+      loadData(); // Reload stats
+
+    } catch (error: any) {
+      console.error('Processing error:', error);
+      setMessage({ type: 'error', text: error.message });
     } finally {
-      setSubmitting(false);
+      setProcessing(false);
     }
   };
-  
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    alert('Copied to clipboard!');
+
+  const filteredBusinesses = businesses.filter(b => {
+    if (filter === 'all') return true;
+    if (filter === 'submitted') return b.status === 'submitted';
+    if (filter === 'in_progress') return b.status === 'in_progress';
+    if (filter === 'invited') return b.status === 'invited';
+    if (filter === 'approved') return b.status === 'approved';
+    return true;
+  });
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'invited': return 'bg-gray-100 text-gray-800';
+      case 'in_progress': return 'bg-blue-100 text-blue-800';
+      case 'submitted': return 'bg-yellow-100 text-yellow-800';
+      case 'approved': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
   };
-  
-  const statusColors: { [key: string]: string } = {
-    invited: 'bg-gray-100 text-gray-800',
-    in_progress: 'bg-blue-100 text-blue-800',
-    submitted: 'bg-yellow-100 text-yellow-800',
-    approved: 'bg-green-100 text-green-800',
-    active: 'bg-green-100 text-green-800'
-  };
-  
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Business Portal Management</h1>
-          <p className="text-gray-600">Invite businesses and manage their contributions</p>
-        </div>
-        
-        {/* Actions */}
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex space-x-2">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Business Portal Admin</h1>
+              <p className="text-sm text-gray-600">Review submissions and curate content</p>
+            </div>
             <button
-              onClick={() => setFilter('all')}
-              className={`px-4 py-2 rounded-lg ${filter === 'all' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'}`}
+              onClick={() => router.push('/admin')}
+              className="text-blue-600 hover:text-blue-700 font-medium"
             >
-              All ({businesses.length})
-            </button>
-            <button
-              onClick={() => setFilter('invited')}
-              className={`px-4 py-2 rounded-lg ${filter === 'invited' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'}`}
-            >
-              Invited
-            </button>
-            <button
-              onClick={() => setFilter('in_progress')}
-              className={`px-4 py-2 rounded-lg ${filter === 'in_progress' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'}`}
-            >
-              In Progress
-            </button>
-            <button
-              onClick={() => setFilter('submitted')}
-              className={`px-4 py-2 rounded-lg ${filter === 'submitted' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'}`}
-            >
-              Submitted
+              ← Back to Admin
             </button>
           </div>
-          
-          <button
-            onClick={() => setShowInviteForm(!showInviteForm)}
-            className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 font-medium"
-          >
-            + Invite Business
-          </button>
         </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 py-8">
         
-        {/* Invite Form */}
-        {showInviteForm && (
-          <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Invite New Business</h2>
-            
-            {error && (
-              <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
-                <p className="text-red-700">{error}</p>
-              </div>
-            )}
-            
-            {success && (
-              <div className="bg-green-50 border-l-4 border-green-500 p-4 mb-4">
-                <p className="text-green-700">{success}</p>
-              </div>
-            )}
-            
-            <form onSubmit={handleInvite} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Business Type *
-                  </label>
-                  <select
-                    value={formData.business_type}
-                    onChange={(e) => setFormData({ ...formData, business_type: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    required
-                  >
-                    <option value="winery">Winery</option>
-                    <option value="restaurant">Restaurant</option>
-                    <option value="hotel">Hotel</option>
-                    <option value="activity">Activity</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Business Name *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Contact Name
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.contact_name}
-                    onChange={(e) => setFormData({ ...formData, contact_name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Contact Email *
-                  </label>
-                  <input
-                    type="email"
-                    value={formData.contact_email}
-                    onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone
-                  </label>
-                  <input
-                    type="tel"
-                    value={formData.contact_phone}
-                    onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Website
-                  </label>
-                  <input
-                    type="url"
-                    value={formData.website}
-                    onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder="https://"
-                  />
-                </div>
-              </div>
-              
-              <div className="flex space-x-3">
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50"
-                >
-                  {submitting ? 'Inviting...' : 'Send Invitation'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowInviteForm(false)}
-                  className="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
+        {/* Messages */}
+        {message && (
+          <div className={`mb-6 p-4 rounded-lg ${
+            message.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
+          }`}>
+            {message.text}
           </div>
         )}
-        
-        {/* Business List */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          {loading ? (
-            <div className="p-8 text-center text-gray-500">Loading...</div>
-          ) : businesses.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
-              No businesses found. Invite your first business to get started!
+
+        {/* Processing Stats */}
+        {processingStats && (
+          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900">Processing Queue</h2>
+              <button
+                onClick={handleProcessJobs}
+                disabled={processing || processingStats.pending === 0}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {processing ? 'Processing...' : 'Process Jobs'}
+              </button>
             </div>
-          ) : (
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+
+            <div className="grid grid-cols-4 gap-4">
+              <div className="bg-yellow-50 rounded-lg p-4">
+                <div className="text-3xl font-bold text-yellow-800">{processingStats.pending}</div>
+                <div className="text-sm text-yellow-600">Pending</div>
+              </div>
+              <div className="bg-blue-50 rounded-lg p-4">
+                <div className="text-3xl font-bold text-blue-800">{processingStats.processing}</div>
+                <div className="text-sm text-blue-600">Processing</div>
+              </div>
+              <div className="bg-green-50 rounded-lg p-4">
+                <div className="text-3xl font-bold text-green-800">{processingStats.completed}</div>
+                <div className="text-sm text-green-600">Completed (24h)</div>
+              </div>
+              <div className="bg-red-50 rounded-lg p-4">
+                <div className="text-3xl font-bold text-red-800">{processingStats.failed}</div>
+                <div className="text-sm text-red-600">Failed (24h)</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Filters */}
+        <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+          <div className="flex gap-2">
+            {['all', 'submitted', 'in_progress', 'invited', 'approved'].map(f => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`px-4 py-2 rounded-lg font-medium transition ${
+                  filter === f
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {f.replace('_', ' ').toUpperCase()}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Business List */}
+        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Business
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Type
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Progress
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Last Activity
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredBusinesses.length === 0 ? (
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Business
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Type
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Progress
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Access Code
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
+                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                    No businesses found
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {businesses.map((business) => (
-                  <tr key={business.id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{business.name}</div>
+              ) : (
+                filteredBusinesses.map(business => (
+                  <tr key={business.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4">
+                      <div className="font-medium text-gray-900">{business.name}</div>
                       <div className="text-sm text-gray-500">{business.contact_email}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900 capitalize">{business.business_type}</div>
+                    <td className="px-6 py-4 text-sm text-gray-700">
+                      {business.business_type}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[business.status] || 'bg-gray-100 text-gray-800'}`}>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(business.status)}`}>
                         {business.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="w-full bg-gray-200 rounded-full h-2 mr-2">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 bg-gray-200 rounded-full h-2">
                           <div
                             className="bg-blue-600 h-2 rounded-full"
                             style={{ width: `${business.completion_percentage}%` }}
                           ></div>
                         </div>
-                        <span className="text-sm text-gray-600">{business.completion_percentage}%</span>
+                        <span className="text-sm font-medium text-gray-700">
+                          {business.completion_percentage}%
+                        </span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <button
-                        onClick={() => copyToClipboard(business.unique_code)}
-                        className="text-sm font-mono text-blue-600 hover:text-blue-800"
-                      >
-                        {business.unique_code}
-                      </button>
+                    <td className="px-6 py-4 text-sm text-gray-500">
+                      {business.last_activity_at 
+                        ? new Date(business.last_activity_at).toLocaleDateString()
+                        : 'Never'
+                      }
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <td className="px-6 py-4">
                       <button
-                        onClick={() => copyToClipboard(`${window.location.origin}/contribute/${business.unique_code}`)}
-                        className="text-blue-600 hover:text-blue-800 mr-3"
+                        onClick={() => router.push(`/admin/business-portal/${business.id}`)}
+                        className="text-blue-600 hover:text-blue-800 font-medium text-sm"
                       >
-                        Copy Link
+                        Review →
                       </button>
-                      <a
-                        href={`/contribute/${business.unique_code}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-800"
-                      >
-                        View →
-                      </a>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
-      </div>
+
+        {/* Quick Actions */}
+        <div className="mt-6 bg-blue-50 rounded-lg p-6 border-2 border-blue-200">
+          <h3 className="text-lg font-semibold text-blue-900 mb-3">Quick Start</h3>
+          <div className="space-y-2 text-sm text-blue-800">
+            <p>• <strong>Invite a business:</strong> Create a new business and send them their unique code</p>
+            <p>• <strong>Process jobs:</strong> Click "Process Jobs" to transcribe audio, extract data, and analyze photos</p>
+            <p>• <strong>Review submissions:</strong> Click "Review" on any submitted business to check for discrepancies</p>
+          </div>
+          <button
+            onClick={() => router.push('/admin/business-portal/invite')}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition"
+          >
+            + Invite New Business
+          </button>
+        </div>
+      </main>
     </div>
   );
 }
-

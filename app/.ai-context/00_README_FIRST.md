@@ -8,7 +8,7 @@ This is a commercial travel suite application. Before making ANY changes:
 ## Project Overview
 - Travel booking system with wine tours and transportation
 - Using Next.js 14, TypeScript, Supabase, Tailwind
-- Deployed on Vercel
+- Deployed on Railway
 - All auth handled by Supabase (never build custom auth)
 
 ## Critical Rules

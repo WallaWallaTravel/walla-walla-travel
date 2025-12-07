@@ -107,7 +107,7 @@ export async function POST(
               <p><strong>${COMPANY_INFO.name}</strong></p>
               <p>${COMPANY_INFO.address.full}</p>
               <p>
-                <a href="tel:${COMPANY_INFO.phone.raw}" style="color: #8B1538; text-decoration: none;">${COMPANY_INFO.phone.formatted}</a> • 
+                <a href="tel:${COMPANY_INFO.phone.dialable}" style="color: #8B1538; text-decoration: none;">${COMPANY_INFO.phone.formatted}</a> • 
                 <a href="mailto:${COMPANY_INFO.email.general}" style="color: #8B1538; text-decoration: none;">${COMPANY_INFO.email.general}</a>
               </p>
             </div>

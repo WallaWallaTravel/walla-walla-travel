@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
         LIMIT 1
       `, [driverId]);
 
-      if (activeTimeCard.rowCount > 0) {
+      if ((activeTimeCard.rowCount ?? 0) > 0) {
         const card = activeTimeCard.rows[0];
         const clockInTime = new Date(card.clock_in_time);
         
@@ -153,7 +153,7 @@ export async function POST(request: NextRequest) {
         LIMIT 1
       `, [driverId, today]);
 
-      if (incompletePrevious.rowCount > 0) {
+      if ((incompletePrevious.rowCount ?? 0) > 0) {
         const card = incompletePrevious.rows[0];
         const cardDate = new Date(card.date);
         
@@ -294,7 +294,7 @@ export async function POST(request: NextRequest) {
         LIMIT 1
       `, [body.vehicleId, driverId]);
 
-      if (vehicleInUse.rowCount > 0) {
+      if ((vehicleInUse.rowCount ?? 0) > 0) {
         const inUseInfo = vehicleInUse.rows[0];
         return successResponse({
           status: 'vehicle_in_use',
@@ -411,7 +411,7 @@ export async function POST(request: NextRequest) {
       const vehicleId = timeCard.vehicle_id;
 
       // EDGE CASE: If no vehicle assigned (non-driving tasks), skip post-trip requirement
-      const warnings = [];
+      const warnings: string[] = [];
 
       if (vehicleId) {
         // Vehicle was used - post-trip inspection REQUIRED
@@ -423,7 +423,7 @@ export async function POST(request: NextRequest) {
           LIMIT 1
         `, [timeCardId]);
 
-        if (inspectionCheck.rowCount === 0) {
+        if ((inspectionCheck.rowCount ?? 0) === 0) {
           // BLOCK clock-out if post-trip not completed for THIS shift with vehicle
           const vehicleName = timeCard.vehicle_number
             ? `${timeCard.make} ${timeCard.model} (${timeCard.vehicle_number})`
@@ -594,7 +594,7 @@ export async function GET(request: NextRequest) {
         LIMIT 1
       `, [driverId]);
       
-      if (todayShifts.rowCount > 0) {
+      if ((todayShifts.rowCount ?? 0) > 0) {
         const lastShift = todayShifts.rows[0];
         return successResponse({
           status: 'not_clocked_in',

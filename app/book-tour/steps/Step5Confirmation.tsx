@@ -60,7 +60,7 @@ export default function Step5Confirmation({ bookingData }: Props) {
             <div>
               <h4 className="font-bold text-gray-900 mb-1">Detailed Itinerary</h4>
               <p className="text-gray-600">
-                You'll receive your detailed itinerary 7 days before your tour
+                You'll receive your detailed itinerary before your tour
               </p>
             </div>
           </div>
@@ -176,16 +176,16 @@ export default function Step5Confirmation({ bookingData }: Props) {
         <p className="text-gray-600 mb-4">Questions about your tour?</p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
           <a
-            href="tel:+15095550199"
+            href="tel:+15092008000"
             className="text-purple-600 hover:text-purple-700 font-semibold flex items-center gap-2"
           >
-            📞 (509) 555-0199
+            📞 (509) 200-8000
           </a>
           <a
-            href="mailto:info@wallawallatravel.com"
+            href="mailto:info@wallawalla.travel"
             className="text-purple-600 hover:text-purple-700 font-semibold flex items-center gap-2"
           >
-            ✉️ info@wallawallatravel.com
+            ✉️ info@wallawalla.travel
           </a>
         </div>
       </div>

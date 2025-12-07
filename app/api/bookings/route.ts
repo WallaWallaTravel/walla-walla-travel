@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
+import { sendBookingConfirmationEmail } from '@/lib/services/email-automation.service';
 
 export async function GET(request: NextRequest) {
   try {
@@ -71,6 +72,8 @@ export async function POST(request: NextRequest) {
         customer_email,
         customer_phone,
         tour_date,
+        tour_start_date,
+        tour_end_date,
         start_time,
         end_time,
         duration_hours,
@@ -78,12 +81,21 @@ export async function POST(request: NextRequest) {
         pickup_location,
         dropoff_location,
         status,
+        tour_type,
+        tour_duration_type,
         base_price,
         total_price,
         deposit_amount,
+        final_payment_amount,
         driver_id,
-        vehicle_id
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+        vehicle_id,
+        referral_source,
+        specific_social_media,
+        specific_ai,
+        hotel_concierge_name,
+        referral_other_details,
+        wine_tour_preference
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28)
       RETURNING *
     `, [
       `WWT-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(5, '0')}`,
@@ -91,6 +103,8 @@ export async function POST(request: NextRequest) {
       body.customer_email,
       body.customer_phone,
       body.tour_date,
+      body.tour_start_date || null,
+      body.tour_end_date || null,
       body.start_time || body.pickup_time,
       body.end_time || '16:00:00',
       body.duration_hours || 6,
@@ -98,14 +112,32 @@ export async function POST(request: NextRequest) {
       body.pickup_location,
       body.dropoff_location,
       body.status || 'pending',
+      body.tour_type || 'wine_tour',
+      body.tour_duration_type || 'single',
       body.base_price || 0,
       body.total_price || 0,
       body.deposit_amount || 0,
+      body.final_payment_amount || 0,
       body.driver_id || null,
-      body.vehicle_id || null
+      body.vehicle_id || null,
+      body.referral_source || null,
+      body.specific_social_media || null,
+      body.specific_ai || null,
+      body.hotel_concierge_name || null,
+      body.referral_other_details || null,
+      body.wine_tour_preference || null
     ]);
 
-    return NextResponse.json({ success: true, booking: result.rows[0] });
+    const booking = result.rows[0];
+
+    // Send confirmation email (async, don't wait)
+    if (booking.customer_email) {
+      sendBookingConfirmationEmail(booking.id).catch(err => {
+        console.error('[Booking] Failed to send confirmation email:', err);
+      });
+    }
+
+    return NextResponse.json({ success: true, booking });
   } catch (error: any) {
     console.error('Error creating booking:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });

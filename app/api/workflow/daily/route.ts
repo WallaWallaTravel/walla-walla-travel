@@ -102,7 +102,7 @@ export async function GET(request: NextRequest) {
     hos.daily_driving = drivingResult.rows[0]?.daily_driving || 0;
 
     // Get today's breaks (table doesn't exist yet)
-    let breaks = [];
+    const breaks: { id: number; break_start: string; break_end: string | null; break_type: string }[] = [];
 
     // Get today's scheduled routes
     const routesResult = await query(`

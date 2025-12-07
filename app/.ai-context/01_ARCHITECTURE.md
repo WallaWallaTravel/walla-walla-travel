@@ -5,7 +5,7 @@
 - TypeScript for type safety
 - Supabase for auth & database
 - Tailwind for styling
-- Vercel for deployment
+- Railway for deployment
 
 ## Directory Structure
 travel-suite/

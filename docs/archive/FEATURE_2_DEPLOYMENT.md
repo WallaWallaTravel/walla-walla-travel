@@ -53,7 +53,7 @@ psql your_database_url < migrations/001_add_time_card_id_to_inspections.sql
 3. Execute the SQL script
 4. You should see: ✅ Migration successful!
 
-### Option 3: Run via Vercel (if you add DATABASE_URL env var)
+### Option 3: Run via Railway (if you add DATABASE_URL env var)
 
 ```bash
 # From your local terminal:
@@ -138,7 +138,7 @@ This prevents data corruption and makes it clear what needs to be done.
 
 ## 📊 Production URL
 
-https://walla-walla-final-7yfpyeilk-walla-walla-travel-app.vercel.app
+https://walla-walla-travel.up.railway.app
 
 ---
 

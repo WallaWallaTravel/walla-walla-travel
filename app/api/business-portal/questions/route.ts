@@ -44,13 +44,16 @@ export async function GET(request: NextRequest) {
     const questionsWithStatus = progress.questions.map(q => {
       const hasVoice = progress.voiceAnswers.has(q.id);
       const hasText = progress.textAnswers.has(q.id);
+      const voiceEntry = hasVoice ? progress.voiceAnswers.get(q.id) : null;
+      const textEntry = hasText ? progress.textAnswers.get(q.id) : null;
       
       return {
         ...q,
         answered: hasVoice || hasText,
         answer_type: hasVoice ? 'voice' : hasText ? 'text' : null,
-        voice_entry: hasVoice ? progress.voiceAnswers.get(q.id) : null,
-        text_entry: hasText ? progress.textAnswers.get(q.id) : null
+        answer_text: textEntry?.response_text || voiceEntry?.transcription || null,
+        voice_entry: voiceEntry,
+        text_entry: textEntry
       };
     });
     

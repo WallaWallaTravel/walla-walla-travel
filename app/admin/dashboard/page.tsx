@@ -1,566 +1,379 @@
-'use client';
+/**
+ * Admin Dashboard - Overview
+ * 
+ * Main landing page for administrators with key metrics and quick actions
+ */
 
-import React, { useState, useEffect } from 'react';
-import { MobileCard, TouchButton, AlertBanner } from '@/components/mobile';
-import type { ActiveShift, FleetVehicle } from '@/lib/types';
+import { getSession } from '@/lib/auth/session';
+import { redirect } from 'next/navigation';
+import Link from 'next/link';
+import { query } from '@/lib/db';
 
-interface Statistics {
-  shifts: {
-    total_today: number;
-    active: number;
-    completed: number;
-  };
-  services: {
-    total_today: number;
-    active: number;
-    completed: number;
-  };
-  revenue: {
-    total_today: number;
-    service_hours_today: number;
-  };
-  fleet: {
-    total: number;
-    available: number;
-    in_use: number;
-    out_of_service: number;
-    utilization_rate: number;
-  };
+interface DashboardStats {
+  totalBookings: number;
+  pendingBookings: number;
+  activeDrivers: number;
+  totalRevenue: number;
+  recentBookings: Array<{
+    id: number;
+    booking_number: string;
+    customer_name: string;
+    tour_date: string;
+    status: string;
+    total_price: number;
+  }>;
+  pendingProposals: number;
+  acceptedProposals: number;
+  businessPortalSubmissions: number;
 }
 
-interface DashboardData {
-  activeShifts: ActiveShift[];
-  fleetStatus: FleetVehicle[];
-  statistics: Statistics;
-  lastUpdated: string;
+async function getDashboardStats(): Promise<DashboardStats> {
+  try {
+    const bookingsCount = await query(
+      `SELECT COUNT(*) as count FROM bookings`
+    );
+    
+    const pendingCount = await query(
+      `SELECT COUNT(*) as count FROM bookings WHERE status = 'pending'`
+    );
+    
+    const driversCount = await query(
+      `SELECT COUNT(*) as count FROM users WHERE role = 'driver' AND is_active = true`
+    );
+    
+    const revenueResult = await query(
+      `SELECT COALESCE(SUM(total_price), 0) as revenue 
+       FROM bookings 
+       WHERE status IN ('confirmed', 'completed')`
+    );
+    
+    const recentBookings = await query<{
+      id: number;
+      booking_number: string;
+      customer_name: string;
+      tour_date: string;
+      status: string;
+      total_price: number;
+    }>(
+      `SELECT id, booking_number, customer_name, tour_date, status, total_price
+       FROM bookings
+       ORDER BY created_at DESC
+       LIMIT 5`
+    );
+    
+    const proposalsCount = await query(
+      `SELECT COUNT(*) as count FROM proposals WHERE status = 'pending'`
+    ).catch(() => ({ rows: [{ count: 0 }] }));
+    
+    const acceptedProposalsCount = await query(
+      `SELECT COUNT(*) as count FROM proposals WHERE status = 'accepted' AND converted_to_booking_id IS NULL`
+    ).catch(() => ({ rows: [{ count: 0 }] }));
+    
+    const businessCount = await query(
+      `SELECT COUNT(*) as count FROM business_portal WHERE status = 'pending'`
+    ).catch(() => ({ rows: [{ count: 0 }] }));
+    
+    return {
+      totalBookings: parseInt(bookingsCount.rows[0]?.count || '0'),
+      pendingBookings: parseInt(pendingCount.rows[0]?.count || '0'),
+      activeDrivers: parseInt(driversCount.rows[0]?.count || '0'),
+      totalRevenue: parseFloat(revenueResult.rows[0]?.revenue || '0'),
+      recentBookings: recentBookings.rows.map(booking => ({
+        ...booking,
+        total_price: parseFloat(booking.total_price as any || '0')
+      })),
+      pendingProposals: parseInt(proposalsCount.rows[0]?.count || '0'),
+      acceptedProposals: parseInt(acceptedProposalsCount.rows[0]?.count || '0'),
+      businessPortalSubmissions: parseInt(businessCount.rows[0]?.count || '0'),
+    };
+  } catch (error) {
+    console.error('[Dashboard] Error fetching stats:', error);
+    return {
+      totalBookings: 0,
+      pendingBookings: 0,
+      activeDrivers: 0,
+      totalRevenue: 0,
+      recentBookings: [],
+      pendingProposals: 0,
+      acceptedProposals: 0,
+      businessPortalSubmissions: 0,
+    };
+  }
 }
 
-export default function AdminDashboard() {
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedShift, setSelectedShift] = useState<ActiveShift | null>(null);
-  const [showAssignModal, setShowAssignModal] = useState(false);
-  const [autoRefresh, setAutoRefresh] = useState(true);
-
-  // Fetch dashboard data
-  const fetchDashboard = async () => {
-    try {
-      const response = await fetch('/api/admin/dashboard', {
-        credentials: 'include'
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        setData(result.data);
-        setError(null);
-      } else {
-        setError(result.error || 'Failed to load dashboard');
-      }
-    } catch (err) {
-      console.error('Dashboard fetch error:', err);
-      setError('Network error - please try again');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Initial load
-  useEffect(() => {
-    fetchDashboard();
-  }, []);
-
-  // Auto-refresh every 30 seconds
-  useEffect(() => {
-    if (!autoRefresh) return;
-
-    const interval = setInterval(() => {
-      fetchDashboard();
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, [autoRefresh]);
-
-  const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
-  };
-
-  const handleAssignVehicle = (shift: ActiveShift) => {
-    setSelectedShift(shift);
-    setShowAssignModal(true);
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-100 p-4">
-        <div className="max-w-7xl mx-auto">
-          <MobileCard>
-            <p className="text-center text-gray-800">Loading dashboard...</p>
-          </MobileCard>
-        </div>
-      </div>
-    );
+export default async function AdminDashboardPage() {
+  const session = await getSession();
+  
+  if (!session || session.user.role !== 'admin') {
+    redirect('/login');
   }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-100 p-4">
-        <div className="max-w-7xl mx-auto">
-          <AlertBanner
-            type="error"
-            message={error}
-            onDismiss={() => setError(null)}
-          />
-          <TouchButton onClick={() => fetchDashboard()} className="mt-4">
-            Retry
-          </TouchButton>
-        </div>
-      </div>
-    );
-  }
-
-  if (!data) return null;
-
-  const stats = data.statistics;
-
+  
+  const stats = await getDashboardStats();
+  
   return (
-    <div className="min-h-screen bg-gray-100 p-4">
-      <div className="max-w-7xl mx-auto space-y-4">
-        {/* Header */}
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900">Supervisor Dashboard</h1>
-          <div className="flex items-center gap-3">
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={autoRefresh}
-                onChange={(e) => setAutoRefresh(e.target.checked)}
-                className="rounded"
-              />
-              <span>Auto-refresh</span>
-            </label>
-            <TouchButton variant="secondary" onClick={() => fetchDashboard()}>
-              Refresh Now
-            </TouchButton>
-          </div>
-        </div>
-
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Active Shifts */}
-          <MobileCard>
-            <h3 className="text-sm font-medium text-gray-600">Active Shifts</h3>
-            <p className="text-3xl font-bold text-blue-600 mt-2">{stats.shifts.active}</p>
-            <p className="text-xs text-gray-600 mt-1">
-              {stats.shifts.completed} completed today
-            </p>
-          </MobileCard>
-
-          {/* Fleet Utilization */}
-          <MobileCard>
-            <h3 className="text-sm font-medium text-gray-600">Fleet Utilization</h3>
-            <p className="text-3xl font-bold text-green-600 mt-2">{stats.fleet.utilization_rate}%</p>
-            <p className="text-xs text-gray-600 mt-1">
-              {stats.fleet.in_use} of {stats.fleet.total} in use
-            </p>
-          </MobileCard>
-
-          {/* Today's Revenue */}
-          <MobileCard>
-            <h3 className="text-sm font-medium text-gray-600">Today's Revenue</h3>
-            <p className="text-3xl font-bold text-purple-600 mt-2">
-              {formatCurrency(stats.revenue.total_today)}
-            </p>
-            <p className="text-xs text-gray-600 mt-1">
-              {stats.revenue.service_hours_today.toFixed(1)} service hours
-            </p>
-          </MobileCard>
-
-          {/* Active Services */}
-          <MobileCard>
-            <h3 className="text-sm font-medium text-gray-600">Active Services</h3>
-            <p className="text-3xl font-bold text-orange-600 mt-2">{stats.services.active}</p>
-            <p className="text-xs text-gray-600 mt-1">
-              {stats.services.completed} completed today
-            </p>
-          </MobileCard>
-        </div>
-
-        {/* Active Shifts */}
-        <MobileCard>
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Active Shifts</h2>
-          {data.activeShifts.length === 0 ? (
-            <p className="text-gray-600 text-center py-8">No active shifts</p>
-          ) : (
-            <div className="space-y-3">
-              {data.activeShifts.map((shift) => (
-                <div
-                  key={shift.time_card_id}
-                  className="border border-gray-200 rounded-lg p-4 bg-white"
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900">{shift.driver_name}</h3>
-                      <p className="text-sm text-gray-600">{shift.driver_email}</p>
-                      <div className="mt-2 space-y-1 text-sm">
-                        <p>
-                          <span className="text-gray-600">Clocked in:</span>{' '}
-                          <span className="font-medium">{formatTime(shift.clock_in_time)}</span>
-                        </p>
-                        {shift.vehicle_number ? (
-                          <p>
-                            <span className="text-gray-600">Vehicle:</span>{' '}
-                            <span className="font-medium">
-                              {shift.vehicle_number} ({shift.make} {shift.model})
-                            </span>
-                          </p>
-                        ) : (
-                          <p className="text-orange-600 font-medium">⚠️ No vehicle assigned</p>
-                        )}
-                        {shift.client_name && (
-                          <>
-                            <p>
-                              <span className="text-gray-600">Client:</span>{' '}
-                              <span className="font-medium">{shift.client_name}</span>
-                            </p>
-                            <p>
-                              <span className="text-gray-600">Rate:</span>{' '}
-                              <span className="font-medium">{formatCurrency(shift.hourly_rate || 0)}/hr</span>
-                            </p>
-                            {shift.service_status && (
-                              <p>
-                                <span className="text-gray-600">Status:</span>{' '}
-                                <span
-                                  className={`inline-block px-2 py-1 rounded text-xs font-medium ${
-                                    shift.service_status === 'completed'
-                                      ? 'bg-green-100 text-green-800'
-                                      : shift.service_status === 'in_progress'
-                                      ? 'bg-blue-100 text-blue-800'
-                                      : 'bg-gray-100 text-gray-800'
-                                  }`}
-                                >
-                                  {shift.service_status}
-                                </span>
-                              </p>
-                            )}
-                            {shift.total_cost !== null && (
-                              <p className="text-green-600 font-medium">
-                                Total: {formatCurrency(shift.total_cost)} ({shift.service_hours?.toFixed(1)} hrs)
-                              </p>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    </div>
-                    {!shift.vehicle_id && (
-                      <TouchButton
-                        variant="primary"
-                        onClick={() => handleAssignVehicle(shift)}
-                        className="ml-4"
-                      >
-                        Assign Vehicle
-                      </TouchButton>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </MobileCard>
-
-        {/* Fleet Status */}
-        <MobileCard>
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Fleet Status</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {data.fleetStatus.map((vehicle) => (
-              <div
-                key={vehicle.vehicle_id}
-                className={`border-2 rounded-lg p-3 ${
-                  vehicle.availability_status === 'available'
-                    ? 'border-green-500 bg-green-50'
-                    : vehicle.availability_status === 'in_use'
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-red-500 bg-red-50'
-                }`}
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-semibold text-gray-900">{vehicle.vehicle_number}</h3>
-                    <p className="text-sm text-gray-700">
-                      {vehicle.make} {vehicle.model} {vehicle.year}
-                    </p>
-                    <p className="text-xs text-gray-600 mt-1">
-                      Cap: {vehicle.capacity} | {vehicle.license_plate}
-                    </p>
-                  </div>
-                  <span
-                    className={`px-2 py-1 rounded text-xs font-medium ${
-                      vehicle.availability_status === 'available'
-                        ? 'bg-green-600 text-white'
-                        : vehicle.availability_status === 'in_use'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-red-600 text-white'
-                    }`}
-                  >
-                    {vehicle.availability_status}
-                  </span>
-                </div>
-                {vehicle.current_driver_name && (
-                  <div className="mt-2 text-sm">
-                    <p className="text-gray-700">
-                      <span className="font-medium">Driver:</span> {vehicle.current_driver_name}
-                    </p>
-                    {vehicle.current_client && (
-                      <p className="text-gray-700">
-                        <span className="font-medium">Client:</span> {vehicle.current_client}
-                      </p>
-                    )}
-                  </div>
-                )}
-                {vehicle.defect_notes && (
-                  <p className="mt-2 text-xs text-red-700 bg-red-100 p-2 rounded">
-                    ⚠️ {vehicle.defect_notes}
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
-        </MobileCard>
-
-        {/* Last Updated */}
-        <p className="text-center text-sm text-gray-600">
-          Last updated: {new Date(data.lastUpdated).toLocaleTimeString()}
+    <div className="p-6 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-slate-900">
+          Welcome back, {session.user.name}
+        </h1>
+        <p className="text-slate-500 mt-1">
+          Here's what's happening with your business today
         </p>
       </div>
-
-      {/* Vehicle Assignment Modal */}
-      {showAssignModal && selectedShift && (
-        <VehicleAssignmentModal
-          shift={selectedShift}
-          availableVehicles={data.fleetStatus.filter(v => v.availability_status === 'available')}
-          onClose={() => {
-            setShowAssignModal(false);
-            setSelectedShift(null);
-          }}
-          onSuccess={() => {
-            setShowAssignModal(false);
-            setSelectedShift(null);
-            fetchDashboard(); // Refresh data
-          }}
-        />
-      )}
-    </div>
-  );
-}
-
-// Vehicle Assignment Modal Component
-function VehicleAssignmentModal({
-  shift,
-  availableVehicles,
-  onClose,
-  onSuccess
-}: {
-  shift: ActiveShift;
-  availableVehicles: FleetVehicle[];
-  onClose: () => void;
-  onSuccess: () => void;
-}) {
-  const [selectedVehicleId, setSelectedVehicleId] = useState<number | null>(null);
-  const [clientName, setClientName] = useState('');
-  const [hourlyRate, setHourlyRate] = useState('150.00');
-  const [notes, setNotes] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleSubmit = async () => {
-    if (!selectedVehicleId) {
-      setError('Please select a vehicle');
-      return;
-    }
-
-    if (!clientName.trim()) {
-      setError('Please enter client name');
-      return;
-    }
-
-    const rate = parseFloat(hourlyRate);
-    if (isNaN(rate) || rate <= 0) {
-      setError('Please enter a valid hourly rate');
-      return;
-    }
-
-    setSubmitting(true);
-    setError(null);
-
-    try {
-      const response = await fetch('/api/admin/assign-vehicle', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          timeCardId: shift.time_card_id,
-          vehicleId: selectedVehicleId,
-          clientName: clientName.trim(),
-          hourlyRate: rate,
-          notes: notes.trim() || undefined
-        })
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        onSuccess();
-      } else {
-        setError(result.error || 'Failed to assign vehicle');
-      }
-    } catch (err) {
-      console.error('Assignment error:', err);
-      setError('Network error - please try again');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <MobileCard>
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Assign Vehicle</h2>
-
-          {error && (
-            <AlertBanner
-              type="error"
-              message={error}
-              onDismiss={() => setError(null)}
-              className="mb-4"
-            />
-          )}
-
-          {/* Driver Info */}
-          <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-            <p className="font-medium text-gray-900">{shift.driver_name}</p>
-            <p className="text-sm text-gray-600">{shift.driver_email}</p>
-          </div>
-
-          {/* Client Name */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Client Name *
-            </label>
-            <input
-              type="text"
-              value={clientName}
-              onChange={(e) => setClientName(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              placeholder="Enter client name"
-            />
-          </div>
-
-          {/* Hourly Rate */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Hourly Rate (USD) *
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              value={hourlyRate}
-              onChange={(e) => setHourlyRate(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              placeholder="150.00"
-            />
-          </div>
-
-          {/* Vehicle Selection */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Select Vehicle *
-            </label>
-            {availableVehicles.length === 0 ? (
-              <p className="text-gray-600 p-4 bg-yellow-50 rounded-lg">
-                No vehicles currently available
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {availableVehicles.map((vehicle) => (
-                  <button
-                    key={vehicle.vehicle_id}
-                    onClick={() => setSelectedVehicleId(vehicle.vehicle_id)}
-                    className={`w-full p-3 border-2 rounded-lg text-left transition ${
-                      selectedVehicleId === vehicle.vehicle_id
-                        ? 'border-blue-600 bg-blue-50'
-                        : 'border-gray-300 bg-white hover:border-gray-400'
-                    }`}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-medium text-gray-900">{vehicle.vehicle_number}</p>
-                        <p className="text-sm text-gray-700">
-                          {vehicle.make} {vehicle.model} {vehicle.year}
-                        </p>
-                        <p className="text-xs text-gray-600">
-                          Capacity: {vehicle.capacity} | {vehicle.license_plate}
-                        </p>
-                      </div>
-                      {selectedVehicleId === vehicle.vehicle_id && (
-                        <svg className="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                    </div>
-                  </button>
-                ))}
+      
+      {/* Action Required Alert - Accepted Proposals */}
+      {stats.acceptedProposals > 0 && (
+        <Link 
+          href="/admin/proposals?status=accepted"
+          className="block mb-6 bg-emerald-50 border border-emerald-200 rounded-lg p-4 hover:shadow-soft hover:border-emerald-300 transition-all"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="bg-emerald-600 text-white rounded-full p-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
               </div>
-            )}
+              <div>
+                <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wide">Action Required</p>
+                <p className="text-base font-semibold text-slate-900">
+                  {stats.acceptedProposals} Accepted Proposal{stats.acceptedProposals !== 1 ? 's' : ''} Awaiting Conversion
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1 text-emerald-600 font-medium text-sm">
+              <span>Review</span>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
           </div>
-
-          {/* Notes */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Notes (Optional)
-            </label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              rows={3}
-              placeholder="Additional notes or instructions"
-            />
+        </Link>
+      )}
+      
+      {/* Stats Grid - Clickable Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {/* Total Bookings */}
+        <Link 
+          href="/admin/bookings"
+          className="bg-white rounded-lg border border-slate-200 p-5 hover:shadow-soft hover:border-[#9FB3C8] transition-all"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-slate-500">Total Bookings</p>
+              <p className="text-2xl font-bold text-slate-900 mt-1">
+                {stats.totalBookings}
+              </p>
+            </div>
+            <div className="bg-[#D9E2EC] rounded-lg p-2.5">
+              <svg className="w-5 h-5 text-[#334E68]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+            </div>
           </div>
-
-          {/* Actions */}
-          <div className="flex gap-3">
-            <TouchButton
-              variant="secondary"
-              onClick={onClose}
-              className="flex-1"
-              disabled={submitting}
+        </Link>
+        
+        {/* Pending Bookings */}
+        <Link 
+          href="/admin/bookings?status=pending"
+          className="bg-white rounded-lg border border-slate-200 p-5 hover:shadow-soft hover:border-[#E8BA8F] transition-all"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-slate-500">Pending</p>
+              <p className="text-2xl font-bold text-[#A5632B] mt-1">
+                {stats.pendingBookings}
+              </p>
+              <p className="text-xs text-[#B87333] mt-0.5">View all →</p>
+            </div>
+            <div className="bg-[#FAEDE0] rounded-lg p-2.5">
+              <svg className="w-5 h-5 text-[#A5632B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+        </Link>
+        
+        {/* Active Drivers */}
+        <Link 
+          href="/admin/users?role=driver"
+          className="bg-white rounded-lg border border-slate-200 p-5 hover:shadow-soft hover:border-emerald-300 transition-all"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-slate-500">Active Drivers</p>
+              <p className="text-2xl font-bold text-slate-900 mt-1">
+                {stats.activeDrivers}
+              </p>
+            </div>
+            <div className="bg-emerald-100 rounded-lg p-2.5">
+              <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+            </div>
+          </div>
+        </Link>
+        
+        {/* Total Revenue */}
+        <Link 
+          href="/admin/bookings?status=completed"
+          className="bg-white rounded-lg border border-slate-200 p-5 hover:shadow-soft hover:border-emerald-300 transition-all"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-slate-500">Total Revenue</p>
+              <p className="text-2xl font-bold text-emerald-600 mt-1">
+                ${Number(stats.totalRevenue || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+              </p>
+            </div>
+            <div className="bg-emerald-100 rounded-lg p-2.5">
+              <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+        </Link>
+      </div>
+      
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <Link 
+          href="/admin/bookings" 
+          className="bg-[#1E3A5F] hover:bg-[#1A3354] transition-colors rounded-lg p-5 text-white"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-[#BCCCDC]">Manage</p>
+              <p className="text-lg font-semibold mt-0.5">Bookings</p>
+            </div>
+            <svg className="w-6 h-6 text-[#BCCCDC]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
+        </Link>
+        
+        <Link 
+          href="/admin/users" 
+          className="bg-slate-700 hover:bg-slate-800 transition-colors rounded-lg p-5 text-white"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-slate-300">Manage</p>
+              <p className="text-lg font-semibold mt-0.5">Users</p>
+            </div>
+            <svg className="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
+        </Link>
+        
+        <Link 
+          href="/admin/business-portal" 
+          className="bg-[#A5632B] hover:bg-[#8B5225] transition-colors rounded-lg p-5 text-white"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-[#FAEDE0]">Review</p>
+              <p className="text-lg font-semibold mt-0.5">Business Portal</p>
+              {stats.businessPortalSubmissions > 0 && (
+                <span className="inline-block bg-white text-[#A5632B] text-xs font-bold px-2 py-0.5 rounded mt-1">
+                  {stats.businessPortalSubmissions} pending
+                </span>
+              )}
+            </div>
+            <svg className="w-6 h-6 text-[#FAEDE0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
+        </Link>
+      </div>
+      
+      {/* Recent Bookings */}
+      <div className="bg-white rounded-lg border border-slate-200">
+        <div className="px-5 py-4 border-b border-slate-100">
+          <h2 className="text-lg font-semibold text-slate-900">Recent Bookings</h2>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-slate-50">
+              <tr>
+                <th className="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  Booking #
+                </th>
+                <th className="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  Customer
+                </th>
+                <th className="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  Tour Date
+                </th>
+                <th className="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  Amount
+                </th>
+                <th className="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-slate-100">
+              {stats.recentBookings.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-5 py-10 text-center text-slate-500">
+                    No bookings yet. Start by creating your first booking.
+                  </td>
+                </tr>
+              ) : (
+                stats.recentBookings.map((booking) => (
+                  <tr key={booking.id} className="hover:bg-slate-50">
+                    <td className="px-5 py-3 whitespace-nowrap text-sm font-medium text-[#1E3A5F]">
+                      #{booking.booking_number}
+                    </td>
+                    <td className="px-5 py-3 whitespace-nowrap text-sm text-slate-900">
+                      {booking.customer_name}
+                    </td>
+                    <td className="px-5 py-3 whitespace-nowrap text-sm text-slate-500">
+                      {new Date(booking.tour_date).toLocaleDateString()}
+                    </td>
+                    <td className="px-5 py-3 whitespace-nowrap">
+                      <span className={`px-2 py-1 inline-flex text-xs font-medium rounded ${
+                        booking.status === 'confirmed' ? 'bg-emerald-100 text-emerald-700' :
+                        booking.status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                        booking.status === 'completed' ? 'bg-[#D9E2EC] text-[#1E3A5F]' :
+                        'bg-slate-100 text-slate-600'
+                      }`}>
+                        {booking.status}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3 whitespace-nowrap text-sm font-medium text-slate-900">
+                      ${parseFloat(String(booking.total_price || 0)).toFixed(2)}
+                    </td>
+                    <td className="px-5 py-3 whitespace-nowrap text-sm">
+                      <Link 
+                        href={`/admin/bookings/${booking.id}`}
+                        className="text-[#334E68] hover:text-[#1A3354] font-medium"
+                      >
+                        View →
+                      </Link>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+        {stats.recentBookings.length > 0 && (
+          <div className="px-5 py-3 border-t border-slate-100">
+            <Link 
+              href="/admin/bookings"
+              className="text-sm text-[#334E68] hover:text-[#1A3354] font-medium"
             >
-              Cancel
-            </TouchButton>
-            <TouchButton
-              variant="primary"
-              onClick={handleSubmit}
-              className="flex-1"
-              disabled={submitting || availableVehicles.length === 0}
-            >
-              {submitting ? 'Assigning...' : 'Assign Vehicle'}
-            </TouchButton>
+              View all bookings →
+            </Link>
           </div>
-        </MobileCard>
+        )}
       </div>
     </div>
   );

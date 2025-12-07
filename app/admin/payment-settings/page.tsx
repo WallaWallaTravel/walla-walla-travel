@@ -62,7 +62,7 @@ export default function AdminPaymentSettings() {
                 <tbody className="divide-y divide-gray-200">
                   <tr>
                     <td className="px-4 py-3 font-semibold text-gray-900">Credit/Debit Card</td>
-                    <td className="px-4 py-3 text-right text-gray-700">2.9% + $0.30</td>
+                    <td className="px-4 py-3 text-right text-gray-700">2.9%</td>
                   </tr>
                   <tr>
                     <td className="px-4 py-3 font-semibold text-gray-900">ACH/Bank Account</td>
@@ -82,7 +82,7 @@ export default function AdminPaymentSettings() {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-700">$595.20 via Card:</span>
-                  <span className="font-bold text-gray-900">${((595.20 * 0.029) + 0.30).toFixed(2)}</span>
+                  <span className="font-bold text-gray-900">${(595.20 * 0.029).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-700">$595.20 via ACH:</span>

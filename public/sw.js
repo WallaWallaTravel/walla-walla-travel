@@ -75,39 +75,10 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // API requests: Network-first, then cache
+  // API requests: BYPASS IN DEVELOPMENT - Always use network
   if (url.pathname.startsWith('/api/')) {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          // Clone the response before caching
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, responseToCache);
-          });
-          return response;
-        })
-        .catch(() => {
-          // If network fails, try cache
-          return caches.match(request).then((cachedResponse) => {
-            if (cachedResponse) {
-              return cachedResponse;
-            }
-            // Return offline response for API calls
-            return new Response(
-              JSON.stringify({ 
-                error: 'Offline', 
-                message: 'This request requires an internet connection',
-                offline: true 
-              }),
-              { 
-                status: 503,
-                headers: { 'Content-Type': 'application/json' }
-              }
-            );
-          });
-        })
-    );
+    // Don't intercept API calls - let them go directly to network
+    // This prevents offline errors during development
     return;
   }
 

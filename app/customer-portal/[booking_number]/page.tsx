@@ -399,16 +399,16 @@ export default function CustomerPortalPage({ params }: { params: Promise<{ booki
               <h2 className="text-xl font-bold text-gray-900 mb-4">📞 Need Help?</h2>
               <div className="space-y-3">
                 <a
-                  href="tel:+15095550199"
+                  href="tel:+15092008000"
                   className="block text-purple-600 hover:text-purple-700 font-semibold"
                 >
-                  📞 (509) 555-0199
+                  📞 (509) 200-8000
                 </a>
                 <a
-                  href="mailto:info@wallawallatravel.com"
+                  href="mailto:info@wallawalla.travel"
                   className="block text-purple-600 hover:text-purple-700 font-semibold"
                 >
-                  ✉️ info@wallawallatravel.com
+                  ✉️ info@wallawalla.travel
                 </a>
               </div>
             </div>

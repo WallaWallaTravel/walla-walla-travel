@@ -220,16 +220,16 @@ export default function BookTourPage() {
             <p className="text-gray-600 mb-2">Need help? We're here for you!</p>
             <div className="flex items-center justify-center gap-6">
               <a
-                href="tel:+15095550199"
+                href="tel:+15092008000"
                 className="text-purple-600 hover:text-purple-700 font-semibold flex items-center gap-2"
               >
-                📞 (509) 555-0199
+                📞 (509) 200-8000
               </a>
               <a
-                href="mailto:info@wallawallatravel.com"
+                href="mailto:info@wallawalla.travel"
                 className="text-purple-600 hover:text-purple-700 font-semibold flex items-center gap-2"
               >
-                ✉️ info@wallawallatravel.com
+                ✉️ info@wallawalla.travel
               </a>
             </div>
           </div>

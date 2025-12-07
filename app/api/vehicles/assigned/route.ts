@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
     
     console.log('Permanent vehicle query result:', permanentVehicleResult.rowCount, 'rows');
     
-    if (permanentVehicleResult.rowCount > 0) {
+    if ((permanentVehicleResult.rowCount ?? 0) > 0) {
       const vehicle = permanentVehicleResult.rows[0];
       console.log('Found permanently assigned vehicle:', vehicle.vehicle_number);
       

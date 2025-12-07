@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Pool } from 'pg';
+import { sendEmail, EmailTemplates } from '@/lib/email';
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -8,10 +9,11 @@ const pool = new Pool({
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { order_id: string } }
+  { params }: { params: Promise<{ order_id: string }> }
 ) {
   try {
-    const order_id = parseInt(params.order_id);
+    const { order_id: orderId } = await params;
+    const order_id = parseInt(orderId);
 
     // Get order details
     const orderResult = await pool.query(`
@@ -19,9 +21,12 @@ export async function POST(
         lo.*,
         b.customer_name,
         b.customer_email,
+        b.customer_phone,
         b.tour_date,
+        b.party_size,
         r.name as restaurant_name,
         r.email as restaurant_email,
+        r.phone as restaurant_phone,
         r.contact_name as restaurant_contact
       FROM lunch_orders lo
       JOIN bookings b ON lo.booking_id = b.id
@@ -37,29 +42,59 @@ export async function POST(
     }
 
     const order = orderResult.rows[0];
+    const orderItems = typeof order.order_items === 'string' 
+      ? JSON.parse(order.order_items) 
+      : order.order_items;
+
+    // Calculate commission (10%)
+    const commission = parseFloat(order.total) * 0.10;
 
     // Update order status
     await pool.query(`
       UPDATE lunch_orders
       SET 
-        status = 'sent',
+        status = 'sent_to_restaurant',
         email_sent_at = NOW(),
         approved_by = 1,
         approved_at = NOW(),
+        commission_amount = $2,
         updated_at = NOW()
       WHERE id = $1
-    `, [order_id]);
+    `, [order_id, commission]);
 
-    // TODO: In production, send actual email here using SendGrid/Resend
-    // For now, we'll just log it
-    console.log('📧 EMAIL WOULD BE SENT TO:', order.restaurant_email);
-    console.log('Subject: Lunch Order for', order.customer_name, 'on', order.tour_date);
-    console.log('Body:', order.email_body);
+    // Send email to restaurant
+    const template = EmailTemplates.lunchOrderToRestaurant({
+      restaurant_name: order.restaurant_name,
+      customer_name: order.customer_name,
+      tour_date: order.tour_date,
+      party_size: order.party_size,
+      arrival_time: order.estimated_arrival_time,
+      items: orderItems.map((item: { name: string; quantity: number; price: number }) => ({
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+      })),
+      subtotal: parseFloat(order.subtotal),
+      total: parseFloat(order.total),
+      dietary_restrictions: order.dietary_restrictions || undefined,
+      special_requests: order.special_instructions || undefined,
+      contact_phone: order.customer_phone || '(509) 555-0199',
+    });
+
+    const emailSent = await sendEmail({
+      to: order.restaurant_email,
+      ...template,
+    });
+
+    console.log(`📧 Lunch order #${order_id} ${emailSent ? 'sent to' : 'failed to send to'} ${order.restaurant_email}`);
 
     return NextResponse.json({
       success: true,
-      message: 'Order approved and sent to restaurant',
-      // In production, include email send confirmation
+      message: emailSent 
+        ? 'Order approved and email sent to restaurant' 
+        : 'Order approved but email failed - please contact restaurant manually',
+      email_sent: emailSent,
+      commission: commission,
     });
 
   } catch (error) {

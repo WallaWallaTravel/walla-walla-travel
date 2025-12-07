@@ -1,5 +1,7 @@
-import { NextResponse } from 'next/server';
-import { withErrorHandling, BadRequestError } from '@/lib/api-errors';
+import { NextRequest, NextResponse } from 'next/server';
+import { withErrorHandling } from '@/lib/api/middleware/error-handler';
+import { validateBody, validateQuery } from '@/lib/api/middleware/validation';
+import { CheckAvailabilitySchema, z } from '@/lib/validation/schemas';
 import { checkAvailability, getAvailableDates } from '@/lib/availability-engine';
 import { calculatePrice } from '@/lib/pricing-engine';
 
@@ -7,31 +9,14 @@ import { calculatePrice } from '@/lib/pricing-engine';
  * POST /api/bookings/check-availability
  * Checks availability and returns pricing for a booking request
  * 
- * Body: {
- *   date: string (YYYY-MM-DD),
- *   duration_hours: number (4, 6, or 8),
- *   party_size: number (1-14),
- *   start_time?: string (HH:MM) - optional, checks specific time
- * }
+ * ✅ REFACTORED: Now using Zod validation for type-safe inputs
  */
-export const POST = withErrorHandling(async (request: Request) => {
-  const body = await request.json();
-  const { date, duration_hours, party_size, start_time } = body;
-
-  // Validate required fields
-  if (!date || !duration_hours || !party_size) {
-    throw new BadRequestError('Missing required fields: date, duration_hours, and party_size are required');
-  }
-
-  // Validate duration
-  if (![4, 6, 8].includes(duration_hours)) {
-    throw new BadRequestError('Duration must be 4, 6, or 8 hours');
-  }
-
-  // Validate party size
-  if (party_size < 1 || party_size > 14) {
-    throw new BadRequestError('Party size must be between 1 and 14');
-  }
+export const POST = withErrorHandling(async (request: NextRequest) => {
+  // ✅ Validate with Zod schema (auto type-safe!)
+  const { date, duration_hours, party_size, start_time } = await validateBody(
+    request,
+    CheckAvailabilitySchema
+  );
 
   // Check availability
   const availability = await checkAvailability({
@@ -72,15 +57,17 @@ export const POST = withErrorHandling(async (request: Request) => {
 /**
  * GET /api/bookings/check-availability?year=2025&month=11
  * Get available dates for a month
+ * 
+ * ✅ REFACTORED: Now using Zod validation for query parameters
  */
-export const GET = withErrorHandling(async (request: Request) => {
-  const { searchParams } = new URL(request.url);
-  const year = parseInt(searchParams.get('year') || '');
-  const month = parseInt(searchParams.get('month') || '');
+const GetAvailabilityQuerySchema = z.object({
+  year: z.coerce.number().int().min(2020).max(2030),
+  month: z.coerce.number().int().min(1).max(12),
+});
 
-  if (!year || !month || month < 1 || month > 12) {
-    throw new BadRequestError('Valid year and month (1-12) are required');
-  }
+export const GET = withErrorHandling(async (request: NextRequest) => {
+  // ✅ Validate query params with Zod
+  const { year, month } = validateQuery(request, GetAvailabilityQuerySchema);
 
   const availableDates = await getAvailableDates(year, month);
 

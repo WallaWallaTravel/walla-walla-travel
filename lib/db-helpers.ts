@@ -3,7 +3,7 @@
  * Provides convenient wrappers for database operations
  */
 
-import { Pool, PoolClient, QueryResult } from 'pg';
+import { Pool, PoolClient, QueryResult, QueryResultRow } from 'pg';
 import { pool } from './db';
 
 /**
@@ -48,14 +48,19 @@ export async function withTransaction<T>(
  * Execute a simple query with automatic connection management
  * @param text SQL query string
  * @param params Query parameters
+ * @param client Optional client for transaction support
  * @returns Query result
  */
-export async function query<T = any>(
+export async function query<T extends QueryResultRow = QueryResultRow>(
   text: string,
-  params?: any[]
+  params?: any[],
+  client?: PoolClient
 ): Promise<QueryResult<T>> {
-  return withDatabase(async (client) => {
+  if (client) {
     return client.query<T>(text, params);
+  }
+  return withDatabase(async (c) => {
+    return c.query<T>(text, params);
   });
 }
 
@@ -63,13 +68,15 @@ export async function query<T = any>(
  * Execute a query and return the first row, or null if no rows
  * @param text SQL query string
  * @param params Query parameters
+ * @param client Optional client for transaction support
  * @returns First row or null
  */
-export async function queryOne<T = any>(
+export async function queryOne<T extends QueryResultRow = QueryResultRow>(
   text: string,
-  params?: any[]
+  params?: any[],
+  client?: PoolClient
 ): Promise<T | null> {
-  const result = await query<T>(text, params);
+  const result = await query<T>(text, params, client);
   return result.rows[0] || null;
 }
 
@@ -77,13 +84,15 @@ export async function queryOne<T = any>(
  * Execute a query and return all rows
  * @param text SQL query string
  * @param params Query parameters
+ * @param client Optional client for transaction support
  * @returns Array of rows
  */
-export async function queryMany<T = any>(
+export async function queryMany<T extends QueryResultRow = QueryResultRow>(
   text: string,
-  params?: any[]
+  params?: any[],
+  client?: PoolClient
 ): Promise<T[]> {
-  const result = await query<T>(text, params);
+  const result = await query<T>(text, params, client);
   return result.rows;
 }
 
@@ -112,7 +121,7 @@ export async function exists(
  * @param data Object with column names and values
  * @returns Inserted row
  */
-export async function insertOne<T = any>(
+export async function insertOne<T extends QueryResultRow = QueryResultRow>(
   table: string,
   data: Record<string, any>
 ): Promise<T> {
@@ -138,7 +147,7 @@ export async function insertOne<T = any>(
  * @param conditionParams Parameters for WHERE clause
  * @returns Updated row
  */
-export async function updateOne<T = any>(
+export async function updateOne<T extends QueryResultRow = QueryResultRow>(
   table: string,
   data: Record<string, any>,
   conditions: string,

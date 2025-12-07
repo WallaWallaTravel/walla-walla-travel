@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { withErrorHandling, BadRequestError, NotFoundError, InternalServerError } from '@/lib/api-errors';
-import { queryOne, executeQuery, withTransaction } from '@/lib/db-helpers';
+import { queryOne, withTransaction } from '@/lib/db-helpers';
+import { sendPaymentReceiptEmail } from '@/lib/services/email-automation.service';
 
 // Initialize Stripe
 const stripe = process.env.STRIPE_SECRET_KEY
   ? new Stripe(process.env.STRIPE_SECRET_KEY, {
-      apiVersion: '2024-12-18.acacia',
+      apiVersion: '2025-09-30.clover',
     })
   : null;
 
@@ -137,6 +138,11 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
         }),
       ]
     );
+  });
+
+  // Send payment receipt email (async, don't wait)
+  sendPaymentReceiptEmail(payment.id).catch(err => {
+    console.error('[Payment] Failed to send receipt email:', err);
   });
 
   return NextResponse.json({

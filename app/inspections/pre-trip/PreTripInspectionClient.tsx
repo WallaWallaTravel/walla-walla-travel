@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import api from '@/lib/api-client'
 import { sanitizeText, sanitizeNumber, patterns } from '@/lib/security'
@@ -15,6 +15,7 @@ import {
   MobileInput,
   haptics
 } from '@/components/mobile'
+import { VoiceInspectionMode, VoiceModeFloatingButton } from '@/components/voice'
 import type { Vehicle } from '@/lib/types'
 
 interface Props {
@@ -31,6 +32,7 @@ export function PreTripInspectionClient({ driver }: Props) {
   const [beginningMileage, setBeginningMileage] = useState('')
   const [notes, setNotes] = useState('')
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({})
+  const [itemNotes, setItemNotes] = useState<Record<string, string>>({})
   const [signature, setSignature] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -38,6 +40,7 @@ export function PreTripInspectionClient({ driver }: Props) {
   const [loadingVehicle, setLoadingVehicle] = useState(true)
   const [sendingHelp, setSendingHelp] = useState(false)
   const [helpSent, setHelpSent] = useState(false)
+  const [inspectionMode, setInspectionMode] = useState<'manual' | 'voice'>('manual')
 
   useEffect(() => {
     loadAssignedVehicle()
@@ -122,6 +125,43 @@ export function PreTripInspectionClient({ driver }: Props) {
   const handleItemToggle = (category: string, index: number) => {
     const key = `${category}-${index}`
     setCheckedItems(prev => ({ ...prev, [key]: !prev[key] }))
+  }
+
+  // Format items for voice mode
+  const voiceItems = useMemo(() => {
+    const items: { id: string; category: string; text: string; checked: boolean }[] = []
+    Object.entries(inspectionItems).forEach(([category, categoryItems]) => {
+      categoryItems.forEach((item, index) => {
+        const key = `${category}-${index}`
+        items.push({
+          id: key,
+          category: category.charAt(0).toUpperCase() + category.slice(1),
+          text: item,
+          checked: checkedItems[key] || false,
+        })
+      })
+    })
+    return items
+  }, [inspectionItems, checkedItems])
+
+  // Handle voice mode item check
+  const handleVoiceItemCheck = (id: string, checked: boolean, note?: string) => {
+    setCheckedItems(prev => ({ ...prev, [id]: checked }))
+    if (note) {
+      setItemNotes(prev => ({ ...prev, [id]: note }))
+    }
+  }
+
+  // Handle voice mode complete
+  const handleVoiceComplete = () => {
+    setInspectionMode('manual')
+    setCurrentStep('signature')
+    haptics.success()
+  }
+
+  // Handle voice mode cancel
+  const handleVoiceCancel = () => {
+    setInspectionMode('manual')
   }
 
   const handleMileageNext = () => {
@@ -291,7 +331,7 @@ export function PreTripInspectionClient({ driver }: Props) {
                 <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
                   <p className="text-red-800 font-medium">{error}</p>
                   <p className="text-red-600 text-sm mt-1">
-                    Emergency Contact: evcritchlow@gmail.com
+                    Emergency Contact: info@nwtouring.com
                   </p>
                 </div>
               )}
@@ -302,12 +342,46 @@ export function PreTripInspectionClient({ driver }: Props) {
     )
   }
 
+  // Voice mode overlay
+  if (inspectionMode === 'voice' && currentStep === 'inspection') {
+    return (
+      <VoiceInspectionMode
+        items={voiceItems}
+        onItemCheck={handleVoiceItemCheck}
+        onComplete={handleVoiceComplete}
+        onCancel={handleVoiceCancel}
+        onModeChange={setInspectionMode}
+      />
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-100">
+      {/* Voice mode floating button (only during inspection step) */}
+      {currentStep === 'inspection' && (
+        <VoiceModeFloatingButton
+          mode={inspectionMode}
+          onModeChange={setInspectionMode}
+        />
+      )}
+
       {/* Header */}
       <div className="bg-white border-b px-4 py-3">
-        <h1 className="text-xl font-semibold text-gray-900">Pre-Trip Inspection</h1>
-        <p className="text-sm text-gray-800">Driver: {driver.name}</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-semibold text-gray-900">Pre-Trip Inspection</h1>
+            <p className="text-sm text-gray-800">Driver: {driver.name}</p>
+          </div>
+          {currentStep === 'inspection' && (
+            <button
+              onClick={() => setInspectionMode('voice')}
+              className="flex items-center gap-1 px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-sm font-medium"
+            >
+              <span>🎤</span>
+              <span>Voice</span>
+            </button>
+          )}
+        </div>
         {vehicle && (
           <p className="text-sm text-gray-800">Vehicle: {vehicle.vehicle_number} ({vehicle.make} {vehicle.model})</p>
         )}

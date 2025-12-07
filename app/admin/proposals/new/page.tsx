@@ -89,6 +89,8 @@ export default function NewProposalPageV2() {
   const [wineries, setWineries] = useState<any[]>([]);
   const [availableAdditionalServices, setAvailableAdditionalServices] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
+  const [pricingStrategy, setPricingStrategy] = useState<'conservative' | 'standard' | 'aggressive'>('standard');
+  const [showPriceRange, setShowPriceRange] = useState(true); // Toggle between exact and range
   
   const [formData, setFormData] = useState<ProposalData>({
     client_name: '',
@@ -142,13 +144,13 @@ export default function NewProposalPageV2() {
   };
 
   // Add new service item
-  const addServiceItem = (type: ServiceItem['service_type']) => {
+  const addServiceItem = async (type: ServiceItem['service_type']) => {
     const newItem: ServiceItem = {
       id: `service-${Date.now()}`,
       service_type: type,
       name: getServiceName(type),
       description: '',
-      date: '',
+      date: new Date().toISOString().split('T')[0], // Default to today for pricing
       start_time: '10:00',
       party_size: 4,
       pricing_type: type === 'wine_tour' ? 'calculated' : type === 'wait_time' ? 'hourly' : 'flat',
@@ -173,6 +175,16 @@ export default function NewProposalPageV2() {
       newItem.hourly_rate = 75;
     }
 
+    // Fetch dynamic price from database
+    try {
+      const dynamicPrice = await fetchDynamicPrice(newItem);
+      newItem.calculated_price = dynamicPrice;
+      console.log('✅ Dynamic pricing:', dynamicPrice);
+    } catch (error) {
+      console.error('Failed to fetch dynamic price, using fallback:', error);
+      newItem.calculated_price = calculateServicePrice(newItem);
+    }
+
     setFormData(prev => ({
       ...prev,
       service_items: [...prev.service_items, newItem]
@@ -192,21 +204,65 @@ export default function NewProposalPageV2() {
   };
 
   // Update service item
-  const updateServiceItem = (id: string, updates: Partial<ServiceItem>) => {
+  const updateServiceItem = async (id: string, updates: Partial<ServiceItem>) => {
+    // Check if we should refresh pricing
+    const shouldRefreshPrice = 
+      updates.duration_hours !== undefined || 
+      updates.party_size !== undefined || 
+      updates.date !== undefined ||
+      updates.transfer_type !== undefined ||
+      updates.wait_hours !== undefined;
+    
     setFormData(prev => ({
       ...prev,
       service_items: prev.service_items.map(item => {
         if (item.id === id) {
-          const updated = { ...item, ...updates };
-          
-          // Recalculate price
-          updated.calculated_price = calculateServicePrice(updated);
-          
-          return updated;
+          return { ...item, ...updates };
         }
         return item;
       })
     }));
+    
+    // Fetch dynamic pricing if relevant fields changed
+    if (shouldRefreshPrice) {
+      const item = formData.service_items.find(i => i.id === id);
+      if (item) {
+        const updatedItem = { ...item, ...updates };
+        
+        try {
+          const dynamicPrice = await fetchDynamicPrice(updatedItem);
+          setFormData(prev => ({
+            ...prev,
+            service_items: prev.service_items.map(item =>
+              item.id === id ? { ...item, calculated_price: dynamicPrice } : item
+            )
+          }));
+          console.log('✅ Price refreshed:', dynamicPrice);
+        } catch (error) {
+          console.error('Failed to refresh price, using fallback:', error);
+          const fallbackPrice = calculateServicePrice(updatedItem);
+          setFormData(prev => ({
+            ...prev,
+            service_items: prev.service_items.map(item =>
+              item.id === id ? { ...item, calculated_price: fallbackPrice } : item
+            )
+          }));
+        }
+      }
+    } else {
+      // Just recalculate with fallback for non-dynamic fields
+      setFormData(prev => ({
+        ...prev,
+        service_items: prev.service_items.map(item => {
+          if (item.id === id) {
+            const updated = { ...item, ...updates };
+            updated.calculated_price = calculateServicePrice(updated);
+            return updated;
+          }
+          return item;
+        })
+      }));
+    }
   };
 
   // Remove service item
@@ -217,8 +273,37 @@ export default function NewProposalPageV2() {
     }));
   };
 
-  // Calculate price for a service
-  const calculateServicePrice = (item: ServiceItem): number => {
+  // Fetch dynamic pricing from database
+  const fetchDynamicPrice = async (item: ServiceItem): Promise<number> => {
+    try {
+      const response = await fetch('/api/pricing/calculate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          serviceType: item.service_type,
+          partySize: item.party_size,
+          durationHours: item.duration_hours,
+          date: item.date,
+          transferType: item.transfer_type,
+          hours: item.wait_hours,
+          applyModifiers: false // Backend-only, not automatic
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        return data.finalPrice;
+      }
+    } catch (error) {
+      console.error('Dynamic pricing fetch failed, using fallback:', error);
+    }
+    
+    // Fallback to hardcoded rates if API fails
+    return calculateServicePriceFallback(item);
+  };
+
+  // Calculate price for a service (synchronous fallback)
+  const calculateServicePriceFallback = (item: ServiceItem): number => {
     // Check for pricing override first
     if (item.pricing_override?.enabled && item.pricing_override.custom_total) {
       return item.pricing_override.custom_total;
@@ -247,10 +332,15 @@ export default function NewProposalPageV2() {
     }
 
     if (item.service_type === 'wait_time' && item.wait_hours) {
-      return calculateWaitTimePrice(item.wait_hours);
+      return calculateWaitTimePrice(item.wait_hours, item.party_size, item.date);
     }
 
     return 0;
+  };
+  
+  // Main price calculator (uses fallback for sync context)
+  const calculateServicePrice = (item: ServiceItem): number => {
+    return calculateServicePriceFallback(item);
   };
 
   // Calculate totals
@@ -271,6 +361,17 @@ export default function NewProposalPageV2() {
     const deposit = calculateDeposit(total);
     const balance = total - deposit;
     
+    // Calculate price range based on strategy
+    const rangeMultipliers = {
+      conservative: { low: 0.85, high: 0.95 }, // Show 85-95% of calculated price
+      standard: { low: 0.90, high: 1.10 },     // Show 90-110% of calculated price
+      aggressive: { low: 1.05, high: 1.20 }    // Show 105-120% of calculated price
+    };
+    
+    const multiplier = rangeMultipliers[pricingStrategy];
+    const lowTotal = total * multiplier.low;
+    const highTotal = total * multiplier.high;
+    
     return {
       servicesSubtotal,
       additionalServicesTotal,
@@ -280,7 +381,10 @@ export default function NewProposalPageV2() {
       tax,
       total,
       deposit,
-      balance
+      balance,
+      lowTotal,
+      highTotal,
+      showRange: showPriceRange
     };
   };
 
@@ -632,6 +736,10 @@ export default function NewProposalPageV2() {
                   formData={formData}
                   totals={totals}
                   saving={saving}
+                  pricingStrategy={pricingStrategy}
+                  setPricingStrategy={setPricingStrategy}
+                  showPriceRange={showPriceRange}
+                  setShowPriceRange={setShowPriceRange}
                 />
               </div>
             </div>
@@ -1107,10 +1215,74 @@ function ServiceItemCard({ item, index, wineries, onUpdate, onRemove }: ServiceI
 }
 
 // Pricing Summary Component
-function PricingSummary({ formData, totals, saving }: any) {
+function PricingSummary({ formData, totals, saving, pricingStrategy, setPricingStrategy, showPriceRange, setShowPriceRange }: any) {
   return (
     <div className="bg-white rounded-xl shadow-lg p-6 border-2 border-[#8B1538]">
       <h2 className="text-2xl font-bold text-gray-900 mb-4">💰 Pricing Summary</h2>
+      
+      {/* Pricing Strategy Controls */}
+      <div className="bg-blue-50 rounded-lg p-4 mb-4 border border-blue-200">
+        <label className="flex items-center gap-2 mb-3">
+          <input
+            type="checkbox"
+            checked={showPriceRange}
+            onChange={(e) => setShowPriceRange(e.target.checked)}
+            className="w-4 h-4 text-blue-600"
+          />
+          <span className="text-sm font-medium text-gray-700">
+            Show Price Range (instead of exact price)
+          </span>
+        </label>
+        
+        {showPriceRange && (
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 mb-2">
+              Pricing Strategy
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => setPricingStrategy('conservative')}
+                className={`px-3 py-2 text-xs rounded-lg font-medium transition ${
+                  pricingStrategy === 'conservative'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                Conservative<br />
+                <span className="text-[10px] opacity-75">85-95%</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPricingStrategy('standard')}
+                className={`px-3 py-2 text-xs rounded-lg font-medium transition ${
+                  pricingStrategy === 'standard'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                Standard<br />
+                <span className="text-[10px] opacity-75">90-110%</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPricingStrategy('aggressive')}
+                className={`px-3 py-2 text-xs rounded-lg font-medium transition ${
+                  pricingStrategy === 'aggressive'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                Aggressive<br />
+                <span className="text-[10px] opacity-75">105-120%</span>
+              </button>
+            </div>
+            <p className="text-xs text-gray-600 mt-2">
+              💡 Range gives flexibility without locking into exact pricing
+            </p>
+          </div>
+        )}
+      </div>
       
       <div className="space-y-3 mb-6">
         <div className="flex justify-between text-gray-700">
@@ -1144,7 +1316,18 @@ function PricingSummary({ formData, totals, saving }: any) {
 
         <div className="border-t-2 border-[#8B1538] pt-3 flex justify-between">
           <span className="text-xl font-bold text-gray-900">Total</span>
-          <span className="text-2xl font-bold text-[#8B1538]">{formatCurrency(totals.total)}</span>
+          {showPriceRange ? (
+            <div className="text-right">
+              <div className="text-2xl font-bold text-[#8B1538]">
+                {formatCurrency(totals.lowTotal)} - {formatCurrency(totals.highTotal)}
+              </div>
+              <div className="text-xs text-gray-500 mt-1">
+                (Exact: {formatCurrency(totals.total)})
+              </div>
+            </div>
+          ) : (
+            <span className="text-2xl font-bold text-[#8B1538]">{formatCurrency(totals.total)}</span>
+          )}
         </div>
 
         <div className="bg-[#FDF2F4] rounded-lg p-3 space-y-2">

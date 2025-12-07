@@ -24,7 +24,7 @@
 - **Admin Settings:** http://localhost:3000/admin/payment-settings
 
 ### Next Steps:
-- [ ] Deploy to production (Vercel)
+- [ ] Deploy to production (Railway)
 - [ ] Add webhook handler for payment confirmations
 - [ ] Link payment form to actual booking flow
 - [ ] Add payment history page

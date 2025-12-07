@@ -108,15 +108,16 @@ export default function DriverOffersPage() {
   const respondedOffers = offers.filter(o => o.status !== 'pending');
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">🚗 Tour Offers</h1>
-          <p className="text-gray-600 mt-2">
-            Review and respond to tour offers from dispatch
-          </p>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 shadow-lg">
+        <div className="max-w-4xl mx-auto">
+          <h1 className="text-3xl font-bold text-white">🚗 Tour Offers</h1>
+          <p className="text-blue-100 text-lg mt-1">Review and respond to tour offers from dispatch</p>
         </div>
+      </div>
+
+      <div className="max-w-4xl mx-auto py-8 px-4">
 
         {/* Pending Offers */}
         <div className="mb-8">

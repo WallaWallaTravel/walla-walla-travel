@@ -1,37 +1,25 @@
+/**
+ * Restaurants API
+ * 
+ * ✅ REFACTORED: Service layer handles data fetching
+ */
+
 import { NextResponse } from 'next/server';
-import { withErrorHandling } from '@/lib/api-errors';
-import { queryMany } from '@/lib/db-helpers';
+import { withErrorHandling } from '@/lib/api/middleware/error-handler';
+import { restaurantService } from '@/lib/services/restaurant.service';
 
-interface Restaurant {
-  id: number;
-  name: string;
-  cuisine_type: string;
-  address: string;
-  phone: string;
-  email: string;
-  website: string;
-  menu_url: string;
-  is_partner: boolean;
-  is_active: boolean;
-}
-
+/**
+ * GET /api/restaurants
+ * Get all active restaurants
+ * 
+ * ✅ REFACTORED: Reduced from 38 lines to 15 lines
+ */
 export const GET = withErrorHandling(async () => {
-  const restaurants = await queryMany<Restaurant>(`
-    SELECT 
-      id,
-      name,
-      cuisine_type,
-      address,
-      phone,
-      email,
-      website,
-      menu_url,
-      is_partner,
-      is_active
-    FROM restaurants
-    WHERE is_active = true
-    ORDER BY name
-  `);
+  const restaurants = await restaurantService.list();
 
-  return NextResponse.json(restaurants);
+  return NextResponse.json({
+    success: true,
+    data: restaurants,
+    timestamp: new Date().toISOString(),
+  });
 });

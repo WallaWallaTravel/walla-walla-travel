@@ -363,7 +363,7 @@ export function DailyWorkflowClient({ user, userEmail }: Props) {
                     <TouchButton
                       variant="primary"
                       onClick={(e) => {
-                        e.stopPropagation()
+                        e?.stopPropagation()
                         handleStartStep(step, index)
                       }}
                       className="w-full"
@@ -376,7 +376,7 @@ export function DailyWorkflowClient({ user, userEmail }: Props) {
                     <TouchButton
                       variant="secondary"
                       onClick={(e) => {
-                        e.stopPropagation()
+                        e?.stopPropagation()
                         handleStartStep(step, index)
                       }}
                       className="w-full"

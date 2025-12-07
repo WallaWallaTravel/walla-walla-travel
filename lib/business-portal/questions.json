@@ -1,0 +1,140 @@
+{
+  "winery": [
+    {
+      "question_number": 1,
+      "question_text": "Tell us about your winery. When was it founded and what makes it unique?",
+      "help_text": "Share your story, founding year, and what sets you apart from other wineries.",
+      "expected_duration_seconds": 60,
+      "category": "about"
+    },
+    {
+      "question_number": 2,
+      "question_text": "What wine varieties do you specialize in?",
+      "help_text": "List your signature wines and any unique or award-winning bottles.",
+      "expected_duration_seconds": 45,
+      "category": "wines"
+    },
+    {
+      "question_number": 3,
+      "question_text": "Describe your tasting experience. What should visitors expect?",
+      "help_text": "Include details about the setting, number of wines tasted, food pairings, etc.",
+      "expected_duration_seconds": 60,
+      "category": "experience"
+    },
+    {
+      "question_number": 4,
+      "question_text": "What are your hours of operation?",
+      "help_text": "Include seasonal variations if applicable.",
+      "expected_duration_seconds": 30,
+      "category": "logistics"
+    },
+    {
+      "question_number": 5,
+      "question_text": "Do you require reservations? What is your capacity?",
+      "help_text": "Help visitors know if they need to book ahead and how many guests you can accommodate.",
+      "expected_duration_seconds": 45,
+      "category": "logistics"
+    },
+    {
+      "question_number": 6,
+      "question_text": "What is your tasting fee? Are there different options or levels?",
+      "help_text": "Be specific about pricing and what is included.",
+      "expected_duration_seconds": 45,
+      "category": "pricing"
+    },
+    {
+      "question_number": 7,
+      "question_text": "Do you have outdoor seating or a patio?",
+      "help_text": "Describe your outdoor spaces if available.",
+      "expected_duration_seconds": 30,
+      "category": "amenities"
+    },
+    {
+      "question_number": 8,
+      "question_text": "Do you allow food? Can guests bring picnics or do you offer food for purchase?",
+      "help_text": "Clarify your food policy.",
+      "expected_duration_seconds": 45,
+      "category": "amenities"
+    },
+    {
+      "question_number": 9,
+      "question_text": "Is your venue wheelchair accessible?",
+      "help_text": "Important for visitors with mobility needs.",
+      "expected_duration_seconds": 20,
+      "category": "accessibility"
+    },
+    {
+      "question_number": 10,
+      "question_text": "Do you offer private tastings, tours, or special events?",
+      "help_text": "Describe premium experiences available.",
+      "expected_duration_seconds": 60,
+      "category": "special_experiences"
+    },
+    {
+      "question_number": 11,
+      "question_text": "Do you have a wine club or mailing list?",
+      "help_text": "Share details about ongoing customer relationships.",
+      "expected_duration_seconds": 30,
+      "category": "engagement"
+    },
+    {
+      "question_number": 12,
+      "question_text": "How should visitors book a tasting or tour? Phone, email, online?",
+      "help_text": "Make it easy for visitors to know how to reserve.",
+      "expected_duration_seconds": 30,
+      "category": "booking"
+    }
+  ],
+  "restaurant": [
+    {
+      "question_number": 1,
+      "question_text": "Tell us about your restaurant. What type of cuisine do you serve?",
+      "help_text": "Share your concept, founding story, and culinary style.",
+      "expected_duration_seconds": 60,
+      "category": "about"
+    },
+    {
+      "question_number": 2,
+      "question_text": "What are your signature dishes or specialties?",
+      "help_text": "Highlight must-try items.",
+      "expected_duration_seconds": 45,
+      "category": "menu"
+    },
+    {
+      "question_number": 3,
+      "question_text": "Do you accommodate dietary restrictions like gluten-free, vegan, or allergies?",
+      "help_text": "Important for many visitors.",
+      "expected_duration_seconds": 30,
+      "category": "dietary"
+    },
+    {
+      "question_number": 4,
+      "question_text": "What are your hours and do you take reservations?",
+      "help_text": "Include seasonal variations.",
+      "expected_duration_seconds": 30,
+      "category": "logistics"
+    },
+    {
+      "question_number": 5,
+      "question_text": "What is your price range? Average cost per person?",
+      "help_text": "Help visitors budget appropriately.",
+      "expected_duration_seconds": 30,
+      "category": "pricing"
+    },
+    {
+      "question_number": 6,
+      "question_text": "Do you have outdoor seating?",
+      "help_text": "Describe your outdoor dining if available.",
+      "expected_duration_seconds": 20,
+      "category": "amenities"
+    },
+    {
+      "question_number": 7,
+      "question_text": "Do you offer wine pairings or a notable wine list?",
+      "help_text": "Especially relevant for wine country visitors.",
+      "expected_duration_seconds": 45,
+      "category": "beverages"
+    }
+  ]
+}
+

@@ -47,7 +47,7 @@ export async function GET(
         special_event_details,
         group_coordination
        FROM proposals 
-       WHERE proposal_number = $1 OR id::text = $1`,
+       WHERE proposal_number = $1 OR id::text = $1 OR uuid::text = $1`,
       [proposal_id]
     );
 

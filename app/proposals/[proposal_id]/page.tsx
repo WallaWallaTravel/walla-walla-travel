@@ -92,6 +92,15 @@ export default function ClientProposalView({ params }: { params: Promise<{ propo
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [proposalId, setProposalId] = useState<string | null>(null);
+  
+  // Decline modal state
+  const [showDeclineModal, setShowDeclineModal] = useState(false);
+  const [declineReason, setDeclineReason] = useState('');
+  const [declineCategory, setDeclineCategory] = useState('');
+  const [desiredChanges, setDesiredChanges] = useState('');
+  const [openToCounter, setOpenToCounter] = useState(true);
+  const [declining, setDeclining] = useState(false);
+  const [declineSuccess, setDeclineSuccess] = useState(false);
 
   useEffect(() => {
     // Unwrap params Promise
@@ -178,6 +187,43 @@ export default function ClientProposalView({ params }: { params: Promise<{ propo
     return labels[type] || type;
   };
 
+  const handleDecline = async () => {
+    if (!proposalId || declineReason.trim().length < 10) {
+      alert('Please provide a reason for declining (at least 10 characters)');
+      return;
+    }
+
+    setDeclining(true);
+    try {
+      const response = await fetch(`/api/proposals/${proposalId}/decline`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reason: declineReason,
+          category: declineCategory || 'other',
+          desired_changes: desiredChanges || null,
+          open_to_counter: openToCounter,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setDeclineSuccess(true);
+        setShowDeclineModal(false);
+        // Refresh proposal to show updated status
+        fetchProposal();
+      } else {
+        alert(result.error || 'Failed to submit your response');
+      }
+    } catch (err) {
+      console.error('Error declining proposal:', err);
+      alert('Failed to submit your response. Please try again.');
+    } finally {
+      setDeclining(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
@@ -208,7 +254,8 @@ export default function ClientProposalView({ params }: { params: Promise<{ propo
   }
 
   const isExpired = new Date(proposal.valid_until) < new Date();
-  const canAccept = proposal.status === 'sent' && !isExpired;
+  // Client can accept if proposal is sent OR viewed (not already accepted/declined/converted) and not expired
+  const canAccept = ['sent', 'viewed'].includes(proposal.status) && !isExpired;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -597,19 +644,27 @@ export default function ClientProposalView({ params }: { params: Promise<{ propo
         )}
 
         {/* Action Buttons */}
-          {canAccept && (
+        {canAccept && (
           <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
             <div className="text-center">
               <h3 className="text-2xl font-bold text-gray-900 mb-4">Ready to Book Your Experience?</h3>
               <p className="text-gray-600 mb-6">
                 This proposal is valid until {formatDate(proposal.valid_until)}
               </p>
-              <Link
-                href={proposalId ? `/proposals/${proposalId}/accept` : '#'}
-                className="inline-block bg-[#8B1538] text-white px-8 py-4 rounded-lg font-bold text-lg hover:bg-[#6B1028] transition-colors shadow-lg hover:shadow-xl"
-              >
-                Accept Proposal & Continue
-              </Link>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                <Link
+                  href={proposalId ? `/proposals/${proposalId}/accept` : '#'}
+                  className="inline-block bg-[#8B1538] text-white px-8 py-4 rounded-lg font-bold text-lg hover:bg-[#6B1028] transition-colors shadow-lg hover:shadow-xl"
+                >
+                  ✓ Accept Proposal
+                </Link>
+                <button
+                  onClick={() => setShowDeclineModal(true)}
+                  className="inline-block bg-white text-gray-700 border-2 border-gray-300 px-8 py-4 rounded-lg font-bold text-lg hover:bg-gray-50 hover:border-gray-400 transition-colors"
+                >
+                  Not Quite Right?
+                </button>
+              </div>
               <p className="text-sm text-gray-600 mt-4">
                 Questions? Call us at{' '}
                 <a href={getPhoneLink()} className="text-[#8B1538] hover:underline">
@@ -624,13 +679,47 @@ export default function ClientProposalView({ params }: { params: Promise<{ propo
           </div>
         )}
 
+        {/* Decline Success Message */}
+        {declineSuccess && (
+          <div className="mb-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-blue-800 font-medium">
+                  Thank you for your feedback! {openToCounter ? 'Our team will review your comments and may reach out with an updated proposal.' : 'We appreciate you taking the time to let us know.'}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Declined Status Banner */}
+        {proposal.status === 'declined' && !declineSuccess && (
+          <div className="mb-6 bg-gray-50 border-l-4 border-gray-400 p-4 rounded-r-lg">
+            <div className="flex">
+              <div className="ml-3">
+                <p className="text-sm text-gray-700 font-medium">
+                  This proposal was declined. If you'd like to discuss alternatives, please{' '}
+                  <a href={`mailto:info@wallawalla.travel?subject=Re: Proposal ${proposal.proposal_number}`} className="text-[#8B1538] hover:underline">
+                    contact us
+                  </a>.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {!canAccept && proposal.status !== 'accepted' && (
           <div className="bg-white rounded-xl shadow-lg p-6 mb-6 text-center">
             <p className="text-gray-700 mb-4">
               Have questions or need to make changes?
             </p>
             <a
-              href={`mailto:info@wallawallatravel.com?subject=Proposal ${proposal.proposal_number}`}
+              href={`mailto:info@wallawalla.travel?subject=Proposal ${proposal.proposal_number}`}
               className="inline-block bg-gray-800 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-700 transition-colors"
             >
               Contact Us
@@ -641,6 +730,111 @@ export default function ClientProposalView({ params }: { params: Promise<{ propo
 
       {/* Footer */}
       <Footer />
+
+      {/* Decline Modal */}
+      {showDeclineModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-bold text-gray-900">Help Us Improve</h3>
+                <button
+                  onClick={() => setShowDeclineModal(false)}
+                  className="text-gray-400 hover:text-gray-600 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+
+              <p className="text-gray-600 mb-6">
+                We'd love to understand what's not quite right so we can better meet your needs.
+              </p>
+
+              {/* Category Selection */}
+              <div className="mb-4">
+                <label className="block text-sm font-bold text-gray-700 mb-2">
+                  What's the main concern?
+                </label>
+                <select
+                  value={declineCategory}
+                  onChange={(e) => setDeclineCategory(e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#8B1538] focus:ring-4 focus:ring-[#FDF2F4] text-gray-900"
+                >
+                  <option value="">Select a reason...</option>
+                  <option value="price">Pricing is too high</option>
+                  <option value="dates">Dates don't work</option>
+                  <option value="services">Services don't match our needs</option>
+                  <option value="timing">Not the right time</option>
+                  <option value="competitor">Going with another provider</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+
+              {/* Detailed Feedback */}
+              <div className="mb-4">
+                <label className="block text-sm font-bold text-gray-700 mb-2">
+                  Please share more details <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={declineReason}
+                  onChange={(e) => setDeclineReason(e.target.value)}
+                  placeholder="Help us understand your needs better..."
+                  rows={3}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#8B1538] focus:ring-4 focus:ring-[#FDF2F4] text-gray-900"
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">Minimum 10 characters</p>
+              </div>
+
+              {/* Desired Changes */}
+              <div className="mb-4">
+                <label className="block text-sm font-bold text-gray-700 mb-2">
+                  What would make this work for you?
+                </label>
+                <textarea
+                  value={desiredChanges}
+                  onChange={(e) => setDesiredChanges(e.target.value)}
+                  placeholder="e.g., Lower price, different dates, fewer services..."
+                  rows={2}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#8B1538] focus:ring-4 focus:ring-[#FDF2F4] text-gray-900"
+                />
+              </div>
+
+              {/* Open to Counter */}
+              <div className="mb-6">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={openToCounter}
+                    onChange={(e) => setOpenToCounter(e.target.checked)}
+                    className="w-5 h-5 text-[#8B1538] border-gray-300 rounded focus:ring-[#8B1538]"
+                  />
+                  <span className="text-gray-700">
+                    I'm open to receiving a revised proposal
+                  </span>
+                </label>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDeclineModal(false)}
+                  className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-bold hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDecline}
+                  disabled={declining || declineReason.trim().length < 10}
+                  className="flex-1 px-6 py-3 bg-gray-800 text-white rounded-lg font-bold hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {declining ? 'Submitting...' : 'Submit Feedback'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -2,16 +2,18 @@
 
 import React from 'react';
 
-interface StatusIndicatorProps {
+export interface StatusIndicatorProps {
   status: 'pending' | 'active' | 'completed' | 'error' | 'warning';
   size?: 'sm' | 'md' | 'lg';
   className?: string;
+  label?: string;
 }
 
 export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
   status,
   size = 'md',
   className = '',
+  label,
 }) => {
   const sizeClasses = {
     sm: 'text-xs px-2 py-0.5',
@@ -55,7 +57,7 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
       `}
     >
       <span className="text-xs">{statusIcons[status]}</span>
-      <span>{statusLabels[status]}</span>
+      <span>{label || statusLabels[status]}</span>
     </span>
   );
 };

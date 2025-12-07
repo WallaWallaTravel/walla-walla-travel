@@ -24,11 +24,10 @@ interface ServiceItem {
   tour_type?: '2_winery' | '3_winery' | '4_winery' | 'custom';
   selected_wineries?: Array<{ id: number; name: string; city: string }>;
   start_time?: string;
-  pickup_location?: string;
   
   // Transfer
   transfer_route?: string;
-  pickup_location?: string;
+  pickup_location?: string;  // Common for wine tour and transfer
   dropoff_location?: string;
   
   // Common

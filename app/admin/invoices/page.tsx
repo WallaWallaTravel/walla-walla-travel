@@ -127,7 +127,7 @@ export default function AdminInvoicesPage() {
             <div className="text-gray-600 text-sm font-semibold mb-2">AVG HOURS</div>
             <div className="text-4xl font-bold text-purple-600">
               {invoices.length > 0
-                ? (invoices.reduce((sum, inv) => sum + parseFloat(inv.actual_hours || inv.estimated_hours), 0) / invoices.length).toFixed(1)
+                ? (invoices.reduce((sum, inv) => sum + parseFloat(String(inv.actual_hours || inv.estimated_hours || 0)), 0) / invoices.length).toFixed(1)
                 : '0.0'}
             </div>
           </div>

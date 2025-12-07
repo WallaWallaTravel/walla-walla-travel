@@ -27,11 +27,23 @@ export async function checkDatabase(): Promise<HealthCheckResult> {
     await query('SELECT 1 as health_check');
     const responseTime = Date.now() - startTime;
     
+    // Adjusted thresholds for remote database (Heroku/AWS)
+    // Local: < 50ms, Remote: 100-1000ms is normal
+    const status: HealthStatus = 
+      responseTime < 1500 ? 'healthy' :    // Normal for remote DB
+      responseTime < 3000 ? 'degraded' :   // Slow but usable
+      'down';                               // Too slow
+    
     return {
       checkType: 'database',
       checkName: 'PostgreSQL Connection',
-      status: responseTime < 100 ? 'healthy' : 'degraded',
-      responseTimeMs: responseTime
+      status,
+      responseTimeMs: responseTime,
+      metadata: {
+        threshold_healthy: '< 1500ms',
+        threshold_degraded: '1500-3000ms',
+        location: 'remote'
+      }
     };
   } catch (error: any) {
     return {

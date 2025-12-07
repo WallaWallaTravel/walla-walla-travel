@@ -1,6 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, NotFoundError, ConflictError, BadRequestError } from '@/lib/api-errors';
-import { queryOne, insertOne, executeQuery } from '@/lib/db-helpers';
+import { queryOne, insertOne, query } from '@/lib/db-helpers';
 
 interface BookingWithDriver {
   id: number;
@@ -36,10 +36,11 @@ interface Invoice {
  * 5. Mark booking as final_invoice_sent
  */
 export const POST = withErrorHandling(async (
-  request: Request,
-  { params }: { params: { booking_id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ booking_id: string }> }
 ) => {
-  const bookingId = parseInt(params.booking_id);
+  const { booking_id } = await params;
+  const bookingId = parseInt(booking_id);
 
   if (isNaN(bookingId)) {
     throw new BadRequestError('Invalid booking ID');
@@ -93,7 +94,7 @@ export const POST = withErrorHandling(async (
   `, [bookingId, subtotal, taxAmount, totalAmount]);
 
   // 5. Update booking status
-  await executeQuery(`
+  await query(`
     UPDATE bookings
     SET 
       final_invoice_sent = true,

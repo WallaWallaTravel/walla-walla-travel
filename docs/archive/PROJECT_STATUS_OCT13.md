@@ -68,7 +68,7 @@ node_modules/
 .env.local
 .DS_Store
 *.log
-.vercel
+.railway
 EOF
 
 # Add all files

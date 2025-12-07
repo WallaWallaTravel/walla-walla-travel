@@ -47,12 +47,8 @@ export function determineSmartPeriod(
   }
 
   // Transfers (wider range: 5am-11pm)
-  if (
-    serviceType === 'transfer' || 
-    serviceType === 'airport_transfer' || 
-    serviceType === 'local_transfer' ||
-    serviceType === 'regional_transfer'
-  ) {
+  const transferTypes = ['transfer', 'airport_transfer', 'local_transfer', 'regional_transfer'];
+  if (transferTypes.includes(serviceType as string)) {
     if (hour >= 5 && hour <= 11) return 'AM';
     if (hour === 12 || (hour >= 1 && hour <= 11)) return 'PM';
   }

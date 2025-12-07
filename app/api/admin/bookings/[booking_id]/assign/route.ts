@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api-errors';
-import { queryOne, updateOne, insertOne, withTransaction } from '@/lib/db-helpers';
+import { queryOne, query, withTransaction } from '@/lib/db-helpers';
+import { sendDriverAssignmentToCustomer } from '@/lib/services/email-automation.service';
+import { sendEmail, EmailTemplates } from '@/lib/email';
 
 /**
  * PUT /api/admin/bookings/[booking_id]/assign
@@ -15,9 +17,10 @@ import { queryOne, updateOne, insertOne, withTransaction } from '@/lib/db-helper
  */
 export const PUT = withErrorHandling(async (
   request: NextRequest,
-  { params }: { params: { booking_id: string } }
+  { params }: { params: Promise<{ booking_id: string }> }
 ) => {
-  const bookingId = parseInt(params.booking_id);
+  const { booking_id } = await params;
+  const bookingId = parseInt(booking_id);
 
   if (isNaN(bookingId)) {
     throw new BadRequestError('Invalid booking ID');
@@ -88,7 +91,7 @@ export const PUT = withErrorHandling(async (
     }
 
     // 5. Update booking with driver
-    await updateOne(
+    await query(
       `UPDATE bookings 
        SET driver_id = $1, 
            status = CASE WHEN status = 'pending' THEN 'assigned' ELSE status END,
@@ -106,7 +109,7 @@ export const PUT = withErrorHandling(async (
     );
 
     if (existingAssignment) {
-      await updateOne(
+      await query(
         `UPDATE vehicle_assignments 
          SET vehicle_id = $1, assigned_at = NOW()
          WHERE booking_id = $2`,
@@ -114,7 +117,7 @@ export const PUT = withErrorHandling(async (
         client
       );
     } else {
-      await insertOne(
+      await query(
         `INSERT INTO vehicle_assignments (booking_id, vehicle_id, assigned_at)
          VALUES ($1, $2, NOW())
          RETURNING id`,
@@ -123,16 +126,33 @@ export const PUT = withErrorHandling(async (
       );
     }
 
-    // 7. TODO: Send notifications if requested
-    if (notify_driver) {
-      console.log(`📧 Would send notification to driver ${driver.email}`);
-    }
-    if (notify_customer) {
-      console.log(`📧 Would send notification to customer ${booking.customer_email}`);
-    }
-
     return { booking, driver, vehicle };
   });
+
+  // 7. Send notifications (async, don't block response)
+  if (notify_driver && result.driver.email) {
+    const template = EmailTemplates.driverAssignment({
+      driver_name: result.driver.name,
+      customer_name: result.booking.customer_name,
+      booking_number: result.booking.booking_number,
+      tour_date: result.booking.tour_date,
+      start_time: result.booking.start_time,
+      pickup_location: result.booking.pickup_location || 'TBD',
+      vehicle_name: result.vehicle ? 
+        `${result.vehicle.vehicle_number} (${result.vehicle.make} ${result.vehicle.model})` : undefined,
+    });
+    
+    sendEmail({
+      to: result.driver.email,
+      ...template,
+    }).catch(err => console.error('[Assign] Failed to send driver notification:', err));
+  }
+  
+  if (notify_customer) {
+    sendDriverAssignmentToCustomer(bookingId).catch(err => {
+      console.error('[Assign] Failed to send customer notification:', err);
+    });
+  }
 
   return NextResponse.json({
     success: true,

@@ -71,6 +71,8 @@ export interface StatusMessage {
   duration?: number;
   /** Whether message can be dismissed */
   dismissible?: boolean;
+  /** Optional suggestions or next steps */
+  suggestions?: string[];
 }
 
 /**

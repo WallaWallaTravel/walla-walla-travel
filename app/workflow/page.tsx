@@ -167,7 +167,7 @@ export default function WorkflowPage() {
 
       const result = await api.workflow.clockIn({
         vehicleId: vehicleId || undefined, // Convert null to undefined for API
-        location,
+        location: location || undefined, // Convert null to undefined for API
       });
 
       if (result.success) {
@@ -258,7 +258,7 @@ export default function WorkflowPage() {
 
       const result = await api.workflow.clockOut({
         signature,
-        location,
+        location: location || undefined, // Convert null to undefined for API
       });
 
       if (result.success) {
@@ -306,20 +306,21 @@ export default function WorkflowPage() {
         }
       } else {
         // Handle error response
-        if (result.errorId) {
+        const errorResult = result as { error?: string; errorId?: string; supportContact?: string };
+        if (errorResult.errorId) {
           setStatusMessage({
             type: 'error',
-            message: result.error || 'Clock out failed',
+            message: errorResult.error || 'Clock out failed',
             suggestions: [
-              `Error ID: ${result.errorId}`,
+              `Error ID: ${errorResult.errorId}`,
               'Contact support if this continues',
-              result.supportContact || 'support@wallawallatravel.com'
+              errorResult.supportContact || 'support@wallawallatravel.com'
             ],
           });
         } else {
           setStatusMessage({
             type: 'error',
-            message: result.error || 'Clock out failed',
+            message: errorResult.error || 'Clock out failed',
             suggestions: ['Please try again or contact support'],
           });
         }

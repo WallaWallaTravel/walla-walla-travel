@@ -247,7 +247,7 @@ __tests__/
 
 ### **Planned Production:**
 ```
-Vercel (Frontend & API Routes)
+Railway (Frontend & API Routes)
       ↓
 PostgreSQL (Database)
       ↓

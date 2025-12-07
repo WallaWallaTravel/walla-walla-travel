@@ -1,50 +1,26 @@
+/**
+ * Drivers API
+ * 
+ * ✅ REFACTORED: Service layer handles data fetching
+ */
+
 import { NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { withErrorHandling } from '@/lib/api/middleware/error-handler';
+import { driverService } from '@/lib/services/driver.service';
 
 /**
  * GET /api/drivers
  * Returns list of active drivers
+ * 
+ * ✅ REFACTORED: Reduced from 51 lines to 16 lines
  */
-export async function GET() {
-  try {
-    const result = await query(
-      `SELECT 
-        id, 
-        email, 
-        name, 
-        role, 
-        phone,
-        license_number,
-        license_state,
-        license_expiry,
-        created_at,
-        last_login
-      FROM users 
-      WHERE is_active = true 
-      AND role IN ('driver', 'owner')
-      ORDER BY 
-        CASE 
-          WHEN role = 'owner' THEN 0 
-          ELSE 1 
-        END,
-        name`
-    );
+export const GET = withErrorHandling(async () => {
+  const drivers = await driverService.listActive();
 
-    return NextResponse.json({
-      success: true,
-      drivers: result.rows,
-      count: result.rows.length
-    });
-
-  } catch (error) {
-    console.error('❌ Error fetching drivers:', error);
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Failed to fetch drivers',
-        message: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    );
-  }
-}
+  return NextResponse.json({
+    success: true,
+    drivers,
+    count: drivers.length,
+    timestamp: new Date().toISOString(),
+  });
+});

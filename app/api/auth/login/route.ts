@@ -1,80 +1,50 @@
-import { NextRequest } from 'next/server';
-import bcrypt from 'bcryptjs';
-import { cookies } from 'next/headers';
-import {
-  successResponse,
-  errorResponse,
-  checkRateLimit,
-  logApiRequest
-} from '@/app/api/utils';
-import { getUserByEmail, updateUserLastLogin } from '@/lib/db';
-import { validate, loginSchema } from '@/lib/validation';
+/**
+ * Login API
+ * POST /api/auth/login
+ * 
+ * Authenticates user and creates session
+ * 
+ * ✅ REFACTORED: Service layer + error handling + audit logging
+ */
 
-export async function POST(request: NextRequest) {
-  try {
-    // Rate limiting by IP
-    const ip = request.headers.get('x-forwarded-for') || 'unknown';
-    if (!checkRateLimit(`login:${ip}`, 5, 300000)) { // 5 attempts per 5 minutes
-      return errorResponse('Too many login attempts. Please try again later.', 429);
-    }
+import { NextRequest, NextResponse } from 'next/server';
+import { withErrorHandling } from '@/lib/api/middleware/error-handler';
+import { validateBody } from '@/lib/api/middleware/validation';
+import { setSessionCookie } from '@/lib/auth/session';
+import { authService } from '@/lib/services/auth.service';
+import { auditService } from '@/lib/services/audit.service';
+import { z } from 'zod';
 
-    // Validate request body with Zod schema
-    const validation = await validate(request, loginSchema);
-    if (!validation.success) {
-      return validation.error;
-    }
+export const dynamic = 'force-dynamic';
 
-    const { email, password } = validation.data;
+const LoginSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(1, 'Password is required'),
+});
 
-    // Log the request
-    logApiRequest('POST', '/api/auth/login', undefined, { email });
-
-    // Get user from database
-    const user = await getUserByEmail(email);
-    if (!user) {
-      return errorResponse('Invalid email or password', 401);
-    }
-
-    // Verify password
-    const passwordValid = await bcrypt.compare(password, user.password_hash);
-    if (!passwordValid) {
-      return errorResponse('Invalid email or password', 401);
-    }
-
-    // Update last login time
-    try {
-      await updateUserLastLogin(user.id);
-    } catch (error) {
-      // Non-critical, don't fail the login
-      console.error('Failed to update last login:', error);
-    }
-
-    // Set session cookie
-    const cookieStore = await cookies();
-    const sessionData = {
-      email: user.email,
-      userId: user.id.toString(),
-      name: user.name,
-    };
-
-    cookieStore.set('session', JSON.stringify(sessionData), {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-      path: '/',
-    });
-
-    // Return user data (without password hash)
-    return successResponse({
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-    }, 'Login successful');
-
-  } catch (error) {
-    console.error('Login error:', error);
-    return errorResponse('Login failed. Please try again.', 500);
-  }
+// Get client IP from request headers (Next.js 15 removed request.ip)
+function getClientIp(request: NextRequest): string {
+  const forwarded = request.headers.get('x-forwarded-for');
+  const realIp = request.headers.get('x-real-ip');
+  return forwarded?.split(',')[0].trim() || realIp || 'unknown';
 }
+
+export const POST = withErrorHandling(async (request: NextRequest) => {
+  // ✅ Validate with Zod
+  const credentials = await validateBody(request, LoginSchema);
+
+  // ✅ Use auth service
+  const result = await authService.login(credentials, getClientIp(request));
+
+  // ✅ Set session cookie and return standardized response
+  const response = NextResponse.json({
+    success: true,
+    data: {
+      user: result.user,
+      redirectTo: result.redirectTo,
+    },
+    timestamp: new Date().toISOString(),
+  });
+
+  return setSessionCookie(response, result.token);
+});

@@ -18,6 +18,7 @@ interface Question {
   category: string;
   answered: boolean;
   answer_type?: 'voice' | 'text' | null;
+  answer_text?: string; // For loading previous answers
 }
 
 interface Business {
@@ -62,6 +63,18 @@ export default function BusinessPortalPage() {
   useEffect(() => {
     loadPortalData();
   }, []);
+  
+  // Load previous answer when question changes
+  useEffect(() => {
+    if (currentQuestion) {
+      if (currentQuestion.answer_text) {
+        setTextAnswer(currentQuestion.answer_text);
+        setAnswerMode(currentQuestion.answer_type || 'voice');
+      } else {
+        setTextAnswer('');
+      }
+    }
+  }, [currentQuestionIndex]);
   
   const loadPortalData = async () => {
     try {
@@ -183,7 +196,13 @@ export default function BusinessPortalPage() {
     }
   };
   
-  const handleNext = () => {
+  const handleNext = async () => {
+    // Auto-save if there's unsaved content
+    if (answerMode === 'text' && textAnswer.trim() && !submitting) {
+      await handleSubmitText();
+      return; // handleSubmitText will call handleNext after saving
+    }
+    
     setSuccess(null);
     setError(null);
     if (currentQuestionIndex < questions.length - 1) {
@@ -194,7 +213,35 @@ export default function BusinessPortalPage() {
     }
   };
   
-  const handlePrevious = () => {
+  const handlePrevious = async () => {
+    // Auto-save if there's unsaved content
+    if (answerMode === 'text' && textAnswer.trim() && !submitting) {
+      setSubmitting(true);
+      try {
+        const response = await fetch('/api/business-portal/text-response', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            businessId: business!.id,
+            questionId: currentQuestion.id,
+            questionNumber: currentQuestion.question_number,
+            questionText: currentQuestion.question_text,
+            responseText: textAnswer
+          })
+        });
+        
+        if (response.ok) {
+          setSuccess('Answer saved! ✓');
+          // Reload to update question status
+          await loadPortalData();
+        }
+      } catch (err) {
+        console.error('Auto-save failed:', err);
+      } finally {
+        setSubmitting(false);
+      }
+    }
+    
     setSuccess(null);
     setError(null);
     if (currentQuestionIndex > 0) {
@@ -250,7 +297,7 @@ export default function BusinessPortalPage() {
               🎉 All Questions Complete!
             </h1>
             <p className="text-xl text-gray-600 mb-8">
-              Great work, {business.name}! You've answered all {stats?.totalQuestions} questions.
+              Great work, {business.name}! You've answered all questions.
             </p>
             
             <div className="bg-blue-50 rounded-lg p-6 mb-8">
@@ -312,9 +359,9 @@ export default function BusinessPortalPage() {
                 Upload Files
               </button>
               <div className="text-right">
-                <div className="text-2xl font-bold text-blue-600">{stats?.completionPercentage}%</div>
+                <div className="text-2xl font-bold text-blue-600">{stats?.completionPercentage ?? 0}%</div>
                 <div className="text-sm text-gray-600">
-                  {stats?.answeredQuestions} of {stats?.totalQuestions} complete
+                  {stats?.answeredQuestions ?? 0} of {stats?.totalQuestions ?? 0} complete
                 </div>
               </div>
             </div>
@@ -324,7 +371,7 @@ export default function BusinessPortalPage() {
           <div className="mt-4 bg-gray-200 rounded-full h-2">
             <div
               className="bg-blue-600 h-2 rounded-full transition-all duration-500"
-              style={{ width: `${stats?.completionPercentage}%` }}
+              style={{ width: `${stats?.completionPercentage ?? 0}%` }}
             ></div>
           </div>
         </div>
@@ -336,8 +383,15 @@ export default function BusinessPortalPage() {
           <div className="bg-white rounded-2xl shadow-lg p-8">
             {/* Question header */}
             <div className="mb-6">
-              <div className="text-sm text-blue-600 font-semibold mb-2">
-                Question {currentQuestion.question_number} of {questions.length}
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-sm text-blue-600 font-semibold">
+                  Question {currentQuestion.question_number} of {questions.length}
+                </div>
+                {currentQuestion.answered && (
+                  <span className="text-xs px-3 py-1 bg-green-100 text-green-700 rounded-full font-medium">
+                    ✓ Previously Answered
+                  </span>
+                )}
               </div>
               <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-3">
                 {currentQuestion.question_text}
@@ -474,25 +528,26 @@ export default function BusinessPortalPage() {
             <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
               <button
                 onClick={handlePrevious}
-                disabled={currentQuestionIndex === 0}
-                className="px-6 py-2 text-gray-700 hover:bg-gray-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={currentQuestionIndex === 0 || submitting}
+                className="px-6 py-2 text-gray-700 hover:bg-gray-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 ← Previous
               </button>
               
               <button
                 onClick={handleSkip}
-                className="px-6 py-2 text-gray-600 hover:text-gray-800"
+                disabled={submitting}
+                className="px-6 py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50"
               >
                 Skip for now
               </button>
               
               <button
                 onClick={handleNext}
-                disabled={currentQuestionIndex === questions.length - 1}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={submitting}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
-                Next →
+                {currentQuestionIndex === questions.length - 1 ? 'Finish' : 'Next →'}
               </button>
             </div>
           </div>

@@ -227,8 +227,7 @@ export default function EditProposalPage({ params }: { params: Promise<{ proposa
       const pricing = calculateWineTourPrice(
         item.duration_hours,
         item.party_size,
-        isWeekend,
-        false
+        new Date(item.date)
       );
       
       return pricing.total;
@@ -442,7 +441,7 @@ export default function EditProposalPage({ params }: { params: Promise<{ proposa
                         item={item}
                         index={index}
                         wineries={wineries}
-                        onUpdate={(updates) => updateServiceItem(item.id, updates)}
+                        onUpdate={(updates: Partial<ServiceItem>) => updateServiceItem(item.id, updates)}
                         onRemove={() => removeServiceItem(item.id)}
                       />
                     ))}

@@ -1,0 +1,102 @@
+/**
+ * REFACTORED API ROUTE EXAMPLE
+ * 
+ * This is an example of how to refactor API routes using the new infrastructure:
+ * - withAuth wrapper for authentication
+ * - Zod schemas for validation
+ * - Service layer for business logic
+ * - Consistent error handling
+ * 
+ * Compare this to the old pattern to see the improvements!
+ */
+
+import { NextRequest, NextResponse } from 'next/server';
+import { withAuth } from '@/lib/api/middleware/auth-wrapper';
+import { validateParams } from '@/lib/api/middleware/validation';
+import { BookingIdSchema } from '@/lib/validation/schemas';
+import { bookingService } from '@/lib/services/booking.service';
+import { successResponse } from '@/app/api/utils';
+
+// ============================================================================
+// GET /api/v1/bookings/[id]
+// Get booking by ID
+// ============================================================================
+
+export const GET = withAuth(async (request: NextRequest, session, { params }) => {
+  // ✅ Validate URL parameters with Zod
+  const { id } = await validateParams(params, BookingIdSchema);
+
+  // ✅ Get include parameter from query
+  const { searchParams } = new URL(request.url);
+  const include = searchParams.get('include')?.split(',');
+
+  // ✅ Use service layer for business logic
+  const booking = await bookingService.getById(id, include);
+
+  // ✅ Return standardized success response
+  return successResponse(booking);
+});
+
+// ============================================================================
+// COMPARISON: Old Pattern vs New Pattern
+// ============================================================================
+
+/**
+ * ❌ OLD PATTERN (109 lines, lots of boilerplate):
+ * 
+ * export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+ *   try {
+ *     // Manual auth check
+ *     const authResult = await requireAuth();
+ *     if ('status' in authResult) {
+ *       return authResult;
+ *     }
+ *     const session = authResult;
+ *     
+ *     // Manual parameter validation
+ *     const resolvedParams = await params;
+ *     const id = parseInt(resolvedParams.id);
+ *     if (isNaN(id)) {
+ *       return errorResponse('Invalid booking ID', 400);
+ *     }
+ *     
+ *     // SQL directly in route
+ *     const result = await query(`
+ *       SELECT b.*, c.name as customer_name, c.email as customer_email
+ *       FROM bookings b
+ *       JOIN customers c ON b.customer_id = c.id
+ *       WHERE b.id = $1
+ *     `, [id]);
+ *     
+ *     if (result.rows.length === 0) {
+ *       return errorResponse('Booking not found', 404);
+ *     }
+ *     
+ *     return successResponse(result.rows[0]);
+ *   } catch (error) {
+ *     console.error('Get booking error:', error);
+ *     return errorResponse('Failed to fetch booking', 500);
+ *   }
+ * }
+ * 
+ * ✅ NEW PATTERN (20 lines, clean and focused):
+ * 
+ * export const GET = withAuth(async (request, session, { params }) => {
+ *   const { id } = await validateParams(params, BookingIdSchema);
+ *   const booking = await bookingService.getById(id);
+ *   return successResponse(booking);
+ * });
+ * 
+ * IMPROVEMENTS:
+ * - 82% less code
+ * - Automatic error handling
+ * - Type-safe validation
+ * - Testable business logic (service layer)
+ * - Consistent patterns
+ * - Better error messages
+ * - Automatic logging
+ */
+
+
+
+
