@@ -9,7 +9,7 @@ const getApiUrl = () => {
     // Client-side
     return process.env.NEXT_PUBLIC_API_URL || '';
   }
-  // Server-side - uses Railway URL in production
+  // Server-side - uses production URL
   return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 };
 

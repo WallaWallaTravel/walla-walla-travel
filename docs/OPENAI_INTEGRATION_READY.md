@@ -245,13 +245,13 @@ import { Input, Select, Textarea, Button } from '@/components/forms';
 - [x] Validation tests
 
 #### Phase 4: Production Deployment (TODO)
-- [ ] Deploy to Railway with custom domain
+- [ ] Deploy to Vercel with custom domain
 - [ ] Set up subdomain routing (staff.wallawalla.travel, etc.)
 - [ ] Configure environment variables
 - [ ] Test API endpoints in production
 - [ ] Submit to OpenAI Store
 
-**See:** `docs/RAILWAY_DEPLOYMENT.md` for complete deployment guide
+**See:** `docs/DEPLOYMENT.md` for complete deployment guide
 
 ---
 
@@ -316,7 +316,7 @@ import { Input, Select, Textarea, Button } from '@/components/forms';
 ### Immediate (This Week)
 1. **Test OpenAPI spec** - Import into Swagger UI or Postman
 2. **Review API responses** - Ensure all endpoints return consistent format
-3. **Production deployment** - Deploy to Railway with custom domain
+3. **Production deployment** - Deploy to Vercel with custom domain
 
 ### Short Term (This Month)
 1. **Create Custom GPT** - Build initial ChatGPT integration

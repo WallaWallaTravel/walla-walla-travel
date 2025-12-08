@@ -1,7 +1,7 @@
 🚀 WALLA WALLA TRAVEL - PRODUCTION DEPLOYMENT COMPLETE
 =======================================================
 
-✅ Deployed to: https://walla-walla-travel.up.railway.app
+✅ Deployed to: https://[YOUR-VERCEL-URL].vercel.app
 ✅ Database: Updated with production data
 ✅ All drivers: Ready to receive credentials
 
@@ -15,7 +15,7 @@ TO: Eric Critchlow (206) 713-7576
 
 Hi Eric! Your Walla Walla Travel driver portal:
 
-Website: https://walla-walla-travel.up.railway.app
+Website: https://[YOUR-VERCEL-URL].vercel.app
 Email: evcritchlow@gmail.com
 Password: travel2024
 
@@ -27,7 +27,7 @@ TO: Janine Bergevin (206) 949-2662
 
 Hi Janine! Your Walla Walla Travel driver portal:
 
-Website: https://walla-walla-travel.up.railway.app
+Website: https://[YOUR-VERCEL-URL].vercel.app
 Email: janinebergevin@hotmail.com
 Password: travel2024
 
@@ -39,7 +39,7 @@ TO: Ryan Madsen (509) 540-3600
 
 Hi Ryan! Your Walla Walla Travel driver portal:
 
-Website: https://walla-walla-travel.up.railway.app
+Website: https://[YOUR-VERCEL-URL].vercel.app
 Email: madsry@gmail.com
 Password: travel2024
 
@@ -86,8 +86,8 @@ STEP 4: Confirm Password Changes (within 48 hours)
 📋 PRODUCTION INFORMATION
 =======================================================
 
-Production URL: https://walla-walla-travel.up.railway.app
-Database: PostgreSQL (Railway)
+Production URL: https://[YOUR-VERCEL-URL].vercel.app
+Database: PostgreSQL (Heroku)
 All Passwords: travel2024 (TEMPORARY - must be changed)
 
 Drivers:

@@ -40,7 +40,7 @@
 ┌─────────────────────────────────────────────────────────┐
 │                  DATA LAYER                             │
 │  ┌──────────────────────────────────────────────────┐  │
-│  │         PostgreSQL Database (Railway)            │  │
+│  │         PostgreSQL Database (Heroku)             │  │
 │  │  - 20+ tables                                     │  │
 │  │  - 30+ indexes                                    │  │
 │  │  - ACID transactions                              │  │
@@ -251,9 +251,9 @@ export const POST = withAuth(async (request, session) => {
 
 ## 🚀 Deployment
 
-**Platform:** Railway  
-**Database:** PostgreSQL on Railway  
-**CDN:** Railway Edge  
+**Platform:** Vercel  
+**Database:** PostgreSQL on Heroku  
+**CDN:** Vercel Edge Network  
 
 **Environment:**
 - **Production:** wallawalla.travel
@@ -265,7 +265,7 @@ export const POST = withAuth(async (request, session) => {
 ## 📊 Monitoring
 
 - **Error Tracking:** Sentry (configured)
-- **Performance:** Railway metrics
+- **Performance:** Vercel Analytics
 - **Database:** PostgreSQL logs
 - **API:** Request logging
 

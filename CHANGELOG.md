@@ -120,7 +120,7 @@ All notable changes to the Walla Walla Travel project will be documented in this
 - TypeScript
 - Tailwind CSS
 - PostgreSQL database
-- Railway deployment
+- Vercel deployment
 
 ---
 

@@ -5,7 +5,7 @@ import { processTourReminders } from '@/lib/services/email-automation.service';
  * Cron Job: Send Tour Reminders
  * 
  * Should be called every hour by external scheduler:
- * - Railway: Use cron-job.org or Railway's built-in cron service
+ * - Vercel: Use Vercel Cron Jobs (vercel.json) or cron-job.org
  * - External: curl -X POST https://yoursite.com/api/cron/send-reminders -H "Authorization: Bearer YOUR_CRON_SECRET"
  * 
  * Sends reminder emails to customers 48 hours before their tour.
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
     schedule: 'Recommended: Every hour',
     requires_auth: !!process.env.CRON_SECRET,
     setup: {
-      railway: 'Use cron-job.org or Railway cron service',
+      vercel: 'Use Vercel Cron Jobs or cron-job.org',
       manual: 'POST with Authorization: Bearer YOUR_CRON_SECRET header',
     },
   });

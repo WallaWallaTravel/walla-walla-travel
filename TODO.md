@@ -47,7 +47,7 @@
 - [x] Resend integration complete
 - [x] Email sending functions ready
 - [ ] Add `RESEND_API_KEY` to `.env.local`
-- [ ] Add to Railway env vars
+- [ ] Add to Vercel env vars
 - [ ] Verify deliverability
 
 **Notes:** Just add your Resend API key to `.env.local` and emails will work

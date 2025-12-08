@@ -256,7 +256,7 @@ ngrok http 3000
 Then use the ngrok HTTPS URL
 
 ### **For Long-term Testing:**
-- Deploy to Railway (gets real HTTPS)
+- Deploy to Vercel (gets real HTTPS automatically)
 - Test on actual production URL
 
 ---

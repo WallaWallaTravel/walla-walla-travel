@@ -142,7 +142,7 @@ Issue: ${defectDescription?.substring(0, 100)}...
 
 Vehicle marked OUT OF SERVICE.
 
-View details: https://walla-walla-travel.up.railway.app/admin/vehicle-status`;
+View details: https://wallawalla.travel/admin/vehicle-status`;
 
   // Email Message
   const emailSubject = `🚨 CRITICAL: ${vehicle.vehicle_number} Out of Service`;
@@ -164,7 +164,7 @@ Action Required:
 - No other drivers can select this vehicle
 - Inspect and repair before returning to service
 
-View vehicle status: https://walla-walla-travel.up.railway.app/admin/vehicle-status
+View vehicle status: https://wallawalla.travel/admin/vehicle-status
 Contact driver: ${driver.phone || 'N/A'}
   `.trim();
 
@@ -336,8 +336,8 @@ if (!needsPreTrip) {
 git add .
 git commit -m "feat: implement complete safety workflow with defect tracking"
 
-# 2. Deploy to production
-railway up
+# 2. Deploy to production (automatic via Vercel on push to main)
+git push origin main
 
 # 3. Test the workflow
 ```
@@ -393,7 +393,7 @@ railway up
 ## 🎯 DEPLOYMENT ORDER:
 
 1. Run database migration (Step 1)
-2. Deploy code changes (railway up)
+2. Deploy code changes (push to main, auto-deploys via Vercel)
 3. Test critical defect workflow
 4. Verify notifications in logs
 5. Test vehicle filtering works

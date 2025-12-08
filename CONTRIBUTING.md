@@ -537,8 +537,7 @@ git push origin hotfix/critical-bug
 
 # 6. Get expedited review
 # 7. Merge to main immediately after approval
-# 8. Deploy to production
-railway up
+# 8. Deploy to production (automatic via Vercel on merge to main)
 
 # 9. Update CHANGELOG.md
 # 10. Create patch release (v0.2.1)

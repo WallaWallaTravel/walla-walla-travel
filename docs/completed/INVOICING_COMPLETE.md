@@ -264,7 +264,7 @@ const COMPANY_NAME = 'Walla Walla Travel'
 
 ### **Steps:**
 1. ✅ Run migration on production database
-2. ✅ Deploy updated code to Railway
+2. ✅ Deploy updated code to Vercel
 3. ⏳ Add `RESEND_API_KEY` to production env
 4. ⏳ Test with real booking
 5. ⏳ Monitor first few invoices

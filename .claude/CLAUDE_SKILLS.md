@@ -334,7 +334,7 @@ docs/update-api-reference
 ### If Something Breaks in Production
 
 1. **Don't panic** - Take a breath
-2. **Check logs** - Railway/Heroku logs first
+2. **Check logs** - Vercel/Heroku logs first
 3. **Identify scope** - How many users affected?
 4. **Rollback if needed** - `git revert` or redeploy previous version
 5. **Fix forward** - Quick patch if rollback not possible

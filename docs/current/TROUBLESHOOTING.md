@@ -231,7 +231,7 @@ psql $DATABASE_URL -c "SELECT 1"
 ```
 
 **Common Causes:**
-1. **Wrong DATABASE_URL** - Check Render/Railway dashboard
+1. **Wrong DATABASE_URL** - Check Vercel/Heroku dashboard
 2. **IP not whitelisted** - Add your IP to firewall rules
 3. **Database sleeping** - Free tier databases sleep after inactivity
 
@@ -269,24 +269,20 @@ const url = process.env.NEXT_PUBLIC_SUPABASE_URL
 **Symptom:** Works locally, fails in production
 
 **Diagnose:**
-```bash
-# Check Railway env vars
-railway variables
-
-# Pull env to local
-railway run printenv > .env.production
-```
+1. Check Vercel dashboard → Project → Settings → Environment Variables
+2. Verify variable names match exactly (case-sensitive)
+3. Check if variable is set for correct environment (Production/Preview/Development)
 
 **Fix:**
 ```bash
-# Add missing var in Railway dashboard
-# Go to: https://railway.app/dashboard → Your Project → Variables
+# Add missing var in Vercel dashboard
+# Go to: https://vercel.com → Your Project → Settings → Environment Variables
 
 # Or via CLI:
-railway variables set NEXT_PUBLIC_SUPABASE_URL=your_value
+vercel env add NEXT_PUBLIC_SUPABASE_URL
 
-# Redeploy
-railway up
+# Redeploy (automatic on push, or manual)
+vercel --prod
 ```
 
 ---
@@ -336,19 +332,19 @@ jest.mock('next/navigation', () => ({
 
 ## 🚀 **Deployment Issues**
 
-### **Railway Build Fails**
+### **Vercel Build Fails**
 
-**Symptom:** Build works locally but fails in Railway
+**Symptom:** Build works locally but fails in Vercel
 
 **Diagnose:**
-1. Check Railway build logs in dashboard
+1. Check Vercel build logs in dashboard
 2. Look for error messages
 3. Note which file failed
 
 **Common Causes:**
 1. **Build command wrong** - Should be: `npm run build`
-2. **Node version mismatch** - Set in nixpacks.toml or package.json engines
-3. **Missing env vars** - Add via Railway dashboard or `railway variables set`
+2. **Node version mismatch** - Set in package.json engines
+3. **Missing env vars** - Add via Vercel dashboard
 
 **Fix:**
 ```bash
@@ -356,8 +352,8 @@ jest.mock('next/navigation', () => ({
 npm run build
 npm start
 
-# If that works, issue is in Railway config
-# Check: railway.json or Railway dashboard settings
+# If that works, check Vercel settings
+# Go to: vercel.com → Project → Settings → General
 ```
 
 ---
@@ -509,7 +505,7 @@ npm test        # ✅ Must pass
 ```bash
 npm run build   # ✅ Must pass in production mode
 npm test        # ✅ All tests pass
-# Env vars set in Railway
+# Env vars set in Vercel
 # MASTER_STATUS.md updated
 ```
 

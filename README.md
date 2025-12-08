@@ -2,7 +2,7 @@
 
 **Premium wine tour operations and booking system for Walla Walla Valley**
 
-**Status:** ✅ Production-Ready | **Performance:** 10-100x Optimized | **Deployment:** Railway | **Last Updated:** November 15, 2025
+**Status:** ✅ Production-Ready | **Performance:** 10-100x Optimized | **Deployment:** Vercel | **Last Updated:** December 2025
 
 ---
 
@@ -102,8 +102,8 @@ Database (PostgreSQL with 25+ indexes)
 ### Key Technologies
 
 - **Framework:** Next.js 15, React 19, TypeScript
-- **Database:** PostgreSQL (Railway)
-- **Deployment:** Railway
+- **Database:** PostgreSQL (Heroku)
+- **Deployment:** Vercel
 - **Payments:** Stripe
 - **Email:** Resend
 - **AI:** OpenAI GPT-4o, Deepgram
@@ -205,7 +205,7 @@ PATCH  /api/v1/proposals/:id         # Update proposal
 ### 🚧 Future Enhancements
 
 - **Testing suite** (80%+ coverage target)
-- **CI/CD pipeline** (automated Railway deployment)
+- **CI/CD pipeline** (automated Vercel deployment)
 - **Monitoring** (Sentry, DataDog)
 - **Smart itinerary builder** (AI-powered)
 - **GraphQL API** (optional)

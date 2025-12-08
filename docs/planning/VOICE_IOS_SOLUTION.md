@@ -368,7 +368,7 @@ const client = new speech.SpeechClient({
 ## Deployment Checklist
 
 ### Before Deploying
-- [ ] API key added to Railway environment variables
+- [ ] API key added to Vercel environment variables
 - [ ] Test on production build
 - [ ] Test on iOS device
 - [ ] Error handling added

@@ -571,7 +571,7 @@ logger.info('Booking created', {
 ```
 
 #### 2. Application Monitoring
-- **Option 1:** Railway Metrics (built-in)
+- **Option 1:** Vercel Analytics (built-in)
 - **Option 2:** Datadog
 - **Option 3:** New Relic
 - **Option 4:** Self-hosted (Prometheus + Grafana)

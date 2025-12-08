@@ -147,13 +147,14 @@ tail -f /tmp/dev-server.log
 
 Before deploying to production:
 
-- [ ] Deploy to Railway (`railway up`)
-- [ ] Add PostgreSQL database (`railway add postgresql`)
-- [ ] Configure environment variables in Railway dashboard
+- [ ] Import repository to Vercel (vercel.com/new)
+- [ ] Configure environment variables in Vercel dashboard
+- [ ] Generate strong `JWT_SECRET` (32+ characters)
 - [ ] Generate strong `SESSION_SECRET` (32+ characters)
+- [ ] Generate strong `CSRF_SECRET` (32+ characters)
 - [ ] Use production Stripe keys
 - [ ] Verify domain with Resend for emails
-- [ ] Set `NODE_ENV=production`
+- [ ] Configure custom domain in Vercel
 - [ ] Configure subdomains (staff/driver/business.wallawalla.travel)
 - [ ] Create real admin user (strong password)
 - [ ] Delete test users
@@ -161,10 +162,10 @@ Before deploying to production:
 - [ ] Test login flow
 - [ ] Test booking creation
 - [ ] Test email sending
-- [ ] Verify HTTPS enabled (automatic on Railway)
-- [ ] Set up monitoring (Railway logs, optional Sentry)
+- [ ] Verify HTTPS enabled (automatic on Vercel)
+- [ ] Set up monitoring (Vercel Analytics, optional Sentry)
 
-See `docs/RAILWAY_DEPLOYMENT.md` for complete deployment guide.
+See `docs/DEPLOYMENT.md` for complete deployment guide.
 
 ## 🎯 User Roles & Access
 

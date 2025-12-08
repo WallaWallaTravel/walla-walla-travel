@@ -86,10 +86,11 @@ Multi-brand implementation:
 
 ## 🎯 COMMON TASKS
 
-### **Deploy to Railway**
+### **Deploy to Production**
 ```bash
-# See: 01-getting-started/deployment.md
-railway up
+# Automatic on push to main via Vercel
+# See: docs/DEPLOYMENT.md for manual deployment
+git push origin main
 ```
 
 ### **Run Tests**
@@ -125,7 +126,7 @@ https://wallawalla.travel/api/openapi
 
 - ✅ **14 Routes Refactored** - Service layer architecture
 - ✅ **Performance Optimized** - 30+ indexes, caching
-- ✅ **Railway Migration** - Production-ready deployment
+- ✅ **Vercel Deployment** - Production-ready deployment
 - ✅ **A+ Infrastructure** - Error handling, validation, auth
 - ✅ **Multi-Brand Support** - 3 brands operational
 
@@ -139,7 +140,7 @@ https://wallawalla.travel/api/openapi
 | **Admin Portal** | https://wallawalla.travel/admin |
 | **Driver Portal** | https://wallawalla.travel/driver-portal |
 | **API Docs** | https://wallawalla.travel/api/openapi |
-| **Railway** | https://railway.app |
+| **Vercel** | https://vercel.com |
 | **GitHub** | [Your Repository] |
 
 ---

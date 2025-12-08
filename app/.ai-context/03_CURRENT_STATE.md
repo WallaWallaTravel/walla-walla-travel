@@ -15,7 +15,7 @@
 - Transportation module
 - Business directory
 - RAG implementation
-- Deployment to Railway
+- Deployment to Vercel
 
 ## Environment Variables Needed
 - NEXT_PUBLIC_SUPABASE_URL=

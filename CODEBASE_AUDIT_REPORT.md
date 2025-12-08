@@ -35,7 +35,7 @@
 
 **Problems:**
 1. Multiple "start here" guides (START_HERE.md, README.md, SETUP_INSTRUCTIONS.md, GETTING_STARTED.md)
-2. Duplicate deployment guides (RAILWAY_DEPLOY.md, RAILWAY_DEPLOYMENT_READY.md, docs/RAILWAY_DEPLOYMENT.md)
+2. Duplicate deployment guides (now consolidated to docs/DEPLOYMENT.md for Vercel)
 3. Session summaries at root level mixed with critical docs
 4. No clear documentation hierarchy
 
@@ -167,14 +167,14 @@ git rm -r --cached travel-suite-api/venv/
 
 **Found:**
 ```
-.env.example (NEW - Railway)
+.env.example (production-ready)
 env.example.txt
 env.local.example
 ```
 
 **Recommended Action:**
 ```bash
-# Keep: .env.example (most recent, Railway-ready)
+# Keep: .env.example (most recent, Vercel-ready)
 # Delete:
 rm env.example.txt
 rm env.local.example
@@ -231,8 +231,6 @@ QUICK_REFERENCE.md              ← KEEP
 QUICK_START_OPENAI.md
 QUICK_TEST_RESULTS.md
 QUICK_TEST.md
-RAILWAY_DEPLOY.md
-RAILWAY_DEPLOYMENT_READY.md
 README.md                       ← KEEP
 SETUP_INSTRUCTIONS.md
 START_HERE.md
@@ -251,14 +249,14 @@ WAKE_UP_SUMMARY.md
 ├── QUICK_REFERENCE.md
 ├── docs/
 │   ├── deployment/
-│   │   ├── railway-guide.md
+│   │   ├── DEPLOYMENT.md
 │   │   └── openai-integration.md
 │   ├── guides/
 │   │   ├── getting-started.md
 │   │   ├── testing.md
 │   │   └── monitoring.md
 │   ├── sessions/
-│   │   ├── 2025-11-15-railway-migration.md
+│   │   ├── 2025-12-vercel-deployment.md
 │   │   ├── 2025-11-14-testing-suite.md
 │   │   └── ... (all session summaries)
 │   ├── bugfixes/
@@ -350,7 +348,6 @@ git commit -m "chore: remove development test pages"
 mkdir -p docs/{deployment,guides,sessions,bugfixes}
 
 # 6. Move files (examples)
-mv RAILWAY*.md docs/deployment/
 mv QUICK_START_OPENAI.md docs/deployment/
 mv *_COMPLETE*.md docs/sessions/
 mv BUGFIX*.md docs/bugfixes/
