@@ -71,6 +71,47 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // ============================================================================
+  // SUBDOMAIN ROUTE ENFORCEMENT
+  // Block routes that don't belong to this subdomain
+  // ============================================================================
+  
+  // Define allowed routes per subdomain
+  const subdomainAllowedRoutes: Record<string, string[]> = {
+    admin: ['/admin', '/login'],
+    drivers: ['/driver-portal', '/driver', '/workflow', '/inspections', '/time-clock', '/login'],
+    partners: ['/partner-portal', '/partner-setup', '/login'],
+    app: ['/book', '/login', '/embed', '/payment'],
+    business: ['/contribute', '/login'],
+  };
+
+  // Enforce subdomain boundaries
+  if (subdomain && subdomain in subdomainAllowedRoutes) {
+    const allowedRoutes = subdomainAllowedRoutes[subdomain];
+    const isAllowedRoute = allowedRoutes.some(route => 
+      pathname === route || pathname.startsWith(route + '/') || pathname === '/'
+    );
+    
+    // Shared routes accessible from any subdomain
+    const sharedRoutes = ['/login', '/error', '/404', '/500', '/api'];
+    const isSharedRoute = sharedRoutes.some(route => 
+      pathname === route || pathname.startsWith(route + '/')
+    );
+    
+    if (!isAllowedRoute && !isSharedRoute) {
+      // Redirect to subdomain's appropriate page
+      const homeRedirects: Record<string, string> = {
+        admin: '/admin/dashboard',
+        drivers: '/driver-portal/dashboard',
+        partners: '/partner-portal/dashboard',
+        app: '/',
+        business: '/contribute',
+      };
+      const redirectTo = homeRedirects[subdomain] || '/';
+      return NextResponse.redirect(new URL(redirectTo, request.url));
+    }
+  }
+
   // Redirect homepage (/) based on subdomain
   if (pathname === '/') {
     // admin.* → /admin/dashboard (auth check happens below)
