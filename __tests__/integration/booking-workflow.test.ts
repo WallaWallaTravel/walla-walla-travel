@@ -1,22 +1,42 @@
 /**
  * Booking Workflow Integration Tests
  * Tests complete end-to-end booking workflows
+ *
+ * These tests require:
+ * - A test database (TEST_DATABASE_URL environment variable)
+ *
+ * Run with: npm run test:integration
  */
 
 import { Pool } from 'pg';
 import { createMockBookingRequest, generateRandomEmail } from '@/lib/__tests__/factories';
-import { cleanupTestData } from '@/lib/__tests__/test-utils';
+import { cleanupTestData, shouldSkipIntegrationTests } from '@/lib/__tests__/test-utils';
 
-// This would connect to a test database
-const testPool = new Pool({
-  connectionString: process.env.TEST_DATABASE_URL || process.env.DATABASE_URL,
-});
+// Skip all tests if no test database is configured
+const describeIntegration = shouldSkipIntegrationTests() ? describe.skip : describe;
 
-describe('Booking Workflow Integration', () => {
+// Only create pool if we're running integration tests
+let testPool: Pool | null = null;
+
+describeIntegration('Booking Workflow Integration', () => {
+  beforeAll(() => {
+    // Only create pool when tests actually run
+    testPool = new Pool({
+      connectionString: process.env.TEST_DATABASE_URL || process.env.DATABASE_URL,
+      ssl: process.env.DATABASE_URL?.includes('heroku') ? { rejectUnauthorized: false } : undefined,
+    });
+  });
+
   afterAll(async () => {
-    // Clean up test data
-    await cleanupTestData(testPool, ['bookings', 'customers', 'payments']);
-    await testPool.end();
+    if (testPool) {
+      // Clean up test data
+      try {
+        await cleanupTestData(testPool, ['bookings', 'customers', 'payments']);
+      } catch {
+        // Ignore cleanup errors
+      }
+      await testPool.end();
+    }
   });
 
   describe('Complete Booking Flow', () => {
@@ -27,7 +47,7 @@ describe('Booking Workflow Integration', () => {
       // 2. Create a booking
       // 3. Process payment
       // 4. Verify all records are created correctly
-      
+
       const bookingData = createMockBookingRequest({
         customerEmail: generateRandomEmail(),
       });
@@ -59,7 +79,7 @@ describe('Booking Workflow Integration', () => {
   describe('Error Handling', () => {
     it('should reject invalid email addresses', () => {
       const invalidEmails = ['invalid', 'test@', '@example.com', 'test @example.com'];
-      
+
       invalidEmails.forEach(email => {
         expect(email).not.toMatch(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
       });
@@ -76,5 +96,3 @@ describe('Booking Workflow Integration', () => {
     });
   });
 });
-
-

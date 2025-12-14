@@ -266,3 +266,6 @@ SELECT id, 'referral', TRUE, ARRAY['vacation_rental', 'luxury_home']
 FROM brands WHERE slug = 'haven-collection'
 ON CONFLICT DO NOTHING;
 
+
+
+

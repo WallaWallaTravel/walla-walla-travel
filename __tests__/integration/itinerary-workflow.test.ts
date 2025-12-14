@@ -1,19 +1,34 @@
 /**
  * Integration tests for Itinerary Builder Workflow
  * Tests the complete itinerary creation and management process
+ *
+ * These tests require:
+ * - A running Next.js server (npm run dev)
+ * - A test database (TEST_DATABASE_URL environment variable)
+ *
+ * Run with: npm run test:integration
  */
 
-import { describe, it, expect, beforeEach } from '@jest/globals';
-import { query } from '@/lib/db';
-import { resetDb } from '@/lib/__tests__/test-utils';
+import { describe, it, expect, beforeEach, beforeAll } from '@jest/globals';
+import { shouldSkipIntegrationTests } from '@/lib/__tests__/test-utils';
 
-describe('Itinerary Builder Workflow', () => {
+// Skip all tests if no test database is configured
+const describeIntegration = shouldSkipIntegrationTests() ? describe.skip : describe;
+
+// Lazy import database to avoid connection at module load
+let query: typeof import('@/lib/db').query;
+
+describeIntegration('Itinerary Builder Workflow', () => {
   let bookingId: number;
   let wineryIds: number[];
 
-  beforeEach(async () => {
-    await resetDb();
+  beforeAll(async () => {
+    // Dynamically import to avoid connection issues during test discovery
+    const db = await import('@/lib/db');
+    query = db.query;
+  });
 
+  beforeEach(async () => {
     // Create a test booking
     const bookingResult = await query(`
       INSERT INTO bookings (
@@ -103,14 +118,17 @@ describe('Itinerary Builder Workflow', () => {
 
     beforeEach(async () => {
       // Create itinerary
-      const itineraryResult = await query(`
+      const itineraryResult = await query(
+        `
         INSERT INTO itineraries (
           booking_id, pickup_location, pickup_time, 
           dropoff_location, estimated_dropoff_time, created_at, updated_at
         ) VALUES 
         ($1, 'Marcus Whitman Hotel', '10:00', 'Marcus Whitman Hotel', '16:00', NOW(), NOW())
         RETURNING id
-      `, [bookingId]);
+      `,
+        [bookingId]
+      );
       itineraryId = itineraryResult.rows[0].id;
     });
 
@@ -235,7 +253,8 @@ describe('Itinerary Builder Workflow', () => {
     let itineraryId: number;
 
     beforeEach(async () => {
-      const itineraryResult = await query(`
+      const itineraryResult = await query(
+        `
         INSERT INTO itineraries (
           booking_id, pickup_location, pickup_time, 
           dropoff_location, estimated_dropoff_time, 
@@ -244,7 +263,9 @@ describe('Itinerary Builder Workflow', () => {
         ) VALUES 
         ($1, 'Marcus Whitman Hotel', '10:00', 'Marcus Whitman Hotel', '16:00', 10, 10, '', NOW(), NOW())
         RETURNING id
-      `, [bookingId]);
+      `,
+        [bookingId]
+      );
       itineraryId = itineraryResult.rows[0].id;
     });
 
@@ -307,18 +328,22 @@ describe('Itinerary Builder Workflow', () => {
   describe('Retrieve Itinerary with Stops', () => {
     beforeEach(async () => {
       // Create itinerary with stops
-      const itineraryResult = await query(`
+      const itineraryResult = await query(
+        `
         INSERT INTO itineraries (
           booking_id, pickup_location, pickup_time, 
           dropoff_location, estimated_dropoff_time, created_at, updated_at
         ) VALUES 
         ($1, 'Marcus Whitman Hotel', '10:00', 'Marcus Whitman Hotel', '16:00', NOW(), NOW())
         RETURNING id
-      `, [bookingId]);
+      `,
+        [bookingId]
+      );
       const itineraryId = itineraryResult.rows[0].id;
 
       // Add stops
-      await query(`
+      await query(
+        `
         INSERT INTO itinerary_stops (
           itinerary_id, winery_id, stop_order, arrival_time, departure_time,
           duration_minutes, drive_time_to_next_minutes, is_lunch_stop, 
@@ -327,7 +352,9 @@ describe('Itinerary Builder Workflow', () => {
         ($1, $2, 1, '10:30', '11:45', 75, 15, false, true, 'First stop'),
         ($1, $3, 2, '12:00', '13:30', 90, 15, true, true, 'Lunch stop'),
         ($1, $4, 3, '13:45', '15:00', 75, 0, false, true, 'Final stop')
-      `, [itineraryId, wineryIds[0], wineryIds[1], wineryIds[2]]);
+      `,
+        [itineraryId, wineryIds[0], wineryIds[1], wineryIds[2]]
+      );
     });
 
     it('should retrieve itinerary with all stops and winery details', async () => {
@@ -337,11 +364,11 @@ describe('Itinerary Builder Workflow', () => {
       expect(response.status).toBe(200);
       expect(result.success).toBe(true);
       expect(result.data.stops).toHaveLength(3);
-      
+
       // Check first stop has winery details
       expect(result.data.stops[0].winery).toBeDefined();
       expect(result.data.stops[0].winery.name).toBe('Test Winery 1');
-      
+
       // Check lunch stop
       const lunchStop = result.data.stops.find((s: any) => s.is_lunch_stop);
       expect(lunchStop).toBeDefined();
@@ -349,7 +376,3 @@ describe('Itinerary Builder Workflow', () => {
     });
   });
 });
-
-
-
-

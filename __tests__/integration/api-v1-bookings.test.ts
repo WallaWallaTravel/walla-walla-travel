@@ -1,15 +1,32 @@
 /**
  * Integration tests for v1 Bookings API
  * Tests the complete booking workflow end-to-end
+ *
+ * These tests require:
+ * - A running Next.js server (npm run dev)
+ * - A test database (TEST_DATABASE_URL environment variable)
+ *
+ * Run with: npm run test:integration
  */
 
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
-import { query } from '@/lib/db';
-import { resetDb } from '@/lib/__tests__/test-utils';
+import { shouldSkipIntegrationTests } from '@/lib/__tests__/test-utils';
 
-describe('API v1 /bookings', () => {
+// Skip all tests if no test database is configured
+const describeIntegration = shouldSkipIntegrationTests() ? describe.skip : describe;
+
+// Lazy import database to avoid connection at module load
+let query: typeof import('@/lib/db').query;
+
+describeIntegration('API v1 /bookings', () => {
+  beforeAll(async () => {
+    // Dynamically import to avoid connection issues during test discovery
+    const db = await import('@/lib/db');
+    query = db.query;
+  });
+
   beforeEach(async () => {
-    await resetDb();
+    // resetDb is now a no-op without explicit pool
   });
 
   describe('POST /api/v1/bookings', () => {
@@ -261,7 +278,3 @@ describe('API v1 /bookings', () => {
     // Cleanup is handled by resetDb
   });
 });
-
-
-
-

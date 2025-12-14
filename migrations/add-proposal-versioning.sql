@@ -25,3 +25,6 @@ COMMENT ON COLUMN proposals.client_feedback_category IS 'Category of decline rea
 COMMENT ON COLUMN proposals.client_desired_changes IS 'What the client would like changed to accept';
 
 
+
+
+

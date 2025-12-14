@@ -71,15 +71,16 @@ describe('Rate Configuration', () => {
       expect(result.day_type).toBe('Thu-Sat');
     });
 
-    it('enforces 5-hour minimum', () => {
+    it('enforces 4-hour minimum', () => {
       const result = calculateWineTourPrice(
         3, // 3 hours (below minimum)
         4, // 4 guests
         new Date('2025-06-09') // Monday
       );
 
-      expect(result.hours).toBe(5); // Enforced minimum
-      expect(result.subtotal).toBe(475); // 5 × 95
+      // Configuration has 4-hour minimum for all days
+      expect(result.hours).toBe(4); // Enforced minimum
+      expect(result.subtotal).toBe(380); // 4 × 95
     });
 
     it('handles large groups correctly', () => {

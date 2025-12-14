@@ -306,3 +306,6 @@ CREATE INDEX IF NOT EXISTS idx_events_active ON events(is_active) WHERE is_activ
 -- CREATE INDEX ON wineries USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
 -- CREATE INDEX ON wines USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
 
+
+
+

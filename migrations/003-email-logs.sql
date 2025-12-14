@@ -87,3 +87,6 @@ COMMENT ON TABLE email_logs IS 'Tracks all automated emails sent by the system';
 COMMENT ON TABLE scheduled_emails IS 'Queue for scheduled automated emails';
 COMMENT ON VIEW upcoming_reminders IS 'Bookings that need tour reminder emails';
 
+
+
+

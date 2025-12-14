@@ -1,6 +1,9 @@
 /**
  * Jest global setup
  * Defines globals needed for Next.js API route testing
+ * 
+ * Note: This file is loaded via setupFiles (before Jest is initialized).
+ * jest.mock() calls should go in jest.setup.cjs (setupFilesAfterEnv) instead.
  */
 
 import { Request, Response, Headers } from 'node-fetch';
@@ -26,6 +29,8 @@ global.FormData = class FormData {
 
 // Mock Blob
 global.Blob = class Blob {
-  constructor(public parts: any[], public options?: any) {}
+  constructor(
+    public parts: any[],
+    public options?: any
+  ) {}
 } as any;
-

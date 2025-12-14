@@ -5,6 +5,37 @@
 
 import { Pool } from 'pg';
 
+/**
+ * Check if a test database is available
+ * Used to conditionally skip integration tests
+ */
+export async function isDatabaseAvailable(): Promise<boolean> {
+  if (!process.env.TEST_DATABASE_URL && !process.env.DATABASE_URL) {
+    return false;
+  }
+
+  try {
+    const pool = new Pool({
+      connectionString: process.env.TEST_DATABASE_URL || process.env.DATABASE_URL,
+      ssl: process.env.DATABASE_URL?.includes('heroku') ? { rejectUnauthorized: false } : undefined,
+      connectionTimeoutMillis: 3000,
+    });
+    await pool.query('SELECT 1');
+    await pool.end();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Check if integration tests should be skipped
+ * Returns true if TEST_DATABASE_URL is not set
+ */
+export function shouldSkipIntegrationTests(): boolean {
+  return !process.env.TEST_DATABASE_URL;
+}
+
 // Mock database query results
 export function createMockQueryResult<T>(rows: T[], rowCount?: number) {
   return {
@@ -29,15 +60,17 @@ export function createMockPool(): jest.Mocked<Pool> {
 }
 
 // Mock request object for API tests
-export function createMockRequest(options: {
-  method?: string;
-  url?: string;
-  headers?: Record<string, string>;
-  body?: any;
-  searchParams?: Record<string, string>;
-} = {}) {
+export function createMockRequest(
+  options: {
+    method?: string;
+    url?: string;
+    headers?: Record<string, string>;
+    body?: any;
+    searchParams?: Record<string, string>;
+  } = {}
+) {
   const url = new URL(options.url || 'http://localhost:3000/api/v1/test');
-  
+
   if (options.searchParams) {
     Object.entries(options.searchParams).forEach(([key, value]) => {
       url.searchParams.set(key, value);
@@ -77,28 +110,38 @@ export async function cleanupTestData(pool: Pool, tables: string[]) {
   }
 }
 
-// Reset database for testing (alias for cleanupTestData with common tables)
-export async function resetDb(pool?: Pool) {
-  // This is a stub - in real integration tests, you'd reset specific test data
-  // For unit tests that mock the database, this is a no-op
-  if (pool) {
-    const testTables = [
-      'booking_timeline',
-      'payments',
-      'booking_wineries',
-      'lunch_orders',
-      'bookings',
-      'reservations',
-      'proposals',
-      'customers',
-    ];
-    await cleanupTestData(pool, testTables);
+/**
+ * Reset database for testing
+ *
+ * For unit tests: No-op (pass no arguments)
+ * For integration tests: Pass an explicit pool to clean test data
+ *
+ * @param pool - Optional database pool. If not provided, this is a no-op.
+ */
+export async function resetDb(pool?: Pool): Promise<void> {
+  // No-op for unit tests - integration tests should call with explicit pool
+  if (!pool) {
+    return;
   }
+
+  const testTables = [
+    'booking_timeline',
+    'payments',
+    'booking_wineries',
+    'lunch_orders',
+    'bookings',
+    'reservations',
+    'proposals',
+    'customers',
+  ];
+  await cleanupTestData(pool, testTables);
 }
 
 // Generate random test data
 export function generateRandomString(length: number = 10): string {
-  return Math.random().toString(36).substring(2, length + 2);
+  return Math.random()
+    .toString(36)
+    .substring(2, length + 2);
 }
 
 export function generateRandomEmail(): string {
@@ -165,5 +208,3 @@ export async function expectErrorResponse(response: Response, expectedStatus: nu
   expect(data.error).toBeDefined();
   return data.error;
 }
-
-
