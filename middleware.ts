@@ -42,57 +42,66 @@ export async function middleware(request: NextRequest) {
   // ============================================================================
   // SUBDOMAIN ROUTING
   // ============================================================================
-  
+
   // Extract subdomain (handle localhost:3000, admin.localhost:3000, admin.wallawallatravel.com)
   const hostWithoutPort = hostname.split(':')[0];
   const parts = hostWithoutPort.split('.');
-  
+
   // Determine subdomain
   // localhost → no subdomain
   // admin.localhost → subdomain = 'admin'
   // admin.wallawallatravel.com → subdomain = 'admin'
   // wallawallatravel.com → no subdomain
   let subdomain: string | null = null;
-  
+
   if (parts.length >= 2 && parts[0] !== 'www') {
     // Check if first part is a known subdomain
-    const knownSubdomains = ['admin', 'drivers', 'partners', 'app', 'business'];
-    if (knownSubdomains.includes(parts[0])) {
-      subdomain = parts[0];
+    // Support both singular and plural forms (driver/drivers, partner/partners)
+    const subdomainMap: Record<string, string> = {
+      admin: 'admin',
+      driver: 'drivers',
+      drivers: 'drivers',
+      partner: 'partners',
+      partners: 'partners',
+      app: 'app',
+      business: 'business',
+    };
+    if (parts[0] in subdomainMap) {
+      subdomain = subdomainMap[parts[0]];
     }
   }
-  
+
   // Redirect homepage (/) based on subdomain
   if (pathname === '/') {
     // admin.* → /admin/dashboard (auth check happens below)
     if (subdomain === 'admin') {
       return NextResponse.redirect(new URL('/admin/dashboard', request.url));
     }
-    
+
     // drivers.* → /driver-portal/dashboard
     if (subdomain === 'drivers') {
       return NextResponse.redirect(new URL('/driver-portal/dashboard', request.url));
     }
-    
+
     // partners.* → /partner-portal/dashboard
     if (subdomain === 'partners') {
       return NextResponse.redirect(new URL('/partner-portal/dashboard', request.url));
     }
-    
+
     // business.* → /contribute (legacy, for business questionnaire)
     if (subdomain === 'business') {
       return NextResponse.redirect(new URL('/contribute', request.url));
     }
-    
+
     // app.* or no subdomain → show the portal selector page
   }
 
   // ============================================================================
   // AUTHENTICATION & ROUTE PROTECTION
   // ============================================================================
-  
+
   const session = await getSessionFromRequest(request);
-  
+
   // Protected routes that require authentication
   const protectedRoutes = [
     '/admin',
@@ -102,9 +111,9 @@ export async function middleware(request: NextRequest) {
     '/inspections',
     '/time-clock',
   ];
-  
+
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
-  
+
   // If trying to access protected route without session, redirect to login
   if (isProtectedRoute && !session) {
     const loginUrl = new URL('/login', request.url);
@@ -115,30 +124,40 @@ export async function middleware(request: NextRequest) {
     }
     return NextResponse.redirect(loginUrl);
   }
-  
+
   // Role-based route protection
   if (session) {
     // Admin-only routes
     if (pathname.startsWith('/admin') && session.user.role !== 'admin') {
-      return addSecurityHeaders(NextResponse.redirect(new URL('/login?error=forbidden', request.url)));
+      return addSecurityHeaders(
+        NextResponse.redirect(new URL('/login?error=forbidden', request.url))
+      );
     }
-    
+
     // Driver-only routes (admins can also access for oversight)
     const driverRoutes = ['/driver-portal', '/workflow', '/inspections', '/time-clock'];
     const isDriverRoute = driverRoutes.some(route => pathname.startsWith(route));
-    
+
     if (isDriverRoute && session.user.role !== 'driver' && session.user.role !== 'admin') {
-      return addSecurityHeaders(NextResponse.redirect(new URL('/login?error=forbidden', request.url)));
+      return addSecurityHeaders(
+        NextResponse.redirect(new URL('/login?error=forbidden', request.url))
+      );
     }
-    
+
     // Partner-only routes (admins can also access for oversight)
     // Note: 'partner' role may not be in the type union - use string comparison
     const role = session.user.role as string;
-    if (pathname.startsWith('/partner-portal') && role !== 'partner' && session.user.role !== 'admin') {
-      return addSecurityHeaders(NextResponse.redirect(new URL('/login?error=forbidden', request.url)));
+    if (
+      pathname.startsWith('/partner-portal') &&
+      role !== 'partner' &&
+      session.user.role !== 'admin'
+    ) {
+      return addSecurityHeaders(
+        NextResponse.redirect(new URL('/login?error=forbidden', request.url))
+      );
     }
   }
-  
+
   // If logged in and trying to access login page, redirect to appropriate dashboard
   if (pathname === '/login' && session) {
     const userRole = session.user.role as string;
@@ -154,7 +173,7 @@ export async function middleware(request: NextRequest) {
   // ============================================================================
   // TEST ROUTE PROTECTION
   // ============================================================================
-  
+
   const testRoutes = [
     '/test',
     '/test-mobile',
@@ -164,8 +183,8 @@ export async function middleware(request: NextRequest) {
     '/ai-directory',
   ];
 
-  const isTestRoute = testRoutes.some(route => 
-    pathname === route || pathname.startsWith(route + '/')
+  const isTestRoute = testRoutes.some(
+    route => pathname === route || pathname.startsWith(route + '/')
   );
 
   if (isTestRoute) {
