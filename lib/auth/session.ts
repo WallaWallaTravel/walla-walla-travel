@@ -14,6 +14,18 @@ const SESSION_SECRET = new TextEncoder().encode(
 );
 const SESSION_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days
 
+/**
+ * Get cookie domain for cross-subdomain sharing
+ * In production, cookies are shared across all *.wallawalla.travel subdomains
+ * In development, no domain is set (localhost doesn't support subdomain cookies)
+ */
+function getCookieDomain(): string | undefined {
+  if (process.env.NODE_ENV === 'production') {
+    return '.wallawalla.travel';
+  }
+  return undefined;
+}
+
 export interface SessionUser {
   id: number;
   email: string;
@@ -82,8 +94,11 @@ export async function getSessionFromRequest(request: NextRequest): Promise<Sessi
 
 /**
  * Set session cookie in response
+ * Cookie is shared across all *.wallawalla.travel subdomains in production
  */
 export function setSessionCookie(response: NextResponse, token: string): NextResponse {
+  const domain = getCookieDomain();
+  
   response.cookies.set({
     name: SESSION_COOKIE_NAME,
     value: token,
@@ -92,6 +107,7 @@ export function setSessionCookie(response: NextResponse, token: string): NextRes
     sameSite: 'lax',
     maxAge: SESSION_DURATION / 1000, // Convert to seconds
     path: '/',
+    ...(domain && { domain }), // Only set domain in production
   });
   
   return response;
@@ -99,8 +115,11 @@ export function setSessionCookie(response: NextResponse, token: string): NextRes
 
 /**
  * Clear session cookie
+ * Must use same domain as setSessionCookie to properly clear cross-subdomain cookies
  */
 export function clearSessionCookie(response: NextResponse): NextResponse {
+  const domain = getCookieDomain();
+  
   response.cookies.set({
     name: SESSION_COOKIE_NAME,
     value: '',
@@ -109,6 +128,7 @@ export function clearSessionCookie(response: NextResponse): NextResponse {
     sameSite: 'lax',
     maxAge: 0,
     path: '/',
+    ...(domain && { domain }), // Only set domain in production
   });
   
   return response;

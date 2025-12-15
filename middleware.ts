@@ -246,6 +246,11 @@ export async function middleware(request: NextRequest) {
 
   // Add security headers to all responses
   const response = NextResponse.next();
+  
+  // Debug headers to verify middleware is running (can be removed after debugging)
+  response.headers.set('X-Middleware-Subdomain', subdomain || 'none');
+  response.headers.set('X-Middleware-Pathname', pathname);
+  
   return addSecurityHeaders(response);
 }
 
