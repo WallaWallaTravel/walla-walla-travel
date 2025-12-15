@@ -1,7 +1,7 @@
 /**
  * Jest global setup
  * Defines globals needed for Next.js API route testing
- * 
+ *
  * Note: This file is loaded via setupFiles (before Jest is initialized).
  * jest.mock() calls should go in jest.setup.cjs (setupFilesAfterEnv) instead.
  */

@@ -11,7 +11,7 @@ import { createMockBooking, createMockBookingRequest } from '@/lib/__tests__/fac
 // Note: Schema must be defined inside factory since jest.mock is hoisted
 jest.mock('@/lib/services/booking-service', () => {
   const { z } = require('zod');
-  
+
   return {
     bookingService: {
       findManyWithFilters: jest.fn(),
@@ -134,9 +134,7 @@ describe('/api/v1/bookings', () => {
     });
 
     it('should handle service errors', async () => {
-      mockBookingService.findManyWithFilters.mockRejectedValue(
-        new Error('Database error')
-      );
+      mockBookingService.findManyWithFilters.mockRejectedValue(new Error('Database error'));
 
       const request = createMockRequest({
         method: 'GET',
@@ -196,9 +194,7 @@ describe('/api/v1/bookings', () => {
     });
 
     it('should handle service errors', async () => {
-      mockBookingService.createBooking.mockRejectedValue(
-        new Error('Failed to create booking')
-      );
+      mockBookingService.createBooking.mockRejectedValue(new Error('Failed to create booking'));
 
       const request = createMockRequest({
         method: 'POST',
@@ -214,5 +210,3 @@ describe('/api/v1/bookings', () => {
     });
   });
 });
-
-

@@ -30,10 +30,7 @@ describe('ProposalService', () => {
 
   describe('findManyWithFilters', () => {
     it('should return proposals with default filters', async () => {
-      const mockProposals = [
-        createMockProposal(),
-        createMockProposal(),
-      ];
+      const mockProposals = [createMockProposal(), createMockProposal()];
 
       mockQuery
         .mockResolvedValueOnce(createMockQueryResult([{ count: '2' }]))

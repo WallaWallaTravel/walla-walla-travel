@@ -14,6 +14,11 @@ function getSecurityHeaders(): Record<string, string> {
     'X-XSS-Protection': '1; mode=block',
     'Referrer-Policy': 'strict-origin-when-cross-origin',
     'Permissions-Policy': 'camera=(), microphone=(self), geolocation=()',
+    // Force no caching of HTML pages to ensure middleware redirects work
+    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0',
+    'Surrogate-Control': 'no-store',
   };
 }
 
@@ -75,7 +80,7 @@ export async function middleware(request: NextRequest) {
   // SUBDOMAIN ROUTE ENFORCEMENT
   // Block routes that don't belong to this subdomain
   // ============================================================================
-  
+
   // Define allowed routes per subdomain
   const subdomainAllowedRoutes: Record<string, string[]> = {
     admin: ['/admin', '/login'],
@@ -88,16 +93,16 @@ export async function middleware(request: NextRequest) {
   // Enforce subdomain boundaries
   if (subdomain && subdomain in subdomainAllowedRoutes) {
     const allowedRoutes = subdomainAllowedRoutes[subdomain];
-    const isAllowedRoute = allowedRoutes.some(route => 
-      pathname === route || pathname.startsWith(route + '/') || pathname === '/'
+    const isAllowedRoute = allowedRoutes.some(
+      route => pathname === route || pathname.startsWith(route + '/') || pathname === '/'
     );
-    
+
     // Shared routes accessible from any subdomain
     const sharedRoutes = ['/login', '/error', '/404', '/500', '/api'];
-    const isSharedRoute = sharedRoutes.some(route => 
-      pathname === route || pathname.startsWith(route + '/')
+    const isSharedRoute = sharedRoutes.some(
+      route => pathname === route || pathname.startsWith(route + '/')
     );
-    
+
     if (!isAllowedRoute && !isSharedRoute) {
       // Redirect to subdomain's appropriate page
       const homeRedirects: Record<string, string> = {
@@ -108,7 +113,11 @@ export async function middleware(request: NextRequest) {
         business: '/contribute',
       };
       const redirectTo = homeRedirects[subdomain] || '/';
-      return NextResponse.redirect(new URL(redirectTo, request.url));
+      const response = NextResponse.redirect(new URL(redirectTo, request.url));
+      // Ensure redirect is not cached
+      response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+      response.headers.set('X-Subdomain-Redirect', `${subdomain}:${pathname}->${redirectTo}`);
+      return response;
     }
   }
 

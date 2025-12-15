@@ -1,5 +1,5 @@
 // Learn more: https://github.com/testing-library/jest-dom
-require('@testing-library/jest-dom')
+require('@testing-library/jest-dom');
 
 // Mock NextResponse for Next.js API route testing
 // This must be in setupFilesAfterEnv for jest.mock hoisting to work
@@ -46,4 +46,4 @@ jest.mock('next/server', () => {
       json: jest.fn().mockResolvedValue(init.body || {}),
     })),
   };
-})
+});

@@ -5,10 +5,10 @@
 
 import { BookingService } from '../booking-service';
 import { createMockQueryResult } from '../../__tests__/test-utils';
-import { 
-  createMockBooking, 
+import {
+  createMockBooking,
   createMockBookingWithRelations,
-  createMockCustomer 
+  createMockCustomer,
 } from '../../__tests__/factories';
 
 // Mock the db module - use factory function to avoid initialization order issues
@@ -34,14 +34,11 @@ describe('BookingService', () => {
 
   describe('findManyWithFilters', () => {
     it('should return bookings with default filters', async () => {
-      const mockBookings = [
-        createMockBooking(),
-        createMockBooking(),
-      ];
+      const mockBookings = [createMockBooking(), createMockBooking()];
 
       mockQuery
         .mockResolvedValueOnce(createMockQueryResult([{ count: '2' }])) // COUNT query
-        .mockResolvedValueOnce(createMockQueryResult(mockBookings));     // SELECT query
+        .mockResolvedValueOnce(createMockQueryResult(mockBookings)); // SELECT query
 
       const result = await service.findManyWithFilters({});
 
@@ -61,7 +58,7 @@ describe('BookingService', () => {
 
       expect(result.bookings).toHaveLength(1);
       expect(result.bookings[0].status).toBe('confirmed');
-      
+
       // Verify SQL includes status filter
       const sqlCall = mockQuery.mock.calls[1][0];
       expect(sqlCall).toContain('b.status = $');
@@ -78,7 +75,7 @@ describe('BookingService', () => {
 
       expect(result.bookings[0].wineries).toBeDefined();
       expect(result.bookings[0].wineries).toBeInstanceOf(Array);
-      
+
       // Verify SQL includes JSON_AGG for wineries
       const sqlCall = mockQuery.mock.calls[1][0];
       expect(sqlCall).toContain('JSON_AGG');
@@ -93,7 +90,7 @@ describe('BookingService', () => {
       const result = await service.findManyWithFilters({ limit: 10, offset: 20 });
 
       expect(result.total).toBe(100);
-      
+
       // Verify SQL includes LIMIT and OFFSET
       const sqlCall = mockQuery.mock.calls[1][0];
       expect(sqlCall).toContain('LIMIT 10');
@@ -129,7 +126,7 @@ describe('BookingService', () => {
       expect(result.id).toBe(mockBooking.id);
       expect(result.wineries).toBeDefined();
       expect(result.customer).toBeDefined();
-      
+
       // Verify single query with all relations
       expect(mockQuery).toHaveBeenCalledTimes(1);
       const sqlCall = mockQuery.mock.calls[0][0];
@@ -180,12 +177,16 @@ describe('BookingService', () => {
     });
 
     it('should filter statistics by date range', async () => {
-      mockQuery.mockResolvedValueOnce(createMockQueryResult([{
-        total_bookings: '10',
-        total_revenue: '8500.00',
-        avg_party_size: '6.0',
-        cancelled_count: '1',
-      }]));
+      mockQuery.mockResolvedValueOnce(
+        createMockQueryResult([
+          {
+            total_bookings: '10',
+            total_revenue: '8500.00',
+            avg_party_size: '6.0',
+            cancelled_count: '1',
+          },
+        ])
+      );
 
       const result = await service.getStatistics({
         startDate: '2025-12-01',
@@ -248,5 +249,3 @@ describe('BookingService', () => {
     });
   });
 });
-
-
