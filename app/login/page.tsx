@@ -75,22 +75,66 @@ function LoginPageContent() {
       const data = await response.json()
 
       if (response.ok && data.success) {
-        // Use explicit redirect from URL, or role-based default
-        const customRedirect = searchParams.get('redirect')
-        let redirectTo = customRedirect || data.data?.redirectTo
+        // Determine subdomain to validate redirect
+        const hostname = window.location.hostname
+        const parts = hostname.split('.')
+        let currentSubdomain: string | null = null
         
-        // Override redirect based on user role
-        const userRole = data.data?.user?.role
-        if (userRole === 'admin') {
-          redirectTo = customRedirect || '/admin/dashboard'
-        } else if (userRole === 'driver') {
-          redirectTo = customRedirect || '/driver-portal/dashboard'
-        } else if (userRole === 'partner') {
-          redirectTo = customRedirect || '/partner-portal/dashboard'
+        const subdomainMap: Record<string, string> = {
+          admin: 'admin',
+          driver: 'drivers',
+          drivers: 'drivers',
+          partner: 'partners',
+          partners: 'partners',
+          app: 'app',
         }
         
-        router.push(redirectTo)
-        router.refresh()
+        if (parts.length >= 2 && parts[0] !== 'www' && parts[0] in subdomainMap) {
+          currentSubdomain = subdomainMap[parts[0]]
+        }
+        
+        // Define allowed routes per subdomain
+        const subdomainAllowedRoutes: Record<string, string[]> = {
+          admin: ['/admin'],
+          drivers: ['/driver-portal', '/driver', '/workflow', '/inspections', '/time-clock'],
+          partners: ['/partner-portal', '/partner-setup'],
+          app: ['/book', '/embed', '/payment'],
+        }
+        
+        // Get custom redirect and validate it against subdomain
+        const customRedirect = searchParams.get('redirect')
+        let redirectTo: string
+        
+        // Check if customRedirect is allowed on this subdomain
+        const isRedirectAllowed = !currentSubdomain || 
+          !customRedirect ||
+          subdomainAllowedRoutes[currentSubdomain]?.some(
+            route => customRedirect === route || customRedirect.startsWith(route + '/')
+          )
+        
+        // Use role-based default if redirect is not allowed
+        const userRole = data.data?.user?.role
+        if (isRedirectAllowed && customRedirect) {
+          redirectTo = customRedirect
+        } else if (userRole === 'admin') {
+          redirectTo = '/admin/dashboard'
+        } else if (userRole === 'driver') {
+          redirectTo = '/driver-portal/dashboard'
+        } else if (userRole === 'partner') {
+          redirectTo = '/partner-portal/dashboard'
+        } else {
+          // Fallback based on subdomain
+          const subdomainDefaults: Record<string, string> = {
+            admin: '/admin/dashboard',
+            drivers: '/driver-portal/dashboard',
+            partners: '/partner-portal/dashboard',
+            app: '/',
+          }
+          redirectTo = currentSubdomain ? subdomainDefaults[currentSubdomain] || '/' : '/'
+        }
+        
+        // Use hard navigation to ensure middleware runs
+        window.location.href = redirectTo
       } else {
         setError(data.error?.message || data.message || 'Invalid email or password')
         setLoading(false)
