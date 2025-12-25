@@ -15,12 +15,12 @@ export interface Vehicle {
   vin: string;
   license_plate: string;
   capacity: number;
-  vehicle_type?: string;
+  current_mileage?: number;
+  next_service_due?: string | null;
+  last_service_date?: string | null;
   status: string;
   is_active: boolean;
   is_available: boolean;
-  defect_notes?: string | null;
-  defect_reported_at?: string | null;
   current_driver?: {
     id: number;
     name: string;
@@ -105,15 +105,18 @@ export class VehicleService extends BaseService {
         v.vin,
         v.license_plate,
         v.capacity,
-        v.vehicle_type,
+        v.current_mileage,
+        v.fuel_level,
         v.status,
         v.is_active,
         CASE 
           WHEN tc.id IS NOT NULL THEN false
           ELSE true
         END as is_available,
-        v.defect_notes,
-        v.defect_reported_at,
+        v.last_service_date,
+        v.next_service_due,
+        v.insurance_expiry,
+        v.registration_expiry,
         json_build_object(
           'id', u.id,
           'name', u.name
@@ -143,19 +146,7 @@ export class VehicleService extends BaseService {
 
     const sql = `
       SELECT 
-        v.id,
-        v.vehicle_number,
-        v.make,
-        v.model,
-        v.year,
-        v.vin,
-        v.license_plate,
-        v.capacity,
-        v.vehicle_type,
-        v.status,
-        v.is_active,
-        v.defect_notes,
-        v.defect_reported_at,
+        v.*,
         CASE 
           WHEN tc.id IS NOT NULL THEN false
           ELSE true

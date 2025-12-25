@@ -316,7 +316,7 @@ walla-walla-final/
 import { env, getRates, APP_CONFIG } from '@/lib/config';
 
 // Use services
-import { bookingService } from '@/lib/services/booking-service';
+import { bookingService } from '@/lib/services/booking.service';
 const bookings = await bookingService.findManyWithFilters({ status: 'confirmed' });
 
 // Use caching

@@ -17,6 +17,7 @@ export interface RateConfig {
       '9-11': number;  // 9-11 guests
       '12-14': number; // 12-14 guests
     };
+    sun_wed_minimum_hours: number;  // 4 hour minimum Sun-Wed
     // Thursday-Saturday rates (per hour)
     thu_sat_rates: {
       '1-2': number;   // 1-2 guests
@@ -26,7 +27,8 @@ export interface RateConfig {
       '9-11': number;  // 9-11 guests
       '12-14': number; // 12-14 guests
     };
-    minimum_hours: number;  // 5 hour minimum
+    thu_sat_minimum_hours: number;  // 5 hour minimum Thu-Sat
+    minimum_hours: number;  // Default minimum
   };
   
   // Shared Group Tours (New Program)
@@ -90,7 +92,7 @@ export interface RateConfig {
 // ACTUAL RATES - Based on Ryan's pricing structure
 export const defaultRates: RateConfig = {
   wine_tours: {
-    // Sunday-Wednesday rates (per hour)
+    // Sunday-Wednesday rates (per hour) - 4 hour minimum
     sun_wed_rates: {
       '1-2': 85,    // $85/hour (often quoted as flat tour price)
       '3-4': 95,    // $95/hour
@@ -99,7 +101,8 @@ export const defaultRates: RateConfig = {
       '9-11': 130,  // $130/hour
       '12-14': 140, // $140/hour
     },
-    // Thursday-Saturday rates (per hour)
+    sun_wed_minimum_hours: 4,  // 4 hour minimum Sun-Wed
+    // Thursday-Saturday rates (per hour) - 5 hour minimum
     thu_sat_rates: {
       '1-2': 95,    // $95/hour (often quoted as flat tour price)
       '3-4': 105,   // $105/hour
@@ -108,7 +111,8 @@ export const defaultRates: RateConfig = {
       '9-11': 140,  // $140/hour
       '12-14': 150, // $150/hour
     },
-    minimum_hours: 4,  // 4 hour minimum (Sun-Wed), 5 hour minimum (Thu-Sat) - use 4 as default
+    thu_sat_minimum_hours: 5,  // 5 hour minimum Thu-Sat
+    minimum_hours: 4,  // Default minimum (used when day type unknown)
   },
   
   shared_tours: {
@@ -215,13 +219,22 @@ export function calculateWineTourPrice(
   total: number;
   day_type: 'Sun-Wed' | 'Thu-Sat';
   rate_tier: string;
+  minimum_hours: number;
 } {
   const rates = getRates();
   const tourDate = typeof date === 'string' ? new Date(date) : date;
   const dayOfWeek = tourDate.getDay();
-  
+
+  // Determine if Thu-Sat (4=Thu, 5=Fri, 6=Sat)
+  const isThursdayToSaturday = dayOfWeek >= 4 && dayOfWeek <= 6;
+
+  // Get the correct minimum hours based on day type
+  const minimumHours = isThursdayToSaturday
+    ? rates.wine_tours.thu_sat_minimum_hours
+    : rates.wine_tours.sun_wed_minimum_hours;
+
   // Enforce minimum hours
-  const billableHours = Math.max(duration, rates.wine_tours.minimum_hours);
+  const billableHours = Math.max(duration, minimumHours);
   
   // Get hourly rate
   const hourly_rate = getHourlyRate(partySize, tourDate);
@@ -234,9 +247,8 @@ export function calculateWineTourPrice(
   
   // Total
   const total = subtotal + tax;
-  
-  // Determine day type
-  const isThursdayToSaturday = dayOfWeek >= 4 && dayOfWeek <= 6;
+
+  // Determine day type (uses isThursdayToSaturday from above)
   const day_type = isThursdayToSaturday ? 'Thu-Sat' : 'Sun-Wed';
   
   // Determine rate tier
@@ -256,6 +268,7 @@ export function calculateWineTourPrice(
     total,
     day_type,
     rate_tier,
+    minimum_hours: minimumHours,
   };
 }
 

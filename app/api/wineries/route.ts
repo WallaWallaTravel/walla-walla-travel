@@ -1,53 +1,45 @@
-/**
- * Wineries API
- * 
- * ✅ REFACTORED: Service layer handles business logic
- */
-
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
+import { validateQuery } from '@/lib/api/middleware/validation';
 import { wineryService } from '@/lib/services/winery.service';
 
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
+// ============================================================================
+// Schema
+// ============================================================================
 
-/**
- * GET /api/wineries
- * Get all wineries for itinerary building
- * 
- * ✅ REFACTORED: Service layer with caching
- */
+const QuerySchema = z.object({
+  search: z.string().optional(),
+  reservation: z.enum(['true', 'false']).optional(),
+  limit: z.string().optional().transform(val => val ? parseInt(val, 10) : undefined),
+  offset: z.string().optional().transform(val => val ? parseInt(val, 10) : undefined),
+});
+
+// ============================================================================
+// GET - List wineries
+// ============================================================================
+
 export const GET = withErrorHandling(async (request: NextRequest) => {
-  const wineries = await wineryService.list();
+  const params = validateQuery(request, QuerySchema);
+
+  const wineries = await wineryService.getAll({
+    search: params.search,
+    reservationRequired: params.reservation === 'true' ? true : params.reservation === 'false' ? false : undefined,
+    limit: params.limit,
+    offset: params.offset,
+  });
+
+  const count = await wineryService.getCount({
+    reservationRequired: params.reservation === 'true' ? true : params.reservation === 'false' ? false : undefined,
+  });
 
   return NextResponse.json({
     success: true,
     data: wineries,
-    message: 'Wineries retrieved successfully',
-    timestamp: new Date().toISOString(),
-  }, {
-    headers: {
-      // Cache for 5 minutes (static data)
-      'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+    meta: {
+      total: count,
+      limit: params.limit,
+      offset: params.offset || 0,
     },
   });
-});
-
-/**
- * POST /api/wineries
- * Create a new winery
- * 
- * ✅ REFACTORED: Service layer handles validation
- */
-export const POST = withErrorHandling(async (request: NextRequest) => {
-  const body = await request.json();
-
-  const winery = await wineryService.create(body);
-
-  return NextResponse.json({
-    success: true,
-    data: winery,
-    message: 'Winery created successfully',
-    timestamp: new Date().toISOString(),
-  }, { status: 201 });
 });

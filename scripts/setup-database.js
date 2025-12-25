@@ -44,7 +44,9 @@ const sqlFiles = [
   '03-add-vehicles.sql',
   '04-add-company-info.sql',
   '05-create-functions.sql',
-  '06-create-views.sql'
+  '06-create-views.sql',
+  '07-create-kb-tables.sql',
+  '08-create-wineries-table.sql'
 ];
 
 async function runSetup() {

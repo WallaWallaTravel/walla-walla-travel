@@ -4,7 +4,8 @@
  * Optimized for deposit-only reservations
  */
 
-import { BaseService, NotFoundError, ValidationError } from './base-service';
+import { BaseService } from './base.service';
+import { NotFoundError } from '@/lib/api/middleware/error-handler';
 import { z } from 'zod';
 
 export interface Reservation {
@@ -45,14 +46,14 @@ export const CreateReservationSchema = z.object({
 });
 
 export class ReservationService extends BaseService {
-  constructor() {
-    super('ReservationService');
+  protected get serviceName(): string {
+    return 'ReservationService';
   }
 
   async createReservation(data: z.infer<typeof CreateReservationSchema>): Promise<Reservation> {
-    this.logInfo('Creating reservation', { email: data.customerEmail });
+    this.log('Creating reservation', { email: data.customerEmail });
 
-    return await this.transaction(async () => {
+    return await this.withTransaction(async () => {
       const customerId = await this.getOrCreateCustomer({
         email: data.customerEmail,
         name: data.customerName,
@@ -61,7 +62,7 @@ export class ReservationService extends BaseService {
 
       const reservationNumber = `RES-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
 
-      const reservation = await this.create<Reservation>('reservations', {
+      const reservation = await this.insert<Reservation>('reservations', {
         reservation_number: reservationNumber,
         customer_id: customerId,
         customer_name: data.customerName,
@@ -82,7 +83,7 @@ export class ReservationService extends BaseService {
         updated_at: new Date().toISOString(),
       });
 
-      this.logInfo('Reservation created', { id: reservation.id });
+      this.log('Reservation created', { id: reservation.id });
       return reservation;
     });
   }
@@ -164,7 +165,7 @@ export class ReservationService extends BaseService {
       return existing.rows[0].id;
     }
 
-    const newCustomer = await this.create<{ id: number }>('customers', {
+    const newCustomer = await this.insert<{ id: number }>('customers', {
       email: data.email,
       name: data.name,
       phone: data.phone,
@@ -177,5 +178,3 @@ export class ReservationService extends BaseService {
 }
 
 export const reservationService = new ReservationService();
-
-

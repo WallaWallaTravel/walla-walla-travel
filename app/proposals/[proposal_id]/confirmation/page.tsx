@@ -13,13 +13,19 @@ interface Proposal {
   accepted_at: string;
 }
 
-export default function ProposalConfirmation({ params }: { params: { proposal_id: string } }) {
-  const proposal_id = params.proposal_id;
+export default function ProposalConfirmation({ params }: { params: Promise<{ proposal_id: string }> }) {
+  const [proposal_id, setProposalId] = useState<string | null>(null);
+
+  useEffect(() => {
+    params.then(p => setProposalId(p.proposal_id));
+  }, [params]);
   const [proposal, setProposal] = useState<Proposal | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchProposal();
+    if (proposal_id) {
+      fetchProposal();
+    }
   }, [proposal_id]);
 
   const fetchProposal = async () => {

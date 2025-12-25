@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { getVehicleDocuments } from '@/lib/db';
+import { vehicleService } from '@/lib/services/vehicle.service';
 import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Get vehicle documents
-    const documents = await getVehicleDocuments(parseInt(vehicleId));
+    const documents = await vehicleService.getDocuments(parseInt(vehicleId));
     
     // Format documents for frontend
     const formattedDocs = documents.map(doc => ({

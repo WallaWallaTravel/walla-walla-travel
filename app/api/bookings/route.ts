@@ -1,145 +1,109 @@
+/**
+ * Bookings API Route
+ * 
+ * GET  /api/bookings - List bookings (with optional year/month filter)
+ * POST /api/bookings - Create a new booking
+ */
+
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
+import { bookingService } from '@/lib/services/booking.service';
 import { sendBookingConfirmationEmail } from '@/lib/services/email-automation.service';
+import { z } from 'zod';
 
-export async function GET(request: NextRequest) {
-  try {
-    const searchParams = request.nextUrl.searchParams;
-    const year = searchParams.get('year');
-    const month = searchParams.get('month');
+// Validation schema for creating a booking
+const CreateBookingSchema = z.object({
+  customer_name: z.string().min(1, 'Customer name is required'),
+  customer_email: z.string().email('Invalid email address'),
+  customer_phone: z.string().optional(),
+  tour_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format'),
+  tour_start_date: z.string().optional().nullable(),
+  tour_end_date: z.string().optional().nullable(),
+  start_time: z.string().optional(),
+  pickup_time: z.string().optional(),
+  end_time: z.string().optional(),
+  duration_hours: z.number().optional().default(6),
+  party_size: z.number().int().min(1).max(50),
+  pickup_location: z.string().optional(),
+  dropoff_location: z.string().optional(),
+  status: z.enum(['pending', 'confirmed', 'completed', 'cancelled']).optional().default('pending'),
+  tour_type: z.string().optional().default('wine_tour'),
+  tour_duration_type: z.string().optional().default('single'),
+  base_price: z.number().optional().default(0),
+  total_price: z.number().optional().default(0),
+  deposit_amount: z.number().optional().default(0),
+  final_payment_amount: z.number().optional().default(0),
+  driver_id: z.number().optional().nullable(),
+  vehicle_id: z.number().optional().nullable(),
+  referral_source: z.string().optional().nullable(),
+  specific_social_media: z.string().optional().nullable(),
+  specific_ai: z.string().optional().nullable(),
+  hotel_concierge_name: z.string().optional().nullable(),
+  referral_other_details: z.string().optional().nullable(),
+  wine_tour_preference: z.string().optional().nullable(),
+});
 
-    if (!year || !month) {
-      // Get all bookings
-      const result = await query(`
-        SELECT
-          id,
-          customer_name,
-          customer_email,
-          customer_phone,
-          tour_date,
-          start_time as pickup_time,
-          party_size,
-          status,
-          driver_id,
-          vehicle_id,
-          pickup_location,
-          dropoff_location
-        FROM bookings
-        ORDER BY tour_date DESC, start_time ASC
-      `);
+/**
+ * GET /api/bookings
+ * List bookings with optional year/month filter
+ */
+export const GET = withErrorHandling(async (request: NextRequest) => {
+  const searchParams = request.nextUrl.searchParams;
+  const year = searchParams.get('year');
+  const month = searchParams.get('month');
 
-      return NextResponse.json({ success: true, bookings: result.rows });
-    }
+  const result = await bookingService.list({
+    year: year || undefined,
+    month: month || undefined,
+    limit: 500, // Higher limit for admin views
+  });
 
-    // Get bookings for specific month
-    const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
-    const endDate = `${year}-${String(month).padStart(2, '0')}-31`;
+  return NextResponse.json({ 
+    success: true, 
+    bookings: result.data,
+    total: result.total,
+  });
+});
 
-    const result = await query(`
-      SELECT
-        id,
-        customer_name,
-        customer_email,
-        customer_phone,
-        tour_date,
-        start_time as pickup_time,
-        party_size,
-        status,
-        driver_id,
-        vehicle_id,
-        pickup_location,
-        dropoff_location
-      FROM bookings
-      WHERE tour_date >= $1 AND tour_date <= $2
-      ORDER BY tour_date ASC, start_time ASC
-    `, [startDate, endDate]);
+/**
+ * POST /api/bookings
+ * Create a new booking
+ */
+export const POST = withErrorHandling(async (request: NextRequest) => {
+  const body = await request.json();
 
-    return NextResponse.json({ success: true, bookings: result.rows });
-  } catch (error: any) {
-    console.error('Error fetching bookings:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  // Validate request body
+  const parseResult = CreateBookingSchema.safeParse(body);
+  if (!parseResult.success) {
+    const errorMessages = parseResult.error.issues.map((e: { message: string }) => e.message).join(', ');
+    throw new BadRequestError('Validation failed: ' + errorMessages);
   }
-}
 
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
+  const data = parseResult.data;
 
-    const result = await query(`
-      INSERT INTO bookings (
-        booking_number,
-        customer_name,
-        customer_email,
-        customer_phone,
-        tour_date,
-        tour_start_date,
-        tour_end_date,
-        start_time,
-        end_time,
-        duration_hours,
-        party_size,
-        pickup_location,
-        dropoff_location,
-        status,
-        tour_type,
-        tour_duration_type,
-        base_price,
-        total_price,
-        deposit_amount,
-        final_payment_amount,
-        driver_id,
-        vehicle_id,
-        referral_source,
-        specific_social_media,
-        specific_ai,
-        hotel_concierge_name,
-        referral_other_details,
-        wine_tour_preference
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28)
-      RETURNING *
-    `, [
-      `WWT-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(5, '0')}`,
-      body.customer_name,
-      body.customer_email,
-      body.customer_phone,
-      body.tour_date,
-      body.tour_start_date || null,
-      body.tour_end_date || null,
-      body.start_time || body.pickup_time,
-      body.end_time || '16:00:00',
-      body.duration_hours || 6,
-      body.party_size,
-      body.pickup_location,
-      body.dropoff_location,
-      body.status || 'pending',
-      body.tour_type || 'wine_tour',
-      body.tour_duration_type || 'single',
-      body.base_price || 0,
-      body.total_price || 0,
-      body.deposit_amount || 0,
-      body.final_payment_amount || 0,
-      body.driver_id || null,
-      body.vehicle_id || null,
-      body.referral_source || null,
-      body.specific_social_media || null,
-      body.specific_ai || null,
-      body.hotel_concierge_name || null,
-      body.referral_other_details || null,
-      body.wine_tour_preference || null
-    ]);
+  // Create booking using the simple createBooking method
+  const booking = await bookingService.createBooking({
+    customerName: data.customer_name,
+    customerEmail: data.customer_email,
+    customerPhone: data.customer_phone || '',
+    partySize: data.party_size,
+    tourDate: data.tour_date,
+    startTime: data.start_time || data.pickup_time || '10:00',
+    durationHours: data.duration_hours,
+    totalPrice: data.total_price,
+    depositPaid: data.deposit_amount,
+  });
 
-    const booking = result.rows[0];
-
-    // Send confirmation email (async, don't wait)
-    if (booking.customer_email) {
-      sendBookingConfirmationEmail(booking.id).catch(err => {
-        console.error('[Booking] Failed to send confirmation email:', err);
-      });
-    }
-
-    return NextResponse.json({ success: true, booking });
-  } catch (error: any) {
-    console.error('Error creating booking:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  // Send confirmation email (async, don't wait)
+  if (booking.customer_email) {
+    sendBookingConfirmationEmail(booking.id).catch(err => {
+      console.error('[Booking] Failed to send confirmation email:', err);
+    });
   }
-}
+
+  return NextResponse.json({ 
+    success: true, 
+    booking,
+    message: 'Booking created successfully',
+  });
+});

@@ -10,10 +10,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { APIResponse } from '@/lib/api/response';
 import { validateRequest, ValidationError } from '@/lib/api/validate';
-import { withMiddleware, rateLimiters } from '@/lib/api/middleware';
-import { bookingService } from '@/lib/services/booking-service';
+import { rateLimiters } from '@/lib/api/middleware';
+import { bookingService } from '@/lib/services/booking.service';
 import { ServiceError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { z } from 'zod';
+
+type RouteContext = { params: Promise<{ id: string }> };
 
 // ============================================================================
 // GET /api/v1/bookings/:id - Get booking details
@@ -28,44 +30,44 @@ import { z } from 'zod';
  * 
  * Returns full booking details with all relations in a single query (no N+1!)
  */
-export const GET = withMiddleware(
-  async (
-    request: NextRequest,
-    context?: { params: Promise<{ id: string }> }
-  ): Promise<NextResponse> => {
-    const resolvedParams = await (context?.params ?? Promise.resolve({ id: '' }));
-    const { id } = resolvedParams;
-    try {
-      // Get full booking details (single query with all relations)
-      const booking = await bookingService.getFullBookingDetails(id);
+export async function GET(
+  request: NextRequest,
+  context: RouteContext
+): Promise<NextResponse> {
+  // Apply rate limiting
+  const rateLimitResult = await rateLimiters.public(request);
+  if (rateLimitResult) return rateLimitResult;
 
-      if (!booking) {
-        return APIResponse.notFound('Booking', id);
-      }
+  const { id } = await context.params;
+  try {
+    // Get full booking details (single query with all relations)
+    const booking = await bookingService.getFullBookingDetails(id);
 
-      return APIResponse.success(booking);
-
-    } catch (error) {
-      if (error instanceof NotFoundError) {
-        return APIResponse.notFound('Booking', id);
-      }
-
-      if (error instanceof ServiceError) {
-        return APIResponse.error({
-          code: error.code,
-          message: error.message,
-          details: error.details,
-        }, 400);
-      }
-
-      return APIResponse.internalError(
-        'Failed to fetch booking',
-        error instanceof Error ? error.message : undefined
-      );
+    if (!booking) {
+      return APIResponse.notFound('Booking', id);
     }
-  },
-  rateLimiters.public
-);
+
+    return APIResponse.success(booking);
+
+  } catch (error) {
+    if (error instanceof NotFoundError) {
+      return APIResponse.notFound('Booking', id);
+    }
+
+    if (error instanceof ServiceError) {
+      return APIResponse.error({
+        code: error.code,
+        message: error.message,
+        details: error.details,
+      }, 400);
+    }
+
+    return APIResponse.internalError(
+      'Failed to fetch booking',
+      error instanceof Error ? error.message : undefined
+    );
+  }
+}
 
 // ============================================================================
 // PATCH /api/v1/bookings/:id - Update booking
@@ -90,59 +92,58 @@ const UpdateBookingSchema = z.object({
  * 
  * Body: Any subset of booking fields
  */
-export const PATCH = withMiddleware(
-  async (
-    request: NextRequest,
-    context?: { params: Promise<{ id: string }> }
-  ): Promise<NextResponse> => {
-    const resolvedParams = await (context?.params ?? Promise.resolve({ id: '' }));
-    const { id } = resolvedParams;
-    try {
+export async function PATCH(
+  request: NextRequest,
+  context: RouteContext
+): Promise<NextResponse> {
+  // Apply rate limiting
+  const rateLimitResult = await rateLimiters.authenticated(request);
+  if (rateLimitResult) return rateLimitResult;
 
-      // Validate ID is numeric
-      const bookingId = parseInt(id, 10);
-      if (isNaN(bookingId)) {
-        return APIResponse.error({
-          code: 'INVALID_ID',
-          message: 'Booking ID must be numeric for updates',
-        }, 400);
-      }
-
-      // Validate request body
-      const data = await validateRequest(UpdateBookingSchema, request);
-
-      // Update booking
-      const updatedBooking = await bookingService.updateBooking(bookingId, data);
-
-      return APIResponse.success(updatedBooking, {
-        message: 'Booking updated successfully',
-      });
-
-    } catch (error) {
-      if (error instanceof ValidationError) {
-        return APIResponse.validation(error.errors);
-      }
-
-      if (error instanceof NotFoundError) {
-        return APIResponse.notFound('Booking', id);
-      }
-
-      if (error instanceof ServiceError) {
-        return APIResponse.error({
-          code: error.code,
-          message: error.message,
-          details: error.details,
-        }, 400);
-      }
-
-      return APIResponse.internalError(
-        'Failed to update booking',
-        error instanceof Error ? error.message : undefined
-      );
+  const { id } = await context.params;
+  try {
+    // Validate ID is numeric
+    const bookingId = parseInt(id, 10);
+    if (isNaN(bookingId)) {
+      return APIResponse.error({
+        code: 'INVALID_ID',
+        message: 'Booking ID must be numeric for updates',
+      }, 400);
     }
-  },
-  rateLimiters.authenticated
-);
+
+    // Validate request body
+    const data = await validateRequest(UpdateBookingSchema, request);
+
+    // Update booking
+    const updatedBooking = await bookingService.updateBooking(bookingId, data);
+
+    return APIResponse.success(updatedBooking, {
+      message: 'Booking updated successfully',
+    });
+
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      return APIResponse.validation(error.errors);
+    }
+
+    if (error instanceof NotFoundError) {
+      return APIResponse.notFound('Booking', id);
+    }
+
+    if (error instanceof ServiceError) {
+      return APIResponse.error({
+        code: error.code,
+        message: error.message,
+        details: error.details,
+      }, 400);
+    }
+
+    return APIResponse.internalError(
+      'Failed to update booking',
+      error instanceof Error ? error.message : undefined
+    );
+  }
+}
 
 // ============================================================================
 // DELETE /api/v1/bookings/:id - Cancel booking
@@ -159,61 +160,58 @@ const CancelBookingSchema = z.object({
  *   reason: string
  * }
  */
-export const DELETE = withMiddleware(
-  async (
-    request: NextRequest,
-    context?: { params: Promise<{ id: string }> }
-  ): Promise<NextResponse> => {
-    const resolvedParams = await (context?.params ?? Promise.resolve({ id: '' }));
-    const { id } = resolvedParams;
-    try {
+export async function DELETE(
+  request: NextRequest,
+  context: RouteContext
+): Promise<NextResponse> {
+  // Apply rate limiting
+  const rateLimitResult = await rateLimiters.authenticated(request);
+  if (rateLimitResult) return rateLimitResult;
 
-      // Validate ID is numeric
-      const bookingId = parseInt(id, 10);
-      if (isNaN(bookingId)) {
-        return APIResponse.error({
-          code: 'INVALID_ID',
-          message: 'Booking ID must be numeric for cancellation',
-        }, 400);
-      }
-
-      // Parse body (optional reason)
-      let reason: string | undefined;
-      try {
-        const body = await request.json();
-        const validated = CancelBookingSchema.parse(body);
-        reason = validated.reason;
-      } catch {
-        // No body is okay
-      }
-
-      // Cancel booking
-      const cancelledBooking = await bookingService.cancelBooking(bookingId, reason);
-
-      return APIResponse.success(cancelledBooking, {
-        message: 'Booking cancelled successfully',
-      });
-
-    } catch (error) {
-      if (error instanceof NotFoundError) {
-        return APIResponse.notFound('Booking', id);
-      }
-
-      if (error instanceof ServiceError) {
-        return APIResponse.error({
-          code: error.code,
-          message: error.message,
-          details: error.details,
-        }, 400);
-      }
-
-      return APIResponse.internalError(
-        'Failed to cancel booking',
-        error instanceof Error ? error.message : undefined
-      );
+  const { id } = await context.params;
+  try {
+    // Validate ID is numeric
+    const bookingId = parseInt(id, 10);
+    if (isNaN(bookingId)) {
+      return APIResponse.error({
+        code: 'INVALID_ID',
+        message: 'Booking ID must be numeric for cancellation',
+      }, 400);
     }
-  },
-  rateLimiters.authenticated
-);
 
+    // Parse body (optional reason)
+    let reason: string | undefined;
+    try {
+      const body = await request.json();
+      const validated = CancelBookingSchema.parse(body);
+      reason = validated.reason;
+    } catch {
+      // No body is okay
+    }
 
+    // Cancel booking
+    const cancelledBooking = await bookingService.cancelBooking(bookingId, reason);
+
+    return APIResponse.success(cancelledBooking, {
+      message: 'Booking cancelled successfully',
+    });
+
+  } catch (error) {
+    if (error instanceof NotFoundError) {
+      return APIResponse.notFound('Booking', id);
+    }
+
+    if (error instanceof ServiceError) {
+      return APIResponse.error({
+        code: error.code,
+        message: error.message,
+        details: error.details,
+      }, 400);
+    }
+
+    return APIResponse.internalError(
+      'Failed to cancel booking',
+      error instanceof Error ? error.message : undefined
+    );
+  }
+}

@@ -116,7 +116,7 @@ app/api/v1/
 ### Import and Use
 
 ```typescript
-import { bookingService } from '@/lib/services/booking-service';
+import { bookingService } from '@/lib/services/booking.service';
 import { proposalService } from '@/lib/services/proposal-service';
 import { customerService } from '@/lib/services/customer-service';
 import { reservationService } from '@/lib/services/reservation-service';
@@ -391,7 +391,7 @@ curl http://localhost:3000/api/v1/myresource
 
 ```typescript
 // lib/services/my-service.ts
-import { BaseService } from './base-service';
+import { BaseService } from './base.service';
 
 export class MyService extends BaseService {
   constructor() {

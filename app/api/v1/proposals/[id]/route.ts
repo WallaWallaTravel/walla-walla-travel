@@ -9,53 +9,55 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { APIResponse } from '@/lib/api/response';
 import { validateRequest, ValidationError } from '@/lib/api/validate';
-import { withMiddleware, rateLimiters } from '@/lib/api/middleware';
+import { rateLimiters } from '@/lib/api/middleware';
 import { proposalService } from '@/lib/services/proposal-service';
 import { ServiceError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { z } from 'zod';
+
+type RouteContext = { params: Promise<{ id: string }> };
 
 // ============================================================================
 // GET /api/v1/proposals/:id - Get proposal details
 // ============================================================================
 
-export const GET = withMiddleware(
-  async (
-    request: NextRequest,
-    context?: { params: Promise<{ id: string }> }
-  ): Promise<NextResponse> => {
-    const resolvedParams = await (context?.params ?? Promise.resolve({ id: '' }));
-    const { id } = resolvedParams;
-    try {
-      // Get full proposal details
-      const proposal = await proposalService.getFullProposalDetails(id);
+export async function GET(
+  request: NextRequest,
+  context: RouteContext
+): Promise<NextResponse> {
+  // Apply rate limiting
+  const rateLimitResult = await rateLimiters.public(request);
+  if (rateLimitResult) return rateLimitResult;
 
-      if (!proposal) {
-        return APIResponse.notFound('Proposal', id);
-      }
+  const { id } = await context.params;
+  try {
+    // Get full proposal details
+    const proposal = await proposalService.getFullProposalDetails(id);
 
-      return APIResponse.success(proposal);
-
-    } catch (error) {
-      if (error instanceof NotFoundError) {
-        return APIResponse.notFound('Proposal', id);
-      }
-
-      if (error instanceof ServiceError) {
-        return APIResponse.error({
-          code: error.code,
-          message: error.message,
-          details: error.details,
-        }, 400);
-      }
-
-      return APIResponse.internalError(
-        'Failed to fetch proposal',
-        error instanceof Error ? error.message : undefined
-      );
+    if (!proposal) {
+      return APIResponse.notFound('Proposal', id);
     }
-  },
-  rateLimiters.public
-);
+
+    return APIResponse.success(proposal);
+
+  } catch (error) {
+    if (error instanceof NotFoundError) {
+      return APIResponse.notFound('Proposal', id);
+    }
+
+    if (error instanceof ServiceError) {
+      return APIResponse.error({
+        code: error.code,
+        message: error.message,
+        details: error.details,
+      }, 400);
+    }
+
+    return APIResponse.internalError(
+      'Failed to fetch proposal',
+      error instanceof Error ? error.message : undefined
+    );
+  }
+}
 
 // ============================================================================
 // PATCH /api/v1/proposals/:id - Update proposal
@@ -72,109 +74,105 @@ const UpdateProposalSchema = z.object({
   notes: z.string().optional(),
 });
 
-export const PATCH = withMiddleware(
-  async (
-    request: NextRequest,
-    context?: { params: Promise<{ id: string }> }
-  ): Promise<NextResponse> => {
-    const resolvedParams = await (context?.params ?? Promise.resolve({ id: '' }));
-    const { id } = resolvedParams;
-    try {
+export async function PATCH(
+  request: NextRequest,
+  context: RouteContext
+): Promise<NextResponse> {
+  // Apply rate limiting
+  const rateLimitResult = await rateLimiters.authenticated(request);
+  if (rateLimitResult) return rateLimitResult;
 
-      // Validate ID is numeric
-      const proposalId = parseInt(id, 10);
-      if (isNaN(proposalId)) {
-        return APIResponse.error({
-          code: 'INVALID_ID',
-          message: 'Proposal ID must be numeric for updates',
-        }, 400);
-      }
-
-      // Validate request body
-      const data = await validateRequest(UpdateProposalSchema, request);
-
-      // Update proposal
-      const updatedProposal = await proposalService.updateProposal(proposalId, data);
-
-      return APIResponse.success(updatedProposal, {
-        message: 'Proposal updated successfully',
-      });
-
-    } catch (error) {
-      if (error instanceof ValidationError) {
-        return APIResponse.validation(error.errors);
-      }
-
-      if (error instanceof NotFoundError) {
-        return APIResponse.notFound('Proposal', id);
-      }
-
-      if (error instanceof ServiceError) {
-        return APIResponse.error({
-          code: error.code,
-          message: error.message,
-          details: error.details,
-        }, 400);
-      }
-
-      return APIResponse.internalError(
-        'Failed to update proposal',
-        error instanceof Error ? error.message : undefined
-      );
+  const { id } = await context.params;
+  try {
+    // Validate ID is numeric
+    const proposalId = parseInt(id, 10);
+    if (isNaN(proposalId)) {
+      return APIResponse.error({
+        code: 'INVALID_ID',
+        message: 'Proposal ID must be numeric for updates',
+      }, 400);
     }
-  },
-  rateLimiters.authenticated
-);
+
+    // Validate request body
+    const data = await validateRequest(UpdateProposalSchema, request);
+
+    // Update proposal
+    const updatedProposal = await proposalService.updateProposal(proposalId, data);
+
+    return APIResponse.success(updatedProposal, {
+      message: 'Proposal updated successfully',
+    });
+
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      return APIResponse.validation(error.errors);
+    }
+
+    if (error instanceof NotFoundError) {
+      return APIResponse.notFound('Proposal', id);
+    }
+
+    if (error instanceof ServiceError) {
+      return APIResponse.error({
+        code: error.code,
+        message: error.message,
+        details: error.details,
+      }, 400);
+    }
+
+    return APIResponse.internalError(
+      'Failed to update proposal',
+      error instanceof Error ? error.message : undefined
+    );
+  }
+}
 
 // ============================================================================
 // DELETE /api/v1/proposals/:id - Decline proposal
 // ============================================================================
 
-export const DELETE = withMiddleware(
-  async (
-    request: NextRequest,
-    context?: { params: Promise<{ id: string }> }
-  ): Promise<NextResponse> => {
-    const resolvedParams = await (context?.params ?? Promise.resolve({ id: '' }));
-    const { id } = resolvedParams;
-    try {
+export async function DELETE(
+  request: NextRequest,
+  context: RouteContext
+): Promise<NextResponse> {
+  // Apply rate limiting
+  const rateLimitResult = await rateLimiters.authenticated(request);
+  if (rateLimitResult) return rateLimitResult;
 
-      // Validate ID is numeric
-      const proposalId = parseInt(id, 10);
-      if (isNaN(proposalId)) {
-        return APIResponse.error({
-          code: 'INVALID_ID',
-          message: 'Proposal ID must be numeric',
-        }, 400);
-      }
-
-      // Mark as declined
-      const declinedProposal = await proposalService.updateStatus(proposalId, 'declined');
-
-      return APIResponse.success(declinedProposal, {
-        message: 'Proposal declined successfully',
-      });
-
-    } catch (error) {
-      if (error instanceof NotFoundError) {
-        return APIResponse.notFound('Proposal', id);
-      }
-
-      if (error instanceof ServiceError) {
-        return APIResponse.error({
-          code: error.code,
-          message: error.message,
-          details: error.details,
-        }, 400);
-      }
-
-      return APIResponse.internalError(
-        'Failed to decline proposal',
-        error instanceof Error ? error.message : undefined
-      );
+  const { id } = await context.params;
+  try {
+    // Validate ID is numeric
+    const proposalId = parseInt(id, 10);
+    if (isNaN(proposalId)) {
+      return APIResponse.error({
+        code: 'INVALID_ID',
+        message: 'Proposal ID must be numeric',
+      }, 400);
     }
-  },
-  rateLimiters.authenticated
-);
 
+    // Mark as declined
+    const declinedProposal = await proposalService.updateStatus(proposalId, 'declined');
 
+    return APIResponse.success(declinedProposal, {
+      message: 'Proposal declined successfully',
+    });
+
+  } catch (error) {
+    if (error instanceof NotFoundError) {
+      return APIResponse.notFound('Proposal', id);
+    }
+
+    if (error instanceof ServiceError) {
+      return APIResponse.error({
+        code: error.code,
+        message: error.message,
+        details: error.details,
+      }, 400);
+    }
+
+    return APIResponse.internalError(
+      'Failed to decline proposal',
+      error instanceof Error ? error.message : undefined
+    );
+  }
+}

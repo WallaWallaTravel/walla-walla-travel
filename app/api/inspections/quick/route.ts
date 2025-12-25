@@ -1,18 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { withAuth } from '@/lib/api/middleware/auth-wrapper'
+import { withAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper'
 import { query } from '@/lib/db'
 
 /**
  * POST /api/inspections/quick
  * Quick inspection endpoint for emergency use
  */
-export const POST = withAuth(async (request: NextRequest, session) => {
+export const POST = withAuth<any>(async (request: NextRequest, session: AuthSession) => {
   try {
     const body = await request.json()
     const { vehicleId, startMileage, type, inspectionData } = body
 
-    // Get user ID from session
-    const userId = session?.user?.id
+    // Get user ID from session (AuthSession provides userId directly)
+    const userId = session.userId
 
     if (!userId) {
       return NextResponse.json({ 

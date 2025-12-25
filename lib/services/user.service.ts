@@ -15,6 +15,7 @@ export interface User {
   role: 'admin' | 'driver';
   phone?: string;
   is_active: boolean;
+  last_login?: Date;
   created_at: Date;
   updated_at: Date;
 }
@@ -160,6 +161,28 @@ export class UserService extends BaseService {
       'SELECT id, email, name, role, phone, is_active, created_at, updated_at FROM users WHERE id = $1',
       [id]
     );
+  }
+
+  /**
+   * Get user by email (for authentication)
+   */
+  async getByEmail(email: string): Promise<(User & { password_hash: string }) | null> {
+    return this.queryOne<User & { password_hash: string }>(
+      'SELECT * FROM users WHERE email = $1 AND is_active = true',
+      [email]
+    );
+  }
+
+  /**
+   * Update user's last login timestamp
+   */
+  async updateLastLogin(userId: number): Promise<void> {
+    try {
+      await this.query('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = $1', [userId]);
+    } catch (error) {
+      // Don't throw - this is not critical
+      this.warn(`Failed to update last login for user ${userId}`);
+    }
   }
 }
 

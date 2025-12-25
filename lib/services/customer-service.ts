@@ -3,7 +3,8 @@
  * Handles all customer-related business logic
  */
 
-import { BaseService, NotFoundError, ConflictError } from './base-service';
+import { BaseService } from './base.service';
+import { NotFoundError, ConflictError } from '@/lib/api/middleware/error-handler';
 import { z } from 'zod';
 
 // ============================================================================
@@ -40,23 +41,23 @@ export const UpdateCustomerSchema = z.object({
 // ============================================================================
 
 export class CustomerService extends BaseService {
-  constructor() {
-    super('CustomerService');
+  protected get serviceName(): string {
+    return 'CustomerService';
   }
 
   /**
    * Create new customer
    */
   async createCustomer(data: z.infer<typeof CreateCustomerSchema>): Promise<Customer> {
-    this.logInfo('Creating customer', { email: data.email });
+    this.log('Creating customer', { email: data.email });
 
     // Check if email already exists
-    const existing = await this.exists('customers', { email: data.email });
-    if (existing) {
+    const existingCheck = await this.exists('customers', 'LOWER(email) = LOWER($1)', [data.email]);
+    if (existingCheck) {
       throw new ConflictError('Customer with this email already exists');
     }
 
-    const customer = await this.create<Customer>('customers', {
+    const customer = await this.insert<Customer>('customers', {
       email: data.email,
       name: data.name,
       phone: data.phone,
@@ -67,7 +68,7 @@ export class CustomerService extends BaseService {
       updated_at: new Date().toISOString(),
     });
 
-    this.logInfo('Customer created', { customerId: customer.id });
+    this.log('Customer created', { customerId: customer.id });
     return customer;
   }
 
@@ -86,11 +87,10 @@ export class CustomerService extends BaseService {
    * Get customer by email
    */
   async getCustomerByEmail(email: string): Promise<Customer | null> {
-    const result = await this.query<Customer>(
+    return this.queryOne<Customer>(
       'SELECT * FROM customers WHERE LOWER(email) = LOWER($1)',
       [email]
     );
-    return result.rows[0] || null;
   }
 
   /**
@@ -134,7 +134,11 @@ export class CustomerService extends BaseService {
     id: number,
     data: z.infer<typeof UpdateCustomerSchema>
   ): Promise<Customer> {
-    await this.requireExists('customers', id, 'Customer');
+    // Check if customer exists
+    const existsCheck = await this.exists('customers', 'id = $1', [id]);
+    if (!existsCheck) {
+      throw new NotFoundError('Customer', id.toString());
+    }
 
     const updated = await this.update<Customer>('customers', id, {
       ...data,
@@ -145,7 +149,7 @@ export class CustomerService extends BaseService {
       throw new NotFoundError('Customer', id.toString());
     }
 
-    this.logInfo('Customer updated', { customerId: id });
+    this.log('Customer updated', { customerId: id });
     return updated;
   }
 
@@ -205,5 +209,3 @@ export class CustomerService extends BaseService {
 }
 
 export const customerService = new CustomerService();
-
-

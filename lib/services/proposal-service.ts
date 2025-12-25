@@ -4,7 +4,8 @@
  * Consolidates proposal operations with optimized queries
  */
 
-import { BaseService, NotFoundError, ConflictError, ValidationError } from './base-service';
+import { BaseService } from './base.service';
+import { NotFoundError, ValidationError } from '@/lib/api/middleware/error-handler';
 import { z } from 'zod';
 
 // ============================================================================
@@ -71,8 +72,8 @@ export const CreateProposalSchema = z.object({
 // ============================================================================
 
 export class ProposalService extends BaseService {
-  constructor() {
-    super('ProposalService');
+  protected get serviceName(): string {
+    return 'ProposalService';
   }
 
   // ==========================================================================
@@ -83,12 +84,12 @@ export class ProposalService extends BaseService {
    * Create a new proposal
    */
   async createProposal(data: CreateProposalData): Promise<Proposal> {
-    this.logInfo('Creating proposal', {
+    this.log('Creating proposal', {
       customerEmail: data.customerEmail,
       tourDate: data.tourDate,
     });
 
-    return await this.transaction(async () => {
+    return await this.withTransaction(async () => {
       // Validate data
       const validated = CreateProposalSchema.parse(data);
 
@@ -103,7 +104,7 @@ export class ProposalService extends BaseService {
       const proposalNumber = await this.generateProposalNumber();
 
       // Create proposal
-      const proposal = await this.create<Proposal>('proposals', {
+      const proposal = await this.insert<Proposal>('proposals', {
         proposal_number: proposalNumber,
         customer_id: customerId,
         customer_name: validated.customerName,
@@ -122,7 +123,7 @@ export class ProposalService extends BaseService {
         updated_at: new Date().toISOString(),
       });
 
-      this.logInfo('Proposal created successfully', {
+      this.log('Proposal created successfully', {
         proposalId: proposal.id,
         proposalNumber: proposal.proposal_number,
       });
@@ -139,7 +140,7 @@ export class ProposalService extends BaseService {
    * Get proposal by ID
    */
   async getProposalById(id: number): Promise<Proposal> {
-    this.logInfo('Fetching proposal', { id });
+    this.log('Fetching proposal', { id });
 
     const proposal = await this.findById<Proposal>('proposals', id);
 
@@ -154,18 +155,18 @@ export class ProposalService extends BaseService {
    * Get proposal by proposal number
    */
   async getProposalByNumber(proposalNumber: string): Promise<Proposal> {
-    this.logInfo('Fetching proposal by number', { proposalNumber });
+    this.log('Fetching proposal by number', { proposalNumber });
 
-    const result = await this.query<Proposal>(
+    const proposal = await this.queryOne<Proposal>(
       'SELECT * FROM proposals WHERE proposal_number = $1',
       [proposalNumber]
     );
 
-    if (result.rows.length === 0) {
+    if (!proposal) {
       throw new NotFoundError('Proposal', proposalNumber);
     }
 
-    return result.rows[0];
+    return proposal;
   }
 
   /**
@@ -182,7 +183,7 @@ export class ProposalService extends BaseService {
     limit?: number;
     offset?: number;
   }): Promise<{ proposals: Proposal[]; total: number }> {
-    this.logInfo('Finding proposals with filters', { filters });
+    this.log('Finding proposals with filters', filters);
 
     const whereClause: string[] = [];
     const params: any[] = [];
@@ -264,7 +265,7 @@ export class ProposalService extends BaseService {
    * Get full proposal details with all data (single query)
    */
   async getFullProposalDetails(id: number | string): Promise<Proposal | null> {
-    this.logInfo('Fetching full proposal details', { id });
+    this.log('Fetching full proposal details', { id });
 
     const isNumber = typeof id === 'number' || /^\d+$/.test(id as string);
     const whereClause = isNumber ? 'p.id = $1' : 'p.proposal_number = $1';
@@ -316,7 +317,7 @@ export class ProposalService extends BaseService {
     id: number,
     status: Proposal['status']
   ): Promise<Proposal> {
-    this.logInfo('Updating proposal status', { id, status });
+    this.log('Updating proposal status', { id, status });
 
     const proposal = await this.getProposalById(id);
     
@@ -339,7 +340,7 @@ export class ProposalService extends BaseService {
       [id, 'status_change', `Status changed from ${proposal.status} to ${status}`]
     );
 
-    this.logInfo('Proposal status updated', {
+    this.log('Proposal status updated', {
       id,
       oldStatus: proposal.status,
       newStatus: status,
@@ -355,9 +356,13 @@ export class ProposalService extends BaseService {
     id: number,
     data: Partial<Proposal>
   ): Promise<Proposal> {
-    this.logInfo('Updating proposal', { id, fields: Object.keys(data) });
+    this.log('Updating proposal', { id, fields: Object.keys(data) });
 
-    await this.requireExists('proposals', id, 'Proposal');
+    // Check if proposal exists
+    const existsCheck = await this.exists('proposals', 'id = $1', [id]);
+    if (!existsCheck) {
+      throw new NotFoundError('Proposal', id.toString());
+    }
 
     const updated = await this.update<Proposal>('proposals', id, {
       ...data,
@@ -368,7 +373,7 @@ export class ProposalService extends BaseService {
       throw new NotFoundError('Proposal', id.toString());
     }
 
-    this.logInfo('Proposal updated successfully', { id });
+    this.log('Proposal updated successfully', { id });
 
     return updated;
   }
@@ -385,20 +390,20 @@ export class ProposalService extends BaseService {
     name: string;
     phone: string;
   }): Promise<number> {
-    const existing = await this.query<{ id: number }>(
+    const existing = await this.queryOne<{ id: number }>(
       'SELECT id FROM customers WHERE LOWER(email) = LOWER($1)',
       [data.email]
     );
 
-    if (existing.rows.length > 0) {
+    if (existing) {
       await this.query(
         'UPDATE customers SET name = $1, phone = $2, updated_at = NOW() WHERE id = $3',
-        [data.name, data.phone, existing.rows[0].id]
+        [data.name, data.phone, existing.id]
       );
-      return existing.rows[0].id;
+      return existing.id;
     }
 
-    const newCustomer = await this.create<{ id: number }>('customers', {
+    const newCustomer = await this.insert<{ id: number }>('customers', {
       email: data.email,
       name: data.name,
       phone: data.phone,
@@ -509,5 +514,3 @@ export class ProposalService extends BaseService {
 
 // Export singleton instance
 export const proposalService = new ProposalService();
-
-

@@ -5,7 +5,8 @@ import {
   requireAuth,
   logApiRequest
 } from '@/app/api/utils';
-import { getUserByEmail, query } from '@/lib/db';
+import { query } from '@/lib/db';
+import { userService } from '@/lib/services/user.service';
 import { validate, profileUpdateSchema } from '@/lib/validation';
 
 export async function GET(request: NextRequest) {
@@ -20,7 +21,7 @@ export async function GET(request: NextRequest) {
     logApiRequest('GET', '/api/auth/profile', session.userId);
 
     // Get full user profile from database
-    const user = await getUserByEmail(session.email);
+    const user = await userService.getByEmail(session.email);
     if (!user) {
       return errorResponse('User not found', 404);
     }

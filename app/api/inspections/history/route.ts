@@ -7,7 +7,7 @@ import {
   getPaginationParams,
   buildPaginationMeta
 } from '@/app/api/utils';
-import { getInspectionsByDriver, query } from '@/lib/db';
+import { query } from '@/lib/db';
 
 export async function GET(request: NextRequest) {
   try {

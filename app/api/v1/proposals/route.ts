@@ -5,10 +5,10 @@
  * POST   /api/v1/proposals - Create new proposal
  */
 
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { APIResponse } from '@/lib/api/response';
 import { validateRequest, ValidationError } from '@/lib/api/validate';
-import { withMiddleware, rateLimiters } from '@/lib/api/middleware';
+import { rateLimiters } from '@/lib/api/middleware';
 import { proposalService, CreateProposalSchema } from '@/lib/services/proposal-service';
 import { ServiceError } from '@/lib/api/middleware/error-handler';
 
@@ -29,10 +29,13 @@ import { ServiceError } from '@/lib/api/middleware/error-handler';
  * - limit: Results per page (default: 50)
  * - offset: Pagination offset (default: 0)
  */
-export const GET = withMiddleware(
-  async (request: NextRequest) => {
-    try {
-      const { searchParams } = new URL(request.url);
+export async function GET(request: NextRequest): Promise<NextResponse> {
+  // Apply rate limiting
+  const rateLimitResult = await rateLimiters.authenticated(request);
+  if (rateLimitResult) return rateLimitResult;
+
+  try {
+    const { searchParams } = new URL(request.url);
 
       // Parse filters
       const filters = {
@@ -80,9 +83,7 @@ export const GET = withMiddleware(
         error instanceof Error ? error.message : undefined
       );
     }
-  },
-  rateLimiters.authenticated
-);
+}
 
 // ============================================================================
 // POST /api/v1/proposals - Create new proposal
@@ -91,11 +92,14 @@ export const GET = withMiddleware(
 /**
  * Create a new proposal
  */
-export const POST = withMiddleware(
-  async (request: NextRequest) => {
-    try {
-      // Validate request body
-      const data = await validateRequest(CreateProposalSchema, request);
+export async function POST(request: NextRequest): Promise<NextResponse> {
+  // Apply rate limiting
+  const rateLimitResult = await rateLimiters.authenticated(request);
+  if (rateLimitResult) return rateLimitResult;
+
+  try {
+    // Validate request body
+    const data = await validateRequest(CreateProposalSchema, request);
 
       // Create proposal via service
       const proposal = await proposalService.createProposal(data);
@@ -123,8 +127,4 @@ export const POST = withMiddleware(
         error instanceof Error ? error.message : undefined
       );
     }
-  },
-  rateLimiters.authenticated
-);
-
-
+}

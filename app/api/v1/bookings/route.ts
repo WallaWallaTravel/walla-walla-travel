@@ -6,11 +6,11 @@
  * POST   /api/v1/bookings - Create new booking
  */
 
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { APIResponse } from '@/lib/api/response';
 import { validateRequest, ValidationError } from '@/lib/api/validate';
-import { withMiddleware, rateLimiters } from '@/lib/api/middleware';
-import { bookingService, CreateBookingSchema } from '@/lib/services/booking-service';
+import { rateLimiters } from '@/lib/api/middleware';
+import { bookingService, CreateBookingSchema } from '@/lib/services/booking.service';
 import { ServiceError } from '@/lib/api/middleware/error-handler';
 
 // ============================================================================
@@ -35,10 +35,13 @@ import { ServiceError } from '@/lib/api/middleware/error-handler';
  * - /api/v1/bookings?status=confirmed&include=wineries,driver
  * - /api/v1/bookings?customer_id=123&limit=10
  */
-export const GET = withMiddleware(
-  async (request: NextRequest) => {
-    try {
-      const { searchParams } = new URL(request.url);
+export async function GET(request: NextRequest): Promise<NextResponse> {
+  // Apply rate limiting
+  const rateLimitResult = await rateLimiters.authenticated(request);
+  if (rateLimitResult) return rateLimitResult;
+
+  try {
+    const { searchParams } = new URL(request.url);
 
       // Parse filters
       const filters = {
@@ -87,9 +90,7 @@ export const GET = withMiddleware(
         error instanceof Error ? error.message : undefined
       );
     }
-  },
-  rateLimiters.authenticated
-);
+}
 
 // ============================================================================
 // POST /api/v1/bookings - Create new booking
@@ -111,11 +112,14 @@ export const GET = withMiddleware(
  *   brandId?: number
  * }
  */
-export const POST = withMiddleware(
-  async (request: NextRequest) => {
-    try {
-      // Validate request body
-      const data = await validateRequest(CreateBookingSchema, request);
+export async function POST(request: NextRequest): Promise<NextResponse> {
+  // Apply rate limiting
+  const rateLimitResult = await rateLimiters.public(request);
+  if (rateLimitResult) return rateLimitResult;
+
+  try {
+    // Validate request body
+    const data = await validateRequest(CreateBookingSchema, request);
 
       // Create booking via service
       const booking = await bookingService.createBooking(data);
@@ -146,8 +150,4 @@ export const POST = withMiddleware(
         error instanceof Error ? error.message : undefined
       );
     }
-  },
-  rateLimiters.public
-);
-
-
+}

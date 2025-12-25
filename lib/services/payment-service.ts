@@ -3,7 +3,8 @@
  * Handles all payment processing and tracking
  */
 
-import { BaseService, NotFoundError } from './base-service';
+import { BaseService } from './base.service';
+import { NotFoundError } from '@/lib/api/middleware/error-handler';
 import { z } from 'zod';
 
 export interface Payment {
@@ -32,14 +33,14 @@ export const CreatePaymentSchema = z.object({
 });
 
 export class PaymentService extends BaseService {
-  constructor() {
-    super('PaymentService');
+  protected get serviceName(): string {
+    return 'PaymentService';
   }
 
   async createPayment(data: z.infer<typeof CreatePaymentSchema>): Promise<Payment> {
-    this.logInfo('Creating payment', { amount: data.amount });
+    this.log('Creating payment', { amount: data.amount });
 
-    const payment = await this.create<Payment>('payments', {
+    const payment = await this.insert<Payment>('payments', {
       booking_id: data.bookingId || null,
       reservation_id: data.reservationId || null,
       customer_id: data.customerId,
@@ -53,32 +54,29 @@ export class PaymentService extends BaseService {
       updated_at: new Date().toISOString(),
     });
 
-    this.logInfo('Payment created', { id: payment.id });
+    this.log('Payment created', { id: payment.id });
     return payment;
   }
 
   async getPaymentsByBooking(bookingId: number): Promise<Payment[]> {
-    const result = await this.query<Payment>(
+    return this.queryMany<Payment>(
       'SELECT * FROM payments WHERE booking_id = $1 ORDER BY created_at DESC',
       [bookingId]
     );
-    return result.rows;
   }
 
   async getPaymentsByReservation(reservationId: number): Promise<Payment[]> {
-    const result = await this.query<Payment>(
+    return this.queryMany<Payment>(
       'SELECT * FROM payments WHERE reservation_id = $1 ORDER BY created_at DESC',
       [reservationId]
     );
-    return result.rows;
   }
 
   async getPaymentsByCustomer(customerId: number): Promise<Payment[]> {
-    const result = await this.query<Payment>(
+    return this.queryMany<Payment>(
       'SELECT * FROM payments WHERE customer_id = $1 ORDER BY created_at DESC',
       [customerId]
     );
-    return result.rows;
   }
 
   async updatePaymentStatus(
@@ -160,5 +158,3 @@ export class PaymentService extends BaseService {
 }
 
 export const paymentService = new PaymentService();
-
-

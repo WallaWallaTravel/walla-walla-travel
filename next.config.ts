@@ -25,10 +25,9 @@ const nextConfig: NextConfig = {
   
   // Webpack optimizations
   webpack: (config, { dev, isServer }) => {
-    // Only apply custom optimizations to client-side production builds
-    // Server builds have different requirements and shouldn't use browser-specific chunking
-    if (!dev && !isServer) {
-      // Enable tree shaking for client
+    // Production optimizations
+    if (!dev) {
+      // Enable tree shaking
       config.optimization = {
         ...config.optimization,
         usedExports: true,
@@ -36,7 +35,7 @@ const nextConfig: NextConfig = {
         minimize: true,
       };
       
-      // Split chunks for better caching (client-side only)
+      // Split chunks for better caching
       config.optimization.splitChunks = {
         chunks: 'all',
         cacheGroups: {
