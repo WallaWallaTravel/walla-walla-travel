@@ -16,21 +16,22 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     const result = await query(
-      `SELECT 
+      `SELECT
         r.*,
         c.name as customer_name,
         c.email as customer_email,
-        c.phone as customer_phone
+        c.phone as customer_phone,
+        c.sms_marketing_consent as sms_consent
        FROM reservations r
-       JOIN customers c ON r.customer_id = c.id
-       ORDER BY 
-         CASE 
+       LEFT JOIN customers c ON r.customer_id = c.id
+       ORDER BY
+         CASE
            WHEN r.status = 'pending' THEN 1
            WHEN r.status = 'contacted' THEN 2
            WHEN r.status = 'confirmed' THEN 3
            ELSE 4
          END,
-         r.consultation_deadline ASC`,
+         r.created_at DESC`,
       []
     );
     

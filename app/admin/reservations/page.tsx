@@ -7,6 +7,22 @@
 
 import { useState, useEffect } from 'react';
 
+interface TourDayDetails {
+  date: string;
+  guests: number | string;
+  hours: number;
+}
+
+interface BookingDetails {
+  provider?: string;
+  providerId?: string;
+  tourDays?: TourDayDetails[];
+  additionalServices?: { type: string; details: string }[];
+  estimatedTotal?: string;
+  customerNotes?: string;
+  textConsent?: boolean;
+}
+
 interface Reservation {
   id: number;
   reservation_number: string;
@@ -25,12 +41,35 @@ interface Reservation {
   consultation_deadline: string;
   contacted_at?: string;
   created_at: string;
+  tour_type?: string;
+  tour_duration_type?: string;
+  sms_consent?: boolean;
 }
 
 export default function AdminReservationsPage() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'pending' | 'contacted' | 'confirmed'>('all');
+  const [depositModal, setDepositModal] = useState<{
+    open: boolean;
+    reservation: Reservation | null;
+    depositAmount: string;
+    emailSubject: string;
+    emailBody: string;
+    smsMessage: string;
+    sendEmail: boolean;
+    sendSms: boolean;
+  }>({
+    open: false,
+    reservation: null,
+    depositAmount: '',
+    emailSubject: '',
+    emailBody: '',
+    smsMessage: '',
+    sendEmail: true,
+    sendSms: false,
+  });
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     loadReservations();
@@ -55,12 +94,105 @@ export default function AdminReservationsPage() {
       const response = await fetch(`/api/admin/reservations/${id}/contact`, {
         method: 'POST'
       });
-      
+
       if (response.ok) {
         loadReservations();
       }
     } catch (error) {
       console.error('Failed to mark as contacted:', error);
+    }
+  };
+
+  // Parse booking details from special_requests JSON
+  const parseBookingDetails = (specialRequests: string | undefined): BookingDetails | null => {
+    if (!specialRequests) return null;
+    try {
+      return JSON.parse(specialRequests);
+    } catch {
+      return null;
+    }
+  };
+
+  // Open deposit request modal with pre-filled content
+  const openDepositModal = (reservation: Reservation) => {
+    const details = parseBookingDetails(reservation.special_requests);
+    const depositAmount = reservation.party_size <= 7 ? 250 : 350;
+    // Format as MM/DD/YYYY
+    const date = new Date(reservation.preferred_date);
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const year = date.getFullYear();
+    const tourDate = `${month}/${day}/${year}`;
+
+    const emailSubject = `Deposit Request - ${reservation.reservation_number}`;
+    const emailBody = `Hi ${reservation.customer_name.split(' ')[0]},
+
+Thank you for your booking request! We're excited to help you plan your wine tour experience.
+
+**Tour Details:**
+- Date: ${tourDate}
+- Party Size: ${reservation.party_size} guests
+- Experience: ${(reservation.tour_type || 'Wine Tour').replace('_', ' ')}
+${details?.estimatedTotal ? `- Estimated Total: ${details.estimatedTotal}` : ''}
+
+**Deposit Required:** $${depositAmount}
+
+To confirm your reservation, please submit your deposit at:
+[PAYMENT LINK]
+
+Once we receive your deposit, we'll call within 24 hours to customize your perfect wine country experience.
+
+Questions? Reply to this email or call us at (509) 555-0123.
+
+Best,
+The Walla Walla Travel Team`;
+
+    const smsMessage = `Hi ${reservation.customer_name.split(' ')[0]}! Thanks for your booking request (${reservation.reservation_number}). To confirm your ${tourDate} tour for ${reservation.party_size} guests, please submit your $${depositAmount} deposit: [LINK]. Questions? Reply here or call (509) 555-0123.`;
+
+    setDepositModal({
+      open: true,
+      reservation,
+      depositAmount: depositAmount.toString(),
+      emailSubject,
+      emailBody,
+      smsMessage,
+      sendEmail: true,
+      sendSms: details?.textConsent || false,
+    });
+  };
+
+  // Send deposit request
+  const sendDepositRequest = async () => {
+    if (!depositModal.reservation) return;
+
+    setSending(true);
+    try {
+      const response = await fetch(`/api/admin/reservations/${depositModal.reservation.id}/deposit-request`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          depositAmount: parseFloat(depositModal.depositAmount),
+          emailSubject: depositModal.emailSubject,
+          emailBody: depositModal.emailBody,
+          smsMessage: depositModal.smsMessage,
+          sendEmail: depositModal.sendEmail,
+          sendSms: depositModal.sendSms,
+        }),
+      });
+
+      if (response.ok) {
+        setDepositModal(prev => ({ ...prev, open: false }));
+        loadReservations();
+        alert('Deposit request sent successfully!');
+      } else {
+        const error = await response.json();
+        alert(`Failed to send: ${error.message || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Failed to send deposit request:', error);
+      alert('Failed to send deposit request');
+    } finally {
+      setSending(false);
     }
   };
 
@@ -81,6 +213,31 @@ export default function AdminReservationsPage() {
   const isOverdue = (deadline: string, contacted: boolean) => {
     if (contacted) return false;
     return new Date(deadline) < new Date();
+  };
+
+  // Format date as MM/DD/YYYY
+  const formatDate = (dateString: string): string => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${month}/${day}/${year}`;
+  };
+
+  // Format datetime as MM/DD/YYYY h:mm AM/PM
+  const formatDateTime = (dateString: string): string => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const year = date.getFullYear();
+    let hours = date.getHours();
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    return `${month}/${day}/${year} ${hours}:${minutes} ${ampm}`;
   };
 
   if (loading) {
@@ -194,7 +351,7 @@ export default function AdminReservationsPage() {
                       <div className="text-sm text-gray-600 mb-1">Tour Details</div>
                       <div className="text-sm">
                         <div><strong>{reservation.party_size} guests</strong></div>
-                        <div>{new Date(reservation.preferred_date).toLocaleDateString()}</div>
+                        <div>{formatDate(reservation.preferred_date)}</div>
                         <div className="capitalize">{reservation.event_type.replace('_', ' ')}</div>
                       </div>
                     </div>
@@ -219,18 +376,26 @@ export default function AdminReservationsPage() {
 
                   <div className="flex items-center justify-between pt-4 border-t">
                     <div className="text-sm text-gray-600">
-                      <div>Created: {new Date(reservation.created_at).toLocaleString()}</div>
+                      <div>Created: {formatDateTime(reservation.created_at)}</div>
                       <div>
-                        Call deadline: <strong>{new Date(reservation.consultation_deadline).toLocaleString()}</strong>
+                        Call deadline: <strong>{formatDateTime(reservation.consultation_deadline)}</strong>
                       </div>
                       {reservation.contacted_at && (
                         <div className="text-green-600">
-                          ✓ Contacted: {new Date(reservation.contacted_at).toLocaleString()}
+                          ✓ Contacted: {formatDateTime(reservation.contacted_at)}
                         </div>
                       )}
                     </div>
 
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap">
+                      {reservation.status === 'pending' && !reservation.deposit_paid && (
+                        <button
+                          onClick={() => openDepositModal(reservation)}
+                          className="px-4 py-2 bg-[#B87333] text-white rounded-lg hover:bg-[#A5632B] transition font-semibold"
+                        >
+                          💰 Send Deposit Request
+                        </button>
+                      )}
                       <a
                         href={`mailto:${reservation.customer_email}`}
                         className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
@@ -259,6 +424,137 @@ export default function AdminReservationsPage() {
           </div>
         )}
       </main>
+
+      {/* Deposit Request Modal */}
+      {depositModal.open && depositModal.reservation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-gray-900">
+                  Send Deposit Request
+                </h2>
+                <button
+                  onClick={() => setDepositModal(prev => ({ ...prev, open: false }))}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <p className="text-gray-600 mt-1">
+                {depositModal.reservation.reservation_number} - {depositModal.reservation.customer_name}
+              </p>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Deposit Amount */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Deposit Amount
+                </label>
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-500">$</span>
+                  <input
+                    type="number"
+                    value={depositModal.depositAmount}
+                    onChange={(e) => setDepositModal(prev => ({ ...prev, depositAmount: e.target.value }))}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              {/* Send Options */}
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={depositModal.sendEmail}
+                    onChange={(e) => setDepositModal(prev => ({ ...prev, sendEmail: e.target.checked }))}
+                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">Send Email</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={depositModal.sendSms}
+                    onChange={(e) => setDepositModal(prev => ({ ...prev, sendSms: e.target.checked }))}
+                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">
+                    Send SMS
+                    {parseBookingDetails(depositModal.reservation.special_requests)?.textConsent && (
+                      <span className="text-green-600 ml-1">(Customer consented)</span>
+                    )}
+                  </span>
+                </label>
+              </div>
+
+              {/* Email Content */}
+              {depositModal.sendEmail && (
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-gray-900">Email Content</h3>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                    <input
+                      type="text"
+                      value={depositModal.emailSubject}
+                      onChange={(e) => setDepositModal(prev => ({ ...prev, emailSubject: e.target.value }))}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Body</label>
+                    <textarea
+                      value={depositModal.emailBody}
+                      onChange={(e) => setDepositModal(prev => ({ ...prev, emailBody: e.target.value }))}
+                      rows={12}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* SMS Content */}
+              {depositModal.sendSms && (
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-gray-900">SMS Content</h3>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Message <span className="text-gray-400">({depositModal.smsMessage.length}/160 characters)</span>
+                    </label>
+                    <textarea
+                      value={depositModal.smsMessage}
+                      onChange={(e) => setDepositModal(prev => ({ ...prev, smsMessage: e.target.value }))}
+                      rows={4}
+                      maxLength={320}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+              <button
+                onClick={() => setDepositModal(prev => ({ ...prev, open: false }))}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={sendDepositRequest}
+                disabled={sending || (!depositModal.sendEmail && !depositModal.sendSms)}
+                className="px-6 py-2 bg-[#B87333] text-white rounded-lg hover:bg-[#A5632B] transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {sending ? 'Sending...' : 'Send Deposit Request'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

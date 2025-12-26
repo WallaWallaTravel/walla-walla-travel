@@ -5,10 +5,10 @@ import Link from 'next/link';
 
 /**
  * Book a Tour - Entry Point
- * 
+ *
  * This is the main booking flow for customers.
  * Can be embedded in Webflow via iframe or loaded directly.
- * 
+ *
  * Supports multiple tour providers (NW Touring, Herding Cats, etc.)
  */
 
@@ -20,6 +20,20 @@ interface Provider {
   minHours: number;
   baseRate: number;
   maxGuests: number;
+}
+
+interface TourDay {
+  id: string;
+  date: string;
+  guests: number | 'large';
+  largeGroupSize: string;
+  hours: number;
+}
+
+interface ServiceItem {
+  id: string;
+  serviceType: string;
+  details: string;
 }
 
 const PROVIDERS: Provider[] = [
@@ -43,18 +57,44 @@ const PROVIDERS: Provider[] = [
   },
 ];
 
+const createNewDay = (): TourDay => ({
+  id: Math.random().toString(36).substring(7),
+  date: '',
+  guests: 2,
+  largeGroupSize: '',
+  hours: 4,
+});
+
+const createNewService = (): ServiceItem => ({
+  id: Math.random().toString(36).substring(7),
+  serviceType: '',
+  details: '',
+});
+
+const SERVICE_OPTIONS = [
+  { value: 'airport_pickup', label: 'Airport Pickup' },
+  { value: 'airport_dropoff', label: 'Airport Dropoff' },
+  { value: 'dinner_transport', label: 'Dinner Transportation' },
+  { value: 'event_transport', label: 'Event Transportation' },
+  { value: 'hotel_transfer', label: 'Hotel Transfer' },
+  { value: 'other', label: 'Other' },
+];
+
 export default function BookTourPage() {
   const [step, setStep] = useState(1);
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
+  const [isMultipleServices, setIsMultipleServices] = useState(false);
+  const [tourDays, setTourDays] = useState<TourDay[]>([createNewDay()]);
+  const [additionalServices, setAdditionalServices] = useState<ServiceItem[]>([createNewService()]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [formData, setFormData] = useState({
-    date: '',
-    guests: 2,
-    hours: 4,
     tourType: 'wine_tour',
     name: '',
     email: '',
     phone: '',
     notes: '',
+    textConsent: true, // Pre-filled checkbox for text communications
   });
 
   const handleProviderSelect = (providerId: string) => {
@@ -66,7 +106,123 @@ export default function BookTourPage() {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
+  const handleDayChange = (dayId: string, field: keyof TourDay, value: string | number | 'large') => {
+    setTourDays(prev => prev.map(day =>
+      day.id === dayId ? { ...day, [field]: value } : day
+    ));
+  };
+
+  const addDay = () => {
+    setTourDays(prev => [...prev, createNewDay()]);
+  };
+
+  const removeDay = (dayId: string) => {
+    if (tourDays.length > 1) {
+      setTourDays(prev => prev.filter(day => day.id !== dayId));
+    }
+  };
+
+  const handleServiceChange = (serviceId: string, field: keyof ServiceItem, value: string) => {
+    setAdditionalServices(prev => prev.map(svc =>
+      svc.id === serviceId ? { ...svc, [field]: value } : svc
+    ));
+  };
+
+  const addService = () => {
+    setAdditionalServices(prev => [...prev, createNewService()]);
+  };
+
+  const removeService = (serviceId: string) => {
+    if (additionalServices.length > 1) {
+      setAdditionalServices(prev => prev.filter(svc => svc.id !== serviceId));
+    }
+  };
+
+  // Handle checkbox changes - reset to single item when unchecked
+  const handleMultipleServicesChange = (checked: boolean) => {
+    setIsMultipleServices(checked);
+    if (!checked && additionalServices.length > 1) {
+      setAdditionalServices([additionalServices[0]]);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!selectedProviderData || !formData.name || !formData.email) return;
+
+    setIsSubmitting(true);
+    setSubmitStatus('idle');
+
+    const bookingData = {
+      provider: selectedProviderData.name,
+      providerId: selectedProviderData.id,
+      tourType: formData.tourType,
+      tourDays: tourDays.map(day => ({
+        date: day.date,
+        guests: day.guests === 'large' ? `Large Group (~${day.largeGroupSize})` : day.guests,
+        hours: day.hours,
+      })),
+      additionalServices: isMultipleServices
+        ? additionalServices.filter(s => s.serviceType).map(s => ({
+            type: SERVICE_OPTIONS.find(o => o.value === s.serviceType)?.label || s.serviceType,
+            details: s.details,
+          }))
+        : [],
+      contact: {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        textConsent: formData.textConsent,
+      },
+      notes: formData.notes,
+      estimatedTotal: tourDays.some(d => d.guests === 'large')
+        ? 'Quote pending'
+        : `$${calculateTotalPrice()}`,
+    };
+
+    try {
+      const response = await fetch('/api/booking-requests', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(bookingData),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to submit booking request');
+      }
+
+      console.log('Booking Request Created:', result);
+      setSubmitStatus('success');
+    } catch (error) {
+      console.error('Booking error:', error);
+      setSubmitStatus('error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const selectedProviderData = PROVIDERS.find(p => p.id === selectedProvider);
+
+  // Calculate total estimated price across all days
+  const calculateTotalPrice = () => {
+    if (!selectedProviderData) return 0;
+    return tourDays.reduce((total, day) => {
+      return total + (selectedProviderData.baseRate * day.hours);
+    }, 0);
+  };
+
+  // Check if all required fields are filled
+  const allDaysComplete = tourDays.every(day => day.date && (day.guests !== 'large' || day.largeGroupSize));
+
+  // Format date as MM/DD/YYYY
+  const formatDate = (dateString: string): string => {
+    if (!dateString) return '';
+    const [year, month, day] = dateString.split('-');
+    return `${month}/${day}/${year}`;
+  };
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -202,77 +358,207 @@ export default function BookTourPage() {
                   <option value="wine_tour">Wine Tour</option>
                   <option value="custom_charter">Custom Charter</option>
                   <option value="airport_transfer">Airport Transfer</option>
+                  <option value="dinner_service">Dinner Service</option>
                 </select>
               </div>
 
-              {/* Date */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  When?
-                </label>
-                <input
-                  type="date"
-                  name="date"
-                  value={formData.date}
-                  onChange={handleInputChange}
-                  min={new Date().toISOString().split('T')[0]}
-                  required
-                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2"
-                />
+              {/* Tour Days */}
+              {tourDays.map((day, index) => (
+                <div key={day.id} className="space-y-4">
+                  {/* Day Header (show when more than one day) */}
+                  {tourDays.length > 1 && (
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-semibold text-slate-800">
+                        Day {index + 1}
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={() => removeDay(day.id)}
+                        className="text-xs text-red-500 hover:text-red-700"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Date */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      When?
+                    </label>
+                    <input
+                      type="date"
+                      value={day.date}
+                      onChange={(e) => handleDayChange(day.id, 'date', e.target.value)}
+                      min={new Date().toISOString().split('T')[0]}
+                      required
+                      className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E07A5F] text-base"
+                    />
+                  </div>
+
+                  {/* Guests & Hours */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        How many guests?
+                      </label>
+                      <select
+                        value={day.guests}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          handleDayChange(day.id, 'guests', val === 'large' ? 'large' : parseInt(val, 10));
+                        }}
+                        className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2"
+                      >
+                        {Array.from({ length: selectedProviderData.maxGuests }, (_, i) => i + 1).map(n => (
+                          <option key={n} value={n}>{n} {n === 1 ? 'guest' : 'guests'}</option>
+                        ))}
+                        <option value="large">Large Group</option>
+                      </select>
+
+                      {/* Large Group Size Input */}
+                      {day.guests === 'large' && (
+                        <div className="mt-2">
+                          <input
+                            type="text"
+                            value={day.largeGroupSize}
+                            onChange={(e) => handleDayChange(day.id, 'largeGroupSize', e.target.value)}
+                            placeholder="Approximately how many will be in your group?"
+                            className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 text-sm"
+                          />
+                          <p className="text-xs text-slate-500 mt-1">
+                            We'll contact you to discuss vehicle options for your group size.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        How long?
+                      </label>
+                      <select
+                        value={day.hours}
+                        onChange={(e) => handleDayChange(day.id, 'hours', parseInt(e.target.value, 10))}
+                        className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2"
+                      >
+                        {Array.from({ length: 9 }, (_, i) => i + selectedProviderData.minHours).map(n => (
+                          <option key={n} value={n}>{n} hours</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Separator between days */}
+                  {tourDays.length > 1 && index < tourDays.length - 1 && (
+                    <hr className="border-slate-200 my-4" />
+                  )}
+                </div>
+              ))}
+
+              {/* Add Day Section */}
+              <div className="pt-4 border-t border-slate-200">
+                <h3 className="text-sm font-semibold text-slate-800 mb-3">+ Add Additional Day(s)</h3>
+                <button
+                  type="button"
+                  onClick={addDay}
+                  className="w-full py-2.5 border-2 border-dashed border-slate-300 rounded-lg text-slate-600 hover:border-slate-400 hover:text-slate-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Add Another Day
+                </button>
               </div>
 
-              {/* Guests & Hours */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    How many guests?
-                  </label>
-                  <select
-                    name="guests"
-                    value={formData.guests}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2"
-                  >
-                    {Array.from({ length: selectedProviderData.maxGuests }, (_, i) => i + 1).map(n => (
-                      <option key={n} value={n}>{n} {n === 1 ? 'guest' : 'guests'}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    How long?
-                  </label>
-                  <select
-                    name="hours"
-                    value={formData.hours}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2"
-                  >
-                    {Array.from({ length: 9 }, (_, i) => i + selectedProviderData.minHours).map(n => (
-                      <option key={n} value={n}>{n} hours</option>
-                    ))}
-                  </select>
-                </div>
+              {/* Additional Services Checkbox */}
+              <div className="py-3 border-t border-slate-100">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isMultipleServices}
+                    onChange={(e) => handleMultipleServicesChange(e.target.checked)}
+                    className="w-4 h-4 rounded border-slate-300 text-[#E07A5F] focus:ring-[#E07A5F]"
+                  />
+                  <span className="text-sm font-medium text-slate-700">Additional Services</span>
+                </label>
               </div>
+
+              {/* Additional Services Section */}
+              {isMultipleServices && (
+                <div className="space-y-4 pt-4 border-t border-slate-200">
+                  <h3 className="text-sm font-semibold text-slate-800">Additional Services</h3>
+
+                  {additionalServices.map((service, index) => (
+                    <div key={service.id} className="space-y-3 p-4 bg-slate-50 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-slate-500">Service {index + 1}</span>
+                        {additionalServices.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeService(service.id)}
+                            className="text-xs text-red-500 hover:text-red-700"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+
+                      <select
+                        value={service.serviceType}
+                        onChange={(e) => handleServiceChange(service.id, 'serviceType', e.target.value)}
+                        className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 bg-white"
+                      >
+                        <option value="">Select a service...</option>
+                        {SERVICE_OPTIONS.map(opt => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+
+                      <input
+                        type="text"
+                        value={service.details}
+                        onChange={(e) => handleServiceChange(service.id, 'details', e.target.value)}
+                        placeholder="Details (time, location, etc.)"
+                        className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 text-sm bg-white"
+                      />
+                    </div>
+                  ))}
+
+                  <button
+                    type="button"
+                    onClick={addService}
+                    className="w-full py-2.5 border-2 border-dashed border-slate-300 rounded-lg text-slate-600 hover:border-slate-400 hover:text-slate-700 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add Another Service
+                  </button>
+                </div>
+              )}
 
               {/* Estimated Price */}
               <div className="bg-slate-50 rounded-lg p-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-600">Estimated Total</span>
+                  <span className="text-slate-600">
+                    Estimated Total {tourDays.length > 1 && `(${tourDays.length} days)`}
+                  </span>
                   <span className="text-2xl font-semibold text-slate-900">
-                    ${selectedProviderData.baseRate * formData.hours}
+                    ${calculateTotalPrice()}
                   </span>
                 </div>
                 <p className="text-xs text-slate-500 mt-1">
-                  Final pricing may vary based on specific requirements
+                  {tourDays.some(d => d.guests === 'large')
+                    ? 'Large group pricing will be quoted separately'
+                    : 'Final pricing may vary based on specific requirements'}
                 </p>
               </div>
 
               <button
                 onClick={() => setStep(3)}
-                disabled={!formData.date}
+                disabled={!allDaysComplete}
                 className="w-full py-3 rounded-lg text-white font-semibold transition-colors disabled:bg-slate-300"
-                style={{ backgroundColor: formData.date ? selectedProviderData.color : undefined }}
+                style={{ backgroundColor: allDaysComplete ? selectedProviderData.color : undefined }}
               >
                 Continue
               </button>
@@ -345,6 +631,19 @@ export default function BookTourPage() {
                   className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E07A5F]"
                   placeholder="(509) 555-0123"
                 />
+
+                {/* Text Consent Checkbox */}
+                <label className="flex items-start gap-3 mt-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.textConsent}
+                    onChange={(e) => setFormData(prev => ({ ...prev, textConsent: e.target.checked }))}
+                    className="w-4 h-4 mt-0.5 rounded border-slate-300 text-[#E07A5F] focus:ring-[#E07A5F]"
+                  />
+                  <span className="text-sm text-slate-600">
+                    I agree to receive text message updates about my booking. Message and data rates may apply. You can opt out at any time.
+                  </span>
+                </label>
               </div>
 
               <div>
@@ -369,37 +668,87 @@ export default function BookTourPage() {
                     <span>Provider</span>
                     <span className="font-medium text-slate-900">{selectedProviderData.name}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Date</span>
-                    <span className="font-medium text-slate-900">{formData.date}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Duration</span>
-                    <span className="font-medium text-slate-900">{formData.hours} hours</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Guests</span>
-                    <span className="font-medium text-slate-900">{formData.guests}</span>
-                  </div>
+
+                  {/* Tour Days Summary */}
+                  {tourDays.map((day, index) => (
+                    <div key={day.id} className={tourDays.length > 1 ? 'pt-2 border-t border-slate-200' : ''}>
+                      {tourDays.length > 1 && (
+                        <div className="text-xs font-semibold text-slate-500 mb-1">Day {index + 1}</div>
+                      )}
+                      <div className="flex justify-between">
+                        <span>Date</span>
+                        <span className="font-medium text-slate-900">{formatDate(day.date)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Duration</span>
+                        <span className="font-medium text-slate-900">{day.hours} hours</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Guests</span>
+                        <span className="font-medium text-slate-900">
+                          {day.guests === 'large' ? `Large Group (~${day.largeGroupSize})` : day.guests}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+
                   <div className="flex justify-between pt-2 border-t border-slate-200">
                     <span className="font-medium">Estimated Total</span>
-                    <span className="font-semibold text-slate-900">${selectedProviderData.baseRate * formData.hours}</span>
+                    <span className="font-semibold text-slate-900">
+                      {tourDays.some(d => d.guests === 'large') ? 'Quote pending' : `$${calculateTotalPrice()}`}
+                    </span>
                   </div>
                 </div>
               </div>
 
-              <button
-                type="submit"
-                disabled={!formData.name || !formData.email}
-                className="w-full py-3 rounded-lg text-white font-semibold transition-colors disabled:bg-slate-300 bg-[#E07A5F] hover:bg-[#d06a4f]"
-              >
-                Request Booking
-              </button>
+              {submitStatus === 'success' ? (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+                  <svg className="w-12 h-12 text-green-500 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <h3 className="text-lg font-semibold text-green-800 mb-1">Request Submitted!</h3>
+                  <p className="text-sm text-green-700">
+                    We've received your booking request. You'll receive a confirmation email at {formData.email} shortly.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {submitStatus === 'error' && (
+                    <div className="text-sm text-red-600 mb-4 text-center">
+                      Something went wrong. Please try again.
+                    </div>
+                  )}
 
-              <p className="text-xs text-slate-500 text-center">
-                By submitting, you agree to our terms of service. 
-                We'll confirm availability and send you a quote.
-              </p>
+                  <button
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={!formData.name || !formData.email || isSubmitting}
+                    className="w-full py-3 rounded-lg text-white font-semibold transition-colors disabled:bg-slate-300 bg-[#E07A5F] hover:bg-[#d06a4f]"
+                  >
+                    {isSubmitting ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        Submitting...
+                      </span>
+                    ) : (
+                      'Request Booking'
+                    )}
+                  </button>
+
+                  <p className="text-xs text-slate-500 text-center">
+                    By submitting, you agree to our terms of service.
+                    We'll confirm availability and send you a quote.
+                  </p>
+                  <p className="text-xs text-slate-400 text-center mt-3">
+                    Questions? <a href="mailto:info@nwtouring.com" className="underline hover:text-slate-600">info@nwtouring.com</a>
+                    {' '}&bull;{' '}
+                    <a href="tel:+15095403600" className="underline hover:text-slate-600">(509) 540-3600</a>
+                  </p>
+                </>
+              )}
             </div>
           </div>
         )}

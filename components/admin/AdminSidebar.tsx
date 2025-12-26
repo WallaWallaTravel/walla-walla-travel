@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
@@ -9,6 +10,7 @@ interface NavItem {
   href: string;
   badge?: number;
   section?: string;
+  dynamicBadge?: string; // Key to look up dynamic badge count
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -19,7 +21,7 @@ const NAV_ITEMS: NavItem[] = [
   
   // Operations
   { label: 'Bookings', icon: '📅', href: '/admin/bookings', section: 'Operations' },
-  { label: 'Reservations', icon: '🎨', href: '/admin/reservations', section: 'Operations' },
+  { label: 'Reservations', icon: '🎨', href: '/admin/reservations', section: 'Operations', dynamicBadge: 'pendingReservations' },
   { label: 'Proposals', icon: '📄', href: '/admin/proposals', section: 'Operations' },
   { label: 'Tour Offers', icon: '🎫', href: '/admin/tour-offers', section: 'Operations' },
   { label: 'Corporate Requests', icon: '🏢', href: '/admin/corporate-requests', section: 'Operations' },
@@ -60,6 +62,30 @@ const NAV_ITEMS: NavItem[] = [
 export function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const [badgeCounts, setBadgeCounts] = useState<Record<string, number>>({});
+
+  // Fetch dynamic badge counts
+  useEffect(() => {
+    async function fetchBadgeCounts() {
+      try {
+        const response = await fetch('/api/booking-requests');
+        if (response.ok) {
+          const data = await response.json();
+          setBadgeCounts(prev => ({
+            ...prev,
+            pendingReservations: data.pendingCount || 0,
+          }));
+        }
+      } catch (error) {
+        console.error('Failed to fetch badge counts:', error);
+      }
+    }
+
+    fetchBadgeCounts();
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchBadgeCounts, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Group items by section
   const sections: { [key: string]: NavItem[] } = {};
@@ -133,11 +159,16 @@ export function AdminSidebar() {
                   >
                     <span className="text-base">{item.icon}</span>
                     <span className="flex-1 text-left">{item.label}</span>
-                    {item.badge !== undefined && item.badge > 0 && (
-                      <span className="bg-[#B87333] text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                        {item.badge > 99 ? '99+' : item.badge}
-                      </span>
-                    )}
+                    {(() => {
+                      const badgeValue = item.dynamicBadge
+                        ? badgeCounts[item.dynamicBadge]
+                        : item.badge;
+                      return badgeValue !== undefined && badgeValue > 0 && (
+                        <span className="bg-[#B87333] text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                          {badgeValue > 99 ? '99+' : badgeValue}
+                        </span>
+                      );
+                    })()}
                   </button>
                 );
               })}
