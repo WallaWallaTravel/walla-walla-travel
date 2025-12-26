@@ -442,7 +442,9 @@ export default function BookTourPage() {
                         className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2"
                       >
                         {Array.from({ length: 9 }, (_, i) => i + selectedProviderData.minHours).map(n => (
-                          <option key={n} value={n}>{n} hours</option>
+                          <option key={n} value={n}>
+                            {n} hours{n === 6 ? ' (Typical - 3 Wineries)' : ''}
+                          </option>
                         ))}
                       </select>
                     </div>
