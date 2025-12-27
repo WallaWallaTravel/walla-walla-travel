@@ -12,6 +12,7 @@ import { Elements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 import { StripePaymentForm } from '@/components/payment/StripePaymentForm';
 import Link from 'next/link';
+import { useBookingTracking } from '@/lib/hooks/useBookingTracking';
 
 // Load Stripe
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
@@ -25,6 +26,9 @@ function PaymentPageContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reservation, setReservation] = useState<any>(null);
+
+  // Booking tracking
+  const { trackBookingProgress, trackPageView } = useBookingTracking();
 
   // Fetch reservation and create payment intent
   useEffect(() => {
@@ -89,6 +93,15 @@ function PaymentPageContent() {
       if (!response.ok) {
         throw new Error('Failed to confirm payment');
       }
+
+      // Track successful payment and conversion
+      trackBookingProgress({
+        stepReached: 'completed',
+        email: reservation?.customer?.email,
+        name: reservation?.customer?.name,
+        partySize: reservation?.party_size,
+        tourDate: reservation?.preferred_date,
+      });
 
       // Redirect to confirmation page
       router.push(`/book/reserve/confirmation?id=${reservationId}`);

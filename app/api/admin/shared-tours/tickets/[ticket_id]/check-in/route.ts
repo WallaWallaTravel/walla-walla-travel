@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper';
 import { sharedTourService } from '@/lib/services/shared-tour.service';
 
 interface RouteParams {
@@ -10,7 +10,7 @@ interface RouteParams {
  * POST /api/admin/shared-tours/tickets/[ticket_id]/check-in
  * Check in a ticket on tour day
  */
-export const POST = withAdminAuth(async (request: NextRequest, session, { params }: RouteParams) => {
+export const POST = withAdminAuth(async (request: NextRequest, session: AuthSession, { params }: RouteParams) => {
   const { ticket_id } = await params;
 
   const ticket = await sharedTourService.checkInTicket(ticket_id);

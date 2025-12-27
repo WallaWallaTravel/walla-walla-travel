@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { vehicleService } from '@/lib/services/vehicle.service';
+import { vehicleService, VehicleDocument } from '@/lib/services/vehicle.service';
 import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
@@ -36,25 +36,26 @@ export async function GET(request: NextRequest) {
     const documents = await vehicleService.getDocuments(parseInt(vehicleId));
     
     // Format documents for frontend
-    const formattedDocs = documents.map(doc => ({
+    const formattedDocs = documents.map((doc: VehicleDocument) => ({
       id: doc.id,
       type: doc.document_type,
       name: doc.document_name,
       url: doc.document_url,
       expiryDate: doc.expiry_date,
       isExpired: doc.expiry_date ? new Date(doc.expiry_date) < new Date() : false,
-      expiresInDays: doc.expiry_date 
+      expiresInDays: doc.expiry_date
         ? Math.floor((new Date(doc.expiry_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
         : null
     }));
 
     // Group by type for easier rendering
+    type FormattedDoc = typeof formattedDocs[number];
     const groupedDocs = {
-      registration: formattedDocs.find(d => d.type === 'registration'),
-      insurance: formattedDocs.find(d => d.type === 'insurance'),
-      inspection: formattedDocs.find(d => d.type === 'inspection'),
-      maintenance: formattedDocs.find(d => d.type === 'maintenance'),
-      other: formattedDocs.filter(d => !['registration', 'insurance', 'inspection', 'maintenance'].includes(d.type))
+      registration: formattedDocs.find((d: FormattedDoc) => d.type === 'registration'),
+      insurance: formattedDocs.find((d: FormattedDoc) => d.type === 'insurance'),
+      inspection: formattedDocs.find((d: FormattedDoc) => d.type === 'inspection'),
+      maintenance: formattedDocs.find((d: FormattedDoc) => d.type === 'maintenance'),
+      other: formattedDocs.filter((d: FormattedDoc) => !['registration', 'insurance', 'inspection', 'maintenance'].includes(d.type))
     };
 
     return NextResponse.json({

@@ -8,6 +8,151 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model migrations {
+  id                Int       @id @default(dbgenerated("nextval('_migrations_id_seq'::regclass)"))
+  migration_name    String    @unique @db.VarChar(255)
+  applied_at        DateTime? @default(now()) @db.Timestamptz(6)
+  checksum          String?   @db.VarChar(64)
+  execution_time_ms Int?
+  notes             String?
+
+  @@index([applied_at], map: "idx_migrations_applied")
+  @@index([migration_name], map: "idx_migrations_name")
+  @@map("_migrations")
+}
+
+model activity_partners {
+  id                        Int       @id @default(autoincrement())
+  brand_id                  Int?
+  partner_type              String    @default("referral") @db.VarChar(50)
+  activity_types            String[]
+  referral_tracking_enabled Boolean?  @default(true)
+  commission_rate           Decimal?  @db.Decimal(5, 2)
+  created_at                DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at                DateTime? @default(now()) @db.Timestamptz(6)
+  brands                    brands?   @relation(fields: [brand_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model additional_services {
+  id            Int       @id @default(autoincrement())
+  name          String    @db.VarChar(255)
+  description   String?
+  price         Decimal   @db.Decimal(10, 2)
+  is_active     Boolean?  @default(true)
+  display_order Int?      @default(0)
+  icon          String?   @default("✨") @db.VarChar(50)
+  created_at    DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([is_active], map: "idx_additional_services_active")
+  @@index([display_order], map: "idx_additional_services_display_order")
+}
+
+model ai_fine_tuning_jobs {
+  id                      Int       @id @default(autoincrement())
+  provider                String    @db.VarChar(50)
+  base_model              String    @db.VarChar(100)
+  job_id                  String?   @unique @db.VarChar(255)
+  fine_tuned_model        String?   @db.VarChar(255)
+  model_name              String?   @db.VarChar(100)
+  description             String?
+  training_file_id        String?   @db.VarChar(255)
+  training_examples_count Int?
+  status                  String?   @db.VarChar(50)
+  error_message           String?
+  estimated_cost          Decimal?  @db.Decimal(10, 2)
+  actual_cost             Decimal?  @db.Decimal(10, 2)
+  created_by              Int?
+  created_at              DateTime? @default(now()) @db.Timestamp(6)
+  started_at              DateTime? @db.Timestamp(6)
+  completed_at            DateTime? @db.Timestamp(6)
+  users                   users?    @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([created_at(sort: Desc)], map: "idx_fine_tuning_date")
+  @@index([status], map: "idx_fine_tuning_status")
+}
+
+model ai_queries {
+  id                    Int       @id @default(autoincrement())
+  session_id            String    @db.VarChar(255)
+  user_id               Int?
+  query_text            String
+  query_intent          String?   @db.VarChar(100)
+  query_hash            String?   @db.VarChar(64)
+  provider              String    @db.VarChar(50)
+  model                 String    @db.VarChar(100)
+  model_version         String?   @db.VarChar(50)
+  system_prompt_hash    String?   @db.VarChar(64)
+  response_text         String
+  input_tokens          Int?
+  output_tokens         Int?
+  total_tokens          Int?
+  response_time_ms      Int?
+  api_cost              Decimal?  @db.Decimal(10, 6)
+  ab_test_group         String?   @db.VarChar(1)
+  user_rating           Int?
+  user_feedback_text    String?
+  user_clicked_result   Boolean?  @default(false)
+  clicked_item_id       Int?
+  clicked_item_type     String?   @db.VarChar(50)
+  resulted_in_booking   Boolean?  @default(false)
+  booking_id            Int?
+  booking_value         Decimal?  @db.Decimal(10, 2)
+  admin_rating          String?   @db.VarChar(20)
+  admin_notes           String?
+  approved_for_training Boolean?  @default(false)
+  edited_response       String?
+  created_at            DateTime? @default(now()) @db.Timestamp(6)
+  reviewed_at           DateTime? @db.Timestamp(6)
+  visitor_id            Int?
+  bookings              bookings? @relation(fields: [booking_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  visitors              visitors? @relation(fields: [visitor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([created_at(sort: Desc)], map: "idx_ai_queries_date")
+  @@index([query_hash], map: "idx_ai_queries_hash")
+  @@index([query_intent], map: "idx_ai_queries_intent")
+  @@index([provider, model], map: "idx_ai_queries_model")
+  @@index([user_rating], map: "idx_ai_queries_rating")
+  @@index([session_id], map: "idx_ai_queries_session")
+  @@index([visitor_id], map: "idx_ai_queries_visitor_id")
+}
+
+model ai_query_cache {
+  id                 Int       @id @default(autoincrement())
+  query_hash         String    @unique @db.VarChar(64)
+  query_text         String
+  model              String    @db.VarChar(100)
+  system_prompt_hash String?   @db.VarChar(64)
+  response_text      String
+  response_data      Json?
+  hit_count          Int?      @default(1)
+  created_at         DateTime? @default(now()) @db.Timestamp(6)
+  last_hit_at        DateTime? @default(now()) @db.Timestamp(6)
+  expires_at         DateTime  @db.Timestamp(6)
+
+  @@index([expires_at], map: "idx_ai_cache_expires")
+  @@index([query_hash], map: "idx_ai_cache_hash")
+  @@index([model], map: "idx_ai_cache_model")
+}
+
+model ai_settings {
+  id                 Int       @id @default(autoincrement())
+  provider           String    @db.VarChar(50)
+  model              String    @db.VarChar(100)
+  display_name       String?   @db.VarChar(100)
+  temperature        Decimal?  @default(0.7) @db.Decimal(3, 2)
+  max_tokens         Int?      @default(600)
+  system_prompt      String?
+  is_active          Boolean?  @default(false)
+  is_fallback        Boolean?  @default(false)
+  ab_test_enabled    Boolean?  @default(false)
+  ab_test_percentage Int?
+  ab_test_group      String?   @db.VarChar(1)
+  created_at         DateTime? @default(now()) @db.Timestamp(6)
+  updated_at         DateTime? @default(now()) @db.Timestamp(6)
+}
+
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model availability_rules {
   id                      Int       @id @default(autoincrement())
@@ -29,6 +174,53 @@ model availability_rules {
 
   @@index([is_active], map: "idx_availability_rules_active")
   @@index([rule_type], map: "idx_availability_rules_type")
+}
+
+model booking_line_items {
+  id                                                                         String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  booking_id                                                                 Int
+  service_type_id                                                            String?             @db.Uuid
+  description                                                                String              @db.VarChar(500)
+  provider_entity_id                                                         String              @db.Uuid
+  quantity                                                                   Decimal?            @default(1) @db.Decimal(10, 2)
+  unit_price                                                                 Decimal             @db.Decimal(10, 2)
+  total_price                                                                Decimal             @db.Decimal(10, 2)
+  tax_rate                                                                   Decimal?            @default(0) @db.Decimal(5, 4)
+  tax_amount                                                                 Decimal?            @default(0) @db.Decimal(10, 2)
+  commission_rate                                                            Decimal?            @default(0) @db.Decimal(5, 4)
+  commission_amount                                                          Decimal?            @default(0) @db.Decimal(10, 2)
+  commission_entity_id                                                       String?             @db.Uuid
+  status                                                                     String?             @default("pending") @db.VarChar(20)
+  notes                                                                      String?
+  metadata                                                                   Json?               @default("{}")
+  created_at                                                                 DateTime?           @default(now()) @db.Timestamptz(6)
+  updated_at                                                                 DateTime?           @default(now()) @db.Timestamptz(6)
+  bookings                                                                   bookings            @relation(fields: [booking_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  service_entities_booking_line_items_commission_entity_idToservice_entities service_entities?   @relation("booking_line_items_commission_entity_idToservice_entities", fields: [commission_entity_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  service_entities_booking_line_items_provider_entity_idToservice_entities   service_entities    @relation("booking_line_items_provider_entity_idToservice_entities", fields: [provider_entity_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  service_types                                                              service_types?      @relation(fields: [service_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  commission_ledger                                                          commission_ledger[]
+
+  @@index([booking_id], map: "idx_line_items_booking")
+  @@index([commission_entity_id], map: "idx_line_items_commission")
+  @@index([provider_entity_id], map: "idx_line_items_provider")
+}
+
+model booking_sources {
+  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code             String             @unique @db.VarChar(50)
+  name             String             @db.VarChar(100)
+  description      String?
+  owner_entity_id  String?            @db.Uuid
+  commission_rate  Decimal?           @db.Decimal(5, 4)
+  commission_type  String?            @default("percentage") @db.VarChar(20)
+  source_url       String?            @db.VarChar(500)
+  is_active        Boolean?           @default(true)
+  created_at       DateTime?          @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime?          @default(now()) @db.Timestamptz(6)
+  service_entities service_entities?  @relation(fields: [owner_entity_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  bookings         bookings[]
+  commission_rates commission_rates[]
 }
 
 model booking_timeline {
@@ -68,77 +260,462 @@ model booking_wineries {
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model bookings {
-  id                                              Int                      @id @default(autoincrement())
-  booking_number                                  String                   @unique @db.VarChar(20)
-  customer_id                                     Int?
-  customer_name                                   String                   @db.VarChar(255)
-  customer_email                                  String                   @db.VarChar(255)
-  customer_phone                                  String?                  @db.VarChar(20)
-  party_size                                      Int
-  tour_date                                       DateTime                 @db.Date
-  start_time                                      DateTime                 @db.Time(6)
-  end_time                                        DateTime                 @db.Time(6)
-  duration_hours                                  Decimal                  @db.Decimal(3, 1)
-  pickup_location                                 String                   @db.VarChar(500)
-  dropoff_location                                String?                  @db.VarChar(500)
-  special_requests                                String?
-  driver_id                                       Int?
-  vehicle_id                                      Int?
-  time_card_id                                    Int?
-  base_price                                      Decimal                  @db.Decimal(10, 2)
-  gratuity                                        Decimal?                 @default(0) @db.Decimal(10, 2)
-  taxes                                           Decimal?                 @default(0) @db.Decimal(10, 2)
-  total_price                                     Decimal                  @db.Decimal(10, 2)
-  deposit_amount                                  Decimal                  @db.Decimal(10, 2)
-  deposit_paid                                    Boolean?                 @default(false)
-  deposit_paid_at                                 DateTime?                @db.Timestamp(6)
-  final_payment_amount                            Decimal                  @db.Decimal(10, 2)
-  final_payment_paid                              Boolean?                 @default(false)
-  final_payment_paid_at                           DateTime?                @db.Timestamp(6)
-  status                                          String                   @default("pending") @db.VarChar(50)
-  cancellation_reason                             String?
-  cancelled_at                                    DateTime?                @db.Timestamp(6)
-  cancelled_by                                    Int?
-  booking_source                                  String?                  @default("online") @db.VarChar(50)
-  booked_by                                       Int?
-  created_at                                      DateTime                 @default(now()) @db.Timestamp(6)
-  updated_at                                      DateTime                 @default(now()) @db.Timestamp(6)
-  completed_at                                    DateTime?                @db.Timestamp(6)
-  actual_hours                                    Decimal?                 @db.Decimal(5, 2)
-  estimated_hours                                 Decimal?                 @default(6.0) @db.Decimal(5, 2)
-  hourly_rate                                     Decimal?                 @default(150.00) @db.Decimal(10, 2)
-  ready_for_final_invoice                         Boolean?                 @default(false)
-  final_invoice_sent                              Boolean?                 @default(false)
-  final_invoice_sent_at                           DateTime?                @db.Timestamp(6)
-  final_invoice_approved_by                       Int?
-  final_invoice_approved_at                       DateTime?                @db.Timestamp(6)
-  booking_timeline                                booking_timeline[]
-  booking_wineries                                booking_wineries[]
-  users_bookings_booked_byTousers                 users?                   @relation("bookings_booked_byTousers", fields: [booked_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  users_bookings_cancelled_byTousers              users?                   @relation("bookings_cancelled_byTousers", fields: [cancelled_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  customers                                       customers?               @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  users_bookings_driver_idTousers                 users?                   @relation("bookings_driver_idTousers", fields: [driver_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  users_bookings_final_invoice_approved_byTousers users?                   @relation("bookings_final_invoice_approved_byTousers", fields: [final_invoice_approved_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  time_cards                                      time_cards?              @relation(fields: [time_card_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  vehicles                                        vehicles?                @relation(fields: [vehicle_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  customer_tasting_notes                          customer_tasting_notes[]
-  invoices                                        invoices[]
-  itineraries                                     itineraries[]
-  lunch_orders                                    lunch_orders[]
-  payment_intents                                 payment_intents[]
-  payments                                        payments[]
-  refunds                                         refunds[]
-  tour_offers                                     tour_offers[]
-  wine_purchases                                  wine_purchases[]
-  winery_reviews                                  winery_reviews[]
+  id                                                             Int                           @id @default(autoincrement())
+  booking_number                                                 String                        @unique @db.VarChar(20)
+  customer_id                                                    Int?
+  customer_name                                                  String                        @db.VarChar(255)
+  customer_email                                                 String                        @db.VarChar(255)
+  customer_phone                                                 String?                       @db.VarChar(20)
+  party_size                                                     Int
+  tour_date                                                      DateTime                      @db.Date
+  start_time                                                     DateTime                      @db.Time(6)
+  end_time                                                       DateTime                      @db.Time(6)
+  duration_hours                                                 Decimal                       @db.Decimal(3, 1)
+  pickup_location                                                String                        @db.VarChar(500)
+  dropoff_location                                               String?                       @db.VarChar(500)
+  special_requests                                               String?
+  driver_id                                                      Int?
+  vehicle_id                                                     Int?
+  time_card_id                                                   Int?
+  base_price                                                     Decimal                       @db.Decimal(10, 2)
+  gratuity                                                       Decimal?                      @default(0) @db.Decimal(10, 2)
+  taxes                                                          Decimal?                      @default(0) @db.Decimal(10, 2)
+  total_price                                                    Decimal                       @db.Decimal(10, 2)
+  deposit_amount                                                 Decimal                       @db.Decimal(10, 2)
+  deposit_paid                                                   Boolean?                      @default(false)
+  deposit_paid_at                                                DateTime?                     @db.Timestamp(6)
+  final_payment_amount                                           Decimal                       @db.Decimal(10, 2)
+  final_payment_paid                                             Boolean?                      @default(false)
+  final_payment_paid_at                                          DateTime?                     @db.Timestamp(6)
+  status                                                         String                        @default("pending") @db.VarChar(50)
+  cancellation_reason                                            String?
+  cancelled_at                                                   DateTime?                     @db.Timestamp(6)
+  cancelled_by                                                   Int?
+  booking_source                                                 String?                       @default("online") @db.VarChar(50)
+  booked_by                                                      Int?
+  created_at                                                     DateTime                      @default(now()) @db.Timestamp(6)
+  updated_at                                                     DateTime                      @default(now()) @db.Timestamp(6)
+  completed_at                                                   DateTime?                     @db.Timestamp(6)
+  actual_hours                                                   Decimal?                      @db.Decimal(5, 2)
+  estimated_hours                                                Decimal?                      @default(6.0) @db.Decimal(5, 2)
+  hourly_rate                                                    Decimal?                      @default(150.00) @db.Decimal(10, 2)
+  ready_for_final_invoice                                        Boolean?                      @default(false)
+  final_invoice_sent                                             Boolean?                      @default(false)
+  final_invoice_sent_at                                          DateTime?                     @db.Timestamp(6)
+  final_invoice_approved_by                                      Int?
+  final_invoice_approved_at                                      DateTime?                     @db.Timestamp(6)
+  brand_id                                                       Int?
+  brand_code                                                     String?                       @db.VarChar(20)
+  specific_social_media                                          String?                       @db.VarChar(50)
+  specific_ai                                                    String?                       @db.VarChar(50)
+  wine_tour_preference                                           String?                       @db.VarChar(50)
+  hotel_concierge_name                                           String?                       @db.VarChar(255)
+  referral_other_details                                         String?
+  tour_type                                                      String?                       @default("wine_tour") @db.VarChar(50)
+  referral_source                                                String?                       @db.VarChar(50)
+  tour_duration_type                                             String?                       @default("single") @db.VarChar(20)
+  tour_start_date                                                DateTime?                     @db.Date
+  tour_end_date                                                  DateTime?                     @db.Date
+  tenant_id                                                      Int?
+  provider_id                                                    Int?
+  reminder_sent                                                  Boolean?                      @default(false)
+  provider_entity_id                                             String?                       @db.Uuid
+  booking_source_id                                              String?                       @db.Uuid
+  referrer_entity_id                                             String?                       @db.Uuid
+  ai_queries                                                     ai_queries[]
+  booking_line_items                                             booking_line_items[]
+  booking_timeline                                               booking_timeline[]
+  booking_wineries                                               booking_wineries[]
+  users_bookings_booked_byTousers                                users?                        @relation("bookings_booked_byTousers", fields: [booked_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  booking_sources                                                booking_sources?              @relation(fields: [booking_source_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  brands                                                         brands?                       @relation(fields: [brand_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_bookings_cancelled_byTousers                             users?                        @relation("bookings_cancelled_byTousers", fields: [cancelled_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  customers                                                      customers?                    @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_bookings_driver_idTousers                                users?                        @relation("bookings_driver_idTousers", fields: [driver_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_bookings_final_invoice_approved_byTousers                users?                        @relation("bookings_final_invoice_approved_byTousers", fields: [final_invoice_approved_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  service_entities_bookings_provider_entity_idToservice_entities service_entities?             @relation("bookings_provider_entity_idToservice_entities", fields: [provider_entity_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tour_providers                                                 tour_providers?               @relation(fields: [provider_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  service_entities_bookings_referrer_entity_idToservice_entities service_entities?             @relation("bookings_referrer_entity_idToservice_entities", fields: [referrer_entity_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tenants                                                        tenants?                      @relation(fields: [tenant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  time_cards                                                     time_cards?                   @relation(fields: [time_card_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  vehicles                                                       vehicles?                     @relation(fields: [vehicle_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  commission_ledger                                              commission_ledger[]
+  customer_tasting_notes                                         customer_tasting_notes[]
+  invoices                                                       invoices[]
+  itineraries                                                    itineraries[]
+  lunch_orders                                                   lunch_orders[]
+  payment_intents                                                payment_intents[]
+  payments                                                       payments[]
+  refunds                                                        refunds[]
+  reservations                                                   reservations[]
+  shared_tours_tickets                                           shared_tours_tickets[]
+  tour_offers                                                    tour_offers[]
+  trip_distances                                                 trip_distances[]
+  vehicle_availability_blocks                                    vehicle_availability_blocks[]
+  vehicle_incidents                                              vehicle_incidents[]
+  visitors                                                       visitors[]
+  wine_purchases                                                 wine_purchases[]
+  winery_reviews                                                 winery_reviews[]
 
   @@index([booking_number], map: "idx_bookings_booking_number")
+  @@index([brand_id], map: "idx_bookings_brand")
+  @@index([created_at(sort: Desc)], map: "idx_bookings_created_at")
+  @@index([customer_id, created_at(sort: Desc)], map: "idx_bookings_customer_created")
   @@index([customer_email], map: "idx_bookings_customer_email")
   @@index([customer_id], map: "idx_bookings_customer_id")
   @@index([driver_id], map: "idx_bookings_driver")
+  @@index([provider_id], map: "idx_bookings_provider")
+  @@index([provider_entity_id], map: "idx_bookings_provider_entity")
+  @@index([referral_source], map: "idx_bookings_referral_source")
+  @@index([booking_source_id], map: "idx_bookings_source")
   @@index([status], map: "idx_bookings_status")
+  @@index([tenant_id], map: "idx_bookings_tenant")
   @@index([tour_date], map: "idx_bookings_tour_date")
+  @@index([tour_duration_type], map: "idx_bookings_tour_duration_type")
+  @@index([tour_end_date], map: "idx_bookings_tour_end_date")
+  @@index([tour_start_date], map: "idx_bookings_tour_start_date")
+  @@index([tour_type], map: "idx_bookings_tour_type")
   @@index([vehicle_id], map: "idx_bookings_vehicle")
+}
+
+model brand_email_templates {
+  id            Int       @id @default(autoincrement())
+  brand_id      Int?
+  template_type String    @db.VarChar(50)
+  subject_line  String
+  html_body     String
+  text_body     String
+  active        Boolean?  @default(true)
+  created_at    DateTime? @default(now()) @db.Timestamp(6)
+  updated_at    DateTime? @default(now()) @db.Timestamp(6)
+  brands        brands?   @relation(fields: [brand_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([brand_id, template_type])
+  @@index([brand_id, template_type], map: "idx_brand_templates")
+}
+
+model brand_metrics {
+  id                   Int       @id @default(autoincrement())
+  brand_id             Int?
+  metric_date          DateTime  @db.Date
+  website_visits       Int?      @default(0)
+  booking_page_visits  Int?      @default(0)
+  reservations_created Int?      @default(0)
+  bookings_created     Int?      @default(0)
+  conversion_rate      Decimal?  @db.Decimal(5, 2)
+  total_revenue        Decimal?  @default(0) @db.Decimal(10, 2)
+  avg_booking_value    Decimal?  @db.Decimal(10, 2)
+  new_customers        Int?      @default(0)
+  repeat_customers     Int?      @default(0)
+  created_at           DateTime? @default(now()) @db.Timestamp(6)
+  brands               brands?   @relation(fields: [brand_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([brand_id, metric_date])
+  @@index([brand_id, metric_date(sort: Desc)], map: "idx_brand_metrics_date")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model brands {
+  id                          Int                           @id @default(autoincrement())
+  brand_code                  String                        @unique @db.VarChar(20)
+  brand_name                  String                        @db.VarChar(100)
+  display_name                String                        @db.VarChar(100)
+  legal_name                  String?                       @db.VarChar(255)
+  tagline                     String?
+  website_url                 String?                       @db.VarChar(255)
+  booking_url                 String?                       @db.VarChar(255)
+  email_from                  String?                       @db.VarChar(255)
+  email_support               String?                       @db.VarChar(255)
+  phone                       String?                       @db.VarChar(20)
+  phone_display               String?                       @db.VarChar(50)
+  logo_url                    String?                       @db.VarChar(255)
+  icon_url                    String?                       @db.VarChar(255)
+  primary_color               String?                       @db.VarChar(7)
+  secondary_color             String?                       @db.VarChar(7)
+  accent_color                String?                       @db.VarChar(7)
+  target_market               String?
+  description                 String?
+  meta_description            String?
+  short_description           String?
+  terms_url                   String?                       @db.VarChar(255)
+  cancellation_policy_url     String?                       @db.VarChar(255)
+  active                      Boolean?                      @default(true)
+  show_on_wwt                 Boolean?                      @default(true)
+  default_brand               Boolean?                      @default(false)
+  operating_entity            String?                       @db.VarChar(255)
+  insurance_policy_number     String?                       @db.VarChar(100)
+  license_number              String?                       @db.VarChar(100)
+  created_at                  DateTime?                     @default(now()) @db.Timestamp(6)
+  updated_at                  DateTime?                     @default(now()) @db.Timestamp(6)
+  tenant_id                   Int?
+  brand_type                  String?                       @default("tour_provider") @db.VarChar(50)
+  is_featured                 Boolean?                      @default(false)
+  activity_partners           activity_partners[]
+  bookings                    bookings[]
+  brand_email_templates       brand_email_templates[]
+  brand_metrics               brand_metrics[]
+  tenants                     tenants?                      @relation(fields: [tenant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  corporate_requests          corporate_requests[]
+  customers                   customers[]
+  lodging_partners            lodging_partners[]
+  proposals                   proposals[]
+  referral_clicks             referral_clicks[]
+  reservations                reservations[]
+  tour_providers              tour_providers[]
+  vehicle_availability_blocks vehicle_availability_blocks[]
+  vehicles                    vehicles[]
+
+  @@index([tenant_id], map: "idx_brands_tenant")
+  @@index([brand_type], map: "idx_brands_type")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model business_activity_log {
+  id                   Int        @id @default(autoincrement())
+  business_id          Int
+  activity_type        String     @db.VarChar(100)
+  activity_description String?
+  metadata             Json?
+  ip_address           String?    @db.VarChar(45)
+  user_agent           String?
+  created_at           DateTime?  @default(now()) @db.Timestamp(6)
+  businesses           businesses @relation(fields: [business_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([business_id], map: "idx_activity_business")
+  @@index([created_at(sort: Desc)], map: "idx_activity_date")
+  @@index([activity_type], map: "idx_activity_type")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model business_attributes {
+  id               Int        @id @default(autoincrement())
+  business_id      Int
+  attribute_type   String     @db.VarChar(100)
+  attribute_key    String     @db.VarChar(200)
+  attribute_value  String
+  source           String     @db.VarChar(50)
+  source_id        Int?
+  confidence_score Decimal?   @db.Decimal(5, 2)
+  verified         Boolean?   @default(false)
+  verified_by      Int?
+  verified_at      DateTime?  @db.Timestamp(6)
+  created_at       DateTime?  @default(now()) @db.Timestamp(6)
+  businesses       businesses @relation(fields: [business_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users            users?     @relation(fields: [verified_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([business_id], map: "idx_attributes_business")
+  @@index([attribute_key], map: "idx_attributes_key")
+  @@index([attribute_type], map: "idx_attributes_type")
+}
+
+model business_content {
+  id           Int                    @id @default(autoincrement())
+  business_id  Int?
+  content_type String                 @db.VarChar(50)
+  title        String?                @db.VarChar(255)
+  content      String
+  metadata     Json?
+  embedding    Unsupported("vector")?
+  created_at   DateTime?              @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime?              @default(now()) @db.Timestamptz(6)
+  businesses   businesses?            @relation(fields: [business_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([business_id], map: "idx_business_content_business")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model business_discrepancies {
+  id                   Int        @id @default(autoincrement())
+  business_id          Int
+  discrepancy_id       String     @unique @db.VarChar(200)
+  type                 String     @db.VarChar(50)
+  severity             String     @db.VarChar(20)
+  title                String     @db.VarChar(500)
+  description          String
+  sources              Json?
+  suggested_resolution String?
+  draft_message        String?
+  status               String?    @default("pending") @db.VarChar(50)
+  resolved_at          DateTime?  @db.Timestamp(6)
+  resolved_by          Int?
+  resolution_notes     String?
+  created_at           DateTime?  @default(now()) @db.Timestamp(6)
+  updated_at           DateTime?  @default(now()) @db.Timestamp(6)
+  businesses           businesses @relation(fields: [business_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users                users?     @relation(fields: [resolved_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([business_id], map: "idx_discrepancies_business")
+  @@index([severity], map: "idx_discrepancies_severity")
+  @@index([status], map: "idx_discrepancies_status")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model business_files {
+  id                     Int        @id @default(autoincrement())
+  business_id            Int
+  file_type              String     @db.VarChar(50)
+  original_filename      String     @db.VarChar(500)
+  storage_url            String
+  file_size_bytes        BigInt?
+  mime_type              String?    @db.VarChar(100)
+  processing_status      String?    @default("pending") @db.VarChar(50)
+  processed_at           DateTime?  @db.Timestamp(6)
+  extracted_text         String?
+  ai_description         String?
+  ai_tags                String[]
+  thumbnail_url          String?    @db.VarChar(500)
+  width                  Int?
+  height                 Int?
+  video_duration_seconds Int?
+  video_thumbnail_url    String?    @db.VarChar(500)
+  video_transcription    String?
+  category               String?    @db.VarChar(100)
+  display_order          Int?       @default(0)
+  is_featured            Boolean?   @default(false)
+  approved               Boolean?   @default(false)
+  reviewed_by            Int?
+  reviewed_at            DateTime?  @db.Timestamp(6)
+  admin_notes            String?
+  uploaded_at            DateTime?  @default(now()) @db.Timestamp(6)
+  created_at             DateTime?  @default(now()) @db.Timestamp(6)
+  businesses             businesses @relation(fields: [business_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users                  users?     @relation(fields: [reviewed_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([business_id], map: "idx_files_business")
+  @@index([category], map: "idx_files_category")
+  @@index([processing_status], map: "idx_files_status")
+  @@index([file_type], map: "idx_files_type")
+}
+
+model business_portal {
+  id                                      Int         @id @default(autoincrement())
+  business_id                             Int?
+  user_id                                 Int?
+  access_level                            String?     @default("editor") @db.VarChar(20)
+  notifications_enabled                   Boolean?    @default(true)
+  email_frequency                         String?     @default("daily") @db.VarChar(20)
+  last_login_at                           DateTime?   @db.Timestamptz(6)
+  login_count                             Int?        @default(0)
+  is_active                               Boolean?    @default(true)
+  invited_at                              DateTime?   @db.Timestamptz(6)
+  accepted_at                             DateTime?   @db.Timestamptz(6)
+  invited_by                              Int?
+  created_at                              DateTime?   @default(now()) @db.Timestamptz(6)
+  updated_at                              DateTime?   @default(now()) @db.Timestamptz(6)
+  businesses                              businesses? @relation(fields: [business_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_business_portal_invited_byTousers users?      @relation("business_portal_invited_byTousers", fields: [invited_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_business_portal_user_idTousers    users?      @relation("business_portal_user_idTousers", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([business_id, user_id])
+  @@index([business_id], map: "idx_business_portal_business")
+  @@index([user_id], map: "idx_business_portal_user")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model business_text_entries {
+  id                  Int                  @id @default(autoincrement())
+  business_id         Int
+  question_id         Int?
+  question_number     Int?
+  question_text       String?
+  response_text       String
+  extracted_data      Json?
+  extraction_status   String?              @default("pending") @db.VarChar(50)
+  extracted_at        DateTime?            @db.Timestamp(6)
+  approved            Boolean?             @default(false)
+  reviewed_by         Int?
+  reviewed_at         DateTime?            @db.Timestamp(6)
+  admin_notes         String?
+  submitted_at        DateTime?            @default(now()) @db.Timestamp(6)
+  created_at          DateTime?            @default(now()) @db.Timestamp(6)
+  businesses          businesses           @relation(fields: [business_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  interview_questions interview_questions? @relation(fields: [question_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users               users?               @relation(fields: [reviewed_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([business_id], map: "idx_text_business")
+  @@index([question_id], map: "idx_text_question")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model business_voice_entries {
+  id                       Int                  @id @default(autoincrement())
+  business_id              Int
+  question_id              Int?
+  question_number          Int?
+  question_text            String?
+  audio_url                String?              @db.VarChar(500)
+  audio_duration_seconds   Int?
+  audio_size_bytes         BigInt?
+  transcription            String?
+  transcription_confidence Decimal?             @db.Decimal(5, 2)
+  transcribed_at           DateTime?            @db.Timestamp(6)
+  extracted_data           Json?
+  extraction_status        String?              @default("pending") @db.VarChar(50)
+  extracted_at             DateTime?            @db.Timestamp(6)
+  approved                 Boolean?             @default(false)
+  reviewed_by              Int?
+  reviewed_at              DateTime?            @db.Timestamp(6)
+  admin_notes              String?
+  recorded_at              DateTime?            @default(now()) @db.Timestamp(6)
+  created_at               DateTime?            @default(now()) @db.Timestamp(6)
+  businesses               businesses           @relation(fields: [business_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  interview_questions      interview_questions? @relation(fields: [question_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users                    users?               @relation(fields: [reviewed_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([business_id], map: "idx_voice_business")
+  @@index([question_id], map: "idx_voice_question")
+  @@index([extraction_status], map: "idx_voice_status")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model businesses {
+  id                                  Int                      @id @default(autoincrement())
+  business_type                       String                   @db.VarChar(50)
+  name                                String                   @db.VarChar(200)
+  slug                                String                   @unique @db.VarChar(250)
+  contact_name                        String?                  @db.VarChar(200)
+  contact_email                       String?                  @db.VarChar(200)
+  contact_phone                       String?                  @db.VarChar(50)
+  unique_code                         String                   @unique @db.VarChar(50)
+  portal_password                     String?                  @db.VarChar(255)
+  status                              String?                  @default("invited") @db.VarChar(50)
+  completion_percentage               Int?                     @default(0)
+  invited_by                          Int?
+  invited_at                          DateTime?                @db.Timestamp(6)
+  first_access_at                     DateTime?                @db.Timestamp(6)
+  last_activity_at                    DateTime?                @db.Timestamp(6)
+  submitted_at                        DateTime?                @db.Timestamp(6)
+  approved_at                         DateTime?                @db.Timestamp(6)
+  approved_by                         Int?
+  address                             String?
+  city                                String?                  @default("Walla Walla") @db.VarChar(100)
+  state                               String?                  @default("WA") @db.VarChar(2)
+  zip                                 String?                  @db.VarChar(10)
+  website                             String?                  @db.VarChar(500)
+  allow_ai_directory                  Boolean?                 @default(true)
+  public_profile                      Boolean?                 @default(false)
+  created_at                          DateTime?                @default(now()) @db.Timestamp(6)
+  updated_at                          DateTime?                @default(now()) @db.Timestamp(6)
+  embedding                           Unsupported("vector")?
+  price_range                         String?                  @db.VarChar(10)
+  business_activity_log               business_activity_log[]
+  business_attributes                 business_attributes[]
+  business_content                    business_content[]
+  business_discrepancies              business_discrepancies[]
+  business_files                      business_files[]
+  business_portal                     business_portal[]
+  business_text_entries               business_text_entries[]
+  business_voice_entries              business_voice_entries[]
+  users_businesses_approved_byTousers users?                   @relation("businesses_approved_byTousers", fields: [approved_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_businesses_invited_byTousers  users?                   @relation("businesses_invited_byTousers", fields: [invited_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  events                              events[]
+  processing_jobs                     processing_jobs[]
+  tour_operator_insights              tour_operator_insights[]
+
+  @@index([unique_code], map: "idx_businesses_code")
+  @@index([slug], map: "idx_businesses_slug")
+  @@index([status], map: "idx_businesses_status")
+  @@index([business_type], map: "idx_businesses_type")
 }
 
 model client_notes {
@@ -200,6 +777,65 @@ model client_services {
   @@index([time_card_id], map: "idx_client_services_time_card")
 }
 
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model commission_ledger {
+  id                                                                  String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  booking_id                                                          Int?
+  line_item_id                                                        String?             @db.Uuid
+  from_entity_id                                                      String              @db.Uuid
+  to_entity_id                                                        String              @db.Uuid
+  gross_amount                                                        Decimal             @db.Decimal(10, 2)
+  commission_rate                                                     Decimal             @db.Decimal(5, 4)
+  commission_amount                                                   Decimal             @db.Decimal(10, 2)
+  status                                                              String?             @default("pending") @db.VarChar(20)
+  paid_at                                                             DateTime?           @db.Timestamptz(6)
+  payment_reference                                                   String?             @db.VarChar(255)
+  payment_method                                                      String?             @db.VarChar(50)
+  period_start                                                        DateTime?           @db.Date
+  period_end                                                          DateTime?           @db.Date
+  notes                                                               String?
+  metadata                                                            Json?               @default("{}")
+  created_at                                                          DateTime?           @default(now()) @db.Timestamptz(6)
+  updated_at                                                          DateTime?           @default(now()) @db.Timestamptz(6)
+  bookings                                                            bookings?           @relation(fields: [booking_id], references: [id], onUpdate: NoAction)
+  service_entities_commission_ledger_from_entity_idToservice_entities service_entities    @relation("commission_ledger_from_entity_idToservice_entities", fields: [from_entity_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  booking_line_items                                                  booking_line_items? @relation(fields: [line_item_id], references: [id], onUpdate: NoAction)
+  service_entities_commission_ledger_to_entity_idToservice_entities   service_entities    @relation("commission_ledger_to_entity_idToservice_entities", fields: [to_entity_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([booking_id], map: "idx_ledger_booking")
+  @@index([from_entity_id], map: "idx_ledger_from")
+  @@index([period_start, period_end], map: "idx_ledger_period")
+  @@index([status], map: "idx_ledger_status")
+  @@index([to_entity_id], map: "idx_ledger_to")
+}
+
+model commission_rates {
+  id                                                                     String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  booking_source_id                                                      String?           @db.Uuid
+  service_type_id                                                        String?           @db.Uuid
+  provider_entity_id                                                     String?           @db.Uuid
+  referrer_entity_id                                                     String?           @db.Uuid
+  commission_rate                                                        Decimal           @db.Decimal(5, 4)
+  commission_type                                                        String?           @default("percentage") @db.VarChar(20)
+  flat_amount                                                            Decimal?          @db.Decimal(10, 2)
+  effective_from                                                         DateTime?         @default(dbgenerated("CURRENT_DATE")) @db.Date
+  effective_to                                                           DateTime?         @db.Date
+  priority                                                               Int?              @default(0)
+  is_active                                                              Boolean?          @default(true)
+  notes                                                                  String?
+  created_at                                                             DateTime?         @default(now()) @db.Timestamptz(6)
+  updated_at                                                             DateTime?         @default(now()) @db.Timestamptz(6)
+  booking_sources                                                        booking_sources?  @relation(fields: [booking_source_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  service_entities_commission_rates_provider_entity_idToservice_entities service_entities? @relation("commission_rates_provider_entity_idToservice_entities", fields: [provider_entity_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  service_entities_commission_rates_referrer_entity_idToservice_entities service_entities? @relation("commission_rates_referrer_entity_idToservice_entities", fields: [referrer_entity_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  service_types                                                          service_types?    @relation(fields: [service_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([is_active, effective_from, effective_to], map: "idx_commission_rates_active")
+  @@index([provider_entity_id], map: "idx_commission_rates_provider")
+  @@index([service_type_id], map: "idx_commission_rates_service")
+  @@index([booking_source_id], map: "idx_commission_rates_source")
+}
+
 model company_info {
   id                         Int      @id @default(autoincrement())
   company_name               String?  @default("Walla Walla Travel")
@@ -216,6 +852,65 @@ model company_info {
   operates_7_days            Boolean? @default(false)
   created_at                 DateTime @default(now()) @db.Timestamp(6)
   updated_at                 DateTime @default(now()) @db.Timestamp(6)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model compliance_violations {
+  id                                             Int       @id @default(autoincrement())
+  entity_type                                    String    @db.VarChar(20)
+  entity_id                                      Int
+  violation_type                                 String    @db.VarChar(50)
+  violation_code                                 String?   @db.VarChar(20)
+  severity                                       String?   @default("minor") @db.VarChar(20)
+  description                                    String?
+  detected_date                                  DateTime  @default(now()) @db.Timestamptz(6)
+  detected_by                                    Int?
+  detection_method                               String?   @db.VarChar(50)
+  resolved_date                                  DateTime? @db.Timestamptz(6)
+  resolved_by                                    Int?
+  resolution_notes                               String?
+  dot_inspection_number                          String?   @db.VarChar(50)
+  out_of_service                                 Boolean?  @default(false)
+  document_urls                                  String[]
+  created_at                                     DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at                                     DateTime? @default(now()) @db.Timestamptz(6)
+  users_compliance_violations_detected_byTousers users?    @relation("compliance_violations_detected_byTousers", fields: [detected_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_compliance_violations_resolved_byTousers users?    @relation("compliance_violations_resolved_byTousers", fields: [resolved_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([detected_date], map: "idx_violations_detected")
+  @@index([entity_type, entity_id], map: "idx_violations_entity")
+  @@index([severity], map: "idx_violations_severity")
+  @@index([violation_type], map: "idx_violations_type")
+}
+
+model corporate_requests {
+  id                       Int        @id @default(autoincrement())
+  request_number           String     @unique @db.VarChar(50)
+  company_name             String?    @db.VarChar(255)
+  contact_name             String     @db.VarChar(255)
+  contact_email            String     @db.VarChar(255)
+  contact_phone            String?    @db.VarChar(50)
+  party_size               Int?
+  event_type               String?    @db.VarChar(100)
+  preferred_dates          Json?
+  description              String?
+  special_requirements     String?
+  budget_range             String?    @db.VarChar(100)
+  uploaded_files           Json?      @default("[]")
+  ai_extracted_data        Json?
+  ai_confidence_score      Decimal?   @db.Decimal(3, 2)
+  status                   String?    @default("pending") @db.VarChar(50)
+  assigned_to              Int?
+  proposal_id              Int?
+  created_at               DateTime?  @default(now()) @db.Timestamp(6)
+  responded_at             DateTime?  @db.Timestamp(6)
+  converted_to_proposal_at DateTime?  @db.Timestamp(6)
+  brand_id                 Int?
+  brand_code               String?    @db.VarChar(20)
+  users                    users?     @relation(fields: [assigned_to], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  brands                   brands?    @relation(fields: [brand_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  proposals                proposals? @relation(fields: [proposal_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model customer_preferences {
@@ -264,6 +959,9 @@ model customer_tasting_notes {
   @@index([winery_id], map: "idx_tasting_notes_winery")
 }
 
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains an index with non-default null sort order and requires additional setup for migrations. Visit https://pris.ly/d/default-index-null-ordering for more info.
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model customers {
   id                      Int                      @id @default(autoincrement())
   email                   String                   @unique @db.VarChar(255)
@@ -282,14 +980,20 @@ model customers {
   created_at              DateTime                 @default(now()) @db.Timestamp(6)
   updated_at              DateTime                 @default(now()) @db.Timestamp(6)
   stripe_customer_id      String?                  @db.VarChar(100)
+  discovery_brand_id      Int?
   bookings                bookings[]
   customer_tasting_notes  customer_tasting_notes[]
+  brands                  brands?                  @relation(fields: [discovery_brand_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   lunch_orders            lunch_orders[]
   payments                payments[]
+  reservations            reservations[]
+  shared_tours_tickets    shared_tours_tickets[]
   wine_purchases          wine_purchases[]
   winery_reviews          winery_reviews[]
 
   @@index([email], map: "idx_customers_email")
+  @@index([last_booking_date(sort: Desc)], map: "idx_customers_last_booking")
+  @@index([phone], map: "idx_customers_phone")
   @@index([vip_status], map: "idx_customers_vip")
 }
 
@@ -322,38 +1026,255 @@ model daily_trips {
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model driver_documents {
+  id                                        Int       @id @default(autoincrement())
+  driver_id                                 Int
+  document_type                             String    @db.VarChar(50)
+  document_name                             String?   @db.VarChar(255)
+  document_url                              String?   @db.VarChar(500)
+  file_size_bytes                           Int?
+  mime_type                                 String?   @db.VarChar(100)
+  issue_date                                DateTime? @db.Date
+  expiry_date                               DateTime? @db.Date
+  verified_by                               Int?
+  verified_at                               DateTime? @db.Timestamptz(6)
+  verification_notes                        String?
+  status                                    String?   @default("active") @db.VarChar(20)
+  metadata                                  Json?
+  created_at                                DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at                                DateTime? @default(now()) @db.Timestamptz(6)
+  users_driver_documents_driver_idTousers   users     @relation("driver_documents_driver_idTousers", fields: [driver_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_driver_documents_verified_byTousers users?    @relation("driver_documents_verified_byTousers", fields: [verified_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([driver_id], map: "idx_driver_docs_driver")
+  @@index([status], map: "idx_driver_docs_status")
+  @@index([document_type], map: "idx_driver_docs_type")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model email_capture_attempts {
+  id                    Int       @id @default(autoincrement())
+  visitor_id            Int
+  trigger_type          String    @db.VarChar(100)
+  query_count_at_prompt Int?
+  prompted_at           DateTime  @default(now()) @db.Timestamptz(6)
+  captured              Boolean?  @default(false)
+  email                 String?   @db.VarChar(255)
+  captured_at           DateTime? @db.Timestamptz(6)
+  created_at            DateTime  @default(now()) @db.Timestamptz(6)
+  visitors              visitors  @relation(fields: [visitor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([visitor_id], map: "idx_email_capture_visitor_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model error_logs {
+  id                                  Int       @id @default(autoincrement())
+  error_id                            String    @unique @db.VarChar(50)
+  error_type                          String    @db.VarChar(100)
+  error_message                       String
+  error_stack                         String?
+  severity                            String?   @default("error") @db.VarChar(20)
+  user_id                             Int?
+  request_path                        String?   @db.VarChar(500)
+  request_method                      String?   @db.VarChar(10)
+  request_body                        Json?
+  request_headers                     Json?
+  environment                         String?   @default("production") @db.VarChar(20)
+  service_name                        String?   @db.VarChar(100)
+  hostname                            String?   @db.VarChar(255)
+  metadata                            Json?     @default("{}")
+  resolved_at                         DateTime? @db.Timestamptz(6)
+  resolved_by                         Int?
+  resolution_notes                    String?
+  created_at                          DateTime? @default(now()) @db.Timestamptz(6)
+  users_error_logs_resolved_byTousers users?    @relation("error_logs_resolved_byTousers", fields: [resolved_by], references: [id], onUpdate: NoAction)
+  users_error_logs_user_idTousers     users?    @relation("error_logs_user_idTousers", fields: [user_id], references: [id], onUpdate: NoAction)
+
+  @@index([created_at(sort: Desc)], map: "idx_error_logs_created")
+  @@index([error_id], map: "idx_error_logs_error_id")
+  @@index([severity], map: "idx_error_logs_severity")
+  @@index([error_type], map: "idx_error_logs_type")
+}
+
+model events {
+  id              Int                    @id @default(autoincrement())
+  source          String                 @default("manual") @db.VarChar(50)
+  source_url      String?                @db.VarChar(500)
+  source_id       String?                @db.VarChar(100)
+  title           String                 @db.VarChar(500)
+  slug            String?                @db.VarChar(200)
+  description     String?
+  category        String?                @db.VarChar(100)
+  tags            String[]
+  start_date      DateTime               @db.Date
+  end_date        DateTime?              @db.Date
+  start_time      DateTime?              @db.Time(6)
+  end_time        DateTime?              @db.Time(6)
+  is_all_day      Boolean?               @default(false)
+  recurrence_rule String?                @db.VarChar(255)
+  venue_name      String?                @db.VarChar(255)
+  address         String?                @db.VarChar(500)
+  latitude        Decimal?               @db.Decimal(10, 8)
+  longitude       Decimal?               @db.Decimal(11, 8)
+  is_virtual      Boolean?               @default(false)
+  virtual_url     String?                @db.VarChar(500)
+  winery_id       Int?
+  business_id     Int?
+  price_info      String?                @db.VarChar(255)
+  ticket_url      String?                @db.VarChar(500)
+  image_url       String?                @db.VarChar(500)
+  is_verified     Boolean?               @default(false)
+  is_featured     Boolean?               @default(false)
+  is_active       Boolean?               @default(true)
+  embedding       Unsupported("vector")?
+  created_at      DateTime?              @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime?              @default(now()) @db.Timestamptz(6)
+  businesses      businesses?            @relation(fields: [business_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  wineries        wineries?              @relation(fields: [winery_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([source, source_id])
+  @@index([business_id], map: "idx_events_business")
+  @@index([category], map: "idx_events_category")
+  @@index([start_date, end_date], map: "idx_events_dates")
+  @@index([winery_id], map: "idx_events_winery")
+}
+
+model financial_audit_log {
+  id                String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  action_type       String            @db.VarChar(50)
+  correlation_id    String?           @db.VarChar(100)
+  entity_type       String?           @db.VarChar(50)
+  entity_id         String?           @db.VarChar(100)
+  user_id           Int?
+  service_entity_id String?           @db.Uuid
+  amount            Decimal?          @db.Decimal(10, 2)
+  currency          String?           @default("USD") @db.VarChar(3)
+  previous_state    Json?
+  new_state         Json?
+  ip_address        String?           @db.Inet
+  user_agent        String?
+  request_path      String?           @db.VarChar(500)
+  success           Boolean?
+  error_message     String?
+  metadata          Json?             @default("{}")
+  created_at        DateTime?         @default(now()) @db.Timestamptz(6)
+  service_entities  service_entities? @relation(fields: [service_entity_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users             users?            @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([action_type], map: "idx_fin_audit_action")
+  @@index([correlation_id], map: "idx_fin_audit_correlation")
+  @@index([created_at(sort: Desc)], map: "idx_fin_audit_created")
+  @@index([entity_type, entity_id], map: "idx_fin_audit_entity")
+  @@index([user_id], map: "idx_fin_audit_user")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model hotels {
+  id               Int                @id @default(autoincrement())
+  name             String             @db.VarChar(255)
+  slug             String             @unique @db.VarChar(255)
+  address          String             @db.VarChar(500)
+  city             String?            @default("Walla Walla") @db.VarChar(100)
+  state            String?            @default("WA") @db.VarChar(2)
+  zip_code         String?            @db.VarChar(10)
+  latitude         Decimal?           @db.Decimal(10, 8)
+  longitude        Decimal?           @db.Decimal(11, 8)
+  phone            String?            @db.VarChar(20)
+  website          String?            @db.VarChar(500)
+  type             String?            @db.VarChar(50)
+  description      String?
+  amenities        String[]
+  is_active        Boolean?           @default(true)
+  display_order    Int?               @default(0)
+  created_at       DateTime?          @default(now()) @db.Timestamp(6)
+  updated_at       DateTime?          @default(now()) @db.Timestamp(6)
+  partner_profiles partner_profiles[]
+
+  @@index([is_active], map: "idx_hotels_active")
+  @@index([city], map: "idx_hotels_city")
+  @@index([slug], map: "idx_hotels_slug")
+  @@index([type], map: "idx_hotels_type")
+}
+
+model incident_fee_schedule {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  incident_type String    @db.VarChar(50)
+  severity      String?   @db.VarChar(20)
+  description   String
+  base_fee      Decimal   @db.Decimal(10, 2)
+  is_negotiable Boolean?  @default(false)
+  max_fee       Decimal?  @db.Decimal(10, 2)
+  policy_text   String?
+  is_active     Boolean?  @default(true)
+  created_at    DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@unique([incident_type, severity])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model inspections {
-  id                         Int         @id @default(autoincrement())
-  driver_id                  Int
-  vehicle_id                 Int
-  type                       String      @db.VarChar(20)
-  inspection_data            Json?
-  start_mileage              Int?
-  end_mileage                Int?
-  status                     String?     @default("pending") @db.VarChar(20)
-  issues_found               Boolean?    @default(false)
-  issues_description         String?
-  vehicle_capacity           Int?
-  passenger_area_check       Boolean?    @default(true)
-  emergency_equipment_check  Boolean?    @default(true)
-  fire_extinguisher_check    Boolean?    @default(true)
-  first_aid_kit_check        Boolean?    @default(true)
-  emergency_reflectors_check Boolean?    @default(true)
-  created_at                 DateTime    @default(now()) @db.Timestamptz(6)
-  updated_at                 DateTime    @default(now()) @db.Timestamptz(6)
-  time_card_id               Int?
-  defects_found              Boolean?    @default(false)
-  defect_severity            String?     @db.VarChar(20)
-  defect_description         String?
-  users                      users       @relation(fields: [driver_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  time_cards                 time_cards? @relation(fields: [time_card_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  vehicles                   vehicles    @relation(fields: [vehicle_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  id                                  Int         @id @default(autoincrement())
+  driver_id                           Int
+  vehicle_id                          Int
+  type                                String      @db.VarChar(20)
+  inspection_data                     Json?
+  start_mileage                       Int?
+  end_mileage                         Int?
+  status                              String?     @default("pending") @db.VarChar(20)
+  issues_found                        Boolean?    @default(false)
+  issues_description                  String?
+  vehicle_capacity                    Int?
+  passenger_area_check                Boolean?    @default(true)
+  emergency_equipment_check           Boolean?    @default(true)
+  fire_extinguisher_check             Boolean?    @default(true)
+  first_aid_kit_check                 Boolean?    @default(true)
+  emergency_reflectors_check          Boolean?    @default(true)
+  created_at                          DateTime    @default(now()) @db.Timestamptz(6)
+  updated_at                          DateTime    @default(now()) @db.Timestamptz(6)
+  time_card_id                        Int?
+  defects_found                       Boolean?    @default(false)
+  defect_severity                     String?     @db.VarChar(20)
+  defect_description                  String?
+  is_historical_entry                 Boolean?    @default(false)
+  historical_source                   String?     @db.VarChar(100)
+  entered_by                          Int?
+  entry_date                          DateTime?   @default(now()) @db.Timestamptz(6)
+  entry_notes                         String?
+  original_document_date              DateTime?   @db.Date
+  users_inspections_driver_idTousers  users       @relation("inspections_driver_idTousers", fields: [driver_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_inspections_entered_byTousers users?      @relation("inspections_entered_byTousers", fields: [entered_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  time_cards                          time_cards? @relation(fields: [time_card_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  vehicles                            vehicles    @relation(fields: [vehicle_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([created_at(sort: Desc)], map: "idx_inspections_created_at")
   @@index([driver_id], map: "idx_inspections_driver_id")
   @@index([time_card_id], map: "idx_inspections_time_card_id")
   @@index([type], map: "idx_inspections_type")
   @@index([vehicle_id], map: "idx_inspections_vehicle_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model interview_questions {
+  id                        Int                      @id @default(autoincrement())
+  business_type             String                   @db.VarChar(50)
+  question_number           Int
+  question_text             String
+  help_text                 String?
+  expected_duration_seconds Int?                     @default(60)
+  required                  Boolean?                 @default(true)
+  category                  String?                  @db.VarChar(50)
+  ai_extraction_prompt      String?
+  active                    Boolean?                 @default(true)
+  created_at                DateTime?                @default(now()) @db.Timestamp(6)
+  business_text_entries     business_text_entries[]
+  business_voice_entries    business_voice_entries[]
+
+  @@index([question_number], map: "idx_questions_number")
+  @@index([business_type], map: "idx_questions_type")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -384,22 +1305,25 @@ model invoices {
   @@index([status], map: "idx_invoices_status")
 }
 
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model itineraries {
-  id                       Int               @id @default(autoincrement())
-  booking_id               Int?
-  template_name            String?           @db.VarChar(255)
-  is_template              Boolean?          @default(false)
-  pickup_location          String?
-  pickup_time              DateTime?         @db.Time(6)
-  dropoff_location         String?
-  estimated_dropoff_time   DateTime?         @db.Time(6)
-  total_drive_time_minutes Int?
-  internal_notes           String?
-  driver_notes             String?
-  created_at               DateTime?         @default(now()) @db.Timestamp(6)
-  updated_at               DateTime?         @default(now()) @db.Timestamp(6)
-  bookings                 bookings?         @relation(fields: [booking_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  itinerary_stops          itinerary_stops[]
+  id                         Int               @id @default(autoincrement())
+  booking_id                 Int?
+  template_name              String?           @db.VarChar(255)
+  is_template                Boolean?          @default(false)
+  pickup_location            String?
+  pickup_time                DateTime?         @db.Time(6)
+  dropoff_location           String?
+  estimated_dropoff_time     DateTime?         @db.Time(6)
+  total_drive_time_minutes   Int?
+  internal_notes             String?
+  driver_notes               String?
+  created_at                 DateTime?         @default(now()) @db.Timestamp(6)
+  updated_at                 DateTime?         @default(now()) @db.Timestamp(6)
+  pickup_drive_time_minutes  Int?              @default(0)
+  dropoff_drive_time_minutes Int?              @default(0)
+  bookings                   bookings?         @relation(fields: [booking_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  itinerary_stops            itinerary_stops[]
 }
 
 model itinerary_stops {
@@ -419,7 +1343,26 @@ model itinerary_stops {
   wineries                   wineries?    @relation(fields: [winery_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([itinerary_id], map: "idx_itinerary_stops_itinerary")
+  @@index([itinerary_id, stop_order], map: "idx_itinerary_stops_order")
   @@index([winery_id], map: "idx_itinerary_stops_winery")
+  @@index([winery_id], map: "idx_itinerary_stops_winery_id")
+}
+
+model lodging_partners {
+  id                        Int       @id @default(autoincrement())
+  brand_id                  Int?
+  partner_type              String    @default("referral") @db.VarChar(50)
+  affiliate_code            String?   @db.VarChar(100)
+  affiliate_platform        String?   @db.VarChar(50)
+  referral_tracking_enabled Boolean?  @default(true)
+  commission_rate           Decimal?  @db.Decimal(5, 2)
+  property_count            Int?      @default(1)
+  property_types            String[]
+  created_at                DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at                DateTime? @default(now()) @db.Timestamptz(6)
+  brands                    brands?   @relation(fields: [brand_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([brand_id], map: "idx_lodging_partners_brand")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -526,6 +1469,7 @@ model media_usage_log {
   @@index([used_in], map: "idx_media_usage_type")
 }
 
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model monthly_exemption_status {
   id                      Int      @id @default(autoincrement())
   driver_id               Int
@@ -540,6 +1484,53 @@ model monthly_exemption_status {
 
   @@unique([driver_id, month_start_date])
   @@index([driver_id, month_start_date(sort: Desc)], map: "idx_monthly_exemption_driver")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model partner_activity_log {
+  id                 Int              @id @default(autoincrement())
+  partner_profile_id Int
+  action             String           @db.VarChar(100)
+  details            Json?
+  ip_address         String?          @db.VarChar(45)
+  created_at         DateTime         @default(now()) @db.Timestamp(6)
+  partner_profiles   partner_profiles @relation(fields: [partner_profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([created_at], map: "idx_partner_activity_created_at")
+  @@index([partner_profile_id], map: "idx_partner_activity_partner_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model partner_profiles {
+  id                                       Int                    @id @default(autoincrement())
+  user_id                                  Int                    @unique(map: "unique_partner_user")
+  business_name                            String                 @db.VarChar(255)
+  business_type                            String                 @db.VarChar(50)
+  winery_id                                Int?
+  hotel_id                                 Int?
+  restaurant_id                            Int?
+  status                                   String                 @default("pending") @db.VarChar(20)
+  invited_by                               Int?
+  invited_at                               DateTime?              @default(now()) @db.Timestamp(6)
+  setup_completed_at                       DateTime?              @db.Timestamp(6)
+  setup_token                              String?                @db.VarChar(255)
+  setup_token_expires_at                   DateTime?              @db.Timestamp(6)
+  notes                                    String?
+  created_at                               DateTime               @default(now()) @db.Timestamp(6)
+  updated_at                               DateTime               @default(now()) @db.Timestamp(6)
+  partner_activity_log                     partner_activity_log[]
+  hotels                                   hotels?                @relation(fields: [hotel_id], references: [id], onUpdate: NoAction)
+  users_partner_profiles_invited_byTousers users?                 @relation("partner_profiles_invited_byTousers", fields: [invited_by], references: [id], onUpdate: NoAction)
+  restaurants                              restaurants?           @relation(fields: [restaurant_id], references: [id], onUpdate: NoAction)
+  users_partner_profiles_user_idTousers    users                  @relation("partner_profiles_user_idTousers", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  wineries                                 wineries?              @relation(fields: [winery_id], references: [id], onUpdate: NoAction)
+
+  @@index([business_type], map: "idx_partner_profiles_business_type")
+  @@index([setup_token], map: "idx_partner_profiles_setup_token")
+  @@index([status], map: "idx_partner_profiles_status")
+  @@index([user_id], map: "idx_partner_profiles_user_id")
+  @@index([winery_id], map: "idx_partner_profiles_winery_id")
 }
 
 model payment_intents {
@@ -560,32 +1551,132 @@ model payment_intents {
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model payments {
-  id                       Int        @id @default(autoincrement())
-  booking_id               Int
+  id                       Int                 @id @default(autoincrement())
+  booking_id               Int?
   customer_id              Int?
-  amount                   Decimal    @db.Decimal(10, 2)
-  currency                 String?    @default("USD") @db.VarChar(3)
-  payment_type             String     @db.VarChar(50)
-  payment_method           String     @db.VarChar(50)
-  stripe_payment_intent_id String?    @db.VarChar(100)
-  stripe_charge_id         String?    @db.VarChar(100)
-  stripe_refund_id         String?    @db.VarChar(100)
-  card_brand               String?    @db.VarChar(20)
-  card_last4               String?    @db.VarChar(4)
-  status                   String     @default("pending") @db.VarChar(50)
+  amount                   Decimal             @db.Decimal(10, 2)
+  currency                 String?             @default("USD") @db.VarChar(3)
+  payment_type             String              @db.VarChar(50)
+  payment_method           String              @db.VarChar(50)
+  stripe_payment_intent_id String?             @db.VarChar(100)
+  stripe_charge_id         String?             @db.VarChar(100)
+  stripe_refund_id         String?             @db.VarChar(100)
+  card_brand               String?             @db.VarChar(20)
+  card_last4               String?             @db.VarChar(4)
+  status                   String              @default("pending") @db.VarChar(50)
   failure_reason           String?
-  created_at               DateTime   @default(now()) @db.Timestamp(6)
-  updated_at               DateTime   @default(now()) @db.Timestamp(6)
-  succeeded_at             DateTime?  @db.Timestamp(6)
-  failed_at                DateTime?  @db.Timestamp(6)
-  refunded_at              DateTime?  @db.Timestamp(6)
-  bookings                 bookings   @relation(fields: [booking_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  customers                customers? @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  created_at               DateTime            @default(now()) @db.Timestamp(6)
+  updated_at               DateTime            @default(now()) @db.Timestamp(6)
+  succeeded_at             DateTime?           @db.Timestamp(6)
+  failed_at                DateTime?           @db.Timestamp(6)
+  refunded_at              DateTime?           @db.Timestamp(6)
+  reservation_id           Int?
+  bookings                 bookings?           @relation(fields: [booking_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  customers                customers?          @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  reservations             reservations?       @relation(fields: [reservation_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  vehicle_incidents        vehicle_incidents[]
 
   @@index([booking_id], map: "idx_payments_booking")
+  @@index([booking_id, status], map: "idx_payments_booking_status")
+  @@index([created_at(sort: Desc), status], map: "idx_payments_created_status")
+  @@index([reservation_id], map: "idx_payments_reservation")
   @@index([status], map: "idx_payments_status")
   @@index([stripe_payment_intent_id], map: "idx_payments_stripe_intent")
+}
+
+model performance_metrics {
+  id           Int       @id @default(autoincrement())
+  metric_name  String    @db.VarChar(100)
+  metric_value Decimal   @db.Decimal(15, 4)
+  metric_unit  String?   @db.VarChar(20)
+  endpoint     String?   @db.VarChar(255)
+  method       String?   @db.VarChar(10)
+  status_code  Int?
+  user_id      Int?
+  session_id   String?   @db.VarChar(100)
+  tags         Json?     @default("{}")
+  recorded_at  DateTime? @default(now()) @db.Timestamptz(6)
+  users        users?    @relation(fields: [user_id], references: [id], onUpdate: NoAction)
+
+  @@index([endpoint], map: "idx_perf_metrics_endpoint")
+  @@index([metric_name], map: "idx_perf_metrics_name")
+  @@index([recorded_at(sort: Desc)], map: "idx_perf_metrics_recorded")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model pricing_cache {
+  id                Int       @id @default(autoincrement())
+  cache_key         String    @unique @db.VarChar(255)
+  service_type      String    @db.VarChar(50)
+  party_size        Int
+  service_date      DateTime  @db.Date
+  duration_hours    Decimal?  @db.Decimal(5, 2)
+  miles             Decimal?  @db.Decimal(8, 2)
+  base_rate         Decimal   @db.Decimal(10, 2)
+  applied_modifiers Json?
+  final_price       Decimal   @db.Decimal(10, 2)
+  breakdown         Json?
+  calculated_at     DateTime? @default(now()) @db.Timestamptz(6)
+  expires_at        DateTime  @db.Timestamptz(6)
+  hit_count         Int?      @default(0)
+
+  @@index([expires_at], map: "idx_pricing_cache_expires")
+  @@index([cache_key], map: "idx_pricing_cache_key")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model pricing_history {
+  id              Int       @id @default(autoincrement())
+  table_name      String    @db.VarChar(50)
+  record_id       Int
+  action          String    @db.VarChar(20)
+  old_values      Json?
+  new_values      Json?
+  change_summary  String?
+  changed_by      Int?
+  changed_by_name String?   @db.VarChar(255)
+  changed_at      DateTime? @default(now()) @db.Timestamptz(6)
+  change_reason   String?
+
+  @@index([changed_at], map: "idx_pricing_history_date")
+  @@index([table_name, record_id], map: "idx_pricing_history_record")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model pricing_modifiers {
+  id                       Int       @id @default(autoincrement())
+  name                     String    @db.VarChar(100)
+  description              String?
+  modifier_type            String    @db.VarChar(50)
+  value_type               String    @db.VarChar(20)
+  value                    Decimal   @db.Decimal(10, 2)
+  applies_to_service_types String[]
+  applies_to_tier_ids      Int[]
+  min_party_size           Int?
+  max_party_size           Int?
+  min_advance_days         Int?
+  min_booking_amount       Decimal?  @db.Decimal(10, 2)
+  effective_start_date     DateTime? @db.Date
+  effective_end_date       DateTime? @db.Date
+  applies_monday           Boolean?  @default(true)
+  applies_tuesday          Boolean?  @default(true)
+  applies_wednesday        Boolean?  @default(true)
+  applies_thursday         Boolean?  @default(true)
+  applies_friday           Boolean?  @default(true)
+  applies_saturday         Boolean?  @default(true)
+  applies_sunday           Boolean?  @default(true)
+  active                   Boolean?  @default(true)
+  priority                 Int?      @default(0)
+  is_stackable             Boolean?  @default(true)
+  created_at               DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at               DateTime? @default(now()) @db.Timestamptz(6)
+  created_by               Int?
+  notes                    String?
+
+  @@index([active], map: "idx_pricing_modifiers_active")
+  @@index([effective_start_date, effective_end_date], map: "idx_pricing_modifiers_dates")
 }
 
 model pricing_rules {
@@ -616,6 +1707,57 @@ model pricing_rules {
   @@index([priority(sort: Desc)], map: "idx_pricing_rules_priority")
 }
 
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model pricing_tiers {
+  id                   Int       @id @default(autoincrement())
+  service_type         String    @db.VarChar(50)
+  tier_name            String    @db.VarChar(100)
+  description          String?
+  party_size_min       Int       @default(1)
+  party_size_max       Int       @default(14)
+  day_type             String?   @db.VarChar(20)
+  season               String?   @default("standard") @db.VarChar(20)
+  pricing_model        String    @db.VarChar(20)
+  base_rate            Decimal?  @db.Decimal(10, 2)
+  hourly_rate          Decimal?  @db.Decimal(10, 2)
+  per_person_rate      Decimal?  @db.Decimal(10, 2)
+  per_mile_rate        Decimal?  @db.Decimal(10, 2)
+  minimum_charge       Decimal?  @db.Decimal(10, 2)
+  effective_start_date DateTime? @db.Date
+  effective_end_date   DateTime? @db.Date
+  active               Boolean?  @default(true)
+  priority             Int?      @default(0)
+  created_at           DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime? @default(now()) @db.Timestamptz(6)
+  created_by           Int?
+  notes                String?
+
+  @@index([effective_start_date, effective_end_date], map: "idx_pricing_tiers_dates")
+  @@index([party_size_min, party_size_max], map: "idx_pricing_tiers_party_size")
+  @@index([service_type, active], map: "idx_pricing_tiers_service")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model processing_jobs {
+  id            Int        @id @default(autoincrement())
+  business_id   Int
+  job_type      String     @db.VarChar(50)
+  source_id     Int
+  status        String?    @default("pending") @db.VarChar(50)
+  result_data   Json?
+  error_message String?
+  created_at    DateTime?  @default(now()) @db.Timestamp(6)
+  started_at    DateTime?  @db.Timestamp(6)
+  completed_at  DateTime?  @db.Timestamp(6)
+  businesses    businesses @relation(fields: [business_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([business_id], map: "idx_jobs_business")
+  @@index([created_at(sort: Desc)], map: "idx_jobs_created")
+  @@index([status], map: "idx_jobs_status")
+  @@index([job_type], map: "idx_jobs_type")
+}
+
 model proposal_activity_log {
   id            Int        @id @default(autoincrement())
   proposal_id   Int?
@@ -642,6 +1784,39 @@ model proposal_media {
   @@unique([proposal_id, media_id])
   @@index([media_id], map: "idx_proposal_media_media_id")
   @@index([proposal_id], map: "idx_proposal_media_proposal_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model proposal_text_templates {
+  id                    Int       @id @default(autoincrement())
+  template_name         String    @unique @db.VarChar(255)
+  title                 String?
+  introduction          String?
+  wine_tour_description String?
+  transfer_description  String?
+  wait_time_description String?
+  terms_and_conditions  String?
+  cancellation_policy   String?
+  footer_notes          String?
+  is_default            Boolean?  @default(false)
+  created_at            DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model proposal_versions {
+  id              Int        @id @default(autoincrement())
+  proposal_id     Int?
+  version_number  Int
+  changed_by      String?    @db.VarChar(255)
+  changed_at      DateTime?  @default(now()) @db.Timestamptz(6)
+  changes_summary String?
+  snapshot        Json?
+  proposals       proposals? @relation(fields: [proposal_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([proposal_id, version_number])
+  @@index([changed_at], map: "idx_proposal_versions_changed_at")
+  @@index([proposal_id], map: "idx_proposal_versions_proposal_id")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -680,15 +1855,110 @@ model proposals {
   sent_at                       DateTime?               @db.Timestamp(6)
   viewed_at                     DateTime?               @db.Timestamp(6)
   view_count                    Int?                    @default(0)
+  modules                       Json?                   @default("{}")
+  corporate_details             Json?
+  multi_day_itinerary           Json?
+  b2b_details                   Json?
+  special_event_details         Json?
+  group_coordination            Json?
+  accepted_by_name              String?                 @db.VarChar(255)
+  accepted_by_email             String?                 @db.VarChar(255)
+  accepted_by_phone             String?                 @db.VarChar(50)
+  final_total                   Decimal?                @db.Decimal(10, 2)
+  signature                     String?
+  signature_date                DateTime?               @db.Timestamp(6)
+  include_gratuity_request      Boolean?                @default(true)
+  suggested_gratuity_percentage Decimal?                @default(18.00) @db.Decimal(5, 2)
+  client_gratuity_amount        Decimal?                @default(0) @db.Decimal(10, 2)
+  client_gratuity_percentage    Decimal?                @db.Decimal(5, 2)
+  acceptance_step               String?                 @default("pending") @db.VarChar(50)
+  proposal_title                String?
+  introduction                  String?
+  wine_tour_description         String?
+  transfer_description          String?
+  wait_time_description         String?
+  special_notes                 String?
+  cancellation_policy           String?
+  footer_notes                  String?
+  lunch_coordination            Boolean?                @default(false)
+  lunch_coordination_count      Int?                    @default(0)
+  photography_package           Boolean?                @default(false)
+  uuid                          String?                 @unique(map: "proposals_uuid_unique") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  additional_services           Json?                   @default("[]")
+  brand_id                      Int?
+  brand_code                    String?                 @db.VarChar(20)
+  tenant_id                     Int?
+  corporate_requests            corporate_requests[]
   proposal_activity_log         proposal_activity_log[]
   proposal_media                proposal_media[]
+  proposal_versions             proposal_versions[]
+  brands                        brands?                 @relation(fields: [brand_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users                         users?                  @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tenants                       tenants?                @relation(fields: [tenant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
+  @@index([acceptance_step], map: "idx_proposals_acceptance_step")
+  @@index([brand_id], map: "idx_proposals_brand")
   @@index([client_email], map: "idx_proposals_client_email")
   @@index([created_at], map: "idx_proposals_created_at")
+  @@index([include_gratuity_request], map: "idx_proposals_include_gratuity")
+  @@index([modules], map: "idx_proposals_modules", type: Gin)
   @@index([proposal_number], map: "idx_proposals_proposal_number")
   @@index([status], map: "idx_proposals_status")
+  @@index([status, created_at(sort: Desc)], map: "idx_proposals_status_created")
+  @@index([uuid], map: "idx_proposals_uuid")
   @@index([valid_until], map: "idx_proposals_valid_until")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model rate_change_log {
+  id            Int       @id @default(autoincrement())
+  config_key    String    @db.VarChar(100)
+  old_value     Json?
+  new_value     Json
+  changed_by    String?   @db.VarChar(255)
+  change_reason String?
+  changed_at    DateTime? @default(now()) @db.Timestamp(6)
+
+  @@index([changed_at], map: "idx_rate_change_log_changed_at")
+  @@index([changed_by], map: "idx_rate_change_log_changed_by")
+  @@index([config_key], map: "idx_rate_change_log_config_key")
+  @@index([changed_at(sort: Desc)], map: "idx_rate_change_log_date")
+  @@index([config_key], map: "idx_rate_change_log_key")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model rate_config {
+  id              Int       @id @default(autoincrement())
+  config_key      String    @unique @db.VarChar(100)
+  config_value    Json
+  description     String?
+  last_updated_by String?   @db.VarChar(255)
+  updated_at      DateTime? @default(now()) @db.Timestamp(6)
+  created_at      DateTime? @default(now()) @db.Timestamp(6)
+
+  @@index([config_key], map: "idx_rate_config_key")
+}
+
+model referral_clicks {
+  id               Int       @id @default(autoincrement())
+  partner_type     String    @db.VarChar(50)
+  partner_id       Int
+  brand_id         Int?
+  click_source     String?   @db.VarChar(100)
+  utm_source       String?   @db.VarChar(100)
+  utm_medium       String?   @db.VarChar(100)
+  utm_campaign     String?   @db.VarChar(100)
+  session_id       String?   @db.VarChar(100)
+  ip_address       String?   @db.VarChar(45)
+  user_agent       String?
+  referrer_url     String?
+  converted        Boolean?  @default(false)
+  converted_at     DateTime? @db.Timestamptz(6)
+  conversion_value Decimal?  @db.Decimal(10, 2)
+  created_at       DateTime? @default(now()) @db.Timestamptz(6)
+  brands           brands?   @relation(fields: [brand_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([partner_type, partner_id], map: "idx_referral_clicks_partner")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -709,40 +1979,142 @@ model refunds {
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model reservations {
+  id                     Int        @id @default(autoincrement())
+  reservation_number     String     @unique @db.VarChar(50)
+  customer_id            Int?
+  party_size             Int
+  preferred_date         DateTime   @db.Date
+  alternate_date         DateTime?  @db.Date
+  event_type             String?    @db.VarChar(100)
+  special_requests       String?
+  deposit_amount         Decimal    @db.Decimal(10, 2)
+  deposit_paid           Boolean?   @default(false)
+  payment_method         String?    @db.VarChar(20)
+  status                 String?    @default("pending") @db.VarChar(50)
+  consultation_deadline  DateTime?  @db.Timestamp(6)
+  contacted_at           DateTime?  @db.Timestamp(6)
+  confirmed_at           DateTime?  @db.Timestamp(6)
+  booking_id             Int?
+  created_at             DateTime?  @default(now()) @db.Timestamp(6)
+  updated_at             DateTime?  @default(now()) @db.Timestamp(6)
+  brand_id               Int?
+  brand_code             String?    @db.VarChar(20)
+  specific_social_media  String?    @db.VarChar(50)
+  specific_ai            String?    @db.VarChar(50)
+  wine_tour_preference   String?    @db.VarChar(50)
+  hotel_concierge_name   String?    @db.VarChar(255)
+  referral_other_details String?
+  tour_type              String?    @default("wine_tour") @db.VarChar(50)
+  referral_source        String?    @db.VarChar(50)
+  tour_duration_type     String?    @default("single") @db.VarChar(20)
+  tour_start_date        DateTime?  @db.Date
+  tour_end_date          DateTime?  @db.Date
+  payments               payments[]
+  bookings               bookings?  @relation(fields: [booking_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  brands                 brands?    @relation(fields: [brand_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  customers              customers? @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([brand_id], map: "idx_reservations_brand")
+  @@index([created_at(sort: Desc)], map: "idx_reservations_created")
+  @@index([created_at(sort: Desc)], map: "idx_reservations_created_at")
+  @@index([customer_id], map: "idx_reservations_customer")
+  @@index([reservation_number], map: "idx_reservations_number")
+  @@index([preferred_date], map: "idx_reservations_preferred_date")
+  @@index([referral_source], map: "idx_reservations_referral_source")
+  @@index([reservation_number], map: "idx_reservations_reservation_number")
+  @@index([status], map: "idx_reservations_status")
+  @@index([tour_duration_type], map: "idx_reservations_tour_duration_type")
+  @@index([tour_end_date], map: "idx_reservations_tour_end_date")
+  @@index([tour_start_date], map: "idx_reservations_tour_start_date")
+  @@index([tour_type], map: "idx_reservations_tour_type")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model restaurants {
-  id                        Int            @id @default(autoincrement())
-  name                      String         @db.VarChar(255)
-  cuisine_type              String?        @db.VarChar(100)
-  address                   String?        @db.VarChar(500)
-  phone                     String?        @db.VarChar(20)
-  email                     String?        @db.VarChar(255)
-  website                   String?        @db.VarChar(500)
-  menu_url                  String?        @db.VarChar(500)
+  id                        Int                @id @default(autoincrement())
+  name                      String             @db.VarChar(255)
+  cuisine_type              String?            @db.VarChar(100)
+  address                   String?            @db.VarChar(500)
+  phone                     String?            @db.VarChar(20)
+  email                     String?            @db.VarChar(255)
+  website                   String?            @db.VarChar(500)
+  menu_url                  String?            @db.VarChar(500)
   menu_data                 Json?
-  accepts_pre_orders        Boolean?       @default(true)
-  minimum_order_value       Decimal?       @db.Decimal(8, 2)
-  is_partner                Boolean?       @default(false)
-  commission_rate           Decimal?       @db.Decimal(4, 2)
-  payment_terms             String?        @db.VarChar(100)
-  contact_name              String?        @db.VarChar(255)
-  contact_email             String?        @db.VarChar(255)
-  api_enabled               Boolean?       @default(false)
-  api_endpoint              String?        @db.VarChar(500)
-  api_key_encrypted         String?        @db.VarChar(500)
-  order_notification_method String?        @default("email") @db.VarChar(50)
-  average_rating            Decimal?       @db.Decimal(2, 1)
-  review_count              Int?           @default(0)
-  is_active                 Boolean?       @default(true)
-  created_at                DateTime       @default(now()) @db.Timestamp(6)
-  updated_at                DateTime       @default(now()) @db.Timestamp(6)
-  price_range               String?        @db.VarChar(20)
+  accepts_pre_orders        Boolean?           @default(true)
+  minimum_order_value       Decimal?           @db.Decimal(8, 2)
+  is_partner                Boolean?           @default(false)
+  commission_rate           Decimal?           @db.Decimal(4, 2)
+  payment_terms             String?            @db.VarChar(100)
+  contact_name              String?            @db.VarChar(255)
+  contact_email             String?            @db.VarChar(255)
+  api_enabled               Boolean?           @default(false)
+  api_endpoint              String?            @db.VarChar(500)
+  api_key_encrypted         String?            @db.VarChar(500)
+  order_notification_method String?            @default("email") @db.VarChar(50)
+  average_rating            Decimal?           @db.Decimal(2, 1)
+  review_count              Int?               @default(0)
+  is_active                 Boolean?           @default(true)
+  created_at                DateTime           @default(now()) @db.Timestamp(6)
+  updated_at                DateTime           @default(now()) @db.Timestamp(6)
+  price_range               String?            @db.VarChar(20)
   notes                     String?
-  latitude                  Decimal?       @db.Decimal(10, 7)
-  longitude                 Decimal?       @db.Decimal(10, 7)
+  latitude                  Decimal?           @db.Decimal(10, 7)
+  longitude                 Decimal?           @db.Decimal(10, 7)
   lunch_orders              lunch_orders[]
+  partner_profiles          partner_profiles[]
 
   @@index([is_active], map: "idx_restaurants_is_active")
   @@index([is_partner], map: "idx_restaurants_is_partner")
+}
+
+model service_entities {
+  id                                                                           String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code                                                                         String                @unique @db.VarChar(50)
+  legal_name                                                                   String                @db.VarChar(255)
+  display_name                                                                 String                @db.VarChar(255)
+  dba_names                                                                    String[]
+  entity_type                                                                  String?               @default("llc") @db.VarChar(50)
+  state_of_formation                                                           String?               @db.VarChar(2)
+  ein                                                                          String?               @db.VarChar(20)
+  usdot_number                                                                 String?               @db.VarChar(20)
+  mc_number                                                                    String?               @db.VarChar(20)
+  is_motor_carrier                                                             Boolean?              @default(false)
+  insurance_provider                                                           String?               @db.VarChar(255)
+  insurance_policy_number                                                      String?               @db.VarChar(100)
+  insurance_expiration                                                         DateTime?             @db.Date
+  insurance_coverage_amount                                                    Decimal?              @db.Decimal(15, 2)
+  primary_email                                                                String?               @db.VarChar(255)
+  primary_phone                                                                String?               @db.VarChar(50)
+  address_line1                                                                String?               @db.VarChar(255)
+  address_line2                                                                String?               @db.VarChar(255)
+  city                                                                         String?               @db.VarChar(100)
+  state                                                                        String?               @db.VarChar(2)
+  zip                                                                          String?               @db.VarChar(20)
+  stripe_account_id                                                            String?               @db.VarChar(255)
+  stripe_account_type                                                          String?               @db.VarChar(20)
+  default_payment_processor                                                    String?               @default("stripe") @db.VarChar(50)
+  default_commission_rate                                                      Decimal?              @default(0.15) @db.Decimal(5, 4)
+  commission_type                                                              String?               @default("percentage") @db.VarChar(20)
+  is_active                                                                    Boolean?              @default(true)
+  onboarded_at                                                                 DateTime?             @db.Timestamptz(6)
+  settings                                                                     Json?                 @default("{}")
+  metadata                                                                     Json?                 @default("{}")
+  created_at                                                                   DateTime?             @default(now()) @db.Timestamptz(6)
+  updated_at                                                                   DateTime?             @default(now()) @db.Timestamptz(6)
+  booking_line_items_booking_line_items_commission_entity_idToservice_entities booking_line_items[]  @relation("booking_line_items_commission_entity_idToservice_entities")
+  booking_line_items_booking_line_items_provider_entity_idToservice_entities   booking_line_items[]  @relation("booking_line_items_provider_entity_idToservice_entities")
+  booking_sources                                                              booking_sources[]
+  bookings_bookings_provider_entity_idToservice_entities                       bookings[]            @relation("bookings_provider_entity_idToservice_entities")
+  bookings_bookings_referrer_entity_idToservice_entities                       bookings[]            @relation("bookings_referrer_entity_idToservice_entities")
+  commission_ledger_commission_ledger_from_entity_idToservice_entities         commission_ledger[]   @relation("commission_ledger_from_entity_idToservice_entities")
+  commission_ledger_commission_ledger_to_entity_idToservice_entities           commission_ledger[]   @relation("commission_ledger_to_entity_idToservice_entities")
+  commission_rates_commission_rates_provider_entity_idToservice_entities       commission_rates[]    @relation("commission_rates_provider_entity_idToservice_entities")
+  commission_rates_commission_rates_referrer_entity_idToservice_entities       commission_rates[]    @relation("commission_rates_referrer_entity_idToservice_entities")
+  financial_audit_log                                                          financial_audit_log[]
+  service_types                                                                service_types[]
+
+  @@index([code], map: "idx_entities_code")
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -758,6 +2130,185 @@ model service_type_media {
   @@unique([service_type, media_id])
   @@index([is_default], map: "idx_service_type_media_default")
   @@index([service_type], map: "idx_service_type_media_type")
+}
+
+model service_types {
+  id                      String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code                    String               @unique @db.VarChar(50)
+  name                    String               @db.VarChar(100)
+  description             String?
+  category                String?              @db.VarChar(50)
+  default_provider_id     String?              @db.Uuid
+  default_hourly_rate     Decimal?             @db.Decimal(10, 2)
+  default_flat_rate       Decimal?             @db.Decimal(10, 2)
+  pricing_model           String?              @default("hourly") @db.VarChar(20)
+  default_commission_rate Decimal?             @db.Decimal(5, 4)
+  is_active               Boolean?             @default(true)
+  sort_order              Int?                 @default(0)
+  created_at              DateTime?            @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime?            @default(now()) @db.Timestamptz(6)
+  booking_line_items      booking_line_items[]
+  commission_rates        commission_rates[]
+  service_entities        service_entities?    @relation(fields: [default_provider_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model shared_tours {
+  id                                   Int                    @id @default(autoincrement())
+  tour_code                            String                 @unique @db.VarChar(20)
+  title                                String                 @db.VarChar(255)
+  description                          String?
+  tour_date                            DateTime               @db.Date
+  start_time                           DateTime               @db.Time(6)
+  end_time                             DateTime?              @db.Time(6)
+  duration_hours                       Decimal?               @default(6.0) @db.Decimal(4, 2)
+  max_guests                           Int                    @default(14)
+  min_guests                           Int?                   @default(2)
+  current_guests                       Int?                   @default(0)
+  price_per_person                     Decimal                @db.Decimal(10, 2)
+  deposit_per_person                   Decimal?               @db.Decimal(10, 2)
+  pickup_location                      String?
+  pickup_address                       String?                @db.VarChar(500)
+  pickup_notes                         String?
+  planned_wineries                     String[]
+  lunch_included                       Boolean?               @default(false)
+  lunch_venue                          String?                @db.VarChar(255)
+  status                               String?                @default("scheduled") @db.VarChar(20)
+  published                            Boolean?               @default(false)
+  driver_id                            Int?
+  vehicle_id                           Int?
+  notes                                String?
+  internal_notes                       String?
+  metadata                             Json?                  @default("{}")
+  created_at                           DateTime?              @default(now()) @db.Timestamptz(6)
+  updated_at                           DateTime?              @default(now()) @db.Timestamptz(6)
+  created_by                           Int?
+  users_shared_tours_created_byTousers users?                 @relation("shared_tours_created_byTousers", fields: [created_by], references: [id], onUpdate: NoAction)
+  users_shared_tours_driver_idTousers  users?                 @relation("shared_tours_driver_idTousers", fields: [driver_id], references: [id], onUpdate: NoAction)
+  vehicles                             vehicles?              @relation(fields: [vehicle_id], references: [id], onUpdate: NoAction)
+  shared_tours_tickets                 shared_tours_tickets[]
+
+  @@index([tour_code], map: "idx_shared_tours_code")
+  @@index([tour_date], map: "idx_shared_tours_date")
+  @@index([driver_id], map: "idx_shared_tours_driver")
+  @@index([status], map: "idx_shared_tours_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model shared_tours_availability {
+  id                      Int       @id @default(autoincrement())
+  start_date              DateTime  @db.Date
+  end_date                DateTime? @db.Date
+  day_of_week             Int?
+  start_time              DateTime  @db.Time(6)
+  duration_hours          Decimal?  @default(6.0) @db.Decimal(4, 2)
+  max_guests              Int?      @default(14)
+  price_per_person        Decimal   @db.Decimal(10, 2)
+  default_pickup_location String?
+  default_wineries        String[]
+  is_active               Boolean?  @default(true)
+  created_at              DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([start_date, end_date], map: "idx_shared_avail_dates")
+  @@index([day_of_week], map: "idx_shared_avail_day")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model shared_tours_tickets {
+  id                   Int          @id @default(autoincrement())
+  shared_tour_id       Int
+  customer_id          Int?
+  booking_id           Int?
+  ticket_number        String       @unique @db.VarChar(20)
+  guest_count          Int          @default(1)
+  primary_guest_name   String       @db.VarChar(255)
+  primary_guest_email  String?      @db.VarChar(255)
+  primary_guest_phone  String?      @db.VarChar(50)
+  additional_guests    Json?        @default("[]")
+  pickup_location      String?
+  pickup_address       String?      @db.VarChar(500)
+  pickup_notes         String?
+  price_per_person     Decimal      @db.Decimal(10, 2)
+  total_price          Decimal      @db.Decimal(10, 2)
+  deposit_amount       Decimal?     @db.Decimal(10, 2)
+  amount_paid          Decimal?     @default(0) @db.Decimal(10, 2)
+  payment_status       String?      @default("pending") @db.VarChar(20)
+  payment_intent_id    String?      @db.VarChar(255)
+  status               String?      @default("confirmed") @db.VarChar(20)
+  checked_in_at        DateTime?    @db.Timestamptz(6)
+  dietary_restrictions String?
+  special_requests     String?
+  notes                String?
+  metadata             Json?        @default("{}")
+  created_at           DateTime?    @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime?    @default(now()) @db.Timestamptz(6)
+  cancelled_at         DateTime?    @db.Timestamptz(6)
+  cancellation_reason  String?
+  bookings             bookings?    @relation(fields: [booking_id], references: [id], onUpdate: NoAction)
+  customers            customers?   @relation(fields: [customer_id], references: [id], onUpdate: NoAction)
+  shared_tours         shared_tours @relation(fields: [shared_tour_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([booking_id], map: "idx_tickets_booking")
+  @@index([customer_id], map: "idx_tickets_customer")
+  @@index([primary_guest_email], map: "idx_tickets_email")
+  @@index([ticket_number], map: "idx_tickets_number")
+  @@index([status], map: "idx_tickets_status")
+  @@index([shared_tour_id], map: "idx_tickets_tour")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model system_health_checks {
+  id               Int       @id @default(autoincrement())
+  check_type       String    @db.VarChar(50)
+  check_name       String    @db.VarChar(100)
+  status           String    @db.VarChar(20)
+  response_time_ms Int?
+  error_message    String?
+  metadata         Json?     @default("{}")
+  checked_at       DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([checked_at(sort: Desc)], map: "idx_health_checks_checked")
+  @@index([status], map: "idx_health_checks_status")
+  @@index([check_type], map: "idx_health_checks_type")
+}
+
+model system_settings {
+  setting_key   String    @id @db.VarChar(100)
+  setting_value Json
+  setting_type  String    @db.VarChar(50)
+  description   String?
+  updated_at    DateTime? @default(now()) @db.Timestamp(6)
+  updated_by    Int?
+  users         users?    @relation(fields: [updated_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model tenants {
+  id                Int         @id @default(autoincrement())
+  slug              String      @unique @db.VarChar(50)
+  legal_name        String      @db.VarChar(255)
+  display_name      String      @db.VarChar(255)
+  email             String?     @db.VarChar(255)
+  phone             String?     @db.VarChar(50)
+  address_line1     String?     @db.VarChar(255)
+  address_line2     String?     @db.VarChar(255)
+  city              String?     @db.VarChar(100)
+  state             String?     @db.VarChar(50)
+  zip               String?     @db.VarChar(20)
+  logo_url          String?     @db.VarChar(500)
+  primary_color     String?     @default("#1E3A5F") @db.VarChar(7)
+  secondary_color   String?     @default("#E07A5F") @db.VarChar(7)
+  stripe_account_id String?     @db.VarChar(100)
+  tax_id            String?     @db.VarChar(50)
+  is_active         Boolean?    @default(true)
+  is_platform_owner Boolean?    @default(false)
+  created_at        DateTime?   @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime?   @default(now()) @db.Timestamptz(6)
+  bookings          bookings[]
+  brands            brands[]
+  proposals         proposals[]
+  users             users[]
+  vehicles          vehicles[]
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -782,13 +2333,21 @@ model time_cards {
   created_at                                                    DateTime              @default(now()) @db.Timestamptz(6)
   updated_at                                                    DateTime              @default(now()) @db.Timestamptz(6)
   client_service_id                                             Int?
+  is_historical_entry                                           Boolean?              @default(false)
+  historical_source                                             String?               @db.VarChar(100)
+  entered_by                                                    Int?
+  entry_date                                                    DateTime?             @default(now()) @db.Timestamptz(6)
+  entry_notes                                                   String?
+  original_document_date                                        DateTime?             @db.Date
   bookings                                                      bookings[]
   client_services_client_services_time_card_idTotime_cards      client_services[]     @relation("client_services_time_card_idTotime_cards")
   daily_trips                                                   daily_trips[]
   inspections                                                   inspections[]
   client_services_time_cards_client_service_idToclient_services client_services?      @relation("time_cards_client_service_idToclient_services", fields: [client_service_id], references: [id], onUpdate: NoAction)
-  users                                                         users                 @relation(fields: [driver_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_time_cards_driver_idTousers                             users                 @relation("time_cards_driver_idTousers", fields: [driver_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_time_cards_entered_byTousers                            users?                @relation("time_cards_entered_byTousers", fields: [entered_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
   vehicles                                                      vehicles?             @relation(fields: [vehicle_id], references: [id], onUpdate: NoAction)
+  trip_distances                                                trip_distances[]
   vehicle_assignments                                           vehicle_assignments[]
 
   @@index([driver_id, date(sort: Desc)], map: "idx_time_cards_driver_date")
@@ -823,48 +2382,204 @@ model tour_offers {
   @@index([status], map: "idx_tour_offers_status")
 }
 
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model tour_operator_insights {
+  id              Int        @id @default(autoincrement())
+  business_id     Int
+  insight_type    String     @db.VarChar(50)
+  content         String
+  applies_to      String[]
+  season          String[]
+  priority        Int?       @default(5)
+  show_in_ai      Boolean?   @default(true)
+  show_in_profile Boolean?   @default(false)
+  created_by      Int?
+  created_at      DateTime?  @default(now()) @db.Timestamp(6)
+  updated_at      DateTime?  @default(now()) @db.Timestamp(6)
+  businesses      businesses @relation(fields: [business_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users           users?     @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([business_id], map: "idx_insights_business")
+  @@index([priority(sort: Desc)], map: "idx_insights_priority")
+  @@index([insight_type], map: "idx_insights_type")
+}
+
+model tour_providers {
+  id                   Int        @id @default(autoincrement())
+  brand_id             Int?
+  service_types        String[]
+  max_passengers       Int?
+  service_area         String[]
+  vehicle_count        Int?       @default(0)
+  base_hourly_rate     Decimal?   @db.Decimal(10, 2)
+  minimum_hours        Int?       @default(4)
+  advance_booking_days Int?       @default(1)
+  max_booking_days     Int?       @default(365)
+  cancellation_policy  String?
+  deposit_percentage   Decimal?   @default(25.00) @db.Decimal(5, 2)
+  created_at           DateTime?  @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime?  @default(now()) @db.Timestamptz(6)
+  bookings             bookings[]
+  brands               brands?    @relation(fields: [brand_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([brand_id], map: "idx_tour_providers_brand")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model trip_distances {
+  id                       Int        @id @default(autoincrement())
+  time_card_id             Int
+  booking_id               Int?
+  driver_id                Int
+  trip_date                DateTime   @db.Date
+  start_lat                Decimal?   @db.Decimal(10, 8)
+  start_lng                Decimal?   @db.Decimal(11, 8)
+  start_location_name      String?    @db.VarChar(255)
+  start_timestamp          DateTime?  @db.Timestamptz(6)
+  furthest_lat             Decimal?   @db.Decimal(10, 8)
+  furthest_lng             Decimal?   @db.Decimal(11, 8)
+  furthest_location_name   String?    @db.VarChar(255)
+  furthest_timestamp       DateTime?  @db.Timestamptz(6)
+  end_lat                  Decimal?   @db.Decimal(10, 8)
+  end_lng                  Decimal?   @db.Decimal(11, 8)
+  end_location_name        String?    @db.VarChar(255)
+  end_timestamp            DateTime?  @db.Timestamptz(6)
+  max_air_miles            Decimal?   @db.Decimal(6, 2)
+  exceeds_150              Boolean?   @default(dbgenerated("(max_air_miles > (150)::numeric)"))
+  returned_within_12_hours Boolean?
+  paper_log_required       Boolean?   @default(dbgenerated("(max_air_miles > (150)::numeric)"))
+  paper_log_completed      Boolean?   @default(false)
+  paper_log_url            String?    @db.VarChar(500)
+  tracking_method          String?    @default("gps") @db.VarChar(20)
+  created_at               DateTime?  @default(now()) @db.Timestamptz(6)
+  updated_at               DateTime?  @default(now()) @db.Timestamptz(6)
+  bookings                 bookings?  @relation(fields: [booking_id], references: [id], onUpdate: NoAction)
+  users                    users      @relation(fields: [driver_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  time_cards               time_cards @relation(fields: [time_card_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([driver_id, trip_date], map: "idx_trip_distances_driver_date")
+  @@index([time_card_id], map: "idx_trip_distances_time_card")
+}
+
+model user_activity_logs {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  action     String   @db.VarChar(100)
+  details    Json?
+  ip_address String?  @db.VarChar(45)
+  created_at DateTime @default(now()) @db.Timestamp(6)
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([action], map: "idx_user_activity_logs_action")
+  @@index([created_at(sort: Desc)], map: "idx_user_activity_logs_timestamp")
+  @@index([user_id], map: "idx_user_activity_logs_user")
+}
+
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model users {
-  id                                                         Int                        @id @default(autoincrement())
-  email                                                      String                     @unique @db.VarChar(255)
-  password_hash                                              String                     @db.VarChar(255)
-  name                                                       String                     @db.VarChar(255)
-  role                                                       String                     @default("driver") @db.VarChar(50)
-  is_active                                                  Boolean?                   @default(true)
-  last_login                                                 DateTime?                  @db.Timestamp(6)
-  created_at                                                 DateTime                   @default(now()) @db.Timestamp(6)
-  updated_at                                                 DateTime                   @default(now()) @db.Timestamp(6)
-  phone                                                      String?                    @db.VarChar(20)
-  emergency_contact_name                                     String?                    @db.VarChar(255)
-  emergency_contact_phone                                    String?                    @db.VarChar(20)
-  emergency_contact_relationship                             String?                    @db.VarChar(100)
-  availability_rules                                         availability_rules[]
-  booking_timeline                                           booking_timeline[]
-  bookings_bookings_booked_byTousers                         bookings[]                 @relation("bookings_booked_byTousers")
-  bookings_bookings_cancelled_byTousers                      bookings[]                 @relation("bookings_cancelled_byTousers")
-  bookings_bookings_driver_idTousers                         bookings[]                 @relation("bookings_driver_idTousers")
-  bookings_bookings_final_invoice_approved_byTousers         bookings[]                 @relation("bookings_final_invoice_approved_byTousers")
-  client_notes                                               client_notes[]
-  client_services                                            client_services[]
-  daily_trips                                                daily_trips[]
-  inspections                                                inspections[]
-  lunch_orders                                               lunch_orders[]
-  monthly_exemption_status                                   monthly_exemption_status[]
-  proposals                                                  proposals[]
-  time_cards                                                 time_cards[]
-  tour_offers_tour_offers_driver_idTousers                   tour_offers[]              @relation("tour_offers_driver_idTousers")
-  tour_offers_tour_offers_offered_byTousers                  tour_offers[]              @relation("tour_offers_offered_byTousers")
-  vehicle_assignments_vehicle_assignments_assigned_byTousers vehicle_assignments[]      @relation("vehicle_assignments_assigned_byTousers")
-  vehicle_assignments_vehicle_assignments_driver_idTousers   vehicle_assignments[]      @relation("vehicle_assignments_driver_idTousers")
-  vehicle_documents                                          vehicle_documents[]
-  vehicles_vehicles_assigned_driver_idTousers                vehicles[]                 @relation("vehicles_assigned_driver_idTousers")
-  vehicles_vehicles_defect_reported_byTousers                vehicles[]                 @relation("vehicles_defect_reported_byTousers")
-  weekly_hos                                                 weekly_hos[]
-  winery_reviews                                             winery_reviews[]
-  workflows                                                  workflows[]
+  id                                                             Int                           @id @default(autoincrement())
+  email                                                          String                        @unique @db.VarChar(255)
+  password_hash                                                  String                        @db.VarChar(255)
+  name                                                           String                        @db.VarChar(255)
+  role                                                           String                        @default("driver") @db.VarChar(50)
+  is_active                                                      Boolean?                      @default(true)
+  last_login                                                     DateTime?                     @db.Timestamp(6)
+  created_at                                                     DateTime                      @default(now()) @db.Timestamp(6)
+  updated_at                                                     DateTime                      @default(now()) @db.Timestamp(6)
+  phone                                                          String?                       @db.VarChar(20)
+  emergency_contact_name                                         String?                       @db.VarChar(255)
+  emergency_contact_phone                                        String?                       @db.VarChar(20)
+  emergency_contact_relationship                                 String?                       @db.VarChar(100)
+  tenant_id                                                      Int?
+  accessible_tenant_ids                                          Int[]
+  medical_cert_number                                            String?                       @db.VarChar(50)
+  medical_cert_expiry                                            DateTime?                     @db.Date
+  medical_cert_url                                               String?                       @db.VarChar(500)
+  medical_cert_type                                              String?                       @db.VarChar(50)
+  license_number                                                 String?                       @db.VarChar(50)
+  license_state                                                  String?                       @db.VarChar(2)
+  license_expiry                                                 DateTime?                     @db.Date
+  license_class                                                  String?                       @db.VarChar(10)
+  cdl_endorsements                                               String[]
+  hired_date                                                     DateTime?                     @db.Date
+  termination_date                                               DateTime?                     @db.Date
+  employment_status                                              String?                       @default("active") @db.VarChar(20)
+  mvr_check_date                                                 DateTime?                     @db.Date
+  mvr_check_url                                                  String?                       @db.VarChar(500)
+  background_check_date                                          DateTime?                     @db.Date
+  background_check_url                                           String?                       @db.VarChar(500)
+  road_test_date                                                 DateTime?                     @db.Date
+  road_test_url                                                  String?                       @db.VarChar(500)
+  annual_review_date                                             DateTime?                     @db.Date
+  dq_file_complete                                               Boolean?                      @default(false)
+  dq_file_notes                                                  String?
+  dq_file_last_reviewed                                          DateTime?                     @db.Date
+  dq_file_reviewed_by                                            Int?
+  ai_fine_tuning_jobs                                            ai_fine_tuning_jobs[]
+  availability_rules                                             availability_rules[]
+  booking_timeline                                               booking_timeline[]
+  bookings_bookings_booked_byTousers                             bookings[]                    @relation("bookings_booked_byTousers")
+  bookings_bookings_cancelled_byTousers                          bookings[]                    @relation("bookings_cancelled_byTousers")
+  bookings_bookings_driver_idTousers                             bookings[]                    @relation("bookings_driver_idTousers")
+  bookings_bookings_final_invoice_approved_byTousers             bookings[]                    @relation("bookings_final_invoice_approved_byTousers")
+  business_attributes                                            business_attributes[]
+  business_discrepancies                                         business_discrepancies[]
+  business_files                                                 business_files[]
+  business_portal_business_portal_invited_byTousers              business_portal[]             @relation("business_portal_invited_byTousers")
+  business_portal_business_portal_user_idTousers                 business_portal[]             @relation("business_portal_user_idTousers")
+  business_text_entries                                          business_text_entries[]
+  business_voice_entries                                         business_voice_entries[]
+  businesses_businesses_approved_byTousers                       businesses[]                  @relation("businesses_approved_byTousers")
+  businesses_businesses_invited_byTousers                        businesses[]                  @relation("businesses_invited_byTousers")
+  client_notes                                                   client_notes[]
+  client_services                                                client_services[]
+  compliance_violations_compliance_violations_detected_byTousers compliance_violations[]       @relation("compliance_violations_detected_byTousers")
+  compliance_violations_compliance_violations_resolved_byTousers compliance_violations[]       @relation("compliance_violations_resolved_byTousers")
+  corporate_requests                                             corporate_requests[]
+  daily_trips                                                    daily_trips[]
+  driver_documents_driver_documents_driver_idTousers             driver_documents[]            @relation("driver_documents_driver_idTousers")
+  driver_documents_driver_documents_verified_byTousers           driver_documents[]            @relation("driver_documents_verified_byTousers")
+  error_logs_error_logs_resolved_byTousers                       error_logs[]                  @relation("error_logs_resolved_byTousers")
+  error_logs_error_logs_user_idTousers                           error_logs[]                  @relation("error_logs_user_idTousers")
+  financial_audit_log                                            financial_audit_log[]
+  inspections_inspections_driver_idTousers                       inspections[]                 @relation("inspections_driver_idTousers")
+  inspections_inspections_entered_byTousers                      inspections[]                 @relation("inspections_entered_byTousers")
+  lunch_orders                                                   lunch_orders[]
+  monthly_exemption_status                                       monthly_exemption_status[]
+  partner_profiles_partner_profiles_invited_byTousers            partner_profiles[]            @relation("partner_profiles_invited_byTousers")
+  partner_profiles_partner_profiles_user_idTousers               partner_profiles?             @relation("partner_profiles_user_idTousers")
+  performance_metrics                                            performance_metrics[]
+  proposals                                                      proposals[]
+  shared_tours_shared_tours_created_byTousers                    shared_tours[]                @relation("shared_tours_created_byTousers")
+  shared_tours_shared_tours_driver_idTousers                     shared_tours[]                @relation("shared_tours_driver_idTousers")
+  system_settings                                                system_settings[]
+  time_cards_time_cards_driver_idTousers                         time_cards[]                  @relation("time_cards_driver_idTousers")
+  time_cards_time_cards_entered_byTousers                        time_cards[]                  @relation("time_cards_entered_byTousers")
+  tour_offers_tour_offers_driver_idTousers                       tour_offers[]                 @relation("tour_offers_driver_idTousers")
+  tour_offers_tour_offers_offered_byTousers                      tour_offers[]                 @relation("tour_offers_offered_byTousers")
+  tour_operator_insights                                         tour_operator_insights[]
+  trip_distances                                                 trip_distances[]
+  user_activity_logs                                             user_activity_logs[]
+  users                                                          users?                        @relation("usersTousers", fields: [dq_file_reviewed_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  other_users                                                    users[]                       @relation("usersTousers")
+  tenants                                                        tenants?                      @relation(fields: [tenant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  vehicle_assignments_vehicle_assignments_assigned_byTousers     vehicle_assignments[]         @relation("vehicle_assignments_assigned_byTousers")
+  vehicle_assignments_vehicle_assignments_driver_idTousers       vehicle_assignments[]         @relation("vehicle_assignments_driver_idTousers")
+  vehicle_availability_blocks                                    vehicle_availability_blocks[]
+  vehicle_documents                                              vehicle_documents[]
+  vehicle_incidents_vehicle_incidents_driver_idTousers           vehicle_incidents[]           @relation("vehicle_incidents_driver_idTousers")
+  vehicle_incidents_vehicle_incidents_reported_byTousers         vehicle_incidents[]           @relation("vehicle_incidents_reported_byTousers")
+  vehicle_incidents_vehicle_incidents_resolved_byTousers         vehicle_incidents[]           @relation("vehicle_incidents_resolved_byTousers")
+  vehicles_vehicles_assigned_driver_idTousers                    vehicles[]                    @relation("vehicles_assigned_driver_idTousers")
+  vehicles_vehicles_defect_reported_byTousers                    vehicles[]                    @relation("vehicles_defect_reported_byTousers")
+  weekly_hos                                                     weekly_hos[]
+  winery_reviews                                                 winery_reviews[]
+  workflows                                                      workflows[]
 
   @@index([email], map: "idx_users_email")
   @@index([role], map: "idx_users_role")
+  @@index([tenant_id], map: "idx_users_tenant")
 }
 
 model vehicle_assignments {
@@ -890,6 +2605,31 @@ model vehicle_assignments {
   @@index([vehicle_id, created_at(sort: Desc)], map: "idx_vehicle_assignments_vehicle")
 }
 
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This table contains exclusion constraints and requires additional setup for migrations. Visit https://pris.ly/d/exclusion-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model vehicle_availability_blocks {
+  id         Int       @id @default(autoincrement())
+  vehicle_id Int
+  block_date DateTime  @db.Date
+  start_time DateTime  @db.Time(6)
+  end_time   DateTime  @db.Time(6)
+  block_type String    @default("booking") @db.VarChar(20)
+  booking_id Int?
+  brand_id   Int?
+  created_by Int?
+  notes      String?
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at DateTime? @default(now()) @db.Timestamptz(6)
+  bookings   bookings? @relation(fields: [booking_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  brands     brands?   @relation(fields: [brand_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users      users?    @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  vehicles   vehicles  @relation(fields: [vehicle_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([brand_id], map: "idx_availability_brand")
+  @@index([vehicle_id, block_date], map: "idx_availability_vehicle_date")
+}
+
 model vehicle_documents {
   id            Int       @id @default(autoincrement())
   vehicle_id    Int
@@ -907,6 +2647,45 @@ model vehicle_documents {
   @@index([is_active], map: "idx_vehicle_documents_active")
   @@index([document_type], map: "idx_vehicle_documents_type")
   @@index([vehicle_id], map: "idx_vehicle_documents_vehicle_id")
+}
+
+model vehicle_incidents {
+  id                                         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  vehicle_id                                 Int
+  booking_id                                 Int?
+  driver_id                                  Int?
+  reported_by                                Int?
+  incident_type                              String    @db.VarChar(50)
+  incident_date                              DateTime? @default(now()) @db.Timestamptz(6)
+  description                                String
+  location                                   String?   @db.VarChar(255)
+  severity                                   String?   @default("minor") @db.VarChar(20)
+  fee_amount                                 Decimal?  @db.Decimal(10, 2)
+  repair_cost                                Decimal?  @db.Decimal(10, 2)
+  total_charged                              Decimal?  @db.Decimal(10, 2)
+  charged_to_customer                        Boolean?  @default(false)
+  charge_status                              String?   @default("pending") @db.VarChar(20)
+  payment_id                                 Int?
+  photos                                     String[]
+  documents                                  String[]
+  resolved_at                                DateTime? @db.Timestamptz(6)
+  resolved_by                                Int?
+  resolution_notes                           String?
+  metadata                                   Json?     @default("{}")
+  created_at                                 DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at                                 DateTime? @default(now()) @db.Timestamptz(6)
+  bookings                                   bookings? @relation(fields: [booking_id], references: [id], onUpdate: NoAction)
+  users_vehicle_incidents_driver_idTousers   users?    @relation("vehicle_incidents_driver_idTousers", fields: [driver_id], references: [id], onUpdate: NoAction)
+  payments                                   payments? @relation(fields: [payment_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_vehicle_incidents_reported_byTousers users?    @relation("vehicle_incidents_reported_byTousers", fields: [reported_by], references: [id], onUpdate: NoAction)
+  users_vehicle_incidents_resolved_byTousers users?    @relation("vehicle_incidents_resolved_byTousers", fields: [resolved_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  vehicles                                   vehicles  @relation(fields: [vehicle_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([booking_id], map: "idx_incidents_booking")
+  @@index([incident_date(sort: Desc)], map: "idx_incidents_date")
+  @@index([charge_status], map: "idx_incidents_status")
+  @@index([incident_type], map: "idx_incidents_type")
+  @@index([vehicle_id], map: "idx_incidents_vehicle")
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -927,38 +2706,135 @@ model vehicle_media {
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model vehicles {
-  id                                       Int                   @id @default(autoincrement())
-  vehicle_number                           String                @db.VarChar(50)
-  make                                     String?               @db.VarChar(100)
-  model                                    String?               @db.VarChar(100)
+  id                                       Int                           @id @default(autoincrement())
+  vehicle_number                           String                        @db.VarChar(50)
+  make                                     String?                       @db.VarChar(100)
+  model                                    String?                       @db.VarChar(100)
   year                                     Int?
-  vin                                      String?               @db.VarChar(17)
-  license_plate                            String?               @db.VarChar(20)
+  vin                                      String?                       @db.VarChar(17)
+  license_plate                            String?                       @db.VarChar(20)
   capacity                                 Int?
-  vehicle_type                             String?               @default("passenger_van") @db.VarChar(50)
-  is_active                                Boolean?              @default(true)
-  created_at                               DateTime              @default(now()) @db.Timestamp(6)
-  updated_at                               DateTime              @default(now()) @db.Timestamp(6)
+  vehicle_type                             String?                       @default("passenger_van") @db.VarChar(50)
+  is_active                                Boolean?                      @default(true)
+  created_at                               DateTime                      @default(now()) @db.Timestamp(6)
+  updated_at                               DateTime                      @default(now()) @db.Timestamp(6)
   assigned_driver_id                       Int?
-  status                                   String?               @default("available") @db.VarChar(50)
+  status                                   String?                       @default("available") @db.VarChar(50)
   defect_notes                             String?
-  defect_reported_at                       DateTime?             @db.Timestamptz(6)
+  defect_reported_at                       DateTime?                     @db.Timestamptz(6)
   defect_reported_by                       Int?
+  tenant_id                                Int?
+  primary_brand_id                         Int?
+  available_to_all_brands                  Boolean?                      @default(true)
+  registration_number                      String?                       @db.VarChar(50)
+  registration_state                       String?                       @db.VarChar(2)
+  registration_expiry                      DateTime?                     @db.Date
+  insurance_policy_number                  String?                       @db.VarChar(100)
+  insurance_carrier                        String?                       @db.VarChar(100)
+  insurance_expiry                         DateTime?                     @db.Date
+  mc_number                                String?                       @db.VarChar(20)
+  usdot_number                             String?                       @db.VarChar(20)
+  dot_registration_date                    DateTime?                     @db.Date
+  max_passengers                           Int?
+  is_dot_compliant                         Boolean?                      @default(false)
+  dot_compliance_notes                     String?
+  last_dot_inspection                      DateTime?                     @db.Date
   bookings                                 bookings[]
   client_services                          client_services[]
   daily_trips                              daily_trips[]
   inspections                              inspections[]
+  shared_tours                             shared_tours[]
   time_cards                               time_cards[]
   tour_offers                              tour_offers[]
   vehicle_assignments                      vehicle_assignments[]
+  vehicle_availability_blocks              vehicle_availability_blocks[]
   vehicle_documents                        vehicle_documents[]
+  vehicle_incidents                        vehicle_incidents[]
   vehicle_media                            vehicle_media[]
-  users_vehicles_assigned_driver_idTousers users?                @relation("vehicles_assigned_driver_idTousers", fields: [assigned_driver_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  users_vehicles_defect_reported_byTousers users?                @relation("vehicles_defect_reported_byTousers", fields: [defect_reported_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_vehicles_assigned_driver_idTousers users?                        @relation("vehicles_assigned_driver_idTousers", fields: [assigned_driver_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_vehicles_defect_reported_byTousers users?                        @relation("vehicles_defect_reported_byTousers", fields: [defect_reported_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  brands                                   brands?                       @relation(fields: [primary_brand_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tenants                                  tenants?                      @relation(fields: [tenant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
+  @@index([primary_brand_id], map: "idx_vehicles_brand")
+  @@index([is_dot_compliant], map: "idx_vehicles_dot_compliant")
   @@index([is_active], map: "idx_vehicles_is_active")
   @@index([vehicle_number], map: "idx_vehicles_vehicle_number")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model visitor_sessions {
+  id               Int       @id @default(autoincrement())
+  visitor_id       Int
+  session_uuid     String    @unique @db.Uuid
+  started_at       DateTime  @default(now()) @db.Timestamptz(6)
+  ended_at         DateTime? @db.Timestamptz(6)
+  duration_seconds Int?
+  pages_viewed     Int?      @default(0)
+  queries_count    Int?      @default(0)
+  device_type      String?   @db.VarChar(50)
+  user_agent       String?
+  ip_address       String?   @db.Inet
+  created_at       DateTime  @default(now()) @db.Timestamptz(6)
+  visitors         visitors  @relation(fields: [visitor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([session_uuid], map: "idx_visitor_sessions_uuid")
+  @@index([visitor_id], map: "idx_visitor_sessions_visitor_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model visitors {
+  id                     Int                      @id @default(autoincrement())
+  visitor_uuid           String                   @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email                  String?                  @unique @db.VarChar(255)
+  name                   String?                  @db.VarChar(255)
+  phone                  String?                  @db.VarChar(50)
+  first_visit_at         DateTime                 @default(now()) @db.Timestamptz(6)
+  last_visit_at          DateTime                 @default(now()) @db.Timestamptz(6)
+  visit_count            Int                      @default(1)
+  total_queries          Int                      @default(0)
+  referral_source        String?                  @db.VarChar(255)
+  utm_source             String?                  @db.VarChar(100)
+  utm_medium             String?                  @db.VarChar(100)
+  utm_campaign           String?                  @db.VarChar(100)
+  landing_page           String?
+  user_agent             String?
+  device_type            String?                  @db.VarChar(50)
+  browser                String?                  @db.VarChar(50)
+  os                     String?                  @db.VarChar(50)
+  converted_to_booking   Boolean?                 @default(false)
+  first_booking_id       Int?
+  total_bookings         Int?                     @default(0)
+  total_revenue          Decimal?                 @default(0) @db.Decimal(10, 2)
+  preferences            Json?                    @default("{}")
+  gdpr_consent           Boolean?                 @default(false)
+  marketing_consent      Boolean?                 @default(false)
+  created_at             DateTime                 @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime                 @default(now()) @db.Timestamptz(6)
+  ai_queries             ai_queries[]
+  email_capture_attempts email_capture_attempts[]
+  visitor_sessions       visitor_sessions[]
+  bookings               bookings?                @relation(fields: [first_booking_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([created_at(sort: Desc)], map: "idx_visitors_created")
+  @@index([last_visit_at], map: "idx_visitors_last_visit")
+  @@index([visitor_uuid], map: "idx_visitors_uuid")
+}
+
+model voice_transcriptions {
+  id                     Int       @id @default(autoincrement())
+  session_id             String    @db.VarChar(255)
+  user_id                Int?
+  audio_duration_seconds Decimal?  @db.Decimal(10, 3)
+  transcript             String
+  confidence             Decimal?  @db.Decimal(5, 4)
+  api_cost               Decimal?  @db.Decimal(10, 6)
+  created_at             DateTime? @default(now()) @db.Timestamp(6)
+
+  @@index([created_at(sort: Desc)], map: "idx_voice_date")
+  @@index([session_id], map: "idx_voice_session")
 }
 
 model weekly_hos {
@@ -1010,6 +2886,7 @@ model wine_purchases {
   @@index([tracking_number], map: "idx_wine_purchases_tracking")
 }
 
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model wineries {
   id                               Int                      @id @default(autoincrement())
   name                             String                   @db.VarChar(255)
@@ -1065,16 +2942,58 @@ model wineries {
   display_order                    Int?
   created_at                       DateTime                 @default(now()) @db.Timestamp(6)
   updated_at                       DateTime                 @default(now()) @db.Timestamp(6)
+  ava                              String?                  @db.VarChar(100)
+  embedding                        Unsupported("vector")?
+  walk_ins_welcome                 Boolean?                 @default(true)
+  annual_production_cases          Int?
+  vineyard_acres                   Decimal?                 @db.Decimal(10, 2)
   booking_wineries                 booking_wineries[]
   customer_tasting_notes           customer_tasting_notes[]
+  events                           events[]
   itinerary_stops                  itinerary_stops[]
+  partner_profiles                 partner_profiles[]
   wine_purchases                   wine_purchases[]
+  winery_content                   winery_content[]
+  winery_faqs                      winery_faqs[]
   winery_media                     winery_media[]
+  winery_people                    winery_people[]
   winery_reviews                   winery_reviews[]
+  wines                            wines[]
 
   @@index([is_active], map: "idx_wineries_active")
+  @@index([is_active, is_featured], map: "idx_wineries_active_featured")
+  @@index([ava], map: "idx_wineries_ava")
   @@index([is_featured], map: "idx_wineries_featured")
   @@index([slug], map: "idx_wineries_slug")
+}
+
+model winery_content {
+  id           Int                    @id @default(autoincrement())
+  winery_id    Int?
+  content_type String                 @db.VarChar(50)
+  title        String?                @db.VarChar(255)
+  content      String
+  metadata     Json?
+  embedding    Unsupported("vector")?
+  created_at   DateTime?              @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime?              @default(now()) @db.Timestamptz(6)
+  wineries     wineries?              @relation(fields: [winery_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([content_type], map: "idx_winery_content_type")
+  @@index([winery_id], map: "idx_winery_content_winery")
+}
+
+model winery_faqs {
+  id         Int                    @id @default(autoincrement())
+  winery_id  Int?
+  question   String
+  answer     String
+  category   String?                @db.VarChar(100)
+  embedding  Unsupported("vector")?
+  created_at DateTime?              @default(now()) @db.Timestamptz(6)
+  wineries   wineries?              @relation(fields: [winery_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([winery_id], map: "idx_winery_faqs_winery")
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -1093,6 +3012,21 @@ model winery_media {
   @@index([media_id], map: "idx_winery_media_media")
   @@index([is_primary], map: "idx_winery_media_primary")
   @@index([winery_id], map: "idx_winery_media_winery")
+}
+
+model winery_people {
+  id         Int                    @id @default(autoincrement())
+  winery_id  Int?
+  name       String                 @db.VarChar(255)
+  role       String                 @db.VarChar(100)
+  bio        String?
+  photo_url  String?                @db.VarChar(500)
+  email      String?                @db.VarChar(255)
+  embedding  Unsupported("vector")?
+  created_at DateTime?              @default(now()) @db.Timestamptz(6)
+  wineries   wineries?              @relation(fields: [winery_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([winery_id], map: "idx_winery_people_winery")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1123,6 +3057,65 @@ model winery_reviews {
 
   @@index([is_approved], map: "idx_winery_reviews_approved")
   @@index([winery_id], map: "idx_winery_reviews_winery")
+}
+
+model wines {
+  id                     Int                    @id @default(autoincrement())
+  winery_id              Int?
+  name                   String                 @db.VarChar(255)
+  vintage                Int?
+  slug                   String?                @db.VarChar(150)
+  status                 String?                @default("current_release") @db.VarChar(50)
+  is_club_exclusive      Boolean?               @default(false)
+  is_featured            Boolean?               @default(false)
+  varietals              Json?
+  vineyard_sources       Json?
+  ava                    String?                @db.VarChar(100)
+  elevation_feet         Int?
+  soil_type              String?                @db.VarChar(255)
+  vine_age_years         Int?
+  yield_tons_per_acre    Decimal?               @db.Decimal(4, 2)
+  harvest_date           DateTime?              @db.Date
+  harvest_method         String?                @db.VarChar(50)
+  fermentation_vessel    String?                @db.VarChar(100)
+  fermentation_days      Int?
+  malolactic             Boolean?
+  oak_treatment          Json?
+  aging_months           Int?
+  bottling_date          DateTime?              @db.Date
+  cases_produced         Int?
+  official_tasting_notes String?
+  aroma_profile          Json?
+  palate_profile         Json?
+  food_pairings          String[]
+  serving_temp_f_low     Int?
+  serving_temp_f_high    Int?
+  decant_time_minutes    Int?
+  drink_window_start     Int?
+  drink_window_end       Int?
+  aging_potential        String?                @db.VarChar(100)
+  alcohol_pct            Decimal?               @db.Decimal(4, 2)
+  ph                     Decimal?               @db.Decimal(3, 2)
+  ta                     Decimal?               @db.Decimal(4, 2)
+  rs                     Decimal?               @db.Decimal(5, 2)
+  price                  Decimal?               @db.Decimal(10, 2)
+  club_price             Decimal?               @db.Decimal(10, 2)
+  awards                 Json?
+  ratings                Json?
+  vintage_story          String?
+  winemaker_notes        String?
+  label_story            String?
+  bottle_image_url       String?                @db.VarChar(500)
+  label_image_url        String?                @db.VarChar(500)
+  embedding              Unsupported("vector")?
+  created_at             DateTime?              @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime?              @default(now()) @db.Timestamptz(6)
+  wineries               wineries?              @relation(fields: [winery_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([winery_id, name, vintage])
+  @@index([status], map: "idx_wines_status")
+  @@index([vintage], map: "idx_wines_vintage")
+  @@index([winery_id], map: "idx_wines_winery")
 }
 
 model workflows {

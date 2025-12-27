@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useBookingTracking } from '@/lib/hooks/useBookingTracking';
 
 /**
  * Book a Tour - Entry Point
@@ -88,6 +89,14 @@ export default function BookTourPage() {
   const [additionalServices, setAdditionalServices] = useState<ServiceItem[]>([createNewService()]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [confirmationData, setConfirmationData] = useState<{
+    reservationNumber: string;
+    providerName: string;
+    customerName: string;
+    email: string;
+    tourDays: TourDay[];
+    estimatedTotal: string;
+  } | null>(null);
   const [formData, setFormData] = useState({
     tourType: 'wine_tour',
     name: '',
@@ -97,9 +106,40 @@ export default function BookTourPage() {
     textConsent: true, // Pre-filled checkbox for text communications
   });
 
+  // Booking tracking
+  const { trackBookingProgress, trackBookingStarted, trackPageView } = useBookingTracking();
+
+  // Track page view on mount
+  useEffect(() => {
+    trackPageView('/book', 'Book a Tour');
+  }, [trackPageView]);
+
+  // Track step changes and form progress
+  useEffect(() => {
+    const stepNames = ['provider_selection', 'tour_details', 'contact_info'];
+    const stepName = stepNames[step - 1] || 'unknown';
+
+    trackBookingProgress({
+      stepReached: stepName,
+      email: formData.email || undefined,
+      name: formData.name || undefined,
+      phone: formData.phone || undefined,
+      tourDate: tourDays[0]?.date || undefined,
+      partySize: typeof tourDays[0]?.guests === 'number' ? tourDays[0].guests : undefined,
+      durationHours: tourDays[0]?.hours || undefined,
+      formData: {
+        tourType: formData.tourType,
+        provider: selectedProvider,
+        tourDaysCount: tourDays.length,
+      },
+    });
+  }, [step, formData.email, formData.name, formData.phone, tourDays, selectedProvider, trackBookingProgress, formData.tourType]);
+
   const handleProviderSelect = (providerId: string) => {
     setSelectedProvider(providerId);
     setStep(2);
+    // Track that user started booking flow
+    trackBookingStarted();
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -195,6 +235,28 @@ export default function BookTourPage() {
       }
 
       console.log('Booking Request Created:', result);
+
+      // Track successful submission
+      trackBookingProgress({
+        stepReached: 'completed',
+        email: formData.email,
+        name: formData.name,
+        phone: formData.phone,
+        tourDate: tourDays[0]?.date || undefined,
+        partySize: typeof tourDays[0]?.guests === 'number' ? tourDays[0].guests : undefined,
+        durationHours: tourDays[0]?.hours || undefined,
+      });
+
+      setConfirmationData({
+        reservationNumber: result.reservationNumber,
+        providerName: selectedProviderData.name,
+        customerName: formData.name,
+        email: formData.email,
+        tourDays: tourDays,
+        estimatedTotal: tourDays.some(d => d.guests === 'large')
+          ? 'Quote pending'
+          : `$${calculateTotalPrice()}`,
+      });
       setSubmitStatus('success');
     } catch (error) {
       console.error('Booking error:', error);
@@ -223,6 +285,153 @@ export default function BookTourPage() {
     const [year, month, day] = dateString.split('-');
     return `${month}/${day}/${year}`;
   };
+
+  // Show full-page confirmation after successful submission
+  if (submitStatus === 'success' && confirmationData) {
+    return (
+      <div className="min-h-screen bg-slate-50">
+        {/* Simple Header */}
+        <header className="bg-white border-b border-slate-200 py-4">
+          <div className="max-w-3xl mx-auto px-4 flex items-center justify-center">
+            <Link href="/" className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-[#E07A5F] rounded flex items-center justify-center">
+                <span className="text-white text-sm font-bold">W</span>
+              </div>
+              <span className="font-medium text-slate-900">Walla Walla Travel</span>
+            </Link>
+          </div>
+        </header>
+
+        {/* Confirmation Content */}
+        <main className="max-w-2xl mx-auto px-4 py-12">
+          <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+            {/* Success Header */}
+            <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 px-8 py-10 text-center">
+              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-9 h-9 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h1 className="text-2xl font-bold text-white mb-2">Request Submitted!</h1>
+              <p className="text-emerald-100">We'll be in touch within 24 hours</p>
+            </div>
+
+            {/* Confirmation Details */}
+            <div className="px-8 py-8 space-y-6">
+              {/* Reference Number */}
+              <div className="text-center pb-6 border-b border-slate-200">
+                <p className="text-sm text-slate-500 mb-1">Reference Number</p>
+                <p className="text-2xl font-bold text-slate-900 tracking-wide">{confirmationData.reservationNumber}</p>
+              </div>
+
+              {/* Booking Summary */}
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-600">Provider</span>
+                  <span className="font-semibold text-slate-900">{confirmationData.providerName}</span>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-600">Name</span>
+                  <span className="font-semibold text-slate-900">{confirmationData.customerName}</span>
+                </div>
+
+                {confirmationData.tourDays.map((day, index) => (
+                  <div key={day.id} className={confirmationData.tourDays.length > 1 ? 'pt-3 border-t border-slate-100' : ''}>
+                    {confirmationData.tourDays.length > 1 && (
+                      <p className="text-xs font-semibold text-slate-400 mb-2">DAY {index + 1}</p>
+                    )}
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-600">Date</span>
+                      <span className="font-semibold text-slate-900">{formatDate(day.date)}</span>
+                    </div>
+                    <div className="flex justify-between items-center mt-2">
+                      <span className="text-slate-600">Duration</span>
+                      <span className="font-semibold text-slate-900">{day.hours} hours</span>
+                    </div>
+                    <div className="flex justify-between items-center mt-2">
+                      <span className="text-slate-600">Guests</span>
+                      <span className="font-semibold text-slate-900">
+                        {day.guests === 'large' ? `Large Group (~${day.largeGroupSize})` : day.guests}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+
+                <div className="flex justify-between items-center pt-4 border-t border-slate-200">
+                  <span className="font-medium text-slate-700">Estimated Total</span>
+                  <span className="text-xl font-bold text-slate-900">{confirmationData.estimatedTotal}</span>
+                </div>
+              </div>
+
+              {/* What's Next */}
+              <div className="bg-emerald-50 rounded-xl p-6 mt-6">
+                <h3 className="font-semibold text-emerald-800 mb-3">What's Next?</h3>
+                <ul className="space-y-2 text-sm text-emerald-700">
+                  <li className="flex items-start gap-2">
+                    <span className="text-emerald-500 mt-0.5">1.</span>
+                    <span>We'll review your request and check availability</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-emerald-500 mt-0.5">2.</span>
+                    <span>You'll receive a follow-up email or call within 24 hours</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-emerald-500 mt-0.5">3.</span>
+                    <span>Once confirmed, we'll send deposit payment instructions</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-emerald-500 mt-0.5">4.</span>
+                    <span>Your date will be officially held once deposit is received</span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Email Confirmation Note */}
+              <div className="text-center text-sm text-slate-500 pt-4 border-t border-slate-100">
+                <p>A confirmation email has been sent to</p>
+                <p className="font-medium text-slate-700">{confirmationData.email}</p>
+              </div>
+
+              {/* Contact Info */}
+              <div className="text-center pt-4">
+                <p className="text-sm text-slate-500 mb-2">Questions? We're here to help!</p>
+                <p className="text-sm">
+                  <a href="mailto:info@nwtouring.com" className="text-emerald-600 hover:text-emerald-700 font-medium">info@nwtouring.com</a>
+                  <span className="text-slate-300 mx-2">|</span>
+                  <a href="tel:+15095403600" className="text-emerald-600 hover:text-emerald-700 font-medium">(509) 540-3600</a>
+                </p>
+              </div>
+
+              {/* Book Another Tour Button */}
+              <div className="text-center pt-4">
+                <button
+                  onClick={() => {
+                    setSubmitStatus('idle');
+                    setConfirmationData(null);
+                    setStep(1);
+                    setSelectedProvider(null);
+                    setTourDays([createNewDay()]);
+                    setFormData({
+                      tourType: 'wine_tour',
+                      name: '',
+                      email: '',
+                      phone: '',
+                      notes: '',
+                      textConsent: true,
+                    });
+                  }}
+                  className="text-sm text-slate-500 hover:text-slate-700 underline"
+                >
+                  Book another tour
+                </button>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -703,54 +912,40 @@ export default function BookTourPage() {
                 </div>
               </div>
 
-              {submitStatus === 'success' ? (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-                  <svg className="w-12 h-12 text-green-500 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <h3 className="text-lg font-semibold text-green-800 mb-1">Request Submitted!</h3>
-                  <p className="text-sm text-green-700">
-                    We've received your booking request. You'll receive a confirmation email at {formData.email} shortly.
-                  </p>
+              {submitStatus === 'error' && (
+                <div className="text-sm text-red-600 mb-4 text-center">
+                  Something went wrong. Please try again.
                 </div>
-              ) : (
-                <>
-                  {submitStatus === 'error' && (
-                    <div className="text-sm text-red-600 mb-4 text-center">
-                      Something went wrong. Please try again.
-                    </div>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={handleSubmit}
-                    disabled={!formData.name || !formData.email || isSubmitting}
-                    className="w-full py-3 rounded-lg text-white font-semibold transition-colors disabled:bg-slate-300 bg-[#E07A5F] hover:bg-[#d06a4f]"
-                  >
-                    {isSubmitting ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                        </svg>
-                        Submitting...
-                      </span>
-                    ) : (
-                      'Request Booking'
-                    )}
-                  </button>
-
-                  <p className="text-xs text-slate-500 text-center">
-                    By submitting, you agree to our terms of service.
-                    We'll confirm availability and send you a quote.
-                  </p>
-                  <p className="text-xs text-slate-400 text-center mt-3">
-                    Questions? <a href="mailto:info@nwtouring.com" className="underline hover:text-slate-600">info@nwtouring.com</a>
-                    {' '}&bull;{' '}
-                    <a href="tel:+15095403600" className="underline hover:text-slate-600">(509) 540-3600</a>
-                  </p>
-                </>
               )}
+
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={!formData.name || !formData.email || isSubmitting}
+                className="w-full py-3 rounded-lg text-white font-semibold transition-colors disabled:bg-slate-300 bg-[#E07A5F] hover:bg-[#d06a4f]"
+              >
+                {isSubmitting ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Submitting...
+                  </span>
+                ) : (
+                  'Request Booking'
+                )}
+              </button>
+
+              <p className="text-xs text-slate-500 text-center">
+                By submitting, you agree to our terms of service.
+                We'll confirm availability and send you a quote.
+              </p>
+              <p className="text-xs text-slate-400 text-center mt-3">
+                Questions? <a href="mailto:info@nwtouring.com" className="underline hover:text-slate-600">info@nwtouring.com</a>
+                {' '}&bull;{' '}
+                <a href="tel:+15095403600" className="underline hover:text-slate-600">(509) 540-3600</a>
+              </p>
             </div>
           </div>
         )}

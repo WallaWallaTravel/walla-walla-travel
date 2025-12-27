@@ -2,8 +2,10 @@
 /**
  * Email Service
  * Handles all email notifications for the system
- * Uses Postmark API (https://postmarkapp.com)
+ * Uses Resend API (https://resend.com)
  */
+
+import { Resend } from 'resend';
 
 interface EmailOptions {
   to: string | string[];
@@ -12,54 +14,45 @@ interface EmailOptions {
   text?: string;
   from?: string;
   replyTo?: string;
-  messageStream?: 'outbound' | 'broadcast'; // Postmark message streams
 }
 
-const POSTMARK_API_KEY = process.env.POSTMARK_API_KEY;
-const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@wallawallatravel.com';
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+// Domain verified in Resend - wallawalla.travel
+const FROM_EMAIL = process.env.FROM_EMAIL || 'Walla Walla Travel <bookings@wallawalla.travel>';
 const COMPANY_NAME = 'Walla Walla Travel';
 
+// Initialize Resend client
+const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
+
 /**
- * Send an email using Postmark API
+ * Send an email using Resend API
  */
 export async function sendEmail(options: EmailOptions): Promise<boolean> {
-  if (!POSTMARK_API_KEY) {
-    console.warn('⚠️  POSTMARK_API_KEY not configured. Email would be sent:', options.subject);
+  if (!resend) {
+    console.warn('⚠️  RESEND_API_KEY not configured. Email would be sent:', options.subject);
     console.log('   To:', options.to);
     console.log('   Subject:', options.subject);
     return false;
   }
 
   try {
-    // Postmark expects a single recipient or comma-separated list
-    const toAddresses = Array.isArray(options.to) ? options.to.join(',') : options.to;
-    
-    const response = await fetch('https://api.postmarkapp.com/email', {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'X-Postmark-Server-Token': POSTMARK_API_KEY,
-      },
-      body: JSON.stringify({
-        From: options.from || FROM_EMAIL,
-        To: toAddresses,
-        Subject: options.subject,
-        HtmlBody: options.html,
-        TextBody: options.text || '',
-        ReplyTo: options.replyTo,
-        MessageStream: options.messageStream || 'outbound',
-      }),
+    const toAddresses = Array.isArray(options.to) ? options.to : [options.to];
+
+    const { data, error } = await resend.emails.send({
+      from: options.from || FROM_EMAIL,
+      to: toAddresses,
+      subject: options.subject,
+      html: options.html,
+      text: options.text,
+      replyTo: options.replyTo,
     });
 
-    if (!response.ok) {
-      const error = await response.json();
+    if (error) {
       console.error('❌ Email send failed:', error);
       return false;
     }
 
-    const data = await response.json();
-    console.log('✅ Email sent via Postmark:', data.MessageID);
+    console.log('✅ Email sent via Resend:', data?.id);
     return true;
 
   } catch (error) {

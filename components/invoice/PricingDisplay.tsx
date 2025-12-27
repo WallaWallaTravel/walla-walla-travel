@@ -261,7 +261,7 @@ export function RateCard({
             </table>
           </div>
           <div className="px-4 py-2 bg-gray-50 text-xs text-gray-500">
-            {HOURLY_WINE_TOUR_RATES.minimumHours} hour minimum
+            {HOURLY_WINE_TOUR_RATES.sun_wed.minimumHours} hour minimum (Sun-Wed) / {HOURLY_WINE_TOUR_RATES.thu_sat.minimumHours} hour minimum (Thu-Sat)
           </div>
         </div>
       )}

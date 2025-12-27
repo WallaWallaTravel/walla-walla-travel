@@ -5,23 +5,49 @@ import { useRouter } from 'next/navigation';
 
 interface Booking {
   id: number;
+  booking_number: string;
   customer_name: string;
   tour_date: string;
-  pickup_time: string;
+  start_time: string;
+  pickup_time?: string;
   party_size: number;
   status: string;
   driver_id?: number;
   vehicle_id?: number;
+  driver_name?: string;
+  vehicle_name?: string;
 }
 
-interface Driver {
+interface AvailabilityBlock {
   id: number;
-  name: string;
+  vehicle_id: number;
+  block_date: string;
+  start_time: string;
+  end_time: string;
+  block_type: 'maintenance' | 'blackout' | 'hold' | 'booking';
+  reason: string;
+  vehicle_name: string;
 }
 
 interface Vehicle {
   id: number;
   name: string;
+  capacity: number;
+  is_active: boolean;
+}
+
+interface Driver {
+  id: number;
+  name: string;
+  is_active: boolean;
+}
+
+interface DailySummary {
+  bookings: number;
+  blockedVehicles: number;
+  availableVehicles: number;
+  totalCapacity: number;
+  bookedCapacity: number;
 }
 
 export default function CalendarView() {
@@ -29,6 +55,10 @@ export default function CalendarView() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [allBookings, setAllBookings] = useState<Booking[]>([]);
+  const [blocks, setBlocks] = useState<AvailabilityBlock[]>([]);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [dailySummaries, setDailySummaries] = useState<Record<string, DailySummary>>({});
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
 
@@ -36,33 +66,38 @@ export default function CalendarView() {
   const [filterDriver, setFilterDriver] = useState<string>('all');
   const [filterVehicle, setFilterVehicle] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [showBlocks, setShowBlocks] = useState(true);
 
   // Quick availability
   const [showAvailability, setShowAvailability] = useState(false);
   const [selectedDateForAvailability, setSelectedDateForAvailability] = useState<string>('');
 
   useEffect(() => {
-    loadBookings();
+    loadCalendarData();
   }, [currentDate]);
 
   useEffect(() => {
     applyFilters();
   }, [filterDriver, filterVehicle, filterStatus, allBookings]);
 
-  const loadBookings = async () => {
+  const loadCalendarData = async () => {
     try {
       const year = currentDate.getFullYear();
       const month = currentDate.getMonth() + 1;
 
-      const response = await fetch(`/api/bookings?year=${year}&month=${month}`);
+      const response = await fetch(`/api/admin/calendar?year=${year}&month=${month}`);
 
       if (response.ok) {
         const data = await response.json();
         setAllBookings(data.bookings || []);
         setBookings(data.bookings || []);
+        setBlocks(data.blocks || []);
+        setVehicles(data.vehicles || []);
+        setDrivers(data.drivers || []);
+        setDailySummaries(data.dailySummaries || {});
       }
     } catch (error) {
-      console.error('Error loading bookings:', error);
+      console.error('Error loading calendar data:', error);
     } finally {
       setLoading(false);
     }
@@ -101,16 +136,50 @@ export default function CalendarView() {
     return bookings.filter(booking => booking.tour_date === dateStr);
   };
 
+  const getBlocksForDate = (dateStr: string): AvailabilityBlock[] => {
+    return blocks.filter(block => block.block_date === dateStr);
+  };
+
   const checkAvailability = (dateStr: string) => {
+    const summary = dailySummaries[dateStr];
     const dayBookings = allBookings.filter(b => b.tour_date === dateStr);
-    const maxToursPerDay = 3; // Your mentioned capacity
-    const available = maxToursPerDay - dayBookings.length;
+    const dayBlocks = blocks.filter(b => b.block_date === dateStr);
 
     return {
       total: dayBookings.length,
-      available: Math.max(0, available),
-      bookings: dayBookings
+      available: summary?.availableVehicles ?? vehicles.length,
+      bookings: dayBookings,
+      blocks: dayBlocks,
+      bookedCapacity: summary?.bookedCapacity ?? 0,
+      totalCapacity: summary?.totalCapacity ?? 0,
+      blockedVehicles: summary?.blockedVehicles ?? 0
     };
+  };
+
+  const getBlockTypeColor = (blockType: string): string => {
+    switch (blockType) {
+      case 'maintenance':
+        return 'bg-orange-100 text-orange-800 border-orange-300';
+      case 'blackout':
+        return 'bg-gray-800 text-white border-gray-900';
+      case 'hold':
+        return 'bg-purple-100 text-purple-800 border-purple-300';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-300';
+    }
+  };
+
+  const getBlockTypeIcon = (blockType: string): string => {
+    switch (blockType) {
+      case 'maintenance':
+        return '🔧';
+      case 'blackout':
+        return '⛔';
+      case 'hold':
+        return '⏸️';
+      default:
+        return '📅';
+    }
   };
 
   const getStatusColor = (status: string): string => {
@@ -174,10 +243,26 @@ export default function CalendarView() {
           <h1 className="text-4xl font-bold text-gray-900">Booking Calendar</h1>
           <div className="flex items-center gap-4">
             <button
-              onClick={() => setShowAvailability(!showAvailability)}
-              className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold text-lg transition-colors"
+              onClick={() => setShowBlocks(!showBlocks)}
+              className={`px-4 py-2 rounded-lg font-semibold text-base transition-colors ${
+                showBlocks
+                  ? 'bg-orange-600 hover:bg-orange-700 text-white'
+                  : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+              }`}
             >
-              {showAvailability ? '📅 Calendar View' : '🔍 Quick Availability'}
+              {showBlocks ? '🔧 Blocks Visible' : '🔧 Show Blocks'}
+            </button>
+            <button
+              onClick={() => router.push('/admin/availability')}
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold text-base transition-colors"
+            >
+              Manage Availability
+            </button>
+            <button
+              onClick={() => setShowAvailability(!showAvailability)}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold text-base transition-colors"
+            >
+              {showAvailability ? '📅 Calendar' : '🔍 Check Date'}
             </button>
             <button
               onClick={() => router.push('/admin/dashboard')}
@@ -206,7 +291,10 @@ export default function CalendarView() {
                 onClick={() => {
                   if (selectedDateForAvailability) {
                     const avail = checkAvailability(selectedDateForAvailability);
-                    alert(`${selectedDateForAvailability}\n\n✅ Available Slots: ${avail.available} of 3\n📋 Current Bookings: ${avail.total}\n\nBookings:\n${avail.bookings.map(b => `- ${formatTime(b.pickup_time)}: ${b.customer_name} (${b.party_size} guests)`).join('\n') || 'None'}`);
+                    const blockInfo = avail.blocks.length > 0
+                      ? `\n\n🔧 Blocks (${avail.blockedVehicles} vehicles):\n${avail.blocks.map(b => `- ${getBlockTypeIcon(b.block_type)} ${b.vehicle_name}: ${b.reason}`).join('\n')}`
+                      : '';
+                    alert(`📅 ${selectedDateForAvailability}\n\n🚐 Vehicles: ${avail.available} available of ${vehicles.length}\n👥 Capacity: ${avail.bookedCapacity} / ${avail.totalCapacity} seats booked\n📋 Bookings: ${avail.total}\n\nBookings:\n${avail.bookings.map(b => `- ${formatTime(b.start_time || b.pickup_time || '')}: ${b.customer_name} (${b.party_size} guests)`).join('\n') || 'None'}${blockInfo}`);
                   }
                 }}
                 className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-lg"
@@ -275,8 +363,9 @@ export default function CalendarView() {
                 className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg text-gray-900 font-semibold focus:border-blue-500"
               >
                 <option value="all">All Drivers</option>
-                <option value="1">Driver 1</option>
-                <option value="2">Driver 2</option>
+                {drivers.map(driver => (
+                  <option key={driver.id} value={String(driver.id)}>{driver.name}</option>
+                ))}
                 <option value="">Unassigned</option>
               </select>
             </div>
@@ -288,15 +377,17 @@ export default function CalendarView() {
                 className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg text-gray-900 font-semibold focus:border-blue-500"
               >
                 <option value="all">All Vehicles</option>
-                <option value="1">Vehicle 1</option>
-                <option value="2">Vehicle 2</option>
+                {vehicles.map(vehicle => (
+                  <option key={vehicle.id} value={String(vehicle.id)}>{vehicle.name} ({vehicle.capacity} seats)</option>
+                ))}
                 <option value="">Unassigned</option>
               </select>
             </div>
           </div>
 
           {/* Legend */}
-          <div className="flex gap-6 text-sm font-semibold mt-4 pt-4 border-t-2 border-gray-200">
+          <div className="flex flex-wrap gap-4 text-sm font-semibold mt-4 pt-4 border-t-2 border-gray-200">
+            <span className="text-gray-500 font-bold">Bookings:</span>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 bg-green-100 border-2 border-green-300 rounded"></div>
               <span className="text-gray-700">Confirmed</span>
@@ -309,8 +400,24 @@ export default function CalendarView() {
               <div className="w-4 h-4 bg-blue-100 border-2 border-blue-300 rounded"></div>
               <span className="text-gray-700">Completed</span>
             </div>
+
+            <span className="text-gray-400">|</span>
+            <span className="text-gray-500 font-bold">Blocks:</span>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-orange-100 border-2 border-orange-300 rounded"></div>
+              <span className="text-gray-700">🔧 Maintenance</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-gray-800 border-2 border-gray-900 rounded"></div>
+              <span className="text-gray-700">⛔ Blackout</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-purple-100 border-2 border-purple-300 rounded"></div>
+              <span className="text-gray-700">⏸️ Hold</span>
+            </div>
+
             <div className="ml-auto text-gray-900 font-bold">
-              Showing {bookings.length} of {allBookings.length} bookings
+              {bookings.length} bookings | {blocks.length} blocks | {vehicles.length} vehicles
             </div>
           </div>
         </div>
@@ -330,64 +437,112 @@ export default function CalendarView() {
           <div className="grid grid-cols-7">
             {calendarDays.map((day, index) => {
               if (day === null) {
-                return <div key={`empty-${index}`} className="min-h-[140px] bg-gray-50 border border-gray-200"></div>;
+                return <div key={`empty-${index}`} className="min-h-[160px] bg-gray-50 border border-gray-200"></div>;
               }
 
               const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
               const dayBookings = getBookingsForDate(dateStr);
+              const dayBlocks = getBlocksForDate(dateStr);
               const availability = checkAvailability(dateStr);
               const isToday = new Date().toDateString() === new Date(dateStr).toDateString();
+              const hasBlocks = dayBlocks.length > 0;
 
               return (
                 <div
                   key={day}
-                  className={`min-h-[140px] border border-gray-200 p-3 ${
-                    isToday ? 'bg-blue-50' : 'bg-white'
+                  className={`min-h-[160px] border border-gray-200 p-2 ${
+                    isToday ? 'bg-blue-50' : hasBlocks ? 'bg-orange-50/30' : 'bg-white'
                   } hover:bg-gray-50 transition-colors`}
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className={`text-lg font-bold ${isToday ? 'text-blue-600' : 'text-gray-900'}`}>
+                  {/* Date Header */}
+                  <div className="flex items-center justify-between mb-1">
+                    <span className={`text-base font-bold ${isToday ? 'text-blue-600' : 'text-gray-900'}`}>
                       {day}
                     </span>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
                       {dayBookings.length > 0 && (
-                        <span className="text-xs font-bold bg-blue-600 text-white px-2 py-1 rounded-full">
+                        <span className="text-xs font-bold bg-blue-600 text-white px-1.5 py-0.5 rounded-full">
                           {dayBookings.length}
                         </span>
                       )}
+                      {hasBlocks && showBlocks && (
+                        <span className="text-xs font-bold bg-orange-500 text-white px-1.5 py-0.5 rounded-full">
+                          🔧{dayBlocks.length}
+                        </span>
+                      )}
                       {availability.available === 0 && (
-                        <span className="text-xs font-bold bg-red-600 text-white px-2 py-1 rounded-full">
+                        <span className="text-xs font-bold bg-red-600 text-white px-1.5 py-0.5 rounded-full">
                           FULL
                         </span>
                       )}
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    {dayBookings.slice(0, 3).map(booking => (
+                  {/* Capacity Bar */}
+                  {dailySummaries[dateStr] && (
+                    <div className="mb-1">
+                      <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full ${
+                            availability.bookedCapacity / availability.totalCapacity > 0.8
+                              ? 'bg-red-500'
+                              : availability.bookedCapacity / availability.totalCapacity > 0.5
+                              ? 'bg-yellow-500'
+                              : 'bg-green-500'
+                          }`}
+                          style={{
+                            width: `${Math.min(100, (availability.bookedCapacity / availability.totalCapacity) * 100)}%`
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Blocks */}
+                  {showBlocks && dayBlocks.length > 0 && (
+                    <div className="space-y-1 mb-1">
+                      {dayBlocks.slice(0, 2).map(block => (
+                        <div
+                          key={block.id}
+                          className={`px-1.5 py-0.5 rounded text-xs border cursor-pointer hover:shadow-sm ${getBlockTypeColor(block.block_type)}`}
+                          title={`${block.vehicle_name}: ${block.reason}`}
+                        >
+                          <span>{getBlockTypeIcon(block.block_type)} {block.vehicle_name.substring(0, 8)}</span>
+                        </div>
+                      ))}
+                      {dayBlocks.length > 2 && (
+                        <div className="text-xs font-bold text-orange-600 text-center">
+                          +{dayBlocks.length - 2} blocks
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Bookings */}
+                  <div className="space-y-1">
+                    {dayBookings.slice(0, showBlocks && dayBlocks.length > 0 ? 2 : 3).map(booking => (
                       <div
                         key={booking.id}
                         onClick={() => router.push(`/itinerary-builder/${booking.id}`)}
-                        className={`p-2 rounded border-2 cursor-pointer hover:shadow-md transition-shadow ${getStatusColor(booking.status)}`}
+                        className={`p-1.5 rounded border cursor-pointer hover:shadow-md transition-shadow ${getStatusColor(booking.status)}`}
                       >
-                        <div className="font-bold text-sm truncate">{formatTime(booking.pickup_time)}</div>
+                        <div className="font-bold text-xs truncate">{formatTime(booking.start_time || booking.pickup_time || '')}</div>
                         <div className="text-xs truncate font-semibold">{booking.customer_name}</div>
-                        <div className="text-xs font-semibold">{booking.party_size} guests</div>
                       </div>
                     ))}
-                    {dayBookings.length > 3 && (
+                    {dayBookings.length > (showBlocks && dayBlocks.length > 0 ? 2 : 3) && (
                       <div className="text-xs font-bold text-gray-600 text-center">
-                        +{dayBookings.length - 3} more
+                        +{dayBookings.length - (showBlocks && dayBlocks.length > 0 ? 2 : 3)} more
                       </div>
                     )}
                   </div>
 
-                  {dayBookings.length === 0 && (
+                  {dayBookings.length === 0 && dayBlocks.length === 0 && (
                     <button
                       onClick={() => router.push(`/admin/bookings/new?date=${dateStr}`)}
-                      className="mt-2 w-full py-2 text-sm font-semibold text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                      className="mt-1 w-full py-1 text-xs font-semibold text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
                     >
-                      + Add Booking
+                      + Add
                     </button>
                   )}
                 </div>

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper';
 import { sharedTourService } from '@/lib/services/shared-tour.service';
 
 /**
@@ -29,7 +29,7 @@ export const GET = withAdminAuth(async (request: NextRequest, session) => {
  * POST /api/admin/shared-tours
  * Create a new shared tour date
  */
-export const POST = withAdminAuth(async (request: NextRequest, session) => {
+export const POST = withAdminAuth(async (request: NextRequest, session: AuthSession) => {
   const body = await request.json();
 
   // Validate required fields

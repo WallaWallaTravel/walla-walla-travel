@@ -179,33 +179,35 @@ export const fileUploadConfig = {
 
 /**
  * API Key Configuration (Server-side only)
+ * Uses process.env directly for optional API keys not in the env schema
  */
 export const apiKeys = {
   google: {
-    mapsApiKey: env.GOOGLE_MAPS_API_KEY,
+    mapsApiKey: process.env.GOOGLE_MAPS_API_KEY,
+    aiApiKey: env.GOOGLE_AI_API_KEY,
     // Never expose API keys to client-side
     isServerOnly: true,
   },
-  
+
   stripe: {
     publishableKey: env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, // Safe for client
     secretKey: env.STRIPE_SECRET_KEY, // Server-only
-    webhookSecret: env.STRIPE_WEBHOOK_SECRET, // Server-only
+    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET, // Server-only
   },
-  
-  postmark: {
-    apiKey: env.POSTMARK_API_KEY, // Server-only
+
+  resend: {
+    apiKey: process.env.RESEND_API_KEY, // Server-only
   },
-  
+
   twilio: {
-    accountSid: env.TWILIO_ACCOUNT_SID, // Server-only
-    authToken: env.TWILIO_AUTH_TOKEN, // Server-only
-    phoneNumber: env.TWILIO_PHONE_NUMBER, // Server-only
+    accountSid: process.env.TWILIO_ACCOUNT_SID, // Server-only
+    authToken: process.env.TWILIO_AUTH_TOKEN, // Server-only
+    phoneNumber: process.env.TWILIO_PHONE_NUMBER, // Server-only
   },
-  
+
   sentry: {
-    dsn: env.NEXT_PUBLIC_SENTRY_DSN, // Safe for client
-    authToken: env.SENTRY_AUTH_TOKEN, // Server-only
+    dsn: process.env.NEXT_PUBLIC_SENTRY_DSN, // Safe for client
+    authToken: process.env.SENTRY_AUTH_TOKEN, // Server-only
   },
 };
 

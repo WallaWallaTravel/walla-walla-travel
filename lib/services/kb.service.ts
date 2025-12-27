@@ -42,7 +42,7 @@ export const CreateChatMessageSchema = z.object({
   role: z.enum(['user', 'assistant']),
   content: z.string().min(1),
   sources_used: z.array(z.string()).optional(),
-  grounding_metadata: z.record(z.unknown()).optional(),
+  grounding_metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const UpdateTripStateSchema = z.object({
@@ -53,8 +53,8 @@ export const UpdateTripStateSchema = z.object({
   party_size: z.number().int().positive().optional(),
   party_type: z.enum(['couple', 'family', 'friends', 'solo', 'corporate']).optional(),
   special_occasion: z.string().optional(),
-  selections: z.array(z.record(z.unknown())).optional(),
-  preferences: z.record(z.unknown()).optional(),
+  selections: z.array(z.record(z.string(), z.unknown())).optional(),
+  preferences: z.record(z.string(), z.unknown()).optional(),
   ready_for_itinerary: z.boolean().optional(),
   ready_for_deposit: z.boolean().optional(),
 });
@@ -70,8 +70,8 @@ export const CreateDraftBookingSchema = z.object({
   party_size: z.number().int().positive(),
   party_type: z.string().optional(),
   special_occasion: z.string().optional(),
-  itinerary_summary: z.record(z.unknown()).optional(),
-  preferences: z.record(z.unknown()).optional(),
+  itinerary_summary: z.record(z.string(), z.unknown()).optional(),
+  preferences: z.record(z.string(), z.unknown()).optional(),
   special_requests: z.string().optional(),
   cost_transportation: z.number().optional(),
   cost_guide: z.number().optional(),
@@ -352,9 +352,9 @@ class KBServiceClass extends BaseService {
 
   async incrementRetrievalCount(id: number): Promise<void> {
     await this.query(
-      `UPDATE kb_contributions 
-       SET retrieval_count = retrieval_count + 1, 
-           last_retrieved_at = NOW() 
+      `UPDATE kb_contributions
+       SET retrieval_count = retrieval_count + 1,
+           last_retrieved_at = NOW()
        WHERE id = $1`,
       [id]
     );
@@ -374,8 +374,7 @@ class KBServiceClass extends BaseService {
 
   async getChatSession(id: string): Promise<KBChatSession | null> {
     return this.queryOne<KBChatSession>(
-      'SELECT * FROM kb_chat_sessions WHERE id = $1',
-      [id]
+      'SELECT * FROM kb_chat_sessions WHERE id = $1', [id]
     );
   }
 
@@ -404,10 +403,10 @@ class KBServiceClass extends BaseService {
     const message = await this.insert<KBChatMessage>('kb_chat_messages', data);
 
     // Update session
-    await this.query(
-      `UPDATE kb_chat_sessions 
-       SET message_count = message_count + 1, 
-           last_message_at = NOW() 
+    await this.query<void>(
+      `UPDATE kb_chat_sessions
+       SET message_count = message_count + 1,
+           last_message_at = NOW()
        WHERE id = $1`,
       [data.session_id]
     );

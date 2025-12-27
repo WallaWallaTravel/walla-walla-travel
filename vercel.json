@@ -1,4 +1,14 @@
 {
+  "crons": [
+    {
+      "path": "/api/cron/cleanup-holds",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/abandoned-cart-emails",
+      "schedule": "0 * * * *"
+    }
+  ],
   "headers": [
     {
       "source": "/((?!_next/static|_next/image|favicon.ico).*)",

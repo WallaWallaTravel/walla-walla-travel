@@ -85,7 +85,7 @@ function TripCard({ trip }: { trip: TripSummary }) {
             </div>
           </div>
           <span className="text-stone-400 text-xs">
-            Updated {new Date(trip.last_activity_at).toLocaleDateString()}
+            Updated {trip.last_activity_at ? new Date(trip.last_activity_at).toLocaleDateString() : 'Recently'}
           </span>
         </div>
       </div>

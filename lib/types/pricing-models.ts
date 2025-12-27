@@ -324,7 +324,7 @@ export function calculateFixedTourPrice(
 export function isSharedTourDay(date: Date | string): boolean {
   const d = typeof date === 'string' ? new Date(date) : date;
   const dayName = d.toLocaleDateString('en-US', { weekday: 'long' });
-  return SHARED_TOUR_RATES.availableDays.includes(dayName);
+  return (SHARED_TOUR_RATES.availableDays as readonly string[]).includes(dayName);
 }
 
 /**

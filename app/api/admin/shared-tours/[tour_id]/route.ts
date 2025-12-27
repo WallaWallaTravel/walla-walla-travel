@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper';
 import { sharedTourService } from '@/lib/services/shared-tour.service';
 
 interface RouteParams {
@@ -10,7 +10,7 @@ interface RouteParams {
  * GET /api/admin/shared-tours/[tour_id]
  * Get tour details with tickets
  */
-export const GET = withAdminAuth(async (request: NextRequest, session, { params }: RouteParams) => {
+export const GET = withAdminAuth(async (request: NextRequest, session: AuthSession, { params }: RouteParams) => {
   const { tour_id } = await params;
 
   const tour = await sharedTourService.getTourWithAvailability(tour_id);
@@ -38,7 +38,7 @@ export const GET = withAdminAuth(async (request: NextRequest, session, { params 
  * PATCH /api/admin/shared-tours/[tour_id]
  * Update a tour
  */
-export const PATCH = withAdminAuth(async (request: NextRequest, session, { params }: RouteParams) => {
+export const PATCH = withAdminAuth(async (request: NextRequest, session: AuthSession, { params }: RouteParams) => {
   const { tour_id } = await params;
   const body = await request.json();
 
@@ -73,7 +73,7 @@ export const PATCH = withAdminAuth(async (request: NextRequest, session, { param
  * DELETE /api/admin/shared-tours/[tour_id]
  * Cancel a tour
  */
-export const DELETE = withAdminAuth(async (request: NextRequest, session, { params }: RouteParams) => {
+export const DELETE = withAdminAuth(async (request: NextRequest, session: AuthSession, { params }: RouteParams) => {
   const { tour_id } = await params;
 
   const tour = await sharedTourService.cancelTour(tour_id);

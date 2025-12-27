@@ -6,7 +6,7 @@ import { query } from '@/lib/db'
  * POST /api/inspections/quick
  * Quick inspection endpoint for emergency use
  */
-export const POST = withAuth<any>(async (request: NextRequest, session: AuthSession) => {
+export const POST = withAuth(async (request: NextRequest, session: AuthSession) => {
   try {
     const body = await request.json()
     const { vehicleId, startMileage, type, inspectionData } = body

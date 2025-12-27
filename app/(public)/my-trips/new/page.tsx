@@ -49,9 +49,9 @@ export default function NewTripPage() {
   });
 
   const handleSubmit = async () => {
-    const trip = await createTrip(formData);
-    if (trip) {
-      router.push(`/my-trips/${trip.share_code}`);
+    const result = await createTrip(formData);
+    if (result) {
+      router.push(`/my-trips/${result.trip.share_code}`);
     }
   };
 

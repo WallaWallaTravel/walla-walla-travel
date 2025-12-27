@@ -36,6 +36,17 @@ export interface ListVehiclesFilters {
   offset?: number;
 }
 
+export interface VehicleDocument {
+  id: number;
+  vehicle_id: number;
+  document_type: string;
+  document_name: string;
+  document_url: string;
+  expiry_date: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export class VehicleService extends BaseService {
   protected get serviceName(): string {
     return 'VehicleService';
@@ -341,6 +352,30 @@ export class VehicleService extends BaseService {
       daysUntilService,
       mileageUntilService,
     };
+  }
+
+  /**
+   * Get documents for a vehicle
+   */
+  async getDocuments(vehicleId: number): Promise<VehicleDocument[]> {
+    this.log(`Getting documents for vehicle ${vehicleId}`);
+
+    const sql = `
+      SELECT
+        id,
+        vehicle_id,
+        document_type,
+        document_name,
+        document_url,
+        expiry_date,
+        created_at,
+        updated_at
+      FROM vehicle_documents
+      WHERE vehicle_id = $1
+      ORDER BY document_type, created_at DESC
+    `;
+
+    return this.queryMany<VehicleDocument>(sql, [vehicleId]);
   }
 }
 

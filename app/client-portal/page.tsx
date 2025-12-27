@@ -5,11 +5,21 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 export default function ClientPortalPage() {
-  const [bookingNumber, setBookingNumber] = useState('');
+  const [lookupValue, setLookupValue] = useState('');
   const [lastName, setLastName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  // Auto-detect lookup type based on input
+  const detectLookupType = (value: string): 'email' | 'phone' | 'booking' => {
+    const trimmed = value.trim();
+    if (trimmed.includes('@')) return 'email';
+    // If mostly digits (allowing for formatting like dashes, parens, spaces)
+    const digitsOnly = trimmed.replace(/\D/g, '');
+    if (digitsOnly.length >= 7 && digitsOnly.length <= 11) return 'phone';
+    return 'booking';
+  };
 
   async function handleLookup(e: React.FormEvent) {
     e.preventDefault();
@@ -17,20 +27,29 @@ export default function ClientPortalPage() {
     setError('');
 
     try {
-      // Look up booking by number and last name
+      const lookupType = detectLookupType(lookupValue);
+      const body: Record<string, string> = {
+        last_name: lastName.trim(),
+        lookup_method: lookupType,
+      };
+
+      if (lookupType === 'email') {
+        body.email = lookupValue.toLowerCase().trim();
+      } else if (lookupType === 'phone') {
+        body.phone = lookupValue.replace(/\D/g, '');
+      } else {
+        body.booking_number = lookupValue.toUpperCase().trim();
+      }
+
       const response = await fetch(`/api/client/booking-lookup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          booking_number: bookingNumber.toUpperCase().trim(),
-          last_name: lastName.trim()
-        }),
+        body: JSON.stringify(body),
       });
 
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // Redirect to the booking detail page
         router.push(`/client-portal/${data.data.booking_id}`);
       } else {
         setError(data.error?.message || 'Booking not found. Please check your details and try again.');
@@ -75,29 +94,26 @@ export default function ClientPortalPage() {
             Find Your Booking
           </h2>
           <p className="text-slate-500 text-sm mb-6">
-            Enter your booking number and last name to access your tour details.
+            Enter your email, phone number, or booking number to access your tour details.
           </p>
 
           <form onSubmit={handleLookup}>
             <div className="mb-5">
-              <label 
-                htmlFor="bookingNumber" 
+              <label
+                htmlFor="lookupValue"
                 className="block text-sm font-medium text-slate-700 mb-1.5"
               >
-                Booking Number
+                Email, Phone, or Booking Number
               </label>
               <input
-                id="bookingNumber"
+                id="lookupValue"
                 type="text"
-                value={bookingNumber}
-                onChange={(e) => setBookingNumber(e.target.value)}
+                value={lookupValue}
+                onChange={(e) => setLookupValue(e.target.value)}
                 required
-                className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-slate-900 bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 focus:outline-none transition-colors uppercase"
-                placeholder="e.g. WWT-2025-12345"
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-slate-900 bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 focus:outline-none transition-colors"
+                placeholder="john@example.com or (509) 555-0123"
               />
-              <p className="text-xs text-slate-400 mt-1">
-                Check your confirmation email for this number
-              </p>
             </div>
 
             <div className="mb-5">

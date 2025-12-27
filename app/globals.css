@@ -248,3 +248,71 @@ html {
 .react-datepicker__input-container {
   width: 100%;
 }
+
+/* ============================================
+   NATIVE DATE INPUT STYLING
+   ============================================ */
+
+/* Make native date inputs larger and more legible */
+input[type="date"] {
+  font-size: 16px;
+  padding: 12px 16px;
+  min-height: 48px;
+}
+
+/* WebKit (Safari, Chrome) calendar popup styling */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  padding: 4px;
+  margin-left: 8px;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* Make the calendar popup larger on WebKit browsers */
+@supports (-webkit-touch-callout: none) {
+  /* iOS Safari specific - larger touch targets */
+  input[type="date"] {
+    font-size: 18px;
+    min-height: 52px;
+  }
+}
+
+/* Ensure date input text is visible and well-sized */
+input[type="date"]::-webkit-datetime-edit {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+input[type="date"]::-webkit-datetime-edit-fields-wrapper {
+  padding: 0;
+}
+
+input[type="date"]::-webkit-datetime-edit-text,
+input[type="date"]::-webkit-datetime-edit-month-field,
+input[type="date"]::-webkit-datetime-edit-day-field,
+input[type="date"]::-webkit-datetime-edit-year-field {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+/* Empty state styling */
+input[type="date"]:not(:valid)::-webkit-datetime-edit {
+  color: var(--text-muted);
+}
+
+/* Large date picker class for booking forms */
+.date-picker-large {
+  font-size: 18px !important;
+  min-height: 56px !important;
+  padding: 14px 18px !important;
+}
+
+.date-picker-large::-webkit-datetime-edit {
+  font-size: 18px !important;
+}

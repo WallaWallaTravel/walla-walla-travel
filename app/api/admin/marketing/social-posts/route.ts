@@ -1,204 +1,173 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { Pool } from 'pg'
+import { query } from '@/lib/db'
+import { getSessionFromRequest } from '@/lib/auth/session'
+import { withErrorHandling, UnauthorizedError, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler'
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
-})
+async function verifyAdmin(request: NextRequest) {
+  const session = await getSessionFromRequest(request)
+  if (!session || session.user.role !== 'admin') {
+    throw new UnauthorizedError('Admin access required')
+  }
+  return session
+}
 
 // GET - Fetch scheduled posts
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url)
-    const status = searchParams.get('status')
-    const platform = searchParams.get('platform')
-    const start_date = searchParams.get('start_date')
-    const end_date = searchParams.get('end_date')
+async function getHandler(request: NextRequest) {
+  await verifyAdmin(request)
 
-    let query = `
-      SELECT 
-        sp.*,
-        sa.account_name,
-        u.name as created_by_name
-      FROM scheduled_posts sp
-      LEFT JOIN social_accounts sa ON sp.account_id = sa.id
-      LEFT JOIN users u ON sp.created_by = u.id
-      WHERE 1=1
-    `
-    const params: (string | number)[] = []
-    let paramIndex = 1
+  const { searchParams } = new URL(request.url)
+  const status = searchParams.get('status')
+  const platform = searchParams.get('platform')
+  const start_date = searchParams.get('start_date')
+  const end_date = searchParams.get('end_date')
 
-    if (status && status !== 'all') {
-      query += ` AND sp.status = $${paramIndex++}`
-      params.push(status)
-    }
+  let queryText = `
+    SELECT
+      sp.*,
+      sa.account_name,
+      u.name as created_by_name
+    FROM scheduled_posts sp
+    LEFT JOIN social_accounts sa ON sp.account_id = sa.id
+    LEFT JOIN users u ON sp.created_by = u.id
+    WHERE 1=1
+  `
+  const params: (string | number)[] = []
+  let paramIndex = 1
 
-    if (platform && platform !== 'all') {
-      query += ` AND sp.platform = $${paramIndex++}`
-      params.push(platform)
-    }
-
-    if (start_date) {
-      query += ` AND sp.scheduled_for >= $${paramIndex++}`
-      params.push(start_date)
-    }
-
-    if (end_date) {
-      query += ` AND sp.scheduled_for <= $${paramIndex++}`
-      params.push(end_date)
-    }
-
-    query += ` ORDER BY sp.scheduled_for ASC`
-
-    const result = await pool.query(query, params)
-
-    return NextResponse.json({
-      posts: result.rows,
-      total: result.rows.length
-    })
-
-  } catch (error) {
-    console.error('Error fetching social posts:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch social posts' },
-      { status: 500 }
-    )
+  if (status && status !== 'all') {
+    queryText += ` AND sp.status = $${paramIndex++}`
+    params.push(status)
   }
+
+  if (platform && platform !== 'all') {
+    queryText += ` AND sp.platform = $${paramIndex++}`
+    params.push(platform)
+  }
+
+  if (start_date) {
+    queryText += ` AND sp.scheduled_for >= $${paramIndex++}`
+    params.push(start_date)
+  }
+
+  if (end_date) {
+    queryText += ` AND sp.scheduled_for <= $${paramIndex++}`
+    params.push(end_date)
+  }
+
+  queryText += ` ORDER BY sp.scheduled_for ASC`
+
+  const result = await query(queryText, params)
+
+  return NextResponse.json({
+    posts: result.rows,
+    total: result.rows.length
+  })
 }
 
 // POST - Create new scheduled post
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json()
+async function postHandler(request: NextRequest) {
+  await verifyAdmin(request)
 
-    const {
-      content,
-      media_urls,
-      hashtags,
-      link_url,
-      platform,
-      account_id,
-      scheduled_for,
-      timezone,
-      ab_test_id,
-      variant_letter,
-      created_by
-    } = body
+  const body = await request.json()
 
-    // Validation
-    if (!content || !platform || !scheduled_for) {
-      return NextResponse.json(
-        { error: 'Content, platform, and scheduled time are required' },
-        { status: 400 }
-      )
-    }
+  const {
+    content,
+    media_urls,
+    hashtags,
+    link_url,
+    platform,
+    account_id,
+    scheduled_for,
+    timezone,
+    ab_test_id,
+    variant_letter,
+    created_by
+  } = body
 
-    const result = await pool.query(`
-      INSERT INTO scheduled_posts (
-        content, media_urls, hashtags, link_url,
-        platform, account_id, scheduled_for, timezone,
-        status, ab_test_id, variant_letter, created_by,
-        created_at, updated_at
-      ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, 'scheduled', $9, $10, $11, NOW(), NOW()
-      ) RETURNING *
-    `, [
-      content,
-      media_urls || [],
-      hashtags || [],
-      link_url || null,
-      platform,
-      account_id || null,
-      scheduled_for,
-      timezone || 'America/Los_Angeles',
-      ab_test_id || null,
-      variant_letter || null,
-      created_by || null
-    ])
-
-    return NextResponse.json({
-      success: true,
-      post: result.rows[0]
-    })
-
-  } catch (error) {
-    console.error('Error creating social post:', error)
-    return NextResponse.json(
-      { error: 'Failed to create social post' },
-      { status: 500 }
-    )
+  // Validation
+  if (!content || !platform || !scheduled_for) {
+    throw new BadRequestError('Content, platform, and scheduled time are required')
   }
+
+  const result = await query(`
+    INSERT INTO scheduled_posts (
+      content, media_urls, hashtags, link_url,
+      platform, account_id, scheduled_for, timezone,
+      status, ab_test_id, variant_letter, created_by,
+      created_at, updated_at
+    ) VALUES (
+      $1, $2, $3, $4, $5, $6, $7, $8, 'scheduled', $9, $10, $11, NOW(), NOW()
+    ) RETURNING *
+  `, [
+    content,
+    media_urls || [],
+    hashtags || [],
+    link_url || null,
+    platform,
+    account_id || null,
+    scheduled_for,
+    timezone || 'America/Los_Angeles',
+    ab_test_id || null,
+    variant_letter || null,
+    created_by || null
+  ])
+
+  return NextResponse.json({
+    success: true,
+    post: result.rows[0]
+  })
 }
 
 // PATCH - Update post (status, reschedule, etc.)
-export async function PATCH(request: NextRequest) {
-  try {
-    const body = await request.json()
-    const { id, ...updates } = body
+async function patchHandler(request: NextRequest) {
+  await verifyAdmin(request)
 
-    if (!id) {
-      return NextResponse.json(
-        { error: 'Post ID is required' },
-        { status: 400 }
-      )
-    }
+  const body = await request.json()
+  const { id, ...updates } = body
 
-    const allowedFields = [
-      'content', 'media_urls', 'hashtags', 'link_url',
-      'scheduled_for', 'status'
-    ]
-
-    const setClause: string[] = []
-    const params: (string | number | string[])[] = [id]
-    let paramIndex = 2
-
-    for (const [key, value] of Object.entries(updates)) {
-      if (allowedFields.includes(key)) {
-        setClause.push(`${key} = $${paramIndex++}`)
-        params.push(value as string | number | string[])
-      }
-    }
-
-    if (setClause.length === 0) {
-      return NextResponse.json(
-        { error: 'No valid fields to update' },
-        { status: 400 }
-      )
-    }
-
-    setClause.push(`updated_at = NOW()`)
-
-    const result = await pool.query(`
-      UPDATE scheduled_posts
-      SET ${setClause.join(', ')}
-      WHERE id = $1
-      RETURNING *
-    `, params)
-
-    if (result.rows.length === 0) {
-      return NextResponse.json(
-        { error: 'Post not found' },
-        { status: 404 }
-      )
-    }
-
-    return NextResponse.json({
-      success: true,
-      post: result.rows[0]
-    })
-
-  } catch (error) {
-    console.error('Error updating social post:', error)
-    return NextResponse.json(
-      { error: 'Failed to update social post' },
-      { status: 500 }
-    )
+  if (!id) {
+    throw new BadRequestError('Post ID is required')
   }
+
+  const allowedFields = [
+    'content', 'media_urls', 'hashtags', 'link_url',
+    'scheduled_for', 'status'
+  ]
+
+  const setClause: string[] = []
+  const params: (string | number | string[])[] = [id]
+  let paramIndex = 2
+
+  for (const [key, value] of Object.entries(updates)) {
+    if (allowedFields.includes(key)) {
+      setClause.push(`${key} = $${paramIndex++}`)
+      params.push(value as string | number | string[])
+    }
+  }
+
+  if (setClause.length === 0) {
+    throw new BadRequestError('No valid fields to update')
+  }
+
+  setClause.push(`updated_at = NOW()`)
+
+  const result = await query(`
+    UPDATE scheduled_posts
+    SET ${setClause.join(', ')}
+    WHERE id = $1
+    RETURNING *
+  `, params)
+
+  if (result.rows.length === 0) {
+    throw new NotFoundError('Post not found')
+  }
+
+  return NextResponse.json({
+    success: true,
+    post: result.rows[0]
+  })
 }
 
-
-
-
-
-
-
+export const GET = withErrorHandling(getHandler)
+export const POST = withErrorHandling(postHandler)
+export const PATCH = withErrorHandling(patchHandler)

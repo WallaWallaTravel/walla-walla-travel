@@ -85,11 +85,6 @@ export default function WineryDetailPage({ params }: PageProps) {
         id: winery.id,
         name: winery.name,
         slug: winery.slug,
-        description: winery.description,
-        tastingFee: winery.tasting_fee,
-        reservationRequired: winery.reservation_required,
-        wineStyles: winery.wine_styles,
-        region: winery.region,
       });
 
       // Track winery view
@@ -298,7 +293,7 @@ export default function WineryDetailPage({ params }: PageProps) {
                 {winery.phone && (
                   <a
                     href={`tel:${winery.phone}`}
-                    onClick={() => analytics.trackPhoneClick(winery.phone!, winery.name)}
+                    onClick={() => analytics.trackPhoneClick(winery.id, winery.name)}
                     className="flex items-center gap-3 text-gray-700 hover:text-[#8B1538]"
                   >
                     <span>📞</span>
@@ -310,7 +305,7 @@ export default function WineryDetailPage({ params }: PageProps) {
                     href={winery.website}
                     target="_blank"
                     rel="noopener noreferrer"
-                    onClick={() => analytics.trackExternalLinkClick(winery.website!, winery.name)}
+                    onClick={() => analytics.trackExternalLinkClick(winery.id, winery.name, 'website')}
                     className="flex items-center gap-3 text-gray-700 hover:text-[#8B1538]"
                   >
                     <span>🌐</span>
@@ -326,7 +321,7 @@ export default function WineryDetailPage({ params }: PageProps) {
                     href={winery.website || '#'}
                     target="_blank"
                     rel="noopener noreferrer"
-                    onClick={() => analytics.trackReservationClick(winery.name, winery.id)}
+                    onClick={() => analytics.trackReservationClick(winery.id, winery.name)}
                     className="block w-full bg-[#8B1538] text-white text-center py-3 rounded-xl font-semibold hover:bg-[#722F37] transition-colors"
                   >
                     Make Reservation
@@ -340,7 +335,7 @@ export default function WineryDetailPage({ params }: PageProps) {
                 <button
                   onClick={() => {
                     // Track winery added to trip
-                    analytics.trackWineryAdded(winery.name, winery.id);
+                    analytics.trackWineryAdded(winery.id, winery.name);
                     // Show confirmation toast or open chat
                     alert(`${winery.name} added to your trip! Open the chat to continue planning.`);
                   }}

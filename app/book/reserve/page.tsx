@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { PaymentMethodSelector } from '@/components/payment/PaymentMethodSelector';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import { useBookingTracking } from '@/lib/hooks/useBookingTracking';
 
 const FORM_STORAGE_KEY = 'ww_reserve_form_data';
 const STEP_STORAGE_KEY = 'ww_reserve_form_step';
@@ -41,6 +42,38 @@ export default function ReserveRefinePage() {
   const [submitting, setSubmitting] = useState(false);
   const [depositCalculated, setDepositCalculated] = useState(250);
   const [isLoaded, setIsLoaded] = useState(false);
+
+  // Booking tracking
+  const { trackBookingProgress, trackBookingStarted, trackPageView } = useBookingTracking();
+
+  // Track page view on mount
+  useEffect(() => {
+    trackPageView('/book/reserve', 'Reserve & Customize Your Tour');
+    trackBookingStarted(); // User is starting the booking flow
+  }, [trackPageView, trackBookingStarted]);
+
+  // Track step changes and form progress
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    const stepNames = ['contact_info', 'tour_details', 'payment'];
+    const stepName = stepNames[step - 1] || 'unknown';
+
+    trackBookingProgress({
+      stepReached: stepName,
+      email: formData.contactEmail || undefined,
+      name: formData.contactName || undefined,
+      phone: formData.contactPhone || undefined,
+      tourDate: formData.preferredDate?.toISOString().split('T')[0] || undefined,
+      partySize: formData.partySize || undefined,
+      brandId: formData.brandId || undefined,
+      formData: {
+        eventType: formData.eventType,
+        depositAmount: depositCalculated,
+        paymentMethod: formData.paymentMethod,
+      },
+    });
+  }, [step, formData.contactEmail, formData.contactName, formData.contactPhone, formData.preferredDate, formData.partySize, formData.brandId, formData.eventType, depositCalculated, formData.paymentMethod, isLoaded, trackBookingProgress]);
 
   // Load saved form data on mount
   useEffect(() => {
@@ -194,11 +227,22 @@ export default function ReserveRefinePage() {
       }
 
       const data = await response.json();
-      
+
+      // Track successful reservation submission
+      trackBookingProgress({
+        stepReached: formData.paymentMethod === 'card' ? 'payment_pending' : 'completed',
+        email: formData.contactEmail,
+        name: formData.contactName,
+        phone: formData.contactPhone,
+        tourDate: formData.preferredDate?.toISOString().split('T')[0],
+        partySize: formData.partySize,
+        brandId: formData.brandId,
+      });
+
       // Clear saved form data on successful submission
       sessionStorage.removeItem(FORM_STORAGE_KEY);
       sessionStorage.removeItem(STEP_STORAGE_KEY);
-      
+
       // Redirect based on payment method
       if (formData.paymentMethod === 'card') {
         // Redirect to Stripe payment page

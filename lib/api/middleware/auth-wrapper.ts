@@ -30,17 +30,19 @@ export interface AuthSession {
 // Authenticated Handler Types
 // ============================================================================
 
-export type AuthenticatedHandler<T = any> = (
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type AuthenticatedHandler = (
   request: NextRequest,
   session: AuthSession,
   context?: any
-) => Promise<NextResponse<T>>;
+) => Promise<NextResponse<any>>;
 
-export type OptionalAuthHandler<T = any> = (
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type OptionalAuthHandler = (
   request: NextRequest,
   session: AuthSession | null,
   context?: any
-) => Promise<NextResponse<T>>;
+) => Promise<NextResponse<any>>;
 
 // Error response type (matches error-handler)
 interface ErrorResponse {
@@ -57,9 +59,10 @@ interface ErrorResponse {
 // withAuth - Requires Authentication
 // ============================================================================
 
-export function withAuth<T = any>(
-  handler: AuthenticatedHandler<T>
-): (request: NextRequest, context?: any) => Promise<NextResponse<T | ErrorResponse>> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function withAuth(
+  handler: AuthenticatedHandler
+): (request: NextRequest, context?: any) => Promise<NextResponse<any>> {
   return withErrorHandling(async (request: NextRequest, context?: any) => {
     // Get session from request
     const session = await getSessionFromRequest();
@@ -90,9 +93,10 @@ export function withAuth<T = any>(
 // withAdminAuth - Requires Admin Role
 // ============================================================================
 
-export function withAdminAuth<T = any>(
-  handler: AuthenticatedHandler<T>
-): (request: NextRequest, context?: any) => Promise<NextResponse<T | ErrorResponse>> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function withAdminAuth(
+  handler: AuthenticatedHandler
+): (request: NextRequest, context?: any) => Promise<NextResponse<any>> {
   return withAuth(async (request: NextRequest, session: AuthSession, context?: any) => {
     // Check admin role
     if (session.role !== 'admin') {
@@ -112,9 +116,10 @@ export function withAdminAuth<T = any>(
 // withDriverAuth - Requires Driver Role
 // ============================================================================
 
-export function withDriverAuth<T = any>(
-  handler: AuthenticatedHandler<T>
-): (request: NextRequest, context?: any) => Promise<NextResponse<T | ErrorResponse>> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function withDriverAuth(
+  handler: AuthenticatedHandler
+): (request: NextRequest, context?: any) => Promise<NextResponse<any>> {
   return withAuth(async (request: NextRequest, session: AuthSession, context?: any) => {
     // Check driver role
     if (session.role !== 'driver' && session.role !== 'admin') {
@@ -130,9 +135,10 @@ export function withDriverAuth<T = any>(
 // withOptionalAuth - Optional Authentication
 // ============================================================================
 
-export function withOptionalAuth<T = any>(
-  handler: OptionalAuthHandler<T>
-): (request: NextRequest, context?: any) => Promise<NextResponse<T | ErrorResponse>> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function withOptionalAuth(
+  handler: OptionalAuthHandler
+): (request: NextRequest, context?: any) => Promise<NextResponse<any>> {
   return withErrorHandling(async (request: NextRequest, context?: any) => {
     // Try to get session (don't throw if it fails)
     let session: AuthSession | null = null;
@@ -161,10 +167,11 @@ export function withOptionalAuth<T = any>(
 // withRoleAuth - Generic Role-Based Authentication
 // ============================================================================
 
-export function withRoleAuth<T = any>(
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function withRoleAuth(
   allowedRoles: Array<'admin' | 'driver' | 'customer' | 'business'>,
-  handler: AuthenticatedHandler<T>
-): (request: NextRequest, context?: any) => Promise<NextResponse<T | ErrorResponse>> {
+  handler: AuthenticatedHandler
+): (request: NextRequest, context?: any) => Promise<NextResponse<any>> {
   return withAuth(async (request: NextRequest, session: AuthSession, context?: any) => {
     // Check if user has required role
     if (!allowedRoles.includes(session.role)) {

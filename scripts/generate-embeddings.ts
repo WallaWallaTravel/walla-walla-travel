@@ -8,10 +8,16 @@
  *   npx tsx scripts/generate-embeddings.ts --target compliance_qa
  *   npx tsx scripts/generate-embeddings.ts --target wineries
  *   npx tsx scripts/generate-embeddings.ts --target all
+ *
+ * Prerequisites:
+ *   npm install @supabase/supabase-js openai
  */
 
-import OpenAI from 'openai';
-import { createClient } from '@supabase/supabase-js';
+// Note: These are optional dependencies that must be installed before running this script
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const OpenAI = require('openai').default;
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { createClient } = require('@supabase/supabase-js');
 
 // Configuration
 const EMBEDDING_MODEL = 'text-embedding-3-small';
@@ -30,8 +36,12 @@ const DATABASES = {
   }
 };
 
+// Types for the dynamically required modules
+type OpenAIClient = InstanceType<typeof OpenAI>;
+type SupabaseClient = ReturnType<typeof createClient>;
+
 // Initialize clients
-function getOpenAIClient(): OpenAI {
+function getOpenAIClient(): OpenAIClient {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     throw new Error('OPENAI_API_KEY environment variable is required');
@@ -39,7 +49,7 @@ function getOpenAIClient(): OpenAI {
   return new OpenAI({ apiKey });
 }
 
-function getSupabaseClient(url: string): ReturnType<typeof createClient> {
+function getSupabaseClient(url: string): SupabaseClient {
   const serviceKey = process.env.SUPABASE_SERVICE_KEY;
   if (!serviceKey) {
     throw new Error('SUPABASE_SERVICE_KEY environment variable is required');
@@ -48,7 +58,7 @@ function getSupabaseClient(url: string): ReturnType<typeof createClient> {
 }
 
 // Generate embedding for text
-async function generateEmbedding(openai: OpenAI, text: string): Promise<number[]> {
+async function generateEmbedding(openai: OpenAIClient, text: string): Promise<number[]> {
   const response = await openai.embeddings.create({
     model: EMBEDDING_MODEL,
     input: text,
@@ -58,7 +68,7 @@ async function generateEmbedding(openai: OpenAI, text: string): Promise<number[]
 }
 
 // Process compliance Q&A entries
-async function processComplianceQA(openai: OpenAI, supabase: ReturnType<typeof createClient>) {
+async function processComplianceQA(openai: OpenAIClient, supabase: SupabaseClient) {
   console.log('\n📋 Processing compliance_qa table...');
 
   // Get entries without embeddings
@@ -113,7 +123,7 @@ async function processComplianceQA(openai: OpenAI, supabase: ReturnType<typeof c
 }
 
 // Process wineries
-async function processWineries(openai: OpenAI, supabase: ReturnType<typeof createClient>) {
+async function processWineries(openai: OpenAIClient, supabase: SupabaseClient) {
   console.log('\n🍷 Processing wineries table...');
 
   const { data: wineries, error } = await supabase
@@ -167,7 +177,7 @@ Amenities: ${Array.isArray(winery.amenities) ? winery.amenities.join(', ') : 'N/
 }
 
 // Process businesses
-async function processBusinesses(openai: OpenAI, supabase: ReturnType<typeof createClient>) {
+async function processBusinesses(openai: OpenAIClient, supabase: SupabaseClient) {
   console.log('\n🏪 Processing businesses table...');
 
   const { data: businesses, error } = await supabase
