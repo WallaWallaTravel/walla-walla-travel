@@ -1,18 +1,28 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
+import { complianceService } from '@/lib/services/compliance.service';
 
 /**
  * POST /api/time-clock/clock-in
  * Creates a new time card for clock in
- * 
+ *
  * Body: {
  *   driverId: number,
  *   vehicleId: number,
  *   location: { latitude: number, longitude: number, accuracy: number },
  *   notes?: string
  * }
+ *
+ * COMPLIANCE ENFORCEMENT:
+ * This endpoint checks HOS (Hours of Service) limits before allowing clock-in:
+ * - Daily driving limit: 10 hours (FMCSA 395.5)
+ * - Daily on-duty limit: 15 hours
+ * - Weekly limit: 60/70 hours
+ *
+ * HOS violations CANNOT be overridden - this is for driver and public safety.
+ * Returns 403 if HOS limits would be exceeded.
  */
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { driverId, vehicleId, location, notes } = body;
@@ -20,13 +30,75 @@ export async function POST(request: Request) {
     // Validate required fields
     if (!driverId || !vehicleId) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Driver ID and Vehicle ID are required' 
+        {
+          success: false,
+          error: 'Driver ID and Vehicle ID are required'
         },
         { status: 400 }
       );
     }
+
+    // ==========================================================================
+    // COMPLIANCE CHECK: Verify HOS limits before allowing clock-in
+    // ==========================================================================
+    const hosCheck = await complianceService.checkHOSCompliance(driverId, new Date());
+
+    if (!hosCheck.canProceed) {
+      // Log the compliance block
+      await complianceService.logComplianceCheck(
+        'clock_in',
+        '/api/time-clock/clock-in',
+        {
+          canProceed: false,
+          driverCompliance: {
+            driverId,
+            isCompliant: true,
+            canProceed: true,
+            violations: [],
+            warnings: [],
+            allowsAdminOverride: true,
+          },
+          vehicleCompliance: {
+            vehicleId,
+            isCompliant: true,
+            canProceed: true,
+            violations: [],
+            warnings: [],
+            allowsAdminOverride: true,
+          },
+          hosCompliance: hosCheck,
+          allViolations: hosCheck.violations,
+          allWarnings: hosCheck.warnings,
+          primaryViolation: hosCheck.primaryViolation,
+          allowsAdminOverride: false, // HOS violations cannot be overridden
+        },
+        {
+          driverId,
+          vehicleId,
+          tourDate: new Date(),
+          requestIp: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
+          userAgent: request.headers.get('user-agent') || undefined,
+        }
+      );
+
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: 'COMPLIANCE_BLOCKED',
+            message: hosCheck.primaryViolation?.message || 'HOS limits exceeded',
+            violations: hosCheck.violations,
+            warnings: hosCheck.warnings,
+            canOverride: false,
+            reason: 'Hours of Service (HOS) violations cannot be overridden. This is a safety requirement.',
+          }
+        },
+        { status: 403 }
+      );
+    }
+
+    // Check if there are HOS warnings to include in response
+    const hosWarnings = hosCheck.warnings.length > 0 ? hosCheck.warnings : undefined;
 
     // Check if driver is already clocked in today
     const existingResult = await query(
@@ -133,7 +205,9 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       message: 'Clocked in successfully',
-      timeCard: detailsResult.rows[0]
+      timeCard: detailsResult.rows[0],
+      // Include HOS warnings so driver sees them even on successful clock-in
+      ...(hosWarnings && { warnings: hosWarnings }),
     }, { status: 201 });
 
   } catch (error) {

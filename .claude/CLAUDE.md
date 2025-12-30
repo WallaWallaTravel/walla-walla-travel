@@ -10,7 +10,7 @@ This is a **multi-product ecosystem** with modular architecture designed for:
 
 | Product | Purpose | Tech Stack | Status | Sellable? |
 |---------|---------|------------|--------|-----------|
-| **Walla Walla Travel** | Wine tour booking & management | Next.js 15, Prisma | Production (migrating) | Bundle only |
+| **Walla Walla Travel** | Wine tour booking & management | Next.js 15, Prisma, Supabase | Production | Bundle only |
 | **Auditor's Dream** | FMCSA/DOT compliance management | Vite+React, Supabase | Active development | ✅ Yes |
 | **Driver Portal** | Tour execution, DVIRs, time tracking | Vite+React, Supabase | Planned | Module |
 | **Admin Dashboard** | Staff booking management | Vite+React, Supabase | Scaffolded | Module |
@@ -86,12 +86,13 @@ walla-walla-final/
 
 ## 🔧 TECHNOLOGY STACK
 
-### Walla Walla Travel (Legacy - Migrating to Supabase)
+### Walla Walla Travel
 | Layer | Technology |
 |-------|------------|
 | Framework | Next.js 15 (App Router) |
-| Database | PostgreSQL (Heroku) → Supabase |
-| Auth | JWT → Supabase Auth |
+| Database | Supabase (`eabqmcvmpkbpyhhpbcij`) |
+| ORM | Prisma |
+| Auth | JWT (Supabase Auth planned) |
 | Validation | Zod |
 | Styling | Tailwind CSS |
 
@@ -110,12 +111,15 @@ walla-walla-final/
 
 ## 🗄️ DATABASE ARCHITECTURE
 
-### Supabase Project (Auditor's Dream)
-```
-URL: https://gymsdluogchurhdvhqao.supabase.co
-```
+### Supabase Projects
+| Product | Project ID | URL |
+|---------|------------|-----|
+| Walla Walla Travel | `eabqmcvmpkbpyhhpbcij` | https://eabqmcvmpkbpyhhpbcij.supabase.co |
+| Auditor's Dream | `gymsdluogchurhdvhqao` | https://gymsdluogchurhdvhqao.supabase.co |
 
-### Core Tables (COMBINED_MIGRATION.sql)
+See `/Users/temp/INFRASTRUCTURE.md` for complete infrastructure registry.
+
+### Core Tables
 | Table | Purpose | Used By |
 |-------|---------|---------|
 | `profiles` | User profiles with roles | All apps |
@@ -140,26 +144,27 @@ walla_walla_booking_id INTEGER  -- Links to lsh.bookings.id
 
 ---
 
-## 🚨 IMMEDIATE PRIORITIES
+## 🚨 CURRENT STATUS
 
-### 1. Supabase Setup (Auditor's Dream)
+### ✅ Completed (2025-12-29)
+- WWT migrated from Heroku to Supabase
+- Auditor's Dream connected to real Supabase data
+- Infrastructure consolidated (4 Supabase projects total)
+- Test login: madsry@gmail.com / wwtRynMdsn03
+
+### Running the Apps
 ```bash
-# Credentials already in .env files
-cd auditors-dream/apps/operator
-npm run dev  # http://localhost:5173
+# Walla Walla Travel
+cd /Users/temp/walla-walla-final
+npm run dev  # http://localhost:3000
+
+# Auditor's Dream
+cd /Users/temp/walla-walla-final/auditors-dream/apps/operator
+npm run dev  # http://localhost:3001
 ```
 
-**Manual steps needed:**
-1. Run `COMBINED_MIGRATION.sql` in Supabase SQL Editor
-2. Create storage bucket: `compliance-documents`
-3. Create test user: `madsry@gmail.com`
-4. Link user to operator (SQL in CLAUDE_CODE_HANDOFF.md)
-
-### 2. Connect to Real Data
-Replace mock data in Operator Portal with Supabase queries.
-
-### 3. Complete Commercial Readiness (Walla Walla Travel)
-See `COMMERCIAL_READINESS_ROADMAP.md` for full plan.
+### Next Steps
+See `/Users/temp/INFRASTRUCTURE.md` for infrastructure overview.
 
 ---
 

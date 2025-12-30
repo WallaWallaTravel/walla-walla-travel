@@ -1,72 +1,50 @@
 /**
- * Supabase Stub Module
- * 
- * This is a stub - the actual project uses PostgreSQL with direct queries,
- * not Supabase. This file exists to prevent TypeScript errors from legacy code.
- * 
- * TODO: Refactor ClientNotesClient.tsx to use API routes instead of Supabase
+ * Supabase Client Exports
+ *
+ * This file re-exports from the @/lib/supabase/ directory for backward compatibility.
+ * New code should import directly from @/lib/supabase/client or @/lib/supabase/server.
+ *
+ * Usage:
+ *
+ * Client Components (browser):
+ *   import { createBrowserClient } from '@/lib/supabase';
+ *   const supabase = createBrowserClient();
+ *
+ * Server Components / API Routes:
+ *   import { createServerClient } from '@/lib/supabase';
+ *   const supabase = await createServerClient();
+ *
+ * Admin Operations (bypasses RLS):
+ *   import { supabaseAdmin } from '@/lib/supabase';
  */
 
-// Create a chainable stub that returns itself for method chaining
-interface StubQueryBuilder {
-  select: (columns?: string) => StubQueryBuilder;
-  insert: (data: unknown) => StubQueryBuilder;
-  update: (data: unknown) => StubQueryBuilder;
-  upsert: (data: unknown) => StubQueryBuilder;
-  delete: () => StubQueryBuilder;
-  eq: (column: string, value: unknown) => StubQueryBuilder;
-  neq: (column: string, value: unknown) => StubQueryBuilder;
-  gt: (column: string, value: unknown) => StubQueryBuilder;
-  lt: (column: string, value: unknown) => StubQueryBuilder;
-  single: () => StubQueryBuilder;
-  order: (column: string, options?: { ascending?: boolean }) => StubQueryBuilder;
-  then: <T>(onfulfilled?: (value: { data: null; error: Error }) => T) => Promise<T>;
-}
+// Re-export everything from the supabase directory
+export * from './supabase/index';
 
-// Create a mock supabase client that warns on usage
-const createStubClient = () => {
-  const createQueryBuilder = (tableName: string): StubQueryBuilder => {
-    const result = { data: null, error: new Error('Supabase not configured - use API routes') };
-    
-    const builder: StubQueryBuilder = {
-      select: (columns?: string) => {
-        console.warn(`[Supabase Stub] select("${columns}") called on table "${tableName}" - this feature needs refactoring`);
-        return builder;
-      },
-      insert: (data: unknown) => {
-        console.warn(`[Supabase Stub] insert() called on table "${tableName}" - this feature needs refactoring`);
-        return builder;
-      },
-      update: (data: unknown) => {
-        console.warn(`[Supabase Stub] update() called on table "${tableName}" - this feature needs refactoring`);
-        return builder;
-      },
-      upsert: (data: unknown) => {
-        console.warn(`[Supabase Stub] upsert() called on table "${tableName}" - this feature needs refactoring`);
-        return builder;
-      },
-      delete: () => {
-        console.warn(`[Supabase Stub] delete() called on table "${tableName}" - this feature needs refactoring`);
-        return builder;
-      },
-      eq: (column: string, value: unknown) => builder,
-      neq: (column: string, value: unknown) => builder,
-      gt: (column: string, value: unknown) => builder,
-      lt: (column: string, value: unknown) => builder,
-      single: () => builder,
-      order: (column: string, options?: { ascending?: boolean }) => builder,
-      then: <T>(onfulfilled?: (value: { data: null; error: Error }) => T) => {
-        return Promise.resolve(result).then(onfulfilled);
-      },
-    };
-    
-    return builder;
-  };
+// Also provide a default 'supabase' export for legacy compatibility
+// This creates a browser client - for server-side use createServerClient instead
+import { createClient } from './supabase/client';
 
-  return {
-    from: (tableName: string) => createQueryBuilder(tableName),
-  };
-};
+// Lazy-initialize browser client for legacy imports
+let _browserClient: ReturnType<typeof createClient> | null = null;
 
-export const supabase = createStubClient();
+/**
+ * Get the browser Supabase client (for client components)
+ * @deprecated Use `import { createBrowserClient } from '@/lib/supabase'` instead
+ */
+export const supabase = new Proxy({} as ReturnType<typeof createClient>, {
+  get(_target, prop) {
+    if (typeof window === 'undefined') {
+      // Server-side: warn and return a stub
+      console.warn(
+        '[Supabase] Accessed browser client on server. Use createServerClient() for server components.'
+      );
+      return () => Promise.resolve({ data: null, error: new Error('Use createServerClient on server') });
+    }
 
+    if (!_browserClient) {
+      _browserClient = createClient();
+    }
+    return (_browserClient as Record<string, unknown>)[prop as string];
+  },
+});

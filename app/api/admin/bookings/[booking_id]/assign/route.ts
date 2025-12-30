@@ -3,22 +3,36 @@ import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api-err
 import { queryOne, query, withTransaction } from '@/lib/db-helpers';
 import { sendDriverAssignmentToCustomer } from '@/lib/services/email-automation.service';
 import { sendEmail, EmailTemplates } from '@/lib/email';
+import { withComplianceCheck } from '@/lib/api/middleware/compliance-check';
+import { complianceService } from '@/lib/services/compliance.service';
 
 /**
  * PUT /api/admin/bookings/[booking_id]/assign
  * Assign driver and vehicle to a booking
- * 
+ *
  * Body: {
  *   driver_id: number,
  *   vehicle_id: number,
  *   notify_driver?: boolean,
- *   notify_customer?: boolean
+ *   notify_customer?: boolean,
+ *   compliance_override?: boolean,          // Optional: attempt to override compliance block
+ *   compliance_override_reason?: string     // Required if override is true
  * }
+ *
+ * COMPLIANCE ENFORCEMENT:
+ * This endpoint checks driver and vehicle compliance before assignment:
+ * - Driver: Medical cert, license, MVR, annual review, open violations
+ * - Vehicle: Registration, insurance, DOT inspection, critical defects
+ * - HOS: Daily driving/on-duty limits, weekly limits
+ *
+ * Returns 403 if compliance violations prevent assignment.
  */
-export const PUT = withErrorHandling(async (
+
+// Inner handler (after compliance check passes)
+async function handleAssignment(
   request: NextRequest,
   { params }: { params: Promise<{ booking_id: string }> }
-) => {
+) {
   const { booking_id } = await params;
   const bookingId = parseInt(booking_id);
 
@@ -27,7 +41,7 @@ export const PUT = withErrorHandling(async (
   }
 
   const body = await request.json();
-  const { driver_id, vehicle_id, notify_driver, notify_customer } = body;
+  const { driver_id, vehicle_id, notify_driver, notify_customer, compliance_override, compliance_override_reason } = body;
 
   if (!driver_id || !vehicle_id) {
     throw new BadRequestError('driver_id and vehicle_id are required');
@@ -163,5 +177,32 @@ export const PUT = withErrorHandling(async (
       vehicle_name: `${result.vehicle.make} ${result.vehicle.model}`,
     },
   });
-});
+}
+
+// Wrap with compliance check middleware, then error handling
+export const PUT = withErrorHandling(
+  withComplianceCheck(handleAssignment, {
+    checkType: 'assignment',
+    extractEntities: async (request, context) => {
+      // Clone request to read body without consuming it
+      const clonedRequest = request.clone();
+      const body = await clonedRequest.json();
+
+      // Get booking to determine tour date
+      const { booking_id } = await context.params;
+      const booking = await queryOne(
+        `SELECT tour_date FROM bookings WHERE id = $1`,
+        [parseInt(booking_id as string)]
+      );
+
+      return {
+        driverId: body.driver_id,
+        vehicleId: body.vehicle_id,
+        tourDate: booking?.tour_date ? new Date(booking.tour_date) : new Date(),
+        bookingId: parseInt(booking_id as string),
+      };
+    },
+    allowOverride: true, // Allow admin override for non-critical violations
+  })
+);
 
