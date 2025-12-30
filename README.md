@@ -37,12 +37,19 @@ npm install
 # Copy template
 cp .env.example .env.local
 
-# Required variables:
-DATABASE_URL=your_postgresql_connection_url
+# Required variables (Supabase PostgreSQL):
+DATABASE_URL=postgresql://postgres.xxx:password@aws-0-us-west-2.pooler.supabase.com:6543/postgres
+DIRECT_URL=postgresql://postgres:password@db.xxx.supabase.co:5432/postgres
+NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+
+# Other required:
 STRIPE_SECRET_KEY=your_stripe_key
 OPENAI_API_KEY=your_openai_key
 RESEND_API_KEY=your_resend_key
 ```
+
+**Database:** Supabase PostgreSQL (project: `eabqmcvmpkbpyhhpbcij`)
 
 ### 3. Run Development Server
 
