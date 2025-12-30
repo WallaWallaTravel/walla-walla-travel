@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 /**
  * Audit Service
  * 
@@ -98,7 +99,7 @@ class AuditService extends BaseService {
       // Logged successfully (silent in production)
     } catch (error) {
       // Don't throw - audit logging should never break the main flow
-      console.error('[AuditService] Failed to log activity:', error);
+      logger.error('[AuditService] Failed to log activity:', error);
     }
   }
 

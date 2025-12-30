@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 /**
  * Enhanced Error Handling Middleware
  * 
@@ -185,7 +186,7 @@ export function withErrorHandling<T = any>(
       // Log successful requests in development
       if (process.env.NODE_ENV === 'development') {
         const duration = Date.now() - startTime;
-        console.log(`✅ ${request.method} ${request.nextUrl.pathname} - ${duration}ms`);
+        logger.info(`✅ ${request.method} ${request.nextUrl.pathname} - ${duration}ms`);
       }
 
       return response;
@@ -247,7 +248,7 @@ export function withErrorHandling<T = any>(
       }
 
       // Log unexpected errors
-      console.error('❌ Unexpected error:', error);
+      logger.error('❌ Unexpected error:', error);
 
       // Return generic error for unknown errors (don't expose internal details)
       const genericError = new ApiError(
@@ -323,7 +324,7 @@ export async function catchAsync<T>(
   try {
     return await fn();
   } catch (error: any) {
-    console.error('Async operation failed:', error);
+    logger.error('Async operation failed:', error);
     throw new ApiError(
       errorMessage || error.message || 'Operation failed',
       error.statusCode || 500

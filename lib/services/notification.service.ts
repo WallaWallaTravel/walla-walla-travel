@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 /**
  * Notification Service
  * 
@@ -96,19 +97,19 @@ Contact driver: ${driver.phone || 'N/A'}
     `.trim();
 
     // Log notifications (Console output for now)
-    console.log('');
-    console.log('🚨 CRITICAL DEFECT DETECTED - Initiating safety protocol');
-    console.log('══════════════════════════════════════════════════════════');
-    console.log('');
-    console.log('📱 SMS NOTIFICATION:');
-    console.log(`   To: ${supervisorPhone}`);
-    console.log(`   Message: ${smsMessage}`);
-    console.log('');
-    console.log('📧 EMAIL NOTIFICATION:');
-    console.log(`   To: ${supervisorEmail}`);
-    console.log(`   Subject: ${emailSubject}`);
-    console.log(`   Body:\n${emailBody}`);
-    console.log('');
+    logger.info('');
+    logger.info('🚨 CRITICAL DEFECT DETECTED - Initiating safety protocol');
+    logger.info('══════════════════════════════════════════════════════════');
+    logger.info('');
+    logger.info('📱 SMS NOTIFICATION:');
+    logger.info(`   To: ${supervisorPhone}`);
+    logger.info(`   Message: ${smsMessage}`);
+    logger.info('');
+    logger.info('📧 EMAIL NOTIFICATION:');
+    logger.info(`   To: ${supervisorEmail}`);
+    logger.info(`   Subject: ${emailSubject}`);
+    logger.info(`   Body:\n${emailBody}`);
+    logger.info('');
 
     // Log to notifications table
     try {
@@ -117,9 +118,9 @@ Contact driver: ${driver.phone || 'N/A'}
          VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)`,
         [data.driverId, 'critical_vehicle_defect', smsMessage, supervisorEmail]
       );
-      console.log('✅ Notification logged to database');
+      logger.info('✅ Notification logged to database');
     } catch (dbError) {
-      console.warn('⚠️ Failed to log notification to database:', dbError);
+      logger.warn('⚠️ Failed to log notification to database:', dbError);
     }
 
     // TODO: In production, integrate with real services:
@@ -127,10 +128,10 @@ Contact driver: ${driver.phone || 'N/A'}
     // - SendGrid for Email
     // - Push notifications
 
-    console.log('');
-    console.log('✅ Critical defect workflow completed successfully');
-    console.log('══════════════════════════════════════════════════════════');
-    console.log('');
+    logger.info('');
+    logger.info('✅ Critical defect workflow completed successfully');
+    logger.info('══════════════════════════════════════════════════════════');
+    logger.info('');
 
     this.log('Critical defect alert sent successfully');
   }

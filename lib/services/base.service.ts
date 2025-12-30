@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 /**
  * Base Service Class
  * 
@@ -257,7 +258,7 @@ export abstract class BaseService {
 
     // Log to console in development
     if (process.env.NODE_ENV === 'development') {
-      console.error(`❌ ${this.serviceName} Error [${context}]:`, error);
+      logger.error(`❌ ${this.serviceName} Error [${context}]:`, error);
     }
   }
 
@@ -270,7 +271,7 @@ export abstract class BaseService {
    */
   protected log(message: string, data?: any): void {
     if (process.env.NODE_ENV === 'development') {
-      console.log(`📋 ${this.serviceName}: ${message}`, data || '');
+      logger.info(`📋 ${this.serviceName}: ${message}`, data || '');
     }
   }
 
@@ -278,7 +279,7 @@ export abstract class BaseService {
    * Log warning
    */
   protected warn(message: string, data?: any): void {
-    console.warn(`⚠️  ${this.serviceName}: ${message}`, data || '');
+    logger.warn(`⚠️  ${this.serviceName}: ${message}`, data || '');
   }
 }
 

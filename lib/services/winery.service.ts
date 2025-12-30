@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { BaseService } from './base.service';
 import { z } from 'zod';
 

@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 /**
  * Email Automation Service
  * Handles automated email triggers and scheduled emails
@@ -55,7 +56,7 @@ export async function sendBookingConfirmationEmail(bookingId: number): Promise<b
     `, [bookingId]);
 
     if (!booking || !booking.customer_email) {
-      console.error('[EmailAutomation] Booking not found or no email:', bookingId);
+      logger.error('[EmailAutomation] Booking not found or no email:', bookingId);
       return false;
     }
 
@@ -102,11 +103,11 @@ export async function sendBookingConfirmationEmail(bookingId: number): Promise<b
       `, [bookingId, 'booking_confirmation', booking.customer_email, template.subject]);
     }
 
-    console.log(`[EmailAutomation] Booking confirmation ${result ? 'sent' : 'failed'} for booking #${booking.booking_number}`);
+    logger.info(`[EmailAutomation] Booking confirmation ${result ? 'sent' : 'failed'} for booking #${booking.booking_number}`);
     return result;
 
   } catch (error) {
-    console.error('[EmailAutomation] Error sending booking confirmation:', error);
+    logger.error('[EmailAutomation] Error sending booking confirmation:', error);
     return false;
   }
 }
@@ -129,7 +130,7 @@ export async function sendPaymentReceiptEmail(paymentId: number): Promise<boolea
     `, [paymentId]);
 
     if (!payment || !payment.customer_email) {
-      console.error('[EmailAutomation] Payment not found or no email:', paymentId);
+      logger.error('[EmailAutomation] Payment not found or no email:', paymentId);
       return false;
     }
 
@@ -177,11 +178,11 @@ export async function sendPaymentReceiptEmail(paymentId: number): Promise<boolea
       `, [payment.booking_id, 'payment_receipt', payment.customer_email, 'Payment Received']);
     }
 
-    console.log(`[EmailAutomation] Payment receipt ${result ? 'sent' : 'failed'} for booking #${payment.booking_number}`);
+    logger.info(`[EmailAutomation] Payment receipt ${result ? 'sent' : 'failed'} for booking #${payment.booking_number}`);
     return result;
 
   } catch (error) {
-    console.error('[EmailAutomation] Error sending payment receipt:', error);
+    logger.error('[EmailAutomation] Error sending payment receipt:', error);
     return false;
   }
 }
@@ -203,7 +204,7 @@ export async function sendTourReminderEmail(bookingId: number): Promise<boolean>
     `, [bookingId]);
 
     if (!booking || !booking.customer_email) {
-      console.error('[EmailAutomation] Booking not found or no email:', bookingId);
+      logger.error('[EmailAutomation] Booking not found or no email:', bookingId);
       return false;
     }
 
@@ -300,11 +301,11 @@ export async function sendTourReminderEmail(bookingId: number): Promise<boolean>
       `, [bookingId]);
     }
 
-    console.log(`[EmailAutomation] Tour reminder ${result ? 'sent' : 'failed'} for booking #${booking.booking_number}`);
+    logger.info(`[EmailAutomation] Tour reminder ${result ? 'sent' : 'failed'} for booking #${booking.booking_number}`);
     return result;
 
   } catch (error) {
-    console.error('[EmailAutomation] Error sending tour reminder:', error);
+    logger.error('[EmailAutomation] Error sending tour reminder:', error);
     return false;
   }
 }
@@ -329,7 +330,7 @@ export async function processTourReminders(): Promise<{ sent: number; failed: nu
       AND customer_email IS NOT NULL
     `);
 
-    console.log(`[EmailAutomation] Found ${bookings.length} bookings needing tour reminders`);
+    logger.info(`[EmailAutomation] Found ${bookings.length} bookings needing tour reminders`);
 
     for (const booking of bookings) {
       const result = await sendTourReminderEmail(booking.id);
@@ -344,7 +345,7 @@ export async function processTourReminders(): Promise<{ sent: number; failed: nu
     }
 
   } catch (error) {
-    console.error('[EmailAutomation] Error processing tour reminders:', error);
+    logger.error('[EmailAutomation] Error processing tour reminders:', error);
   }
 
   return { sent, failed };
@@ -376,7 +377,7 @@ export async function sendDriverAssignmentToCustomer(bookingId: number): Promise
     `, [bookingId]);
 
     if (!booking || !booking.customer_email || !booking.driver_name) {
-      console.error('[EmailAutomation] Booking, email, or driver not found:', bookingId);
+      logger.error('[EmailAutomation] Booking, email, or driver not found:', bookingId);
       return false;
     }
 
@@ -445,11 +446,11 @@ export async function sendDriverAssignmentToCustomer(bookingId: number): Promise
       `, [bookingId, 'driver_assignment_customer', booking.customer_email, 'Driver Confirmed']);
     }
 
-    console.log(`[EmailAutomation] Driver assignment to customer ${result ? 'sent' : 'failed'} for booking #${booking.booking_number}`);
+    logger.info(`[EmailAutomation] Driver assignment to customer ${result ? 'sent' : 'failed'} for booking #${booking.booking_number}`);
     return result;
 
   } catch (error) {
-    console.error('[EmailAutomation] Error sending driver assignment to customer:', error);
+    logger.error('[EmailAutomation] Error sending driver assignment to customer:', error);
     return false;
   }
 }

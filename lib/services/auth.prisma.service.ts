@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 /**
  * Authentication Prisma Service
  *
@@ -100,7 +101,7 @@ class AuthPrismaService extends PrismaBaseService {
 
     // Log activity (non-blocking)
     this.logLoginActivity(user.id, ip).catch((err) => {
-      console.error('[AuthService] Failed to log activity:', err);
+      logger.error('[AuthService] Failed to log activity:', err);
     });
 
     this.log('Login successful', { userId: user.id, role: user.role });

@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 /**
  * Email Service
  * Handles email-related business logic (sending booking confirmations, etc.)

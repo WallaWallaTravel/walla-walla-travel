@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 /**
  * Reservation Service
  * Handles "Reserve & Refine" booking flow

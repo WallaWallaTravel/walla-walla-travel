@@ -26,16 +26,16 @@ const nextConfig: NextConfig = {
   // Webpack optimizations
   webpack: (config, { dev, isServer }) => {
     // Production optimizations
-    if (!dev) {
-      // Enable tree shaking
+    if (!dev && !isServer) {
+      // Enable tree shaking (client-side only)
       config.optimization = {
         ...config.optimization,
         usedExports: true,
         sideEffects: false,
         minimize: true,
       };
-      
-      // Split chunks for better caching
+
+      // Split chunks for better caching (client-side only)
       config.optimization.splitChunks = {
         chunks: 'all',
         cacheGroups: {
@@ -86,6 +86,14 @@ const nextConfig: NextConfig = {
       'react-datepicker',
     ],
   },
+
+  // Server-only packages (avoid bundling browser code)
+  serverExternalPackages: [
+    '@deepgram/sdk',
+    'openai',
+    'stripe',
+    '@anthropic-ai/sdk',
+  ],
   
   // Compiler optimizations
   compiler: {

@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 /**
  * Payment Service
  * Handles all payment processing and tracking

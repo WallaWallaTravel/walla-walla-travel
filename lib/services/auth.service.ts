@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 /**
  * Authentication Service
  * 
@@ -83,7 +84,7 @@ export class AuthService extends BaseService {
 
     // Log successful login (non-blocking)
     this.logActivity(user.id, 'login', { ip: ip || 'unknown' }).catch((err) => {
-      console.error('[AuthService] Failed to log activity:', err);
+      logger.error('[AuthService] Failed to log activity:', err);
     });
 
     this.log('Login successful', { userId: user.id, role: user.role });

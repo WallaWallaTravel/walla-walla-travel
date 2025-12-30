@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 /**
  * Itinerary Service
  * Handles all itinerary and itinerary stop business logic

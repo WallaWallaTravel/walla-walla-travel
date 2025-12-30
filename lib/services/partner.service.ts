@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 /**
  * Partner Service
  * Handles partner portal business logic

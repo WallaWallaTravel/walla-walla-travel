@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 /**
  * Prisma Base Service Class
  *
@@ -157,7 +158,7 @@ export abstract class PrismaBaseService {
       });
     } catch (error) {
       // Don't fail the operation if audit logging fails, but log the error
-      console.error('[AuditLog] Failed to create audit entry:', error);
+      logger.error('[AuditLog] Failed to create audit entry:', error);
     }
   }
 
@@ -183,7 +184,7 @@ export abstract class PrismaBaseService {
         },
       });
     } catch (error) {
-      console.error('[AuditLog] Failed to create failure audit entry:', error);
+      logger.error('[AuditLog] Failed to create failure audit entry:', error);
     }
   }
 
@@ -211,7 +212,7 @@ export abstract class PrismaBaseService {
 
     // Log to console in development
     if (process.env.NODE_ENV === 'development') {
-      console.error(`❌ ${this.serviceName} Error [${context}]:`, error);
+      logger.error(`❌ ${this.serviceName} Error [${context}]:`, error);
     }
   }
 
@@ -262,7 +263,7 @@ export abstract class PrismaBaseService {
    */
   protected log(message: string, data?: unknown): void {
     if (process.env.NODE_ENV === 'development') {
-      console.log(`📋 ${this.serviceName}: ${message}`, data || '');
+      logger.info(`📋 ${this.serviceName}: ${message}`, data || '');
     }
   }
 
@@ -270,7 +271,7 @@ export abstract class PrismaBaseService {
    * Log warning
    */
   protected warn(message: string, data?: unknown): void {
-    console.warn(`⚠️  ${this.serviceName}: ${message}`, data || '');
+    logger.warn(`⚠️  ${this.serviceName}: ${message}`, data || '');
   }
 
   // ============================================================================

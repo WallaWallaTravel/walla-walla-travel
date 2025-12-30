@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 /**
  * A/B Testing Statistical Analysis Service
  * 

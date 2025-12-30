@@ -1,11 +1,12 @@
 // Deepgram Voice Transcription Service
 
-import { createClient, LiveTranscriptionEvents } from '@deepgram/sdk'
+import { createClient } from '@deepgram/sdk'
+import { logger } from '@/lib/logger'
 
 const DEEPGRAM_API_KEY = process.env.DEEPGRAM_API_KEY
 
 if (!DEEPGRAM_API_KEY) {
-  console.warn('⚠️ DEEPGRAM_API_KEY not set - voice transcription will not work')
+  logger.warn('⚠️ DEEPGRAM_API_KEY not set - voice transcription will not work')
 }
 
 export interface TranscriptionResult {
@@ -90,7 +91,7 @@ export async function transcribeAudio(
       cost
     }
   } catch (error) {
-    console.error('Deepgram transcription error:', error)
+    logger.error('Deepgram transcription error:', error)
     throw error
   }
 }

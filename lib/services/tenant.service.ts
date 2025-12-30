@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 /**
  * Tenant Service
  * Handles multi-tenant business logic for Walla Walla Travel platform

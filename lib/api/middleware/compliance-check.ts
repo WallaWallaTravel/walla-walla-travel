@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 /**
  * Compliance Check Middleware
  *
@@ -121,7 +122,7 @@ export function withComplianceCheck(
     } catch (error) {
       // If we can't extract entities, proceed without compliance check
       // (the handler will fail with its own validation)
-      console.warn('[ComplianceCheck] Failed to extract entities:', error);
+      logger.warn('[ComplianceCheck] Failed to extract entities:', error);
       return handler(request, context);
     }
 
@@ -239,7 +240,7 @@ export function withComplianceCheck(
       }
     } catch (error) {
       // Log error but don't block operation if compliance check fails
-      console.error('[ComplianceCheck] Check failed:', error);
+      logger.error('[ComplianceCheck] Check failed:', error);
       // Continue to handler - fail-open for now
       return handler(request, context);
     }

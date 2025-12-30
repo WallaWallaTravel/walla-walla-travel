@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 /**
  * Restaurant Service
  * Handles restaurant business logic

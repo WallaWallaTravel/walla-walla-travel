@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 /**
  * Hotel Service
  * Handles hotel and lodging location business logic

@@ -1,361 +1,242 @@
 /**
- * Centralized logging system for the application
- * Provides consistent error handling and debugging capabilities
+ * Structured Logger
+ *
+ * Provides consistent logging across the application with:
+ * - Environment-aware log levels
+ * - Structured JSON output for production
+ * - Context/metadata support
+ * - Performance timing helpers
+ *
+ * Usage:
+ *   import { logger } from '@/lib/logger';
+ *
+ *   logger.info('User logged in', { userId: 123 });
+ *   logger.error('Failed to process payment', { error, bookingId });
+ *   logger.warn('Rate limit approaching', { remaining: 10 });
+ *   logger.debug('Cache hit', { key: 'user:123' });
  */
 
-import { NextResponse } from 'next/server';
+type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
-export interface LogEntry {
-  timestamp: Date;
-  level: 'error' | 'warn' | 'info' | 'debug';
-  source: string;
+interface LogContext {
+  [key: string]: unknown;
+}
+
+interface LogEntry {
+  level: LogLevel;
   message: string;
-  details?: any;
-  stack?: string;
-  sql?: string;
-  params?: any[];
-  userId?: string;
-  errorCode?: string;
+  timestamp: string;
+  context?: LogContext;
+  error?: {
+    name: string;
+    message: string;
+    stack?: string;
+  };
 }
 
-// In-memory log storage for development
-const LOG_BUFFER_SIZE = 100;
-const logBuffer: LogEntry[] = [];
-
-// ANSI color codes for console output
-const colors = {
-  reset: '\x1b[0m',
-  bright: '\x1b[1m',
-  red: '\x1b[31m',
-  green: '\x1b[32m',
-  yellow: '\x1b[33m',
-  blue: '\x1b[34m',
-  magenta: '\x1b[35m',
-  cyan: '\x1b[36m',
+// Environment configuration
+const LOG_LEVELS: Record<LogLevel, number> = {
+  debug: 0,
+  info: 1,
+  warn: 2,
+  error: 3,
 };
 
-class Logger {
-  private isDevelopment = process.env.NODE_ENV === 'development';
-  
-  /**
-   * Log an error with full details
-   */
-  error(source: string, message: string, error?: any, context?: any): string {
-    const errorId = this.generateErrorId();
-    const entry: LogEntry = {
-      timestamp: new Date(),
-      level: 'error',
-      source,
-      message,
-      details: {
-        ...context,
-        errorId,
-        error: error ? {
-          message: error.message,
-          code: error.code,
-          detail: error.detail,
-          constraint: error.constraint,
-          table: error.table,
-          column: error.column,
-        } : undefined,
-      },
-      stack: error?.stack,
-      errorCode: error?.code,
+function getMinLogLevel(): LogLevel {
+  const env = process.env.NODE_ENV;
+  const configuredLevel = process.env.LOG_LEVEL as LogLevel | undefined;
+
+  if (configuredLevel && LOG_LEVELS[configuredLevel] !== undefined) {
+    return configuredLevel;
+  }
+
+  // Default: debug in development, info in production
+  return env === 'production' ? 'info' : 'debug';
+}
+
+function shouldLog(level: LogLevel): boolean {
+  const minLevel = getMinLogLevel();
+  return LOG_LEVELS[level] >= LOG_LEVELS[minLevel];
+}
+
+function formatError(error: unknown): LogEntry['error'] | undefined {
+  if (!error) return undefined;
+
+  if (error instanceof Error) {
+    return {
+      name: error.name,
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
     };
-
-    this.addToBuffer(entry);
-    this.consoleLog(entry);
-    
-    return errorId;
   }
 
-  /**
-   * Log a database query error
-   */
-  dbError(source: string, sql: string, params: any[], error: any): string {
-    const errorId = this.generateErrorId();
-    const entry: LogEntry = {
-      timestamp: new Date(),
-      level: 'error',
-      source: `DB:${source}`,
-      message: `Database query failed: ${error.message}`,
-      sql,
-      params,
-      details: {
-        errorId,
-        severity: error.severity,
-        code: error.code,
-        detail: error.detail,
-        hint: error.hint,
-        position: error.position,
-        where: error.where,
-        constraint: error.constraint,
-        table: error.table,
-        column: error.column,
-        dataType: error.dataType,
-        file: error.file,
-        line: error.line,
-        routine: error.routine,
-      },
-      stack: error.stack,
-      errorCode: error.code,
-    };
+  return {
+    name: 'UnknownError',
+    message: String(error),
+  };
+}
 
-    this.addToBuffer(entry);
-    this.consoleLog(entry);
-    
-    return errorId;
-  }
+function createLogEntry(
+  level: LogLevel,
+  message: string,
+  context?: LogContext
+): LogEntry {
+  const entry: LogEntry = {
+    level,
+    message,
+    timestamp: new Date().toISOString(),
+  };
 
-  /**
-   * Log an API request
-   */
-  apiRequest(method: string, path: string, userId?: string, body?: any): void {
-    if (!this.isDevelopment) return;
-    
-    const entry: LogEntry = {
-      timestamp: new Date(),
-      level: 'info',
-      source: 'API',
-      message: `${method} ${path}`,
-      details: {
-        userId,
-        body: body ? this.sanitizeBody(body) : undefined,
-      },
-    };
-
-    this.addToBuffer(entry);
-    console.log(
-      `${colors.cyan}[API]${colors.reset} ${method} ${path}`,
-      userId ? `[User: ${userId}]` : '',
-      body ? JSON.stringify(this.sanitizeBody(body)) : ''
-    );
-  }
-
-  /**
-   * Log a warning
-   */
-  warn(source: string, message: string, details?: any): void {
-    const entry: LogEntry = {
-      timestamp: new Date(),
-      level: 'warn',
-      source,
-      message,
-      details,
-    };
-
-    this.addToBuffer(entry);
-    this.consoleLog(entry);
-  }
-
-  /**
-   * Log info message
-   */
-  info(source: string, message: string, details?: any): void {
-    const entry: LogEntry = {
-      timestamp: new Date(),
-      level: 'info',
-      source,
-      message,
-      details,
-    };
-
-    this.addToBuffer(entry);
-    if (this.isDevelopment) {
-      this.consoleLog(entry);
-    }
-  }
-
-  /**
-   * Log debug message (only in development)
-   */
-  debug(source: string, message: string, details?: any): void {
-    if (!this.isDevelopment) return;
-    
-    const entry: LogEntry = {
-      timestamp: new Date(),
-      level: 'debug',
-      source,
-      message,
-      details,
-    };
-
-    this.addToBuffer(entry);
-    this.consoleLog(entry);
-  }
-
-  /**
-   * Get recent logs (for development debugging)
-   */
-  getRecentLogs(limit: number = 50, level?: string): LogEntry[] {
-    let logs = [...logBuffer].reverse();
-    
-    if (level) {
-      logs = logs.filter(log => log.level === level);
-    }
-    
-    return logs.slice(0, limit);
-  }
-
-  /**
-   * Clear log buffer
-   */
-  clearLogs(): void {
-    logBuffer.length = 0;
-  }
-
-  /**
-   * Create an error response with proper logging
-   */
-  errorResponse(
-    source: string,
-    error: any,
-    statusCode: number = 500,
-    userMessage?: string
-  ): NextResponse {
-    const errorId = this.error(source, error.message || 'Unknown error', error);
-    
-    const response = {
-      success: false,
-      error: this.isDevelopment
-        ? error.message
-        : userMessage || 'An error occurred. Please try again.',
-      errorId,
-      ...(this.isDevelopment && {
-        debug: {
-          message: error.message,
-          code: error.code,
-          detail: error.detail,
-          stack: error.stack,
-          source,
-        },
-      }),
-    };
-
-    return NextResponse.json(response, { status: statusCode });
-  }
-
-  /**
-   * Create a success response with optional logging
-   */
-  successResponse(data: any, message?: string, log?: boolean): NextResponse {
-    if (log) {
-      this.info('Response', message || 'Success', { dataKeys: Object.keys(data || {}) });
-    }
-    
-    return NextResponse.json({
-      success: true,
-      data,
-      ...(message && { message }),
-    });
-  }
-
-  // Private methods
-
-  private generateErrorId(): string {
-    return `ERR-${Date.now()}-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
-  }
-
-  private sanitizeBody(body: any): any {
-    if (!body) return body;
-    
-    const sanitized = { ...body };
-    
-    // Remove sensitive fields
-    const sensitiveFields = ['password', 'passwordHash', 'token', 'secret', 'apiKey'];
-    sensitiveFields.forEach(field => {
-      if (sanitized[field]) {
-        sanitized[field] = '[REDACTED]';
+  if (context) {
+    // Extract error if present
+    if (context.error) {
+      entry.error = formatError(context.error);
+      const { error: _error, ...rest } = context;
+      if (Object.keys(rest).length > 0) {
+        entry.context = rest;
       }
-    });
-    
-    return sanitized;
-  }
-
-  private addToBuffer(entry: LogEntry): void {
-    logBuffer.push(entry);
-    
-    // Keep buffer size limited
-    if (logBuffer.length > LOG_BUFFER_SIZE) {
-      logBuffer.shift();
+    } else {
+      entry.context = context;
     }
   }
 
-  private consoleLog(entry: LogEntry): void {
-    if (!this.isDevelopment && entry.level !== 'error') return;
-    
-    const timestamp = entry.timestamp.toISOString();
-    const levelColors = {
-      error: colors.red,
-      warn: colors.yellow,
-      info: colors.cyan,
-      debug: colors.magenta,
-    };
-    
-    const levelColor = levelColors[entry.level] || colors.reset;
-    
-    // Main log message
-    console.log(
-      `${levelColor}[${entry.level.toUpperCase()}]${colors.reset}`,
-      `${colors.bright}[${entry.source}]${colors.reset}`,
-      timestamp,
-      entry.message
-    );
-    
-    // Details
-    if (entry.details) {
-      console.log('📦 Details:', entry.details);
+  return entry;
+}
+
+function outputLog(entry: LogEntry): void {
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  if (isProduction) {
+    // JSON output for production (easier to parse in log aggregators)
+    const output = JSON.stringify(entry);
+    switch (entry.level) {
+      case 'error':
+        console.error(output);
+        break;
+      case 'warn':
+        console.warn(output);
+        break;
+      default:
+        console.log(output);
     }
-    
-    // SQL query
-    if (entry.sql) {
-      console.log(`${colors.blue}📊 SQL:${colors.reset}`, entry.sql);
-      if (entry.params?.length) {
-        console.log(`${colors.blue}📌 Params:${colors.reset}`, entry.params);
-      }
-    }
-    
-    // Stack trace (only for errors)
-    if (entry.stack && entry.level === 'error') {
-      console.log(`${colors.red}📚 Stack:${colors.reset}\n`, entry.stack);
-    }
-    
-    // Separator for errors
-    if (entry.level === 'error') {
-      console.log(colors.red + '='.repeat(60) + colors.reset);
+  } else {
+    // Human-readable output for development
+    const prefix = {
+      debug: '[DEBUG]',
+      info: '[INFO]',
+      warn: '[WARN]',
+      error: '[ERROR]',
+    }[entry.level];
+
+    const contextStr = entry.context
+      ? ' ' + JSON.stringify(entry.context)
+      : '';
+    const errorStr = entry.error
+      ? '\n   Error: ' + entry.error.name + ': ' + entry.error.message + (entry.error.stack ? '\n' + entry.error.stack : '')
+      : '';
+
+    const output = prefix + ' ' + entry.message + contextStr + errorStr;
+
+    switch (entry.level) {
+      case 'error':
+        console.error(output);
+        break;
+      case 'warn':
+        console.warn(output);
+        break;
+      default:
+        console.log(output);
     }
   }
 }
 
-// Export singleton instance
-export const logger = new Logger();
+/**
+ * Main logger object
+ */
+export const logger = {
+  debug(message: string, context?: LogContext): void {
+    if (shouldLog('debug')) {
+      outputLog(createLogEntry('debug', message, context));
+    }
+  },
 
-// Export convenient wrapper functions
-export const logError = (source: string, message: string, error?: any, context?: any) =>
-  logger.error(source, message, error, context);
+  info(message: string, context?: LogContext): void {
+    if (shouldLog('info')) {
+      outputLog(createLogEntry('info', message, context));
+    }
+  },
 
-export const logDbError = (source: string, sql: string, params: any[], error: any) =>
-  logger.dbError(source, sql, params, error);
+  warn(message: string, context?: LogContext): void {
+    if (shouldLog('warn')) {
+      outputLog(createLogEntry('warn', message, context));
+    }
+  },
 
-export const logApiRequest = (method: string, path: string, userId?: string, body?: any) =>
-  logger.apiRequest(method, path, userId, body);
+  error(message: string, context?: LogContext): void {
+    if (shouldLog('error')) {
+      outputLog(createLogEntry('error', message, context));
+    }
+  },
 
-export const logWarn = (source: string, message: string, details?: any) =>
-  logger.warn(source, message, details);
+  /**
+   * Create a child logger with preset context
+   */
+  child(defaultContext: LogContext) {
+    return {
+      debug: (message: string, context?: LogContext) =>
+        logger.debug(message, { ...defaultContext, ...context }),
+      info: (message: string, context?: LogContext) =>
+        logger.info(message, { ...defaultContext, ...context }),
+      warn: (message: string, context?: LogContext) =>
+        logger.warn(message, { ...defaultContext, ...context }),
+      error: (message: string, context?: LogContext) =>
+        logger.error(message, { ...defaultContext, ...context }),
+    };
+  },
 
-export const logInfo = (source: string, message: string, details?: any) =>
-  logger.info(source, message, details);
+  /**
+   * Time an async operation
+   */
+  async time<T>(
+    label: string,
+    fn: () => Promise<T>,
+    context?: LogContext
+  ): Promise<T> {
+    const start = performance.now();
+    try {
+      const result = await fn();
+      const duration = Math.round(performance.now() - start);
+      logger.debug(label + ' completed', { ...context, durationMs: duration });
+      return result;
+    } catch (error) {
+      const duration = Math.round(performance.now() - start);
+      logger.error(label + ' failed', { ...context, durationMs: duration, error });
+      throw error;
+    }
+  },
 
-export const logDebug = (source: string, message: string, details?: any) =>
-  logger.debug(source, message, details);
-
-// Helper for creating consistent API responses
-export const apiResponse = {
-  success: (data: any, message?: string, log?: boolean) =>
-    logger.successResponse(data, message, log),
-    
-  error: (source: string, error: any, statusCode?: number, userMessage?: string) =>
-    logger.errorResponse(source, error, statusCode, userMessage),
+  /**
+   * Time a sync operation
+   */
+  timeSync<T>(label: string, fn: () => T, context?: LogContext): T {
+    const start = performance.now();
+    try {
+      const result = fn();
+      const duration = Math.round(performance.now() - start);
+      logger.debug(label + ' completed', { ...context, durationMs: duration });
+      return result;
+    } catch (error) {
+      const duration = Math.round(performance.now() - start);
+      logger.error(label + ' failed', { ...context, durationMs: duration, error });
+      throw error;
+    }
+  },
 };
+
+// Named exports for specific log levels (convenient imports)
+export const logDebug = logger.debug.bind(logger);
+export const logInfo = logger.info.bind(logger);
+export const logWarn = logger.warn.bind(logger);
+export const logError = logger.error.bind(logger);
 
 export default logger;

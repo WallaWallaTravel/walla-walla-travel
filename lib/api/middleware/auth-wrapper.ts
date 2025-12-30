@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 /**
  * Authentication Middleware Wrappers
  * 
@@ -155,7 +156,7 @@ export function withOptionalAuth(
       }
     } catch (error) {
       // Silently fail - auth is optional
-      console.debug('Optional auth failed:', error);
+      logger.debug('Optional auth failed:', error);
     }
 
     // Execute handler with session (may be null)
@@ -208,7 +209,7 @@ async function getSessionFromRequest(): Promise<any> {
     const { getSession } = await import('@/lib/session');
     return await getSession();
   } catch (error) {
-    console.error('[Auth Wrapper] Session error:', error);
+    logger.error('[Auth Wrapper] Session error:', error);
     return null;
   }
 }

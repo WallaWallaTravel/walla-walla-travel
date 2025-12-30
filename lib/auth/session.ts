@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 /**
  * Session Management
  * 
@@ -23,7 +24,7 @@ function getSessionSecret(): Uint8Array {
       );
     }
     // Development only - use a consistent dev secret
-    console.warn('[Session] WARNING: Using development session secret. Set SESSION_SECRET in production.');
+    logger.warn('[Session] WARNING: Using development session secret. Set SESSION_SECRET in production.');
     return new TextEncoder().encode('dev-only-secret-do-not-use-in-production-32chars');
   }
   if (secret.length < 32) {
@@ -81,7 +82,7 @@ export async function verifySession(token: string): Promise<SessionPayload | nul
     const { payload } = await jwtVerify(token, SESSION_SECRET);
     return payload as unknown as SessionPayload;
   } catch (error) {
-    console.error('[Session] Verification failed:', error);
+    logger.error('[Session] Verification failed:', error);
     return null;
   }
 }
