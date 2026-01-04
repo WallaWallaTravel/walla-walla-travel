@@ -158,7 +158,7 @@ export abstract class PrismaBaseService {
       });
     } catch (error) {
       // Don't fail the operation if audit logging fails, but log the error
-      logger.error('[AuditLog] Failed to create audit entry:', error);
+      logger.error('[AuditLog] Failed to create audit entry', { error });
     }
   }
 
@@ -184,7 +184,7 @@ export abstract class PrismaBaseService {
         },
       });
     } catch (error) {
-      logger.error('[AuditLog] Failed to create failure audit entry:', error);
+      logger.error('[AuditLog] Failed to create failure audit entry', { error });
     }
   }
 
@@ -212,7 +212,7 @@ export abstract class PrismaBaseService {
 
     // Log to console in development
     if (process.env.NODE_ENV === 'development') {
-      logger.error(`❌ ${this.serviceName} Error [${context}]:`, error);
+      logger.error(`${this.serviceName} Error [${context}]`, { error });
     }
   }
 
@@ -261,17 +261,17 @@ export abstract class PrismaBaseService {
   /**
    * Log service activity (development only)
    */
-  protected log(message: string, data?: unknown): void {
+  protected log(message: string, data?: Record<string, unknown>): void {
     if (process.env.NODE_ENV === 'development') {
-      logger.info(`📋 ${this.serviceName}: ${message}`, data || '');
+      logger.info(`${this.serviceName}: ${message}`, data);
     }
   }
 
   /**
    * Log warning
    */
-  protected warn(message: string, data?: unknown): void {
-    logger.warn(`⚠️  ${this.serviceName}: ${message}`, data || '');
+  protected warn(message: string, data?: Record<string, unknown>): void {
+    logger.warn(`${this.serviceName}: ${message}`, data);
   }
 
   // ============================================================================

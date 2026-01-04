@@ -1,7 +1,34 @@
 import { logger } from '@/lib/logger';
 /**
  * Proposal Service
- * Handles all proposal business logic
+ *
+ * @module lib/services/proposal.service
+ * @description Manages wine tour proposals from creation through conversion to booking.
+ * Handles proposal lifecycle including drafting, sending, client responses (accept/decline/counter),
+ * and conversion to confirmed bookings.
+ *
+ * @requires BaseService - Database operations abstraction
+ * @requires proposal-utils - Proposal number generation, pricing calculations, validation
+ *
+ * @example
+ * ```typescript
+ * import { proposalService } from '@/lib/services/proposal.service';
+ *
+ * // Create a new proposal
+ * const proposal = await proposalService.create({
+ *   client_name: 'Jane Smith',
+ *   client_email: 'jane@example.com',
+ *   tour_date: '2026-03-15',
+ *   party_size: 6,
+ *   wineries: [{ winery_id: 1, duration: 90 }]
+ * });
+ *
+ * // Send proposal to client
+ * await proposalService.send(proposal.id);
+ *
+ * // Convert accepted proposal to booking
+ * const booking = await proposalService.convertToBooking(proposal.id);
+ * ```
  */
 
 import { BaseService } from './base.service';
@@ -16,7 +43,7 @@ import {
 } from '@/lib/proposals/proposal-utils';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
 
-interface Proposal {
+interface ProposalRow {
   id: number;
   proposal_number: string;
   uuid: string;
@@ -54,7 +81,7 @@ export class ProposalService extends BaseService {
 
     // Build WHERE conditions
     const conditions: string[] = ['1=1'];
-    const values: any[] = [];
+    const values: unknown[] = [];
     let paramCount = 0;
 
     if (status && status !== 'all') {
@@ -96,7 +123,7 @@ export class ProposalService extends BaseService {
 
     // Get total count
     const countQuery = `SELECT COUNT(*) FROM proposals WHERE ${whereClause}`;
-    const countResult = await this.query(countQuery, values.slice(0, -2)); // Remove limit/offset
+    const countResult = await this.query<{ count: string }>(countQuery, values.slice(0, -2)); // Remove limit/offset
     const total = parseInt(countResult.rows[0].count);
 
     return {
@@ -157,7 +184,7 @@ export class ProposalService extends BaseService {
         $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
         $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
         $31, $32
-      ) RETURNING id, proposal_number, uuid`,
+      ) RETURNING id, proposal_number, uuid` as const,
       [
         proposalNumber,
         data.client_name,
@@ -194,7 +221,7 @@ export class ProposalService extends BaseService {
       ]
     );
 
-    const proposal = result.rows[0];
+    const proposal = result.rows[0] as { id: number; proposal_number: string; uuid: string };
 
     // Log activity
     await logProposalActivity(

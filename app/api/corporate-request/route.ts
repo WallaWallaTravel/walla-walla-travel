@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { parseItineraryFile } from '@/lib/corporate/itinerary-parser';
 import { sendCorporateRequestNotification } from '@/lib/email';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -34,8 +35,14 @@ export async function POST(request: NextRequest) {
     const requestNumber = `CR-${Date.now()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
     
     // Handle file uploads
-    const uploadedFiles: any[] = [];
-    let aiExtractedData: any = null;
+    interface UploadedFile {
+      filename: string;
+      mimeType: string;
+      size: number;
+      dataUrl: string;
+    }
+    const uploadedFiles: UploadedFile[] = [];
+    let aiExtractedData: Record<string, unknown> | null = null;
     let aiConfidenceScore = 0;
     
     const files = formData.getAll('files');
@@ -50,11 +57,11 @@ export async function POST(request: NextRequest) {
           
           // Parse itinerary if it's the first file
           if (uploadedFiles.length === 0) {
-            console.log('[Corporate Request] Parsing itinerary from:', file.name);
+            logger.info('Parsing corporate itinerary', { filename: file.name });
             const parsed = await parseItineraryFile(fileDataUrl, file.type, file.name);
-            aiExtractedData = parsed;
-            aiConfidenceScore = parsed.confidence;
-            console.log('[Corporate Request] AI extraction confidence:', aiConfidenceScore);
+            aiExtractedData = parsed as unknown as Record<string, unknown>;
+            aiConfidenceScore = (parsed as { confidence: number }).confidence;
+            logger.info('AI extraction complete', { confidence: aiConfidenceScore });
           }
           
           uploadedFiles.push({
@@ -64,15 +71,15 @@ export async function POST(request: NextRequest) {
             dataUrl: fileDataUrl
           });
         } catch (error) {
-          console.error('[Corporate Request] File processing error:', error);
+          logger.error('Corporate request file processing error', { error, filename: file.name });
         }
       }
     }
     
     // Parse preferred dates
-    let parsedDates: any = [];
+    let parsedDates: string[] = [];
     try {
-      parsedDates = JSON.parse(preferredDates || '[]');
+      parsedDates = JSON.parse(preferredDates || '[]') as string[];
     } catch {
       parsedDates = preferredDates ? [preferredDates] : [];
     }
@@ -118,7 +125,7 @@ export async function POST(request: NextRequest) {
       budget_range: budgetRange || undefined,
       estimated_attendees: partySize,
     }).catch(err => {
-      console.error('[Corporate Request] Failed to send admin notification:', err);
+      logger.error('Failed to send corporate request admin notification', { error: err });
     });
     
     return NextResponse.json({
@@ -130,10 +137,11 @@ export async function POST(request: NextRequest) {
       message: 'Corporate request submitted successfully. We\'ll respond within 48 hours.'
     });
     
-  } catch (error: any) {
-    console.error('[Corporate Request API] Error:', error);
+  } catch (error) {
+    logger.error('Corporate request API error', { error });
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to submit corporate request', details: error.message },
+      { error: 'Failed to submit corporate request', details: message },
       { status: 500 }
     );
   }
@@ -149,8 +157,8 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status');
     
     let sql = 'SELECT * FROM corporate_requests';
-    let params: any[] = [];
-    
+    const params: string[] = [];
+
     if (status) {
       sql += ' WHERE status = $1';
       params.push(status);
@@ -166,10 +174,11 @@ export async function GET(request: NextRequest) {
       count: result.rows.length
     });
     
-  } catch (error: any) {
-    console.error('[Corporate Request API] Error:', error);
+  } catch (error) {
+    logger.error('Corporate request API fetch error', { error });
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to fetch corporate requests', details: error.message },
+      { error: 'Failed to fetch corporate requests', details: message },
       { status: 500 }
     );
   }

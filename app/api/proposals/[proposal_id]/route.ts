@@ -7,6 +7,8 @@ import {
   validateProposalData,
   logProposalActivity
 } from '@/lib/proposals/proposal-utils';
+import { withCSRF } from '@/lib/api/middleware/csrf';
+import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 
 /**
  * GET /api/proposals/[proposal_id]
@@ -72,7 +74,9 @@ export const GET = withErrorHandling(async (
  * PATCH /api/proposals/[proposal_id]
  * Update an existing proposal
  */
-export const PATCH = withErrorHandling(async (
+export const PATCH = withCSRF(
+  withRateLimit(rateLimiters.api)(
+    withErrorHandling(async (
   request: NextRequest,
   { params }: { params: Promise<{ proposal_id: string }> }
 ): Promise<NextResponse> => {
@@ -116,11 +120,11 @@ export const PATCH = withErrorHandling(async (
 
   // Build update query dynamically
   const updateFields: string[] = [];
-  const updateValues: any[] = [];
+  const updateValues: unknown[] = [];
   let paramCount = 0;
 
   // Helper to add field
-  const addField = (field: string, value: any) => {
+  const addField = (field: string, value: unknown) => {
     paramCount++;
     updateFields.push(`${field} = $${paramCount}`);
     updateValues.push(value);
@@ -207,13 +211,15 @@ export const PATCH = withErrorHandling(async (
     data: result.rows[0],
     message: 'Proposal updated successfully'
   });
-});
+})));
 
 /**
  * DELETE /api/proposals/[proposal_id]
  * Delete a proposal (only drafts can be deleted)
  */
-export const DELETE = withErrorHandling(async (
+export const DELETE = withCSRF(
+  withRateLimit(rateLimiters.api)(
+    withErrorHandling(async (
   request: NextRequest,
   { params }: { params: Promise<{ proposal_id: string }> }
 ): Promise<NextResponse> => {
@@ -243,4 +249,4 @@ export const DELETE = withErrorHandling(async (
     success: true,
     message: 'Proposal deleted successfully'
   });
-});
+})));

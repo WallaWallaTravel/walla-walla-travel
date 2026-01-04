@@ -1,7 +1,8 @@
 import { NextRequest } from 'next/server';
-import { 
-  successResponse, 
-  errorResponse, 
+import { logger } from '@/lib/logger';
+import {
+  successResponse,
+  errorResponse,
   requireAuth,
   parseRequestBody,
   validateRequiredFields,
@@ -150,7 +151,7 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('Break management error:', error);
+    logger.error('Break management error', { error });
     return errorResponse('Failed to process break action', 500);
   }
 }
@@ -203,7 +204,7 @@ export async function GET(request: NextRequest) {
     }, 'Breaks retrieved successfully');
 
   } catch (error) {
-    console.error('Get breaks error:', error);
+    logger.error('Get breaks error', { error });
     return errorResponse('Failed to retrieve breaks', 500);
   }
 }

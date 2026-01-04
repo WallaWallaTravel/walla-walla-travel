@@ -1,8 +1,29 @@
 import { logger } from '@/lib/logger';
 /**
  * Authentication Service
- * 
- * Handles user authentication and session management
+ *
+ * @module lib/services/auth.service
+ * @description Handles user authentication, session management, and access control.
+ * Provides secure login with bcrypt password verification and JWT session tokens.
+ *
+ * @security
+ * - Passwords are verified using bcrypt (never stored in plain text)
+ * - Login attempts are rate-limited (5 attempts per 15 minutes)
+ * - Sessions are JWT tokens with configurable expiration
+ * - Inactive users cannot authenticate
+ *
+ * @example
+ * ```typescript
+ * import { authService } from '@/lib/services/auth.service';
+ *
+ * // Authenticate user
+ * const result = await authService.login({
+ *   email: 'admin@example.com',
+ *   password: 'securePassword123'
+ * }, '192.168.1.1');
+ *
+ * // Returns { token, user, redirectTo }
+ * ```
  */
 
 import { BaseService } from './base.service';
@@ -104,7 +125,7 @@ export class AuthService extends BaseService {
   /**
    * Log user activity (non-critical, non-blocking)
    */
-  private async logActivity(userId: number, action: string, details: any): Promise<void> {
+  private async logActivity(userId: number, action: string, details: Record<string, unknown>): Promise<void> {
     const { query } = await import('@/lib/db');
     await query(
       `INSERT INTO user_activity_logs (user_id, action, details, created_at)

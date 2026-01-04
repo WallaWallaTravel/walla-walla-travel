@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import { query } from '@/lib/db';
 
 export async function PUT(
@@ -82,8 +83,9 @@ export async function PUT(
       throw error;
     }
 
-  } catch (error: any) {
-    console.error('Error saving stops:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error) {
+    logger.error('Error saving stops', { error });
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

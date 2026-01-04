@@ -3,6 +3,8 @@ import { withAuth } from '@/lib/api/middleware/auth-wrapper';
 import { validateBody } from '@/lib/api/middleware/validation';
 import { bookingService } from '@/lib/services/booking.service';
 import { z } from 'zod';
+import { withCSRF } from '@/lib/api/middleware/csrf';
+import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 
 /**
  * POST /api/bookings/cancel
@@ -16,7 +18,9 @@ const CancelBookingSchema = z.object({
   reason: z.string().optional(),
 });
 
-export const POST = withAuth(async (request: NextRequest, session) => {
+export const POST = withCSRF(
+  withRateLimit(rateLimiters.payment)(
+    withAuth(async (request: NextRequest, session) => {
   // ✅ Validate
   const { booking_id, reason } = await validateBody(request, CancelBookingSchema);
 
@@ -29,7 +33,7 @@ export const POST = withAuth(async (request: NextRequest, session) => {
     message: 'Booking cancelled successfully',
     timestamp: new Date().toISOString(),
   });
-});
+})));
 
 
 

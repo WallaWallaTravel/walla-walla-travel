@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 import { bookingService } from '@/lib/services/booking.service';
 import { validate, createBookingSchema } from '@/lib/validation';
+import { withCSRF } from '@/lib/api/middleware/csrf';
+import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 
 /**
  * POST /api/bookings/create
@@ -10,7 +12,9 @@ import { validate, createBookingSchema } from '@/lib/validation';
  * 
  * ✅ REFACTORED: Service layer handles all business logic
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withRateLimit(rateLimiters.payment)(
+    withErrorHandling(async (request: NextRequest) => {
   // ✅ Validate request body
   const validation = await validate(request, createBookingSchema);
   if (!validation.success) {
@@ -35,4 +39,4 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     message: "Booking confirmed! We're excited to show you Walla Walla wine country.",
     timestamp: new Date().toISOString(),
   });
-});
+})));

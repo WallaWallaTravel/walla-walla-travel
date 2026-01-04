@@ -14,6 +14,7 @@ import { setSessionCookie } from '@/lib/auth/session';
 import { authService } from '@/lib/services/auth.service';
 import { auditService } from '@/lib/services/audit.service';
 import { z } from 'zod';
+import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,7 +30,8 @@ function getClientIp(request: NextRequest): string {
   return forwarded?.split(',')[0].trim() || realIp || 'unknown';
 }
 
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withRateLimit(rateLimiters.auth)(
+  withErrorHandling(async (request: NextRequest) => {
   // ✅ Validate with Zod
   const credentials = await validateBody(request, LoginSchema);
 
@@ -47,4 +49,4 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   });
 
   return setSessionCookie(response, result.token);
-});
+}));

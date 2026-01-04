@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { isProduction } from '@/lib/config/env';
+import { logger } from '@/lib/logger';
 
 // ============================================================================
 // Rate Limiting
@@ -260,18 +261,14 @@ export function logRequest(
   const method = request.method;
   const url = request.nextUrl.pathname;
   const ip = request.headers.get('x-forwarded-for') || 'unknown';
-  
-  console.log(
-    JSON.stringify({
-      type: 'http_request',
-      method,
-      url,
-      ip,
-      statusCode,
-      duration,
-      timestamp: new Date().toISOString(),
-    })
-  );
+
+  logger.debug('HTTP request', {
+    method,
+    url,
+    ip,
+    statusCode,
+    duration
+  });
 }
 
 // ============================================================================

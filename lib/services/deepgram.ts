@@ -81,7 +81,7 @@ export async function transcribeAudio(
     return {
       transcript: alternative.transcript,
       confidence: alternative.confidence || 0,
-      words: alternative.words?.map((w: any) => ({
+      words: alternative.words?.map((w: { word: string; start: number; end: number; confidence: number }) => ({
         word: w.word,
         start: w.start,
         end: w.end,
@@ -91,7 +91,7 @@ export async function transcribeAudio(
       cost
     }
   } catch (error) {
-    logger.error('Deepgram transcription error:', error)
+    logger.error('Deepgram transcription error', { error })
     throw error
   }
 }

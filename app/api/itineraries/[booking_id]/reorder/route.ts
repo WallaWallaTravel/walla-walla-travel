@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import { query } from '@/lib/db';
 
 export async function PUT(
@@ -35,9 +36,10 @@ export async function PUT(
     await query('COMMIT');
 
     return NextResponse.json({ success: true, message: 'Stops reordered successfully' });
-  } catch (error: any) {
+  } catch (error) {
     await query('ROLLBACK');
-    console.error('Error reordering stops:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    logger.error('Error reordering stops', { error });
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

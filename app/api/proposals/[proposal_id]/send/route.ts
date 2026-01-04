@@ -1,14 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import { query } from '@/lib/db';
 import { withErrorHandling, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { sendEmail } from '@/lib/email';
 import { COMPANY_INFO } from '@/lib/config/company';
+import { withCSRF } from '@/lib/api/middleware/csrf';
+import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 
 /**
  * POST /api/proposals/[proposal_id]/send
  * Send proposal to client via email and/or SMS
  */
-export const POST = withErrorHandling(async (
+export const POST = withCSRF(
+  withRateLimit(rateLimiters.api)(
+    withErrorHandling(async (
   request: NextRequest,
   { params }: { params: Promise<{ proposal_id: string }> }
 ): Promise<NextResponse> => {
@@ -44,7 +49,7 @@ export const POST = withErrorHandling(async (
   // Check if already sent
   if (proposal.status !== 'draft') {
     // Allow resending
-    console.log(`Resending proposal ${proposal.proposal_number}`);
+    logger.info('Resending proposal', { proposalNumber: proposal.proposal_number });
   }
 
   // Generate proposal URL
@@ -121,7 +126,7 @@ export const POST = withErrorHandling(async (
   // Send SMS (TODO: Implement Twilio integration)
   if (method === 'sms' || method === 'both') {
     // For now, just log
-    console.log(`SMS would be sent to ${proposal.client_phone}: Your ${COMPANY_INFO.name} proposal is ready! View it here: ${proposalUrl}`);
+    logger.info('SMS would be sent', { phone: proposal.client_phone, proposalUrl });
 
     // TODO: Implement Twilio
     // await sendSMS({
@@ -166,4 +171,4 @@ export const POST = withErrorHandling(async (
       method
     }
   });
-});
+})));

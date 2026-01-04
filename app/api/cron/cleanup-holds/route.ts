@@ -12,6 +12,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { vehicleAvailabilityService } from '@/lib/services/vehicle-availability.service';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   // Verify cron secret (for Vercel cron jobs)
@@ -35,10 +36,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       deleted_count: deletedCount,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
-    console.error('Cron cleanup-holds error:', error);
+  } catch (error) {
+    logger.error('Cron cleanup-holds error', { error });
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Cleanup failed', details: error.message },
+      { error: 'Cleanup failed', details: message },
       { status: 500 }
     );
   }

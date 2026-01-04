@@ -4,12 +4,16 @@ import { withErrorHandling, BadRequestError, NotFoundError, UnauthorizedError } 
 import { getSession } from '@/lib/auth/session';
 import { Pool } from 'pg';
 import { getDbConfig } from '@/lib/config/database';
+import { withCSRF } from '@/lib/api/middleware/csrf';
+import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 
 /**
  * POST /api/proposals/[proposal_id]/convert
  * Convert an accepted proposal to a booking
  */
-export const POST = withErrorHandling(async (
+export const POST = withCSRF(
+  withRateLimit(rateLimiters.api)(
+    withErrorHandling(async (
   request: NextRequest,
   { params }: { params: Promise<{ proposal_id: string }> }
 ): Promise<NextResponse> => {
@@ -48,9 +52,22 @@ export const POST = withErrorHandling(async (
   const serviceItems = proposal.service_items || [];
 
   // Find the main tour service (usually the first one)
-  const tourService = serviceItems.find((item: any) =>
+  interface ServiceItem {
+    type?: string;
+    name?: string;
+    tour_date?: string;
+    date?: string;
+    party_size?: number;
+    guests?: number;
+    duration_hours?: number;
+    duration?: number;
+    pickup_location?: string;
+    start_time?: string;
+    price?: number | string;
+  }
+  const tourService = (serviceItems as ServiceItem[]).find((item) =>
     item.type === 'tour' || item.name?.toLowerCase().includes('tour')
-  ) || serviceItems[0] || {};
+  ) || (serviceItems[0] as ServiceItem) || {};
 
   // Extract tour date - check multiple possible locations
   let tourDate = proposal.tour_date || tourService.tour_date || tourService.date;
@@ -224,4 +241,4 @@ export const POST = withErrorHandling(async (
     client.release();
     await pool.end();
   }
-});
+})));

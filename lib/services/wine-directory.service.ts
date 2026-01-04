@@ -47,13 +47,45 @@ export interface Wine {
   updated_at: Date;
 }
 
+interface WinerySearchResult {
+  id: number;
+  name: string;
+  slug: string;
+  short_description: string | null;
+  city: string;
+  is_featured: boolean;
+}
+
+interface WineryComplete {
+  id: number;
+  name: string;
+  slug: string;
+  description: string | null;
+  short_description: string | null;
+  address: string;
+  city: string;
+  state: string;
+  zip: string;
+  phone: string | null;
+  website: string | null;
+  email: string | null;
+  tasting_fee: number | null;
+  reservation_required: boolean;
+  is_featured: boolean;
+  photos: string[] | null;
+  amenities: string[] | null;
+  specialties: string[] | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
 export interface WineryContent {
   id: number;
   winery_id: number;
   content_type: 'backstory' | 'philosophy' | 'winemaker_bio' | 'tasting_notes' | 'visitor_tips' | 'signature_experience';
   title?: string;
   content: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   created_at: Date;
   updated_at: Date;
 }
@@ -161,7 +193,7 @@ export class WineDirectoryService extends BaseService {
       LEFT JOIN wineries wy ON w.winery_id = wy.id
       WHERE 1=1
     `;
-    const params: any[] = [];
+    const params: unknown[] = [];
 
     if (wineryId) {
       params.push(wineryId);
@@ -397,7 +429,7 @@ export class WineDirectoryService extends BaseService {
         AND e.start_date >= $1
         AND e.start_date <= $2
     `;
-    const params: any[] = [startDate, endDate];
+    const params: unknown[] = [startDate, endDate];
 
     if (category) {
       params.push(category);
@@ -508,7 +540,7 @@ export class WineDirectoryService extends BaseService {
    * Full-text search across directory
    */
   async search(query: string, limit: number = 20): Promise<{
-    wineries: any[];
+    wineries: WinerySearchResult[];
     wines: Wine[];
     events: Event[];
   }> {
@@ -517,7 +549,7 @@ export class WineDirectoryService extends BaseService {
     const searchPattern = `%${query}%`;
 
     const [wineries, wines, events] = await Promise.all([
-      this.queryMany(
+      this.queryMany<WinerySearchResult>(
         `SELECT id, name, slug, short_description, city, is_featured
          FROM wineries
          WHERE name ILIKE $1 OR description ILIKE $1 OR specialties::text ILIKE $1
@@ -544,7 +576,7 @@ export class WineDirectoryService extends BaseService {
    * Get winery with all related data
    */
   async getWineryComplete(wineryId: number): Promise<{
-    winery: any;
+    winery: WineryComplete | null;
     wines: Wine[];
     content: WineryContent[];
     people: WineryPerson[];
@@ -554,7 +586,7 @@ export class WineDirectoryService extends BaseService {
     this.log('Getting complete winery data', { wineryId });
 
     const [winery, wines, content, people, faqs, events] = await Promise.all([
-      this.queryOne('SELECT * FROM wineries WHERE id = $1', [wineryId]),
+      this.queryOne<WineryComplete>('SELECT * FROM wineries WHERE id = $1', [wineryId]),
       this.listWines(wineryId),
       this.getWineryContent(wineryId),
       this.getWineryPeople(wineryId),

@@ -30,8 +30,8 @@ export class RestaurantService extends BaseService {
   async list(): Promise<Restaurant[]> {
     this.log('Listing restaurants');
 
-    const result = await this.query(
-      `SELECT 
+    const result = await this.query<Restaurant>(
+      `SELECT
         id, name, cuisine_type, address, phone, email,
         website, menu_url, is_partner, is_active
       FROM restaurants

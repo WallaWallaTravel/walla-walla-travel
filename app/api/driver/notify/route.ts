@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import { query } from '@/lib/db';
 
 export async function POST(request: NextRequest) {
@@ -31,8 +32,9 @@ export async function POST(request: NextRequest) {
       success: true,
       message: 'Driver notified successfully'
     });
-  } catch (error: any) {
-    console.error('Error notifying driver:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error) {
+    logger.error('Error notifying driver', { error });
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

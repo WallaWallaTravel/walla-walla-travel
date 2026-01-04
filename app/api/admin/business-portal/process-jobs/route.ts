@@ -4,6 +4,7 @@
  */
 
 import { NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import { processJobs } from '@/lib/business-portal/processing-worker';
 
 export const runtime = 'nodejs';
@@ -16,7 +17,7 @@ export const maxDuration = 300; // 5 minutes for processing
  */
 export async function POST() {
   try {
-    console.log('[Admin] Starting job processing...');
+    logger.info('Starting job processing');
     
     const result = await processJobs(50); // Process up to 50 jobs
     
@@ -26,10 +27,11 @@ export async function POST() {
       message: `Processed ${result.processed} jobs: ${result.succeeded} succeeded, ${result.failed} failed`
     });
     
-  } catch (error: any) {
-    console.error('[Admin] Job processing error:', error);
+  } catch (error) {
+    logger.error('Job processing error', { error });
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to process jobs', details: error.message },
+      { error: 'Failed to process jobs', details: message },
       { status: 500 }
     );
   }
@@ -66,10 +68,11 @@ export async function GET() {
       }
     });
     
-  } catch (error: any) {
-    console.error('[Admin] Failed to get job stats:', error);
+  } catch (error) {
+    logger.error('Failed to get job stats', { error });
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to get stats', details: error.message },
+      { error: 'Failed to get stats', details: message },
       { status: 500 }
     );
   }

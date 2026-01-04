@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    logger.info('VehicleDocuments', 'Fetching documents', {
+    logger.info('Fetching vehicle documents', {
       userId: user.id,
       vehicleId: parseInt(vehicleId)
     });
@@ -63,8 +63,8 @@ export async function GET(request: NextRequest) {
       documents: formattedDocs,
       grouped: groupedDocs
     });
-  } catch (error: any) {
-    logger.error('VehicleDocuments', 'Failed to fetch documents', error);
+  } catch (error) {
+    logger.error('Failed to fetch vehicle documents', { error });
     return NextResponse.json(
       { error: 'Failed to fetch vehicle documents' },
       { status: 500 }

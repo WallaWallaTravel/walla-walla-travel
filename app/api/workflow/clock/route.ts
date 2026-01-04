@@ -1,34 +1,42 @@
 import { NextRequest } from 'next/server';
-import { 
-  successResponse, 
-  errorResponse, 
+import {
+  successResponse,
+  errorResponse,
   requireAuth,
-  parseRequestBody,
   formatDateForDB
 } from '@/app/api/utils';
 import { query } from '@/lib/db';
 import { logger, logApiRequest, logError } from '@/lib/logger';
+import { z } from 'zod';
 
-interface ClockRequest {
-  action: 'clock_in' | 'clock_out';
-  location?: {
-    latitude: number;
-    longitude: number;
-  };
-  vehicleId?: number;
-  startMileage?: number;
-  endMileage?: number;
-  signature?: string;
-  forceClockOut?: boolean; // For admin override
-}
+// Request body schema
+const ClockRequestSchema = z.object({
+  action: z.enum(['clock_in', 'clock_out']),
+  location: z.object({
+    latitude: z.number().min(-90).max(90),
+    longitude: z.number().min(-180).max(180),
+  }).optional(),
+  vehicleId: z.number().int().positive().optional(),
+  startMileage: z.number().int().nonnegative().optional(),
+  endMileage: z.number().int().nonnegative().optional(),
+  signature: z.string().max(5000).optional(),
+  forceClockOut: z.boolean().optional(), // For admin override
+});
 
-interface TimeCardStatus {
-  isClocked: boolean;
-  currentTimeCard?: any;
-  lastClockIn?: string;
-  vehicleInfo?: any;
-  message?: string;
-  suggestions?: string[];
+type ClockRequest = z.infer<typeof ClockRequestSchema>;
+
+interface TimeCard {
+  id: number;
+  driver_id: number;
+  vehicle_id: number | null;
+  date: string;
+  clock_in_time: string;
+  clock_out_time: string | null;
+  vehicle_number?: string;
+  make?: string;
+  model?: string;
+  on_duty_hours?: number;
+  status?: string;
 }
 
 // Helper function to generate error ID
@@ -58,7 +66,7 @@ function formatDate(date: Date): string {
 
 export async function POST(request: NextRequest) {
   const errorId = generateErrorId();
-  let session: any = null;
+  let session: { userId: string; name?: string; email?: string } | null = null;
   let body: ClockRequest | null = null;
 
   try {
@@ -69,33 +77,33 @@ export async function POST(request: NextRequest) {
     }
     session = authResult;
 
-    // Parse request body
-    body = await parseRequestBody<ClockRequest>(request);
+    // Parse and validate request body
+    let rawBody: unknown;
+    try {
+      rawBody = await request.json();
+    } catch {
+      return errorResponse('Invalid JSON in request body', 400);
+    }
 
-    // 🔍 DEBUGGING: Log the complete request body
-    console.log('==================================================');
-    console.log('🔍 CLOCK-IN REQUEST RECEIVED');
-    console.log('==================================================');
-    console.log('Driver ID:', session.userId);
-    console.log('Request Body:', JSON.stringify(body, null, 2));
-    console.log('Action:', body?.action);
-    console.log('Vehicle ID:', body?.vehicleId);
-    console.log('Vehicle ID Type:', typeof body?.vehicleId);
-    console.log('==================================================');
+    const parseResult = ClockRequestSchema.safeParse(rawBody);
+    if (!parseResult.success) {
+      logger.warn('Clock request validation failed', {
+        userId: session.userId,
+        errors: parseResult.error.issues,
+      });
+      return errorResponse('Validation failed: ' + parseResult.error.issues.map((e) => e.message).join(', '), 400);
+    }
+
+    body = parseResult.data;
 
     // Log the API request with the new logger
     logApiRequest('POST', '/api/workflow/clock', session.userId, body);
 
-    if (!body) {
-      console.error('❌ Request body is null or undefined');
-      return errorResponse('Unable to process your request. Please try again.', 400);
-    }
-
-    // Validate action
-    if (!body.action || !['clock_in', 'clock_out'].includes(body.action)) {
-      console.error('❌ Invalid action:', body.action);
-      return errorResponse('Please specify whether you want to clock in or clock out.', 400);
-    }
+    logger.debug('Clock request received', {
+      userId: session.userId,
+      action: body.action,
+      vehicleId: body.vehicleId,
+    });
 
     const driverId = parseInt(session.userId);
     const today = formatDateForDB(new Date());
@@ -103,7 +111,7 @@ export async function POST(request: NextRequest) {
 
     // ==================== CLOCK IN ====================
     if (body.action === 'clock_in') {
-      console.log('📍 Processing CLOCK IN for driver', driverId);
+      logger.debug('Processing CLOCK IN', { driverId });
       
       // 1. Check for ACTIVE time card only (not clocked out)
       const activeTimeCard = await query(`
@@ -175,7 +183,7 @@ export async function POST(request: NextRequest) {
             WHERE id = $1
           `, [card.id, endOfDay, 'SYSTEM_AUTO_CLOSE']);
           
-          console.log(`Auto-closed incomplete time card ${card.id} from ${formatDate(cardDate)}`);
+          logger.info('Auto-closed incomplete time card', { timeCardId: card.id, date: formatDate(cardDate) });
         } else {
           return successResponse({
             status: 'incomplete_previous',
@@ -190,11 +198,11 @@ export async function POST(request: NextRequest) {
       }
 
       // 3. Check vehicle selection (allow null for non-driving shifts)
-      console.log(`🚐 Clock-in request - Driver ${driverId}, VehicleID: ${body.vehicleId || 'NONE (non-driving shift)'}`);
+      logger.debug('Clock-in request vehicle check', { driverId, vehicleId: body.vehicleId || 'NONE (non-driving shift)' });
 
       // Allow null vehicleId for non-driving tasks (office work, loading, etc.)
       if (!body.vehicleId) {
-        console.log(`✅ Non-driving shift - no vehicle required for driver ${driverId}`);
+        logger.debug('Non-driving shift - no vehicle required', { driverId });
 
         // Create time card without vehicle (non-driving shift)
         const workLocation = body.location
@@ -224,10 +232,11 @@ export async function POST(request: NextRequest) {
           body.location?.longitude || null
         ]);
 
-        console.log(`✅ Driver ${driverId} clocked in for non-driving shift:`);
-        console.log(`   Time Card ID: ${result.rows[0].id}`);
-        console.log(`   Vehicle ID: NULL (non-driving task)`);
-        console.log(`   Clock In Time: ${result.rows[0].clock_in_time}`);
+        logger.info('Driver clocked in for non-driving shift', {
+          driverId,
+          timeCardId: result.rows[0].id,
+          clockInTime: result.rows[0].clock_in_time,
+        });
 
         return successResponse({
           status: 'success',
@@ -311,17 +320,14 @@ export async function POST(request: NextRequest) {
         ? `Lat: ${body.location.latitude.toFixed(4)}, Lng: ${body.location.longitude.toFixed(4)}`
         : 'Location not provided';
 
-      // 🔍 DEBUGGING: Log all values before INSERT
-      console.log('==================================================');
-      console.log('💾 PREPARING TO INSERT TIME CARD');
-      console.log('==================================================');
-      console.log('Parameter $1 (driver_id):', driverId, typeof driverId);
-      console.log('Parameter $2 (vehicle_id):', body.vehicleId, typeof body.vehicleId);
-      console.log('Parameter $3 (date):', today, typeof today);
-      console.log('Parameter $4 (work_reporting_location):', workLocation);
-      console.log('Parameter $5 (work_reporting_lat):', body.location?.latitude || null);
-      console.log('Parameter $6 (work_reporting_lng):', body.location?.longitude || null);
-      console.log('==================================================');
+      logger.debug('Preparing to insert time card', {
+        driverId,
+        vehicleId: body.vehicleId,
+        date: today,
+        workLocation,
+        latitude: body.location?.latitude || null,
+        longitude: body.location?.longitude || null,
+      });
 
       const result = await query(`
         INSERT INTO time_cards (
@@ -346,10 +352,12 @@ export async function POST(request: NextRequest) {
         body.location?.longitude || null
       ]);
 
-      console.log(`✅ Driver ${driverId} clocked in successfully:`);
-      console.log(`   Time Card ID: ${result.rows[0].id}`);
-      console.log(`   Vehicle ID: ${result.rows[0].vehicle_id}`);
-      console.log(`   Clock In Time: ${result.rows[0].clock_in_time}`);
+      logger.info('Driver clocked in successfully', {
+        driverId,
+        timeCardId: result.rows[0].id,
+        vehicleId: result.rows[0].vehicle_id,
+        clockInTime: result.rows[0].clock_in_time,
+      });
 
       return successResponse({
         status: 'success',
@@ -441,7 +449,7 @@ export async function POST(request: NextRequest) {
         }
       } else {
         // No vehicle assigned - non-driving shift (office work, loading, etc.)
-        console.log(`✅ Clock-out allowed without post-trip - no vehicle assigned (Time Card: ${timeCardId})`);
+        logger.debug('Clock-out allowed without post-trip - no vehicle assigned', { timeCardId });
       }
 
       const clockInTime = new Date(timeCard.clock_in_time);
@@ -494,8 +502,8 @@ export async function POST(request: NextRequest) {
         totalHours,
         body.signature.trim()
       ]);
-      
-      console.log(`Driver ${driverId} clocked out, total hours: ${totalHours.toFixed(2)}`);
+
+      logger.info('Driver clocked out', { driverId, totalHours: totalHours.toFixed(2) });
 
       // 7. Update weekly HOS
       try {
@@ -508,7 +516,7 @@ export async function POST(request: NextRequest) {
             updated_at = CURRENT_TIMESTAMP
         `, [driverId, totalHours]);
       } catch (e) {
-        console.error('Failed to update weekly HOS:', e);
+        logger.error('Failed to update weekly HOS', { error: e });
       }
 
       return successResponse({
@@ -529,18 +537,20 @@ export async function POST(request: NextRequest) {
       }, 'Successfully clocked out');
     }
 
-  } catch (error: any) {
+  } catch (error) {
     // Use the new logger for comprehensive error logging
-    const loggedErrorId = logError('Clock API', error.message || 'Unknown error', error, {
+    const err = error instanceof Error ? error : new Error(String(error));
+    const loggedErrorId = logError('Clock API', err.message || 'Unknown error', error, {
       endpoint: '/api/workflow/clock',
       userId: session?.userId,
       action: body?.action,
       errorId
     });
     
-    // Return user-friendly error response using the logger
-    return logger.errorResponse('Clock API', error, 500, 
-      'Unable to process your time clock request. Please try again or contact support.'
+    // Return user-friendly error response
+    return errorResponse(
+      'Unable to process your time clock request. Please try again or contact support.',
+      500
     );
   }
 }
@@ -634,7 +644,7 @@ export async function GET(request: NextRequest) {
       const hoursWorked = parseFloat(hoursResult.rows[0].hours_worked) || 0;
       
       // Debug logging for troubleshooting
-      console.log('Clock status calculation:', {
+      logger.debug('Clock status calculation', {
         clockInTime: clockInTime.toISOString(),
         now: now.toISOString(),
         timeDiff: timeDiff.toFixed(2),
@@ -667,9 +677,9 @@ export async function GET(request: NextRequest) {
       }, 'Not currently clocked in');
     }
 
-  } catch (error: any) {
+  } catch (error) {
     // Use the logger for error handling
     logError('Clock Status API', 'Failed to check clock status', error);
-    return logger.errorResponse('Clock Status API', error, 500, 'Unable to check clock status');
+    return errorResponse('Unable to check clock status', 500);
   }
 }

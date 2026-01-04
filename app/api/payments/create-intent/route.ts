@@ -1,14 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { withErrorHandling, BadRequestError, NotFoundError, InternalServerError } from '@/lib/api-errors';
+import { withErrorHandling, NotFoundError, InternalServerError, BadRequestError } from '@/lib/api-errors';
 import { queryOne, insertOne } from '@/lib/db-helpers';
+import { validateBody, CreatePaymentIntentSchema } from '@/lib/api/middleware/validation';
+import { withCSRF } from '@/lib/api/middleware/csrf';
+import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
+import { healthService } from '@/lib/services/health.service';
+import { logger } from '@/lib/logger';
 
-// Initialize Stripe
-const stripe = process.env.STRIPE_SECRET_KEY
-  ? new Stripe(process.env.STRIPE_SECRET_KEY, {
+// Initialize Stripe with error handling
+let stripe: Stripe | null = null;
+try {
+  if (process.env.STRIPE_SECRET_KEY) {
+    stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
       apiVersion: '2025-10-29.clover',
-    })
-  : null;
+    });
+  }
+} catch (error) {
+  logger.error('Failed to initialize Stripe client', { error: String(error) });
+}
 
 interface Booking {
   id: number;
@@ -30,27 +40,16 @@ interface Booking {
  *   payment_type: 'deposit' | 'final_payment'
  * }
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withRateLimit(rateLimiters.payment)(
+    withErrorHandling(async (request: NextRequest) => {
   // Check if Stripe is configured
   if (!stripe) {
     throw new InternalServerError('Payment processing not configured. Please contact support.');
   }
 
-  const body = await request.json();
-  const { booking_number, amount, payment_type = 'deposit' } = body;
-
-  // Validate input
-  if (!booking_number || !amount) {
-    throw new BadRequestError('Missing required fields: booking_number and amount');
-  }
-
-  if (amount <= 0) {
-    throw new BadRequestError('Amount must be greater than 0');
-  }
-
-  if (!['deposit', 'final_payment'].includes(payment_type)) {
-    throw new BadRequestError('Payment type must be either "deposit" or "final_payment"');
-  }
+  // Validate input with Zod schema
+  const { booking_number, amount, payment_type } = await validateBody(request, CreatePaymentIntentSchema);
 
   // Get booking details
   const booking = await queryOne<Booking>(
@@ -75,22 +74,35 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     );
   }
 
-  // Create Stripe payment intent
-  const paymentIntent = await stripe.paymentIntents.create({
-    amount: Math.round(amount * 100), // Convert to cents
-    currency: 'usd',
-    metadata: {
-      booking_id: booking.id.toString(),
-      booking_number: booking.booking_number,
-      payment_type: payment_type,
-      customer_email: booking.customer_email,
-    },
-    description: `Walla Walla Travel - ${payment_type === 'deposit' ? 'Deposit' : 'Final Payment'} for booking ${booking.booking_number}`,
-    receipt_email: booking.customer_email,
-    automatic_payment_methods: {
-      enabled: true,
-    },
-  });
+  // Create Stripe payment intent with retry logic
+  let paymentIntent: Stripe.PaymentIntent;
+  try {
+    paymentIntent = await healthService.withRetry(
+      () => stripe!.paymentIntents.create({
+        amount: Math.round(amount * 100), // Convert to cents
+        currency: 'usd',
+        metadata: {
+          booking_id: booking.id.toString(),
+          booking_number: booking.booking_number,
+          payment_type: payment_type,
+          customer_email: booking.customer_email,
+        },
+        description: `Walla Walla Travel - ${payment_type === 'deposit' ? 'Deposit' : 'Final Payment'} for booking ${booking.booking_number}`,
+        receipt_email: booking.customer_email,
+        automatic_payment_methods: {
+          enabled: true,
+        },
+      }),
+      'stripe',
+      3 // Max retries
+    );
+  } catch (stripeError) {
+    logger.error('Stripe payment intent creation failed', { error: String(stripeError) });
+    return NextResponse.json(
+      healthService.serviceUnavailableResponse('Payment processing'),
+      { status: 503, headers: { 'Retry-After': '30' } }
+    );
+  }
 
   // Store payment intent in database
   await insertOne(
@@ -132,4 +144,4 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     },
     message: 'Payment intent created successfully'
   });
-});
+})));

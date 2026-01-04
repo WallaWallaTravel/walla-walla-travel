@@ -13,6 +13,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { logger } from '@/lib/logger';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { validateBody } from '@/lib/api/middleware/validation';
 import { kbService, CreateContributionSchema } from '@/lib/services/kb.service';
@@ -167,7 +168,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
         topics: prescreeningResult.suggestedTopics || data.topics,
       });
     } catch (error) {
-      console.error('Prescreening failed:', error);
+      logger.error('Prescreening failed', { error });
       // Continue without prescreening
     }
   } else {

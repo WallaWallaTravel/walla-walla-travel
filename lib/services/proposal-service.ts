@@ -32,9 +32,31 @@ export interface Proposal {
   created_at: string;
   updated_at: string;
   // Relations (when included)
-  activity_log?: any[];
-  media?: any[];
-  customer?: any;
+  activity_log?: ProposalActivity[];
+  media?: ProposalMedia[];
+  customer?: ProposalCustomer;
+}
+
+interface ProposalActivity {
+  id: number;
+  activity_type: string;
+  notes: string | null;
+  created_at: string;
+}
+
+interface ProposalMedia {
+  id: number;
+  media_type: string;
+  url: string;
+  created_at: string;
+}
+
+interface ProposalCustomer {
+  id: number;
+  email: string;
+  name: string;
+  phone: string | null;
+  vip_status: boolean;
 }
 
 export interface CreateProposalData {
@@ -187,7 +209,7 @@ export class ProposalService extends BaseService {
     this.log('Finding proposals with filters', filters);
 
     const whereClause: string[] = [];
-    const params: any[] = [];
+    const params: unknown[] = [];
 
     // Build WHERE conditions
     if (filters.status) {
@@ -465,8 +487,8 @@ export class ProposalService extends BaseService {
     conversionRate: number;
     averageValue: number;
   }> {
-    const whereClause = [];
-    const params: any[] = [];
+    const whereClause: string[] = [];
+    const params: unknown[] = [];
 
     if (startDate) {
       params.push(startDate);

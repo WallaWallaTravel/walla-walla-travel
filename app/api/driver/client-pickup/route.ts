@@ -3,23 +3,24 @@ import {
   successResponse,
   errorResponse,
   requireAuth,
-  parseRequestBody,
-  validateRequiredFields,
-  logApiRequest
 } from '@/app/api/utils';
 import { query } from '@/lib/db';
+import { logger, logApiRequest } from '@/lib/logger';
+import { z } from 'zod';
+
+// Request body schema
+const ClientPickupSchema = z.object({
+  clientServiceId: z.number().int().positive('Client service ID must be a positive integer'),
+  pickupLocation: z.string().min(1, 'Pickup location is required').max(500),
+  pickupLat: z.number().min(-90).max(90).optional(),
+  pickupLng: z.number().min(-180).max(180).optional(),
+});
 
 /**
  * POST /api/driver/client-pickup
  * Log client pickup time and location
  *
- * Body:
- * {
- *   clientServiceId: number,
- *   pickupLocation: string,
- *   pickupLat?: number,
- *   pickupLng?: number
- * }
+ * ✅ REFACTORED: Zod validation + structured logging
  */
 export async function POST(request: NextRequest) {
   try {
@@ -31,23 +32,20 @@ export async function POST(request: NextRequest) {
 
     logApiRequest('POST', '/api/driver/client-pickup', authResult.userId);
 
-    // Parse request body
-    const body = await parseRequestBody<{
-      clientServiceId: number;
-      pickupLocation: string;
-      pickupLat?: number;
-      pickupLng?: number;
-    }>(request);
-
-    if (!body) {
-      return errorResponse('Invalid request body', 400);
+    // Parse and validate request body
+    let rawBody: unknown;
+    try {
+      rawBody = await request.json();
+    } catch {
+      return errorResponse('Invalid JSON in request body', 400);
     }
 
-    // Validate required fields
-    const validationError = validateRequiredFields(body, ['clientServiceId', 'pickupLocation']);
-    if (validationError) {
-      return errorResponse(validationError, 400);
+    const parseResult = ClientPickupSchema.safeParse(rawBody);
+    if (!parseResult.success) {
+      return errorResponse('Validation failed: ' + parseResult.error.issues.map((e) => e.message).join(', '), 400);
     }
+
+    const body = parseResult.data;
 
     const driverId = parseInt(authResult.userId);
 
@@ -116,12 +114,13 @@ export async function POST(request: NextRequest) {
 
     const updatedService = updateResult.rows[0];
 
-    console.log(`✅ Client pickup logged:`);
-    console.log(`   Service ID: ${updatedService.id}`);
-    console.log(`   Client: ${updatedService.client_name}`);
-    console.log(`   Pickup Time: ${updatedService.pickup_time}`);
-    console.log(`   Location: ${body.pickupLocation}`);
-    console.log(`   Status: ${updatedService.status}`);
+    logger.info('Client pickup logged', {
+      serviceId: updatedService.id,
+      clientName: updatedService.client_name,
+      pickupTime: updatedService.pickup_time,
+      location: body.pickupLocation,
+      status: updatedService.status,
+    });
 
     return successResponse({
       service: updatedService,
@@ -131,7 +130,7 @@ export async function POST(request: NextRequest) {
     }, 'Client pickup logged successfully');
 
   } catch (error) {
-    console.error('❌ Client pickup error:', error);
+    logger.error('Client pickup error', { error });
     return errorResponse('Failed to log client pickup', 500);
   }
 }
@@ -176,7 +175,7 @@ export async function GET(request: NextRequest) {
     }, 'Active client service retrieved');
 
   } catch (error) {
-    console.error('❌ Get client service error:', error);
+    logger.error('Get client service error', { error });
     return errorResponse('Failed to retrieve client service', 500);
   }
 }

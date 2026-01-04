@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { query } from '@/lib/db';
+import { logger } from '@/lib/logger';
 
 /**
  * POST /api/admin/migrate-inspections
@@ -9,31 +10,31 @@ import { query } from '@/lib/db';
  */
 export async function POST(request: NextRequest) {
   try {
-    console.log('🔄 Starting migration: Add time_card_id to inspections');
+    logger.info('Starting migration: Add time_card_id to inspections');
 
     // Add time_card_id column (nullable for existing records)
-    console.log('  Adding time_card_id column...');
+    logger.info('Adding time_card_id column');
     await query(`
       ALTER TABLE inspections
       ADD COLUMN IF NOT EXISTS time_card_id INTEGER REFERENCES time_cards(id) ON DELETE CASCADE;
     `);
 
     // Add index for faster queries
-    console.log('  Creating index on time_card_id...');
+    logger.info('Creating index on time_card_id');
     await query(`
       CREATE INDEX IF NOT EXISTS idx_inspections_time_card_id
       ON inspections(time_card_id);
     `);
 
     // Add composite index for common query pattern
-    console.log('  Creating composite index...');
+    logger.info('Creating composite index');
     await query(`
       CREATE INDEX IF NOT EXISTS idx_inspections_time_card_type
       ON inspections(time_card_id, type)
       WHERE time_card_id IS NOT NULL;
     `);
 
-    console.log('✅ Migration completed successfully!');
+    logger.info('Migration completed successfully');
 
     return new Response(JSON.stringify({
       success: true,
@@ -48,12 +49,15 @@ export async function POST(request: NextRequest) {
       headers: { 'Content-Type': 'application/json' }
     });
 
-  } catch (error: any) {
-    console.error('❌ Migration failed:', error.message);
+  } catch (error) {
+    logger.error('Migration failed', { error });
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    const detail = error instanceof Error && 'detail' in error ? (error as { detail?: string }).detail : undefined;
+    const hint = error instanceof Error && 'hint' in error ? (error as { hint?: string }).hint : undefined;
     return new Response(JSON.stringify({
       success: false,
-      error: error.message,
-      details: error.detail || error.hint
+      error: message,
+      details: detail || hint
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }

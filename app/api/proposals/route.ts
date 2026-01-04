@@ -7,6 +7,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 import { proposalService } from '@/lib/services/proposal.service';
+import { withCSRF } from '@/lib/api/middleware/csrf';
+import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 
 /**
  * GET /api/proposals
@@ -35,10 +37,12 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 /**
  * POST /api/proposals
  * Create new proposal
- * 
+ *
  * ✅ REFACTORED: Service layer handles validation & creation
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withRateLimit(rateLimiters.api)(
+    withErrorHandling(async (request: NextRequest) => {
   const data = await request.json();
 
   const proposal = await proposalService.create(data);
@@ -49,4 +53,4 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     message: 'Proposal created successfully',
     timestamp: new Date().toISOString(),
   }, { status: 201 });
-});
+})));

@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import {
   calculateWineTourPrice,
   calculateTransferPrice,
@@ -65,10 +66,11 @@ export async function POST(request: NextRequest) {
       ...result
     });
     
-  } catch (error: any) {
-    console.error('[Pricing Calculate API] Error:', error);
+  } catch (error) {
+    logger.error('Pricing Calculate API error', { error });
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to calculate price', details: error.message },
+      { error: 'Failed to calculate price', details: message },
       { status: 500 }
     );
   }

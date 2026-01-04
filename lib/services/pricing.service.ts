@@ -1,8 +1,33 @@
 import { logger } from '@/lib/logger';
 /**
  * Pricing Service
- * 
- * Business logic for tour pricing calculations
+ *
+ * @module lib/services/pricing.service
+ * @description Handles dynamic pricing calculations for wine tours.
+ * Applies pricing rules based on party size, vehicle type, date (weekend vs weekday),
+ * and tour duration with configurable gratuity and tax rates.
+ *
+ * @features
+ * - Party size-based vehicle assignment (sedan vs sprinter)
+ * - Weekend pricing multipliers
+ * - Configurable gratuity percentages
+ * - Tax calculation
+ * - Deposit amount calculation (typically 30%)
+ * - Database-driven pricing rules
+ *
+ * @example
+ * ```typescript
+ * import { pricingService } from '@/lib/services/pricing.service';
+ *
+ * // Calculate tour pricing
+ * const pricing = await pricingService.calculatePricing({
+ *   tourDate: '2026-02-15',
+ *   partySize: 6,
+ *   durationHours: 6
+ * });
+ *
+ * // Returns: { basePrice, gratuity, taxes, totalPrice, depositAmount, vehicleType }
+ * ```
  */
 
 import { BaseService } from './base.service';
@@ -32,7 +57,7 @@ export class PricingService extends BaseService {
    * Calculate pricing for a tour
    */
   async calculatePricing(input: PricingInput): Promise<PricingDetails> {
-    this.log('Calculating pricing', input);
+    this.log('Calculating pricing', { input: input as unknown as Record<string, unknown> });
 
     const tourDate = new Date(input.tourDate);
     const dayOfWeek = tourDate.getDay();

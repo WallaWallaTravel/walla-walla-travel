@@ -1,7 +1,8 @@
 import { NextRequest } from 'next/server';
-import { 
-  successResponse, 
-  errorResponse, 
+import { logger } from '@/lib/logger';
+import {
+  successResponse,
+  errorResponse,
   requireAuth,
   logApiRequest,
   formatDateForDB,
@@ -169,7 +170,7 @@ export async function GET(request: NextRequest) {
     return successResponse(scheduleData, 'Schedule retrieved successfully');
 
   } catch (error) {
-    console.error('Get schedule error:', error);
+    logger.error('Get schedule error', { error });
     return errorResponse('Failed to retrieve schedule', 500);
   }
 }
@@ -253,7 +254,7 @@ export async function PUT(request: NextRequest) {
     return successResponse(result.rows[0], 'Route status updated successfully');
 
   } catch (error) {
-    console.error('Update schedule error:', error);
+    logger.error('Update schedule error', { error });
     return errorResponse('Failed to update route status', 500);
   }
 }

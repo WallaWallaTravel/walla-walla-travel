@@ -379,7 +379,7 @@ class BookingPrismaService extends PrismaBaseService {
     filters: BookingFilters,
     pagination: PaginationOptions = {}
   ): Promise<PaginatedResponse<Booking>> {
-    this.log('Listing bookings', filters);
+    this.log('Listing bookings', { filters: filters as unknown as Record<string, unknown> });
 
     // Build where clause
     const where: Prisma.bookingsWhereInput = {};

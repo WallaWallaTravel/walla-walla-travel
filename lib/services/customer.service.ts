@@ -1,8 +1,32 @@
 import { logger } from '@/lib/logger';
 /**
  * Customer Service
- * 
- * Business logic for customer management
+ *
+ * @module lib/services/customer.service
+ * @description Manages customer records for the wine tour booking system.
+ * Handles customer creation, updates, and retrieval with automatic de-duplication by email.
+ *
+ * @features
+ * - Find or create customers by email (prevents duplicates)
+ * - Track booking history and lifetime value
+ * - Manage marketing consent (email/SMS)
+ * - Update customer information on repeat bookings
+ *
+ * @example
+ * ```typescript
+ * import { customerService } from '@/lib/services/customer.service';
+ *
+ * // Find or create customer
+ * const customer = await customerService.findOrCreate({
+ *   email: 'visitor@example.com',
+ *   name: 'Wine Lover',
+ *   phone: '555-0123',
+ *   email_marketing_consent: true
+ * });
+ *
+ * // Get customer by ID
+ * const customer = await customerService.getById(123);
+ * ```
  */
 
 import { BaseService } from './base.service';

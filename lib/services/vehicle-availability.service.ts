@@ -184,7 +184,7 @@ export class VehicleAvailabilityService extends BaseService {
       WHERE v.capacity >= $1
       AND v.status = 'active'
     `;
-    const vehicleParams: any[] = [partySize];
+    const vehicleParams: unknown[] = [partySize];
 
     // If brand specified, filter by brand association
     if (brandId) {
@@ -194,7 +194,17 @@ export class VehicleAvailabilityService extends BaseService {
 
     vehicleQuery += ` ORDER BY v.capacity ASC`;
 
-    const vehicles = await this.queryMany<any>(vehicleQuery, vehicleParams);
+    interface VehicleRow {
+      id: number;
+      make: string;
+      model: string;
+      capacity: number;
+      vehicle_type: string;
+      license_plate: string;
+      status: string;
+      brand_ids?: number[];
+    }
+    const vehicles = await this.queryMany<VehicleRow>(vehicleQuery, vehicleParams);
 
     // Check availability for each vehicle
     const availableVehicles: VehicleWithAvailability[] = [];
@@ -377,9 +387,10 @@ export class VehicleAvailabilityService extends BaseService {
 
       this.log('Hold block created', { blockId: block.id });
       return block;
-    } catch (error: any) {
+    } catch (error) {
       // Check if it's a conflict error from the exclusion constraint
-      if (error.code === '23P01') {
+      const pgError = error as { code?: string };
+      if (pgError.code === '23P01') {
         throw new ConflictError('Time slot is no longer available. Another booking was just made for this time.');
       }
       throw error;
@@ -445,8 +456,9 @@ export class VehicleAvailabilityService extends BaseService {
         notes: params.reason,
         created_at: new Date()
       });
-    } catch (error: any) {
-      if (error.code === '23P01') {
+    } catch (error) {
+      const pgError = error as { code?: string };
+      if (pgError.code === '23P01') {
         throw new ConflictError('Cannot create maintenance block - time slot has existing bookings');
       }
       throw error;
@@ -561,7 +573,7 @@ export class VehicleAvailabilityService extends BaseService {
       JOIN vehicles v ON v.id = vab.vehicle_id
       WHERE vab.block_date >= $1 AND vab.block_date <= $2
     `;
-    const params: any[] = [startDate, endDate];
+    const params: unknown[] = [startDate, endDate];
 
     if (vehicleId) {
       query += ` AND vab.vehicle_id = $${params.length + 1}`;

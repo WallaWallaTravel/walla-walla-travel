@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import { query } from '@/lib/db';
 
 export const runtime = 'nodejs';
@@ -45,17 +46,18 @@ export async function POST(
       );
     }
     
-    console.log(`[Admin] Reservation ${result.rows[0].reservation_number} marked as contacted`);
+    logger.info('Reservation marked as contacted', { reservationNumber: result.rows[0].reservation_number });
     
     return NextResponse.json({
       success: true,
       message: 'Reservation marked as contacted'
     });
     
-  } catch (error: any) {
-    console.error('[Mark Contacted API] Error:', error);
+  } catch (error) {
+    logger.error('Mark Contacted API error', { error });
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to update reservation', details: error.message },
+      { error: 'Failed to update reservation', details: message },
       { status: 500 }
     );
   }

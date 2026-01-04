@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api-errors';
 import { queryOne, query, withTransaction } from '@/lib/db-helpers';
 import { sendDriverAssignmentToCustomer } from '@/lib/services/email-automation.service';
@@ -159,12 +160,12 @@ async function handleAssignment(
     sendEmail({
       to: result.driver.email,
       ...template,
-    }).catch(err => console.error('[Assign] Failed to send driver notification:', err));
+    }).catch(err => logger.error('Failed to send driver notification', { error: err }));
   }
-  
+
   if (notify_customer) {
     sendDriverAssignmentToCustomer(bookingId).catch(err => {
-      console.error('[Assign] Failed to send customer notification:', err);
+      logger.error('Failed to send customer notification', { error: err });
     });
   }
 

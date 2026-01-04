@@ -5,6 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import { query } from '@/lib/db';
 import { getSetting } from '@/lib/settings/settings-service';
 import { sendReservationConfirmation } from '@/lib/email';
@@ -205,14 +206,16 @@ export async function POST(request: NextRequest) {
           data.brandId || 1 // Pass brand ID for brand-specific email template
         );
       } catch (emailError) {
-        console.error('[Reserve & Refine] Email send failed:', emailError);
+        logger.error('Reserve & Refine email send failed', { error: emailError });
         // Don't fail the reservation if email fails
       }
       
-      console.log(
-        `[Reserve & Refine] New reservation ${reservationNumber} - ` +
-        `${data.partySize} guests - $${data.depositAmount} deposit (${data.paymentMethod})`
-      );
+      logger.info('New reserve & refine reservation', {
+        reservationNumber,
+        partySize: data.partySize,
+        depositAmount: data.depositAmount,
+        paymentMethod: data.paymentMethod
+      });
       
       return NextResponse.json({
         success: true,
@@ -228,10 +231,11 @@ export async function POST(request: NextRequest) {
       throw error;
     }
     
-  } catch (error: any) {
-    console.error('[Reserve & Refine API] Error:', error);
+  } catch (error) {
+    logger.error('Reserve & Refine API error', { error });
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to create reservation', details: error.message },
+      { error: 'Failed to create reservation', details: message },
       { status: 500 }
     );
   }

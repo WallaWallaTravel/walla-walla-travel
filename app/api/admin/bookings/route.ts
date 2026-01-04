@@ -1,37 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { bookingService } from '@/lib/services/booking.service';
+import { z } from 'zod';
+
+// Query parameter schema
+const BookingFiltersSchema = z.object({
+  start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  end_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  status: z.enum(['pending', 'confirmed', 'completed', 'cancelled']).optional(),
+  driver_id: z.coerce.number().int().positive().optional(),
+  limit: z.coerce.number().int().min(1).max(500).default(100),
+  offset: z.coerce.number().int().min(0).default(0),
+});
 
 /**
  * GET /api/admin/bookings
  * Get all bookings with filters
- * 
- * ✅ REFACTORED: Service layer + admin auth
+ *
+ * ✅ REFACTORED: Service layer + admin auth + Zod validation
  */
-export const GET = withAdminAuth(async (request: NextRequest, session) => {
+export const GET = withAdminAuth(async (request: NextRequest) => {
   const searchParams = request.nextUrl.searchParams;
 
-  // ✅ Build filters
-  const filters: any = {
-    limit: 100,
-    offset: 0,
+  // Parse and validate query parameters
+  const rawFilters: Record<string, string | undefined> = {
+    start_date: searchParams.get('start_date') || undefined,
+    end_date: searchParams.get('end_date') || undefined,
+    status: searchParams.get('status') || undefined,
+    driver_id: searchParams.get('driver_id') || undefined,
+    limit: searchParams.get('limit') || undefined,
+    offset: searchParams.get('offset') || undefined,
   };
 
-  if (searchParams.get('start_date')) {
-    filters.start_date = searchParams.get('start_date');
-  }
-  if (searchParams.get('end_date')) {
-    filters.end_date = searchParams.get('end_date');
-  }
-  if (searchParams.get('status')) {
-    filters.status = searchParams.get('status');
-  }
-  if (searchParams.get('driver_id')) {
-    filters.driver_id = parseInt(searchParams.get('driver_id')!);
+  const parseResult = BookingFiltersSchema.safeParse(rawFilters);
+  if (!parseResult.success) {
+    return NextResponse.json({
+      success: false,
+      error: 'Invalid query parameters',
+      details: parseResult.error.flatten().fieldErrors,
+    }, { status: 400 });
   }
 
-  // ✅ Use service layer
-  const result = await bookingService.list(filters);
+  // Use validated filters
+  const result = await bookingService.list(parseResult.data);
 
   return NextResponse.json({
     success: true,

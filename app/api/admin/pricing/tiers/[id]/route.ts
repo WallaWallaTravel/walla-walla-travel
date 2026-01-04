@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import { updatePricingTier } from '@/lib/pricing/pricing-service';
 
 export const runtime = 'nodejs';
@@ -34,10 +35,11 @@ export async function PATCH(
       success: true,
       message: 'Pricing tier updated'
     });
-  } catch (error: any) {
-    console.error('[Update Pricing Tier API] Error:', error);
+  } catch (error) {
+    logger.error('Update Pricing Tier API error', { error });
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to update pricing tier', details: error.message },
+      { error: 'Failed to update pricing tier', details: message },
       { status: 500 }
     );
   }

@@ -31,14 +31,14 @@ export interface AuthSession {
 // Authenticated Handler Types
 // ============================================================================
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 export type AuthenticatedHandler = (
   request: NextRequest,
   session: AuthSession,
   context?: any
 ) => Promise<NextResponse<any>>;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 export type OptionalAuthHandler = (
   request: NextRequest,
   session: AuthSession | null,
@@ -60,7 +60,7 @@ interface ErrorResponse {
 // withAuth - Requires Authentication
 // ============================================================================
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 export function withAuth(
   handler: AuthenticatedHandler
 ): (request: NextRequest, context?: any) => Promise<NextResponse<any>> {
@@ -94,7 +94,7 @@ export function withAuth(
 // withAdminAuth - Requires Admin Role
 // ============================================================================
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 export function withAdminAuth(
   handler: AuthenticatedHandler
 ): (request: NextRequest, context?: any) => Promise<NextResponse<any>> {
@@ -117,7 +117,7 @@ export function withAdminAuth(
 // withDriverAuth - Requires Driver Role
 // ============================================================================
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 export function withDriverAuth(
   handler: AuthenticatedHandler
 ): (request: NextRequest, context?: any) => Promise<NextResponse<any>> {
@@ -136,7 +136,7 @@ export function withDriverAuth(
 // withOptionalAuth - Optional Authentication
 // ============================================================================
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 export function withOptionalAuth(
   handler: OptionalAuthHandler
 ): (request: NextRequest, context?: any) => Promise<NextResponse<any>> {
@@ -156,7 +156,7 @@ export function withOptionalAuth(
       }
     } catch (error) {
       // Silently fail - auth is optional
-      logger.debug('Optional auth failed:', error);
+      logger.debug('Optional auth failed', { error });
     }
 
     // Execute handler with session (may be null)
@@ -168,7 +168,7 @@ export function withOptionalAuth(
 // withRoleAuth - Generic Role-Based Authentication
 // ============================================================================
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 export function withRoleAuth(
   allowedRoles: Array<'admin' | 'driver' | 'customer' | 'business'>,
   handler: AuthenticatedHandler
@@ -209,7 +209,7 @@ async function getSessionFromRequest(): Promise<any> {
     const { getSession } = await import('@/lib/session');
     return await getSession();
   } catch (error) {
-    logger.error('[Auth Wrapper] Session error:', error);
+    logger.error('[Auth Wrapper] Session error', { error });
     return null;
   }
 }

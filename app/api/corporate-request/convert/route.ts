@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import { convertCorporateRequestToProposal, ensureProposalColumns } from '@/lib/corporate/proposal-converter';
 
 export const runtime = 'nodejs';
@@ -26,12 +27,12 @@ export async function POST(request: NextRequest) {
     
     // Ensure proposal table has needed columns
     await ensureProposalColumns();
-    
+
     // Convert to proposal
-    console.log('[Convert] Converting corporate request:', requestId);
+    logger.info('Converting corporate request', { requestId });
     const result = await convertCorporateRequestToProposal(requestId);
-    
-    console.log('[Convert] Conversion successful:', result.proposalNumber);
+
+    logger.info('Conversion successful', { proposalNumber: result.proposalNumber });
     
     return NextResponse.json({
       success: true,
@@ -39,10 +40,11 @@ export async function POST(request: NextRequest) {
       message: 'Corporate request converted to proposal successfully'
     });
     
-  } catch (error: any) {
-    console.error('[Convert API] Error:', error);
+  } catch (error) {
+    logger.error('Convert API error', { error });
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to convert corporate request', details: error.message },
+      { error: 'Failed to convert corporate request', details: message },
       { status: 500 }
     );
   }

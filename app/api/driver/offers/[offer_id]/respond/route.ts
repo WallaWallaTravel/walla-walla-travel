@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import { query } from '@/lib/db';
 import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { sendEmail, EmailTemplates } from '@/lib/email';
@@ -171,7 +172,7 @@ export const POST = withErrorHandling(async (
 
     // Notify customer that driver has been assigned (async)
     sendDriverAssignmentToCustomer(offer.booking_id).catch(err => {
-      console.error('[TourOffer] Failed to send customer notification:', err);
+      logger.error('TourOffer: Failed to send customer notification', { error: err, bookingId: offer.booking_id });
     });
 
     return NextResponse.json({

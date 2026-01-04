@@ -7,9 +7,52 @@ import { logger } from '@/lib/logger';
 
 import { BaseService } from './base.service';
 
+interface ActiveShift {
+  time_card_id: number;
+  driver_id: number;
+  driver_name: string;
+  driver_email: string;
+  vehicle_id: number;
+  vehicle_number: string;
+  make: string;
+  model: string;
+  vehicle_status: string;
+  clock_in_time: string;
+  shift_status: string;
+  work_reporting_location: string | null;
+  client_service_id: number | null;
+  client_name: string | null;
+  hourly_rate: number | null;
+  service_status: string | null;
+  pickup_time: string | null;
+  dropoff_time: string | null;
+  service_hours: number | null;
+  total_cost: number | null;
+  assigned_by: number | null;
+  assigned_by_name: string | null;
+}
+
+interface FleetVehicle {
+  vehicle_id: number;
+  vehicle_number: string;
+  make: string;
+  model: string;
+  year: number;
+  capacity: number;
+  status: string;
+  license_plate: string;
+  defect_notes: string | null;
+  active_time_card_id: number | null;
+  current_driver_id: number | null;
+  current_driver_name: string | null;
+  in_use_since: string | null;
+  current_client: string | null;
+  availability_status: 'available' | 'in_use' | 'out_of_service';
+}
+
 export interface DashboardData {
-  activeShifts: any[];
-  fleetStatus: any[];
+  activeShifts: ActiveShift[];
+  fleetStatus: FleetVehicle[];
   statistics: {
     shifts: {
       total_today: number;
@@ -48,7 +91,7 @@ export class AdminDashboardService extends BaseService {
     this.log('Getting admin dashboard data');
 
     // Get active shifts
-    const activeShifts = await this.queryMany(`
+    const activeShifts = await this.queryMany<ActiveShift>(`
       SELECT
         time_card_id, driver_id, driver_name, driver_email,
         vehicle_id, vehicle_number, make, model, vehicle_status,
@@ -61,7 +104,7 @@ export class AdminDashboardService extends BaseService {
     `);
 
     // Get fleet status
-    const fleetStatus = await this.queryMany(`
+    const fleetStatus = await this.queryMany<FleetVehicle>(`
       SELECT
         vehicle_id, vehicle_number, make, model, year, capacity,
         status, license_plate, defect_notes, active_time_card_id,
@@ -79,7 +122,17 @@ export class AdminDashboardService extends BaseService {
     `);
 
     // Get today's statistics
-    const stats = await this.queryOne(`
+    interface DashboardStats {
+      total_shifts_today: string;
+      active_shifts: string;
+      completed_shifts: string;
+      total_services_today: string;
+      active_services: string;
+      completed_services: string;
+      total_revenue_today: string;
+      total_service_hours_today: string;
+    }
+    const stats = await this.queryOne<DashboardStats>(`
       SELECT
         COUNT(DISTINCT tc.id) as total_shifts_today,
         COUNT(DISTINCT tc.id) FILTER (WHERE tc.clock_out_time IS NULL) as active_shifts,
@@ -96,9 +149,9 @@ export class AdminDashboardService extends BaseService {
 
     // Calculate fleet utilization
     const totalVehicles = fleetStatus.length;
-    const availableVehicles = fleetStatus.filter((v: any) => v.availability_status === 'available').length;
-    const inUseVehicles = fleetStatus.filter((v: any) => v.availability_status === 'in_use').length;
-    const outOfServiceVehicles = fleetStatus.filter((v: any) => v.availability_status === 'out_of_service').length;
+    const availableVehicles = fleetStatus.filter((v) => v.availability_status === 'available').length;
+    const inUseVehicles = fleetStatus.filter((v) => v.availability_status === 'in_use').length;
+    const outOfServiceVehicles = fleetStatus.filter((v) => v.availability_status === 'out_of_service').length;
     const utilizationRate = totalVehicles > 0 ? Math.round((inUseVehicles / totalVehicles) * 100) : 0;
 
     return {
@@ -106,18 +159,18 @@ export class AdminDashboardService extends BaseService {
       fleetStatus,
       statistics: {
         shifts: {
-          total_today: parseInt(stats?.total_shifts_today || 0),
-          active: parseInt(stats?.active_shifts || 0),
-          completed: parseInt(stats?.completed_shifts || 0),
+          total_today: parseInt(stats?.total_shifts_today || '0', 10),
+          active: parseInt(stats?.active_shifts || '0', 10),
+          completed: parseInt(stats?.completed_shifts || '0', 10),
         },
         services: {
-          total_today: parseInt(stats?.total_services_today || 0),
-          active: parseInt(stats?.active_services || 0),
-          completed: parseInt(stats?.completed_services || 0),
+          total_today: parseInt(stats?.total_services_today || '0', 10),
+          active: parseInt(stats?.active_services || '0', 10),
+          completed: parseInt(stats?.completed_services || '0', 10),
         },
         revenue: {
-          total_today: parseFloat(stats?.total_revenue_today || 0),
-          service_hours_today: parseFloat(stats?.total_service_hours_today || 0),
+          total_today: parseFloat(stats?.total_revenue_today || '0'),
+          service_hours_today: parseFloat(stats?.total_service_hours_today || '0'),
         },
         fleet: {
           total: totalVehicles,

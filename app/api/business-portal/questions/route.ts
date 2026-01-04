@@ -4,9 +4,10 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { 
+import { logger } from '@/lib/logger';
+import {
   getBusinessQuestionProgress,
-  getNextQuestion 
+  getNextQuestion
 } from '@/lib/business-portal/question-service';
 import { getBusinessStats } from '@/lib/business-portal/business-service';
 
@@ -65,10 +66,11 @@ export async function GET(request: NextRequest) {
       allComplete: nextQuestion === null
     });
     
-  } catch (error: any) {
-    console.error('[Business Portal Questions] Error:', error);
+  } catch (error) {
+    logger.error('Business Portal Questions error', { error });
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to get questions', details: error.message },
+      { error: 'Failed to get questions', details: message },
       { status: 500 }
     );
   }

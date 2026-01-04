@@ -2,12 +2,23 @@ import { logger } from '@/lib/logger';
 /**
  * Shared Tour Service
  *
- * Handles all operations for the shared/group wine tour program.
- * - Tours are available Sun-Wed only
- * - Per-person pricing ($95 base, $115 with lunch)
- * - Ticketed sales model
+ * @module lib/services/shared-tour.service
+ * @description Manages the shared/group wine tour program with ticketed sales.
+ * Allows individual guests to join scheduled group tours at per-person pricing.
  *
- * @see migrations/038-shared-tours-system.sql
+ * @businessRules
+ * - Tours available Sunday-Wednesday only
+ * - Per-person pricing: $95 base, $115 with lunch option
+ * - Maximum capacity per tour (typically 12-14 guests)
+ * - Ticketed sales model (vs private charter)
+ *
+ * @features
+ * - Tour schedule management
+ * - Ticket sales and availability tracking
+ * - Lunch upgrade options
+ * - Guest manifest generation
+ *
+ * @see migrations/038-shared-tours-system.sql - Database schema
  */
 
 import { query } from '@/lib/db';
@@ -214,7 +225,7 @@ export const sharedTourService = {
    */
   async updateTour(tourId: string, data: Partial<CreateTourRequest>): Promise<SharedTourSchedule | null> {
     const updates: string[] = [];
-    const values: any[] = [];
+    const values: unknown[] = [];
     let paramCount = 1;
 
     if (data.tour_date !== undefined) {

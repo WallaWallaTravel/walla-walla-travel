@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import { createBusiness } from '@/lib/business-portal/business-service';
 
 export const runtime = 'nodejs';
@@ -73,10 +74,11 @@ export async function POST(request: NextRequest) {
       message: 'Business invited successfully!'
     });
     
-  } catch (error: any) {
-    console.error('[Admin Invite Business] Error:', error);
+  } catch (error) {
+    logger.error('Admin Invite Business error', { error });
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to invite business', details: error.message },
+      { error: 'Failed to invite business', details: message },
       { status: 500 }
     );
   }

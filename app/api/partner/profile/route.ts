@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, UnauthorizedError } from '@/lib/api/middleware/error-handler';
 import { getSessionFromRequest } from '@/lib/auth/session';
 import { partnerService } from '@/lib/services/partner.service';
+import { withCSRF } from '@/lib/api/middleware/csrf';
+import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 
 /**
  * GET /api/partner/profile
@@ -41,16 +43,18 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
  * PUT /api/partner/profile
  * Update partner profile
  */
-export const PUT = withErrorHandling(async (request: NextRequest) => {
+export const PUT = withCSRF(
+  withRateLimit(rateLimiters.api)(
+    withErrorHandling(async (request: NextRequest) => {
   const session = await getSessionFromRequest(request);
-  
+
   // Note: 'partner' role check may fail if role is not in the type union - use string comparison
   if (!session || (session.user.role as string !== 'partner' && session.user.role !== 'admin')) {
     throw new UnauthorizedError('Partner access required');
   }
 
   const body = await request.json();
-  
+
   const updatedProfile = await partnerService.updateProfile(session.user.id, body);
 
   return NextResponse.json({
@@ -58,5 +62,5 @@ export const PUT = withErrorHandling(async (request: NextRequest) => {
     profile: updatedProfile,
     timestamp: new Date().toISOString(),
   });
-});
+})));
 

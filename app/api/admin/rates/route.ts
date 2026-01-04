@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { getSessionFromRequest } from '@/lib/auth/session';
 import { withErrorHandling, UnauthorizedError, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
+import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 
 async function verifyAdmin(request: NextRequest) {
   const session = await getSessionFromRequest(request);
@@ -49,7 +51,9 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
  * PATCH /api/admin/rates
  * Update a specific rate configuration
  */
-export const PATCH = withErrorHandling(async (request: NextRequest) => {
+export const PATCH = withCSRF(
+  withRateLimit(rateLimiters.api)(
+    withErrorHandling(async (request: NextRequest) => {
   await verifyAdmin(request);
 
   const body = await request.json();
@@ -100,4 +104,4 @@ export const PATCH = withErrorHandling(async (request: NextRequest) => {
     rate: updateResult.rows[0],
     message: 'Rate configuration updated successfully'
   });
-});
+})));

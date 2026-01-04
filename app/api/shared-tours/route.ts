@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sharedTourService } from '@/lib/services/shared-tour.service';
+import { logger } from '@/lib/logger';
 
 /**
  * GET /api/shared-tours
  * Get all upcoming shared tours with availability
  * Public endpoint - no auth required
+ *
+ * ✅ REFACTORED: Structured logging + proper error handling
  */
 export async function GET(request: NextRequest) {
   try {
@@ -27,10 +30,11 @@ export async function GET(request: NextRequest) {
       data: publicTours,
       count: publicTours.length,
     });
-  } catch (error: any) {
-    console.error('Error fetching shared tours:', error);
+  } catch (error) {
+    logger.error('Error fetching shared tours', { error });
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { success: false, error: error.message },
+      { success: false, error: message },
       { status: 500 }
     );
   }

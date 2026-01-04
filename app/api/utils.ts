@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import type { NextRequest } from 'next/server';
+import { logger } from '@/lib/logger';
 
 // Standard API response format
-interface ApiResponse<T = any> {
+interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
@@ -43,7 +44,7 @@ export function successResponse<T>(
 
 // Create an error response
 export function errorResponse(error: string, status: number = 400): NextResponse {
-  const response: ApiResponse = {
+  const response: ApiResponse<undefined> = {
     success: false,
     error,
     timestamp: new Date().toISOString(),
@@ -85,7 +86,7 @@ export async function parseRequestBody<T>(request: NextRequest): Promise<T | nul
 }
 
 // Validate required fields
-export function validateRequiredFields(data: any, fields: string[]): string | null {
+export function validateRequiredFields(data: Record<string, unknown>, fields: string[]): string | null {
   for (const field of fields) {
     if (data[field] === undefined || data[field] === null || data[field] === '') {
       return `Missing required field: ${field}`;
@@ -95,7 +96,7 @@ export function validateRequiredFields(data: any, fields: string[]): string | nu
 }
 
 // Validate field types
-export function validateFieldTypes(data: any, types: { [key: string]: string }): string | null {
+export function validateFieldTypes(data: Record<string, unknown>, types: { [key: string]: string }): string | null {
   for (const [field, expectedType] of Object.entries(types)) {
     if (data[field] !== undefined && typeof data[field] !== expectedType) {
       return `Invalid type for field ${field}: expected ${expectedType}, got ${typeof data[field]}`;
@@ -104,25 +105,32 @@ export function validateFieldTypes(data: any, types: { [key: string]: string }):
   return null;
 }
 
+// Database error type
+interface DatabaseError {
+  code?: string;
+  message?: string;
+}
+
 // Format database errors for API response
-export function formatDatabaseError(error: any): string {
-  if (error.code === '23505') {
+export function formatDatabaseError(error: unknown): string {
+  const dbError = error as DatabaseError;
+  if (dbError.code === '23505') {
     // Unique violation
     return 'Record already exists';
   }
-  if (error.code === '23503') {
+  if (dbError.code === '23503') {
     // Foreign key violation
     return 'Related record not found';
   }
-  if (error.code === '22P02') {
+  if (dbError.code === '22P02') {
     // Invalid text representation
     return 'Invalid data format';
   }
-  if (error.code === '23502') {
+  if (dbError.code === '23502') {
     // Not null violation
     return 'Required field is missing';
   }
-  if (error.code === '22001') {
+  if (dbError.code === '22001') {
     // String data right truncation
     return 'Input value is too long';
   }
@@ -143,10 +151,13 @@ export function handleOptions(): NextResponse {
 }
 
 // Log API requests (for debugging)
-export function logApiRequest(method: string, path: string, userId?: string, body?: any): void {
-  const timestamp = new Date().toISOString();
-  const userInfo = userId ? ` [User: ${userId}]` : '';
-  console.log(`[${timestamp}] ${method} ${path}${userInfo}`, body ? JSON.stringify(body) : '');
+export function logApiRequest(method: string, path: string, userId?: string, body?: unknown): void {
+  logger.debug('API Request', {
+    method,
+    path,
+    userId,
+    body: body ? body : undefined
+  });
 }
 
 // Rate limiting helper (simple in-memory store)
@@ -306,10 +317,10 @@ export interface FieldSchema {
   min?: number;
   max?: number;
   pattern?: RegExp;
-  enum?: any[];
+  enum?: unknown[];
 }
 
-export function validateSchema(data: any, schema: Record<string, FieldSchema>): string | null {
+export function validateSchema(data: Record<string, unknown>, schema: Record<string, FieldSchema>): string | null {
   for (const [field, rules] of Object.entries(schema)) {
     const value = data[field];
     

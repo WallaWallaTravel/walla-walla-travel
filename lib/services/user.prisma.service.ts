@@ -182,7 +182,7 @@ class UserPrismaService extends PrismaBaseService {
    * Update user
    */
   async update(id: number, input: UpdateUserInput): Promise<User> {
-    this.log(`Updating user ${id}`, input);
+    this.log(`Updating user ${id}`, { input: input as unknown as Record<string, unknown> });
 
     // Check user exists
     const existing = await this.db.users.findUnique({ where: { id } });

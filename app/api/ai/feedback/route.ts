@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logger } from '@/lib/logger'
 import { updateQueryRating } from '@/lib/analytics/query-logger'
 
 export const runtime = 'nodejs'
@@ -29,20 +30,21 @@ export async function POST(request: NextRequest) {
 
     await updateQueryRating(queryId, rating, feedback || null)
 
-    console.log(`[Feedback] Query ${queryId} rated ${rating}/5`)
+    logger.info('Feedback received', { queryId, rating })
 
     return NextResponse.json({
       success: true,
       message: 'Feedback submitted'
     })
 
-  } catch (error: any) {
-    console.error('Feedback error:', error)
-    
+  } catch (error) {
+    logger.error('Feedback error', { error })
+    const message = error instanceof Error ? error.message : 'Unknown error'
+
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to submit feedback',
-        details: error.message 
+        details: message
       },
       { status: 500 }
     )

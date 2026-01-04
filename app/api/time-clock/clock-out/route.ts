@@ -1,32 +1,51 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
+import { logger } from '@/lib/logger';
+import { z } from 'zod';
+
+// Request body schema
+const ClockOutSchema = z.object({
+  driverId: z.number().int().positive('Driver ID must be a positive integer'),
+  location: z.object({
+    latitude: z.number().min(-90).max(90),
+    longitude: z.number().min(-180).max(180),
+    accuracy: z.number().positive().optional(),
+  }).optional(),
+  signature: z.string().max(5000).optional(),
+  notes: z.string().max(500).optional(),
+});
 
 /**
  * POST /api/time-clock/clock-out
  * Completes a time card by clocking out
- * 
- * Body: {
- *   driverId: number,
- *   location: { latitude: number, longitude: number, accuracy: number },
- *   signature?: string,
- *   notes?: string
- * }
+ *
+ * ✅ REFACTORED: Zod validation + structured logging
  */
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { driverId, location, signature, notes } = body;
-
-    // Validate required fields
-    if (!driverId) {
+    // Parse and validate request body
+    let rawBody: unknown;
+    try {
+      rawBody = await request.json();
+    } catch {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Driver ID is required' 
+        { success: false, error: 'Invalid JSON in request body' },
+        { status: 400 }
+      );
+    }
+
+    const parseResult = ClockOutSchema.safeParse(rawBody);
+    if (!parseResult.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Validation failed: ' + parseResult.error.issues.map((e) => e.message).join(', ')
         },
         { status: 400 }
       );
     }
+
+    const { driverId, location, signature, notes } = parseResult.data;
 
     // Find today's active time card
     const existingResult = await query(
@@ -140,10 +159,10 @@ export async function POST(request: Request) {
     });
 
   } catch (error) {
-    console.error('❌ Error clocking out:', error);
+    logger.error('Error clocking out', { error });
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         error: 'Failed to clock out',
         message: error instanceof Error ? error.message : 'Unknown error'
       },

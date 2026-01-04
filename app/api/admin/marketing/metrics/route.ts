@@ -19,7 +19,14 @@ async function getHandler(request: NextRequest) {
   const period = searchParams.get('period') || '30' // days
 
   // Get lead metrics
-  const leadsQuery = await query(`
+  const leadsQuery = await query<{
+    total_leads: string;
+    new_leads: string;
+    qualified_leads: string;
+    converted_leads: string;
+    hot_leads: string;
+    leads_this_period: string;
+  }>(`
     SELECT
       COUNT(*) as total_leads,
       COUNT(*) FILTER (WHERE status = 'new') as new_leads,
@@ -28,7 +35,7 @@ async function getHandler(request: NextRequest) {
       COUNT(*) FILTER (WHERE temperature = 'hot') as hot_leads,
       COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '${parseInt(period)} days') as leads_this_period
     FROM leads
-  `).catch(() => ({ rows: [{}] }))
+  `).catch(() => ({ rows: [{ total_leads: '0', new_leads: '0', qualified_leads: '0', converted_leads: '0', hot_leads: '0', leads_this_period: '0' }] }))
 
   // Get booking inquiry metrics (if bookings table exists)
   const bookingsQuery = await query(`
@@ -67,7 +74,7 @@ async function getHandler(request: NextRequest) {
   `).catch(() => ({ rows: [{ scheduled_posts: 0, published_this_week: 0 }] }))
 
   // Calculate conversion rate
-  const leads = leadsQuery.rows[0] || {}
+  const leads = leadsQuery.rows[0] || { total_leads: '0', converted_leads: '0' }
   const totalLeads = parseInt(leads.total_leads) || 1
   const convertedLeads = parseInt(leads.converted_leads) || 0
   const conversionRate = ((convertedLeads / totalLeads) * 100).toFixed(1)

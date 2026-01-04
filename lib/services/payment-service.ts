@@ -1,7 +1,34 @@
 import { logger } from '@/lib/logger';
 /**
  * Payment Service
- * Handles all payment processing and tracking
+ *
+ * @module lib/services/payment-service
+ * @description Handles all payment processing and tracking for the Walla Walla Travel platform.
+ * Integrates with Stripe for secure payment processing and maintains payment records
+ * linked to bookings and reservations.
+ *
+ * @requires BaseService - Database operations abstraction
+ * @requires Stripe - Payment processing via Stripe API
+ *
+ * @security All payment operations are protected by CSRF and rate limiting.
+ * Sensitive data (card numbers, CVV) are never stored; only Stripe tokens are persisted.
+ *
+ * @example
+ * ```typescript
+ * import { paymentService } from '@/lib/services/payment-service';
+ *
+ * // Create a payment record
+ * const payment = await paymentService.createPayment({
+ *   bookingId: 123,
+ *   customerId: 456,
+ *   amount: 15000, // $150.00 in cents
+ *   paymentMethod: 'card',
+ *   stripePaymentIntentId: 'pi_xxx'
+ * });
+ *
+ * // Get payment history for a booking
+ * const payments = await paymentService.getPaymentsByBooking(123);
+ * ```
  */
 
 import { BaseService } from './base.service';

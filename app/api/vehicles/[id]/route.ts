@@ -1,7 +1,8 @@
 import { NextRequest } from 'next/server';
-import { 
-  successResponse, 
-  errorResponse, 
+import { logger } from '@/lib/logger';
+import {
+  successResponse,
+  errorResponse,
   getOptionalAuth,
   logApiRequest
 } from '@/app/api/utils';
@@ -218,7 +219,7 @@ export async function GET(
     return successResponse(responseData, 'Vehicle details retrieved successfully');
 
   } catch (error) {
-    console.error('Get vehicle by ID error:', error);
+    logger.error('Get vehicle by ID error', { error });
     return errorResponse('Failed to retrieve vehicle details', 500);
   }
 }

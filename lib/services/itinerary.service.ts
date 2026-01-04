@@ -7,6 +7,29 @@ import { logger } from '@/lib/logger';
 import { BaseService } from './base.service';
 import { NotFoundError, ConflictError } from '@/lib/api/middleware/error-handler';
 
+interface ItineraryStop {
+  id: number;
+  winery_id: number;
+  stop_order: number;
+  arrival_time: string | null;
+  departure_time: string | null;
+  duration_minutes: number | null;
+  drive_time_to_next_minutes: number | null;
+  stop_type: string | null;
+  reservation_confirmed: boolean;
+  special_notes: string | null;
+  is_lunch_stop: boolean;
+  winery: {
+    id: number;
+    name: string;
+    slug: string;
+    address: string;
+    city: string;
+    tasting_fee: number | null;
+    average_visit_duration: number | null;
+  };
+}
+
 interface Itinerary {
   id: number;
   booking_id: number;
@@ -16,7 +39,7 @@ interface Itinerary {
   estimated_dropoff_time: string;
   driver_notes?: string;
   internal_notes?: string;
-  stops?: any[];
+  stops?: ItineraryStop[];
 }
 
 interface CreateItineraryData {
@@ -89,7 +112,7 @@ export class ItineraryService extends BaseService {
       throw new NotFoundError('Itinerary not found for this booking');
     }
 
-    return result.rows[0];
+    return result.rows[0] as Itinerary;
   }
 
   /**
@@ -132,7 +155,7 @@ export class ItineraryService extends BaseService {
       data.internal_notes || ''
     ]);
 
-    return result.rows[0];
+    return result.rows[0] as Itinerary;
   }
 
   /**
@@ -151,7 +174,7 @@ export class ItineraryService extends BaseService {
       throw new NotFoundError('Itinerary not found');
     }
 
-    const itineraryId = itineraryResult.rows[0].id;
+    const itineraryId = (itineraryResult.rows[0] as { id: number }).id;
 
     const result = await this.query(`
       UPDATE itineraries
@@ -179,7 +202,7 @@ export class ItineraryService extends BaseService {
       itineraryId
     ]);
 
-    return result.rows[0];
+    return result.rows[0] as Itinerary;
   }
 
   /**

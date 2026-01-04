@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import { logger } from '@/lib/logger';
 import { withErrorHandling, BadRequestError, NotFoundError, InternalServerError } from '@/lib/api-errors';
 import { queryOne, withTransaction } from '@/lib/db-helpers';
 import { sendPaymentReceiptEmail } from '@/lib/services/email-automation.service';
+import { validateBody, ConfirmPaymentSchema } from '@/lib/api/middleware/validation';
+import { withCSRF } from '@/lib/api/middleware/csrf';
+import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 
 // Initialize Stripe
 const stripe = process.env.STRIPE_SECRET_KEY
@@ -34,18 +38,16 @@ interface Booking {
  *   payment_intent_id: string
  * }
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withRateLimit(rateLimiters.payment)(
+    withErrorHandling(async (request: NextRequest) => {
   // Check if Stripe is configured
   if (!stripe) {
     throw new InternalServerError('Payment processing not configured. Please contact support.');
   }
 
-  const body = await request.json();
-  const { payment_intent_id } = body;
-
-  if (!payment_intent_id) {
-    throw new BadRequestError('Missing required field: payment_intent_id');
-  }
+  // Validate input with Zod schema
+  const { payment_intent_id } = await validateBody(request, ConfirmPaymentSchema);
 
   // Retrieve payment intent from Stripe
   const paymentIntent = await stripe.paymentIntents.retrieve(payment_intent_id);
@@ -142,7 +144,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
 
   // Send payment receipt email (async, don't wait)
   sendPaymentReceiptEmail(payment.id).catch(err => {
-    console.error('[Payment] Failed to send receipt email:', err);
+    logger.error('Payment: Failed to send receipt email', { error: err, paymentId: payment.id });
   });
 
   return NextResponse.json({
@@ -158,4 +160,4 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     },
     message: 'Payment confirmed successfully'
   });
-});
+})));

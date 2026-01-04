@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import { query } from '@/lib/db';
 
 export async function POST(request: NextRequest) {
@@ -80,7 +81,7 @@ export async function POST(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error('[Client Booking Lookup] Error:', error);
+    logger.error('Client Booking Lookup error', { error });
     return NextResponse.json(
       { success: false, error: { message: 'An error occurred while looking up your booking' } },
       { status: 500 }

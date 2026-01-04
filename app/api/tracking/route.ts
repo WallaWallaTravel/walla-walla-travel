@@ -12,6 +12,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { bookingTrackingService } from '@/lib/services/booking-tracking.service';
 import { z } from 'zod';
+import { logger } from '@/lib/logger';
 
 // ============================================================================
 // Schemas
@@ -30,7 +31,7 @@ const TrackBookingSchema = z.object({
   pickupLocation: z.string().optional(),
   selectedWineries: z.array(z.number()).optional(),
   stepReached: z.string().optional(),
-  formData: z.any().optional(),
+  formData: z.record(z.string(), z.unknown()).optional(),
   brandId: z.number().optional(),
   utmSource: z.string().optional(),
   utmMedium: z.string().optional(),
@@ -116,13 +117,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           { status: 400 }
         );
     }
-  } catch (error: any) {
+  } catch (error) {
     // Log but don't fail - tracking should never break the user experience
-    console.error('Tracking error:', error.message);
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    logger.warn('Tracking error', { error: message });
 
-    if (error.name === 'ZodError') {
+    if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
+        { error: 'Validation error', details: error.issues },
         { status: 400 }
       );
     }

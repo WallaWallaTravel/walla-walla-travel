@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { detectDiscrepancies } from '@/lib/business-portal/discrepancy-detector';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -29,7 +30,7 @@ export async function GET(
       );
     }
 
-    console.log('[Admin] Fetching business details for ID:', businessId);
+    logger.debug('Fetching business details', { businessId });
 
     // Get business info
     const businessResult = await query(
@@ -115,10 +116,10 @@ export async function GET(
     };
 
     // Detect discrepancies
-    console.log('[Admin] Detecting discrepancies...');
+    logger.debug('Detecting discrepancies', { businessId });
     const discrepancies = await detectDiscrepancies(businessId);
 
-    console.log('[Admin] Business details fetched successfully');
+    logger.debug('Business details fetched successfully', { businessId });
 
     return NextResponse.json({
       success: true,
@@ -135,10 +136,11 @@ export async function GET(
       discrepancies
     });
 
-  } catch (error: any) {
-    console.error('[Admin] Error fetching business details:', error);
+  } catch (error) {
+    logger.error('Error fetching business details', { error });
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to fetch business details', details: error.message },
+      { error: 'Failed to fetch business details', details: message },
       { status: 500 }
     );
   }

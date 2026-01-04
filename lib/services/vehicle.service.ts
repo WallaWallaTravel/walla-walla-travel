@@ -1,8 +1,17 @@
 import { logger } from '@/lib/logger';
 /**
  * Vehicle Service
- * 
- * Business logic for vehicle operations
+ *
+ * @module lib/services/vehicle.service
+ * @description Manages the vehicle fleet for wine tour operations.
+ * Handles vehicle records, maintenance tracking, availability, and assignment to tours.
+ *
+ * @features
+ * - Fleet inventory management
+ * - Service/maintenance due tracking
+ * - Vehicle availability checks
+ * - Capacity-based tour assignment
+ * - VIN and license plate records
  */
 
 import { BaseService } from './base.service';
@@ -57,10 +66,10 @@ export class VehicleService extends BaseService {
    * List vehicles with filters and pagination
    */
   async list(filters: ListVehiclesFilters) {
-    this.log('Listing vehicles', filters);
+    this.log('Listing vehicles', { filters: filters as unknown as Record<string, unknown> });
 
     const conditions: string[] = [];
-    const params: any[] = [];
+    const params: unknown[] = [];
     let paramCount = 0;
 
     // Filter by availability
@@ -245,7 +254,19 @@ export class VehicleService extends BaseService {
     );
 
     // Format vehicles
-    const vehicles = result.rows.map((vehicle: any) => ({
+    interface VehicleRow {
+      id: number;
+      vehicle_number: string;
+      make: string;
+      model: string;
+      year: number;
+      capacity: number;
+      license_plate: string;
+      vin: string;
+      status: string;
+      current_driver_name: string | null;
+    }
+    const vehicles = (result.rows as VehicleRow[]).map((vehicle) => ({
       id: vehicle.id,
       vehicleNumber: vehicle.vehicle_number,
       make: vehicle.make,
@@ -263,9 +284,9 @@ export class VehicleService extends BaseService {
 
     // Categorize by status
     const categorized = {
-      assigned: vehicles.filter((v: any) => v.status === 'assigned'),
-      available: vehicles.filter((v: any) => v.status === 'available'),
-      inUse: vehicles.filter((v: any) => v.status === 'in_use' || v.status === 'assigned_other'),
+      assigned: vehicles.filter((v) => v.status === 'assigned'),
+      available: vehicles.filter((v) => v.status === 'available'),
+      inUse: vehicles.filter((v) => v.status === 'in_use' || v.status === 'assigned_other'),
       all: vehicles
     };
 

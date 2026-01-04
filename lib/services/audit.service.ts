@@ -1,8 +1,23 @@
 import { logger } from '@/lib/logger';
 /**
  * Audit Service
- * 
- * Logs admin and user activities for security and compliance
+ *
+ * @module lib/services/audit.service
+ * @description Comprehensive activity logging for security auditing and compliance.
+ * Records all significant user actions with context for forensic analysis.
+ *
+ * @security
+ * - Immutable audit log (append-only)
+ * - IP address and user agent tracking
+ * - Request ID correlation for traceability
+ * - Retention policy compliant
+ *
+ * @features
+ * - Authentication events (login, logout, failed attempts)
+ * - Data modification tracking
+ * - Admin action logging
+ * - Payment transaction auditing
+ * - Configurable event types
  */
 
 import { BaseService } from './base.service';
@@ -58,7 +73,7 @@ export interface AuditLogEntry {
   id: number;
   user_id: number;
   action: AuditAction;
-  details: Record<string, any>;
+  details: Record<string, unknown>;
   ip_address: string | null;
   created_at: string;
 }
@@ -66,7 +81,7 @@ export interface AuditLogEntry {
 export interface CreateAuditLogData {
   userId: number;
   action: AuditAction;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
   ipAddress?: string;
 }
 
@@ -99,7 +114,7 @@ class AuditService extends BaseService {
       // Logged successfully (silent in production)
     } catch (error) {
       // Don't throw - audit logging should never break the main flow
-      logger.error('[AuditService] Failed to log activity:', error);
+      logger.error('[AuditService] Failed to log activity', { error });
     }
   }
 
@@ -119,7 +134,7 @@ class AuditService extends BaseService {
     request: NextRequest,
     userId: number,
     action: AuditAction,
-    details?: Record<string, any>
+    details?: Record<string, unknown>
   ): Promise<void> {
     const ipAddress = this.getIpFromRequest(request);
     
@@ -147,7 +162,7 @@ class AuditService extends BaseService {
     options?: { limit?: number; offset?: number; action?: AuditAction }
   ): Promise<AuditLogEntry[]> {
     const conditions = ['user_id = $1'];
-    const params: any[] = [userId];
+    const params: unknown[] = [userId];
     let paramIndex = 2;
 
     if (options?.action) {
@@ -159,7 +174,7 @@ class AuditService extends BaseService {
     const limit = options?.limit || 50;
     const offset = options?.offset || 0;
 
-    const result = await this.query(
+    const result = await this.query<AuditLogEntry>(
       `SELECT * FROM user_activity_logs
        WHERE ${conditions.join(' AND ')}
        ORDER BY created_at DESC
@@ -189,7 +204,7 @@ class AuditService extends BaseService {
       'bulk_action',
     ];
 
-    const result = await this.query(
+    const result = await this.query<AuditLogEntry>(
       `SELECT al.*, u.name as user_name, u.email as user_email
        FROM user_activity_logs al
        JOIN users u ON al.user_id = u.id
@@ -211,7 +226,7 @@ class AuditService extends BaseService {
     options?: { userId?: number; action?: AuditAction }
   ): Promise<AuditLogEntry[]> {
     const conditions = ['created_at >= $1', 'created_at <= $2'];
-    const params: any[] = [startDate, endDate];
+    const params: unknown[] = [startDate, endDate];
     let paramIndex = 3;
 
     if (options?.userId) {
@@ -226,7 +241,7 @@ class AuditService extends BaseService {
       paramIndex++;
     }
 
-    const result = await this.query(
+    const result = await this.query<AuditLogEntry>(
       `SELECT * FROM user_activity_logs
        WHERE ${conditions.join(' AND ')}
        ORDER BY created_at DESC`,
@@ -244,7 +259,7 @@ class AuditService extends BaseService {
     windowMinutes: number = 15,
     maxAttempts: number = 5
   ): Promise<{ suspicious: boolean; attempts: number }> {
-    const result = await this.query(
+    const result = await this.query<{ count: string }>(
       `SELECT COUNT(*) as count
        FROM user_activity_logs
        WHERE ip_address = $1

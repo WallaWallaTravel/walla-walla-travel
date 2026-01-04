@@ -16,6 +16,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { bookingTrackingService } from '@/lib/services/booking-tracking.service';
 import { Resend } from 'resend';
+import { logger } from '@/lib/logger';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -81,8 +82,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         );
         sent++;
 
-      } catch (emailError: any) {
-        console.error(`Failed to send abandoned cart email to ${attempt.email}:`, emailError.message);
+      } catch (emailError) {
+        const message = emailError instanceof Error ? emailError.message : 'Unknown error';
+        logger.error('Failed to send abandoned cart email', { email: attempt.email, error: message });
         failed++;
       }
     }
@@ -95,10 +97,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       timestamp: new Date().toISOString()
     });
 
-  } catch (error: any) {
-    console.error('Abandoned cart cron error:', error);
+  } catch (error) {
+    logger.error('Abandoned cart cron error', { error });
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Processing failed', details: error.message },
+      { error: 'Processing failed', details: message },
       { status: 500 }
     );
   }

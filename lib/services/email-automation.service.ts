@@ -56,7 +56,7 @@ export async function sendBookingConfirmationEmail(bookingId: number): Promise<b
     `, [bookingId]);
 
     if (!booking || !booking.customer_email) {
-      logger.error('[EmailAutomation] Booking not found or no email:', bookingId);
+      logger.error('[EmailAutomation] Booking not found or no email', { bookingId });
       return false;
     }
 
@@ -107,7 +107,7 @@ export async function sendBookingConfirmationEmail(bookingId: number): Promise<b
     return result;
 
   } catch (error) {
-    logger.error('[EmailAutomation] Error sending booking confirmation:', error);
+    logger.error('[EmailAutomation] Error sending booking confirmation', { error });
     return false;
   }
 }
@@ -130,7 +130,7 @@ export async function sendPaymentReceiptEmail(paymentId: number): Promise<boolea
     `, [paymentId]);
 
     if (!payment || !payment.customer_email) {
-      logger.error('[EmailAutomation] Payment not found or no email:', paymentId);
+      logger.error('[EmailAutomation] Payment not found or no email', { paymentId });
       return false;
     }
 
@@ -182,7 +182,7 @@ export async function sendPaymentReceiptEmail(paymentId: number): Promise<boolea
     return result;
 
   } catch (error) {
-    logger.error('[EmailAutomation] Error sending payment receipt:', error);
+    logger.error('[EmailAutomation] Error sending payment receipt', { error });
     return false;
   }
 }
@@ -204,7 +204,7 @@ export async function sendTourReminderEmail(bookingId: number): Promise<boolean>
     `, [bookingId]);
 
     if (!booking || !booking.customer_email) {
-      logger.error('[EmailAutomation] Booking not found or no email:', bookingId);
+      logger.error('[EmailAutomation] Booking not found or no email', { bookingId });
       return false;
     }
 
@@ -305,7 +305,7 @@ export async function sendTourReminderEmail(bookingId: number): Promise<boolean>
     return result;
 
   } catch (error) {
-    logger.error('[EmailAutomation] Error sending tour reminder:', error);
+    logger.error('[EmailAutomation] Error sending tour reminder', { error });
     return false;
   }
 }
@@ -345,7 +345,7 @@ export async function processTourReminders(): Promise<{ sent: number; failed: nu
     }
 
   } catch (error) {
-    logger.error('[EmailAutomation] Error processing tour reminders:', error);
+    logger.error('[EmailAutomation] Error processing tour reminders', { error });
   }
 
   return { sent, failed };
@@ -377,7 +377,7 @@ export async function sendDriverAssignmentToCustomer(bookingId: number): Promise
     `, [bookingId]);
 
     if (!booking || !booking.customer_email || !booking.driver_name) {
-      logger.error('[EmailAutomation] Booking, email, or driver not found:', bookingId);
+      logger.error('[EmailAutomation] Booking, email, or driver not found', { bookingId });
       return false;
     }
 
@@ -450,7 +450,7 @@ export async function sendDriverAssignmentToCustomer(bookingId: number): Promise
     return result;
 
   } catch (error) {
-    logger.error('[EmailAutomation] Error sending driver assignment to customer:', error);
+    logger.error('[EmailAutomation] Error sending driver assignment to customer', { error });
     return false;
   }
 }

@@ -3,42 +3,33 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import { createDepositPaymentIntent } from '@/lib/stripe';
+import { withErrorHandling } from '@/lib/api-errors';
+import { validateBody, ReservationPaymentIntentSchema } from '@/lib/api/middleware/validation';
+import { withCSRF } from '@/lib/api/middleware/csrf';
+import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const { amount, reservationId, customerEmail, customerName, partySize, preferredDate } = body;
+export const POST = withCSRF(
+  withRateLimit(rateLimiters.payment)(
+    withErrorHandling(async (request: NextRequest) => {
+  // Validate input with Zod schema
+  const { amount, reservationId, customerEmail, customerName, partySize, preferredDate } =
+    await validateBody(request, ReservationPaymentIntentSchema);
 
-    // Validate required fields
-    if (!amount || !reservationId || !customerEmail || !customerName) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
-    }
+  // Create payment intent
+  const paymentIntent = await createDepositPaymentIntent(amount, {
+    reservationId,
+    customerEmail,
+    customerName,
+    partySize: partySize ?? 1,
+    preferredDate: preferredDate ?? new Date().toISOString().split('T')[0],
+  });
 
-    // Create payment intent
-    const paymentIntent = await createDepositPaymentIntent(amount, {
-      reservationId,
-      customerEmail,
-      customerName,
-      partySize,
-      preferredDate,
-    });
-
-    return NextResponse.json({
-      clientSecret: paymentIntent.client_secret,
-      paymentIntentId: paymentIntent.id,
-    });
-
-  } catch (error: any) {
-    console.error('Error creating payment intent:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to create payment intent' },
-      { status: 500 }
-    );
-  }
-}
+  return NextResponse.json({
+    clientSecret: paymentIntent.client_secret,
+    paymentIntentId: paymentIntent.id,
+  });
+})));
 
 

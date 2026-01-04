@@ -6,10 +6,13 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { bookingService } from '@/lib/services/booking.service';
 import { sendBookingConfirmationEmail } from '@/lib/services/email-automation.service';
 import { z } from 'zod';
+import { withCSRF } from '@/lib/api/middleware/csrf';
+import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 
 // Validation schema for creating a booking
 const CreateBookingSchema = z.object({
@@ -69,7 +72,9 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
  * POST /api/bookings
  * Create a new booking
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withRateLimit(rateLimiters.payment)(
+    withErrorHandling(async (request: NextRequest) => {
   const body = await request.json();
 
   // Validate request body
@@ -97,13 +102,13 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   // Send confirmation email (async, don't wait)
   if (booking.customer_email) {
     sendBookingConfirmationEmail(booking.id).catch(err => {
-      console.error('[Booking] Failed to send confirmation email:', err);
+      logger.error('Failed to send confirmation email', { error: err, bookingId: booking.id });
     });
   }
 
-  return NextResponse.json({ 
-    success: true, 
+  return NextResponse.json({
+    success: true,
     booking,
     message: 'Booking created successfully',
   });
-});
+})));

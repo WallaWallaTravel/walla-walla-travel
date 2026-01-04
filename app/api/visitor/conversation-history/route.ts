@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import { getVisitorConversationHistory, getVisitorByUUID } from '@/lib/visitor/visitor-tracking';
 
 export const runtime = 'nodejs';
@@ -53,10 +54,11 @@ export async function GET(request: NextRequest) {
         timestamp: q.created_at,
       })),
     });
-  } catch (error: any) {
-    console.error('Error fetching conversation history:', error);
+  } catch (error) {
+    logger.error('Error fetching conversation history', { error });
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to fetch conversation history', details: error.message },
+      { error: 'Failed to fetch conversation history', details: message },
       { status: 500 }
     );
   }

@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import crypto from 'crypto';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`[Admin] Processing ${businesses.length} business invite(s)`);
+    logger.info('Processing business invites', { count: businesses.length });
 
     const results = [];
 
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
         // TODO: Send email with unique code
         // await sendInviteEmail(business.contact_email, business.name, unique_code);
 
-        console.log(`[Admin] Created invite for ${business.name} (${unique_code})`);
+        logger.info('Created business invite', { businessName: business.name, code: unique_code });
 
         results.push({
           business,
@@ -82,11 +83,13 @@ export async function POST(request: NextRequest) {
           message: `Invite created! Code: ${newBusiness.unique_code}`
         });
 
-      } catch (error: any) {
-        console.error(`[Admin] Error inviting ${business.name}:`, error);
-        
+      } catch (error) {
+        logger.error('Error inviting business', { businessName: business.name, error });
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        const errorCode = error instanceof Error && 'code' in error ? (error as { code?: string }).code : undefined;
+
         // Handle duplicate email
-        if (error.message?.includes('duplicate') || error.code === '23505') {
+        if (errorMessage.includes('duplicate') || errorCode === '23505') {
           results.push({
             business,
             success: false,
@@ -96,7 +99,7 @@ export async function POST(request: NextRequest) {
           results.push({
             business,
             success: false,
-            error: error.message || 'Failed to create invite'
+            error: errorMessage
           });
         }
       }
@@ -105,7 +108,7 @@ export async function POST(request: NextRequest) {
     const successCount = results.filter(r => r.success).length;
     const failCount = results.filter(r => !r.success).length;
 
-    console.log(`[Admin] Batch invite complete: ${successCount} succeeded, ${failCount} failed`);
+    logger.info('Batch invite complete', { succeeded: successCount, failed: failCount });
 
     return NextResponse.json({
       success: true,
@@ -118,10 +121,11 @@ export async function POST(request: NextRequest) {
       }
     });
 
-  } catch (error: any) {
-    console.error('[Admin] Error in batch invite:', error);
+  } catch (error) {
+    logger.error('Error in batch invite', { error });
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to process invites', details: error.message },
+      { error: 'Failed to process invites', details: message },
       { status: 500 }
     );
   }

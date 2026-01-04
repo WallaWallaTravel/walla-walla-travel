@@ -235,7 +235,7 @@ export class TenantService extends BaseService {
       SELECT * FROM brands 
       WHERE 1=1
     `;
-    const params: any[] = [];
+    const params: unknown[] = [];
 
     if (tenantId) {
       params.push(tenantId);

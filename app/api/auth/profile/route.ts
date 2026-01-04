@@ -3,12 +3,16 @@ import {
   successResponse,
   errorResponse,
   requireAuth,
-  logApiRequest
 } from '@/app/api/utils';
 import { query } from '@/lib/db';
 import { userService } from '@/lib/services/user.service';
 import { validate, profileUpdateSchema } from '@/lib/validation';
+import { logger, logApiRequest } from '@/lib/logger';
 
+/**
+ * User profile API
+ * ✅ REFACTORED: Structured logging + proper error handling
+ */
 export async function GET(request: NextRequest) {
   try {
     // Check authentication
@@ -38,7 +42,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Profile fetch error:', error);
+    logger.error('Profile fetch error', { error });
     return errorResponse('Failed to fetch profile', 500);
   }
 }
@@ -64,7 +68,7 @@ export async function PUT(request: NextRequest) {
 
     // Build update query
     const updateFields: string[] = [];
-    const values: any[] = [];
+    const values: unknown[] = [];
     let paramCount = 1;
 
     if (updates.name !== undefined) {
@@ -132,7 +136,7 @@ export async function PUT(request: NextRequest) {
     }, 'Profile updated successfully');
 
   } catch (error) {
-    console.error('Profile update error:', error);
+    logger.error('Profile update error', { error });
     return errorResponse('Failed to update profile', 500);
   }
 }

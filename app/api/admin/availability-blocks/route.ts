@@ -14,6 +14,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, ValidationError, NotFoundError, ForbiddenError } from '@/lib/api/middleware/error-handler';
 import { vehicleAvailabilityService, BlockType } from '@/lib/services/vehicle-availability.service';
 import { z } from 'zod';
+import { withCSRF } from '@/lib/api/middleware/csrf';
+import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 
 // ============================================================================
 // Validation Schemas
@@ -85,7 +87,9 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 // POST Handler - Create Block
 // ============================================================================
 
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withRateLimit(rateLimiters.api)(
+    withErrorHandling(async (request: NextRequest) => {
   const body = await request.json();
   const validated = CreateBlockSchema.parse(body);
 
@@ -139,13 +143,15 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     message: `${validated.block_type} block created successfully`,
     block,
   }, { status: 201 });
-});
+})));
 
 // ============================================================================
 // DELETE Handler - Delete Block
 // ============================================================================
 
-export const DELETE = withErrorHandling(async (request: NextRequest) => {
+export const DELETE = withCSRF(
+  withRateLimit(rateLimiters.api)(
+    withErrorHandling(async (request: NextRequest) => {
   const searchParams = request.nextUrl.searchParams;
   const blockId = searchParams.get('id');
 
@@ -164,4 +170,4 @@ export const DELETE = withErrorHandling(async (request: NextRequest) => {
     message: 'Block deleted successfully',
     deleted_id: id,
   });
-});
+})));

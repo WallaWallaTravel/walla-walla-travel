@@ -1,10 +1,13 @@
 /**
  * Admin Reservations API
  * Get all reservations for admin dashboard
+ *
+ * ✅ REFACTORED: Structured logging + proper error handling
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -34,16 +37,17 @@ export async function GET(request: NextRequest) {
          r.created_at DESC`,
       []
     );
-    
+
     return NextResponse.json({
       success: true,
       reservations: result.rows
     });
-    
-  } catch (error: any) {
-    console.error('[Admin Reservations API] Error:', error);
+
+  } catch (error) {
+    logger.error('Admin Reservations API error', { error });
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to fetch reservations', details: error.message },
+      { error: 'Failed to fetch reservations', details: message },
       { status: 500 }
     );
   }

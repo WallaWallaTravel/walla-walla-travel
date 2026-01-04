@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import { query } from '@/lib/db';
 import { Resend } from 'resend';
 
@@ -73,7 +74,7 @@ export async function POST(
           results.emailSent = true;
         }
       } catch (emailError) {
-        console.error('Email send error:', emailError);
+        logger.error('Email send error', { error: emailError });
         results.errors.push(`Email failed: ${emailError instanceof Error ? emailError.message : 'Unknown error'}`);
       }
     }
@@ -122,7 +123,7 @@ export async function POST(
           }
         }
       } catch (smsError) {
-        console.error('SMS send error:', smsError);
+        logger.error('SMS send error', { error: smsError });
         results.errors.push(`SMS failed: ${smsError instanceof Error ? smsError.message : 'Unknown error'}`);
       }
     }
@@ -172,7 +173,7 @@ export async function POST(
       results,
     });
   } catch (error) {
-    console.error('[Deposit Request API] Error:', error);
+    logger.error('Deposit Request API error', { error });
     return NextResponse.json(
       { error: 'Failed to send deposit request', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }

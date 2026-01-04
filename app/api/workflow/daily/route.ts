@@ -1,7 +1,8 @@
 import { NextRequest } from 'next/server';
-import { 
-  successResponse, 
-  errorResponse, 
+import { logger } from '@/lib/logger';
+import {
+  successResponse,
+  errorResponse,
   requireAuth,
   logApiRequest,
   formatDateForDB
@@ -161,7 +162,7 @@ export async function GET(request: NextRequest) {
     return successResponse(dailyWorkflow, 'Daily workflow retrieved');
 
   } catch (error) {
-    console.error('Get daily workflow error:', error);
+    logger.error('Get daily workflow error', { error });
     return errorResponse('Failed to retrieve daily workflow', 500);
   }
 }

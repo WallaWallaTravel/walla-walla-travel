@@ -26,9 +26,9 @@ export interface BookingAttempt {
   duration_hours: number | null;
   party_size: number | null;
   pickup_location: string | null;
-  selected_wineries: any[];
+  selected_wineries: number[];
   step_reached: string;
-  form_data: any;
+  form_data: Record<string, unknown>;
   converted_to_booking_id: number | null;
   brand_id: number | null;
   created_at: string;
@@ -49,7 +49,7 @@ export interface TrackingData {
   pickupLocation?: string;
   selectedWineries?: number[];
   stepReached?: string;
-  formData?: any;
+  formData?: Record<string, unknown>;
   brandId?: number;
   utmSource?: string;
   utmMedium?: string;
@@ -94,7 +94,7 @@ export class BookingTrackingService extends BaseService {
     if (existing) {
       // Update existing attempt
       const updates: string[] = ['last_activity_at = NOW()', 'updated_at = NOW()'];
-      const params: any[] = [];
+      const params: unknown[] = [];
       let paramCount = 0;
 
       if (data.email) {
@@ -276,7 +276,15 @@ export class BookingTrackingService extends BaseService {
     completed: number;
     conversion_rate: number;
   }> {
-    const result = await this.queryOne<any>(
+    interface FunnelRow {
+      total_started: string;
+      reached_contact: string;
+      reached_date: string;
+      reached_wineries: string;
+      reached_payment: string;
+      completed: string;
+    }
+    const result = await this.queryOne<FunnelRow>(
       `SELECT
         COUNT(*) as total_started,
         COUNT(*) FILTER (WHERE step_reached IN ('contact_info', 'date_selection', 'wineries', 'payment', 'completed')) as reached_contact,
@@ -289,15 +297,15 @@ export class BookingTrackingService extends BaseService {
       [startDate, endDate]
     );
 
-    const total = parseInt(result.total_started) || 0;
-    const completed = parseInt(result.completed) || 0;
+    const total = parseInt(result?.total_started || '0') || 0;
+    const completed = parseInt(result?.completed || '0') || 0;
 
     return {
       total_started: total,
-      reached_contact: parseInt(result.reached_contact) || 0,
-      reached_date: parseInt(result.reached_date) || 0,
-      reached_wineries: parseInt(result.reached_wineries) || 0,
-      reached_payment: parseInt(result.reached_payment) || 0,
+      reached_contact: parseInt(result?.reached_contact || '0') || 0,
+      reached_date: parseInt(result?.reached_date || '0') || 0,
+      reached_wineries: parseInt(result?.reached_wineries || '0') || 0,
+      reached_payment: parseInt(result?.reached_payment || '0') || 0,
       completed,
       conversion_rate: total > 0 ? (completed / total) * 100 : 0
     };
@@ -404,8 +412,14 @@ export class BookingTrackingService extends BaseService {
     top_referrers: Array<{ referrer: string; count: number }>;
     device_breakdown: Array<{ device: string; count: number }>;
   }> {
+    interface SessionStats {
+      total_sessions: string;
+      unique_visitors: string;
+      booking_started: string;
+      avg_page_views: string;
+    }
     const [sessions, landingPages, referrers, devices] = await Promise.all([
-      this.queryOne<any>(
+      this.queryOne<SessionStats>(
         `SELECT
           COUNT(*) as total_sessions,
           COUNT(DISTINCT visitor_id) as unique_visitors,
@@ -415,7 +429,7 @@ export class BookingTrackingService extends BaseService {
          WHERE started_at >= $1 AND started_at <= $2`,
         [startDate, endDate]
       ),
-      this.queryMany<any>(
+      this.queryMany<{ page: string; count: number }>(
         `SELECT first_landing_page as page, COUNT(*) as count
          FROM visitor_sessions
          WHERE started_at >= $1 AND started_at <= $2 AND first_landing_page IS NOT NULL
@@ -424,7 +438,7 @@ export class BookingTrackingService extends BaseService {
          LIMIT 10`,
         [startDate, endDate]
       ),
-      this.queryMany<any>(
+      this.queryMany<{ referrer: string; count: number }>(
         `SELECT first_referrer as referrer, COUNT(*) as count
          FROM visitor_sessions
          WHERE started_at >= $1 AND started_at <= $2 AND first_referrer IS NOT NULL
@@ -433,7 +447,7 @@ export class BookingTrackingService extends BaseService {
          LIMIT 10`,
         [startDate, endDate]
       ),
-      this.queryMany<any>(
+      this.queryMany<{ device: string; count: number }>(
         `SELECT device_type as device, COUNT(*) as count
          FROM visitor_sessions
          WHERE started_at >= $1 AND started_at <= $2
@@ -444,10 +458,10 @@ export class BookingTrackingService extends BaseService {
     ]);
 
     return {
-      total_sessions: parseInt(sessions.total_sessions) || 0,
-      unique_visitors: parseInt(sessions.unique_visitors) || 0,
-      booking_started: parseInt(sessions.booking_started) || 0,
-      avg_page_views: parseFloat(sessions.avg_page_views) || 0,
+      total_sessions: parseInt(sessions?.total_sessions || '0') || 0,
+      unique_visitors: parseInt(sessions?.unique_visitors || '0') || 0,
+      booking_started: parseInt(sessions?.booking_started || '0') || 0,
+      avg_page_views: parseFloat(sessions?.avg_page_views || '0') || 0,
       top_landing_pages: landingPages,
       top_referrers: referrers,
       device_breakdown: devices

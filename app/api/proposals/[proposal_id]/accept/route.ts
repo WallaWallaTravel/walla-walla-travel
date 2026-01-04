@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
+import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 
 /**
  * POST /api/proposals/[proposal_id]/accept
  * Accept a proposal and create a booking
  */
-export const POST = withErrorHandling(async (
+export const POST = withCSRF(
+  withRateLimit(rateLimiters.api)(
+    withErrorHandling(async (
   request: NextRequest,
   { params }: { params: Promise<{ proposal_id: string }> }
 ): Promise<NextResponse> => {
@@ -123,4 +127,4 @@ export const POST = withErrorHandling(async (
       message: 'Proposal accepted successfully'
     }
   });
-});
+})));

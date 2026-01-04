@@ -1,7 +1,38 @@
 import { logger } from '@/lib/logger';
 /**
  * Partner Service
- * Handles partner portal business logic
+ *
+ * @module lib/services/partner.service
+ * @description Manages partner portal functionality for wineries, hotels, and restaurants.
+ * Handles partner onboarding, profile management, content submission, and dashboard data.
+ *
+ * @features
+ * - Partner invitations and onboarding flow
+ * - Profile management with linked business entities
+ * - Content submission (stories, tips, photos)
+ * - Dashboard statistics and progress tracking
+ * - Activity logging for audit trails
+ *
+ * @security
+ * - All mutations require CSRF tokens
+ * - Rate limiting applied to all endpoints
+ * - Partners can only access their own data
+ *
+ * @example
+ * ```typescript
+ * import { partnerService } from '@/lib/services/partner.service';
+ *
+ * // Get partner dashboard data
+ * const dashboard = await partnerService.getDashboardData(userId);
+ *
+ * // Invite a new partner
+ * await partnerService.invitePartner({
+ *   email: 'winery@example.com',
+ *   business_name: 'Sunset Vineyards',
+ *   business_type: 'winery',
+ *   winery_id: 42
+ * }, adminUserId);
+ * ```
  */
 
 import { BaseService } from './base.service';
@@ -32,6 +63,11 @@ export interface PartnerDashboardData {
     total_views: number;
     ai_recommendations: number;
     last_updated: string | null;
+    content_completion: {
+      stories_completed: number;
+      stories_total: number;
+      tips_count: number;
+    };
   };
 }
 
@@ -79,12 +115,44 @@ export class PartnerService extends BaseService {
       // Add more checks as needed
     }
 
-    // TODO: Get actual stats from analytics tables
+    // Get content completion stats
+    const storyContentTypes = ['origin_story', 'philosophy', 'unique_story'];
+    const storiesTotal = storyContentTypes.length;
+    let storiesCompleted = 0;
+    let tipsCount = 0;
+
+    if (profile?.winery_id) {
+      // Count completed stories (content with 100+ characters)
+      const storiesResult = await this.queryOne<{ count: string }>(
+        `SELECT COUNT(DISTINCT content_type)::text as count
+         FROM winery_content
+         WHERE winery_id = $1
+           AND content_type = ANY($2)
+           AND LENGTH(content) >= 100`,
+        [profile.winery_id, storyContentTypes]
+      );
+      storiesCompleted = parseInt(storiesResult?.count || '0', 10);
+
+      // Count insider tips
+      const tipsResult = await this.queryOne<{ count: string }>(
+        `SELECT COUNT(*)::text as count
+         FROM winery_insider_tips
+         WHERE winery_id = $1`,
+        [profile.winery_id]
+      );
+      tipsCount = parseInt(tipsResult?.count || '0', 10);
+    }
+
     const stats = {
       profile_completion: profileCompletion,
       total_views: 0,
       ai_recommendations: 0,
       last_updated: profile?.updated_at || null,
+      content_completion: {
+        stories_completed: storiesCompleted,
+        stories_total: storiesTotal,
+        tips_count: tipsCount,
+      },
     };
 
     return { profile, stats };
@@ -104,7 +172,7 @@ export class PartnerService extends BaseService {
     // Only allow certain fields to be updated
     const allowedFields = ['business_name', 'notes'];
     const updates: string[] = [];
-    const values: any[] = [];
+    const values: unknown[] = [];
     let paramIndex = 1;
 
     for (const [key, value] of Object.entries(data)) {

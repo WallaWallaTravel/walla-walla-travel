@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import { query } from '@/lib/db';
 
 export const runtime = 'nodejs';
@@ -36,7 +37,7 @@ export async function POST(
       );
     }
 
-    console.log('[Admin] Setting business status:', businessId, status.toUpperCase());
+    logger.info('Setting business status', { businessId, status });
 
     // Update business status
     const result = await query(
@@ -75,7 +76,7 @@ export async function POST(
       ]
     );
 
-    console.log('[Admin] Business status updated successfully');
+    logger.info('Business status updated successfully', { businessId });
 
     return NextResponse.json({
       success: true,
@@ -83,10 +84,11 @@ export async function POST(
       message: `Business ${status === 'approved' ? 'approved' : 'rejected'} successfully`
     });
 
-  } catch (error: any) {
-    console.error('[Admin] Error updating business status:', error);
+  } catch (error) {
+    logger.error('Error updating business status', { error });
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to update business status', details: error.message },
+      { error: 'Failed to update business status', details: message },
       { status: 500 }
     );
   }

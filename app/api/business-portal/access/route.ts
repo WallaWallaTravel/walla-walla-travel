@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getBusinessByCode } from '@/lib/business-portal/business-service';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -15,30 +16,30 @@ export const dynamic = 'force-dynamic';
  */
 export async function POST(request: NextRequest) {
   try {
-    console.log('[Business Portal Access] Received request');
     const { code } = await request.json();
-    console.log('[Business Portal Access] Code:', code);
-    
+
     if (!code || typeof code !== 'string') {
-      console.error('[Business Portal Access] Invalid code type');
+      logger.warn('Business portal access: invalid code type');
       return NextResponse.json(
         { error: 'Business code is required' },
         { status: 400 }
       );
     }
-    
+
     // Validate code and get business
-    console.log('[Business Portal Access] Looking up code:', code.toUpperCase());
+    logger.debug('Looking up business code', { code: code.toUpperCase() });
     const business = await getBusinessByCode(code.toUpperCase());
-    console.log('[Business Portal Access] Business found:', business ? business.name : 'NOT FOUND');
-    
+
     if (!business) {
+      logger.debug('Business code not found', { code: code.toUpperCase() });
       return NextResponse.json(
         { error: 'Invalid business code' },
         { status: 404 }
       );
     }
-    
+
+    logger.info('Business portal access granted', { businessId: business.id, businessName: business.name });
+
     // Return business info (excluding sensitive data)
     return NextResponse.json({
       success: true,
@@ -52,11 +53,12 @@ export async function POST(request: NextRequest) {
         unique_code: business.unique_code
       }
     });
-    
-  } catch (error: any) {
-    console.error('[Business Portal Access] Error:', error);
+
+  } catch (error) {
+    logger.error('Business portal access error', { error });
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to validate code', details: error.message },
+      { error: 'Failed to validate code', details: message },
       { status: 500 }
     );
   }

@@ -5,6 +5,8 @@ import { validateBody } from '@/lib/api/middleware/validation';
 import { getSessionFromRequest } from '@/lib/auth/session';
 import { partnerService } from '@/lib/services/partner.service';
 import { sendEmail } from '@/lib/email';
+import { withCSRF } from '@/lib/api/middleware/csrf';
+import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 
 const InviteSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -18,7 +20,9 @@ const InviteSchema = z.object({
  * POST /api/admin/partners/invite
  * Invite a new partner
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withRateLimit(rateLimiters.api)(
+    withErrorHandling(async (request: NextRequest) => {
   const session = await getSessionFromRequest(request);
   
   if (!session || session.user.role !== 'admin') {
@@ -140,12 +144,12 @@ Walla Walla Travel
     user_id: result.user_id,
     setup_url: result.setup_url,
     email_sent: emailSent,
-    message: emailSent 
-      ? 'Invitation sent successfully' 
+    message: emailSent
+      ? 'Invitation sent successfully'
       : 'Partner created but email failed to send. Share the setup link manually.',
     timestamp: new Date().toISOString(),
   });
-});
+})));
 
 
 

@@ -1,11 +1,29 @@
 import { logger } from '@/lib/logger';
 /**
  * Booking Service
- * 
- * Consolidated business logic for booking operations.
- * Uses BaseService from base.service.ts for database operations.
- * 
- * Merged from booking.service.ts and booking-service.ts
+ *
+ * @module lib/services/booking.service
+ * @description Core service for managing wine tour bookings in the Walla Walla Travel platform.
+ * Handles the complete booking lifecycle including creation, confirmation, cancellation,
+ * and payment processing integration.
+ *
+ * @requires BaseService - Database operations abstraction
+ * @requires customerService - Customer creation and management
+ * @requires pricingService - Dynamic pricing calculations
+ * @requires vehicleAvailabilityService - Vehicle capacity management
+ *
+ * @example
+ * ```typescript
+ * import { bookingService } from '@/lib/services/booking.service';
+ *
+ * // Create a new booking
+ * const booking = await bookingService.createFullBooking({
+ *   customer: { name: 'John Doe', email: 'john@example.com', phone: '555-1234' },
+ *   booking: { tour_date: '2026-02-01', start_time: '10:00', duration_hours: 6, party_size: 4 },
+ *   wineries: [{ winery_id: 1, visit_order: 1 }],
+ *   payment: { stripe_payment_method_id: 'pm_xxx' }
+ * });
+ * ```
  */
 
 import { BaseService } from './base.service';
@@ -93,6 +111,176 @@ export interface CreateBookingData {
   totalPrice: number;
   depositPaid: number;
   brandId?: number;
+}
+
+// Full booking details returned by getFullBookingByNumber
+export interface FullBookingDetails {
+  booking_number: string;
+  status: string;
+  tour_date: string;
+  start_time: string;
+  end_time: string;
+  duration_hours: number;
+  customer: {
+    id: number;
+    name: string;
+    email: string;
+    phone: string | null;
+    vip_status: boolean;
+  };
+  party_size: number;
+  pickup_location: string;
+  dropoff_location: string;
+  special_requests: string | null;
+  dietary_restrictions: string | null;
+  accessibility_needs: string | null;
+  wineries: WineryVisit[];
+  driver: { id: number; name: string; email: string; phone: string } | null;
+  vehicle: { id: number; name: string; license_plate: string; type: string; capacity: number } | null;
+  pricing: {
+    base_price: number;
+    gratuity: number;
+    taxes: number;
+    total: number;
+    deposit_paid: number;
+    deposit_paid_at: string | null;
+    balance_due: number;
+    balance_due_date: string;
+    balance_paid: boolean;
+    balance_paid_at: string | null;
+  };
+  payments: PaymentRecord[];
+  timeline: TimelineEvent[];
+  permissions: {
+    can_modify: boolean;
+    can_cancel: boolean;
+    cancellation_deadline: string;
+  };
+  cancellation: { cancelled_at: string; reason: string } | null;
+  created_at: string;
+  completed_at: string | null;
+}
+
+interface WineryVisit {
+  id: number;
+  name: string;
+  slug: string;
+  description: string | null;
+  specialties: string | null;
+  tasting_fee: number | null;
+  address: string;
+  city: string;
+  phone: string | null;
+  website: string | null;
+  photos: string[] | null;
+  amenities: string[] | null;
+  average_rating: number | null;
+  visit_order: number;
+  scheduled_arrival: string | null;
+  scheduled_departure: string | null;
+  actual_arrival: string | null;
+  actual_departure: string | null;
+  notes: string | null;
+}
+
+interface PaymentRecord {
+  id: number;
+  amount: number;
+  payment_type: string;
+  payment_method: string;
+  status: string;
+  stripe_payment_intent_id: string | null;
+  card_brand: string | null;
+  card_last4: string | null;
+  created_at: string;
+  succeeded_at: string | null;
+  failed_at: string | null;
+  failure_reason: string | null;
+}
+
+interface TimelineEvent {
+  id: number;
+  event_type: string;
+  description: string;
+  data: Record<string, unknown>;
+  created_at: string;
+}
+
+// Query result types for proper typing
+interface WineryQueryRow {
+  id: number;
+  name: string;
+  slug: string;
+  description: string | null;
+  short_description: string | null;
+  specialties: string | null;
+  tasting_fee: string | null;
+  address: string;
+  city: string;
+  phone: string | null;
+  website: string | null;
+  photos: string[] | null;
+  amenities: string[] | null;
+  average_rating: string | null;
+  visit_order: number;
+  scheduled_arrival: string | null;
+  scheduled_departure: string | null;
+  actual_arrival: string | null;
+  actual_departure: string | null;
+  notes: string | null;
+}
+
+interface PaymentQueryRow {
+  id: number;
+  amount: string;
+  payment_type: string;
+  payment_method: string;
+  status: string;
+  stripe_payment_intent_id: string | null;
+  card_brand: string | null;
+  card_last4: string | null;
+  created_at: string;
+  succeeded_at: string | null;
+  failed_at: string | null;
+  failure_reason: string | null;
+}
+
+interface BookingQueryRow {
+  id: number;
+  booking_number: string;
+  customer_id: number;
+  customer_name: string;
+  customer_email: string;
+  customer_phone: string | null;
+  tour_date: string;
+  start_time: string;
+  end_time: string;
+  duration_hours: string;
+  party_size: number;
+  status: string;
+  total_price: string;
+  base_price: string;
+  gratuity: string;
+  taxes: string;
+  deposit_amount: string;
+  deposit_paid_at: string | null;
+  final_payment_amount: string;
+  final_payment_paid: boolean;
+  final_payment_paid_at: string | null;
+  pickup_location: string;
+  dropoff_location: string;
+  special_requests: string | null;
+  dietary_restrictions: string | null;
+  accessibility_needs: string | null;
+  driver_id: number | null;
+  vehicle_id: number | null;
+  brand_id: number | null;
+  vip_status: boolean;
+  cancelled_at: string | null;
+  cancellation_reason: string | null;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 // ============================================================================
@@ -187,11 +375,11 @@ export class BookingService extends BaseService {
   /**
    * Get comprehensive booking details by booking number
    */
-  async getFullBookingByNumber(bookingNumber: string): Promise<any> {
+  async getFullBookingByNumber(bookingNumber: string): Promise<FullBookingDetails | null> {
     this.log(`Getting full booking details: ${bookingNumber}`);
 
     // 1. Get booking with customer
-    const booking = await this.queryOne(`
+    const booking = await this.queryOne<BookingQueryRow>(`
       SELECT
         b.*,
         c.email as customer_email_verified,
@@ -207,7 +395,7 @@ export class BookingService extends BaseService {
     }
 
     // 2. Get wineries with details
-    const wineries = await this.queryMany(`
+    const wineries = await this.queryMany<WineryQueryRow>(`
       SELECT
         w.id, w.name, w.slug, w.description, w.short_description,
         w.specialties, w.tasting_fee, w.address, w.city, w.phone,
@@ -221,25 +409,25 @@ export class BookingService extends BaseService {
     `, [booking.id]);
 
     // 3. Get driver if assigned
-    let driver = null;
+    let driver: { id: number; name: string; email: string; phone: string } | null = null;
     if (booking.driver_id) {
-      driver = await this.queryOne(
+      driver = await this.queryOne<{ id: number; name: string; email: string; phone: string }>(
         'SELECT id, name, email, phone FROM users WHERE id = $1',
         [booking.driver_id]
       );
     }
 
     // 4. Get vehicle if assigned
-    let vehicle = null;
+    let vehicle: { id: number; name: string; license_plate: string; type: string; capacity: number } | null = null;
     if (booking.vehicle_id) {
-      vehicle = await this.queryOne(
+      vehicle = await this.queryOne<{ id: number; name: string; license_plate: string; type: string; capacity: number }>(
         'SELECT id, name, license_plate, vehicle_type as type, capacity FROM vehicles WHERE id = $1',
         [booking.vehicle_id]
       );
     }
 
     // 5. Get payment history
-    const payments = await this.queryMany(`
+    const payments = await this.queryMany<PaymentQueryRow>(`
       SELECT id, amount, payment_type, payment_method, status,
         stripe_payment_intent_id, card_brand, card_last4,
         created_at, succeeded_at, failed_at, failure_reason
@@ -249,7 +437,7 @@ export class BookingService extends BaseService {
     `, [booking.id]);
 
     // 6. Get timeline
-    const timeline = await this.queryMany(`
+    const timeline = await this.queryMany<TimelineEvent>(`
       SELECT id, event_type, event_description as description, event_data as data, created_at
       FROM booking_timeline
       WHERE booking_id = $1
@@ -292,7 +480,7 @@ export class BookingService extends BaseService {
       special_requests: booking.special_requests,
       dietary_restrictions: booking.dietary_restrictions,
       accessibility_needs: booking.accessibility_needs,
-      wineries: wineries.map((w: any) => ({
+      wineries: wineries.map((w) => ({
         id: w.id,
         name: w.name,
         slug: w.slug,
@@ -327,9 +515,19 @@ export class BookingService extends BaseService {
         balance_paid: booking.final_payment_paid,
         balance_paid_at: booking.final_payment_paid_at,
       },
-      payments: payments.map((p: any) => ({
-        ...p,
+      payments: payments.map((p) => ({
+        id: p.id,
         amount: parseFloat(p.amount),
+        payment_type: p.payment_type,
+        payment_method: p.payment_method,
+        status: p.status,
+        stripe_payment_intent_id: p.stripe_payment_intent_id,
+        card_brand: p.card_brand,
+        card_last4: p.card_last4,
+        created_at: p.created_at,
+        succeeded_at: p.succeeded_at,
+        failed_at: p.failed_at,
+        failure_reason: p.failure_reason,
       })),
       timeline,
       permissions: {
@@ -337,9 +535,9 @@ export class BookingService extends BaseService {
         can_cancel: canCancel,
         cancellation_deadline: cancellationDeadline.toISOString(),
       },
-      cancellation: booking.status === 'cancelled' ? {
+      cancellation: booking.status === 'cancelled' && booking.cancelled_at ? {
         cancelled_at: booking.cancelled_at,
-        reason: booking.cancellation_reason,
+        reason: booking.cancellation_reason || '',
       } : null,
       created_at: booking.created_at,
       completed_at: booking.completed_at,
@@ -397,7 +595,7 @@ export class BookingService extends BaseService {
     this.log('Listing bookings', filters);
 
     const conditions: string[] = [];
-    const params: any[] = [];
+    const params: unknown[] = [];
     let paramCount = 0;
 
     if (filters.year) {
@@ -493,7 +691,7 @@ export class BookingService extends BaseService {
     this.log('Finding bookings with filters', filters);
 
     const whereClause: string[] = [];
-    const params: any[] = [];
+    const params: unknown[] = [];
 
     // Build WHERE conditions
     if (filters.year && filters.month) {
@@ -873,7 +1071,12 @@ export class BookingService extends BaseService {
       );
 
       // 10. Fetch winery details for response
-      const wineryDetailsResult = await this.query(
+      const wineryDetailsResult = await this.query<{
+        id: number;
+        name: string;
+        slug: string;
+        visit_order: number;
+      }>(
         `SELECT w.id, w.name, w.slug, bw.visit_order
          FROM booking_wineries bw
          JOIN wineries w ON w.id = bw.winery_id
@@ -882,7 +1085,7 @@ export class BookingService extends BaseService {
         [bookingId]
       );
 
-      const wineryDetails = wineryDetailsResult.rows.map((w: any) => ({
+      const wineryDetails = wineryDetailsResult.rows.map((w) => ({
         winery_id: w.id,
         name: w.name,
         slug: w.slug,
@@ -1216,7 +1419,7 @@ export class BookingService extends BaseService {
         status: 'cancelled',
         cancellation_reason: reason,
         cancelled_at: new Date(),
-      } as any);
+      } as Partial<Booking>);
 
       // Delete associated availability blocks (frees up the vehicle)
       await vehicleAvailabilityService.deleteBookingBlocks(id);
@@ -1271,8 +1474,8 @@ export class BookingService extends BaseService {
     averagePartySize: number;
     cancelledRate: number;
   }> {
-    const whereClause = [];
-    const params: any[] = [];
+    const whereClause: string[] = [];
+    const params: unknown[] = [];
 
     if (startDate) {
       params.push(startDate);
@@ -1394,7 +1597,7 @@ export class BookingService extends BaseService {
     await this.query(`CREATE SEQUENCE IF NOT EXISTS ${sequenceName} START 1`);
 
     // Get next sequence number
-    const result = await this.query(`SELECT nextval('${sequenceName}') as seq`);
+    const result = await this.query<{ seq: string }>(`SELECT nextval('${sequenceName}') as seq`);
 
     const sequenceNumber = result.rows[0].seq;
     const paddedNumber = sequenceNumber.toString().padStart(5, '0');

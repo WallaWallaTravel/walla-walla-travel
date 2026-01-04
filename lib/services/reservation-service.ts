@@ -98,7 +98,7 @@ export class ReservationService extends BaseService {
     offset?: number;
   }): Promise<{ reservations: Reservation[]; total: number }> {
     const whereClause: string[] = [];
-    const params: any[] = [];
+    const params: unknown[] = [];
 
     if (filters.status) {
       params.push(filters.status);

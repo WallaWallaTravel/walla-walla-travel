@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import { calculatePaymentOptions } from '@/lib/payment/payment-calculator';
 
 export const runtime = 'nodejs';
@@ -42,10 +43,11 @@ export async function GET(request: NextRequest) {
       options
     });
     
-  } catch (error: any) {
-    console.error('[Payment Options API] Error:', error);
+  } catch (error) {
+    logger.error('Payment Options API error', { error });
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to calculate payment options', details: error.message },
+      { error: 'Failed to calculate payment options', details: message },
       { status: 500 }
     );
   }

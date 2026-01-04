@@ -46,7 +46,21 @@ export const GET = withErrorHandling(async (request: NextRequest): Promise<NextR
     const startDateStr = startDate.toISOString();
     const endDateStr = endDate.toISOString();
 
-    const result: any = {
+    interface AnalyticsResult {
+      period: string;
+      startDate: string;
+      endDate: string;
+      funnel?: Record<string, unknown>;
+      abandoned?: Record<string, unknown>;
+      recentAbandoned?: unknown[];
+      visitors?: Record<string, unknown>;
+      topReferrers?: unknown[];
+      deviceBreakdown?: unknown[];
+      revenue?: Record<string, unknown>;
+      dailyRevenue?: unknown[];
+    }
+
+    const result: AnalyticsResult = {
       period,
       startDate: startDate.toISOString().split('T')[0],
       endDate: endDate.toISOString().split('T')[0]

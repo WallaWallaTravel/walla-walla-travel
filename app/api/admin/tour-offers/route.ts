@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import { query } from '@/lib/db';
 import { sendEmail, EmailTemplates } from '@/lib/email';
 import { getSessionFromRequest } from '@/lib/auth/session';
@@ -105,7 +106,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       ...template,
     });
 
-    console.log(`📧 Tour offer #${offerId} ${emailSent ? 'email sent' : 'email failed'} to ${driver.email}`);
+    logger.info('Tour offer email sent', { offerId, emailSent, driverEmail: driver.email });
   }
 
   return NextResponse.json({

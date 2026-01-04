@@ -4,12 +4,16 @@ import { withErrorHandling, BadRequestError, NotFoundError, UnauthorizedError } 
 import { getSession } from '@/lib/auth/session';
 import { Pool } from 'pg';
 import { getDbConfig } from '@/lib/config/database';
+import { withCSRF } from '@/lib/api/middleware/csrf';
+import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 
 /**
  * POST /api/proposals/[proposal_id]/counter
  * Create a counter-proposal based on a declined proposal
  */
-export const POST = withErrorHandling(async (
+export const POST = withCSRF(
+  withRateLimit(rateLimiters.api)(
+    withErrorHandling(async (
   request: NextRequest,
   { params }: { params: Promise<{ proposal_id: string }> }
 ): Promise<NextResponse> => {
@@ -76,11 +80,14 @@ export const POST = withErrorHandling(async (
   const uuid = crypto.randomUUID();
 
   // Calculate new pricing if service_items provided
+  interface ServiceItem {
+    price?: number | string;
+  }
   const newServiceItems = service_items || original.service_items;
   let newSubtotal = 0;
 
   if (Array.isArray(newServiceItems)) {
-    newSubtotal = newServiceItems.reduce((sum: number, item: any) => sum + (parseFloat(item.price) || 0), 0);
+    newSubtotal = (newServiceItems as ServiceItem[]).reduce((sum: number, item) => sum + (parseFloat(String(item.price ?? 0)) || 0), 0);
   } else {
     newSubtotal = parseFloat(original.subtotal) || 0;
   }
@@ -258,7 +265,7 @@ export const POST = withErrorHandling(async (
     client.release();
     await pool.end();
   }
-});
+})));
 
 /**
  * GET /api/proposals/[proposal_id]/counter

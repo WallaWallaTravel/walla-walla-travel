@@ -27,6 +27,11 @@ import {
 } from '@/lib/services/compliance.service';
 import { getServerSession } from '@/lib/auth';
 
+// Helper to get session from request (wrapper around getServerSession)
+async function getSessionFromRequest(_request: NextRequest) {
+  return await getServerSession();
+}
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -56,7 +61,8 @@ export interface ComplianceCheckConfig {
    */
   extractEntities: (
     request: NextRequest,
-    context: { params: Record<string, string | string[]> }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    context: any
   ) => Promise<ComplianceEntityInfo> | ComplianceEntityInfo;
 
   /**
@@ -70,7 +76,8 @@ export interface ComplianceCheckConfig {
    */
   skipIf?: (
     request: NextRequest,
-    context: { params: Record<string, string | string[]> }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    context: any
   ) => Promise<boolean> | boolean;
 }
 
@@ -87,10 +94,11 @@ export interface ComplianceBlockedResponse {
   };
 }
 
+ 
 type RouteHandler = (
   request: NextRequest,
-  context: { params: Record<string, string | string[]> }
-) => Promise<NextResponse>;
+  context: any
+) => Promise<NextResponse<any>>;
 
 // ============================================================================
 // Middleware Function
@@ -103,10 +111,8 @@ export function withComplianceCheck(
   handler: RouteHandler,
   config: ComplianceCheckConfig
 ): RouteHandler {
-  return async (
-    request: NextRequest,
-    context: { params: Record<string, string | string[]> }
-  ): Promise<NextResponse> => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return async (request: NextRequest, context: any): Promise<NextResponse<any>> => {
     // Check if we should skip compliance check
     if (config.skipIf) {
       const shouldSkip = await config.skipIf(request, context);
@@ -122,7 +128,7 @@ export function withComplianceCheck(
     } catch (error) {
       // If we can't extract entities, proceed without compliance check
       // (the handler will fail with its own validation)
-      logger.warn('[ComplianceCheck] Failed to extract entities:', error);
+      logger.warn('[ComplianceCheck] Failed to extract entities', { error });
       return handler(request, context);
     }
 
@@ -240,7 +246,7 @@ export function withComplianceCheck(
       }
     } catch (error) {
       // Log error but don't block operation if compliance check fails
-      logger.error('[ComplianceCheck] Check failed:', error);
+      logger.error('[ComplianceCheck] Check failed', { error });
       // Continue to handler - fail-open for now
       return handler(request, context);
     }
@@ -378,14 +384,12 @@ export function createEntityExtractor(options: {
   bookingIdField?: string;
   fromParams?: boolean;
 }) {
-  return async (
-    request: NextRequest,
-    context: { params: Record<string, string | string[]> }
-  ): Promise<ComplianceEntityInfo> => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return async (request: NextRequest, context: any): Promise<ComplianceEntityInfo> => {
     const entities: ComplianceEntityInfo = {};
 
     if (options.fromParams) {
-      const params = await Promise.resolve(context.params);
+      const params = await Promise.resolve(context.params) as Record<string, string | string[]>;
 
       if (options.driverIdField && params[options.driverIdField]) {
         entities.driverId = parseInt(params[options.driverIdField] as string, 10);

@@ -1,11 +1,15 @@
 import { NextRequest } from 'next/server';
-import { 
-  successResponse, 
-  errorResponse, 
+import {
+  successResponse,
+  errorResponse,
   requireAuth,
-  logApiRequest
 } from '@/app/api/utils';
+import { logger, logApiRequest } from '@/lib/logger';
 
+/**
+ * Session verification endpoint
+ * ✅ REFACTORED: Structured logging
+ */
 export async function GET(request: NextRequest) {
   try {
     logApiRequest('GET', '/api/auth/verify');
@@ -28,7 +32,7 @@ export async function GET(request: NextRequest) {
     }, 'Session is valid');
 
   } catch (error) {
-    console.error('Session verification error:', error);
+    logger.error('Session verification error', { error });
     return errorResponse('Session verification failed', 500);
   }
 }

@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -40,10 +41,11 @@ export async function GET(
       insights: result.rows
     });
 
-  } catch (error: any) {
-    console.error('[Admin] Error fetching insights:', error);
+  } catch (error) {
+    logger.error('Error fetching insights', { error });
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to fetch insights', details: error.message },
+      { error: 'Failed to fetch insights', details: message },
       { status: 500 }
     );
   }
@@ -69,7 +71,7 @@ export async function POST(
       );
     }
 
-    console.log('[Admin] Adding insight for business:', businessId);
+    logger.debug('Adding insight for business', { businessId });
 
     const {
       insight_type,
@@ -127,17 +129,18 @@ export async function POST(
       ]
     );
 
-    console.log('[Admin] Insight added successfully');
+    logger.info('Insight added', { insightId: insight.id, businessId });
 
     return NextResponse.json({
       success: true,
       insight
     });
 
-  } catch (error: any) {
-    console.error('[Admin] Error adding insight:', error);
+  } catch (error) {
+    logger.error('Error adding insight', { error });
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to add insight', details: error.message },
+      { error: 'Failed to add insight', details: message },
       { status: 500 }
     );
   }
@@ -169,10 +172,11 @@ export async function DELETE(
       message: 'Insight deleted'
     });
 
-  } catch (error: any) {
-    console.error('[Admin] Error deleting insight:', error);
+  } catch (error) {
+    logger.error('Error deleting insight', { error });
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to delete insight', details: error.message },
+      { error: 'Failed to delete insight', details: message },
       { status: 500 }
     );
   }

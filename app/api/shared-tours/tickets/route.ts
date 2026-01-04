@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sharedTourService } from '@/lib/services/shared-tour.service';
+import { logger } from '@/lib/logger';
 
 /**
  * POST /api/shared-tours/tickets
@@ -58,19 +59,20 @@ export async function POST(request: NextRequest) {
       data: ticket,
       message: 'Ticket created successfully. Please complete payment to confirm.',
     });
-  } catch (error: any) {
-    console.error('Error creating ticket:', error);
+  } catch (error) {
+    logger.error('Error creating ticket', { error });
+    const message = error instanceof Error ? error.message : 'Unknown error';
 
     // Handle availability errors
-    if (error.message.includes('spots') || error.message.includes('available') || error.message.includes('sold out')) {
+    if (message.includes('spots') || message.includes('available') || message.includes('sold out')) {
       return NextResponse.json(
-        { success: false, error: error.message },
+        { success: false, error: message },
         { status: 409 }
       );
     }
 
     return NextResponse.json(
-      { success: false, error: error.message },
+      { success: false, error: message },
       { status: 500 }
     );
   }
@@ -113,10 +115,11 @@ export async function GET(request: NextRequest) {
       { success: false, error: 'Please provide email or ticket_number' },
       { status: 400 }
     );
-  } catch (error: any) {
-    console.error('Error fetching tickets:', error);
+  } catch (error) {
+    logger.error('Error fetching tickets', { error });
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { success: false, error: error.message },
+      { success: false, error: message },
       { status: 500 }
     );
   }

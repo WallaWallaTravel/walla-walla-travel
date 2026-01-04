@@ -32,7 +32,7 @@ async function postHandler(request: NextRequest) {
   const contentType = request.headers.get('content-type') || ''
   let leads: ImportedLead[] = []
   let skipped = 0
-  let errors: string[] = []
+  const errors: string[] = []
 
   if (contentType.includes('application/json')) {
     const body = await request.json()

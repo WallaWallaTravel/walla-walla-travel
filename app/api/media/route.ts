@@ -41,7 +41,7 @@ export const GET = withErrorHandling(async (request: Request) => {
     WHERE is_active = TRUE
   `;
 
-  const params: any[] = [];
+  const params: string[] = [];
   let paramCount = 0;
 
   if (category) {

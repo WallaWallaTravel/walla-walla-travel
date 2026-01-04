@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logger } from '@/lib/logger'
 import { getActiveModelConfig, createProviderFromSettings } from '@/lib/ai/model-manager'
 import { getCachedQuery, cacheQueryResponse, generateSystemPromptHash, generateQueryHash } from '@/lib/ai/query-cache'
 import { buildSystemPromptWithContext } from '@/lib/ai/context-builder'
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
     if (cached) {
       const duration = Date.now() - startTime
       
-      console.log(`[AI Query] CACHE HIT - ${query.substring(0, 50)}... (${duration}ms) - Visitor: ${visitor.visitor_uuid}`)
+      logger.info('AI Query cache hit', { query: query.substring(0, 50), duration, visitorId: visitor.visitor_uuid })
       
       // Update visitor query count for cached responses too
       await dbQuery(
@@ -87,7 +88,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Not cached - query AI model
-    console.log(`[AI Query] CACHE MISS - querying ${settings.provider}:${settings.model}`)
+    logger.info('AI Query cache miss', { provider: settings.provider, model: settings.model })
     
     const provider = createProviderFromSettings(settings)
     
@@ -139,12 +140,15 @@ export async function POST(request: NextRequest) {
       [visitor.id, queryId]
     )
 
-    console.log(
-      `[AI Query] ${aiResponse.provider}:${aiResponse.model} - ` +
-      `${query.substring(0, 50)}... - ` +
-      `$${aiResponse.cost.toFixed(4)} - ${duration}ms - ` +
-      `ID: ${queryId} - Visitor: ${visitor.visitor_uuid}`
-    )
+    logger.info('AI Query completed', {
+      provider: aiResponse.provider,
+      model: aiResponse.model,
+      query: query.substring(0, 50),
+      cost: aiResponse.cost.toFixed(4),
+      duration,
+      queryId,
+      visitorId: visitor.visitor_uuid
+    })
 
     const response = NextResponse.json({
       success: true,
@@ -170,15 +174,16 @@ export async function POST(request: NextRequest) {
     setVisitorCookie(response, visitor)
     return response
 
-  } catch (error: any) {
-    console.error('AI query error:', error)
-    
+  } catch (error) {
+    logger.error('AI query error', { error })
+
     const duration = Date.now() - startTime
-    
+    const message = error instanceof Error ? error.message : 'Unknown error'
+
     return NextResponse.json(
-      { 
+      {
         error: 'AI query failed',
-        details: error.message,
+        details: message,
         duration
       },
       { status: 500 }

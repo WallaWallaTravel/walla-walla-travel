@@ -33,8 +33,8 @@ export class HotelService extends BaseService {
   async list(): Promise<Hotel[]> {
     this.log('Listing hotels');
 
-    const result = await this.query(
-      `SELECT 
+    const result = await this.query<Hotel>(
+      `SELECT
         id, name, slug, address, city, state, zip_code,
         phone, website, type, description, amenities, display_order
       FROM hotels

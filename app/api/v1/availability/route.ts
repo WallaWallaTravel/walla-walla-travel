@@ -15,6 +15,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { vehicleAvailabilityService } from '@/lib/services/vehicle-availability.service';
 import { z } from 'zod';
+import { logger } from '@/lib/logger';
+import { addCacheHeaders, CachePresets } from '@/lib/api/middleware/cache';
 
 // ============================================================================
 // Validation Schemas
@@ -68,15 +70,17 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       default:
         return handleCheckAvailability(searchParams);
     }
-  } catch (error: any) {
-    if (error.name === 'ZodError') {
+  } catch (error) {
+    if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
+        { error: 'Validation error', details: error.issues },
         { status: 400 }
       );
     }
+    logger.error('Availability API error', { error });
+    const message = error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: message },
       { status: 500 }
     );
   }
@@ -104,20 +108,24 @@ async function handleCheckAvailability(searchParams: URLSearchParams): Promise<N
       brandId: validated.brand_id,
     });
 
-    return NextResponse.json({
-      available: result.available,
-      date: validated.date,
-      start_time: validated.start_time,
-      duration_hours: validated.duration_hours,
-      party_size: validated.party_size,
-      vehicle: result.vehicle_id ? {
-        id: result.vehicle_id,
-        name: result.vehicle_name,
-        capacity: result.vehicle_capacity,
-      } : null,
-      available_vehicles: result.available_vehicles,
-      conflicts: result.conflicts,
-    });
+    // Cache availability checks for 30 seconds (real-time data)
+    return addCacheHeaders(
+      NextResponse.json({
+        available: result.available,
+        date: validated.date,
+        start_time: validated.start_time,
+        duration_hours: validated.duration_hours,
+        party_size: validated.party_size,
+        vehicle: result.vehicle_id ? {
+          id: result.vehicle_id,
+          name: result.vehicle_name,
+          capacity: result.vehicle_capacity,
+        } : null,
+        available_vehicles: result.available_vehicles,
+        conflicts: result.conflicts,
+      }),
+      CachePresets.REALTIME
+    );
   } else {
     // Get all available slots for the day
     const slots = await vehicleAvailabilityService.getAvailableSlots({
@@ -130,20 +138,24 @@ async function handleCheckAvailability(searchParams: URLSearchParams): Promise<N
     const availableSlots = slots.filter(s => s.available);
     const hasAvailability = availableSlots.length > 0;
 
-    return NextResponse.json({
-      available: hasAvailability,
-      date: validated.date,
-      duration_hours: validated.duration_hours,
-      party_size: validated.party_size,
-      total_slots: slots.length,
-      available_slots_count: availableSlots.length,
-      time_slots: slots,
-      suggested_time: hasAvailability ? availableSlots[0].start : null,
-      suggested_vehicle: hasAvailability && availableSlots[0].vehicle_id ? {
-        id: availableSlots[0].vehicle_id,
-        name: availableSlots[0].vehicle_name,
-      } : null,
-    });
+    // Cache availability checks for 30 seconds (real-time data)
+    return addCacheHeaders(
+      NextResponse.json({
+        available: hasAvailability,
+        date: validated.date,
+        duration_hours: validated.duration_hours,
+        party_size: validated.party_size,
+        total_slots: slots.length,
+        available_slots_count: availableSlots.length,
+        time_slots: slots,
+        suggested_time: hasAvailability ? availableSlots[0].start : null,
+        suggested_vehicle: hasAvailability && availableSlots[0].vehicle_id ? {
+          id: availableSlots[0].vehicle_id,
+          name: availableSlots[0].vehicle_name,
+        } : null,
+      }),
+      CachePresets.REALTIME
+    );
   }
 }
 

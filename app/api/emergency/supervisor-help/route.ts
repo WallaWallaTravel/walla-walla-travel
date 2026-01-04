@@ -1,10 +1,20 @@
 import { NextRequest } from 'next/server';
 import { successResponse, errorResponse, requireAuth } from '@/app/api/utils';
 import { query } from '@/lib/db';
+import { logger } from '@/lib/logger';
+import { z } from 'zod';
+
+// Request body schema
+const SupervisorHelpSchema = z.object({
+  reason: z.string().max(500).optional(),
+  timeCardId: z.number().int().positive().optional(),
+});
 
 /**
  * POST /api/emergency/supervisor-help
  * Sends emergency notification to supervisor when driver needs vehicle assignment help
+ *
+ * ✅ REFACTORED: Zod validation + structured logging
  */
 export async function POST(request: NextRequest) {
   try {
@@ -14,8 +24,20 @@ export async function POST(request: NextRequest) {
     }
     const session = authResult;
 
-    const body = await request.json();
-    const { reason, timeCardId } = body;
+    // Parse and validate request body
+    let rawBody: unknown;
+    try {
+      rawBody = await request.json();
+    } catch {
+      return errorResponse('Invalid JSON in request body', 400);
+    }
+
+    const parseResult = SupervisorHelpSchema.safeParse(rawBody);
+    if (!parseResult.success) {
+      return errorResponse('Validation failed: ' + parseResult.error.issues.map((e) => e.message).join(', '), 400);
+    }
+
+    const { reason, timeCardId } = parseResult.data;
 
     const driverId = parseInt(session.userId);
     const timestamp = new Date().toLocaleString('en-US', {
@@ -68,21 +90,15 @@ Driver ID: ${driverId}
     `.trim();
 
     // Log the notification (in production, this would call Twilio/SendGrid)
-    console.log('🆘 EMERGENCY SUPERVISOR NOTIFICATION:');
-    console.log('=====================================');
-    console.log(`Driver: ${driver.name} (${driver.email})`);
-    console.log(`Time: ${timestamp}`);
-    console.log(`Reason: ${reason || 'No vehicle assigned'}`);
-    console.log('');
-    console.log('📱 SMS TO SEND:');
-    console.log(`   To: ${supervisorPhone}`);
-    console.log(`   Message: ${smsMessage}`);
-    console.log('');
-    console.log('📧 EMAIL TO SEND:');
-    console.log(`   To: ${supervisorEmail}`);
-    console.log(`   Subject: ${emailSubject}`);
-    console.log(`   Body:\n${emailBody}`);
-    console.log('=====================================');
+    logger.info('Emergency supervisor notification', {
+      driverName: driver.name,
+      driverEmail: driver.email,
+      timestamp,
+      reason: reason || 'No vehicle assigned',
+      supervisorPhone,
+      supervisorEmail,
+      deepLink,
+    });
 
     // TODO: In production, integrate with:
     // - Twilio for SMS: await twilioClient.messages.create({ to: supervisorPhone, body: smsMessage })
@@ -106,7 +122,7 @@ Driver ID: ${driverId}
       ]);
     } catch (dbError) {
       // Non-critical error, continue
-      console.warn('Failed to log notification to database:', dbError);
+      logger.warn('Failed to log notification to database', { error: dbError });
     }
 
     return successResponse({
@@ -119,8 +135,8 @@ Driver ID: ${driverId}
       timestamp
     }, 'Notification sent successfully');
 
-  } catch (error: any) {
-    console.error('Emergency notification error:', error);
+  } catch (error) {
+    logger.error('Emergency notification error', { error });
     return errorResponse(
       'Failed to send help request. Please call supervisor directly.',
       500

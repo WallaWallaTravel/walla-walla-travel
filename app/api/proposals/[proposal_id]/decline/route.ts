@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import { query } from '@/lib/db';
 import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { sendProposalDeclineNotification } from '@/lib/email';
+import { withCSRF } from '@/lib/api/middleware/csrf';
+import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 
 /**
  * POST /api/proposals/[proposal_id]/decline
  * Client declines a proposal with feedback
  */
-export const POST = withErrorHandling(async (
+export const POST = withCSRF(
+  withRateLimit(rateLimiters.api)(
+    withErrorHandling(async (
   request: NextRequest,
   { params }: { params: Promise<{ proposal_id: string }> }
 ): Promise<NextResponse> => {
@@ -94,7 +99,7 @@ export const POST = withErrorHandling(async (
     desired_changes: desired_changes || undefined,
     open_to_counter: open_to_counter !== false,
   }).catch(err => {
-    console.error('[Proposal Decline] Failed to send admin notification:', err);
+    logger.error('Proposal Decline: Failed to send admin notification', { error: err });
   });
 
   return NextResponse.json({
@@ -109,4 +114,4 @@ export const POST = withErrorHandling(async (
       open_to_counter: open_to_counter !== false
     }
   });
-});
+})));

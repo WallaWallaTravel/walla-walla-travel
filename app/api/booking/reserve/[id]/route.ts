@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import { query } from '@/lib/db';
 
 export const runtime = 'nodejs';
@@ -52,10 +53,11 @@ export async function GET(
       reservation: result.rows[0]
     });
     
-  } catch (error: any) {
-    console.error('[Get Reservation API] Error:', error);
+  } catch (error) {
+    logger.error('Get Reservation API error', { error });
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to fetch reservation', details: error.message },
+      { error: 'Failed to fetch reservation', details: message },
       { status: 500 }
     );
   }

@@ -1,12 +1,58 @@
 import { logger } from '@/lib/logger';
 /**
  * Email Service
- * Handles email-related business logic (sending booking confirmations, etc.)
+ *
+ * @module lib/services/email.service
+ * @description Handles transactional email delivery for the booking system.
+ * Sends booking confirmations, payment receipts, reminders, and notifications
+ * using the Resend email provider.
+ *
+ * @requires Resend - Email delivery via Resend API
+ * @requires EmailTemplates - Pre-defined email templates
+ *
+ * @features
+ * - Booking confirmation emails with itinerary details
+ * - Payment receipt emails
+ * - Reminder emails (24hr, 48hr before tour)
+ * - Partner notification emails
+ * - Template-based email rendering
+ *
+ * @example
+ * ```typescript
+ * import { emailService } from '@/lib/services/email.service';
+ *
+ * // Send booking confirmation
+ * await emailService.sendBookingConfirmation('WWT-2026-001');
+ *
+ * // Send payment receipt
+ * await emailService.sendPaymentReceipt('WWT-2026-001', 150.00);
+ * ```
  */
 
 import { BaseService } from './base.service';
 import { NotFoundError } from '@/lib/api/middleware/error-handler';
 import { sendEmail, EmailTemplates } from '@/lib/email';
+
+// Type for booking query result
+interface BookingEmailRow {
+  id: number;
+  booking_number: string;
+  customer_name: string;
+  customer_email: string;
+  tour_date: string;
+  start_time: string;
+  end_time: string;
+  duration_hours: number;
+  party_size: number;
+  pickup_location: string;
+  total_price: string;
+  deposit_amount: string;
+}
+
+interface WineryEmailRow {
+  name: string;
+  city: string;
+}
 
 export class EmailService extends BaseService {
   protected get serviceName(): string {
@@ -20,9 +66,9 @@ export class EmailService extends BaseService {
     this.log('Sending booking confirmation', { bookingNumber });
 
     // Get booking details
-    const bookingResult = await this.query(
-      `SELECT 
-        id, booking_number, customer_name, customer_email, tour_date, 
+    const bookingResult = await this.query<BookingEmailRow>(
+      `SELECT
+        id, booking_number, customer_name, customer_email, tour_date,
         start_time, end_time, duration_hours, party_size, pickup_location,
         total_price, deposit_amount
        FROM bookings
@@ -37,7 +83,7 @@ export class EmailService extends BaseService {
     const booking = bookingResult.rows[0];
 
     // Get wineries for this booking
-    const wineriesResult = await this.query(
+    const wineriesResult = await this.query<WineryEmailRow>(
       `SELECT w.name, w.city
        FROM itinerary_stops ist
        JOIN itineraries i ON ist.itinerary_id = i.id

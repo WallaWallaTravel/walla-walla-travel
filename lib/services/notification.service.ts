@@ -1,8 +1,16 @@
 import { logger } from '@/lib/logger';
 /**
  * Notification Service
- * 
- * Handles sending notifications via SMS, email, and logging
+ *
+ * @module lib/services/notification.service
+ * @description Handles multi-channel notification delivery (SMS, email, push).
+ * Used for alerts, reminders, and operational notifications to drivers and staff.
+ *
+ * @features
+ * - SMS notifications for urgent alerts
+ * - Email notifications for detailed information
+ * - Defect/inspection alert routing
+ * - Notification logging for audit trails
  */
 
 import { BaseService } from './base.service';
@@ -120,7 +128,7 @@ Contact driver: ${driver.phone || 'N/A'}
       );
       logger.info('✅ Notification logged to database');
     } catch (dbError) {
-      logger.warn('⚠️ Failed to log notification to database:', dbError);
+      logger.warn('Failed to log notification to database', { error: dbError });
     }
 
     // TODO: In production, integrate with real services:

@@ -10,6 +10,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { processTourReminders } from '@/lib/services/email-automation.service';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
     
     if (process.env.NODE_ENV === 'production' && cronSecret) {
       if (authHeader !== `Bearer ${cronSecret}`) {
-        console.error('[Cron] Unauthorized cron request');
+        logger.warn('Unauthorized cron request');
         return NextResponse.json(
           { error: 'Unauthorized' },
           { status: 401 }
@@ -27,11 +28,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log('[Cron] Processing tour reminders...');
-    
+    logger.info('Processing tour reminders');
+
     const result = await processTourReminders();
-    
-    console.log(`[Cron] Tour reminders complete: ${result.sent} sent, ${result.failed} failed`);
+
+    logger.info('Tour reminders complete', { sent: result.sent, failed: result.failed });
 
     return NextResponse.json({
       success: true,
@@ -43,12 +44,13 @@ export async function POST(request: NextRequest) {
       },
     });
 
-  } catch (error: any) {
-    console.error('[Cron] Error processing tour reminders:', error);
+  } catch (error) {
+    logger.error('Error processing tour reminders', { error });
+    const message = error instanceof Error ? error.message : 'Failed to process tour reminders';
     return NextResponse.json(
-      { 
+      {
         success: false,
-        error: error.message || 'Failed to process tour reminders',
+        error: message,
       },
       { status: 500 }
     );

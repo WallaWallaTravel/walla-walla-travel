@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import { getAllPricingTiers } from '@/lib/pricing/pricing-service';
 
 export const runtime = 'nodejs';
@@ -25,10 +26,11 @@ export async function GET(request: NextRequest) {
       tiers,
       count: tiers.length
     });
-  } catch (error: any) {
-    console.error('[Pricing Tiers API] Error:', error);
+  } catch (error) {
+    logger.error('Pricing Tiers API error', { error });
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to get pricing tiers', details: error.message },
+      { error: 'Failed to get pricing tiers', details: message },
       { status: 500 }
     );
   }

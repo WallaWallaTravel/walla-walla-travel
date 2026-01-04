@@ -7,14 +7,15 @@ import { query } from '@/lib/db';
 import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { confirmPaymentSuccess } from '@/lib/stripe';
 import { sendReservationConfirmation } from '@/lib/email';
+import { validateBody, ConfirmReservationPaymentSchema } from '@/lib/api/middleware/validation';
+import { withCSRF } from '@/lib/api/middleware/csrf';
+import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 
-export const POST = withErrorHandling(async (request: NextRequest) => {
-  const body = await request.json();
-  const { paymentIntentId, reservationId } = body;
-
-  if (!paymentIntentId || !reservationId) {
-    throw new BadRequestError('Missing required fields');
-  }
+export const POST = withCSRF(
+  withRateLimit(rateLimiters.payment)(
+    withErrorHandling(async (request: NextRequest) => {
+  // Validate input with Zod schema
+  const { paymentIntentId, reservationId } = await validateBody(request, ConfirmReservationPaymentSchema);
 
   // Verify payment with Stripe
   const paymentSuccessful = await confirmPaymentSuccess(paymentIntentId);
@@ -75,4 +76,4 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     reservationId: reservation.id,
     reservationNumber: reservation.reservation_number,
   });
-});
+})));

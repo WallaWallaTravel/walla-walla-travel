@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
     
     if (!apiKey) {
       // Fallback: estimate 15 minutes per 10 miles
-      console.warn('Google Maps API key not configured, using fallback estimation');
+      logger.warn('Google Maps API key not configured, using fallback estimation');
       return NextResponse.json({
         duration: 900, // 15 minutes in seconds
         distance: 16000, // ~10 miles in meters
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
     const data = await response.json();
 
     if (data.status !== 'OK' || data.rows[0].elements[0].status !== 'OK') {
-      console.error('Google Distance Matrix API error:', data);
+      logger.error('Google Distance Matrix API error', { response: data });
       // Fallback estimation
       return NextResponse.json({
         duration: 900, // 15 minutes
@@ -58,8 +59,8 @@ export async function GET(request: NextRequest) {
       estimated: false
     });
 
-  } catch (error: any) {
-    console.error('Error calculating distance:', error);
+  } catch (error) {
+    logger.error('Error calculating distance', { error });
     // Fallback estimation
     return NextResponse.json({
       duration: 900, // 15 minutes

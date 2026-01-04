@@ -165,7 +165,7 @@ export class CustomerService extends BaseService {
     offset?: number;
   }): Promise<{ customers: Customer[]; total: number }> {
     const whereClause: string[] = [];
-    const params: any[] = [];
+    const params: unknown[] = [];
 
     if (filters.vipOnly) {
       whereClause.push('vip_status = true');

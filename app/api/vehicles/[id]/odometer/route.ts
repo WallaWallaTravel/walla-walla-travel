@@ -1,7 +1,8 @@
 import { NextRequest } from 'next/server';
-import { 
-  successResponse, 
-  errorResponse, 
+import { logger } from '@/lib/logger';
+import {
+  successResponse,
+  errorResponse,
   requireAuth,
   getOptionalAuth,
   parseRequestBody,
@@ -50,7 +51,7 @@ export async function PUT(
     }
 
     // Validate required fields
-    const validationError = validateRequiredFields(body, ['mileage']);
+    const validationError = validateRequiredFields(body as unknown as Record<string, unknown>, ['mileage']);
     if (validationError) {
       return errorResponse(validationError, 400);
     }
@@ -212,8 +213,8 @@ export async function PUT(
     return successResponse(responseData, message);
 
   } catch (error) {
-    console.error('Update odometer error:', error);
-    
+    logger.error('Update odometer error', { error });
+
     if (error instanceof Error) {
       if (error.message.includes('not found')) {
         return errorResponse(error.message, 404);
@@ -303,7 +304,7 @@ export async function GET(
     return successResponse(responseData, 'Odometer data retrieved successfully');
 
   } catch (error) {
-    console.error('Get odometer error:', error);
+    logger.error('Get odometer error', { error });
     return errorResponse('Failed to retrieve odometer data', 500);
   }
 }

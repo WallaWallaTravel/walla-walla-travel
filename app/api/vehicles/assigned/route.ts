@@ -1,12 +1,13 @@
 import { NextRequest } from 'next/server';
-import { 
-  successResponse, 
-  errorResponse, 
+import {
+  successResponse,
+  errorResponse,
   requireAuth,
   logApiRequest,
   formatDateForDB
 } from '@/app/api/utils';
 import { query } from '@/lib/db';
+import { logger } from '@/lib/logger';
 
 /**
  * GET /api/vehicles/assigned
@@ -25,8 +26,8 @@ export async function GET(request: NextRequest) {
 
     const driverId = parseInt(session.userId);
     const today = formatDateForDB(new Date());
-    
-    console.log('🚐 Getting assigned vehicle for driver:', driverId);
+
+    logger.debug('Getting assigned vehicle', { driverId });
 
     // First check if driver has a permanently assigned vehicle
     // This is now the primary way vehicles are assigned
@@ -55,12 +56,12 @@ export async function GET(request: NextRequest) {
         AND v.is_active = true
       LIMIT 1
     `, [driverId]);
-    
-    console.log('Permanent vehicle query result:', permanentVehicleResult.rowCount, 'rows');
-    
+
+    logger.debug('Permanent vehicle query result', { rowCount: permanentVehicleResult.rowCount });
+
     if ((permanentVehicleResult.rowCount ?? 0) > 0) {
       const vehicle = permanentVehicleResult.rows[0];
-      console.log('Found permanently assigned vehicle:', vehicle.vehicle_number);
+      logger.debug('Found permanently assigned vehicle', { vehicleNumber: vehicle.vehicle_number });
       
       // Return the permanently assigned vehicle
       return successResponse({
@@ -104,7 +105,7 @@ export async function GET(request: NextRequest) {
 
     if (result.rowCount === 0) {
       // No vehicle assigned at all
-      console.log('No vehicle assigned to driver', driverId);
+      logger.debug('No vehicle assigned to driver', { driverId });
       return successResponse(null, 'No vehicle assigned to driver');
     }
 
@@ -220,14 +221,9 @@ export async function GET(request: NextRequest) {
 
     return successResponse(responseData, 'Assigned vehicle retrieved successfully');
 
-  } catch (error: any) {
-    console.error('❌ Get assigned vehicle error:', error);
-    console.error('Error details:', {
-      message: error.message,
-      code: error.code,
-      detail: error.detail,
-      stack: error.stack
-    });
-    return errorResponse(`Failed to retrieve assigned vehicle: ${error.message}`, 500);
+  } catch (error) {
+    logger.error('Get assigned vehicle error', { error });
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return errorResponse(`Failed to retrieve assigned vehicle: ${message}`, 500);
   }
 }

@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logger } from '@/lib/logger'
 import { query } from '@/lib/db'
 import { getSessionFromRequest } from '@/lib/auth/session'
 import { withErrorHandling, UnauthorizedError, NotFoundError } from '@/lib/api/middleware/error-handler'
 import { sendEmail, EmailTemplates } from '@/lib/email'
+import { withCSRF } from '@/lib/api/middleware/csrf'
+import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit'
 
 async function verifyAdmin(request: NextRequest) {
   const session = await getSessionFromRequest(request)
@@ -12,7 +15,9 @@ async function verifyAdmin(request: NextRequest) {
   return session
 }
 
-export const POST = withErrorHandling(async (
+export const POST = withCSRF(
+  withRateLimit(rateLimiters.api)(
+    withErrorHandling(async (
   request: NextRequest,
   { params }: { params: Promise<{ order_id: string }> }
 ) => {
@@ -89,7 +94,7 @@ export const POST = withErrorHandling(async (
     ...template,
   })
 
-  console.log(`Lunch order #${order_id} ${emailSent ? 'sent to' : 'failed to send to'} ${order.restaurant_email}`)
+  logger.info('Lunch order email status', { orderId: order_id, emailSent, restaurantEmail: order.restaurant_email })
 
   return NextResponse.json({
     success: true,
@@ -99,4 +104,4 @@ export const POST = withErrorHandling(async (
     email_sent: emailSent,
     commission: commission,
   })
-})
+})))

@@ -3,6 +3,8 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { validateBody } from '@/lib/api/middleware/validation';
 import { userService } from '@/lib/services/user.service';
 import { z } from 'zod';
+import { withCSRF } from '@/lib/api/middleware/csrf';
+import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 
 /**
  * GET /api/admin/users
@@ -61,7 +63,9 @@ const CreateUserSchema = z.object({
   phone: z.string().optional(),
 });
 
-export const POST = withAdminAuth(async (request: NextRequest, session) => {
+export const POST = withCSRF(
+  withRateLimit(rateLimiters.api)(
+    withAdminAuth(async (request: NextRequest, session) => {
   // ✅ Validate
   const data = await validateBody(request, CreateUserSchema);
 
@@ -74,7 +78,7 @@ export const POST = withAdminAuth(async (request: NextRequest, session) => {
     message: 'User created successfully',
     timestamp: new Date().toISOString(),
   });
-});
+})));
 
 
 

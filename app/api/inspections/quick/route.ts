@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logger } from '@/lib/logger'
 import { withAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper'
 import { query } from '@/lib/db'
 
@@ -60,7 +61,7 @@ export const POST = withAuth(async (request: NextRequest, session: AuthSession) 
       message: 'Inspection saved successfully'
     })
   } catch (error) {
-    console.error('Quick inspection error:', error)
+    logger.error('Quick inspection error', { error })
     return NextResponse.json({
       success: false,
       error: 'Failed to save inspection',

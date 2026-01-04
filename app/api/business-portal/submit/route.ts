@@ -4,9 +4,10 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { 
+import { logger } from '@/lib/logger';
+import {
   submitBusiness,
-  getBusinessStats 
+  getBusinessStats
 } from '@/lib/business-portal/business-service';
 
 export const runtime = 'nodejs';
@@ -51,10 +52,11 @@ export async function POST(request: NextRequest) {
       completionPercentage: stats.completionPercentage
     });
     
-  } catch (error: any) {
-    console.error('[Business Submit] Error:', error);
+  } catch (error) {
+    logger.error('Business Submit error', { error });
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to submit', details: error.message },
+      { error: 'Failed to submit', details: message },
       { status: 500 }
     );
   }

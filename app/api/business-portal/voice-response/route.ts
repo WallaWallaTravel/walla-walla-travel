@@ -4,9 +4,10 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { 
+import { logger } from '@/lib/logger';
+import {
   saveVoiceResponse,
-  updateVoiceTranscription 
+  updateVoiceTranscription
 } from '@/lib/business-portal/question-service';
 import { logBusinessActivity } from '@/lib/business-portal/business-service';
 
@@ -72,10 +73,11 @@ export async function POST(request: NextRequest) {
       message: 'Voice response saved. Transcription queued.'
     });
     
-  } catch (error: any) {
-    console.error('[Voice Response] Error:', error);
+  } catch (error) {
+    logger.error('Voice Response error', { error });
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to save voice response', details: error.message },
+      { error: 'Failed to save voice response', details: message },
       { status: 500 }
     );
   }

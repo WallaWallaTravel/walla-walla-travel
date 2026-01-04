@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import { query } from '@/lib/db';
 
 export const runtime = 'nodejs';
@@ -29,7 +30,7 @@ export async function POST(
       );
     }
 
-    console.log('[Admin] Setting file approval:', fileId, approved ? 'APPROVED' : 'REJECTED');
+    logger.info('Setting file approval', { fileId, approved });
 
     // Update file
     const result = await query(
@@ -68,17 +69,18 @@ export async function POST(
       ]
     );
 
-    console.log('[Admin] File approval updated successfully');
+    logger.info('File approval updated successfully', { fileId });
 
     return NextResponse.json({
       success: true,
       file
     });
 
-  } catch (error: any) {
-    console.error('[Admin] Error updating file approval:', error);
+  } catch (error) {
+    logger.error('Error updating file approval', { error });
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to update file approval', details: error.message },
+      { error: 'Failed to update file approval', details: message },
       { status: 500 }
     );
   }

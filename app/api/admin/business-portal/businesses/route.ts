@@ -4,6 +4,7 @@
  */
 
 import { NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import { query } from '@/lib/db';
 
 export const runtime = 'nodejs';
@@ -42,10 +43,11 @@ export async function GET() {
       businesses: result.rows
     });
     
-  } catch (error: any) {
-    console.error('[Admin] Failed to list businesses:', error);
+  } catch (error) {
+    logger.error('Admin: Failed to list businesses', { error });
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to list businesses', details: error.message },
+      { error: 'Failed to list businesses', details: message },
       { status: 500 }
     );
   }

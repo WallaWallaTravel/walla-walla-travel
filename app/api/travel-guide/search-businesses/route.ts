@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import { searchBusinesses, formatBusinessForAI } from '@/lib/business-portal/business-knowledge';
 
 export const runtime = 'nodejs';
@@ -18,7 +19,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { business_type, tags, amenities, best_for, query } = body;
     
-    console.log('[Business Search] Query:', { business_type, tags, amenities, best_for, query });
+    logger.debug('Business search query', { business_type, tags, amenities, best_for, query });
     
     const businesses = await searchBusinesses({
       business_type,
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
       query
     });
     
-    console.log('[Business Search] Found:', businesses.length, 'businesses');
+    logger.debug('Business search results', { count: businesses.length });
     
     // Format for AI context
     const formattedBusinesses = businesses.map(b => ({
@@ -47,10 +48,11 @@ export async function POST(request: NextRequest) {
       businesses: formattedBusinesses
     });
     
-  } catch (error: any) {
-    console.error('[Business Search] Error:', error);
+  } catch (error) {
+    logger.error('Business search error', { error });
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Search failed', details: error.message },
+      { error: 'Search failed', details: message },
       { status: 500 }
     );
   }

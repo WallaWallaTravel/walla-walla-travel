@@ -46,7 +46,7 @@ export class UserService extends BaseService {
     this.log('Listing users', filters);
 
     const conditions: string[] = [];
-    const params: any[] = [];
+    const params: unknown[] = [];
     let paramCount = 0;
 
     if (filters?.role) {

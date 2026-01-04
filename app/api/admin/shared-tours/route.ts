@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper';
 import { sharedTourService } from '@/lib/services/shared-tour.service';
+import { withCSRF } from '@/lib/api/middleware/csrf';
+import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 
 /**
  * GET /api/admin/shared-tours
@@ -29,7 +31,9 @@ export const GET = withAdminAuth(async (request: NextRequest, session) => {
  * POST /api/admin/shared-tours
  * Create a new shared tour date
  */
-export const POST = withAdminAuth(async (request: NextRequest, session: AuthSession) => {
+export const POST = withCSRF(
+  withRateLimit(rateLimiters.api)(
+    withAdminAuth(async (request: NextRequest, session: AuthSession) => {
   const body = await request.json();
 
   // Validate required fields
@@ -73,4 +77,4 @@ export const POST = withAdminAuth(async (request: NextRequest, session: AuthSess
     data: tour,
     message: 'Shared tour created successfully',
   });
-});
+})));

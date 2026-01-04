@@ -770,10 +770,5 @@ class ComplianceServiceImpl extends BaseService {
 // Export singleton instance
 export const complianceService = new ComplianceServiceImpl();
 
-// Export types
-export type {
-  ComplianceCheckResult,
-  DriverComplianceResult,
-  VehicleComplianceResult,
-  AssignmentComplianceResult,
-};
+// Note: Types (ComplianceCheckResult, DriverComplianceResult, etc.)
+// are already exported above as interfaces

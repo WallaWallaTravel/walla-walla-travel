@@ -1,28 +1,26 @@
 import { NextRequest } from 'next/server';
-import {
-  successResponse,
-  errorResponse,
-  parseRequestBody,
-  validateRequiredFields,
-  logApiRequest
-} from '@/app/api/utils';
+import { successResponse, errorResponse, logApiRequest } from '@/app/api/utils';
 import { requireAdmin } from '@/lib/admin-auth';
 import { query } from '@/lib/db';
+import { logger } from '@/lib/logger';
+import { z } from 'zod';
+
+// Request body schema
+const AssignVehicleSchema = z.object({
+  timeCardId: z.number().int().positive(),
+  vehicleId: z.number().int().positive(),
+  clientName: z.string().min(1).max(255),
+  hourlyRate: z.number().positive('Hourly rate must be greater than 0'),
+  notes: z.string().max(1000).optional(),
+  clientPhone: z.string().max(20).optional(),
+  clientEmail: z.string().email().optional(),
+});
 
 /**
  * POST /api/admin/assign-vehicle
  * Assign vehicle to driver with client and billing information
  *
- * Body:
- * {
- *   timeCardId: number,
- *   vehicleId: number,
- *   clientName: string,
- *   hourlyRate: number,
- *   notes?: string,
- *   clientPhone?: string,
- *   clientEmail?: string
- * }
+ * ✅ REFACTORED: Zod validation + structured logging
  */
 export async function POST(request: NextRequest) {
   try {
@@ -34,31 +32,20 @@ export async function POST(request: NextRequest) {
 
     logApiRequest('POST', '/api/admin/assign-vehicle', authResult.userId);
 
-    // Parse request body
-    const body = await parseRequestBody<{
-      timeCardId: number;
-      vehicleId: number;
-      clientName: string;
-      hourlyRate: number;
-      notes?: string;
-      clientPhone?: string;
-      clientEmail?: string;
-    }>(request);
-
-    if (!body) {
-      return errorResponse('Invalid request body', 400);
+    // Parse and validate request body
+    let rawBody: unknown;
+    try {
+      rawBody = await request.json();
+    } catch {
+      return errorResponse('Invalid JSON in request body', 400);
     }
 
-    // Validate required fields
-    const validationError = validateRequiredFields(body, ['timeCardId', 'vehicleId', 'clientName', 'hourlyRate']);
-    if (validationError) {
-      return errorResponse(validationError, 400);
+    const parseResult = AssignVehicleSchema.safeParse(rawBody);
+    if (!parseResult.success) {
+      return errorResponse('Validation failed: ' + parseResult.error.issues.map((e) => e.message).join(', '), 400);
     }
 
-    // Validate hourly rate is positive
-    if (body.hourlyRate <= 0) {
-      return errorResponse('Hourly rate must be greater than 0', 400);
-    }
+    const body = parseResult.data;
 
     // Start transaction by getting client
     const client = await query('SELECT 1'); // Get a connection from pool
@@ -205,12 +192,13 @@ export async function POST(request: NextRequest) {
       WHERE id = $1
     `, [body.vehicleId]);
 
-    console.log(`✅ Vehicle assigned successfully:`);
-    console.log(`   Time Card ID: ${body.timeCardId}`);
-    console.log(`   Vehicle: ${vehicle.vehicle_number}`);
-    console.log(`   Client: ${body.clientName}`);
-    console.log(`   Rate: $${body.hourlyRate}/hr`);
-    console.log(`   Assigned by: ${authResult.name} (${authResult.email})`);
+    logger.info('Vehicle assigned successfully', {
+      timeCardId: body.timeCardId,
+      vehicleNumber: vehicle.vehicle_number,
+      clientName: body.clientName,
+      hourlyRate: body.hourlyRate,
+      assignedBy: `${authResult.name} (${authResult.email})`,
+    });
 
     return successResponse({
       clientService,
@@ -222,7 +210,7 @@ export async function POST(request: NextRequest) {
     }, 'Vehicle assigned successfully');
 
   } catch (error) {
-    console.error('❌ Vehicle assignment error:', error);
+    logger.error('Vehicle assignment error', { error });
     return errorResponse('Failed to assign vehicle', 500);
   }
 }

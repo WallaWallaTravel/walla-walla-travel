@@ -2,41 +2,46 @@
  * Booking Request API
  * Handles new booking requests from the public booking form
  * Creates a reservation with status "pending" for admin review
+ *
+ * ✅ REFACTORED: Zod validation + structured logging
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { sendEmail } from '@/lib/email';
+import { logger } from '@/lib/logger';
+import { z } from 'zod';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-interface TourDay {
-  date: string;
-  guests: number | string; // number or "Large Group (~X)"
-  hours: number;
-}
+// Request body schema
+const TourDaySchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  guests: z.union([z.number().int().positive(), z.string()]), // number or "Large Group (~X)"
+  hours: z.number().positive(),
+});
 
-interface AdditionalService {
-  type: string;
-  details: string;
-}
+const AdditionalServiceSchema = z.object({
+  type: z.string(),
+  details: z.string(),
+});
 
-interface BookingRequestData {
-  provider: string;
-  providerId: string;
-  tourType: string;
-  tourDays: TourDay[];
-  additionalServices?: AdditionalService[];
-  contact: {
-    name: string;
-    email: string;
-    phone: string;
-    textConsent: boolean;
-  };
-  notes?: string;
-  estimatedTotal: string;
-}
+const BookingRequestSchema = z.object({
+  provider: z.string().min(1),
+  providerId: z.string().min(1),
+  tourType: z.string().min(1),
+  tourDays: z.array(TourDaySchema).min(1, 'At least one tour day is required'),
+  additionalServices: z.array(AdditionalServiceSchema).optional(),
+  contact: z.object({
+    name: z.string().min(1, 'Name is required'),
+    email: z.string().email('Valid email is required'),
+    phone: z.string().optional(),
+    textConsent: z.boolean(),
+  }),
+  notes: z.string().max(2000).optional(),
+  estimatedTotal: z.string(),
+});
 
 /**
  * POST /api/booking-requests
@@ -44,22 +49,26 @@ interface BookingRequestData {
  */
 export async function POST(request: NextRequest) {
   try {
-    const data: BookingRequestData = await request.json();
-
-    // Validate required fields
-    if (!data.contact?.name || !data.contact?.email) {
+    // Parse and validate request body
+    let rawBody: unknown;
+    try {
+      rawBody = await request.json();
+    } catch {
       return NextResponse.json(
-        { error: 'Name and email are required' },
+        { error: 'Invalid JSON in request body' },
         { status: 400 }
       );
     }
 
-    if (!data.tourDays || data.tourDays.length === 0) {
+    const parseResult = BookingRequestSchema.safeParse(rawBody);
+    if (!parseResult.success) {
       return NextResponse.json(
-        { error: 'At least one tour day is required' },
+        { error: parseResult.error.issues.map((e) => e.message).join(', ') },
         { status: 400 }
       );
     }
+
+    const data = parseResult.data;
 
     // Start transaction
     await query('BEGIN');
@@ -178,10 +187,12 @@ export async function POST(request: NextRequest) {
 
       await query('COMMIT');
 
-      console.log(
-        `[Booking Request] New request ${reservationNumber} - ` +
-          `${data.contact.name} - ${data.tourDays.length} day(s) - Provider: ${data.provider}`
-      );
+      logger.info('Booking request created', {
+        reservationNumber,
+        customerName: data.contact.name,
+        days: data.tourDays.length,
+        provider: data.provider,
+      });
 
       // Send confirmation email via Postmark
       try {
@@ -349,13 +360,13 @@ info@nwtouring.com | (509) 540-3600
         });
 
         if (emailSent) {
-          console.log(`[Booking Request] Confirmation email sent to ${data.contact.email}`);
+          logger.info('Confirmation email sent', { email: data.contact.email });
         } else {
-          console.warn(`[Booking Request] Failed to send confirmation email to ${data.contact.email}`);
+          logger.warn('Failed to send confirmation email', { email: data.contact.email });
         }
       } catch (emailError) {
         // Log but don't fail the request if email fails
-        console.error('[Booking Request] Failed to send confirmation email:', emailError);
+        logger.error('Failed to send confirmation email', { error: emailError });
       }
 
       return NextResponse.json({
@@ -368,8 +379,8 @@ info@nwtouring.com | (509) 540-3600
       await query('ROLLBACK');
       throw error;
     }
-  } catch (error: unknown) {
-    console.error('[Booking Request API] Error:', error);
+  } catch (error) {
+    logger.error('Booking Request API error', { error });
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
       { error: 'Failed to create booking request', details: errorMessage },
@@ -393,8 +404,8 @@ export async function GET() {
     return NextResponse.json({
       pendingCount: parseInt(result.rows[0].count, 10),
     });
-  } catch (error: unknown) {
-    console.error('[Booking Request API] Error fetching count:', error);
+  } catch (error) {
+    logger.error('Booking Request API error fetching count', { error });
     return NextResponse.json(
       { error: 'Failed to fetch pending count' },
       { status: 500 }

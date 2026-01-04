@@ -9,6 +9,8 @@ import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 import { validateBody } from '@/lib/api/middleware/validation';
 import { tenantService, CreateTenantData } from '@/lib/services/tenant.service';
 import { z } from 'zod';
+import { withCSRF } from '@/lib/api/middleware/csrf';
+import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 
 // Schema for creating a tenant
 const CreateTenantSchema = z.object({
@@ -40,7 +42,9 @@ export const GET = withErrorHandling(async () => {
  * POST /api/admin/tenants
  * Create a new tenant
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withRateLimit(rateLimiters.api)(
+    withErrorHandling(async (request: NextRequest) => {
   const data = await validateBody<CreateTenantData>(request, CreateTenantSchema);
 
   const tenant = await tenantService.createTenant(data);
@@ -50,7 +54,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     data: tenant,
     message: `Tenant '${tenant.display_name}' created successfully`,
   }, { status: 201 });
-});
+})));
 
 
 

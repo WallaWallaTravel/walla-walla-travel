@@ -1,7 +1,8 @@
 import { NextRequest } from 'next/server';
-import { 
-  successResponse, 
-  errorResponse, 
+import { logger } from '@/lib/logger';
+import {
+  successResponse,
+  errorResponse,
   requireAuth,
   logApiRequest,
   formatDateForDB
@@ -233,7 +234,7 @@ export async function GET(request: NextRequest) {
     return successResponse(compliance, 'HOS compliance data retrieved');
 
   } catch (error) {
-    console.error('Get HOS compliance error:', error);
+    logger.error('Get HOS compliance error', { error });
     return errorResponse('Failed to retrieve HOS compliance data', 500);
   }
 }

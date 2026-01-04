@@ -3,23 +3,24 @@ import {
   successResponse,
   errorResponse,
   requireAuth,
-  parseRequestBody,
-  validateRequiredFields,
-  logApiRequest
 } from '@/app/api/utils';
 import { query } from '@/lib/db';
+import { logger, logApiRequest } from '@/lib/logger';
+import { z } from 'zod';
+
+// Request body schema
+const ClientDropoffSchema = z.object({
+  clientServiceId: z.number().int().positive('Client service ID must be a positive integer'),
+  dropoffLocation: z.string().min(1, 'Dropoff location is required').max(500),
+  dropoffLat: z.number().min(-90).max(90).optional(),
+  dropoffLng: z.number().min(-180).max(180).optional(),
+});
 
 /**
  * POST /api/driver/client-dropoff
  * Log client dropoff time, calculate service hours and total cost
  *
- * Body:
- * {
- *   clientServiceId: number,
- *   dropoffLocation: string,
- *   dropoffLat?: number,
- *   dropoffLng?: number
- * }
+ * ✅ REFACTORED: Zod validation + structured logging
  */
 export async function POST(request: NextRequest) {
   try {
@@ -31,23 +32,20 @@ export async function POST(request: NextRequest) {
 
     logApiRequest('POST', '/api/driver/client-dropoff', authResult.userId);
 
-    // Parse request body
-    const body = await parseRequestBody<{
-      clientServiceId: number;
-      dropoffLocation: string;
-      dropoffLat?: number;
-      dropoffLng?: number;
-    }>(request);
-
-    if (!body) {
-      return errorResponse('Invalid request body', 400);
+    // Parse and validate request body
+    let rawBody: unknown;
+    try {
+      rawBody = await request.json();
+    } catch {
+      return errorResponse('Invalid JSON in request body', 400);
     }
 
-    // Validate required fields
-    const validationError = validateRequiredFields(body, ['clientServiceId', 'dropoffLocation']);
-    if (validationError) {
-      return errorResponse(validationError, 400);
+    const parseResult = ClientDropoffSchema.safeParse(rawBody);
+    if (!parseResult.success) {
+      return errorResponse('Validation failed: ' + parseResult.error.issues.map((e) => e.message).join(', '), 400);
     }
+
+    const body = parseResult.data;
 
     const driverId = parseInt(authResult.userId);
 
@@ -140,14 +138,15 @@ export async function POST(request: NextRequest) {
       WHERE client_service_id = $1 AND status = 'active'
     `, [body.clientServiceId]);
 
-    console.log(`✅ Client dropoff logged and service completed:`);
-    console.log(`   Service ID: ${completedService.id}`);
-    console.log(`   Client: ${completedService.client_name}`);
-    console.log(`   Pickup: ${completedService.pickup_time}`);
-    console.log(`   Dropoff: ${completedService.dropoff_time}`);
-    console.log(`   Service Hours: ${completedService.service_hours} hrs`);
-    console.log(`   Rate: $${completedService.hourly_rate}/hr`);
-    console.log(`   Total Cost: $${completedService.total_cost}`);
+    logger.info('Client dropoff logged and service completed', {
+      serviceId: completedService.id,
+      clientName: completedService.client_name,
+      pickupTime: completedService.pickup_time,
+      dropoffTime: completedService.dropoff_time,
+      serviceHours: completedService.service_hours,
+      hourlyRate: completedService.hourly_rate,
+      totalCost: completedService.total_cost,
+    });
 
     return successResponse({
       service: {
@@ -176,7 +175,7 @@ export async function POST(request: NextRequest) {
     }, 'Client dropoff logged and billing calculated successfully');
 
   } catch (error) {
-    console.error('❌ Client dropoff error:', error);
+    logger.error('Client dropoff error', { error });
     return errorResponse('Failed to log client dropoff', 500);
   }
 }
@@ -240,7 +239,7 @@ export async function GET(request: NextRequest) {
     }, 'Service ready for dropoff');
 
   } catch (error) {
-    console.error('❌ Get dropoff service error:', error);
+    logger.error('Get dropoff service error', { error });
     return errorResponse('Failed to retrieve service for dropoff', 500);
   }
 }

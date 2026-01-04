@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 import { validateBody } from '@/lib/api/middleware/validation';
 import { partnerService } from '@/lib/services/partner.service';
+import { withCSRF } from '@/lib/api/middleware/csrf';
+import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 
 const SetupSchema = z.object({
   token: z.string().min(1, 'Setup token is required'),
@@ -13,7 +15,9 @@ const SetupSchema = z.object({
  * POST /api/partner/setup
  * Complete partner account setup (set password)
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withRateLimit(rateLimiters.api)(
+    withErrorHandling(async (request: NextRequest) => {
   const data = await validateBody(request, SetupSchema);
 
   await partnerService.completeSetup(data.token, data.password);
@@ -23,7 +27,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     message: 'Account setup complete. You can now sign in.',
     timestamp: new Date().toISOString(),
   });
-});
+})));
 
 
 

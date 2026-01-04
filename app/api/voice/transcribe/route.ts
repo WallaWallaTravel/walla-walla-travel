@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logger } from '@/lib/logger'
 import { transcribeAudio } from '@/lib/services/deepgram'
 
 export const runtime = 'nodejs'
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Log for monitoring
-    console.log(`[Voice] Transcribed ${result.duration}s audio: "${result.transcript.substring(0, 50)}..."`)
+    logger.info('Voice transcribed', { duration: result.duration, transcript: result.transcript.substring(0, 50) })
 
     return NextResponse.json({
       success: true,
@@ -56,13 +57,14 @@ export async function POST(request: NextRequest) {
       words: result.words
     })
 
-  } catch (error: any) {
-    console.error('Transcription error:', error)
-    
+  } catch (error) {
+    logger.error('Transcription error', { error })
+    const message = error instanceof Error ? error.message : 'Unknown error'
+
     return NextResponse.json(
-      { 
+      {
         error: 'Transcription failed',
-        details: error.message 
+        details: message
       },
       { status: 500 }
     )

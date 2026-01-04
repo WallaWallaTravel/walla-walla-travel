@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import { withErrorHandling, NotFoundError, ConflictError, BadRequestError } from '@/lib/api-errors';
 import { queryOne, insertOne, query } from '@/lib/db-helpers';
 
@@ -128,10 +129,9 @@ export const POST = withErrorHandling(async (
   });
 
   if (emailSent) {
-    console.log(`✅ Final invoice email sent to ${booking.customer_email}`);
+    logger.info('Final invoice email sent', { to: booking.customer_email });
   } else {
-    console.log(`⚠️  Email not configured. Would send to: ${booking.customer_email}`);
-    console.log(`   Payment URL: ${paymentUrl}`);
+    logger.warn('Email not configured', { to: booking.customer_email, paymentUrl });
   }
 
   // 7. Return success

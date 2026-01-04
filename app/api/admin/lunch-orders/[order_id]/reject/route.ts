@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
 import { getSessionFromRequest } from '@/lib/auth/session'
 import { withErrorHandling, UnauthorizedError, NotFoundError } from '@/lib/api/middleware/error-handler'
+import { withCSRF } from '@/lib/api/middleware/csrf'
+import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit'
 
 async function verifyAdmin(request: NextRequest) {
   const session = await getSessionFromRequest(request)
@@ -11,7 +13,9 @@ async function verifyAdmin(request: NextRequest) {
   return session
 }
 
-export const POST = withErrorHandling(async (
+export const POST = withCSRF(
+  withRateLimit(rateLimiters.api)(
+    withErrorHandling(async (
   request: NextRequest,
   { params }: { params: Promise<{ order_id: string }> }
 ) => {
@@ -41,4 +45,4 @@ export const POST = withErrorHandling(async (
     success: true,
     message: 'Order rejected',
   })
-})
+})))

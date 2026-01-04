@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import { sharedTourService } from '@/lib/services/shared-tour.service';
 
 interface RouteParams {
@@ -21,10 +22,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       success: true,
       data: availability,
     });
-  } catch (error: any) {
-    console.error('Error checking availability:', error);
+  } catch (error) {
+    logger.error('Error checking availability', { error });
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { success: false, error: error.message },
+      { success: false, error: message },
       { status: 500 }
     );
   }

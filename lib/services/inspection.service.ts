@@ -1,12 +1,34 @@
 import { logger } from '@/lib/logger';
 /**
  * Inspection Service
- * 
- * Business logic for vehicle inspections (pre-trip, post-trip, DVIR)
+ *
+ * @module lib/services/inspection.service
+ * @description Handles vehicle inspections for FMCSA/DOT compliance.
+ * Manages pre-trip, post-trip, and Driver Vehicle Inspection Reports (DVIR).
+ *
+ * @compliance FMCSA Part 396.11 - Driver vehicle inspection report(s)
+ *
+ * @features
+ * - Pre-trip inspection checklists
+ * - Post-trip DVIRs with defect reporting
+ * - Defect severity classification (none/minor/critical)
+ * - Electronic signature capture
+ * - Fuel level tracking
+ * - Integration with notification service for critical defects
  */
 
 import { BaseService } from './base.service';
 import { NotFoundError, ConflictError, BadRequestError } from '@/lib/api/middleware/error-handler';
+
+interface InspectionData {
+  items: Record<string, boolean>;
+  signature?: string;
+  notes?: string;
+  fuelLevel?: string;
+  defectsFound?: boolean;
+  defectSeverity?: 'none' | 'minor' | 'critical';
+  defectDescription?: string;
+}
 
 export interface Inspection {
   id: number;
@@ -16,7 +38,7 @@ export interface Inspection {
   type: 'pre_trip' | 'post_trip' | 'dvir';
   start_mileage?: number;
   end_mileage?: number;
-  inspection_data: any;
+  inspection_data: InspectionData;
   issues_description?: string;
   defects_found: boolean;
   defect_severity: 'none' | 'minor' | 'critical';
@@ -235,7 +257,7 @@ export class InspectionService extends BaseService {
     this.log('Getting inspections for driver', { driverId, filters });
 
     const conditions = ['i.driver_id = $1'];
-    const params: any[] = [driverId];
+    const params: unknown[] = [driverId];
     let paramCount = 1;
 
     if (filters?.type) {

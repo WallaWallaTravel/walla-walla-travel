@@ -1,7 +1,8 @@
 import { NextRequest } from 'next/server';
-import { 
-  successResponse, 
-  errorResponse, 
+import { logger } from '@/lib/logger';
+import {
+  successResponse,
+  errorResponse,
   requireAuth,
   logApiRequest,
   getPaginationParams,
@@ -30,7 +31,7 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get('type'); // pre_trip, post_trip, dvir, or all
 
     // Build query conditions
-    let whereConditions = ['i.driver_id = $1'];
+    const whereConditions = ['i.driver_id = $1'];
     const queryParams: any[] = [parseInt(session.userId)];
     let paramCount = 1;
 
@@ -98,7 +99,7 @@ export async function GET(request: NextRequest) {
     }, 'Inspection history retrieved');
 
   } catch (error) {
-    console.error('Get inspection history error:', error);
+    logger.error('Get inspection history error', { error });
     return errorResponse('Failed to retrieve inspection history', 500);
   }
 }

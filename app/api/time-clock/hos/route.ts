@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import { query } from '@/lib/db';
 
 /**
@@ -217,7 +218,7 @@ export async function GET(request: Request) {
     });
 
   } catch (error) {
-    console.error('❌ Error fetching HOS data:', error);
+    logger.error('Error fetching HOS data', { error });
     return NextResponse.json(
       { 
         success: false, 

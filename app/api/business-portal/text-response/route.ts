@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import { saveTextResponse } from '@/lib/business-portal/question-service';
 import { logBusinessActivity } from '@/lib/business-portal/business-service';
 
@@ -64,10 +65,11 @@ export async function POST(request: NextRequest) {
       message: 'Text response saved. Data extraction queued.'
     });
     
-  } catch (error: any) {
-    console.error('[Text Response] Error:', error);
+  } catch (error) {
+    logger.error('Text Response error', { error });
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to save text response', details: error.message },
+      { error: 'Failed to save text response', details: message },
       { status: 500 }
     );
   }

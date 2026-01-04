@@ -1,17 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { complianceService } from '@/lib/services/compliance.service';
+import { logger } from '@/lib/logger';
+import { z } from 'zod';
+
+// Request body schema
+const ClockInSchema = z.object({
+  driverId: z.number().int().positive('Driver ID must be a positive integer'),
+  vehicleId: z.number().int().positive('Vehicle ID must be a positive integer'),
+  location: z.object({
+    latitude: z.number().min(-90).max(90),
+    longitude: z.number().min(-180).max(180),
+    accuracy: z.number().positive().optional(),
+  }).optional(),
+  notes: z.string().max(500).optional(),
+});
 
 /**
  * POST /api/time-clock/clock-in
  * Creates a new time card for clock in
  *
- * Body: {
- *   driverId: number,
- *   vehicleId: number,
- *   location: { latitude: number, longitude: number, accuracy: number },
- *   notes?: string
- * }
+ * ✅ REFACTORED: Zod validation + structured logging
  *
  * COMPLIANCE ENFORCEMENT:
  * This endpoint checks HOS (Hours of Service) limits before allowing clock-in:
@@ -24,19 +33,29 @@ import { complianceService } from '@/lib/services/compliance.service';
  */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { driverId, vehicleId, location, notes } = body;
+    // Parse and validate request body
+    let rawBody: unknown;
+    try {
+      rawBody = await request.json();
+    } catch {
+      return NextResponse.json(
+        { success: false, error: 'Invalid JSON in request body' },
+        { status: 400 }
+      );
+    }
 
-    // Validate required fields
-    if (!driverId || !vehicleId) {
+    const parseResult = ClockInSchema.safeParse(rawBody);
+    if (!parseResult.success) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Driver ID and Vehicle ID are required'
+          error: 'Validation failed: ' + parseResult.error.issues.map((e) => e.message).join(', ')
         },
         { status: 400 }
       );
     }
+
+    const { driverId, vehicleId, location, notes } = parseResult.data;
 
     // ==========================================================================
     // COMPLIANCE CHECK: Verify HOS limits before allowing clock-in
@@ -211,10 +230,10 @@ export async function POST(request: NextRequest) {
     }, { status: 201 });
 
   } catch (error) {
-    console.error('❌ Error clocking in:', error);
+    logger.error('Error clocking in', { error });
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         error: 'Failed to clock in',
         message: error instanceof Error ? error.message : 'Unknown error'
       },

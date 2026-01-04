@@ -12,6 +12,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { withErrorHandling, UnauthorizedError, BadRequestError, NotFoundError, ConflictError, ForbiddenError } from '@/lib/api/middleware/error-handler';
 import { getSessionFromRequest } from '@/lib/auth/session';
+import { withCSRF } from '@/lib/api/middleware/csrf';
+import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 
 // Helper to verify admin access
 async function verifyAdmin(request: NextRequest) {
@@ -92,7 +94,9 @@ export const GET = withErrorHandling(async (request: NextRequest): Promise<NextR
 });
 
 // POST - Create new availability block
-export const POST = withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
+export const POST = withCSRF(
+  withRateLimit(rateLimiters.api)(
+    withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
   await verifyAdmin(request);
 
   const body = await request.json();
@@ -137,10 +141,12 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
       block_date: result.rows[0].block_date?.toISOString().split('T')[0]
     }
   }, { status: 201 });
-});
+})));
 
 // PUT - Update existing availability block
-export const PUT = withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
+export const PUT = withCSRF(
+  withRateLimit(rateLimiters.api)(
+    withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
   await verifyAdmin(request);
 
   const body = await request.json();
@@ -185,10 +191,12 @@ export const PUT = withErrorHandling(async (request: NextRequest): Promise<NextR
       block_date: result.rows[0].block_date?.toISOString().split('T')[0]
     }
   });
-});
+})));
 
 // DELETE - Remove availability block
-export const DELETE = withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
+export const DELETE = withCSRF(
+  withRateLimit(rateLimiters.api)(
+    withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
   await verifyAdmin(request);
 
   const { searchParams } = new URL(request.url);
@@ -218,4 +226,4 @@ export const DELETE = withErrorHandling(async (request: NextRequest): Promise<Ne
   );
 
   return NextResponse.json({ success: true });
-});
+})));

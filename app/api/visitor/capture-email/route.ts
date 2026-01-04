@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import { captureVisitorEmail, logEmailCaptureAttempt, getVisitorByUUID } from '@/lib/visitor/visitor-tracking';
 
 export const runtime = 'nodejs';
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
       email
     );
 
-    console.log(`[Email Captured] ${email} for visitor ${visitor_uuid} via ${trigger_type}`);
+    logger.info('Email captured', { email, visitorUuid: visitor_uuid, triggerType: trigger_type });
 
     return NextResponse.json({
       success: true,
@@ -56,10 +57,11 @@ export async function POST(request: NextRequest) {
         name: updatedVisitor.name,
       },
     });
-  } catch (error: any) {
-    console.error('Error capturing email:', error);
+  } catch (error) {
+    logger.error('Error capturing email', { error });
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to capture email', details: error.message },
+      { error: 'Failed to capture email', details: message },
       { status: 500 }
     );
   }

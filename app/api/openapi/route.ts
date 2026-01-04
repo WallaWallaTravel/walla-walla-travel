@@ -13,13 +13,14 @@
 
 import { NextResponse } from 'next/server';
 import { generateOpenAPISpec } from '@/lib/api/openapi';
+import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export const GET = withErrorHandling(async () => {
   const spec = generateOpenAPISpec();
-  
+
   return NextResponse.json(spec, {
     headers: {
       'Content-Type': 'application/json',
@@ -27,7 +28,7 @@ export async function GET() {
       'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
     },
   });
-}
+});
 
 
 

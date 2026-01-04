@@ -136,7 +136,7 @@ export class TimeCardService extends BaseService {
     this.log('Getting time cards', { driverId, filters });
 
     const conditions = ['driver_id = $1'];
-    const params: any[] = [driverId];
+    const params: unknown[] = [driverId];
     let paramCount = 1;
 
     if (filters?.start_date) {

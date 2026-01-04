@@ -1,8 +1,16 @@
 import { logger } from '@/lib/logger';
 /**
  * Driver Service
- * 
- * Business logic for driver operations
+ *
+ * @module lib/services/driver.service
+ * @description Manages driver operations for the tour company fleet.
+ * Handles driver assignments, schedules, tour management, and driver-specific data.
+ *
+ * @features
+ * - Driver schedule and assignment management
+ * - Tour assignments and pickup details
+ * - Driver notes and special instructions
+ * - Integration with workflow/clock-in system
  */
 
 import { BaseService } from './base.service';
@@ -48,18 +56,18 @@ export class DriverService extends BaseService {
   async listActive(): Promise<Driver[]> {
     this.log('Listing active drivers');
 
-    const result = await this.query(
-      `SELECT 
+    const result = await this.query<Driver>(
+      `SELECT
         id, email, name, role, phone,
         created_at, last_login
-      FROM users 
-      WHERE is_active = true 
+      FROM users
+      WHERE is_active = true
       AND role IN ('driver', 'admin', 'owner')
-      ORDER BY 
-        CASE 
-          WHEN role = 'owner' THEN 0 
+      ORDER BY
+        CASE
+          WHEN role = 'owner' THEN 0
           WHEN role = 'admin' THEN 1
-          ELSE 2 
+          ELSE 2
         END,
         name`,
       []
