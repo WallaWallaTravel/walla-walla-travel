@@ -8,6 +8,22 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
+interface UploadedFile {
+  filename: string;
+  size: number;
+  dataUrl: string;
+  contentType?: string;
+}
+
+interface AIExtractedData {
+  event_name?: string;
+  suggested_services?: string[];
+  estimated_budget?: number;
+  key_requirements?: string[];
+  timeline?: string;
+  [key: string]: string | string[] | number | undefined;
+}
+
 interface CorporateRequest {
   id: number;
   request_number: string;
@@ -20,9 +36,9 @@ interface CorporateRequest {
   description: string;
   special_requirements: string;
   budget_range: string;
-  preferred_dates: any[];
-  uploaded_files: any[];
-  ai_extracted_data: any;
+  preferred_dates: string[];
+  uploaded_files: UploadedFile[];
+  ai_extracted_data: AIExtractedData | null;
   ai_confidence_score: number;
   status: string;
   created_at: string;
@@ -90,10 +106,10 @@ export default function CorporateRequestsPage() {
         window.location.href = `/admin/proposals/${data.proposalId}`;
       }, 1500);
 
-    } catch (error: any) {
-      setConvertMessage({ 
-        type: 'error', 
-        text: error.message 
+    } catch (error) {
+      setConvertMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'An error occurred'
       });
     } finally {
       setConverting(false);
@@ -392,7 +408,7 @@ export default function CorporateRequestsPage() {
                 <div>
                   <h4 className="font-bold text-gray-900 mb-3">Uploaded Files</h4>
                   <div className="space-y-2">
-                    {selectedRequest.uploaded_files.map((file: any, i: number) => (
+                    {selectedRequest.uploaded_files.map((file: UploadedFile, i: number) => (
                       <div key={i} className="flex items-center justify-between bg-gray-50 rounded p-3">
                         <div className="flex items-center gap-3">
                           <span className="text-2xl">📄</span>

@@ -13,12 +13,11 @@
 
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
+import { logger } from '@/lib/logger';
 
 // Validate we have the service key
 if (!process.env.SUPABASE_SERVICE_KEY) {
-  console.warn(
-    '[Supabase Admin] SUPABASE_SERVICE_KEY not set - admin client will not work'
-  );
+  logger.warn('Supabase Admin: SUPABASE_SERVICE_KEY not set - admin client will not work');
 }
 
 // Create admin client (service role - bypasses RLS)

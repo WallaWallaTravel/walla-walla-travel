@@ -3,10 +3,51 @@
 import { useState, useEffect } from 'react';
 import { formatCurrency } from '@/lib/rate-config';
 
+// ============================================================================
+// Rate Configuration Types
+// ============================================================================
+
+interface WineTourRateValues {
+  base_rate: number;
+  per_person_charge: number;
+  per_person_threshold: number;
+  minimum_hours: number;
+  weekend_multiplier: number;
+  holiday_multiplier: number;
+}
+
+interface TransferRateValues {
+  seatac_to_walla: number;
+  walla_to_seatac: number;
+  pasco_to_walla: number;
+  walla_to_pasco: number;
+  local_base: number;
+  local_per_mile: number;
+}
+
+interface WaitTimeRateValues {
+  hourly_rate: number;
+  minimum_hours: number;
+}
+
+interface DepositsFeesValues {
+  deposit_percentage: number;
+  tax_rate: number;
+  cancellation_days: number;
+  cancellation_fee_percentage: number;
+}
+
+interface GratuityValues {
+  default_percentage: number;
+  quick_select_options: number[];
+}
+
+type RateConfigValue = WineTourRateValues | TransferRateValues | WaitTimeRateValues | DepositsFeesValues | GratuityValues | Record<string, number | boolean | number[]>;
+
 interface RateConfig {
   id: number;
   config_key: string;
-  config_value: any;
+  config_value: RateConfigValue;
   description: string;
   last_updated_by: string;
   updated_at: string;
@@ -17,7 +58,7 @@ export default function RatesManagementPage() {
   const [rates, setRates] = useState<RateConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingKey, setEditingKey] = useState<string | null>(null);
-  const [editValues, setEditValues] = useState<any>({});
+  const [editValues, setEditValues] = useState<RateConfigValue>({});
   const [saveReason, setSaveReason] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -88,8 +129,8 @@ export default function RatesManagementPage() {
     }
   };
 
-  const updateEditValue = (key: string, value: any) => {
-    setEditValues((prev: any) => ({
+  const updateEditValue = (key: string, value: number | boolean | number[]) => {
+    setEditValues((prev) => ({
       ...prev,
       [key]: value
     }));
@@ -154,19 +195,19 @@ export default function RatesManagementPage() {
                   // Edit Mode
                   <div className="space-y-4">
                     {rate.config_key === 'wine_tours' && (
-                      <WineTourRateEditor values={editValues} onChange={updateEditValue} />
+                      <WineTourRateEditor values={editValues as WineTourRateValues} onChange={updateEditValue} />
                     )}
                     {rate.config_key === 'transfers' && (
-                      <TransferRateEditor values={editValues} onChange={updateEditValue} />
+                      <TransferRateEditor values={editValues as TransferRateValues} onChange={updateEditValue} />
                     )}
                     {rate.config_key === 'wait_time' && (
-                      <WaitTimeRateEditor values={editValues} onChange={updateEditValue} />
+                      <WaitTimeRateEditor values={editValues as WaitTimeRateValues} onChange={updateEditValue} />
                     )}
                     {rate.config_key === 'deposits_and_fees' && (
-                      <DepositsFeesEditor values={editValues} onChange={updateEditValue} />
+                      <DepositsFeesEditor values={editValues as DepositsFeesValues} onChange={updateEditValue} />
                     )}
                     {rate.config_key === 'gratuity' && (
-                      <GratuityEditor values={editValues} onChange={updateEditValue} />
+                      <GratuityEditor values={editValues as GratuityValues} onChange={updateEditValue} />
                     )}
 
                     {/* Reason for Change */}
@@ -205,19 +246,19 @@ export default function RatesManagementPage() {
                   // View Mode
                   <div>
                     {rate.config_key === 'wine_tours' && (
-                      <WineTourRateDisplay values={rate.config_value} />
+                      <WineTourRateDisplay values={rate.config_value as WineTourRateValues} />
                     )}
                     {rate.config_key === 'transfers' && (
-                      <TransferRateDisplay values={rate.config_value} />
+                      <TransferRateDisplay values={rate.config_value as TransferRateValues} />
                     )}
                     {rate.config_key === 'wait_time' && (
-                      <WaitTimeRateDisplay values={rate.config_value} />
+                      <WaitTimeRateDisplay values={rate.config_value as WaitTimeRateValues} />
                     )}
                     {rate.config_key === 'deposits_and_fees' && (
-                      <DepositsFeesDisplay values={rate.config_value} />
+                      <DepositsFeesDisplay values={rate.config_value as DepositsFeesValues} />
                     )}
                     {rate.config_key === 'gratuity' && (
-                      <GratuityDisplay values={rate.config_value} />
+                      <GratuityDisplay values={rate.config_value as GratuityValues} />
                     )}
 
                     <button
@@ -238,7 +279,7 @@ export default function RatesManagementPage() {
 }
 
 // Wine Tour Rate Components
-function WineTourRateDisplay({ values }: { values: any }) {
+function WineTourRateDisplay({ values }: { values: WineTourRateValues }) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
       <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
@@ -266,7 +307,7 @@ function WineTourRateDisplay({ values }: { values: any }) {
   );
 }
 
-function WineTourRateEditor({ values, onChange }: { values: any; onChange: (key: string, value: any) => void }) {
+function WineTourRateEditor({ values, onChange }: { values: WineTourRateValues; onChange: (key: string, value: number) => void }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>
@@ -330,7 +371,7 @@ function WineTourRateEditor({ values, onChange }: { values: any; onChange: (key:
 }
 
 // Transfer Rate Components
-function TransferRateDisplay({ values }: { values: any }) {
+function TransferRateDisplay({ values }: { values: TransferRateValues }) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
       <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
@@ -349,7 +390,7 @@ function TransferRateDisplay({ values }: { values: any }) {
   );
 }
 
-function TransferRateEditor({ values, onChange }: { values: any; onChange: (key: string, value: any) => void }) {
+function TransferRateEditor({ values, onChange }: { values: TransferRateValues; onChange: (key: string, value: number) => void }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>
@@ -412,7 +453,7 @@ function TransferRateEditor({ values, onChange }: { values: any; onChange: (key:
 }
 
 // Wait Time Components
-function WaitTimeRateDisplay({ values }: { values: any }) {
+function WaitTimeRateDisplay({ values }: { values: WaitTimeRateValues }) {
   return (
     <div className="grid grid-cols-2 gap-4">
       <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
@@ -427,7 +468,7 @@ function WaitTimeRateDisplay({ values }: { values: any }) {
   );
 }
 
-function WaitTimeRateEditor({ values, onChange }: { values: any; onChange: (key: string, value: any) => void }) {
+function WaitTimeRateEditor({ values, onChange }: { values: WaitTimeRateValues; onChange: (key: string, value: number) => void }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>
@@ -454,7 +495,7 @@ function WaitTimeRateEditor({ values, onChange }: { values: any; onChange: (key:
 }
 
 // Deposits & Fees Components
-function DepositsFeesDisplay({ values }: { values: any }) {
+function DepositsFeesDisplay({ values }: { values: DepositsFeesValues }) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
       <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
@@ -477,7 +518,7 @@ function DepositsFeesDisplay({ values }: { values: any }) {
   );
 }
 
-function DepositsFeesEditor({ values, onChange }: { values: any; onChange: (key: string, value: any) => void }) {
+function DepositsFeesEditor({ values, onChange }: { values: DepositsFeesValues; onChange: (key: string, value: number) => void }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>
@@ -522,7 +563,7 @@ function DepositsFeesEditor({ values, onChange }: { values: any; onChange: (key:
 }
 
 // Gratuity Components
-function GratuityDisplay({ values }: { values: any }) {
+function GratuityDisplay({ values }: { values: GratuityValues }) {
   return (
     <div className="grid grid-cols-2 gap-4">
       <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
@@ -537,7 +578,7 @@ function GratuityDisplay({ values }: { values: any }) {
   );
 }
 
-function GratuityEditor({ values, onChange }: { values: any; onChange: (key: string, value: any) => void }) {
+function GratuityEditor({ values, onChange }: { values: GratuityValues; onChange: (key: string, value: number | boolean | number[]) => void }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>

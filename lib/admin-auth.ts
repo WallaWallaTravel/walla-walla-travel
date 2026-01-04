@@ -6,6 +6,7 @@
 import { cookies } from 'next/headers';
 import { query } from '@/lib/db';
 import { errorResponse } from '@/app/api/utils';
+import { logger } from '@/lib/logger';
 
 export interface AdminSession {
   userId: string;
@@ -65,7 +66,7 @@ export async function requireAdmin(): Promise<AdminSession | Response> {
     };
 
   } catch (error) {
-    console.error('❌ Admin auth error:', error);
+    logger.error('Admin auth error', { error });
     return errorResponse('Authentication failed', 500);
   }
 }
@@ -125,7 +126,7 @@ export async function getCurrentUserRole(): Promise<string | null> {
     return userResult.rows[0].role;
 
   } catch (error) {
-    console.error('❌ Error getting user role:', error);
+    logger.error('Error getting user role', { error });
     return null;
   }
 }

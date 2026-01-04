@@ -139,6 +139,7 @@ export default function AssignmentModal({ booking, onClose, onComplete }: Props)
             <button
               onClick={onClose}
               className="text-white hover:text-purple-200 text-3xl font-bold"
+              aria-label="Close dialog"
             >
               ×
             </button>

@@ -7,6 +7,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 interface BusinessInvite {
   name: string;
@@ -293,9 +294,9 @@ export default function BusinessInvitePage() {
           <div className="space-y-2 text-sm text-blue-800">
             <p>1. Each business receives an email with their unique invite code</p>
             <p>2. They visit {' '}
-              <a href="/contribute" className="underline font-medium">
+              <Link href="/contribute" className="underline font-medium">
                 wallawalla.travel/contribute
-              </a>
+              </Link>
               {' '}and enter their code
             </p>
             <p>3. They complete their profile through voice, text, and photo uploads</p>

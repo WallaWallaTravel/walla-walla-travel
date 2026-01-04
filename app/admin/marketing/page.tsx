@@ -33,6 +33,14 @@ export default function MarketingDashboard() {
 
   const marketingModules = [
     {
+      title: 'AI Content Generator',
+      description: 'Generate social media posts for partner wineries using AI',
+      icon: '🤖',
+      href: '/admin/marketing/ai-generator',
+      color: 'from-violet-500 to-purple-600',
+      stats: 'NEW',
+    },
+    {
       title: 'Analytics',
       description: 'Track performance, conversions, and ROI across all channels',
       icon: '📈',
