@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { logger } from '@/lib/logger';
 import { successResponse, errorResponse } from '@/app/api/utils';
 import { healthCheck } from '@/lib/db';
 
@@ -20,7 +21,7 @@ export async function GET(request: NextRequest) {
     }, 'API is healthy', 10); // Cache for 10 seconds
     
   } catch (error) {
-    console.error('Health check failed:', error);
+    logger.error('Health check failed', { error });
     return errorResponse('Health check failed', 503);
   }
 }

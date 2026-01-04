@@ -5,6 +5,7 @@
 
 import { query } from '@/lib/db';
 import { Pool } from 'pg';
+import { logger } from '@/lib/logger';
 
 export type HealthStatus = 'healthy' | 'degraded' | 'down';
 
@@ -293,7 +294,7 @@ export async function logHealthCheck(result: HealthCheckResult): Promise<void> {
     ]);
   } catch (error) {
     // If monitoring tables don't exist yet, fail silently
-    console.warn('[Health Check] Could not log to database:', error);
+    logger.debug('Health Check: Could not log to database', { error });
   }
 }
 

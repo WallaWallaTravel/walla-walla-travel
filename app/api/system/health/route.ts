@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
-import { 
-  runAllHealthChecks, 
-  logHealthCheck, 
+import { logger } from '@/lib/logger';
+import {
+  runAllHealthChecks,
+  logHealthCheck,
   getOverallHealth,
-  type HealthCheckResult 
+  type HealthCheckResult
 } from '@/lib/monitoring/health-checks';
 
 export const dynamic = 'force-dynamic';
@@ -48,15 +49,16 @@ export async function GET() {
       }))
     }, { status: httpStatus });
     
-  } catch (error: any) {
-    console.error('[Health Check] Critical error:', error);
-    
+  } catch (error) {
+    logger.error('Health Check critical error', { error });
+    const message = error instanceof Error ? error.message : 'Unknown error';
+
     return NextResponse.json({
       status: 'down',
       timestamp: new Date().toISOString(),
       duration: Date.now() - startTime,
       error: 'Health check system failure',
-      details: error.message
+      details: message
     }, { status: 503 });
   }
 }
