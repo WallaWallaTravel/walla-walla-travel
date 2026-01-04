@@ -28,20 +28,32 @@ export interface AuthSession {
 }
 
 // ============================================================================
+// Route Context Type (Next.js App Router dynamic route params)
+// Next.js 15+ wraps params in Promise
+// ============================================================================
+
+export interface RouteContext<P = Record<string, string>> {
+  params: Promise<P>;
+}
+
+// ============================================================================
 // Authenticated Handler Types
 // ============================================================================
 
- 
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type AuthenticatedHandler = (
   request: NextRequest,
   session: AuthSession,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   context?: any
 ) => Promise<NextResponse<any>>;
 
- 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type OptionalAuthHandler = (
   request: NextRequest,
   session: AuthSession | null,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   context?: any
 ) => Promise<NextResponse<any>>;
 
@@ -60,11 +72,12 @@ interface ErrorResponse {
 // withAuth - Requires Authentication
 // ============================================================================
 
- 
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function withAuth(
   handler: AuthenticatedHandler
-): (request: NextRequest, context?: any) => Promise<NextResponse<any>> {
-  return withErrorHandling(async (request: NextRequest, context?: any) => {
+): (request: NextRequest, context: RouteContext) => Promise<NextResponse<any>> {
+  return withErrorHandling(async (request: NextRequest, context: RouteContext) => {
     // Get session from request
     const session = await getSessionFromRequest();
 
@@ -94,11 +107,12 @@ export function withAuth(
 // withAdminAuth - Requires Admin Role
 // ============================================================================
 
- 
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function withAdminAuth(
   handler: AuthenticatedHandler
-): (request: NextRequest, context?: any) => Promise<NextResponse<any>> {
-  return withAuth(async (request: NextRequest, session: AuthSession, context?: any) => {
+): (request: NextRequest, context: RouteContext) => Promise<NextResponse<any>> {
+  return withAuth(async (request: NextRequest, session: AuthSession, context?: RouteContext) => {
     // Check admin role
     if (session.role !== 'admin') {
       // Double-check with admin auth service
@@ -117,11 +131,12 @@ export function withAdminAuth(
 // withDriverAuth - Requires Driver Role
 // ============================================================================
 
- 
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function withDriverAuth(
   handler: AuthenticatedHandler
-): (request: NextRequest, context?: any) => Promise<NextResponse<any>> {
-  return withAuth(async (request: NextRequest, session: AuthSession, context?: any) => {
+): (request: NextRequest, context: RouteContext) => Promise<NextResponse<any>> {
+  return withAuth(async (request: NextRequest, session: AuthSession, context?: RouteContext) => {
     // Check driver role
     if (session.role !== 'driver' && session.role !== 'admin') {
       throw new ForbiddenError('Driver access required');
@@ -136,11 +151,12 @@ export function withDriverAuth(
 // withOptionalAuth - Optional Authentication
 // ============================================================================
 
- 
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function withOptionalAuth(
   handler: OptionalAuthHandler
-): (request: NextRequest, context?: any) => Promise<NextResponse<any>> {
-  return withErrorHandling(async (request: NextRequest, context?: any) => {
+): (request: NextRequest, context: RouteContext) => Promise<NextResponse<any>> {
+  return withErrorHandling(async (request: NextRequest, context: RouteContext) => {
     // Try to get session (don't throw if it fails)
     let session: AuthSession | null = null;
 
@@ -154,9 +170,10 @@ export function withOptionalAuth(
           brandId: rawSession.brandId,
         };
       }
-    } catch (error) {
+    } catch (error: unknown) {
       // Silently fail - auth is optional
-      logger.debug('Optional auth failed', { error });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.debug('Optional auth failed', { error: errorMessage });
     }
 
     // Execute handler with session (may be null)
@@ -168,12 +185,13 @@ export function withOptionalAuth(
 // withRoleAuth - Generic Role-Based Authentication
 // ============================================================================
 
- 
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function withRoleAuth(
   allowedRoles: Array<'admin' | 'driver' | 'customer' | 'business'>,
   handler: AuthenticatedHandler
-): (request: NextRequest, context?: any) => Promise<NextResponse<any>> {
-  return withAuth(async (request: NextRequest, session: AuthSession, context?: any) => {
+): (request: NextRequest, context: RouteContext) => Promise<NextResponse<any>> {
+  return withAuth(async (request: NextRequest, session: AuthSession, context?: RouteContext) => {
     // Check if user has required role
     if (!allowedRoles.includes(session.role)) {
       throw new ForbiddenError(
@@ -190,7 +208,19 @@ export function withRoleAuth(
 // Helper: Get session from request (no throw)
 // ============================================================================
 
-async function getSessionFromRequest(): Promise<any> {
+/**
+ * Internal session format returned by getSessionFromRequest
+ * Combines fields from both session sources
+ */
+interface InternalSession {
+  userId: string;
+  email: string;
+  role: 'admin' | 'driver' | 'customer' | 'business';
+  brandId?: number;
+  isLoggedIn?: boolean;
+}
+
+async function getSessionFromRequest(): Promise<InternalSession | null> {
   try {
     // First try lib/auth/session.ts format (used by middleware)
     const { getSession: getAuthSession } = await import('@/lib/auth/session');
@@ -200,16 +230,26 @@ async function getSessionFromRequest(): Promise<any> {
       return {
         userId: String(authSession.user.id),
         email: authSession.user.email,
-        role: authSession.user.role,
+        role: authSession.user.role as InternalSession['role'],
         isLoggedIn: true,
       };
     }
-    
+
     // Fallback to lib/session.ts format
     const { getSession } = await import('@/lib/session');
-    return await getSession();
-  } catch (error) {
-    logger.error('[Auth Wrapper] Session error', { error });
+    const session = await getSession();
+    if (session?.userId) {
+      return {
+        userId: session.userId,
+        email: session.email,
+        role: (session.role as InternalSession['role']) || 'customer',
+        isLoggedIn: session.isLoggedIn,
+      };
+    }
+    return null;
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    logger.error('[Auth Wrapper] Session error', { error: errorMessage });
     return null;
   }
 }

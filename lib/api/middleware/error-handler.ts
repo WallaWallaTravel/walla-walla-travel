@@ -35,7 +35,7 @@ export class ServiceError extends Error {
   constructor(
     public code: string,
     message: string,
-    public details?: any
+    public details?: Record<string, unknown>
   ) {
     super(message);
     this.name = 'ServiceError';
@@ -163,19 +163,57 @@ function formatErrorResponse(
 // Error Handler Type
 // ============================================================================
 
-export type ApiHandler<T = any> = (
+/** Route context containing dynamic route parameters (Next.js 15+ uses Promise) */
+export interface RouteContext<P = Record<string, string>> {
+  params: Promise<P>;
+}
+
+/** Generic API handler function signature for Next.js App Router */
+export type ApiHandler<T = unknown, P = Record<string, string>> = (
   request: NextRequest,
-  context?: any
+  context: RouteContext<P>
 ) => Promise<NextResponse<T>>;
 
 // ============================================================================
 // Main Error Handling Wrapper
 // ============================================================================
 
-export function withErrorHandling<T = any>(
-  handler: ApiHandler<T>
-): (request: NextRequest, context?: any) => Promise<NextResponse<T | ErrorResponse>> {
-  return async (request: NextRequest, context?: any): Promise<NextResponse<T | ErrorResponse>> => {
+/** Type guard to check if error has a name property */
+function hasName(error: unknown): error is { name: string } {
+  return typeof error === 'object' && error !== null && 'name' in error && typeof (error as { name: unknown }).name === 'string';
+}
+
+/** Type guard to check if error has a message property */
+function hasMessage(error: unknown): error is { message: string } {
+  return typeof error === 'object' && error !== null && 'message' in error && typeof (error as { message: unknown }).message === 'string';
+}
+
+/** Type guard to check if error has a stack property */
+function hasStack(error: unknown): error is { stack: string } {
+  return typeof error === 'object' && error !== null && 'stack' in error && typeof (error as { stack: unknown }).stack === 'string';
+}
+
+/** Type guard to check if error has a code property (database errors) */
+function hasCode(error: unknown): error is { code: string } {
+  return typeof error === 'object' && error !== null && 'code' in error && typeof (error as { code: unknown }).code === 'string';
+}
+
+/** Type guard for Zod-like error structure */
+function isZodLikeError(error: unknown): error is { name: string; errors: Array<{ path: (string | number)[]; message: string }> } {
+  return (
+    hasName(error) &&
+    error.name === 'ZodError' &&
+    typeof error === 'object' &&
+    error !== null &&
+    'errors' in error &&
+    Array.isArray((error as { errors: unknown }).errors)
+  );
+}
+
+export function withErrorHandling<T = unknown, P = Record<string, string>>(
+  handler: ApiHandler<T, P>
+): (request: NextRequest, context: RouteContext<P>) => Promise<NextResponse<T | ErrorResponse>> {
+  return async (request: NextRequest, context: RouteContext<P>): Promise<NextResponse<T | ErrorResponse>> => {
     const requestId = generateRequestId();
     const startTime = Date.now();
 
@@ -186,19 +224,24 @@ export function withErrorHandling<T = any>(
       // Log successful requests in development
       if (process.env.NODE_ENV === 'development') {
         const duration = Date.now() - startTime;
-        logger.info(`✅ ${request.method} ${request.nextUrl.pathname} - ${duration}ms`);
+        logger.info(`[OK] ${request.method} ${request.nextUrl.pathname} - ${duration}ms`);
       }
 
       return response;
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       const duration = Date.now() - startTime;
+
+      // Extract error properties safely
+      const errorName = hasName(error) ? error.name : 'Error';
+      const errorMessage = hasMessage(error) ? error.message : 'Unknown error';
+      const errorStack = hasStack(error) ? error.stack : undefined;
 
       // Log error with context
       logError({
-        errorType: error.name || 'Error',
-        errorMessage: error.message || 'Unknown error',
-        stackTrace: error.stack,
+        errorType: errorName,
+        errorMessage: errorMessage,
+        stackTrace: errorStack,
         requestPath: request.nextUrl.pathname,
         requestMethod: request.method,
         userAgent: request.headers.get('user-agent') || undefined,
@@ -227,7 +270,7 @@ export function withErrorHandling<T = any>(
       }
 
       // Handle Zod validation errors
-      if (error.name === 'ZodError') {
+      if (isZodLikeError(error)) {
         const validationError = new ValidationError(
           'Validation failed',
           formatZodErrors(error)
@@ -239,7 +282,7 @@ export function withErrorHandling<T = any>(
       }
 
       // Handle database errors
-      if (error.code) {
+      if (hasCode(error)) {
         const dbError = handleDatabaseError(error);
         return NextResponse.json(
           formatErrorResponse(dbError, requestId),
@@ -248,12 +291,12 @@ export function withErrorHandling<T = any>(
       }
 
       // Log unexpected errors
-      logger.error('❌ Unexpected error:', error);
+      logger.error('[ERROR] Unexpected error', { error });
 
       // Return generic error for unknown errors (don't expose internal details)
       const genericError = new ApiError(
         process.env.NODE_ENV === 'development'
-          ? error.message || 'Internal server error'
+          ? errorMessage
           : 'Internal server error',
         500
       );
@@ -274,40 +317,51 @@ function generateRequestId(): string {
   return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }
 
-function formatZodErrors(error: any): Record<string, string[]> {
+/** Zod error structure for type safety */
+interface ZodLikeError {
+  errors: Array<{
+    path: (string | number)[];
+    message: string;
+  }>;
+}
+
+function formatZodErrors(error: ZodLikeError): Record<string, string[]> {
   const formatted: Record<string, string[]> = {};
 
-  if (error.errors && Array.isArray(error.errors)) {
-    for (const err of error.errors) {
-      const path = err.path.join('.');
-      if (!formatted[path]) {
-        formatted[path] = [];
-      }
-      formatted[path].push(err.message);
+  for (const err of error.errors) {
+    const path = err.path.join('.');
+    if (!formatted[path]) {
+      formatted[path] = [];
     }
+    formatted[path].push(err.message);
   }
 
   return formatted;
 }
 
-function handleDatabaseError(error: any): ApiError {
+/** Database error structure with PostgreSQL error code */
+interface DatabaseError {
+  code: string;
+}
+
+function handleDatabaseError(error: DatabaseError): ApiError {
   // PostgreSQL error codes
   switch (error.code) {
     case '23505': // Unique violation
       return new ConflictError('Resource already exists', 'DUPLICATE_ENTRY');
-    
+
     case '23503': // Foreign key violation
       return new BadRequestError('Related resource not found', 'INVALID_REFERENCE');
-    
+
     case '23502': // Not null violation
       return new BadRequestError('Required field is missing', 'MISSING_FIELD');
-    
+
     case '22P02': // Invalid text representation
       return new BadRequestError('Invalid data format', 'INVALID_FORMAT');
-    
+
     case '42P01': // Undefined table
       return new ServiceUnavailableError('Database schema error', 'SCHEMA_ERROR');
-    
+
     default:
       return new ApiError('Database operation failed', 500, 'DATABASE_ERROR');
   }
@@ -323,12 +377,21 @@ export async function catchAsync<T>(
 ): Promise<T> {
   try {
     return await fn();
-  } catch (error: any) {
-    logger.error('Async operation failed:', error);
-    throw new ApiError(
-      errorMessage || error.message || 'Operation failed',
-      error.statusCode || 500
-    );
+  } catch (error: unknown) {
+    logger.error('Async operation failed', { error });
+
+    // Extract message and statusCode safely
+    const message = hasMessage(error) ? error.message : 'Operation failed';
+    const statusCode = (
+      typeof error === 'object' &&
+      error !== null &&
+      'statusCode' in error &&
+      typeof (error as { statusCode: unknown }).statusCode === 'number'
+    )
+      ? (error as { statusCode: number }).statusCode
+      : 500;
+
+    throw new ApiError(errorMessage || message, statusCode);
   }
 }
 
@@ -336,7 +399,7 @@ export async function catchAsync<T>(
 // Assert helpers (for validation within handlers)
 // ============================================================================
 
-export function assert(condition: any, message: string, statusCode: number = 400): asserts condition {
+export function assert(condition: unknown, message: string, statusCode: number = 400): asserts condition {
   if (!condition) {
     throw new ApiError(message, statusCode);
   }

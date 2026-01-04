@@ -50,6 +50,7 @@ export default function AssignmentModal({ booking, onClose, onComplete }: Props)
 
   useEffect(() => {
     loadAvailability();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadAvailability = async () => {
@@ -78,7 +79,7 @@ export default function AssignmentModal({ booking, onClose, onComplete }: Props)
         const vehiclesResult = await vehiclesResponse.json();
         setVehicles(vehiclesResult.data || []);
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to load availability');
     } finally {
       setLoading(false);
@@ -111,7 +112,7 @@ export default function AssignmentModal({ booking, onClose, onComplete }: Props)
       } else {
         setError('Failed to assign driver/vehicle');
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Error assigning driver/vehicle');
     } finally {
       setSaving(false);

@@ -193,6 +193,7 @@ export async function POST(request: NextRequest) {
         await sendReservationConfirmation(
           {
             customer_name: data.contactName,
+            customer_email: data.contactEmail,
             reservation_number: reservationNumber,
             party_size: data.partySize,
             preferred_date: data.preferredDate,

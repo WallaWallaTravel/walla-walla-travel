@@ -391,8 +391,8 @@ function BookingFormContent() {
                     <option value="early_week_combo">Early Week Combo</option>
                   </select>
                   <p className="text-sm text-gray-700 italic">
-                    💬 Don't worry! We'll discuss all the details about these options when we call you. 
-                    Just pick what sounds right for you, and we'll tailor your wine tour experience accordingly.
+                    Don&apos;t worry! We&apos;ll discuss all the details about these options when we call you.
+                    Just pick what sounds right for you, and we&apos;ll tailor your wine tour experience accordingly.
                   </p>
                 </div>
               )}

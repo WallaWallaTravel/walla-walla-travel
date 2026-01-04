@@ -1,4 +1,3 @@
-import { logger } from '@/lib/logger';
 /**
  * Proposal Service
  * Handles all proposal-related business logic

@@ -90,7 +90,7 @@ export default function Step3CustomerInfo({ bookingData, updateBookingData, next
             <p className="text-red-600 text-sm mt-1 font-semibold">⚠️ {errors.customer_email}</p>
           )}
           <p className="text-sm text-gray-500 mt-1">
-            We'll send your confirmation and itinerary here
+            We&apos;ll send your confirmation and itinerary here
           </p>
         </div>
 

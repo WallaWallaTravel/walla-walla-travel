@@ -23,6 +23,47 @@ export type ClockStatusType =
   | 'already_clocked_out';
 
 /**
+ * Clock API response status
+ * All possible status values from clock in/out API
+ */
+export type ClockApiStatus =
+  | 'success'
+  | 'clocked_in'
+  | 'clocked_out'
+  | 'already_clocked_in'
+  | 'already_clocked_out'
+  | 'already_completed'
+  | 'not_clocked_in'
+  | 'no_vehicle'
+  | 'vehicle_required'
+  | 'vehicle_in_use'
+  | 'vehicle_inactive'
+  | 'invalid_vehicle'
+  | 'incomplete_previous'
+  | 'signature_required'
+  | 'error';
+
+/**
+ * Clock API response
+ * Response from clock in/out operations
+ */
+export interface ClockApiResponse {
+  status: ClockApiStatus;
+  message: string;
+  suggestions?: string[];
+  reminders?: string[];
+  warnings?: string[];
+  details?: string;
+  timeCard?: TimeCard;
+  vehicle?: string;
+  summary?: {
+    totalHours: string | number;
+    startTime?: string;
+    endTime?: string;
+  };
+}
+
+/**
  * Shift type classification
  */
 export type ShiftType = 'driving' | 'non_driving';

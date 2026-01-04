@@ -125,7 +125,7 @@ export default function ClientNotesClient({ driver }: Props) {
       
       await saveNotesToDatabase(completeData)
       window.location.href = '/workflow/daily'
-    } catch (error) {
+    } catch (_error) {
       alert('Error saving notes. Please try again.')
       setSubmitting(false)
     }
@@ -145,7 +145,7 @@ export default function ClientNotesClient({ driver }: Props) {
       
       await saveNotesToDatabase(completeData)
       window.location.href = '/workflow/daily'
-    } catch (error) {
+    } catch (_error) {
       alert('Error saving notes. Please try again.')
       setSubmitting(false)
     }

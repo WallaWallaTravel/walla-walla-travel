@@ -3,6 +3,102 @@
  * These functions handle API calls from React components
  */
 
+import type {
+  PreTripCheckpoints,
+  PostTripCheckpoints,
+  DefectItem,
+  Inspection,
+  InspectionHistory,
+  UserProfile,
+  Vehicle,
+  AssignedVehicle,
+  AvailableVehiclesResponse,
+  TimeCard,
+  ClockStatus,
+  HOSSummary,
+  ActiveShift,
+  ClientService,
+  ClockApiResponse,
+} from './types';
+
+// ============================================================================
+// API Response Types
+// ============================================================================
+
+/** Standard API response wrapper */
+interface ApiClientResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
+}
+
+/** Admin dashboard data */
+interface AdminDashboardData {
+  activeShifts: ActiveShift[];
+  availableVehicles: Vehicle[];
+  statistics: {
+    totalShifts: number;
+    activeShifts: number;
+    completedToday: number;
+    totalRevenue: number;
+  };
+}
+
+/** Vehicle assignment response */
+interface VehicleAssignmentResponse {
+  clientService: ClientService;
+  message: string;
+}
+
+/** Auth verification response */
+interface AuthVerifyResponse {
+  authenticated: boolean;
+  user?: UserProfile;
+}
+
+/** Daily status response */
+interface DailyStatusResponse {
+  clockStatus: ClockStatus;
+  timeCard?: TimeCard;
+  breaks: Array<{
+    id: number;
+    type: string;
+    startTime: string;
+    endTime?: string;
+  }>;
+}
+
+/** Schedule response */
+interface ScheduleResponse {
+  routes: Array<{
+    id: number;
+    date: string;
+    status: string;
+    notes?: string;
+  }>;
+}
+
+/** Driver status response */
+interface DriverStatusResponse {
+  status: string;
+  lastUpdate: string;
+  timeCard?: TimeCard;
+}
+
+/** Odometer history entry */
+interface OdometerHistoryEntry {
+  id: number;
+  vehicleId: number;
+  mileage: number;
+  recordedAt: string;
+  recordedBy: number;
+  notes?: string;
+}
+
+// ============================================================================
+// API Base Configuration
+// ============================================================================
+
 // Get the API base URL
 const getApiUrl = () => {
   if (typeof window !== 'undefined') {
@@ -14,10 +110,10 @@ const getApiUrl = () => {
 };
 
 // Generic API request function
-async function apiRequest<T = any>(
+async function apiRequest<T = unknown>(
   endpoint: string,
   options: RequestInit = {}
-): Promise<{ success: boolean; data?: T; error?: string }> {
+): Promise<ApiClientResponse<T>> {
   try {
     const url = `${getApiUrl()}/api${endpoint}`;
     
@@ -54,16 +150,16 @@ async function apiRequest<T = any>(
 
 // Authentication APIs
 export const authApi = {
-  async verify() {
-    return apiRequest('/auth/verify');
+  async verify(): Promise<ApiClientResponse<AuthVerifyResponse>> {
+    return apiRequest<AuthVerifyResponse>('/auth/verify');
   },
 
-  async getProfile() {
-    return apiRequest('/auth/profile');
+  async getProfile(): Promise<ApiClientResponse<UserProfile>> {
+    return apiRequest<UserProfile>('/auth/profile');
   },
 
-  async updateProfile(data: { name?: string; phone?: string }) {
-    return apiRequest('/auth/profile', {
+  async updateProfile(data: { name?: string; phone?: string }): Promise<ApiClientResponse<UserProfile>> {
+    return apiRequest<UserProfile>('/auth/profile', {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -75,39 +171,39 @@ export const inspectionApi = {
   async submitPreTrip(data: {
     vehicleId: number;
     startMileage: number;
-    inspectionData: any;
-  }) {
-    return apiRequest('/inspections/pre-trip', {
+    inspectionData: PreTripCheckpoints;
+  }): Promise<ApiClientResponse<Inspection>> {
+    return apiRequest<Inspection>('/inspections/pre-trip', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   },
 
-  async getTodayPreTrip() {
-    return apiRequest('/inspections/pre-trip');
+  async getTodayPreTrip(): Promise<ApiClientResponse<Inspection | null>> {
+    return apiRequest<Inspection | null>('/inspections/pre-trip');
   },
 
   async submitPostTrip(data: {
     vehicleId: number;
     endMileage: number;
-    inspectionData: any;
-  }) {
-    return apiRequest('/inspections/post-trip', {
+    inspectionData: PostTripCheckpoints;
+  }): Promise<ApiClientResponse<Inspection>> {
+    return apiRequest<Inspection>('/inspections/post-trip', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   },
 
-  async getTodayPostTrip() {
-    return apiRequest('/inspections/post-trip');
+  async getTodayPostTrip(): Promise<ApiClientResponse<Inspection | null>> {
+    return apiRequest<Inspection | null>('/inspections/post-trip');
   },
 
   async createDVIR(data: {
     vehicleId: number;
-    defects: any[];
+    defects: DefectItem[];
     signature: string;
-  }) {
-    return apiRequest('/inspections/dvir', {
+  }): Promise<ApiClientResponse<Inspection>> {
+    return apiRequest<Inspection>('/inspections/dvir', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -118,7 +214,7 @@ export const inspectionApi = {
     startDate?: string;
     endDate?: string;
     type?: string;
-  }) {
+  }): Promise<ApiClientResponse<InspectionHistory>> {
     const queryParams = new URLSearchParams();
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     if (params?.startDate) queryParams.append('startDate', params.startDate);
@@ -126,94 +222,118 @@ export const inspectionApi = {
     if (params?.type) queryParams.append('type', params.type);
 
     const query = queryParams.toString();
-    return apiRequest(`/inspections/history${query ? `?${query}` : ''}`);
+    return apiRequest<InspectionHistory>(`/inspections/history${query ? `?${query}` : ''}`);
   },
 };
+
+/** Location coordinates for clock operations */
+interface ClockLocation {
+  latitude: number;
+  longitude: number;
+}
+
+/** Break record */
+interface BreakRecord {
+  id: number;
+  type: 'rest' | 'meal' | 'personal';
+  startTime: string;
+  endTime?: string;
+  notes?: string;
+}
 
 // Workflow APIs
 export const workflowApi = {
   async clockIn(data: {
     vehicleId?: number; // Optional for non-driving tasks
-    location?: { latitude: number; longitude: number };
+    location?: ClockLocation;
     startMileage?: number;
-  }) {
-    return apiRequest('/workflow/clock', {
+  }): Promise<ApiClientResponse<ClockApiResponse>> {
+    return apiRequest<ClockApiResponse>('/workflow/clock', {
       method: 'POST',
       body: JSON.stringify({ action: 'clock_in', ...data }),
     });
   },
 
   async clockOut(data: {
-    location?: { latitude: number; longitude: number };
+    location?: ClockLocation;
     endMileage?: number;
     signature: string;
-  }) {
-    return apiRequest('/workflow/clock', {
+  }): Promise<ApiClientResponse<ClockApiResponse>> {
+    return apiRequest<ClockApiResponse>('/workflow/clock', {
       method: 'POST',
       body: JSON.stringify({ action: 'clock_out', ...data }),
     });
   },
 
-  async getDailyStatus() {
-    return apiRequest('/workflow/daily');
+  async getDailyStatus(): Promise<ApiClientResponse<DailyStatusResponse>> {
+    return apiRequest<DailyStatusResponse>('/workflow/daily');
   },
 
-  async startBreak(type: 'rest' | 'meal' | 'personal' = 'rest', notes?: string) {
-    return apiRequest('/workflow/breaks', {
+  async startBreak(type: 'rest' | 'meal' | 'personal' = 'rest', notes?: string): Promise<ApiClientResponse<BreakRecord>> {
+    return apiRequest<BreakRecord>('/workflow/breaks', {
       method: 'POST',
       body: JSON.stringify({ action: 'start', type, notes }),
     });
   },
 
-  async endBreak() {
-    return apiRequest('/workflow/breaks', {
+  async endBreak(): Promise<ApiClientResponse<BreakRecord>> {
+    return apiRequest<BreakRecord>('/workflow/breaks', {
       method: 'POST',
       body: JSON.stringify({ action: 'end' }),
     });
   },
 
-  async getBreaks(date?: string) {
+  async getBreaks(date?: string): Promise<ApiClientResponse<BreakRecord[]>> {
     const query = date ? `?date=${date}` : '';
-    return apiRequest(`/workflow/breaks${query}`);
+    return apiRequest<BreakRecord[]>(`/workflow/breaks${query}`);
   },
 
   async getSchedule(params?: {
     startDate?: string;
     endDate?: string;
     days?: number;
-  }) {
+  }): Promise<ApiClientResponse<ScheduleResponse>> {
     const queryParams = new URLSearchParams();
     if (params?.startDate) queryParams.append('startDate', params.startDate);
     if (params?.endDate) queryParams.append('endDate', params.endDate);
     if (params?.days) queryParams.append('days', params.days.toString());
 
     const query = queryParams.toString();
-    return apiRequest(`/workflow/schedule${query ? `?${query}` : ''}`);
+    return apiRequest<ScheduleResponse>(`/workflow/schedule${query ? `?${query}` : ''}`);
   },
 
-  async updateRouteStatus(routeId: number, status: string, notes?: string) {
-    return apiRequest('/workflow/schedule', {
+  async updateRouteStatus(routeId: number, status: string, notes?: string): Promise<ApiClientResponse<{ updated: boolean }>> {
+    return apiRequest<{ updated: boolean }>('/workflow/schedule', {
       method: 'PUT',
       body: JSON.stringify({ routeId, status, notes }),
     });
   },
 
-  async getCurrentStatus() {
-    return apiRequest('/workflow/status');
+  async getCurrentStatus(): Promise<ApiClientResponse<DriverStatusResponse>> {
+    return apiRequest<DriverStatusResponse>('/workflow/status');
   },
 
-  async updateStatus(status: string, notes?: string) {
-    return apiRequest('/workflow/status', {
+  async updateStatus(status: string, notes?: string): Promise<ApiClientResponse<DriverStatusResponse>> {
+    return apiRequest<DriverStatusResponse>('/workflow/status', {
       method: 'PUT',
       body: JSON.stringify({ status, notes }),
     });
   },
 
-  async getHOSCompliance(date?: string) {
+  async getHOSCompliance(date?: string): Promise<ApiClientResponse<HOSSummary>> {
     const query = date ? `?date=${date}` : '';
-    return apiRequest(`/workflow/hos${query}`);
+    return apiRequest<HOSSummary>(`/workflow/hos${query}`);
   },
 };
+
+/** Paginated vehicles response */
+interface VehiclesListResponse {
+  vehicles: Vehicle[];
+  total: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+}
 
 // Vehicle APIs
 export const vehicleApi = {
@@ -223,7 +343,7 @@ export const vehicleApi = {
     capacity?: number;
     page?: number;
     limit?: number;
-  }) {
+  }): Promise<ApiClientResponse<VehiclesListResponse>> {
     const queryParams = new URLSearchParams();
     if (params?.available !== undefined) queryParams.append('available', params.available.toString());
     if (params?.active !== undefined) queryParams.append('active', params.active.toString());
@@ -232,30 +352,30 @@ export const vehicleApi = {
     if (params?.limit) queryParams.append('limit', params.limit.toString());
 
     const query = queryParams.toString();
-    return apiRequest(`/vehicles${query ? `?${query}` : ''}`);
+    return apiRequest<VehiclesListResponse>(`/vehicles${query ? `?${query}` : ''}`);
   },
 
-  async getVehicle(id: number) {
-    return apiRequest(`/vehicles/${id}`);
+  async getVehicle(id: number): Promise<ApiClientResponse<Vehicle>> {
+    return apiRequest<Vehicle>(`/vehicles/${id}`);
   },
 
-  async getAssignedVehicle() {
-    return apiRequest('/vehicles/assigned');
+  async getAssignedVehicle(): Promise<ApiClientResponse<AssignedVehicle | null>> {
+    return apiRequest<AssignedVehicle | null>('/vehicles/assigned');
   },
 
-  async getAvailable() {
-    return apiRequest('/vehicles/available');
+  async getAvailable(): Promise<ApiClientResponse<AvailableVehiclesResponse>> {
+    return apiRequest<AvailableVehiclesResponse>('/vehicles/available');
   },
 
-  async updateOdometer(vehicleId: number, mileage: number, notes?: string) {
-    return apiRequest(`/vehicles/${vehicleId}/odometer`, {
+  async updateOdometer(vehicleId: number, mileage: number, notes?: string): Promise<ApiClientResponse<{ mileage: number; updatedAt: string }>> {
+    return apiRequest<{ mileage: number; updatedAt: string }>(`/vehicles/${vehicleId}/odometer`, {
       method: 'PUT',
       body: JSON.stringify({ mileage, notes }),
     });
   },
 
-  async getOdometerHistory(vehicleId: number) {
-    return apiRequest(`/vehicles/${vehicleId}/odometer`);
+  async getOdometerHistory(vehicleId: number): Promise<ApiClientResponse<OdometerHistoryEntry[]>> {
+    return apiRequest<OdometerHistoryEntry[]>(`/vehicles/${vehicleId}/odometer`);
   },
 };
 
@@ -264,8 +384,8 @@ export const vehiclesApi = vehicleApi;
 
 // Admin APIs
 export const adminApi = {
-  async getDashboard() {
-    return apiRequest('/admin/dashboard');
+  async getDashboard(): Promise<ApiClientResponse<AdminDashboardData>> {
+    return apiRequest<AdminDashboardData>('/admin/dashboard');
   },
 
   async assignVehicle(data: {
@@ -276,8 +396,8 @@ export const adminApi = {
     notes?: string;
     clientPhone?: string;
     clientEmail?: string;
-  }) {
-    return apiRequest('/admin/assign-vehicle', {
+  }): Promise<ApiClientResponse<VehicleAssignmentResponse>> {
+    return apiRequest<VehicleAssignmentResponse>('/admin/assign-vehicle', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -291,15 +411,15 @@ export const clientServiceApi = {
     pickupLocation: string;
     pickupLat?: number;
     pickupLng?: number;
-  }) {
-    return apiRequest('/driver/client-pickup', {
+  }): Promise<ApiClientResponse<ClientService>> {
+    return apiRequest<ClientService>('/driver/client-pickup', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   },
 
-  async getCurrentService() {
-    return apiRequest('/driver/client-pickup');
+  async getCurrentService(): Promise<ApiClientResponse<ClientService | null>> {
+    return apiRequest<ClientService | null>('/driver/client-pickup');
   },
 
   async logDropoff(data: {
@@ -307,15 +427,15 @@ export const clientServiceApi = {
     dropoffLocation: string;
     dropoffLat?: number;
     dropoffLng?: number;
-  }) {
-    return apiRequest('/driver/client-dropoff', {
+  }): Promise<ApiClientResponse<ClientService>> {
+    return apiRequest<ClientService>('/driver/client-dropoff', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   },
 
-  async getServiceForDropoff() {
-    return apiRequest('/driver/client-dropoff');
+  async getServiceForDropoff(): Promise<ApiClientResponse<ClientService | null>> {
+    return apiRequest<ClientService | null>('/driver/client-dropoff');
   },
 };
 

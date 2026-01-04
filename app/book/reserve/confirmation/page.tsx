@@ -39,6 +39,7 @@ function ReservationConfirmationContent() {
     if (reservationId) {
       loadReservation();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reservationId]);
 
   const loadReservation = async () => {

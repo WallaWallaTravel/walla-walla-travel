@@ -81,6 +81,7 @@ What brings you to Walla Walla? Are you planning a trip, or just curious about t
         },
       ]);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {

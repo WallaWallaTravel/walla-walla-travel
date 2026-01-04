@@ -53,6 +53,7 @@ export default function DriverTourDetailPage() {
     if (bookingId) {
       loadTourDetails();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bookingId]);
 
   const loadTourDetails = async () => {

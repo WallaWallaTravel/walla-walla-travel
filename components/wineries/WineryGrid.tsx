@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePageContextStore } from '@/lib/stores/pageContext';
 import { useAnalyticsStore } from '@/lib/stores/analytics-simple';
 import { EXPERIENCE_TAG_LABELS, ExperienceTag } from '@/lib/config/content-types';
@@ -99,6 +100,9 @@ export function WineryGrid({ initialWineries }: WineryGridProps) {
         clearTimeout(searchTimeoutRef.current);
       }
     };
+    // Note: filteredWineries.length is intentionally not in deps - we only want to track
+    // when searchQuery changes, capturing the count at that moment
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery, analytics]);
 
   // Toggle experience tag
@@ -350,7 +354,7 @@ export function WineryGrid({ initialWineries }: WineryGridProps) {
             {/* Image */}
             <div className="h-48 bg-gradient-to-br from-stone-100 to-stone-200 flex items-center justify-center relative">
               {winery.image_url ? (
-                <img src={winery.image_url} alt={winery.name} className="w-full h-full object-cover" />
+                <Image src={winery.image_url} alt={winery.name} className="object-cover" fill unoptimized />
               ) : (
                 <span className="text-6xl">🍷</span>
               )}

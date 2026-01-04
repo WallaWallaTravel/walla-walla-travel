@@ -17,7 +17,7 @@ export const dynamic = 'force-dynamic';
  * 
  * ✅ REFACTORED: Reduced from 45 lines to 18 lines
  */
-export const GET = withErrorHandling(async (request: NextRequest) => {
+export const GET = withErrorHandling(async (_request: NextRequest) => {
   const hotels = await hotelService.list();
 
   return NextResponse.json({

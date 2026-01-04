@@ -8,7 +8,7 @@ import { logger } from '@/lib/logger';
  *
  * SECURITY: This should be password-protected in production
  */
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     logger.info('Starting migration: Add time_card_id to inspections');
 

@@ -20,7 +20,7 @@ import { logger } from '@/lib/logger';
  * - Database pool statistics
  * - Response time metrics
  */
-export const GET = withErrorHandling(async (request: Request) => {
+export const GET = withErrorHandling(async (_request: Request) => {
   const requestId = getRequestId();
   const startTime = Date.now();
 

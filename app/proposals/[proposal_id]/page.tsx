@@ -113,6 +113,7 @@ export default function ClientProposalView({ params }: { params: Promise<{ propo
     if (proposalId) {
       fetchProposal();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [proposalId]);
 
   const fetchProposal = async () => {

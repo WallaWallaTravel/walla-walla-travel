@@ -16,7 +16,7 @@ import {
   haptics
 } from '@/components/mobile'
 import { VoiceInspectionMode, VoiceModeFloatingButton } from '@/components/voice'
-import type { Vehicle } from '@/lib/types'
+import type { AssignedVehicle } from '@/lib/types'
 
 interface Props {
   driver: {
@@ -36,7 +36,7 @@ export function PreTripInspectionClient({ driver }: Props) {
   const [signature, setSignature] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [vehicle, setVehicle] = useState<Vehicle | null>(null)
+  const [vehicle, setVehicle] = useState<AssignedVehicle | null>(null)
   const [loadingVehicle, setLoadingVehicle] = useState(true)
   const [sendingHelp, setSendingHelp] = useState(false)
   const [helpSent, setHelpSent] = useState(false)
@@ -54,7 +54,7 @@ export function PreTripInspectionClient({ driver }: Props) {
       } else {
         setError('No vehicle assigned. Please contact your supervisor.')
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to load vehicle information')
     } finally {
       setLoadingVehicle(false)
@@ -87,7 +87,7 @@ export function PreTripInspectionClient({ driver }: Props) {
         setError('Failed to send help request. Please call supervisor directly.')
         haptics.error()
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Unable to send help request. Please call supervisor.')
       haptics.error()
     } finally {
@@ -142,7 +142,8 @@ export function PreTripInspectionClient({ driver }: Props) {
       })
     })
     return items
-  }, [inspectionItems, checkedItems])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checkedItems])
 
   // Handle voice mode item check
   const handleVoiceItemCheck = (id: string, checked: boolean, note?: string) => {

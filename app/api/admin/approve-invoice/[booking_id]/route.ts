@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import { withErrorHandling, NotFoundError, ConflictError, BadRequestError } from '@/lib/api-errors';
-import { queryOne, insertOne, query } from '@/lib/db-helpers';
+import { queryOne, query } from '@/lib/db-helpers';
 
 interface BookingWithDriver {
   id: number;
@@ -80,7 +80,7 @@ export const POST = withErrorHandling(async (
   }
 
   // 4. Create invoice record
-  const invoice = await insertOne<Invoice>(`
+  const invoiceResult = await query<Invoice>(`
     INSERT INTO invoices (
       booking_id,
       invoice_type,
@@ -93,6 +93,7 @@ export const POST = withErrorHandling(async (
     ) VALUES ($1, 'final', $2, $3, $4, 'sent', NOW(), CURRENT_DATE + INTERVAL '7 days')
     RETURNING *
   `, [bookingId, subtotal, taxAmount, totalAmount]);
+  const invoice = invoiceResult.rows[0];
 
   // 5. Update booking status
   await query(`

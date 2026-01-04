@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import api from '@/lib/api-client'
 import { sanitizeText, sanitizeNumber, patterns } from '@/lib/security'
 import {
@@ -56,6 +57,7 @@ export function PostTripInspectionClient({ driver, beginningMileage = 0 }: Props
 
   useEffect(() => {
     loadVehicleAndStatus()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function loadVehicleAndStatus() {
@@ -99,7 +101,7 @@ export function PostTripInspectionClient({ driver, beginningMileage = 0 }: Props
       } else {
         setError('Failed to load active shift information.')
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to load vehicle information')
     } finally {
       setLoadingVehicle(false)
@@ -584,11 +586,15 @@ export function PostTripInspectionClient({ driver, beginningMileage = 0 }: Props
                   </div>
 
                   {currentDefect.photo && (
-                    <img 
-                      src={currentDefect.photo} 
-                      alt="Defect" 
-                      className="w-full h-32 object-cover rounded-lg mb-4"
-                    />
+                    <div className="relative w-full h-32 mb-4">
+                      <Image
+                        src={currentDefect.photo}
+                        alt="Defect"
+                        fill
+                        className="object-cover rounded-lg"
+                        unoptimized
+                      />
+                    </div>
                   )}
 
                   {/* List of added defects */}

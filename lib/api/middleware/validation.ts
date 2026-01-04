@@ -1,4 +1,3 @@
-import { logger } from '@/lib/logger';
 /**
  * Request Validation Middleware
  * 
@@ -20,8 +19,8 @@ export async function validateBody<T>(
   try {
     const body = await request.json();
     return schema.parse(body);
-  } catch (error: any) {
-    if (error.name === 'ZodError') {
+  } catch (error: unknown) {
+    if (error instanceof z.ZodError) {
       throw new ValidationError(
         'Request validation failed',
         formatZodErrors(error)
@@ -43,8 +42,8 @@ export function validateQuery<T>(
     const { searchParams } = new URL(request.url);
     const query = Object.fromEntries(searchParams.entries());
     return schema.parse(query);
-  } catch (error: any) {
-    if (error.name === 'ZodError') {
+  } catch (error: unknown) {
+    if (error instanceof z.ZodError) {
       throw new ValidationError(
         'Query parameter validation failed',
         formatZodErrors(error)
@@ -59,15 +58,15 @@ export function validateQuery<T>(
 // ============================================================================
 
 export async function validateParams<T>(
-  params: Promise<any> | any,
+  params: Promise<unknown> | unknown,
   schema: z.ZodType<T>
 ): Promise<T> {
   try {
     // Handle both Promise and direct params
     const resolvedParams = params instanceof Promise ? await params : params;
     return schema.parse(resolvedParams);
-  } catch (error: any) {
-    if (error.name === 'ZodError') {
+  } catch (error: unknown) {
+    if (error instanceof z.ZodError) {
       throw new ValidationError(
         'URL parameter validation failed',
         formatZodErrors(error)

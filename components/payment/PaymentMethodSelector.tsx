@@ -37,6 +37,7 @@ export function PaymentMethodSelector({
 
   useEffect(() => {
     loadPaymentOptions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [amount]);
 
   const loadPaymentOptions = async () => {

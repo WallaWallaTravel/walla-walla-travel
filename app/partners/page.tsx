@@ -79,7 +79,7 @@ export default function PartnersPage() {
             Ready to Join?
           </h3>
           <p className="text-slate-600 mb-6">
-            Fill out our quick registration form and we'll be in touch within 24 hours.
+            Fill out our quick registration form and we&apos;ll be in touch within 24 hours.
           </p>
           <Link
             href="/contribute"

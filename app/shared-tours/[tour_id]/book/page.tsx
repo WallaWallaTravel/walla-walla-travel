@@ -2,7 +2,6 @@
 
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 
 /**
  * Shared Tour Ticket Booking Page
@@ -50,7 +49,6 @@ interface BookingFormData {
 
 export default function BookSharedTourPage({ params }: { params: Promise<{ tour_id: string }> }) {
   const { tour_id } = use(params);
-  const router = useRouter();
 
   const [tour, setTour] = useState<Tour | null>(null);
   const [pricing, setPricing] = useState<Pricing | null>(null);
@@ -74,44 +72,44 @@ export default function BookSharedTourPage({ params }: { params: Promise<{ tour_
   });
 
   useEffect(() => {
+    const fetchTour = async () => {
+      try {
+        const response = await fetch(`/api/shared-tours/${tour_id}`);
+        const data = await response.json();
+        if (data.success) {
+          setTour(data.data);
+        } else {
+          setError(data.error);
+        }
+      } catch (_err) {
+        setError('Failed to load tour details');
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchTour();
   }, [tour_id]);
 
   useEffect(() => {
     if (tour) {
+      const fetchPricing = async () => {
+        try {
+          const response = await fetch(
+            `/api/shared-tours/${tour_id}/price?tickets=${formData.ticketCount}&lunch=${formData.includesLunch}`
+          );
+          const data = await response.json();
+          if (data.success) {
+            setPricing(data.data);
+          }
+        } catch (err) {
+          console.error('Failed to fetch pricing:', err);
+        }
+      };
+
       fetchPricing();
     }
-  }, [formData.ticketCount, formData.includesLunch, tour]);
-
-  const fetchTour = async () => {
-    try {
-      const response = await fetch(`/api/shared-tours/${tour_id}`);
-      const data = await response.json();
-      if (data.success) {
-        setTour(data.data);
-      } else {
-        setError(data.error);
-      }
-    } catch (err) {
-      setError('Failed to load tour details');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchPricing = async () => {
-    try {
-      const response = await fetch(
-        `/api/shared-tours/${tour_id}/price?tickets=${formData.ticketCount}&lunch=${formData.includesLunch}`
-      );
-      const data = await response.json();
-      if (data.success) {
-        setPricing(data.data);
-      }
-    } catch (err) {
-      console.error('Failed to fetch pricing:', err);
-    }
-  };
+  }, [formData.ticketCount, formData.includesLunch, tour, tour_id]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -166,7 +164,7 @@ export default function BookSharedTourPage({ params }: { params: Promise<{ tour_
       } else {
         setError(data.error);
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to create booking. Please try again.');
     } finally {
       setSubmitting(false);

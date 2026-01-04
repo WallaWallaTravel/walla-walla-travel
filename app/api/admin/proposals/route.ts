@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, BadRequestError } from '@/lib/api-errors';
-import { insertOne, queryMany } from '@/lib/db-helpers';
+import { query, queryMany } from '@/lib/db-helpers';
 
 /**
  * POST /api/admin/proposals
@@ -49,7 +49,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   const proposal_number = `PROP-${Date.now()}`;
 
   // Insert proposal
-  const proposal = await insertOne(
+  const result = await query<{ id: number; proposal_number: string }>(
     `INSERT INTO proposals (
       proposal_number,
       client_name,
@@ -110,6 +110,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       valid_until,
     ]
   );
+  const proposal = result.rows[0];
 
   return NextResponse.json({
     success: true,

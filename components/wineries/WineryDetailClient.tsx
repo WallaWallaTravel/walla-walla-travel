@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePageContextStore } from '@/lib/stores/pageContext';
 import { useAnalyticsStore } from '@/lib/stores/analytics-simple';
 import type { Winery, WineryNarrativeContent } from '@/lib/data/wineries';
@@ -75,9 +76,15 @@ export function WineryDetailClient({ winery, narrativeContent }: WineryDetailCli
         <div className="max-w-6xl mx-auto px-4 py-12">
           <div className="flex flex-col md:flex-row gap-8 items-start">
             {/* Winery Image */}
-            <div className="w-full md:w-1/3 aspect-square bg-white/10 rounded-2xl flex items-center justify-center overflow-hidden">
+            <div className="w-full md:w-1/3 aspect-square bg-white/10 rounded-2xl flex items-center justify-center overflow-hidden relative">
               {winery.image_url ? (
-                <img src={winery.image_url} alt={winery.name} className="w-full h-full object-cover" />
+                <Image
+                  src={winery.image_url}
+                  alt={winery.name}
+                  fill
+                  className="object-cover"
+                  unoptimized
+                />
               ) : (
                 <span className="text-8xl">🍷</span>
               )}

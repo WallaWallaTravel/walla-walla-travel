@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface FunnelData {
@@ -73,11 +73,7 @@ export default function AnalyticsPage() {
   const [error, setError] = useState<string | null>(null);
   const [period, setPeriod] = useState('30d');
 
-  useEffect(() => {
-    loadAnalytics();
-  }, [period]);
-
-  const loadAnalytics = async () => {
+  const loadAnalytics = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch(`/api/admin/analytics?period=${period}`);
@@ -93,7 +89,11 @@ export default function AnalyticsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [period]);
+
+  useEffect(() => {
+    loadAnalytics();
+  }, [loadAnalytics]);
 
   const formatDate = (dateStr: string): string => {
     return new Date(dateStr).toLocaleDateString('en-US', {

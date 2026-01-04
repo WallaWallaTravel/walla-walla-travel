@@ -35,7 +35,7 @@ export async function getSession(): Promise<SessionData & { save: () => Promise<
     try {
       const { payload } = await jwtVerify(token, secret)
       sessionData = payload as unknown as SessionData
-    } catch (error) {
+    } catch (_error) {
       // Invalid token, use default empty session
     }
   }

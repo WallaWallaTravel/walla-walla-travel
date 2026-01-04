@@ -65,7 +65,7 @@ function PartnerSetupContent() {
       } else {
         setError(data.error?.message || data.message || 'Setup failed. Please try again.');
       }
-    } catch (err) {
+    } catch (_err) {
       setError('An error occurred. Please try again.');
     } finally {
       setLoading(false);

@@ -28,7 +28,7 @@ export default function EmailCaptureModal({
       case 'after_queries':
         return {
           title: "💡 Want to save this conversation?",
-          description: `You've asked ${queryCount} great questions! Let me email you a summary so you don't lose these recommendations.`,
+          description: `You\u2019ve asked ${queryCount} great questions! Let me email you a summary so you don\u2019t lose these recommendations.`,
           buttonText: "Email Me the Summary"
         };
       case 'save_recommendations':
@@ -150,7 +150,7 @@ export default function EmailCaptureModal({
           {/* Benefits (for after_queries trigger) */}
           {triggerType === 'after_queries' && (
             <div className="mt-6 pt-6 border-t border-gray-200">
-              <p className="text-sm font-medium text-gray-900 mb-2">You'll also get:</p>
+              <p className="text-sm font-medium text-gray-900 mb-2">You&apos;ll also get:</p>
               <ul className="space-y-1 text-sm text-gray-600">
                 <li className="flex items-center">
                   <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">

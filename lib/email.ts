@@ -871,7 +871,86 @@ Ryan & the ${COMPANY_NAME} Team
  * Send specific notification emails
  */
 
-export async function sendBookingConfirmation(booking: any, customerEmail: string) {
+/** Type definitions for email template data */
+export interface BookingConfirmationData {
+  customer_name: string;
+  booking_number: string;
+  tour_date: string;
+  start_time: string;
+  end_time?: string;
+  duration_hours: number;
+  party_size: number;
+  pickup_location: string;
+  total_price: number;
+  deposit_paid: number;
+  balance_due: number;
+  wineries?: Array<{ name: string; city: string }>;
+}
+
+export interface InvoiceData {
+  customer_name: string;
+  invoice_number: string;
+  invoice_type: 'deposit' | 'final';
+  amount: number;
+  due_date: string;
+  payment_url: string;
+}
+
+export interface LunchOrderData {
+  restaurant_name: string;
+  customer_name: string;
+  tour_date: string;
+  party_size: number;
+  arrival_time: string;
+  items: Array<{ name: string; quantity: number; price: number }>;
+  subtotal: number;
+  total: number;
+  dietary_restrictions?: string;
+  special_requests?: string;
+  contact_phone: string;
+}
+
+export interface TourOfferData {
+  driver_name: string;
+  customer_name: string;
+  tour_date: string;
+  start_time: string;
+  end_time: string;
+  party_size: number;
+  pickup_location: string;
+  estimated_hours: number;
+  pay_amount: number;
+  expires_at: string;
+  offer_url: string;
+  notes?: string;
+}
+
+export interface TourAssignmentData {
+  driver_name: string;
+  customer_name: string;
+  booking_number: string;
+  tour_date: string;
+  start_time: string;
+  pickup_location: string;
+  vehicle_name?: string;
+}
+
+export interface ReservationConfirmationData {
+  customer_name: string;
+  customer_email: string;
+  reservation_number: string;
+  party_size: number;
+  preferred_date: string;
+  alternate_date?: string;
+  event_type: string;
+  special_requests?: string;
+  deposit_amount: number;
+  payment_method: string;
+  consultation_hours: number;
+  confirmation_url: string;
+}
+
+export async function sendBookingConfirmation(booking: BookingConfirmationData, customerEmail: string) {
   const template = EmailTemplates.bookingConfirmation(booking);
   return sendEmail({
     to: customerEmail,
@@ -879,7 +958,7 @@ export async function sendBookingConfirmation(booking: any, customerEmail: strin
   });
 }
 
-export async function sendInvoiceEmail(invoice: any, customerEmail: string) {
+export async function sendInvoiceEmail(invoice: InvoiceData, customerEmail: string) {
   const template = EmailTemplates.invoice(invoice);
   return sendEmail({
     to: customerEmail,
@@ -887,7 +966,7 @@ export async function sendInvoiceEmail(invoice: any, customerEmail: string) {
   });
 }
 
-export async function sendLunchOrderToRestaurant(order: any, restaurantEmail: string) {
+export async function sendLunchOrderToRestaurant(order: LunchOrderData, restaurantEmail: string) {
   const template = EmailTemplates.lunchOrderToRestaurant(order);
   return sendEmail({
     to: restaurantEmail,
@@ -895,7 +974,7 @@ export async function sendLunchOrderToRestaurant(order: any, restaurantEmail: st
   });
 }
 
-export async function sendTourOfferToDriver(offer: any, driverEmail: string) {
+export async function sendTourOfferToDriver(offer: TourOfferData, driverEmail: string) {
   const template = EmailTemplates.tourOfferToDriver(offer);
   return sendEmail({
     to: driverEmail,
@@ -903,7 +982,7 @@ export async function sendTourOfferToDriver(offer: any, driverEmail: string) {
   });
 }
 
-export async function sendTourAssignmentConfirmation(assignment: any, driverEmail: string) {
+export async function sendTourAssignmentConfirmation(assignment: TourAssignmentData, driverEmail: string) {
   const template = EmailTemplates.tourAssignmentConfirmation(assignment);
   return sendEmail({
     to: driverEmail,
@@ -912,7 +991,7 @@ export async function sendTourAssignmentConfirmation(assignment: any, driverEmai
 }
 
 export async function sendReservationConfirmation(
-  reservation: any,
+  reservation: ReservationConfirmationData,
   customerEmail: string,
   brandId?: number
 ) {

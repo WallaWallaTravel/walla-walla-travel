@@ -52,6 +52,7 @@ export default function MediaLibraryPage() {
 
   useEffect(() => {
     filterMedia();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [media, selectedCategory, searchTerm]);
 
   const loadMedia = async () => {

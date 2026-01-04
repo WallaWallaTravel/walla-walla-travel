@@ -3,23 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '@/lib/api-client';
 import { TouchButton, MobileCard, AlertBanner } from '@/components/mobile';
-
-interface Vehicle {
-  id: number;
-  vehicleNumber: string;
-  make: string;
-  model: string;
-  year: number;
-  capacity: number;
-  licensePlate: string;
-  color?: string;
-  status: 'available' | 'assigned' | 'in_use' | 'assigned_other' | 'out_of_service';
-  currentDriver?: string;
-  isAvailable: boolean;
-  isAssignedToMe: boolean;
-  displayName: string;
-  defectNotes?: string; // Defect description if vehicle is out of service
-}
+import type { SelectableVehicle, AvailableVehiclesResponse } from '@/lib/types';
 
 interface VehicleSelectorProps {
   onSelect: (vehicleId: number | null) => void;
@@ -28,12 +12,7 @@ interface VehicleSelectorProps {
 }
 
 export function VehicleSelector({ onSelect, onCancel, selectedVehicleId }: VehicleSelectorProps) {
-  const [vehicles, setVehicles] = useState<{
-    assigned: Vehicle[];
-    available: Vehicle[];
-    inUse: Vehicle[];
-    all: Vehicle[];
-  }>({ assigned: [], available: [], inUse: [], all: [] });
+  const [vehicles, setVehicles] = useState<AvailableVehiclesResponse['vehicles']>({ assigned: [], available: [], inUse: [], all: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<number | null>(selectedVehicleId || null);
@@ -41,6 +20,7 @@ export function VehicleSelector({ onSelect, onCancel, selectedVehicleId }: Vehic
 
   useEffect(() => {
     loadVehicles();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function loadVehicles() {
@@ -233,7 +213,7 @@ function VehicleOption({
   isRecommended = false,
   disabled = false
 }: {
-  vehicle: Vehicle;
+  vehicle: SelectableVehicle;
   isSelected: boolean;
   onSelect: (id: number | null) => void;
   isRecommended?: boolean;
@@ -277,7 +257,6 @@ function VehicleOption({
           </div>
           <p className={`text-sm ${disabled ? 'text-gray-600' : 'text-gray-800'} mt-1`}>
             {vehicle.make} {vehicle.model} {vehicle.year}
-            {vehicle.color && ` - ${vehicle.color}`}
           </p>
           <div className="flex gap-4 mt-2 text-xs text-gray-700">
             <span>Plate: {vehicle.licensePlate}</span>

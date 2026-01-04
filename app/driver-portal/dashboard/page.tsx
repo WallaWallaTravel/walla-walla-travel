@@ -34,6 +34,7 @@ export default function DriverDashboard() {
 
   useEffect(() => {
     loadTours();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewMode, selectedDate]);
 
   const loadTours = async () => {

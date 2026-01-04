@@ -13,7 +13,7 @@ import { logger, logApiRequest } from '@/lib/logger';
  * User profile API
  * ✅ REFACTORED: Structured logging + proper error handling
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // Check authentication
     const authResult = await requireAuth();
@@ -141,7 +141,7 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-export async function OPTIONS(request: NextRequest) {
+export async function OPTIONS(_request: NextRequest) {
   return new Response(null, {
     status: 200,
     headers: {

@@ -7,7 +7,7 @@
 
 import { logger } from '@/lib/logger';
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
@@ -49,7 +49,7 @@ async function fetchWithTimeout(
 /**
  * GET request with automatic JSON parsing
  */
-export async function apiGet<T = any>(
+export async function apiGet<T = unknown>(
   url: string,
   options: FetchOptions = {}
 ): Promise<ApiResponse<T>> {
@@ -88,9 +88,9 @@ export async function apiGet<T = any>(
 /**
  * POST request with automatic JSON parsing
  */
-export async function apiPost<T = any>(
+export async function apiPost<T = unknown, B = Record<string, unknown>>(
   url: string,
-  body: any,
+  body: B,
   options: FetchOptions = {}
 ): Promise<ApiResponse<T>> {
   try {
@@ -130,9 +130,9 @@ export async function apiPost<T = any>(
 /**
  * PUT request with automatic JSON parsing
  */
-export async function apiPut<T = any>(
+export async function apiPut<T = unknown, B = Record<string, unknown>>(
   url: string,
-  body: any,
+  body: B,
   options: FetchOptions = {}
 ): Promise<ApiResponse<T>> {
   try {
@@ -172,7 +172,7 @@ export async function apiPut<T = any>(
 /**
  * DELETE request with automatic JSON parsing
  */
-export async function apiDelete<T = any>(
+export async function apiDelete<T = unknown>(
   url: string,
   options: FetchOptions = {}
 ): Promise<ApiResponse<T>> {
@@ -212,7 +212,7 @@ export async function apiDelete<T = any>(
 /**
  * Upload file with progress tracking
  */
-export async function apiUploadFile<T = any>(
+export async function apiUploadFile<T = unknown>(
   url: string,
   file: File,
   onProgress?: (progress: number) => void,
@@ -279,8 +279,8 @@ export async function apiUploadFile<T = any>(
 /**
  * Batch requests with Promise.all
  */
-export async function apiBatch<T = any>(
-  requests: Promise<ApiResponse<any>>[]
+export async function apiBatch<T = unknown>(
+  requests: Promise<ApiResponse<T>>[]
 ): Promise<ApiResponse<T[]>> {
   try {
     const results = await Promise.all(requests);
@@ -306,7 +306,7 @@ export async function apiBatch<T = any>(
 /**
  * Retry a request with exponential backoff
  */
-export async function apiRetry<T = any>(
+export async function apiRetry<T = unknown>(
   requestFn: () => Promise<ApiResponse<T>>,
   maxRetries: number = 3,
   baseDelay: number = 1000

@@ -19,7 +19,7 @@ export const dynamic = 'force-dynamic';
  * GET /api/admin/settings
  * Get all system settings
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const settings = await getAllSettings();
 

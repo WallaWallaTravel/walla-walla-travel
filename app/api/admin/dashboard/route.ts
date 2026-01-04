@@ -8,7 +8,7 @@ import { adminDashboardService } from '@/lib/services/admin-dashboard.service';
  * 
  * ✅ REFACTORED: Service layer + admin auth wrapper
  */
-export const GET = withAdminAuth(async (request: NextRequest, session) => {
+export const GET = withAdminAuth(async (_request: NextRequest, session) => {
 
   // ✅ Use service layer for all dashboard data
   const dashboardData = await adminDashboardService.getDashboardData();

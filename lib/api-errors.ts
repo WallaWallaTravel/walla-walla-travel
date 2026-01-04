@@ -6,14 +6,64 @@
 import { NextResponse } from 'next/server';
 
 /**
+ * Error details can be various shapes depending on the error type
+ */
+export type ErrorDetails = Record<string, unknown> | unknown[] | string | undefined;
+
+/**
+ * Interface for database errors with PostgreSQL error codes
+ */
+interface DatabaseError extends Error {
+  code: string;
+  constraint?: string;
+  column?: string;
+}
+
+/**
+ * Interface for Zod validation errors
+ */
+interface ZodValidationError extends Error {
+  name: 'ZodError';
+  issues: unknown[];
+}
+
+/**
+ * Type guard for database errors
+ */
+function isDatabaseError(error: unknown): error is DatabaseError {
+  return (
+    error instanceof Error &&
+    'code' in error &&
+    typeof (error as DatabaseError).code === 'string'
+  );
+}
+
+/**
+ * Type guard for Zod errors
+ */
+function isZodError(error: unknown): error is ZodValidationError {
+  return error instanceof Error && error.name === 'ZodError' && 'issues' in error;
+}
+
+/**
+ * Formatted error response structure
+ */
+interface ErrorResponse {
+  error: string;
+  code?: string;
+  details?: ErrorDetails;
+  stack?: string;
+}
+
+/**
  * Base API Error class
  */
 export class ApiError extends Error {
   constructor(
     public statusCode: number,
-    public message: string,
+    public override message: string,
     public code?: string,
-    public details?: any
+    public details?: ErrorDetails
   ) {
     super(message);
     this.name = 'ApiError';
@@ -25,7 +75,7 @@ export class ApiError extends Error {
  * Bad Request Error (400)
  */
 export class BadRequestError extends ApiError {
-  constructor(message: string = 'Bad Request', details?: any) {
+  constructor(message: string = 'Bad Request', details?: ErrorDetails) {
     super(400, message, 'BAD_REQUEST', details);
     this.name = 'BadRequestError';
   }
@@ -35,7 +85,7 @@ export class BadRequestError extends ApiError {
  * Unauthorized Error (401)
  */
 export class UnauthorizedError extends ApiError {
-  constructor(message: string = 'Unauthorized', details?: any) {
+  constructor(message: string = 'Unauthorized', details?: ErrorDetails) {
     super(401, message, 'UNAUTHORIZED', details);
     this.name = 'UnauthorizedError';
   }
@@ -45,7 +95,7 @@ export class UnauthorizedError extends ApiError {
  * Forbidden Error (403)
  */
 export class ForbiddenError extends ApiError {
-  constructor(message: string = 'Forbidden', details?: any) {
+  constructor(message: string = 'Forbidden', details?: ErrorDetails) {
     super(403, message, 'FORBIDDEN', details);
     this.name = 'ForbiddenError';
   }
@@ -55,7 +105,7 @@ export class ForbiddenError extends ApiError {
  * Not Found Error (404)
  */
 export class NotFoundError extends ApiError {
-  constructor(resource: string = 'Resource', details?: any) {
+  constructor(resource: string = 'Resource', details?: ErrorDetails) {
     super(404, `${resource} not found`, 'NOT_FOUND', details);
     this.name = 'NotFoundError';
   }
@@ -65,7 +115,7 @@ export class NotFoundError extends ApiError {
  * Conflict Error (409)
  */
 export class ConflictError extends ApiError {
-  constructor(message: string = 'Conflict', details?: any) {
+  constructor(message: string = 'Conflict', details?: ErrorDetails) {
     super(409, message, 'CONFLICT', details);
     this.name = 'ConflictError';
   }
@@ -75,7 +125,7 @@ export class ConflictError extends ApiError {
  * Validation Error (422)
  */
 export class ValidationError extends ApiError {
-  constructor(message: string = 'Validation failed', details?: any) {
+  constructor(message: string = 'Validation failed', details?: ErrorDetails) {
     super(422, message, 'VALIDATION_ERROR', details);
     this.name = 'ValidationError';
   }
@@ -85,7 +135,7 @@ export class ValidationError extends ApiError {
  * Internal Server Error (500)
  */
 export class InternalServerError extends ApiError {
-  constructor(message: string = 'Internal server error', details?: any) {
+  constructor(message: string = 'Internal server error', details?: ErrorDetails) {
     super(500, message, 'INTERNAL_ERROR', details);
     this.name = 'InternalServerError';
   }
@@ -95,7 +145,7 @@ export class InternalServerError extends ApiError {
  * Service Unavailable Error (503)
  */
 export class ServiceUnavailableError extends ApiError {
-  constructor(message: string = 'Service temporarily unavailable', details?: any) {
+  constructor(message: string = 'Service temporarily unavailable', details?: ErrorDetails) {
     super(503, message, 'SERVICE_UNAVAILABLE', details);
     this.name = 'ServiceUnavailableError';
   }
@@ -104,8 +154,8 @@ export class ServiceUnavailableError extends ApiError {
 /**
  * Format error response
  */
-export function formatErrorResponse(error: ApiError) {
-  const response: any = {
+export function formatErrorResponse(error: ApiError): ErrorResponse {
+  const response: ErrorResponse = {
     error: error.message,
     code: error.code,
   };
@@ -138,15 +188,13 @@ export function handleApiError(error: unknown): NextResponse {
   }
 
   // Handle database errors
-  if (error instanceof Error && 'code' in error) {
-    const dbError = error as any;
-    
+  if (isDatabaseError(error)) {
     // Unique constraint violation
-    if (dbError.code === '23505') {
+    if (error.code === '23505') {
       return NextResponse.json(
         formatErrorResponse(
           new ConflictError('Resource already exists', {
-            constraint: dbError.constraint,
+            constraint: error.constraint,
           })
         ),
         { status: 409 }
@@ -154,11 +202,11 @@ export function handleApiError(error: unknown): NextResponse {
     }
 
     // Foreign key violation
-    if (dbError.code === '23503') {
+    if (error.code === '23503') {
       return NextResponse.json(
         formatErrorResponse(
           new BadRequestError('Referenced resource does not exist', {
-            constraint: dbError.constraint,
+            constraint: error.constraint,
           })
         ),
         { status: 400 }
@@ -166,11 +214,11 @@ export function handleApiError(error: unknown): NextResponse {
     }
 
     // Not null violation
-    if (dbError.code === '23502') {
+    if (error.code === '23502') {
       return NextResponse.json(
         formatErrorResponse(
           new BadRequestError('Required field is missing', {
-            column: dbError.column,
+            column: error.column,
           })
         ),
         { status: 400 }
@@ -179,12 +227,10 @@ export function handleApiError(error: unknown): NextResponse {
   }
 
   // Handle validation errors (Zod, etc.)
-  if (error instanceof Error && error.name === 'ZodError') {
+  if (isZodError(error)) {
     return NextResponse.json(
       formatErrorResponse(
-        new ValidationError('Validation failed', {
-          issues: (error as any).issues,
-        })
+        new ValidationError('Validation failed', error.issues)
       ),
       { status: 422 }
     );
@@ -216,7 +262,7 @@ export function handleApiError(error: unknown): NextResponse {
 /**
  * Async error handler wrapper for API routes
  */
-export function withErrorHandling<T extends any[], R>(
+export function withErrorHandling<T extends unknown[], R>(
   handler: (...args: T) => Promise<R>
 ) {
   return async (...args: T): Promise<R | NextResponse> => {

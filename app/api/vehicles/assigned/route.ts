@@ -13,7 +13,7 @@ import { logger } from '@/lib/logger';
  * GET /api/vehicles/assigned
  * Returns the vehicle currently assigned to the authenticated driver
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // Check authentication - required for this endpoint
     const authResult = await requireAuth();

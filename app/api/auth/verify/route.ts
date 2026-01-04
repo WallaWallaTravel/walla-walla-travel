@@ -10,7 +10,7 @@ import { logger, logApiRequest } from '@/lib/logger';
  * Session verification endpoint
  * ✅ REFACTORED: Structured logging
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     logApiRequest('GET', '/api/auth/verify');
 

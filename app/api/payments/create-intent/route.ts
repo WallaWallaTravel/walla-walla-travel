@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { withErrorHandling, NotFoundError, InternalServerError, BadRequestError } from '@/lib/api-errors';
-import { queryOne, insertOne } from '@/lib/db-helpers';
+import { queryOne, query } from '@/lib/db-helpers';
 import { validateBody, CreatePaymentIntentSchema } from '@/lib/api/middleware/validation';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
@@ -105,7 +105,7 @@ export const POST = withCSRF(
   }
 
   // Store payment intent in database
-  await insertOne(
+  await query(
     `INSERT INTO payments (
       booking_id,
       customer_id,

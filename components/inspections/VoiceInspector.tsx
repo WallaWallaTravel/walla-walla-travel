@@ -112,6 +112,7 @@ export function VoiceInspector({
         goToNext()
       }
     }, 1000)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentItem, tts, currentIndex, items.length, goToNext])
 
   const goToPrevious = useCallback(() => {

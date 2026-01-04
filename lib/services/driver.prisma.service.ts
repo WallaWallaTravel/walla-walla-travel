@@ -1,4 +1,3 @@
-import { logger } from '@/lib/logger';
 /**
  * Driver Prisma Service
  *
@@ -7,7 +6,7 @@ import { logger } from '@/lib/logger';
  */
 
 import { PrismaBaseService } from './prisma-base.service';
-import { prisma, Prisma, users } from '@/lib/prisma';
+import { Prisma, users } from '@/lib/prisma';
 
 // ============================================================================
 // Types

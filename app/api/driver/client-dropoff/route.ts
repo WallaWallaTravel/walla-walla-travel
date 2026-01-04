@@ -184,7 +184,7 @@ export async function POST(request: NextRequest) {
  * GET /api/driver/client-dropoff
  * Get service ready for dropoff (pickup completed, dropoff not yet logged)
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // Check authentication
     const authResult = await requireAuth();

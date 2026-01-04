@@ -63,7 +63,7 @@ export default function PartnerProfilePage() {
         const data = await response.json();
         setMessage({ type: 'error', text: data.error || 'Failed to update profile' });
       }
-    } catch (error) {
+    } catch (_error) {
       setMessage({ type: 'error', text: 'An error occurred. Please try again.' });
     } finally {
       setSaving(false);

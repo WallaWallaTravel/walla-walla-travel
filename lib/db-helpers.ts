@@ -7,6 +7,19 @@ import { Pool, PoolClient, QueryResult, QueryResultRow } from 'pg';
 import { pool } from './db';
 
 /**
+ * Type for SQL query parameter values
+ * Represents valid primitive values that can be passed to PostgreSQL queries
+ */
+export type QueryParamValue = string | number | boolean | Date | null | undefined | Buffer;
+export type QueryParams = QueryParamValue[];
+
+/**
+ * Type for record data used in insert/update operations
+ * Values can be any valid SQL parameter type
+ */
+export type RecordData = Record<string, QueryParamValue>;
+
+/**
  * Execute a database operation with automatic connection management
  * @param callback Function that receives a database client
  * @returns Result of the callback function
@@ -53,7 +66,7 @@ export async function withTransaction<T>(
  */
 export async function query<T extends QueryResultRow = QueryResultRow>(
   text: string,
-  params?: any[],
+  params?: QueryParams,
   client?: PoolClient
 ): Promise<QueryResult<T>> {
   if (client) {
@@ -73,7 +86,7 @@ export async function query<T extends QueryResultRow = QueryResultRow>(
  */
 export async function queryOne<T extends QueryResultRow = QueryResultRow>(
   text: string,
-  params?: any[],
+  params?: QueryParams,
   client?: PoolClient
 ): Promise<T | null> {
   const result = await query<T>(text, params, client);
@@ -89,7 +102,7 @@ export async function queryOne<T extends QueryResultRow = QueryResultRow>(
  */
 export async function queryMany<T extends QueryResultRow = QueryResultRow>(
   text: string,
-  params?: any[],
+  params?: QueryParams,
   client?: PoolClient
 ): Promise<T[]> {
   const result = await query<T>(text, params, client);
@@ -106,7 +119,7 @@ export async function queryMany<T extends QueryResultRow = QueryResultRow>(
 export async function exists(
   table: string,
   conditions: string,
-  params?: any[]
+  params?: QueryParams
 ): Promise<boolean> {
   const result = await query(
     `SELECT EXISTS(SELECT 1 FROM ${table} WHERE ${conditions})`,
@@ -123,7 +136,7 @@ export async function exists(
  */
 export async function insertOne<T extends QueryResultRow = QueryResultRow>(
   table: string,
-  data: Record<string, any>
+  data: RecordData
 ): Promise<T> {
   const columns = Object.keys(data);
   const values = Object.values(data);
@@ -149,9 +162,9 @@ export async function insertOne<T extends QueryResultRow = QueryResultRow>(
  */
 export async function updateOne<T extends QueryResultRow = QueryResultRow>(
   table: string,
-  data: Record<string, any>,
+  data: RecordData,
   conditions: string,
-  conditionParams?: any[]
+  conditionParams?: QueryParams
 ): Promise<T | null> {
   const columns = Object.keys(data);
   const values = Object.values(data);
@@ -190,7 +203,7 @@ export async function updateOne<T extends QueryResultRow = QueryResultRow>(
 export async function deleteOne(
   table: string,
   conditions: string,
-  params?: any[]
+  params?: QueryParams
 ): Promise<number> {
   const text = `DELETE FROM ${table} WHERE ${conditions}`;
   const result = await query(text, params);

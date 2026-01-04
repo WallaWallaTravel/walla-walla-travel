@@ -131,10 +131,17 @@ export interface DVIRInspection extends Inspection {
 /**
  * Pre-trip inspection checkpoints
  * All items that must be checked during pre-trip
+ * Supports both flat (items) and nested (exterior/interior/engine) formats
  */
 export interface PreTripCheckpoints {
-  /** Exterior checks */
-  exterior: {
+  /** Flat items format (for form submission) */
+  items?: Record<string, boolean>;
+  /** Additional notes */
+  notes?: string;
+  /** Driver signature */
+  signature?: string;
+  /** Exterior checks (nested format) */
+  exterior?: {
     /** All lights functioning */
     lights: boolean;
     /** Tires properly inflated, no damage */
@@ -148,8 +155,8 @@ export interface PreTripCheckpoints {
     /** License plates visible */
     license_plates: boolean;
   };
-  /** Interior checks */
-  interior: {
+  /** Interior checks (nested format) */
+  interior?: {
     /** Seats properly secured */
     seats: boolean;
     /** All seatbelts functioning */
@@ -163,8 +170,8 @@ export interface PreTripCheckpoints {
     /** Windshield wipers functioning */
     wipers: boolean;
   };
-  /** Engine and mechanical checks */
-  engine: {
+  /** Engine and mechanical checks (nested format) */
+  engine?: {
     /** Fluid levels adequate */
     fluids: boolean;
     /** Belts and hoses intact */
@@ -189,8 +196,29 @@ export interface PostTripCheckpoints {
   items: Record<string, boolean>;
   /** Fuel level at end of shift */
   fuel_level?: string;
+  /** Alternate fuel level field name (camelCase compatibility) */
+  fuelLevel?: string;
   /** Additional notes */
   notes?: string;
+  /** Driver signature */
+  signature?: string;
+  /** List of defects found (flexible format for form submission) */
+  defects?: Array<{
+    id: string;
+    description: string;
+    severity: string;
+    photo?: string;
+  }>;
+  /** Whether vehicle is safe to operate */
+  vehicleSafe?: boolean;
+  /** Mechanic signature for repairs */
+  mechanicSignature?: string | null;
+  /** Whether defects were found */
+  defectsFound?: boolean;
+  /** Severity of defects found */
+  defectSeverity?: DefectSeverity | '';
+  /** Description of defects */
+  defectDescription?: string | null;
 }
 
 /**

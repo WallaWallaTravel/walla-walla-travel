@@ -2,9 +2,57 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 
-// Types for Web Speech API - use any to avoid conflicts with built-in types
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type SpeechRecognitionType = any
+// Web Speech API type declarations
+interface SpeechRecognitionResultItem {
+  transcript: string
+  confidence: number
+}
+
+interface SpeechRecognitionResult {
+  readonly length: number
+  item(index: number): SpeechRecognitionResultItem
+  readonly isFinal: boolean
+  [index: number]: SpeechRecognitionResultItem
+}
+
+interface SpeechRecognitionResultList {
+  readonly length: number
+  item(index: number): SpeechRecognitionResult
+  [index: number]: SpeechRecognitionResult
+}
+
+interface SpeechRecognitionEvent extends Event {
+  readonly resultIndex: number
+  readonly results: SpeechRecognitionResultList
+}
+
+interface SpeechRecognitionErrorEvent extends Event {
+  readonly error: string
+  readonly message: string
+}
+
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean
+  interimResults: boolean
+  lang: string
+  onresult: ((event: SpeechRecognitionEvent) => void) | null
+  onerror: ((event: SpeechRecognitionErrorEvent) => void) | null
+  onend: (() => void) | null
+  onstart: (() => void) | null
+  start(): void
+  stop(): void
+  abort(): void
+}
+
+interface SpeechRecognitionConstructor {
+  new (): SpeechRecognition
+}
+
+// Extend Window interface for browser compatibility
+type WindowWithSpeechRecognition = Omit<Window, 'SpeechRecognition'> & {
+  SpeechRecognition?: SpeechRecognitionConstructor
+  webkitSpeechRecognition?: SpeechRecognitionConstructor
+}
 
 interface VoiceRecognitionOptions {
   continuous?: boolean
@@ -42,13 +90,14 @@ export function useVoiceRecognition(options: VoiceRecognitionOptions = {}): Voic
   const [isSupported, setIsSupported] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const recognitionRef = useRef<SpeechRecognitionType>(null)
+  const recognitionRef = useRef<SpeechRecognition | null>(null)
 
   // Check browser support
   useEffect(() => {
     if (typeof window !== 'undefined') {
       // Use window properties for cross-browser compatibility
-      const SpeechRecognitionCtor = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+      const windowWithSpeech = window as WindowWithSpeechRecognition
+      const SpeechRecognitionCtor = windowWithSpeech.SpeechRecognition || windowWithSpeech.webkitSpeechRecognition
       setIsSupported(!!SpeechRecognitionCtor)
 
       if (SpeechRecognitionCtor) {
@@ -67,7 +116,7 @@ export function useVoiceRecognition(options: VoiceRecognitionOptions = {}): Voic
     const recognition = recognitionRef.current
     if (!recognition) return
 
-    recognition.onresult = (event: any) => {
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
       let interimText = ''
       let finalText = ''
 
@@ -94,7 +143,7 @@ export function useVoiceRecognition(options: VoiceRecognitionOptions = {}): Voic
       setInterimTranscript(interimText)
     }
 
-    recognition.onerror = (event: any) => {
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
       console.error('Speech recognition error:', event.error, event.message)
       const errorMessage = getErrorMessage(event.error)
       setError(errorMessage)
@@ -138,7 +187,7 @@ export function useVoiceRecognition(options: VoiceRecognitionOptions = {}): Voic
 
     try {
       recognition.start()
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Failed to start recognition:', err)
       setError('Failed to start voice recognition')
     }
@@ -155,7 +204,7 @@ export function useVoiceRecognition(options: VoiceRecognitionOptions = {}): Voic
 
     try {
       recognition.stop()
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Failed to stop recognition:', err)
     }
   }, [isListening])

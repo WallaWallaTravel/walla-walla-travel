@@ -23,6 +23,7 @@ export default function DriverSchedulePage() {
 
   useEffect(() => {
     loadTours();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentDate]);
 
   const loadTours = async () => {

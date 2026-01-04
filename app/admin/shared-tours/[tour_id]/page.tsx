@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, useCallback, use } from 'react';
 import Link from 'next/link';
 
 /**
@@ -66,11 +66,7 @@ export default function AdminTourDetailPage({ params }: { params: Promise<{ tour
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'tickets' | 'manifest' | 'details'>('tickets');
 
-  useEffect(() => {
-    fetchTourDetails();
-  }, [tour_id]);
-
-  const fetchTourDetails = async () => {
+  const fetchTourDetails = useCallback(async () => {
     try {
       const response = await fetch(`/api/admin/shared-tours/${tour_id}`);
       const data = await response.json();
@@ -80,12 +76,16 @@ export default function AdminTourDetailPage({ params }: { params: Promise<{ tour
       } else {
         setError(data.error);
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to load tour details');
     } finally {
       setLoading(false);
     }
-  };
+  }, [tour_id]);
+
+  useEffect(() => {
+    fetchTourDetails();
+  }, [fetchTourDetails]);
 
   const handleCheckIn = async (ticketId: string) => {
     try {
@@ -98,7 +98,7 @@ export default function AdminTourDetailPage({ params }: { params: Promise<{ tour
       } else {
         setError(data.error);
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to check in ticket');
     }
   };

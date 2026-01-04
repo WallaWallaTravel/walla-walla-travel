@@ -32,6 +32,7 @@ export default function WorkflowPage() {
   useEffect(() => {
     loadDashboardData();
     checkLocationPermission();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function checkLocationPermission() {
@@ -39,7 +40,7 @@ export default function WorkflowPage() {
       try {
         const permission = await navigator.permissions.query({ name: 'geolocation' });
         setLocationEnabled(permission.state === 'granted');
-      } catch (e) {
+      } catch (_e) {
         console.log('Location permission check failed');
       }
     }
@@ -72,7 +73,7 @@ export default function WorkflowPage() {
         router.push('/login');
         return;
       }
-      setUser(profileResult.data);
+      setUser(profileResult.data ?? null);
 
       // Load clock status
       const statusResult = await fetch('/api/workflow/clock', {
@@ -90,7 +91,7 @@ export default function WorkflowPage() {
       // Load assigned vehicle
       const vehicleResult = await api.vehicle.getAssignedVehicle();
       if (vehicleResult.success) {
-        setVehicle(vehicleResult.data);
+        setVehicle(vehicleResult.data ?? null);
         
         // Load vehicle documents
         if (vehicleResult.data?.id) {
@@ -170,9 +171,9 @@ export default function WorkflowPage() {
         location: location || undefined, // Convert null to undefined for API
       });
 
-      if (result.success) {
+      if (result.success && result.data) {
         const data = result.data;
-        
+
         // Handle different response statuses
         if (data.status === 'already_clocked_in') {
           setStatusMessage({
@@ -184,7 +185,7 @@ export default function WorkflowPage() {
           setStatusMessage({
             type: 'info',
             message: data.message,
-            suggestions: [...(data.details ? [data.details] : []), ...data.suggestions],
+            suggestions: [...(data.details ? [data.details] : []), ...(data.suggestions || [])],
           });
         } else if (data.status === 'no_vehicle' || data.status === 'vehicle_required') {
           // Don't show warning if user deliberately chose "No Vehicle" for non-driving shift
@@ -192,14 +193,14 @@ export default function WorkflowPage() {
             setStatusMessage({
               type: 'warning',
               message: data.message,
-              suggestions: data.suggestions,
+              suggestions: data.suggestions || [],
             });
           }
         } else if (data.status === 'vehicle_in_use' || data.status === 'vehicle_inactive' || data.status === 'invalid_vehicle') {
           setStatusMessage({
             type: 'warning',
             message: data.message,
-            suggestions: data.suggestions,
+            suggestions: data.suggestions || [],
           });
           // Show vehicle selector again for user to pick a different vehicle
           setShowVehicleSelector(true);
@@ -207,7 +208,7 @@ export default function WorkflowPage() {
           setStatusMessage({
             type: 'warning',
             message: data.message,
-            suggestions: data.suggestions,
+            suggestions: data.suggestions || [],
           });
         } else if (data.status === 'success') {
           setStatusMessage({
@@ -232,7 +233,7 @@ export default function WorkflowPage() {
           suggestions: ['Please try again or contact support'],
         });
       }
-    } catch (error) {
+    } catch (_error) {
       setStatusMessage({
         type: 'error',
         message: 'Failed to clock in',
@@ -261,9 +262,9 @@ export default function WorkflowPage() {
         location: location || undefined, // Convert null to undefined for API
       });
 
-      if (result.success) {
+      if (result.success && result.data) {
         const data = result.data;
-        
+
         // Handle different response statuses
         if (data.status === 'already_clocked_out') {
           setStatusMessage({
@@ -287,11 +288,11 @@ export default function WorkflowPage() {
           // Show summary
           const summary = data.summary;
           const warnings = data.warnings || [];
-          
+
           setStatusMessage({
             type: warnings.length > 0 ? 'warning' : 'success',
-            message: `${data.message} - Total hours: ${summary.totalHours}`,
-            suggestions: [...warnings, ...data.reminders],
+            message: summary ? `${data.message} - Total hours: ${summary.totalHours}` : data.message,
+            suggestions: [...warnings, ...(data.reminders || [])],
           });
           // Reset inspection status for new shift
           setPreTripCompleted(false);
@@ -325,7 +326,7 @@ export default function WorkflowPage() {
           });
         }
       }
-    } catch (error) {
+    } catch (_error) {
       setStatusMessage({
         type: 'error',
         message: 'Failed to clock out',

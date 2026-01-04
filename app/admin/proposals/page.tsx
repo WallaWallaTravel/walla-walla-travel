@@ -49,10 +49,12 @@ function ProposalsPageContent() {
     if (urlStatus && urlStatus !== statusFilter) {
       setStatusFilter(urlStatus);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [urlStatus]);
 
   useEffect(() => {
     loadProposals();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter, searchTerm, pagination.offset]);
 
   const loadProposals = async () => {

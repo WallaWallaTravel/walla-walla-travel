@@ -89,6 +89,44 @@ export interface AssignedVehicle {
 }
 
 /**
+ * Selectable vehicle (for driver vehicle selector)
+ */
+export interface SelectableVehicle {
+  id: number;
+  vehicleNumber: string;
+  make: string;
+  model: string;
+  year: number;
+  capacity: number;
+  licensePlate: string;
+  vin?: string;
+  status: 'available' | 'assigned' | 'in_use' | 'assigned_other' | 'out_of_service';
+  currentDriver?: string | null;
+  isAvailable: boolean;
+  isAssignedToMe: boolean;
+  displayName: string;
+  defectNotes?: string;
+}
+
+/**
+ * Available vehicles response (for driver portal)
+ */
+export interface AvailableVehiclesResponse {
+  vehicles: {
+    assigned: SelectableVehicle[];
+    available: SelectableVehicle[];
+    inUse: SelectableVehicle[];
+    all: SelectableVehicle[];
+  };
+  summary: {
+    total: number;
+    assigned: number;
+    available: number;
+    inUse: number;
+  };
+}
+
+/**
  * Fleet vehicle (admin/supervisor view)
  * Extended vehicle information with current usage data
  */

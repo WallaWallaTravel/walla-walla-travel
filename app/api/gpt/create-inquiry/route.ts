@@ -1,0 +1,180 @@
+/**
+ * GPT Store API: Create Booking Inquiry
+ *
+ * Allows ChatGPT to submit booking inquiries on behalf of users
+ * Creates a pending inquiry that the Walla Walla Travel team will follow up on
+ */
+
+import { NextRequest, NextResponse } from 'next/server';
+import { query } from '@/lib/db-helpers';
+import { z } from 'zod';
+
+// CORS headers for ChatGPT
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+};
+
+// Validation schema
+const InquirySchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  email: z.string().email('Please provide a valid email address'),
+  phone: z.string().optional(),
+  tour_date: z.string().refine((date) => {
+    const parsed = new Date(date);
+    return !isNaN(parsed.getTime());
+  }, 'Please provide a valid date in YYYY-MM-DD format'),
+  party_size: z.number().int().min(1).max(14),
+  tour_type: z.enum(['wine_tour', 'private_transportation', 'corporate', 'bachelorette']).optional().default('wine_tour'),
+  preferences: z.string().optional(),
+  pickup_location: z.string().optional()
+});
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+
+    // Validate input
+    const validation = InquirySchema.safeParse(body);
+    if (!validation.success) {
+      const errors = validation.error.issues.map(e => e.message).join('. ');
+      return NextResponse.json(
+        {
+          success: false,
+          message: `Please provide the required information: ${errors}`,
+          inquiry_id: null
+        },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
+    const data = validation.data;
+
+    // Validate date is in the future
+    const tourDate = new Date(data.tour_date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (tourDate < today) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'The tour date must be in the future. Please choose an upcoming date.',
+          inquiry_id: null
+        },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
+    // Check minimum lead time (3 days for wine tours)
+    const minLeadDays = 3;
+    const leadTime = Math.floor((tourDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    if (leadTime < minLeadDays) {
+      const minDate = new Date(today);
+      minDate.setDate(minDate.getDate() + minLeadDays);
+      return NextResponse.json(
+        {
+          success: false,
+          message: `We need at least ${minLeadDays} days advance notice for bookings. The earliest available date is ${minDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}.`,
+          inquiry_id: null
+        },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
+    // Generate inquiry ID
+    const inquiryId = `INQ-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+
+    // Format tour type for display
+    const tourTypeLabels: Record<string, string> = {
+      wine_tour: 'Wine Tour',
+      private_transportation: 'Private Transportation',
+      corporate: 'Corporate Event',
+      bachelorette: 'Celebration/Bachelorette'
+    };
+
+    // Create the inquiry in database
+    // First check if proposals table exists, otherwise use bookings with pending_inquiry status
+    try {
+      await query(
+        `INSERT INTO booking_inquiries
+         (inquiry_id, customer_name, customer_email, customer_phone, tour_date, party_size, tour_type, preferences, pickup_location, status, source, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending', 'chatgpt', NOW())`,
+        [
+          inquiryId,
+          data.name,
+          data.email,
+          data.phone || null,
+          data.tour_date,
+          data.party_size,
+          data.tour_type,
+          data.preferences || null,
+          data.pickup_location || null
+        ]
+      );
+    } catch {
+      // If booking_inquiries table doesn't exist, create as a pending booking
+      await query(
+        `INSERT INTO bookings
+         (booking_number, customer_name, customer_email, customer_phone, tour_date, party_size, tour_type, special_requests, pickup_location, status, source, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'inquiry', 'chatgpt', NOW())`,
+        [
+          inquiryId,
+          data.name,
+          data.email,
+          data.phone || null,
+          data.tour_date,
+          data.party_size,
+          data.tour_type,
+          data.preferences || null,
+          data.pickup_location || null
+        ]
+      );
+    }
+
+    // Format confirmation message
+    const formattedDate = tourDate.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    const message = `Thank you, ${data.name}! Your ${tourTypeLabels[data.tour_type]} inquiry for ${data.party_size} ${data.party_size === 1 ? 'guest' : 'guests'} on ${formattedDate} has been submitted. ` +
+      `Your inquiry reference is ${inquiryId}. ` +
+      `The Walla Walla Travel team will review your request and respond to ${data.email} within 24 hours with availability and pricing.`;
+
+    return NextResponse.json(
+      {
+        success: true,
+        message,
+        inquiry_id: inquiryId,
+        estimated_response_time: '24 hours',
+        next_steps: [
+          `Check your email (${data.email}) for confirmation`,
+          'Our team will send you a custom proposal',
+          'You can reply to the email with any questions'
+        ]
+      },
+      { status: 201, headers: corsHeaders }
+    );
+  } catch (error) {
+    console.error('GPT create-inquiry error:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        message: 'Unable to submit your inquiry at this time. Please try again or contact us directly at info@wallawalla.travel or (509) 555-WINE.',
+        inquiry_id: null
+      },
+      { status: 500, headers: corsHeaders }
+    );
+  }
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: corsHeaders
+  });
+}

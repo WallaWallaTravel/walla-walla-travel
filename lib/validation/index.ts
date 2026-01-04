@@ -105,7 +105,7 @@ export async function validate<T>(
     let body;
     try {
       body = await request.json();
-    } catch (error) {
+    } catch (_error) {
       return {
         success: false,
         error: validationErrorResponse([
@@ -141,7 +141,7 @@ export async function validate<T>(
       success: true,
       data: result.data,
     };
-  } catch (error) {
+  } catch (_error) {
     return {
       success: false,
       error: validationErrorResponse([
@@ -240,7 +240,7 @@ export function validateQuery<T>(
       success: true,
       data: result.data,
     };
-  } catch (error) {
+  } catch (_error) {
     return {
       success: false,
       error: validationErrorResponse([

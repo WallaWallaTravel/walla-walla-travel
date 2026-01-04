@@ -122,7 +122,7 @@ export default function ClientNotes() {
             {/* Overall Tour Rating */}
             <div className="bg-white rounded-lg p-6 mb-4">
               <h2 className="text-lg font-semibold text-gray-900 mb-4 text-center">
-                How was today's tour?
+                How was today&apos;s tour?
               </h2>
               <div className="flex justify-center gap-3">
                 {[1,2,3,4,5].map(rating => (
@@ -144,7 +144,7 @@ export default function ClientNotes() {
             {/* Winery Quick Ratings */}
             <div className="bg-white rounded-lg p-4 mb-4">
               <h3 className="font-semibold text-gray-900 mb-3">Quick Stop Ratings</h3>
-              <p className="text-sm text-gray-800 mb-3">Rate today's scheduled stops</p>
+              <p className="text-sm text-gray-800 mb-3">Rate today&apos;s scheduled stops</p>
               <div className="space-y-3">
                 {itineraryWineries.map(winery => (
                   <div key={winery} className="flex items-center justify-between">
@@ -201,7 +201,7 @@ export default function ClientNotes() {
 
             {/* Favorite Stop */}
             <div className="bg-white rounded-lg p-4 mb-4">
-              <h3 className="font-semibold text-gray-900 mb-3">Client's Favorite Stop</h3>
+              <h3 className="font-semibold text-gray-900 mb-3">Client&apos;s Favorite Stop</h3>
               <div className="grid grid-cols-2 gap-2">
                 {itineraryWineries.map(winery => (
                   <button

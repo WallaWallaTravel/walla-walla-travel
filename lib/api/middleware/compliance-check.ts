@@ -43,6 +43,11 @@ export type ComplianceCheckType =
   | 'hos' // HOS only
   | 'clock_in'; // HOS check for clock-in
 
+/** Route context containing dynamic route parameters (Next.js 15+ uses Promise) */
+export interface RouteContext<P = Record<string, string>> {
+  params: Promise<P>;
+}
+
 export interface ComplianceEntityInfo {
   driverId?: number;
   vehicleId?: number;
@@ -50,7 +55,7 @@ export interface ComplianceEntityInfo {
   bookingId?: number;
 }
 
-export interface ComplianceCheckConfig {
+export interface ComplianceCheckConfig<P = Record<string, string>> {
   /**
    * Type of compliance check to perform
    */
@@ -61,8 +66,7 @@ export interface ComplianceCheckConfig {
    */
   extractEntities: (
     request: NextRequest,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    context: any
+    context: RouteContext<P>
   ) => Promise<ComplianceEntityInfo> | ComplianceEntityInfo;
 
   /**
@@ -76,8 +80,7 @@ export interface ComplianceCheckConfig {
    */
   skipIf?: (
     request: NextRequest,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    context: any
+    context: RouteContext<P>
   ) => Promise<boolean> | boolean;
 }
 
@@ -94,11 +97,14 @@ export interface ComplianceBlockedResponse {
   };
 }
 
- 
-type RouteHandler = (
+/** Generic API response type */
+export type ApiResponse<T = unknown> = T;
+
+/** Route handler function signature */
+type RouteHandler<T = unknown, P = Record<string, string>> = (
   request: NextRequest,
-  context: any
-) => Promise<NextResponse<any>>;
+  context: RouteContext<P>
+) => Promise<NextResponse<ApiResponse<T>>>;
 
 // ============================================================================
 // Middleware Function
@@ -107,12 +113,11 @@ type RouteHandler = (
 /**
  * Wrap an API route handler with compliance checking
  */
-export function withComplianceCheck(
-  handler: RouteHandler,
-  config: ComplianceCheckConfig
-): RouteHandler {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return async (request: NextRequest, context: any): Promise<NextResponse<any>> => {
+export function withComplianceCheck<T = unknown, P = Record<string, string>>(
+  handler: RouteHandler<T, P>,
+  config: ComplianceCheckConfig<P>
+): RouteHandler<T | ComplianceBlockedResponse, P> {
+  return async (request: NextRequest, context: RouteContext<P>): Promise<NextResponse<ApiResponse<T | ComplianceBlockedResponse>>> => {
     // Check if we should skip compliance check
     if (config.skipIf) {
       const shouldSkip = await config.skipIf(request, context);
@@ -377,15 +382,14 @@ export function withComplianceCheck(
 /**
  * Create entity extractor for common patterns
  */
-export function createEntityExtractor(options: {
+export function createEntityExtractor<P = Record<string, string>>(options: {
   driverIdField?: string;
   vehicleIdField?: string;
   tourDateField?: string;
   bookingIdField?: string;
   fromParams?: boolean;
-}) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return async (request: NextRequest, context: any): Promise<ComplianceEntityInfo> => {
+}): (request: NextRequest, context: RouteContext<P>) => Promise<ComplianceEntityInfo> {
+  return async (request: NextRequest, context: RouteContext<P>): Promise<ComplianceEntityInfo> => {
     const entities: ComplianceEntityInfo = {};
 
     if (options.fromParams) {

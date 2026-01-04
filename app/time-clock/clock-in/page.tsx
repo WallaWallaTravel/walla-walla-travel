@@ -232,7 +232,7 @@ export default function ClockInPage() {
         {/* Compliance Reminder */}
         <MobileCard variant="bordered">
           <div className="space-y-2 text-sm text-gray-700">
-            <h3 className="font-semibold text-base">📋 Today's Requirements:</h3>
+            <h3 className="font-semibold text-base">📋 Today&apos;s Requirements:</h3>
             <ul className="space-y-1 ml-4">
               <li>✓ Pre-trip inspection before departure</li>
               <li>✓ Maximum 10 hours driving</li>

@@ -1,4 +1,3 @@
-import { logger } from '@/lib/logger';
 /**
  * Customer Prisma Service
  *
@@ -7,7 +6,7 @@ import { logger } from '@/lib/logger';
  */
 
 import { PrismaBaseService, PaginationOptions } from './prisma-base.service';
-import { prisma, Prisma, customers } from '@/lib/prisma';
+import { Prisma, customers } from '@/lib/prisma';
 
 // ============================================================================
 // Types

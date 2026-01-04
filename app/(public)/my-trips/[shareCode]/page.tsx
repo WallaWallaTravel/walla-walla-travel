@@ -320,7 +320,7 @@ function ShareTab({
             Ready to book?
           </h3>
           <p className="text-sm text-stone-600 mb-4">
-            Hand off your trip to Walla Walla Travel and we'll take care of the rest – 
+            Hand off your trip to Walla Walla Travel and we&apos;ll take care of the rest –
             booking reservations, arranging transportation, and making sure everything is perfect.
           </p>
           <button
@@ -340,7 +340,7 @@ function ShareTab({
             Trip handed off!
           </div>
           <p className="text-sm text-purple-600 mt-1">
-            We've received your trip and will be in touch shortly to finalize your booking.
+            We&apos;ve received your trip and will be in touch shortly to finalize your booking.
           </p>
         </div>
       )}

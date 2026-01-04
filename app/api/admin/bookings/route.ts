@@ -19,7 +19,7 @@ const BookingFiltersSchema = z.object({
  *
  * ✅ REFACTORED: Service layer + admin auth + Zod validation
  */
-export const GET = withAdminAuth(async (request: NextRequest) => {
+export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const searchParams = request.nextUrl.searchParams;
 
   // Parse and validate query parameters

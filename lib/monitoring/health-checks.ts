@@ -15,7 +15,7 @@ export interface HealthCheckResult {
   status: HealthStatus;
   responseTimeMs: number;
   errorMessage?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -46,13 +46,13 @@ export async function checkDatabase(): Promise<HealthCheckResult> {
         location: 'remote'
       }
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     return {
       checkType: 'database',
       checkName: 'PostgreSQL Connection',
       status: 'down',
       responseTimeMs: Date.now() - startTime,
-      errorMessage: error.message
+      errorMessage: error instanceof Error ? error.message : String(error)
     };
   }
 }
@@ -84,13 +84,13 @@ export async function checkOpenAI(): Promise<HealthCheckResult> {
       responseTimeMs: Date.now() - startTime,
       metadata: { keyConfigured: true }
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     return {
       checkType: 'external_service',
       checkName: 'OpenAI API',
       status: 'down',
       responseTimeMs: Date.now() - startTime,
-      errorMessage: error.message
+      errorMessage: error instanceof Error ? error.message : String(error)
     };
   }
 }
@@ -161,13 +161,13 @@ export async function checkDatabaseTables(): Promise<HealthCheckResult> {
       errorMessage: missingTables.length > 0 ? 
         `Missing tables: ${missingTables.join(', ')}` : undefined
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     return {
       checkType: 'database',
       checkName: 'Database Schema',
       status: 'down',
       responseTimeMs: Date.now() - startTime,
-      errorMessage: error.message
+      errorMessage: error instanceof Error ? error.message : String(error)
     };
   }
 }
@@ -204,7 +204,7 @@ export async function checkErrorRate(): Promise<HealthCheckResult> {
         timeWindow: '5 minutes'
       }
     };
-  } catch (error: any) {
+  } catch (_error) {
     // If error_logs table doesn't exist yet, that's okay
     return {
       checkType: 'performance',
@@ -247,7 +247,7 @@ export async function checkAPIPerformance(): Promise<HealthCheckResult> {
         timeWindow: '5 minutes'
       }
     };
-  } catch (error: any) {
+  } catch (_error) {
     // If performance_metrics table doesn't exist yet, that's okay
     return {
       checkType: 'performance',

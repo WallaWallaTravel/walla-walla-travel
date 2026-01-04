@@ -62,6 +62,7 @@ export default function BusinessPortalPage() {
   // Load business and questions
   useEffect(() => {
     loadPortalData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   
   // Load previous answer when question changes
@@ -74,6 +75,7 @@ export default function BusinessPortalPage() {
         setTextAnswer('');
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentQuestionIndex]);
   
   const loadPortalData = async () => {

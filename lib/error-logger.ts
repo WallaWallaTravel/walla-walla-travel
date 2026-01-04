@@ -3,15 +3,17 @@
  * Automatically captures and logs errors for debugging
  */
 
+interface LoggedError {
+  timestamp: string;
+  type: string;
+  message: string;
+  stack?: string;
+  url?: string;
+}
+
 export class ErrorLogger {
   private static instance: ErrorLogger;
-  private errors: Array<{
-    timestamp: string;
-    type: string;
-    message: string;
-    stack?: string;
-    url?: string;
-  }> = [];
+  private errors: LoggedError[] = [];
 
   private constructor() {
     if (typeof window !== 'undefined') {
@@ -45,12 +47,13 @@ export class ErrorLogger {
     };
   }
 
-  logError(type: string, message: any, url?: string) {
-    const error = {
+  logError(type: string, message: unknown, url?: string) {
+    const errorMessage = message as { stack?: string } | null;
+    const error: LoggedError = {
       timestamp: new Date().toISOString(),
       type,
       message: typeof message === 'object' ? JSON.stringify(message) : String(message),
-      stack: message?.stack,
+      stack: errorMessage?.stack,
       url: url || window.location.href
     };
 
@@ -63,14 +66,14 @@ export class ErrorLogger {
     console.log('🔴 ERROR CAPTURED:', error);
   }
 
-  private async sendToServer(error: any) {
+  private async sendToServer(error: LoggedError) {
     try {
       await fetch('/api/log-error', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(error)
       });
-    } catch (e) {
+    } catch (_e) {
       // Silently fail if logging fails
     }
   }

@@ -5,6 +5,64 @@
 
 import { Pool } from 'pg';
 
+// Module-specific types
+export interface CorporateDetails {
+  company_name?: string;
+  company_logo?: string;
+  contact_person?: string;
+  po_number?: string;
+  billing_address?: string;
+}
+
+export interface MultiDayItineraryItem {
+  day: number;
+  date: string;
+  title: string;
+  activities: string[];
+  accommodation?: string;
+  meals?: string[];
+}
+
+export interface B2BDetails {
+  partner_company?: string;
+  contract_id?: string;
+  commission_rate?: number;
+  payment_terms?: string;
+  referral_source?: string;
+}
+
+export interface SpecialEventDetails {
+  event_type?: string;
+  occasion?: string;
+  special_requests?: string;
+  vip_needs?: string[];
+}
+
+export interface GroupCoordinationDetails {
+  attendees?: Array<{
+    name: string;
+    email: string;
+    dietary_restrictions?: string;
+  }>;
+  special_needs?: string[];
+}
+
+export interface ProposalActivityMetadata {
+  viewed_at?: string;
+  sent_at?: string;
+  method?: string;
+  sent_to_email?: string;
+  sent_to_phone?: string;
+  custom_message?: string | null;
+  accepted_at?: string;
+  declined_at?: string;
+  decline_reason?: string;
+  converted_at?: string;
+  booking_id?: number;
+  changes?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
 export interface ServiceItem {
   id: string;
   service_type: 'wine_tour' | 'airport_transfer' | 'local_transfer' | 'wait_time' | 'custom';
@@ -97,11 +155,11 @@ export interface ProposalData {
     special_event?: boolean;
     group_coordination?: boolean;
   };
-  corporate_details?: any;
-  multi_day_itinerary?: any;
-  b2b_details?: any;
-  special_event_details?: any;
-  group_coordination?: any;
+  corporate_details?: CorporateDetails;
+  multi_day_itinerary?: MultiDayItineraryItem[];
+  b2b_details?: B2BDetails;
+  special_event_details?: SpecialEventDetails;
+  group_coordination?: GroupCoordinationDetails;
 }
 
 export interface Proposal extends ProposalData {
@@ -244,7 +302,7 @@ export async function logProposalActivity(
   proposalId: number,
   activityType: string,
   description: string,
-  metadata?: any
+  metadata?: ProposalActivityMetadata
 ) {
   await pool.query(
     `INSERT INTO proposal_activity_log (proposal_id, activity_type, description, metadata)

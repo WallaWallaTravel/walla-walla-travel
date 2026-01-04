@@ -40,6 +40,7 @@ export default function AdminLunchOrdersPage() {
 
   useEffect(() => {
     loadOrders()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter])
 
   const loadOrders = async () => {

@@ -122,7 +122,7 @@ export default function PartnerListingPage() {
         const data = await response.json();
         setMessage({ type: 'error', text: data.error || 'Failed to update listing' });
       }
-    } catch (error) {
+    } catch (_error) {
       setMessage({ type: 'error', text: 'An error occurred. Please try again.' });
     } finally {
       setSaving(false);

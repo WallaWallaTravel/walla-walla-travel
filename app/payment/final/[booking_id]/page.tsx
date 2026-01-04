@@ -35,6 +35,7 @@ export default function FinalInvoicePaymentPage() {
 
   useEffect(() => {
     loadInvoice();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bookingId]);
 
   const loadInvoice = async () => {

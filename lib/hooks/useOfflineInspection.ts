@@ -67,6 +67,7 @@ export function useOfflineInspection(): UseOfflineInspectionReturn {
     )
 
     return cleanup
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   /**
@@ -142,7 +143,9 @@ export function useOfflineInspection(): UseOfflineInspectionReturn {
 
           if (response.ok) {
             // Delete from local storage after successful sync
-            await deleteInspection(id)
+            if (typeof id === 'number') {
+              await deleteInspection(id)
+            }
             synced++
             console.log(`Synced inspection ${id}`)
           } else {

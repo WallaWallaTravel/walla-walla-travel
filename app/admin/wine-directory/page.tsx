@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 
 interface Winery {
   id: number
@@ -28,7 +29,7 @@ export default function WineDirectoryPage() {
   const [selectedWinery, setSelectedWinery] = useState<Winery | null>(null)
 
   useEffect(() => {
-    // Simulated data
+    // Simulated data - runs once on mount
     setTimeout(() => {
       setWineries([
         {
@@ -289,7 +290,7 @@ export default function WineDirectoryPage() {
                   >
                     <div className="h-32 bg-gradient-to-br from-purple-100 to-pink-100 relative">
                       {winery.hero_image_url ? (
-                        <img src={winery.hero_image_url} alt={winery.name} className="w-full h-full object-cover" />
+                        <Image src={winery.hero_image_url} alt={winery.name} className="object-cover" fill unoptimized />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
                           <span className="text-5xl">🍇</span>
@@ -334,9 +335,9 @@ export default function WineDirectoryPage() {
           <div className="lg:col-span-1">
             {selectedWinery ? (
               <div className="bg-white rounded-xl shadow-sm sticky top-4">
-                <div className="h-48 bg-gradient-to-br from-purple-200 to-pink-200 rounded-t-xl relative">
+                <div className="h-48 bg-gradient-to-br from-purple-200 to-pink-200 rounded-t-xl relative overflow-hidden">
                   {selectedWinery.hero_image_url ? (
-                    <img src={selectedWinery.hero_image_url} alt={selectedWinery.name} className="w-full h-full object-cover rounded-t-xl" />
+                    <Image src={selectedWinery.hero_image_url} alt={selectedWinery.name} className="object-cover rounded-t-xl" fill unoptimized />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
                       <span className="text-7xl">🍷</span>

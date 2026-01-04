@@ -62,7 +62,7 @@ export default function InvitePartnerPage() {
       } else {
         setError(data.error?.message || data.message || 'Failed to send invitation');
       }
-    } catch (err) {
+    } catch (_err) {
       setError('An error occurred. Please try again.');
     } finally {
       setLoading(false);

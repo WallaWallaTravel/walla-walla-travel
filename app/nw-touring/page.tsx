@@ -23,8 +23,8 @@ export default function NWTouringLandingPage() {
               Excellence in Corporate Transportation
             </p>
             <p className="text-lg text-blue-100 max-w-2xl">
-              Professional wine country experiences, corporate events, and executive transportation 
-              services in Washington's premier viticultural regions.
+              Professional wine country experiences, corporate events, and executive transportation
+              services in Washington&apos;s premier viticultural regions.
             </p>
           </div>
         </div>
@@ -82,7 +82,7 @@ export default function NWTouringLandingPage() {
                 Wine Country Tours
               </h3>
               <p className="text-slate-600 mb-4 leading-relaxed">
-                Expertly guided experiences through Walla Walla's premier wineries. Perfect for 
+                Expertly guided experiences through Walla Walla&apos;s premier wineries. Perfect for
                 corporate entertainment, client relations, and team building.
               </p>
               <ul className="text-sm text-slate-600 space-y-2">

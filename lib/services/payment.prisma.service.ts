@@ -1,4 +1,3 @@
-import { logger } from '@/lib/logger';
 /**
  * Payment Prisma Service
  *
@@ -9,7 +8,7 @@ import { logger } from '@/lib/logger';
  */
 
 import { PrismaBaseService } from './prisma-base.service';
-import { prisma, Prisma, payments } from '@/lib/prisma';
+import { Prisma, payments } from '@/lib/prisma';
 import { NotFoundError } from '@/lib/api/middleware/error-handler';
 import { z } from 'zod';
 

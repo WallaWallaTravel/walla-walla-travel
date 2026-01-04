@@ -6,6 +6,92 @@
 import { z } from 'zod';
 
 // OpenAPI Schema Types
+
+/** OpenAPI primitive types */
+export type OpenAPIDataType = 'string' | 'number' | 'integer' | 'boolean' | 'array' | 'object';
+
+/** OpenAPI string formats */
+export type OpenAPIStringFormat = 'date' | 'date-time' | 'email' | 'uri' | 'time' | 'uuid' | 'decimal';
+
+/** OpenAPI schema reference */
+export interface OpenAPISchemaRef {
+  $ref: string;
+}
+
+/** OpenAPI schema object */
+export interface OpenAPISchemaObject {
+  type?: OpenAPIDataType;
+  format?: OpenAPIStringFormat;
+  description?: string;
+  enum?: string[];
+  items?: OpenAPISchemaObject | OpenAPISchemaRef;
+  properties?: Record<string, OpenAPISchemaObject | OpenAPISchemaRef>;
+  required?: string[];
+  minimum?: number;
+  maximum?: number;
+  minLength?: number;
+  maxLength?: number;
+  default?: unknown;
+  $ref?: string;
+}
+
+/** OpenAPI parameter object */
+export interface OpenAPIParameter {
+  name: string;
+  in: 'query' | 'path' | 'header' | 'cookie';
+  required?: boolean;
+  schema: OpenAPISchemaObject;
+  description?: string;
+}
+
+/** OpenAPI request body object */
+export interface OpenAPIRequestBody {
+  required?: boolean;
+  content: {
+    'application/json': {
+      schema: OpenAPISchemaObject | OpenAPISchemaRef;
+    };
+  };
+}
+
+/** OpenAPI response object */
+export interface OpenAPIResponse {
+  description: string;
+  content?: {
+    'application/json': {
+      schema: OpenAPISchemaObject | OpenAPISchemaRef;
+    };
+  };
+}
+
+/** OpenAPI operation object */
+export interface OpenAPIOperation {
+  summary: string;
+  description: string;
+  tags: string[];
+  parameters?: OpenAPIParameter[];
+  requestBody?: OpenAPIRequestBody;
+  responses: Record<string, OpenAPIResponse>;
+}
+
+/** OpenAPI path item object */
+export interface OpenAPIPathItem {
+  get?: OpenAPIOperation;
+  post?: OpenAPIOperation;
+  put?: OpenAPIOperation;
+  patch?: OpenAPIOperation;
+  delete?: OpenAPIOperation;
+}
+
+/** OpenAPI security scheme object */
+export interface OpenAPISecurityScheme {
+  type: 'http' | 'apiKey' | 'oauth2' | 'openIdConnect';
+  scheme?: string;
+  bearerFormat?: string;
+  in?: 'query' | 'header' | 'cookie';
+  name?: string;
+}
+
 export interface OpenAPISchema {
   openapi: string;
   info: {
@@ -22,10 +108,10 @@ export interface OpenAPISchema {
     url: string;
     description: string;
   }>;
-  paths: Record<string, any>;
+  paths: Record<string, OpenAPIPathItem>;
   components: {
-    schemas: Record<string, any>;
-    securitySchemes?: Record<string, any>;
+    schemas: Record<string, OpenAPISchemaObject>;
+    securitySchemes?: Record<string, OpenAPISecurityScheme>;
   };
 }
 
@@ -423,11 +509,21 @@ export const generateOpenAPISpec = (): OpenAPISchema => {
   };
 };
 
+/** Internal interface for Zod array definition */
+interface ZodArrayDefInternal {
+  type: z.ZodTypeAny;
+}
+
+/** Internal interface for Zod object definition */
+interface ZodObjectDefInternal {
+  shape: () => Record<string, z.ZodTypeAny>;
+}
+
 /**
  * Convert Zod schema to OpenAPI schema
  * This allows us to use Zod for validation and automatically generate OpenAPI specs
  */
-export const zodToOpenAPI = (schema: z.ZodType<any>): any => {
+export const zodToOpenAPI = (schema: z.ZodTypeAny): OpenAPISchemaObject => {
   // Basic implementation - can be extended with @asteasolutions/zod-to-openapi
   if (schema instanceof z.ZodString) {
     return { type: 'string' };
@@ -439,14 +535,16 @@ export const zodToOpenAPI = (schema: z.ZodType<any>): any => {
     return { type: 'boolean' };
   }
   if (schema instanceof z.ZodArray) {
+    const arrayDef = schema._def as unknown as ZodArrayDefInternal;
     return {
       type: 'array',
-      items: zodToOpenAPI((schema as any)._def.type)
+      items: zodToOpenAPI(arrayDef.type)
     };
   }
   if (schema instanceof z.ZodObject) {
-    const shape = (schema as any)._def.shape();
-    const properties: Record<string, any> = {};
+    const objectDef = schema._def as unknown as ZodObjectDefInternal;
+    const shape = objectDef.shape();
+    const properties: Record<string, OpenAPISchemaObject> = {};
     for (const key in shape) {
       properties[key] = zodToOpenAPI(shape[key]);
     }

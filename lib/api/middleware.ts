@@ -161,7 +161,7 @@ export async function requireAuth(
       userId: 1, // Mock
       email: 'user@example.com', // Mock
     };
-  } catch (error) {
+  } catch (_error) {
     return NextResponse.json(
       {
         success: false,

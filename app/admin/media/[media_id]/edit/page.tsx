@@ -50,6 +50,7 @@ export default function EditMediaPage() {
 
   useEffect(() => {
     loadMedia();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [media_id]);
 
   const loadMedia = async () => {

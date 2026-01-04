@@ -47,6 +47,7 @@ export default function UnifiedDashboard() {
     // Refresh every 30 seconds
     const interval = setInterval(loadDashboardData, 30000);
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadDashboardData = async () => {

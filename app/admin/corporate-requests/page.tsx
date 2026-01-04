@@ -54,6 +54,7 @@ export default function CorporateRequestsPage() {
 
   useEffect(() => {
     loadRequests();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter]);
 
   const loadRequests = async () => {

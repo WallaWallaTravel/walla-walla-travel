@@ -18,7 +18,52 @@ export interface ErrorLogEntry {
   visitorId?: number;
   sessionId?: string;
   severity?: ErrorSeverity;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Database row representation for error logs
+ */
+export interface ErrorLogRow {
+  id: number;
+  error_type: string;
+  error_message: string;
+  stack_trace: string | null;
+  request_path: string | null;
+  request_method: string | null;
+  severity: ErrorSeverity;
+  resolved: boolean;
+  occurred_at: Date;
+  metadata: Record<string, unknown> | null;
+}
+
+/**
+ * Repeating error pattern from detection query
+ */
+export interface RepeatingError {
+  error_type: string;
+  error_message: string;
+  occurrences: number;
+  last_occurrence: Date;
+}
+
+/**
+ * Error spike data from detection query
+ */
+export interface ErrorSpike {
+  hour: Date;
+  error_count: number;
+  avg: number;
+  z_score: number;
+}
+
+/**
+ * New error type from detection query
+ */
+export interface NewErrorType {
+  error_type: string;
+  first_seen: Date;
+  occurrences: number;
 }
 
 /**
@@ -71,12 +116,12 @@ export async function getRecentErrors(options: {
   severity?: ErrorSeverity;
   errorType?: string;
   unresolved?: boolean;
-} = {}): Promise<any[]> {
+} = {}): Promise<ErrorLogRow[]> {
   const { limit = 100, severity, errorType, unresolved = false } = options;
-  
+
   try {
     let sql = `
-      SELECT 
+      SELECT
         id,
         error_type,
         error_message,
@@ -90,8 +135,8 @@ export async function getRecentErrors(options: {
       FROM error_logs
       WHERE 1=1
     `;
-    
-    const params: any[] = [];
+
+    const params: (string | number)[] = [];
     let paramCount = 0;
     
     if (severity) {
@@ -205,9 +250,9 @@ export async function resolveError(
  * Detect error patterns and anomalies
  */
 export async function detectErrorPatterns(): Promise<{
-  repeatingErrors: any[];
-  errorSpikes: any[];
-  newErrorTypes: any[];
+  repeatingErrors: RepeatingError[];
+  errorSpikes: ErrorSpike[];
+  newErrorTypes: NewErrorType[];
 }> {
   try {
     // Find errors that repeat frequently

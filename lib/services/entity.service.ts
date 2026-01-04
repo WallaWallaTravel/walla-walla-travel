@@ -1,4 +1,3 @@
-import { logger } from '@/lib/logger';
 /**
  * Entity Service
  * Manages service entities, booking sources, and commission calculations

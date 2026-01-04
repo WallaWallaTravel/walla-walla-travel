@@ -12,7 +12,59 @@ const STORES = {
   QUEUED_REQUESTS: 'queued_requests',
   CACHED_DATA: 'cached_data',
   SYNC_STATUS: 'sync_status'
-};
+} as const;
+
+/**
+ * Type definitions for offline storage
+ */
+
+/** Base inspection data provided when saving offline */
+export interface InspectionInput {
+  driverId: string;
+  vehicleId: string;
+  type: 'pre_trip' | 'post_trip';
+  items: Record<string, boolean>;
+  notes: string | null;
+  beginningMileage?: number;
+  endingMileage?: number;
+  signature?: string | null;
+  timeCardId?: number;
+}
+
+/** Stored inspection with metadata */
+export interface PendingInspection extends InspectionInput {
+  id?: IDBValidKey;
+  timestamp: number;
+  synced: boolean;
+  syncAttempts: number;
+}
+
+/** Request queued for retry when offline */
+export interface QueuedRequest {
+  id?: IDBValidKey;
+  endpoint: string;
+  method: string;
+  body: unknown;
+  headers?: Record<string, string>;
+  timestamp: number;
+  retryCount: number;
+  lastAttempt: number | null;
+}
+
+/** Cached data entry with expiration */
+export interface CacheEntry<T = unknown> {
+  key: string;
+  data: T;
+  cachedAt: number;
+  expiresAt: number;
+}
+
+/** Sync status record */
+export interface SyncStatus {
+  id: string;
+  lastSync: number;
+  pending: number;
+}
 
 /**
  * Initialize IndexedDB database
@@ -67,17 +119,7 @@ export function initDB(): Promise<IDBDatabase> {
 /**
  * Save inspection locally when offline
  */
-export async function saveInspectionOffline(inspection: {
-  driverId: string;
-  vehicleId: string;
-  type: 'pre_trip' | 'post_trip';
-  items: Record<string, boolean>;
-  notes: string | null;
-  beginningMileage?: number;
-  endingMileage?: number;
-  signature?: string | null;
-  timeCardId?: number;
-}): Promise<number> {
+export async function saveInspectionOffline(inspection: InspectionInput): Promise<number> {
   const db = await initDB();
 
   return new Promise((resolve, reject) => {
@@ -103,7 +145,7 @@ export async function saveInspectionOffline(inspection: {
 /**
  * Get all pending inspections that need to be synced
  */
-export async function getPendingInspections(): Promise<any[]> {
+export async function getPendingInspections(): Promise<PendingInspection[]> {
   const db = await initDB();
 
   return new Promise((resolve, reject) => {
@@ -136,15 +178,18 @@ export async function deleteInspection(id: number): Promise<void> {
   });
 }
 
+/** Input for queuing a request */
+export interface QueueRequestInput {
+  endpoint: string;
+  method: string;
+  body: unknown;
+  headers?: Record<string, string>;
+}
+
 /**
  * Queue a failed API request for retry
  */
-export async function queueRequest(request: {
-  endpoint: string;
-  method: string;
-  body: any;
-  headers?: Record<string, string>;
-}): Promise<number> {
+export async function queueRequest(request: QueueRequestInput): Promise<number> {
   const db = await initDB();
 
   return new Promise((resolve, reject) => {
@@ -170,7 +215,7 @@ export async function queueRequest(request: {
 /**
  * Get all queued requests
  */
-export async function getQueuedRequests(): Promise<any[]> {
+export async function getQueuedRequests(): Promise<QueuedRequest[]> {
   const db = await initDB();
 
   return new Promise((resolve, reject) => {
@@ -233,7 +278,7 @@ export async function updateRequestRetryCount(id: number): Promise<void> {
 /**
  * Cache data with expiration
  */
-export async function cacheData(key: string, data: any, ttlMinutes: number = 60): Promise<void> {
+export async function cacheData<T = unknown>(key: string, data: T, ttlMinutes: number = 60): Promise<void> {
   const db = await initDB();
 
   return new Promise((resolve, reject) => {

@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
 }
 
 // GET endpoint for manual testing
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   // Check if this is just a status check
   return NextResponse.json({
     endpoint: '/api/cron/send-reminders',

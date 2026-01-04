@@ -65,7 +65,7 @@ export function ProcessingFeeSettings({
         <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
           <div>
             <label className="font-semibold text-gray-900">Pass fees to customer</label>
-            <p className="text-sm text-gray-600">Add processing fee to customer's invoice</p>
+            <p className="text-sm text-gray-600">Add processing fee to customer&apos;s invoice</p>
           </div>
           <button
             type="button"

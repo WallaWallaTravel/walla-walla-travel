@@ -115,7 +115,7 @@ export default function CancellationPolicyPage() {
                 <h3 className="text-xl font-bold text-gray-900 mb-2">15-29 Days Before Tour</h3>
                 <p className="text-gray-700 leading-relaxed">
                   <strong>50% Refund</strong><br />
-                  Cancellations made 15-29 days before your tour will receive a 50% refund. At this point, we've likely declined other bookings 
+                  Cancellations made 15-29 days before your tour will receive a 50% refund. At this point, we&apos;ve likely declined other bookings
                   for your date and made reservations on your behalf.
                 </p>
               </div>
@@ -184,11 +184,11 @@ export default function CancellationPolicyPage() {
                 your reservation is considered a no-show and is <strong>non-refundable</strong>.
               </p>
               <p>
-                <strong>4.2 Late Arrival:</strong> If you arrive late, we'll do our best to accommodate the remaining itinerary. 
+                <strong>4.2 Late Arrival:</strong> If you arrive late, we&apos;ll do our best to accommodate the remaining itinerary.
                 However, no refunds or credits will be provided for missed portions of the tour due to late arrival.
               </p>
               <p className="text-sm text-gray-600 italic">
-                💡 Tip: Save our phone number and call if you're running late! We're understanding and flexible.
+                Tip: Save our phone number and call if you&apos;re running late! We&apos;re understanding and flexible.
               </p>
             </div>
           </section>
@@ -264,8 +264,8 @@ export default function CancellationPolicyPage() {
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Questions?</h2>
             <div className="space-y-2 text-gray-700 leading-relaxed">
               <p>
-                We're a small, family-run business and we genuinely care about your experience. If you have concerns about canceling, 
-                talk to us first! We'll always try to work something out.
+                We&apos;re a small, family-run business and we genuinely care about your experience. If you have concerns about canceling,
+                talk to us first! We&apos;ll always try to work something out.
               </p>
               <p className="mt-4">
                 <strong>Email:</strong> info@wallawalla.travel<br />

@@ -26,14 +26,14 @@ export interface UseFormStateReturn<T> {
   handleChange: (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
   handleBlur: (field: string) => void;
   handleSubmit: (e?: React.FormEvent) => Promise<void>;
-  setFieldValue: (field: keyof T, value: any) => void;
+  setFieldValue: <K extends keyof T>(field: K, value: T[K]) => void;
   setFieldError: (field: string, error: string) => void;
   setFieldTouched: (field: string, isTouched: boolean) => void;
   resetForm: () => void;
   setValues: (values: T) => void;
 }
 
-export function useFormState<T extends Record<string, any>>({
+export function useFormState<T extends Record<string, unknown>>({
   initialValues,
   validate,
   onSubmit,
@@ -56,7 +56,7 @@ export function useFormState<T extends Record<string, any>>({
   ) => {
     const { name, value, type } = e.target;
     
-    let newValue: any = value;
+    let newValue: string | number | boolean = value;
     
     // Handle checkboxes
     if (type === 'checkbox') {
@@ -146,7 +146,7 @@ export function useFormState<T extends Record<string, any>>({
   /**
    * Set a single field value
    */
-  const setFieldValue = useCallback((field: keyof T, value: any) => {
+  const setFieldValue = useCallback(<K extends keyof T>(field: K, value: T[K]) => {
     setValues(prev => ({
       ...prev,
       [field]: value,

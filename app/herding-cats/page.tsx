@@ -102,7 +102,7 @@ export default function HerdingCatsLandingPage() {
           </h2>
           <div className="space-y-4 text-[#3A3633]" style={{ fontFamily: 'Georgia, serif' }}>
             <p className="leading-relaxed">
-              "Why 'Herding Cats'?" you inquire with justified skepticism.
+              &quot;Why &apos;Herding Cats&apos;?&quot; you inquire with justified skepticism.
             </p>
             <p className="leading-relaxed">
               Those familiar with the idiomatic expression understand: convincing independent-minded 
@@ -110,9 +110,9 @@ export default function HerdingCatsLandingPage() {
               of foolhardy optimism.
             </p>
             <p className="leading-relaxed">
-              After years observing group dynamics in viticultural settings, we've concluded: 
-              attempting to impose uniformity upon diverse personalities proves both futile and 
-              inadvisable. Instead, we employ a methodology borrowed from behavioral science and 
+              After years observing group dynamics in viticultural settings, we&apos;ve concluded:
+              attempting to impose uniformity upon diverse personalities proves both futile and
+              inadvisable. Instead, we employ a methodology borrowed from behavioral science and
               large-scale feline management.
             </p>
             <p className="leading-relaxed italic">

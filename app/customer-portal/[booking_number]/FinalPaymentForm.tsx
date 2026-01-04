@@ -25,6 +25,7 @@ export default function FinalPaymentForm({ booking, onSuccess, onCancel }: Props
 
   useEffect(() => {
     createPaymentIntent();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const createPaymentIntent = async () => {
@@ -46,7 +47,7 @@ export default function FinalPaymentForm({ booking, onSuccess, onCancel }: Props
       } else {
         setError('Failed to initialize payment');
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to initialize payment');
     }
   };

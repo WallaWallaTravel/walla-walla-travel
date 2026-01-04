@@ -345,7 +345,7 @@ function BookTourPageContent() {
                 </svg>
               </div>
               <h1 className="text-2xl font-bold text-white mb-2">Request Submitted!</h1>
-              <p className="text-emerald-100">We'll be in touch within 24 hours</p>
+              <p className="text-emerald-100">We&apos;ll be in touch within 24 hours</p>
             </div>
 
             {/* Confirmation Details */}
@@ -1005,7 +1005,7 @@ function BookTourPageContent() {
 
               <p className="text-xs text-slate-500 text-center">
                 By submitting, you agree to our terms of service.
-                We'll confirm availability and send you a quote.
+                We&apos;ll confirm availability and send you a quote.
               </p>
               <p className="text-xs text-slate-400 text-center mt-3">
                 Questions? <a href="mailto:info@nwtouring.com" className="underline hover:text-slate-600">info@nwtouring.com</a>

@@ -26,7 +26,7 @@ export default function Step5Confirmation({ bookingData }: Props) {
         🎉 Booking Confirmed!
       </h2>
       <p className="text-xl text-gray-600 mb-8">
-        Your wine tour is all set. We can't wait to show you Walla Walla!
+        Your wine tour is all set. We can&apos;t wait to show you Walla Walla!
       </p>
 
       {/* Booking Number */}
@@ -60,7 +60,7 @@ export default function Step5Confirmation({ bookingData }: Props) {
             <div>
               <h4 className="font-bold text-gray-900 mb-1">Detailed Itinerary</h4>
               <p className="text-gray-600">
-                You'll receive your detailed itinerary before your tour
+                You&apos;ll receive your detailed itinerary before your tour
               </p>
             </div>
           </div>
@@ -72,7 +72,7 @@ export default function Step5Confirmation({ bookingData }: Props) {
             <div>
               <h4 className="font-bold text-gray-900 mb-1">Driver Assignment</h4>
               <p className="text-gray-600">
-                Your driver will be assigned and you'll receive their contact information
+                Your driver will be assigned and you&apos;ll receive their contact information
               </p>
             </div>
           </div>
@@ -84,7 +84,7 @@ export default function Step5Confirmation({ bookingData }: Props) {
             <div>
               <h4 className="font-bold text-gray-900 mb-1">Reminder</h4>
               <p className="text-gray-600">
-                We'll send you a reminder 72 hours before your tour
+                We&apos;ll send you a reminder 72 hours before your tour
               </p>
             </div>
           </div>

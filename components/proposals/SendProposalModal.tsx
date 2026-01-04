@@ -174,7 +174,7 @@ export function SendProposalModal({
               <li>• Beautiful email with proposal summary</li>
               <li>• Clickable link to view full proposal</li>
               <li>• Total investment and valid until date</li>
-              <li>• Easy "Accept Proposal" button</li>
+              <li>• Easy &quot;Accept Proposal&quot; button</li>
               {customMessage && <li>• Your custom message</li>}
             </ul>
           </div>

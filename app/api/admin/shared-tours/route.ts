@@ -8,7 +8,7 @@ import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
  * GET /api/admin/shared-tours
  * Get all shared tours (including unpublished)
  */
-export const GET = withAdminAuth(async (request: NextRequest, session) => {
+export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const searchParams = request.nextUrl.searchParams;
   const startDate = searchParams.get('start_date');
   const endDate = searchParams.get('end_date');
@@ -33,7 +33,7 @@ export const GET = withAdminAuth(async (request: NextRequest, session) => {
  */
 export const POST = withCSRF(
   withRateLimit(rateLimiters.api)(
-    withAdminAuth(async (request: NextRequest, session: AuthSession) => {
+    withAdminAuth(async (request: NextRequest, _session: AuthSession) => {
   const body = await request.json();
 
   // Validate required fields

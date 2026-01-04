@@ -52,6 +52,7 @@ export default function ItineraryBuilder({ params }: { params: Promise<{ booking
   // Load data
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bookingId]);
 
   const loadData = async () => {
@@ -378,7 +379,7 @@ export default function ItineraryBuilder({ params }: { params: Promise<{ booking
 
       alert('Itinerary saved successfully!');
       await loadData();
-    } catch (error) {
+    } catch (_error) {
       alert('Error saving itinerary');
     } finally {
       setSaving(false);

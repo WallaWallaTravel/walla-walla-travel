@@ -3,7 +3,7 @@ import { query } from '@/lib/db';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
 
 // GET /api/itineraries - List all itineraries
-export const GET = withErrorHandling(async (request: NextRequest) => {
+export const GET = withErrorHandling(async (_request: NextRequest) => {
   const result = await query(
     `SELECT
       i.*,

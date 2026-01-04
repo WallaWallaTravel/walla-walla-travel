@@ -68,7 +68,7 @@ export default function NewTripPage() {
           </Link>
           <h1 className="text-2xl md:text-3xl font-bold">Create New Trip</h1>
           <p className="text-stone-300 mt-1">
-            Let's plan your perfect Walla Walla adventure
+            Let&apos;s plan your perfect Walla Walla adventure
           </p>
         </div>
       </div>
@@ -134,7 +134,7 @@ export default function NewTripPage() {
                 type="text"
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                placeholder="e.g., Sarah's Bachelorette Wine Tour"
+                placeholder="e.g., Sarah&apos;s Bachelorette Wine Tour"
                 className="w-full px-4 py-3 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#722F37] focus:border-transparent"
               />
             </div>

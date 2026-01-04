@@ -85,6 +85,7 @@ export default function EditProposalPage({ params }: { params: Promise<{ proposa
       loadProposal(p.proposal_id);
     });
     loadWineries();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadProposal = async (id: string) => {

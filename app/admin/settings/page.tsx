@@ -76,7 +76,7 @@ export default function SystemSettingsPage() {
       } else {
         throw new Error('Failed to save settings');
       }
-    } catch (error) {
+    } catch (_error) {
       setMessage({ type: 'error', text: 'Failed to save settings. Please try again.' });
     } finally {
       setSaving(false);

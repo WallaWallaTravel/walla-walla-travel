@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, BadRequestError } from '@/lib/api-errors';
-import { queryOne, insertOne } from '@/lib/db-helpers';
+import { queryOne, query } from '@/lib/db-helpers';
 
 interface Restaurant {
   name: string;
@@ -98,7 +98,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   });
 
   // Insert lunch order
-  const result = await insertOne<LunchOrderResult>(
+  const insertResult = await query<LunchOrderResult>(
     `INSERT INTO lunch_orders (
       booking_id,
       restaurant_id,
@@ -115,7 +115,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       email_body,
       created_at,
       updated_at
-    ) VALUES ($1, $2, 
+    ) VALUES ($1, $2,
       (SELECT id FROM customers WHERE email = $3 LIMIT 1),
       $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW()
     ) RETURNING id`,
@@ -135,6 +135,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       emailBody,
     ]
   );
+  const result = insertResult.rows[0];
 
   return NextResponse.json({
     success: true,

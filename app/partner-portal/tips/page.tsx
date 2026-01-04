@@ -163,7 +163,7 @@ export default function PartnerTipsPage() {
         const data = await response.json();
         setMessage({ type: 'error', text: data.error || 'Failed to save tip' });
       }
-    } catch (error) {
+    } catch (_error) {
       setMessage({ type: 'error', text: 'An error occurred. Please try again.' });
     } finally {
       setSaving(false);
@@ -184,7 +184,7 @@ export default function PartnerTipsPage() {
       } else {
         setMessage({ type: 'error', text: 'Failed to delete tip' });
       }
-    } catch (error) {
+    } catch (_error) {
       setMessage({ type: 'error', text: 'An error occurred.' });
     }
   }

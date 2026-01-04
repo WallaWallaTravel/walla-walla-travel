@@ -60,7 +60,7 @@ export async function requireAuth(): Promise<Session | NextResponse> {
       return errorResponse('Unauthorized - Please login', 401);
     }
     return session;
-  } catch (error) {
+  } catch (_error) {
     return errorResponse('Authentication failed', 401);
   }
 }
@@ -80,7 +80,7 @@ export async function parseRequestBody<T>(request: NextRequest): Promise<T | nul
   try {
     const body = await request.json();
     return body as T;
-  } catch (error) {
+  } catch (_error) {
     return null;
   }
 }

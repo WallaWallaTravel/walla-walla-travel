@@ -1,4 +1,3 @@
-import { logger } from '@/lib/logger';
 /**
  * User Prisma Service
  *
@@ -7,7 +6,7 @@ import { logger } from '@/lib/logger';
  */
 
 import { PrismaBaseService, PaginationOptions } from './prisma-base.service';
-import { prisma, Prisma, users } from '@/lib/prisma';
+import { Prisma, users } from '@/lib/prisma';
 import { hashPassword } from '@/lib/auth/passwords';
 import { ConflictError, NotFoundError } from '@/lib/api/middleware/error-handler';
 
@@ -326,7 +325,7 @@ class UserPrismaService extends PrismaBaseService {
         where: { id: userId },
         data: { last_login: new Date() },
       });
-    } catch (error) {
+    } catch (_error) {
       // Don't throw - this is not critical
       this.warn(`Failed to update last login for user ${userId}`);
     }

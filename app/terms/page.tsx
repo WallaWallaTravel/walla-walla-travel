@@ -93,7 +93,7 @@ export default async function TermsPage() {
                 lunch reservations, and timing preferences.
               </p>
               <p>
-                <strong>2.3 What's Not Included:</strong> Unless otherwise stated, services do not include:
+                <strong>2.3 What&apos;s Not Included:</strong> Unless otherwise stated, services do not include:
               </p>
               <ul className="list-disc pl-6 space-y-2">
                 <li>Wine tasting fees at wineries</li>
@@ -194,8 +194,8 @@ export default async function TermsPage() {
             <h2 className="text-2xl font-bold text-gray-900 mb-4">9. Disputes and Resolution</h2>
             <div className="space-y-3 text-gray-700 leading-relaxed">
               <p>
-                If you have any concerns during or after your tour, please contact us immediately at info@wallawalla.travel or 509-200-8000. 
-                We're committed to making things right.
+                If you have any concerns during or after your tour, please contact us immediately at info@wallawalla.travel or 509-200-8000.
+                We&apos;re committed to making things right.
               </p>
               <p>
                 These terms are governed by the laws of Washington State. Any disputes will be resolved in Walla Walla County, Washington.
@@ -208,7 +208,7 @@ export default async function TermsPage() {
             <h2 className="text-2xl font-bold text-gray-900 mb-4">10. Changes to These Terms</h2>
             <div className="space-y-3 text-gray-700 leading-relaxed">
               <p>
-                We may update these terms from time to time. The "Last updated" date at the top indicates when the most recent changes were made. 
+                We may update these terms from time to time. The &quot;Last updated&quot; date at the top indicates when the most recent changes were made.
                 Continued use of our services after changes constitutes acceptance of the updated terms.
               </p>
             </div>
@@ -219,7 +219,7 @@ export default async function TermsPage() {
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Contact Us</h2>
             <div className="space-y-2 text-gray-700 leading-relaxed">
               <p>
-                Questions about these terms? We're happy to clarify!
+                Questions about these terms? We&apos;re happy to clarify!
               </p>
               <p>
                 <strong>Email:</strong> info@wallawalla.travel<br />

@@ -92,15 +92,15 @@ export async function withSavepoint<T>(
 // Batch Insert Helper
 // ============================================================================
 
-export async function batchInsert<T extends Record<string, any>>(
+export async function batchInsert<T extends Record<string, unknown>, R = T>(
   table: string,
   records: T[],
   returning: string[] = ['*']
-): Promise<any[]> {
+): Promise<R[]> {
   if (records.length === 0) return [];
 
   return withTransaction(async (db) => {
-    const results: any[] = [];
+    const results: R[] = [];
 
     for (const record of records) {
       const keys = Object.keys(record);
@@ -116,7 +116,7 @@ export async function batchInsert<T extends Record<string, any>>(
       `;
 
       const result = await db(sql, values);
-      results.push(result.rows[0]);
+      results.push(result.rows[0] as R);
     }
 
     return results;
@@ -127,7 +127,7 @@ export async function batchInsert<T extends Record<string, any>>(
 // Batch Update Helper
 // ============================================================================
 
-export async function batchUpdate<T extends Record<string, any>>(
+export async function batchUpdate<T extends Record<string, unknown>>(
   table: string,
   records: T[],
   idField: string = 'id'

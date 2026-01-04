@@ -6,6 +6,28 @@
 import { query } from '@/lib/db';
 import { logger } from '@/lib/logger';
 
+// Type for SQL query parameters
+type QueryParamValue = string | number | boolean | null | undefined;
+type QueryParam = QueryParamValue;
+
+// Type for activity log metadata
+interface ActivityMetadata {
+  approved_by?: number;
+  [key: string]: string | number | boolean | null | undefined;
+}
+
+// Type for business activity log entries
+export interface BusinessActivityLogEntry {
+  id: number;
+  business_id: number;
+  activity_type: string;
+  activity_description: string | null;
+  metadata: Record<string, unknown> | null;
+  ip_address: string | null;
+  user_agent: string | null;
+  created_at: string;
+}
+
 export interface Business {
   id: number;
   business_type: 'winery' | 'restaurant' | 'hotel' | 'activity' | 'other';
@@ -149,14 +171,14 @@ export async function getBusinesses(filters: {
   offset?: number;
 } = {}): Promise<{ businesses: Business[]; total: number }> {
   const whereClauses: string[] = [];
-  const params: any[] = [];
+  const params: QueryParam[] = [];
   let paramCount = 0;
-  
+
   if (filters.business_type) {
     params.push(filters.business_type);
     whereClauses.push(`business_type = $${++paramCount}`);
   }
-  
+
   if (filters.status) {
     params.push(filters.status);
     whereClauses.push(`status = $${++paramCount}`);
@@ -211,12 +233,12 @@ export async function updateBusiness(
   ];
   
   const setClauses: string[] = [];
-  const params: any[] = [];
+  const params: QueryParam[] = [];
   let paramCount = 0;
-  
+
   Object.entries(updates).forEach(([key, value]) => {
     if (allowedFields.includes(key)) {
-      params.push(value);
+      params.push(value as QueryParam);
       setClauses.push(`${key} = $${++paramCount}`);
     }
   });
@@ -294,7 +316,7 @@ export async function logBusinessActivity(
   businessId: number,
   activityType: string,
   description?: string,
-  metadata?: any,
+  metadata?: ActivityMetadata,
   ipAddress?: string,
   userAgent?: string
 ): Promise<void> {
@@ -319,7 +341,7 @@ export async function logBusinessActivity(
 export async function getBusinessActivity(
   businessId: number,
   limit: number = 50
-): Promise<any[]> {
+): Promise<BusinessActivityLogEntry[]> {
   const result = await query(
     `SELECT * FROM business_activity_log 
      WHERE business_id = $1 

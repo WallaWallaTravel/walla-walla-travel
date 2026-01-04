@@ -50,6 +50,7 @@ export default function BusinessUploadPage() {
   useEffect(() => {
     loadBusinessData();
     loadFiles();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   
   // Cleanup camera stream

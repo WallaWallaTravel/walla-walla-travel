@@ -85,7 +85,7 @@ export default function AdminSharedToursPage() {
       } else {
         setError(data.error);
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to load tours');
     } finally {
       setLoading(false);
@@ -120,7 +120,7 @@ export default function AdminSharedToursPage() {
       } else {
         setError(data.error);
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to create tour');
     }
   };
@@ -141,7 +141,7 @@ export default function AdminSharedToursPage() {
       } else {
         setError(data.error);
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to cancel tour');
     }
   };
@@ -160,7 +160,7 @@ export default function AdminSharedToursPage() {
       } else {
         setError(data.error);
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to update tour');
     }
   };

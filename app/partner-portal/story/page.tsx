@@ -147,7 +147,7 @@ export default function PartnerStoryPage() {
         const data = await response.json();
         setMessage({ type: 'error', text: data.error || 'Failed to save story' });
       }
-    } catch (error) {
+    } catch (_error) {
       setMessage({ type: 'error', text: 'An error occurred. Please try again.' });
     } finally {
       setSaving(null);

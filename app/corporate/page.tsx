@@ -47,7 +47,7 @@ export default function CorporatePage() {
         const data = await response.json();
         setError(data.error?.message || 'Failed to submit request');
       }
-    } catch (err) {
+    } catch (_err) {
       setError('An error occurred. Please try again.');
     } finally {
       setSubmitting(false);

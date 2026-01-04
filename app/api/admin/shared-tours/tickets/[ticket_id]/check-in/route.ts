@@ -10,7 +10,7 @@ interface RouteParams {
  * POST /api/admin/shared-tours/tickets/[ticket_id]/check-in
  * Check in a ticket on tour day
  */
-export const POST = withAdminAuth(async (request: NextRequest, session: AuthSession, { params }: RouteParams) => {
+export const POST = withAdminAuth(async (request: NextRequest, _session: AuthSession, { params }: RouteParams) => {
   const { ticket_id } = await params;
 
   const ticket = await sharedTourService.checkInTicket(ticket_id);

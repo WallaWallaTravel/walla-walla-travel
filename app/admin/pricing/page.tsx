@@ -53,6 +53,7 @@ function PricingCalculator() {
     }, 300); // 300ms debounce
 
     return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serviceType, partySize, durationHours, date, transferType, waitHours]);
 
   const calculatePrice = async () => {

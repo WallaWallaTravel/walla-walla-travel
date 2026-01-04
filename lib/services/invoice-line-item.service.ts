@@ -1,4 +1,3 @@
-import { logger } from '@/lib/logger';
 /**
  * Invoice Line Item Service
  * Handles creating and managing line-item based invoices

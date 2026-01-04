@@ -20,6 +20,7 @@ export default function Step1TourDetails({ bookingData, updateBookingData, nextS
     if (bookingData.tour_date && bookingData.duration_hours && bookingData.party_size) {
       checkAvailabilityAndPricing();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bookingData.tour_date, bookingData.duration_hours, bookingData.party_size]);
 
   const checkAvailabilityAndPricing = async () => {
@@ -50,7 +51,7 @@ export default function Step1TourDetails({ bookingData, updateBookingData, nextS
         setError(result.data.conflicts?.[0] || 'No availability for selected date');
         setAvailabilityChecked(false);
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to check availability. Please try again.');
       setAvailabilityChecked(false);
     } finally {

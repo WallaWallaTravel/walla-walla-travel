@@ -24,10 +24,10 @@ export default function OfflinePage() {
             </svg>
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            You're Offline
+            You&apos;re Offline
           </h1>
           <p className="text-gray-600 mb-6">
-            It looks like you've lost your internet connection. Don't worry, you can still complete inspections and they'll sync when you're back online.
+            It looks like you&apos;ve lost your internet connection. Don&apos;t worry, you can still complete inspections and they&apos;ll sync when you&apos;re back online.
           </p>
         </div>
 
@@ -37,7 +37,7 @@ export default function OfflinePage() {
               ✓ Pre-Trip Inspections
             </h3>
             <p className="text-sm text-blue-700">
-              Complete inspections offline - they'll upload automatically
+              Complete inspections offline - they&apos;ll upload automatically
             </p>
           </div>
 

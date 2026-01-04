@@ -1,4 +1,3 @@
-import { logger } from '@/lib/logger';
 /**
  * Wine Directory Service
  * Extended winery functionality including wines, events, and AI-ready content

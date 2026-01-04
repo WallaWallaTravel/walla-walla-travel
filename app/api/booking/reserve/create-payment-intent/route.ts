@@ -3,7 +3,6 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { logger } from '@/lib/logger';
 import { createDepositPaymentIntent } from '@/lib/stripe';
 import { withErrorHandling } from '@/lib/api-errors';
 import { validateBody, ReservationPaymentIntentSchema } from '@/lib/api/middleware/validation';

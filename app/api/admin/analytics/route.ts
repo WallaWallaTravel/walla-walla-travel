@@ -92,7 +92,7 @@ export const GET = withErrorHandling(async (request: NextRequest): Promise<NextR
             ? ((funnel.completed / funnel.total_attempts) * 100).toFixed(1)
             : '0'
         };
-      } catch (e) {
+      } catch (_e) {
         result.funnel = { error: 'Funnel data not available' };
       }
     }
@@ -146,7 +146,7 @@ export const GET = withErrorHandling(async (request: NextRequest): Promise<NextR
         );
 
         result.recentAbandoned = recentAbandoned.rows;
-      } catch (e) {
+      } catch (_e) {
         result.abandoned = { error: 'Abandoned cart data not available' };
         result.recentAbandoned = [];
       }
@@ -205,7 +205,7 @@ export const GET = withErrorHandling(async (request: NextRequest): Promise<NextR
         );
 
         result.deviceBreakdown = devicesResult.rows;
-      } catch (e) {
+      } catch (_e) {
         result.visitors = { error: 'Visitor data not available' };
       }
     }
@@ -254,7 +254,7 @@ export const GET = withErrorHandling(async (request: NextRequest): Promise<NextR
           bookings: parseInt(r.bookings),
           revenue: parseFloat(r.revenue)?.toFixed(2) || '0.00'
         }));
-      } catch (e) {
+      } catch (_e) {
         result.revenue = { error: 'Revenue data not available' };
       }
     }

@@ -110,7 +110,7 @@ function EmbedBookingContent() {
         </div>
         <h2 className="text-xl font-semibold text-slate-900 mb-2">Request Received!</h2>
         <p className="text-slate-600 text-sm mb-4">
-          We'll review your request and send you a confirmation email shortly.
+          We&apos;ll review your request and send you a confirmation email shortly.
         </p>
         <button
           onClick={() => { setSubmitted(false); setSelectedProvider(null); setFormData({

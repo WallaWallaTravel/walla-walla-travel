@@ -50,7 +50,7 @@ export default function SharedToursPage() {
       } else {
         setError(data.error);
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to load tours');
     } finally {
       setLoading(false);

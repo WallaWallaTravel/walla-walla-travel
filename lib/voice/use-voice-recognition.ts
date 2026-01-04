@@ -88,8 +88,8 @@ export function useVoiceRecognition(options: UseVoiceRecognitionOptions = {}) {
         restartTimeoutRef.current = setTimeout(() => {
           try {
             recognitionRef.current?.start()
-          } catch (e) {
-            console.log('[Voice] Could not restart:', e)
+          } catch (_e) {
+            console.log('[Voice] Could not restart:', _e)
           }
         }, 100)
       }
@@ -179,7 +179,7 @@ export function useVoiceRecognition(options: UseVoiceRecognitionOptions = {}) {
     if (recognitionRef.current) {
       try {
         recognitionRef.current.stop()
-      } catch (e) {
+      } catch (_e) {
         // Ignore
       }
     }
@@ -221,7 +221,7 @@ export function useVoiceRecognition(options: UseVoiceRecognitionOptions = {}) {
     if (recognitionRef.current) {
       try {
         recognitionRef.current.stop()
-      } catch (e) {
+      } catch (_e) {
         // Ignore
       }
       recognitionRef.current = null
@@ -254,7 +254,7 @@ export function useVoiceRecognition(options: UseVoiceRecognitionOptions = {}) {
       if (recognitionRef.current) {
         try {
           recognitionRef.current.stop()
-        } catch (e) {
+        } catch (_e) {
           // Ignore
         }
       }

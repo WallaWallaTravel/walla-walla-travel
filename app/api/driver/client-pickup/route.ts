@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
  * GET /api/driver/client-pickup
  * Get current service ready for pickup
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // Check authentication
     const authResult = await requireAuth();

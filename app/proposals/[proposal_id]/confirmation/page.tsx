@@ -26,6 +26,7 @@ export default function ProposalConfirmation({ params }: { params: Promise<{ pro
     if (proposal_id) {
       fetchProposal();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [proposal_id]);
 
   const fetchProposal = async () => {

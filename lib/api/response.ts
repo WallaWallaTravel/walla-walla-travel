@@ -10,15 +10,37 @@ import { ZodError } from 'zod';
 // Types
 // ============================================================================
 
-export interface APISuccessResponse<T = any> {
+/**
+ * Metadata that can be attached to API responses
+ */
+export interface APIResponseMeta {
+  timestamp: string;
+  version: string;
+  requestId?: string;
+  pagination?: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+  [key: string]: string | number | boolean | undefined | APIResponseMeta['pagination'];
+}
+
+export interface APISuccessResponse<T = unknown> {
   success: true;
   data: T;
-  meta?: {
-    timestamp: string;
-    version: string;
-    requestId?: string;
-    [key: string]: any;
-  };
+  meta?: APIResponseMeta;
+}
+
+/**
+ * Structured error details for validation errors, constraint violations, etc.
+ */
+export interface ErrorDetails {
+  fieldErrors?: Record<string, string[]>;
+  formErrors?: string[];
+  cause?: string;
+  constraint?: string;
+  [key: string]: unknown;
 }
 
 export interface APIErrorResponse {
@@ -26,7 +48,7 @@ export interface APIErrorResponse {
   error: {
     code: string;
     message: string;
-    details?: any;
+    details?: ErrorDetails;
     statusCode: number;
   };
 }
@@ -34,7 +56,7 @@ export interface APIErrorResponse {
 export interface APIError {
   code: string;
   message: string;
-  details?: any;
+  details?: ErrorDetails;
 }
 
 // ============================================================================
@@ -82,7 +104,7 @@ export class APIResponse {
   /**
    * Success response
    */
-  static success<T>(data: T, meta?: Record<string, any>): NextResponse<APISuccessResponse<T>> {
+  static success<T>(data: T, meta?: Partial<Omit<APIResponseMeta, 'timestamp' | 'version'>>): NextResponse<APISuccessResponse<T>> {
     return NextResponse.json({
       success: true,
       data,
@@ -188,13 +210,16 @@ export class APIResponse {
    */
   static internalError(
     message: string = 'An unexpected error occurred',
-    details?: any
+    details?: ErrorDetails | string
   ): NextResponse<APIErrorResponse> {
+    const sanitizedDetails = process.env.NODE_ENV === 'development'
+      ? (typeof details === 'string' ? { cause: details } : details)
+      : undefined;
     return this.error(
       {
         code: ErrorCodes.INTERNAL_ERROR,
         message,
-        details: process.env.NODE_ENV === 'development' ? details : undefined,
+        details: sanitizedDetails,
       },
       500
     );
@@ -216,7 +241,7 @@ export class APIResponse {
   /**
    * Conflict response (e.g., duplicate email)
    */
-  static conflict(message: string, details?: any): NextResponse<APIErrorResponse> {
+  static conflict(message: string, details?: ErrorDetails): NextResponse<APIErrorResponse> {
     return this.error(
       {
         code: ErrorCodes.CONFLICT,
@@ -233,15 +258,32 @@ export class APIResponse {
 // ============================================================================
 
 /**
+ * Next.js App Router route handler context
+ * Next.js 15+ wraps params in Promise
+ */
+export interface RouteContext<P = Record<string, string>> {
+  params: Promise<P>;
+}
+
+/**
+ * Type for Next.js route handlers
+ * Next.js 15+ requires context parameter to be required for dynamic routes
+ */
+export type RouteHandler<T = unknown, P = Record<string, string>> = (
+  request: Request,
+  context: RouteContext<P>
+) => Promise<NextResponse<T>>;
+
+/**
  * Wrap async API handler with error handling
  */
-export function withErrorHandling<T = any>(
-  handler: (request: Request, ...args: any[]) => Promise<NextResponse<T>>
-) {
-  return async (request: Request, ...args: any[]): Promise<NextResponse> => {
+export function withErrorHandling<T = unknown, P = Record<string, string>>(
+  handler: RouteHandler<T, P>
+): RouteHandler<T | APIErrorResponse, P> {
+  return async (request: Request, context: RouteContext<P>): Promise<NextResponse<T | APIErrorResponse>> => {
     try {
-      return await handler(request, ...args);
-    } catch (error) {
+      return await handler(request, context);
+    } catch (error: unknown) {
       console.error('[API Error]', error);
 
       if (error instanceof ZodError) {
@@ -263,7 +305,7 @@ export function withErrorHandling<T = any>(
 export function createAPIError(
   code: string,
   message: string,
-  details?: any
+  details?: ErrorDetails
 ): APIError {
   return { code, message, details };
 }

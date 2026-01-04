@@ -61,6 +61,7 @@ export default function LunchOrderPage() {
 
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [booking_id]);
 
   const loadData = async () => {

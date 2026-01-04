@@ -224,7 +224,7 @@ export default function MarketingDashboard() {
             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
               <span className="text-xl">🧪</span>
               <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">A/B Test "Caption Length" completed</p>
+                <p className="text-sm font-medium text-gray-900">A/B Test &quot;Caption Length&quot; completed</p>
                 <p className="text-xs text-gray-500">Winner: Long captions (+50% conversions)</p>
               </div>
               <span className="text-xs text-gray-400">2h ago</span>

@@ -35,7 +35,7 @@ export function ServiceWorkerProvider({ children }: { children: ReactNode }) {
         <div className="fixed top-0 left-0 right-0 bg-yellow-500 text-white py-2 px-4 text-center text-sm font-medium z-50">
           <div className="flex items-center justify-center gap-2">
             <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-            You're offline - Inspections will sync when connection is restored
+            You&apos;re offline - Inspections will sync when connection is restored
           </div>
         </div>
       )}

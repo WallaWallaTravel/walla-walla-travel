@@ -87,6 +87,7 @@ export default function BusinessReviewPage() {
 
   useEffect(() => {
     loadBusinessData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [businessId]);
 
   const loadBusinessData = async () => {

@@ -3,7 +3,7 @@ import { logger } from '@/lib/logger';
 import { successResponse, errorResponse } from '@/app/api/utils';
 import { healthCheck } from '@/lib/db';
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // Check database connection
     const dbHealthy = await healthCheck();

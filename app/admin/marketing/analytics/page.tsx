@@ -51,6 +51,7 @@ export default function MarketingAnalyticsPage() {
 
   useEffect(() => {
     loadMetrics()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [period])
 
   const loadMetrics = async () => {

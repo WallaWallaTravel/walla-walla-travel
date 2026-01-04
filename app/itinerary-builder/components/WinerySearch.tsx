@@ -76,7 +76,7 @@ export const WinerySearch: React.FC<WinerySearchProps> = ({
           ))}
           {filteredWineries.length === 0 && (
             <div className="px-4 py-3 text-gray-600 text-center">
-              No matches found. Type "add..." to create a new winery.
+              No matches found. Type &quot;add...&quot; to create a new winery.
             </div>
           )}
         </div>

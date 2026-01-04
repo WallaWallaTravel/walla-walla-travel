@@ -1,4 +1,3 @@
-import { logger } from '@/lib/logger';
 /**
  * Booking Service (Prisma)
  *
@@ -7,7 +6,7 @@ import { logger } from '@/lib/logger';
  */
 
 import { PrismaBaseService, PaginatedResponse, PaginationOptions } from './prisma-base.service';
-import { prisma, Prisma, bookings } from '@/lib/prisma';
+import { Prisma, bookings } from '@/lib/prisma';
 import { NotFoundError, ConflictError, ValidationError } from '@/lib/api/middleware/error-handler';
 import { z } from 'zod';
 

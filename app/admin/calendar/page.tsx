@@ -74,10 +74,12 @@ export default function CalendarView() {
 
   useEffect(() => {
     loadCalendarData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentDate]);
 
   useEffect(() => {
     applyFilters();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterDriver, filterVehicle, filterStatus, allBookings]);
 
   const loadCalendarData = async () => {

@@ -1,4 +1,3 @@
-import { logger } from '@/lib/logger';
 /**
  * User Service
  * 
@@ -180,7 +179,7 @@ export class UserService extends BaseService {
   async updateLastLogin(userId: number): Promise<void> {
     try {
       await this.query('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = $1', [userId]);
-    } catch (error) {
+    } catch (_error) {
       // Don't throw - this is not critical
       this.warn(`Failed to update last login for user ${userId}`);
     }

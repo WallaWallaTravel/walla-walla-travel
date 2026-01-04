@@ -4,6 +4,107 @@
  */
 
 // ============================================================================
+// COMMON UTILITY TYPES
+// ============================================================================
+
+/** Operating hours for a single day */
+export interface DayHours {
+  open: string;  // e.g., "10:00"
+  close: string; // e.g., "18:00"
+  closed?: boolean;
+}
+
+/** Weekly operating hours schedule */
+export interface HoursOfOperation {
+  monday?: DayHours;
+  tuesday?: DayHours;
+  wednesday?: DayHours;
+  thursday?: DayHours;
+  friday?: DayHours;
+  saturday?: DayHours;
+  sunday?: DayHours;
+}
+
+/** Photo/image metadata */
+export interface PhotoData {
+  url: string;
+  alt?: string;
+  caption?: string;
+  width?: number;
+  height?: number;
+  isPrimary?: boolean;
+}
+
+/** Collection of photos */
+export interface PhotoCollection {
+  primary?: PhotoData;
+  gallery?: PhotoData[];
+  thumbnail?: PhotoData;
+}
+
+/** Geographic coordinates */
+export interface Coordinates {
+  latitude: number;
+  longitude: number;
+}
+
+/** Restaurant menu item */
+export interface MenuItem {
+  name: string;
+  description?: string;
+  price: number;
+  category?: string;
+  dietaryFlags?: string[];
+}
+
+/** Restaurant menu structure */
+export interface MenuStructure {
+  categories?: string[];
+  items?: MenuItem[];
+  lastUpdated?: string;
+}
+
+/** Lunch order line item */
+export interface LunchOrderItem {
+  menuItemId?: string;
+  name: string;
+  quantity: number;
+  price: number;
+  specialInstructions?: string;
+  dietaryNotes?: string;
+}
+
+/** Wine purchase line item */
+export interface WinePurchaseItem {
+  wineId?: string;
+  name: string;
+  vintage?: number;
+  quantity: number;
+  pricePerBottle: number;
+  totalPrice: number;
+}
+
+/** Availability rule configuration */
+export interface AvailabilityRuleConfig {
+  blockedDates?: string[];
+  allowedDaysOfWeek?: number[];
+  maxBookingsPerDay?: number;
+  minAdvanceHours?: number;
+  maxAdvanceDays?: number;
+  specialHolidays?: string[];
+  [key: string]: unknown;
+}
+
+/** Timeline event metadata */
+export interface TimelineMetadata {
+  previousValue?: unknown;
+  newValue?: unknown;
+  reason?: string;
+  triggeredBy?: string;
+  additionalInfo?: Record<string, unknown>;
+}
+
+// ============================================================================
 // CUSTOMER TYPES
 // ============================================================================
 
@@ -61,8 +162,8 @@ export interface Winery {
   website?: string;
   latitude?: number;
   longitude?: number;
-  hours_of_operation?: Record<string, any>;
-  photos?: Record<string, any>;
+  hours_of_operation?: HoursOfOperation;
+  photos?: PhotoCollection;
   average_rating: number;
   total_reviews: number;
   curator_notes?: string;
@@ -86,7 +187,7 @@ export interface WineryListItem {
   tasting_fee?: number;
   average_rating: number;
   is_featured: boolean;
-  photos?: Record<string, any>;
+  photos?: PhotoCollection;
 }
 
 // ============================================================================
@@ -103,7 +204,7 @@ export interface Restaurant {
   zip: string;
   phone?: string;
   website?: string;
-  menu?: Record<string, any>;
+  menu?: MenuStructure;
   dietary_options?: string[];
   average_rating: number;
   total_reviews: number;
@@ -145,7 +246,7 @@ export interface Booking {
   end_time: string;
   duration_hours: number;
   pickup_location: string;
-  pickup_coordinates?: Record<string, any>;
+  pickup_coordinates?: Coordinates;
   driver_id?: number;
   vehicle_id?: number;
   base_price: number;
@@ -263,7 +364,7 @@ export interface LunchOrder {
   booking_id: number;
   restaurant_id: number;
   scheduled_time?: string;
-  items: Record<string, any>;
+  items: LunchOrderItem[];
   subtotal: number;
   tax: number;
   tip: number;
@@ -330,7 +431,7 @@ export interface AvailabilityRule {
   id: number;
   name: string;
   rule_type: string;
-  config: Record<string, any>;
+  config: AvailabilityRuleConfig;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -347,7 +448,7 @@ export interface BookingTimeline {
   description: string;
   actor_type?: string;
   actor_id?: number;
-  metadata?: Record<string, any>;
+  metadata?: TimelineMetadata;
   created_at: string;
 }
 
@@ -412,7 +513,7 @@ export interface WinePurchase {
   winery_id: number;
   booking_id?: number;
   purchase_date: string;
-  items: Record<string, any>;
+  items: WinePurchaseItem[];
   subtotal: number;
   tax: number;
   shipping: number;

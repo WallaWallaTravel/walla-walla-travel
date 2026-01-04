@@ -59,6 +59,7 @@ export default function CustomerPortalPage({ params }: { params: Promise<{ booki
 
   useEffect(() => {
     loadBooking();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bookingNumber]);
 
   const loadBooking = async () => {
@@ -81,7 +82,7 @@ export default function CustomerPortalPage({ params }: { params: Promise<{ booki
         setWineries(itineraryResult.stops || []);
       }
 
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to load booking');
     } finally {
       setLoading(false);
@@ -112,7 +113,7 @@ export default function CustomerPortalPage({ params }: { params: Promise<{ booki
       } else {
         alert('Failed to cancel booking');
       }
-    } catch (err) {
+    } catch (_err) {
       alert('Error cancelling booking');
     }
   };
