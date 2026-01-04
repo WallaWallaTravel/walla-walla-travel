@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 
 interface PartnerProfile {
   id: number;
@@ -15,6 +16,21 @@ interface DashboardStats {
   total_views: number;
   ai_recommendations: number;
   last_updated: string | null;
+  content_completion: {
+    stories_completed: number;
+    stories_total: number;
+    tips_count: number;
+  };
+}
+
+interface JourneyStep {
+  id: string;
+  title: string;
+  description: string;
+  href: string;
+  icon: string;
+  status: 'complete' | 'in_progress' | 'not_started';
+  motivation: string;
 }
 
 export default function PartnerDashboardPage() {
@@ -40,6 +56,45 @@ export default function PartnerDashboardPage() {
     fetchData();
   }, []);
 
+  function getJourneySteps(): JourneyStep[] {
+    const storiesComplete = stats?.content_completion?.stories_completed ?? 0;
+    const tipsCount = stats?.content_completion?.tips_count ?? 0;
+    const profileComplete = (stats?.profile_completion ?? 0) >= 80;
+
+    return [
+      {
+        id: 'listing',
+        title: 'Set the Stage',
+        description: 'Basic info, hours & what makes you special',
+        href: '/partner-portal/listing',
+        icon: '🎯',
+        status: profileComplete ? 'complete' : storiesComplete > 0 ? 'in_progress' : 'not_started',
+        motivation: 'Help visitors find you at the right time',
+      },
+      {
+        id: 'story',
+        title: 'Tell Your Story',
+        description: 'Your origin, philosophy & what makes you unique',
+        href: '/partner-portal/story',
+        icon: '📖',
+        status: storiesComplete >= 3 ? 'complete' : storiesComplete > 0 ? 'in_progress' : 'not_started',
+        motivation: 'Connect emotionally before they arrive',
+      },
+      {
+        id: 'tips',
+        title: 'Share Your Secrets',
+        description: 'Insider tips that create memorable visits',
+        href: '/partner-portal/tips',
+        icon: '💎',
+        status: tipsCount >= 3 ? 'complete' : tipsCount > 0 ? 'in_progress' : 'not_started',
+        motivation: 'Turn good visits into unforgettable ones',
+      },
+    ];
+  }
+
+  const journeySteps = getJourneySteps();
+  const completedSteps = journeySteps.filter(s => s.status === 'complete').length;
+
   if (loading) {
     return (
       <div className="p-8">
@@ -52,158 +107,181 @@ export default function PartnerDashboardPage() {
   }
 
   return (
-    <div className="p-8">
-      {/* Header */}
+    <div className="p-8 max-w-4xl">
+      {/* Emotional Welcome */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-900">
-          Welcome back{profile?.business_name ? `, ${profile.business_name}` : ''}!
+        <h1 className="text-3xl font-bold text-slate-900">
+          {profile?.business_name || 'Welcome'}
         </h1>
-        <p className="text-slate-500 mt-1">
-          Manage your business listing and track performance
+        <p className="text-lg text-slate-600 mt-2">
+          Every year, thousands of visitors come to Walla Walla looking for their perfect wine experience.
+          <span className="text-emerald-700 font-medium"> Your story helps them find you.</span>
         </p>
       </div>
 
-      {/* Setup Prompt (if not completed) */}
-      {profile && !profile.setup_completed_at && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 mb-8">
-          <div className="flex items-start gap-4">
-            <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center text-xl">
-              👋
-            </div>
-            <div className="flex-1">
-              <h2 className="font-semibold text-amber-900">Complete Your Setup</h2>
-              <p className="text-amber-700 text-sm mt-1">
-                Your listing isn&apos;t visible to customers yet. Complete your profile to start appearing in recommendations.
-              </p>
-              <div className="mt-4 flex gap-3">
-                <a
-                  href="/partner-portal/profile"
-                  className="inline-flex items-center px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 transition-colors"
-                >
-                  Complete Profile →
-                </a>
+      {/* The Big Why */}
+      <div className="bg-gradient-to-br from-purple-50 to-emerald-50 rounded-2xl p-6 mb-8 border border-purple-100">
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-2xl shadow-sm">
+            ✨
+          </div>
+          <div className="flex-1">
+            <h2 className="text-lg font-semibold text-slate-900">Why This Matters</h2>
+            <p className="text-slate-600 mt-1">
+              Visitors don&apos;t just want a tasting—they want a <em>connection</em>. When you share your story,
+              philosophy, and insider secrets, you attract people who&apos;ll truly appreciate what you&apos;ve built.
+              Better matches mean better reviews, more wine club members, and guests who become ambassadors.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Journey Progress */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 mb-8">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">Your Journey</h2>
+            <p className="text-sm text-slate-500">
+              {completedSteps === 3
+                ? "You're fully set up! Keep your content fresh."
+                : `${3 - completedSteps} step${3 - completedSteps > 1 ? 's' : ''} to go`
+              }
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className={`w-3 h-3 rounded-full transition-colors ${
+                  i < completedSteps
+                    ? 'bg-emerald-500'
+                    : i === completedSteps
+                      ? 'bg-purple-500 animate-pulse'
+                      : 'bg-slate-200'
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          {journeySteps.map((step, index) => (
+            <Link
+              key={step.id}
+              href={step.href}
+              className={`block p-4 rounded-xl border-2 transition-all ${
+                step.status === 'complete'
+                  ? 'bg-emerald-50 border-emerald-200 hover:border-emerald-300'
+                  : step.status === 'in_progress'
+                    ? 'bg-purple-50 border-purple-300 hover:border-purple-400 shadow-sm'
+                    : 'bg-slate-50 border-slate-200 hover:border-slate-300'
+              }`}
+            >
+              <div className="flex items-center gap-4">
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl ${
+                  step.status === 'complete'
+                    ? 'bg-emerald-100'
+                    : step.status === 'in_progress'
+                      ? 'bg-purple-100'
+                      : 'bg-slate-100'
+                }`}>
+                  {step.status === 'complete' ? '✓' : step.icon}
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-400 font-medium">STEP {index + 1}</span>
+                    {step.status === 'in_progress' && (
+                      <span className="px-2 py-0.5 text-xs bg-purple-100 text-purple-700 rounded-full">
+                        Continue
+                      </span>
+                    )}
+                  </div>
+                  <h3 className={`font-semibold ${
+                    step.status === 'complete' ? 'text-emerald-800' : 'text-slate-900'
+                  }`}>
+                    {step.title}
+                  </h3>
+                  <p className="text-sm text-slate-500">{step.description}</p>
+                </div>
+                <div className="text-right">
+                  <span className="text-slate-400">→</span>
+                </div>
               </div>
-            </div>
+              {step.status !== 'complete' && (
+                <div className="mt-3 pt-3 border-t border-slate-200">
+                  <p className="text-sm text-purple-700 italic">
+                    💡 {step.motivation}
+                  </p>
+                </div>
+              )}
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* Preview CTA */}
+      <div className="bg-slate-900 rounded-2xl p-6 mb-8 text-white">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold">See How Visitors Experience You</h2>
+            <p className="text-slate-300 mt-1">
+              Preview your listing exactly as visitors will see it
+            </p>
+          </div>
+          <Link
+            href="/partner-portal/preview"
+            className="px-5 py-2.5 bg-white text-slate-900 rounded-lg font-medium hover:bg-slate-100 transition-colors"
+          >
+            Preview Listing
+          </Link>
+        </div>
+      </div>
+
+      {/* Quick Stats - Less Prominent */}
+      {(stats?.total_views ?? 0) > 0 && (
+        <div className="grid grid-cols-2 gap-4 mb-8">
+          <div className="bg-white rounded-xl border border-slate-200 p-4">
+            <div className="text-sm text-slate-500">Listing Views</div>
+            <div className="text-2xl font-bold text-slate-900">{stats?.total_views ?? 0}</div>
+            <div className="text-xs text-slate-400">Last 30 days</div>
+          </div>
+          <div className="bg-white rounded-xl border border-slate-200 p-4">
+            <div className="text-sm text-slate-500">AI Recommendations</div>
+            <div className="text-2xl font-bold text-slate-900">{stats?.ai_recommendations ?? 0}</div>
+            <div className="text-xs text-slate-400">Times we&apos;ve suggested you</div>
           </div>
         </div>
       )}
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-xl border border-slate-200 p-6">
-          <div className="text-sm text-slate-500 mb-1">Profile Completion</div>
-          <div className="text-3xl font-bold text-slate-900">
-            {stats?.profile_completion ?? 0}%
+      {/* Inspiration Section */}
+      <div className="bg-amber-50 rounded-2xl border border-amber-200 p-6">
+        <div className="flex items-start gap-4">
+          <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center text-xl">
+            💡
           </div>
-          <div className="mt-2 h-2 bg-slate-100 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-emerald-500 rounded-full transition-all"
-              style={{ width: `${stats?.profile_completion ?? 0}%` }}
-            />
+          <div>
+            <h2 className="font-semibold text-amber-900">What Makes Great Partner Profiles?</h2>
+            <ul className="mt-3 space-y-2 text-sm text-amber-800">
+              <li className="flex items-start gap-2">
+                <span className="text-amber-500 mt-0.5">→</span>
+                <span><strong>Authenticity wins.</strong> Visitors can feel when stories are genuine vs. marketing copy.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-amber-500 mt-0.5">→</span>
+                <span><strong>Specifics are memorable.</strong> &ldquo;Our 2019 Syrah&rdquo; beats &ldquo;our award-winning wines.&rdquo;</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-amber-500 mt-0.5">→</span>
+                <span><strong>Insider tips create loyalty.</strong> Sharing secrets makes visitors feel special.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-amber-500 mt-0.5">→</span>
+                <span><strong>Show personality.</strong> Are you casual and fun? Refined and educational? Let it show.</span>
+              </li>
+            </ul>
           </div>
         </div>
-
-        <div className="bg-white rounded-xl border border-slate-200 p-6">
-          <div className="text-sm text-slate-500 mb-1">Listing Views</div>
-          <div className="text-3xl font-bold text-slate-900">
-            {stats?.total_views ?? 0}
-          </div>
-          <div className="text-xs text-slate-400 mt-1">Last 30 days</div>
-        </div>
-
-        <div className="bg-white rounded-xl border border-slate-200 p-6">
-          <div className="text-sm text-slate-500 mb-1">AI Recommendations</div>
-          <div className="text-3xl font-bold text-slate-900">
-            {stats?.ai_recommendations ?? 0}
-          </div>
-          <div className="text-xs text-slate-400 mt-1">Times recommended</div>
-        </div>
-
-        <div className="bg-white rounded-xl border border-slate-200 p-6">
-          <div className="text-sm text-slate-500 mb-1">Last Updated</div>
-          <div className="text-lg font-semibold text-slate-900">
-            {stats?.last_updated 
-              ? new Date(stats.last_updated).toLocaleDateString()
-              : 'Never'
-            }
-          </div>
-          <a 
-            href="/partner-portal/listing" 
-            className="text-xs text-emerald-600 hover:underline mt-1 inline-block"
-          >
-            Update now →
-          </a>
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="bg-white rounded-xl border border-slate-200 p-6">
-        <h2 className="font-semibold text-slate-900 mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <a
-            href="/partner-portal/listing"
-            className="flex items-center gap-3 p-4 rounded-lg border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50 transition-colors"
-          >
-            <span className="text-2xl">📝</span>
-            <div>
-              <div className="font-medium text-slate-900">Edit Listing</div>
-              <div className="text-xs text-slate-500">Update your business info</div>
-            </div>
-          </a>
-
-          <a
-            href="/partner-portal/media"
-            className="flex items-center gap-3 p-4 rounded-lg border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50 transition-colors"
-          >
-            <span className="text-2xl">📷</span>
-            <div>
-              <div className="font-medium text-slate-900">Upload Photos</div>
-              <div className="text-xs text-slate-500">Add images to your listing</div>
-            </div>
-          </a>
-
-          <a
-            href="/partner-portal/profile"
-            className="flex items-center gap-3 p-4 rounded-lg border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50 transition-colors"
-          >
-            <span className="text-2xl">⚙️</span>
-            <div>
-              <div className="font-medium text-slate-900">Account Settings</div>
-              <div className="text-xs text-slate-500">Manage your account</div>
-            </div>
-          </a>
-        </div>
-      </div>
-
-      {/* Tips Section */}
-      <div className="mt-8 bg-emerald-50 rounded-xl border border-emerald-200 p-6">
-        <h2 className="font-semibold text-emerald-900 mb-3">💡 Tips for Better Visibility</h2>
-        <ul className="space-y-2 text-sm text-emerald-800">
-          <li className="flex items-start gap-2">
-            <span className="text-emerald-600">✓</span>
-            <span>Add high-quality photos of your space, products, or experiences</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-emerald-600">✓</span>
-            <span>Keep your hours and availability up to date</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-emerald-600">✓</span>
-            <span>Write a compelling description highlighting what makes you unique</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-emerald-600">✓</span>
-            <span>Add specialties and features that help our AI recommend you accurately</span>
-          </li>
-        </ul>
       </div>
     </div>
   );
 }
-
-
-
-
-
-
-

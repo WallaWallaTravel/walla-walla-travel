@@ -9,12 +9,37 @@ interface NavItem {
   icon: string;
 }
 
-const navItems: NavItem[] = [
-  { href: '/partner-portal/dashboard', label: 'Dashboard', icon: '📊' },
-  { href: '/partner-portal/profile', label: 'Business Profile', icon: '🏢' },
-  { href: '/partner-portal/listing', label: 'Directory Listing', icon: '📝' },
-  { href: '/partner-portal/media', label: 'Photos & Media', icon: '📷' },
-  { href: '/partner-portal/analytics', label: 'Analytics', icon: '📈' },
+interface NavSection {
+  title?: string;
+  items: NavItem[];
+}
+
+const navSections: NavSection[] = [
+  {
+    items: [
+      { href: '/partner-portal/dashboard', label: 'Dashboard', icon: '📊' },
+    ],
+  },
+  {
+    title: 'Business Info',
+    items: [
+      { href: '/partner-portal/profile', label: 'Business Profile', icon: '🏢' },
+      { href: '/partner-portal/listing', label: 'Directory Listing', icon: '📝' },
+      { href: '/partner-portal/media', label: 'Photos & Media', icon: '📷' },
+    ],
+  },
+  {
+    title: 'Your Content',
+    items: [
+      { href: '/partner-portal/story', label: 'Your Story', icon: '📖' },
+      { href: '/partner-portal/tips', label: 'Insider Tips', icon: '💡' },
+    ],
+  },
+  {
+    items: [
+      { href: '/partner-portal/analytics', label: 'Analytics', icon: '📈' },
+    ],
+  },
 ];
 
 export function PartnerSidebar() {
@@ -48,26 +73,37 @@ export function PartnerSidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 p-4">
-        <div className="space-y-1">
-          {navItems.map((item) => {
-            const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
-            
-            return (
-              <button
-                key={item.href}
-                onClick={() => router.push(item.href)}
-                className={cn(
-                  'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-emerald-100 text-emerald-800'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                )}
-              >
-                <span className="text-base">{item.icon}</span>
-                <span className="flex-1 text-left">{item.label}</span>
-              </button>
-            );
-          })}
+        <div className="space-y-4">
+          {navSections.map((section, sectionIndex) => (
+            <div key={sectionIndex}>
+              {section.title && (
+                <div className="px-3 mb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  {section.title}
+                </div>
+              )}
+              <div className="space-y-1">
+                {section.items.map((item) => {
+                  const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+
+                  return (
+                    <button
+                      key={item.href}
+                      onClick={() => router.push(item.href)}
+                      className={cn(
+                        'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                        isActive
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                      )}
+                    >
+                      <span className="text-base">{item.icon}</span>
+                      <span className="flex-1 text-left">{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       </nav>
 
