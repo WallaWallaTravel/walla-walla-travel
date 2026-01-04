@@ -1,10 +1,11 @@
 /**
- * Structured Logger
+ * Structured Logger with Correlation ID Support
  *
  * Provides consistent logging across the application with:
  * - Environment-aware log levels
  * - Structured JSON output for production
  * - Context/metadata support
+ * - Automatic correlation ID inclusion
  * - Performance timing helpers
  *
  * Usage:
@@ -22,10 +23,21 @@ interface LogContext {
   [key: string]: unknown;
 }
 
+// Try to import request context (may not be available in all environments)
+let getRequestId: () => string = () => '';
+try {
+  // Dynamic import to avoid circular dependencies
+  const requestContext = require('./api/middleware/request-context');
+  getRequestId = requestContext.getRequestId;
+} catch {
+  // Request context not available
+}
+
 interface LogEntry {
   level: LogLevel;
   message: string;
   timestamp: string;
+  requestId?: string;
   context?: LogContext;
   error?: {
     name: string;
@@ -81,10 +93,22 @@ function createLogEntry(
   message: string,
   context?: LogContext
 ): LogEntry {
+  // Try to get request ID for correlation
+  let requestId: string | undefined;
+  try {
+    requestId = getRequestId();
+    if (requestId === '' || requestId.startsWith('fallback-')) {
+      requestId = undefined;
+    }
+  } catch {
+    // Ignore - not in request context
+  }
+
   const entry: LogEntry = {
     level,
     message,
     timestamp: new Date().toISOString(),
+    requestId,
   };
 
   if (context) {
@@ -128,6 +152,7 @@ function outputLog(entry: LogEntry): void {
       error: '[ERROR]',
     }[entry.level];
 
+    const requestIdStr = entry.requestId ? ` [${entry.requestId.substring(0, 8)}]` : '';
     const contextStr = entry.context
       ? ' ' + JSON.stringify(entry.context)
       : '';
@@ -135,7 +160,7 @@ function outputLog(entry: LogEntry): void {
       ? '\n   Error: ' + entry.error.name + ': ' + entry.error.message + (entry.error.stack ? '\n' + entry.error.stack : '')
       : '';
 
-    const output = prefix + ' ' + entry.message + contextStr + errorStr;
+    const output = prefix + requestIdStr + ' ' + entry.message + contextStr + errorStr;
 
     switch (entry.level) {
       case 'error':
@@ -237,6 +262,54 @@ export const logger = {
 export const logDebug = logger.debug.bind(logger);
 export const logInfo = logger.info.bind(logger);
 export const logWarn = logger.warn.bind(logger);
-export const logError = logger.error.bind(logger);
+
+/**
+ * Log an error with full context - returns error ID for tracking
+ */
+export function logError(
+  source: string,
+  message: string,
+  error?: unknown,
+  context?: LogContext
+): string {
+  const errorId = `ERR-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+  logger.error(`[${source}] ${message}`, {
+    errorId,
+    ...context,
+    error,
+  });
+  return errorId;
+}
+
+/**
+ * Log API request for audit/debugging
+ */
+export function logApiRequest(
+  method: string,
+  path: string,
+  userId?: string,
+  body?: unknown
+): void {
+  logger.info('API Request', {
+    method,
+    path,
+    userId,
+    body: process.env.NODE_ENV === 'development' ? body : undefined,
+  });
+}
+
+/**
+ * Log database error with query context
+ */
+export function logDbError(
+  operation: string,
+  error: unknown,
+  context?: LogContext
+): void {
+  logger.error(`Database error in ${operation}`, {
+    ...context,
+    error,
+  });
+}
 
 export default logger;

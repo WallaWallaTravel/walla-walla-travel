@@ -72,7 +72,9 @@ export default function ClientNotesClient({ driver }: Props) {
       }
 
       // Save to database with parameterized query
-      const { error } = await supabase
+      // Note: Using type assertion because client_notes table may not be in the generated types
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
         .from('client_notes')
         .insert({
           driver_id: driver.id,
@@ -91,7 +93,9 @@ export default function ClientNotesClient({ driver }: Props) {
       if (error) throw error
 
       // Update workflow progress
-      await supabase
+      // Note: Using type assertion because workflow_progress table may not be in the generated types
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any)
         .from('workflow_progress')
         .upsert({
           driver_email: driver.email,

@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
+import { logger } from '@/lib/logger'
 
 // Login function that calls the real API
 export async function login(email: string, password: string) {
@@ -47,8 +48,8 @@ export async function login(email: string, password: string) {
     return { success: true, user: data.data };
 
   } catch (error) {
-    console.error('Login error:', error);
-    
+    logger.error('Login error', { error });
+
     // Check if it's a network error
     if (error instanceof TypeError && error.message.includes('fetch')) {
       // Fallback to mock login for development if API is not available
@@ -121,7 +122,7 @@ export async function logout() {
     });
   } catch (error) {
     // Continue with logout even if API call fails
-    console.error('Logout API error:', error);
+    logger.error('Logout API error', { error });
   }
 
   // Always clear the session cookie locally

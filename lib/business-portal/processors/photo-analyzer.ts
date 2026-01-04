@@ -4,6 +4,7 @@
  */
 
 import { query } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import OpenAI from 'openai';
 
 const openai = new OpenAI({
@@ -30,7 +31,7 @@ export interface PhotoAnalysis {
  * Analyze a photo using GPT-4o Vision
  */
 export async function analyzePhoto(imageData: string): Promise<PhotoAnalysis> {
-  console.log('[Photo Analyzer] Analyzing photo...');
+  logger.debug('Photo Analyzer: Analyzing photo');
 
   if (!process.env.OPENAI_API_KEY) {
     throw new Error('OPENAI_API_KEY not configured');
@@ -98,13 +99,13 @@ Return JSON with this structure:
     }
 
     const analysis: PhotoAnalysis = JSON.parse(resultJson);
-    
-    console.log('[Photo Analyzer] Analysis complete:', analysis.suggestedCategory, '-', analysis.quality);
-    
+
+    logger.debug('Photo Analyzer: Analysis complete', { category: analysis.suggestedCategory, quality: analysis.quality });
+
     return analysis;
 
-  } catch (error: any) {
-    console.error('[Photo Analyzer] Error:', error);
+  } catch (error) {
+    logger.error('Photo Analyzer: Error', { error });
     throw error;
   }
 }
@@ -113,7 +114,7 @@ Return JSON with this structure:
  * Process a photo file from the database
  */
 export async function processPhotoFile(fileId: number): Promise<PhotoAnalysis> {
-  console.log('[Photo Analyzer] Processing photo file:', fileId);
+  logger.debug('Photo Analyzer: Processing photo file', { fileId });
 
   // Get the file
   const result = await query(
@@ -158,7 +159,7 @@ export async function processPhotoFile(fileId: number): Promise<PhotoAnalysis> {
     analysis.suggestedCategory
   ]);
 
-  console.log('[Photo Analyzer] Updated file with analysis');
+  logger.debug('Photo Analyzer: Updated file with analysis', { fileId });
 
   return analysis;
 }
@@ -167,7 +168,7 @@ export async function processPhotoFile(fileId: number): Promise<PhotoAnalysis> {
  * Batch analyze multiple photos
  */
 export async function batchAnalyzePhotos(fileIds: number[]): Promise<Map<number, PhotoAnalysis>> {
-  console.log('[Photo Analyzer] Batch analyzing', fileIds.length, 'photos');
+  logger.debug('Photo Analyzer: Batch analyzing photos', { count: fileIds.length });
 
   const results = new Map<number, PhotoAnalysis>();
 
@@ -175,8 +176,9 @@ export async function batchAnalyzePhotos(fileIds: number[]): Promise<Map<number,
     try {
       const analysis = await processPhotoFile(fileId);
       results.set(fileId, analysis);
-    } catch (error: any) {
-      console.error(`[Photo Analyzer] Failed to analyze file ${fileId}:`, error.message);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Photo Analyzer: Failed to analyze file', { fileId, error: message });
       // Continue with other files
     }
   }

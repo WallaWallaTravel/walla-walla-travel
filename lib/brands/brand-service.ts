@@ -4,6 +4,7 @@
  */
 
 import { query } from '@/lib/db';
+import { logger } from '@/lib/logger';
 
 export interface Brand {
   id: number;
@@ -49,7 +50,7 @@ export async function getBrandByCode(code: string): Promise<Brand | null> {
     
     return result.rows[0] || null;
   } catch (error) {
-    console.error('[Brand Service] Error getting brand by code:', error);
+    logger.error('Brand Service: Error getting brand by code', { error });
     return null;
   }
 }
@@ -63,10 +64,10 @@ export async function getBrandById(id: number): Promise<Brand | null> {
       'SELECT * FROM brands WHERE id = $1 AND active = true',
       [id]
     );
-    
+
     return result.rows[0] || null;
   } catch (error) {
-    console.error('[Brand Service] Error getting brand by ID:', error);
+    logger.error('Brand Service: Error getting brand by ID', { error, id });
     return null;
   }
 }
@@ -79,10 +80,10 @@ export async function getDefaultBrand(): Promise<Brand | null> {
     const result = await query(
       'SELECT * FROM brands WHERE default_brand = true AND active = true LIMIT 1'
     );
-    
+
     return result.rows[0] || null;
   } catch (error) {
-    console.error('[Brand Service] Error getting default brand:', error);
+    logger.error('Brand Service: Error getting default brand', { error });
     return null;
   }
 }
@@ -95,10 +96,10 @@ export async function getAllBrands(): Promise<Brand[]> {
     const result = await query(
       'SELECT * FROM brands WHERE active = true ORDER BY brand_name'
     );
-    
+
     return result.rows;
   } catch (error) {
-    console.error('[Brand Service] Error getting all brands:', error);
+    logger.error('Brand Service: Error getting all brands', { error });
     return [];
   }
 }
@@ -111,10 +112,10 @@ export async function getPartnerBrands(): Promise<Brand[]> {
     const result = await query(
       'SELECT * FROM brands WHERE show_on_wwt = true AND active = true ORDER BY brand_name'
     );
-    
+
     return result.rows;
   } catch (error) {
-    console.error('[Brand Service] Error getting partner brands:', error);
+    logger.error('Brand Service: Error getting partner brands', { error });
     return [];
   }
 }
@@ -212,7 +213,7 @@ export async function trackBrandMetric(
       DO UPDATE SET ${metricType} = brand_metrics.${metricType} + $3
     `, [brandId, today, value]);
   } catch (error) {
-    console.error('[Brand Service] Error tracking metric:', error);
+    logger.error('Brand Service: Error tracking metric', { error, brandId, metricType });
     // Don't throw - metrics tracking shouldn't break the app
   }
 }

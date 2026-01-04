@@ -1,15 +1,36 @@
 /**
  * Terms and Conditions Page
+ * Server Component - fetches deposit settings from database
  */
 
 import Link from 'next/link';
+import { getSetting } from '@/lib/settings/settings-service';
 
 export const metadata = {
   title: 'Terms and Conditions | Walla Walla Travel',
   description: 'Terms and conditions for Walla Walla Travel wine country tours and transportation services'
 };
 
-export default function TermsPage() {
+// Default deposit amounts (fallback if settings unavailable)
+const DEFAULT_DEPOSITS = {
+  smallGroup: 250,
+  largeGroup: 350,
+};
+
+export default async function TermsPage() {
+  // Fetch deposit settings from database
+  let smallGroupDeposit = DEFAULT_DEPOSITS.smallGroup;
+  let largeGroupDeposit = DEFAULT_DEPOSITS.largeGroup;
+
+  try {
+    const depositSettings = await getSetting('deposit_rules');
+    if (depositSettings?.reserve_refine) {
+      smallGroupDeposit = depositSettings.reserve_refine['1-7'] ?? DEFAULT_DEPOSITS.smallGroup;
+      largeGroupDeposit = depositSettings.reserve_refine['8-14'] ?? DEFAULT_DEPOSITS.largeGroup;
+    }
+  } catch {
+    // Use defaults if settings fetch fails
+  }
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 py-12">
@@ -44,8 +65,8 @@ export default function TermsPage() {
                 <strong>1.1 Deposit:</strong> A deposit is required to secure your reservation. Deposit amounts vary based on party size:
               </p>
               <ul className="list-disc pl-6 space-y-2">
-                <li>1-7 guests: $250 deposit</li>
-                <li>8-14 guests: $350 deposit</li>
+                <li>1-7 guests: ${smallGroupDeposit} deposit</li>
+                <li>8-14 guests: ${largeGroupDeposit} deposit</li>
                 <li>15+ guests: Custom deposit amount (contact us)</li>
               </ul>
               <p>

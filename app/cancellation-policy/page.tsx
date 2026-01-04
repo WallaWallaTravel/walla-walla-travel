@@ -1,16 +1,64 @@
 /**
  * Cancellation Policy Page
+ *
+ * Includes FAQPage schema for AI discoverability.
+ * AI systems (ChatGPT, Perplexity, Google AI) can extract and cite these Q&As.
  */
 
 import Link from 'next/link';
+import { FAQJsonLd } from '@/components/seo/FAQJsonLd';
 
 export const metadata = {
   title: 'Cancellation Policy | Walla Walla Travel',
-  description: 'Cancellation and refund policy for Walla Walla Travel wine country tours'
+  description: 'Cancellation and refund policy for Walla Walla Travel wine country tours. Full refund 30+ days out, 50% refund 15-29 days, no refund under 15 days.',
+  other: {
+    'article:modified_time': '2025-11-11T00:00:00Z',
+  },
 };
+
+// FAQ content for schema markup - makes content extractable by AI systems
+const cancellationFAQs = [
+  {
+    question: "What is the cancellation policy for Walla Walla wine tours?",
+    answer: "Cancellations 30+ days before your tour receive a full 100% refund. Cancellations 15-29 days before receive a 50% refund. Cancellations less than 15 days before are non-refundable, but you can transfer your reservation to someone else or reschedule to another available date."
+  },
+  {
+    question: "Can I get a refund if I cancel my wine tour?",
+    answer: "Yes, if you cancel 30 or more days before your scheduled tour, you receive a full refund. If you cancel 15-29 days before, you receive a 50% refund. Less than 15 days notice means no refund, but you can reschedule or transfer your booking."
+  },
+  {
+    question: "What happens if there's bad weather on my tour day?",
+    answer: "If conditions are unsafe for travel (heavy snow, ice, flooding), Walla Walla Travel will contact you to either reschedule your tour at no additional charge or provide a full refund. The decision to cancel due to weather is at the discretion of Walla Walla Travel for safety reasons."
+  },
+  {
+    question: "What if I'm late for my wine tour?",
+    answer: "If you arrive late, Walla Walla Travel will do their best to accommodate the remaining itinerary. However, no refunds or credits will be provided for missed portions of the tour due to late arrival. Call if you're running late - they're understanding and flexible."
+  },
+  {
+    question: "Can I change my wine tour date instead of canceling?",
+    answer: "Yes, rescheduling is generally free if done more than 30 days in advance, subject to availability. You can also change the itinerary, wineries, or timing up to 48 hours before your tour at no charge."
+  },
+  {
+    question: "How do I cancel or modify my Walla Walla wine tour reservation?",
+    answer: "Contact Walla Walla Travel as soon as possible via email at info@wallawalla.travel or phone at 509-200-8000. Provide your reservation number and name, and let them know if you want to cancel, reschedule, or transfer your booking. Response time is usually within 2 hours during business hours."
+  },
+  {
+    question: "How long does it take to get a refund for a canceled wine tour?",
+    answer: "Approved refunds are processed within 5-7 business days. Card payment refunds are issued to the original card and may take 5-10 business days to appear on your statement. Check payments receive a refund check mailed to the billing address."
+  },
+  {
+    question: "What if Walla Walla Travel cancels my tour?",
+    answer: "If Walla Walla Travel cancels your tour due to vehicle breakdown, driver illness, or circumstances beyond their control, you receive a full refund or the option to reschedule at no additional charge."
+  }
+];
 
 export default function CancellationPolicyPage() {
   return (
+    <>
+      <FAQJsonLd
+        faqs={cancellationFAQs}
+        pageUrl="https://wallawalla.travel/cancellation-policy"
+      />
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 py-12">
         {/* Header */}
@@ -240,6 +288,7 @@ export default function CancellationPolicyPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }
 

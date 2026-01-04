@@ -2,8 +2,8 @@
 
 **Complete architectural documentation for Walla Walla Travel system**
 
-**Last Updated:** November 12, 2025  
-**Status:** ✅ Production-Ready, Optimized
+**Last Updated:** January 2, 2026
+**Status:** ✅ Production-Ready, Reliability-Hardened
 
 ---
 
@@ -17,8 +17,9 @@
 6. [Database Schema](#database-schema)
 7. [Caching Strategy](#caching-strategy)
 8. [Security](#security)
-9. [Performance Optimizations](#performance-optimizations)
-10. [Best Practices](#best-practices)
+9. [Reliability & Resilience](#reliability--resilience)
+10. [Performance Optimizations](#performance-optimizations)
+11. [Best Practices](#best-practices)
 
 ---
 
@@ -472,6 +473,192 @@ await invalidateCache('wineries');
   'Referrer-Policy': 'strict-origin-when-cross-origin'
 }
 ```
+
+---
+
+## 🛡️ RELIABILITY & RESILIENCE
+
+### Overview
+
+Production-grade reliability patterns ensuring system stability:
+- **Circuit Breakers** - Prevent cascade failures
+- **Graceful Degradation** - Continue operating when services fail
+- **Operation Queue** - Retry failed operations automatically
+- **Distributed State** - Share state across serverless instances
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      API REQUEST                            │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+┌────────────────────────▼────────────────────────────────────┐
+│              CORRELATION ID MIDDLEWARE                      │
+│  Adds unique request ID for distributed tracing            │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+┌────────────────────────▼────────────────────────────────────┐
+│                  RATE LIMITING                              │
+│  Redis-backed distributed rate limiting                    │
+│  Fallback: In-memory per-instance                          │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+┌────────────────────────▼────────────────────────────────────┐
+│                CIRCUIT BREAKER                              │
+│  Per-service breakers: stripe, database, email, supabase   │
+│  Opens after 5 failures, half-open after 30s               │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+┌────────────────────────▼────────────────────────────────────┐
+│              SERVICE CALL WITH RETRY                        │
+│  Exponential backoff: 1s, 2s, 4s (max 3 retries)          │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+              ┌──────────┴──────────┐
+              │                     │
+         [Success]              [Failure]
+              │                     │
+              ▼                     ▼
+┌─────────────────────┐  ┌─────────────────────┐
+│  Reset Circuit      │  │  Queue Operation    │
+│  Return Response    │  │  for Retry          │
+└─────────────────────┘  └─────────────────────┘
+```
+
+### Circuit Breaker Pattern
+
+**Location:** `lib/services/health.service.ts`
+
+```typescript
+// Circuit breaker states
+type CircuitState = 'CLOSED' | 'OPEN' | 'HALF-OPEN';
+
+// Configuration
+const FAILURE_THRESHOLD = 5;      // Failures before opening
+const RESET_TIMEOUT = 30000;      // 30s before half-open
+
+// Usage
+await healthService.withRetry(
+  () => stripeClient.createPaymentIntent(data),
+  'stripe',
+  3 // max retries
+);
+```
+
+**Monitored Services:**
+| Service | Purpose | Failure Impact |
+|---------|---------|---------------|
+| stripe | Payment processing | Payments queued |
+| database | PostgreSQL | Critical - unhealthy |
+| email | Postmark | Emails queued |
+| supabase | Auth/Storage | Degraded mode |
+
+### Redis for Distributed State
+
+**Location:** `lib/redis.ts`
+
+```typescript
+// Distributed rate limiting
+const { allowed, remaining } = await rateLimit.check(
+  `rate:${ip}`,
+  100,      // requests
+  60        // seconds
+);
+
+// Circuit breaker persistence
+await circuitBreaker.recordFailure('stripe', 5, 30000);
+await circuitBreaker.isOpen('stripe');
+```
+
+**Automatic Fallback:**
+- When Redis unavailable, switches to in-memory
+- Rate limiting continues per-instance
+- Circuit breakers work locally
+- System remains operational
+
+### Operation Queue
+
+**Location:** `lib/services/queue.service.ts`
+
+Failed operations are automatically queued for retry:
+
+```typescript
+// Enqueue failed payment
+const opId = await queueService.enqueue('payment_create', {
+  bookingId: '123',
+  amount: 5000,
+  customerId: 'cus_xxx'
+});
+
+// Retry with exponential backoff
+// Attempts: 1s, 2s, 4s, 8s, 16s
+// Max: 5 attempts before dead letter
+```
+
+**Queue Status:**
+- `pending` - Waiting for retry
+- `processing` - Currently being processed
+- `completed` - Successfully processed
+- `failed` - Exhausted retries (dead letter)
+
+### Graceful Degradation
+
+When services fail, the system degrades gracefully:
+
+| Service Down | Behavior |
+|--------------|----------|
+| Stripe | Queue payments, notify user |
+| Email | Queue emails for later |
+| Redis | Fall back to in-memory |
+| Database | Return 503, log for investigation |
+
+### Health Monitoring
+
+**Dashboard:** `/admin/health`
+
+**API:** `GET /api/admin/health`
+
+Returns:
+- Overall system status (healthy/degraded/unhealthy)
+- Per-service health with latency
+- Circuit breaker states
+- Active issues list
+
+**Probe Endpoints:**
+- Database: `SELECT 1` query
+- Stripe: Balance API check
+- Email: Postmark server status
+- Redis: Ping/pong test
+
+### Correlation IDs
+
+**Location:** `lib/api/middleware/request-context.ts`
+
+Every request gets a unique correlation ID:
+- Propagated through all logs
+- Included in error reports to Sentry
+- Returned in `x-request-id` header
+- Enables distributed tracing
+
+```typescript
+// In any file
+const requestId = getRequestId();
+logger.info('Processing payment', { requestId, amount });
+```
+
+### Error Tracking (Sentry)
+
+**Integration:** `sentry.*.config.ts`
+
+- Automatic error capture
+- Correlation ID tagging
+- Performance monitoring
+- Release tracking
+
+### Runbook
+
+See `docs/RUNBOOK.md` for incident response procedures.
 
 ---
 

@@ -3,16 +3,17 @@
  * Processes queued jobs for voice transcription, text extraction, photo analysis, and PDF parsing
  */
 
-import { 
-  getPendingJobs, 
-  markJobProcessing, 
-  markJobCompleted, 
-  markJobFailed 
+import {
+  getPendingJobs,
+  markJobProcessing,
+  markJobCompleted,
+  markJobFailed
 } from './ai-processing';
 import { processVoiceEntry } from './processors/voice-transcriber';
 import { processTextEntry, processVoiceTranscription } from './processors/text-extractor';
 import { processPhotoFile } from './processors/photo-analyzer';
 import { processPdfFile } from './processors/pdf-parser';
+import { logger } from '@/lib/logger';
 
 let isProcessing = false;
 
@@ -26,12 +27,12 @@ export async function processJobs(limit: number = 10): Promise<{
   failed: number;
 }> {
   if (isProcessing) {
-    console.log('[Processing Worker] Already processing, skipping...');
+    logger.debug('Processing Worker: Already processing, skipping');
     return { processed: 0, succeeded: 0, failed: 0 };
   }
 
   isProcessing = true;
-  console.log('[Processing Worker] Starting job processing...');
+  logger.info('Processing Worker: Starting job processing');
 
   let processed = 0;
   let succeeded = 0;
@@ -39,11 +40,11 @@ export async function processJobs(limit: number = 10): Promise<{
 
   try {
     const jobs = await getPendingJobs(limit);
-    console.log(`[Processing Worker] Found ${jobs.length} pending jobs`);
+    logger.info('Processing Worker: Found pending jobs', { count: jobs.length });
 
     for (const job of jobs) {
       processed++;
-      console.log(`[Processing Worker] Processing job ${job.id} (${job.job_type})`);
+      logger.debug('Processing Worker: Processing job', { jobId: job.id, type: job.job_type });
 
       try {
         await markJobProcessing(job.id);
@@ -78,21 +79,20 @@ export async function processJobs(limit: number = 10): Promise<{
         }
 
         succeeded++;
-        console.log(`[Processing Worker] ✓ Job ${job.id} completed`);
+        logger.debug('Processing Worker: Job completed', { jobId: job.id });
 
-      } catch (error: any) {
+      } catch (error) {
         failed++;
-        console.error(`[Processing Worker] ✗ Job ${job.id} failed:`, error.message);
-        await markJobFailed(job.id, error.message);
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        logger.error('Processing Worker: Job failed', { jobId: job.id, error });
+        await markJobFailed(job.id, message);
       }
     }
 
-    console.log(
-      `[Processing Worker] Finished: ${processed} processed, ${succeeded} succeeded, ${failed} failed`
-    );
+    logger.info('Processing Worker: Finished', { processed, succeeded, failed });
 
-  } catch (error: any) {
-    console.error('[Processing Worker] Worker error:', error);
+  } catch (error) {
+    logger.error('Processing Worker: Worker error', { error });
   } finally {
     isProcessing = false;
   }
@@ -104,7 +104,7 @@ export async function processJobs(limit: number = 10): Promise<{
  * Process a single job by ID
  */
 export async function processJob(jobId: number): Promise<boolean> {
-  console.log(`[Processing Worker] Processing single job ${jobId}`);
+  logger.debug('Processing Worker: Processing single job', { jobId });
 
   const jobs = await getPendingJobs(100);
   const job = jobs.find(j => j.id === jobId);
@@ -143,12 +143,13 @@ export async function processJob(jobId: number): Promise<boolean> {
         throw new Error(`Unknown job type: ${job.job_type}`);
     }
 
-    console.log(`[Processing Worker] ✓ Job ${jobId} completed`);
+    logger.debug('Processing Worker: Job completed', { jobId });
     return true;
 
-  } catch (error: any) {
-    console.error(`[Processing Worker] ✗ Job ${jobId} failed:`, error.message);
-    await markJobFailed(job.id, error.message);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    logger.error('Processing Worker: Job failed', { jobId, error });
+    await markJobFailed(job.id, message);
     return false;
   }
 }

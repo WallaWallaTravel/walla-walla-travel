@@ -133,6 +133,7 @@ export function BookingsCalendar({ bookings }: BookingsCalendarProps) {
                 onClick={previousMonth}
                 className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
                 title="Previous month"
+                aria-label="Go to previous month"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -142,6 +143,7 @@ export function BookingsCalendar({ bookings }: BookingsCalendarProps) {
                 onClick={nextMonth}
                 className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
                 title="Next month"
+                aria-label="Go to next month"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

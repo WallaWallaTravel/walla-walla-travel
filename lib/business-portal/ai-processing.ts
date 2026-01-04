@@ -4,6 +4,7 @@
  */
 
 import { query } from '@/lib/db';
+import { logger } from '@/lib/logger';
 
 export interface ProcessingJob {
   id: number;
@@ -19,7 +20,7 @@ export interface ProcessingJob {
  * Queue a voice transcription job
  */
 export async function queueVoiceTranscription(voiceEntryId: number, businessId: number): Promise<number> {
-  console.log('[AI Processing] Queueing voice transcription for entry:', voiceEntryId);
+  logger.debug('AI Processing: Queueing voice transcription', { voiceEntryId });
   
   const result = await query(`
     INSERT INTO processing_jobs (
@@ -40,7 +41,7 @@ export async function queueVoiceTranscription(voiceEntryId: number, businessId: 
  * Queue a text extraction job
  */
 export async function queueTextExtraction(textEntryId: number, businessId: number): Promise<number> {
-  console.log('[AI Processing] Queueing text extraction for entry:', textEntryId);
+  logger.debug('AI Processing: Queueing text extraction', { textEntryId });
   
   const result = await query(`
     INSERT INTO processing_jobs (
@@ -61,7 +62,7 @@ export async function queueTextExtraction(textEntryId: number, businessId: numbe
  * Queue a photo analysis job
  */
 export async function queuePhotoAnalysis(fileId: number, businessId: number): Promise<number> {
-  console.log('[AI Processing] Queueing photo analysis for file:', fileId);
+  logger.debug('AI Processing: Queueing photo analysis', { fileId });
   
   const result = await query(`
     INSERT INTO processing_jobs (
@@ -82,7 +83,7 @@ export async function queuePhotoAnalysis(fileId: number, businessId: number): Pr
  * Queue a PDF parsing job
  */
 export async function queuePdfParsing(fileId: number, businessId: number): Promise<number> {
-  console.log('[AI Processing] Queueing PDF parsing for file:', fileId);
+  logger.debug('AI Processing: Queueing PDF parsing', { fileId });
   
   const result = await query(`
     INSERT INTO processing_jobs (

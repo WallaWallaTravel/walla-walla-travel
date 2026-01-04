@@ -1,9 +1,11 @@
 /**
  * Fetch Utilities
- * 
+ *
  * Standardized fetch patterns to eliminate duplication across components.
  * Provides consistent error handling and response parsing.
  */
+
+import { logger } from '@/lib/logger';
 
 export interface ApiResponse<T = any> {
   success: boolean;
@@ -75,7 +77,7 @@ export async function apiGet<T = any>(
       data: data.data || data,
     };
   } catch (error) {
-    console.error('GET request failed:', url, error);
+    logger.error('GET request failed', { url, error });
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -117,7 +119,7 @@ export async function apiPost<T = any>(
       message: data.message,
     };
   } catch (error) {
-    console.error('POST request failed:', url, error);
+    logger.error('POST request failed', { url, error });
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -159,7 +161,7 @@ export async function apiPut<T = any>(
       message: data.message,
     };
   } catch (error) {
-    console.error('PUT request failed:', url, error);
+    logger.error('PUT request failed', { url, error });
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -199,7 +201,7 @@ export async function apiDelete<T = any>(
       message: data.message,
     };
   } catch (error) {
-    console.error('DELETE request failed:', url, error);
+    logger.error('DELETE request failed', { url, error });
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -266,7 +268,7 @@ export async function apiUploadFile<T = any>(
       xhr.send(formData);
     });
   } catch (error) {
-    console.error('File upload failed:', url, error);
+    logger.error('File upload failed', { url, error });
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -282,18 +284,18 @@ export async function apiBatch<T = any>(
 ): Promise<ApiResponse<T[]>> {
   try {
     const results = await Promise.all(requests);
-    
+
     const allSuccessful = results.every(r => r.success);
     const data = results.map(r => r.data);
     const errors = results.filter(r => !r.success).map(r => r.error);
-    
+
     return {
       success: allSuccessful,
       data: data as T[],
       error: errors.length > 0 ? errors.join(', ') : undefined,
     };
   } catch (error) {
-    console.error('Batch request failed:', error);
+    logger.error('Batch request failed', { error });
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',

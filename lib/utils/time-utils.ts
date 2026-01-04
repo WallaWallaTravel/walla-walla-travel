@@ -112,7 +112,7 @@ export function to24HourFormat(time12: string): string {
   const match = time12.match(/(\d+):(\d+)\s*(AM|PM)/i);
   if (!match) return time12;
   
-  let [, hours, minutes, period] = match;
+  const [, hours, minutes, period] = match;
   let hours24 = parseInt(hours);
   
   if (period.toUpperCase() === 'PM' && hours24 !== 12) {

@@ -4,6 +4,7 @@
  */
 
 import { query } from '@/lib/db';
+import { logger } from '@/lib/logger';
 
 export interface Business {
   id: number;
@@ -34,15 +35,15 @@ export interface CreateBusinessInput {
  */
 export async function createBusiness(data: CreateBusinessInput): Promise<Business> {
   try {
-    console.log('[createBusiness] Creating business:', data.name);
-    
+    logger.debug('createBusiness: Creating business', { name: data.name });
+
     // Generate slug from name
     const slug = data.name
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '');
-    
-    console.log('[createBusiness] Generated slug:', slug);
+
+    logger.debug('createBusiness: Generated slug', { slug });
     
     // Generate unique code
     const result = await query(`
@@ -73,14 +74,14 @@ export async function createBusiness(data: CreateBusinessInput): Promise<Busines
     ]);
     
     const business = result.rows[0];
-    console.log('[createBusiness] Business created with code:', business.unique_code);
-    
+    logger.info('createBusiness: Business created', { code: business.unique_code, name: data.name });
+
     // Log activity
     await logBusinessActivity(business.id, 'business_invited', 'Business invited to contribute content');
-    
+
     return business;
   } catch (error) {
-    console.error('[createBusiness] Error:', error);
+    logger.error('createBusiness: Error', { error });
     throw error;
   }
 }
@@ -90,14 +91,14 @@ export async function createBusiness(data: CreateBusinessInput): Promise<Busines
  */
 export async function getBusinessByCode(code: string): Promise<Business | null> {
   try {
-    console.log('[getBusinessByCode] Looking up code:', code);
-    
+    logger.debug('getBusinessByCode: Looking up code', { code });
+
     const result = await query(
       'SELECT * FROM businesses WHERE unique_code = $1',
       [code]
     );
-    
-    console.log('[getBusinessByCode] Query result:', result.rows.length, 'rows');
+
+    logger.debug('getBusinessByCode: Query result', { rows: result.rows.length });
     
     if (result.rows.length === 0) {
       return null;
@@ -117,11 +118,11 @@ export async function getBusinessByCode(code: string): Promise<Business | null> 
       `UPDATE businesses SET ${updates.join(', ')} WHERE id = $1`,
       [business.id]
     );
-    
-    console.log('[getBusinessByCode] Successfully retrieved business:', business.name);
+
+    logger.debug('getBusinessByCode: Successfully retrieved business', { name: business.name });
     return business;
   } catch (error) {
-    console.error('[getBusinessByCode] Error:', error);
+    logger.error('getBusinessByCode: Error', { error });
     throw error;
   }
 }
@@ -147,8 +148,8 @@ export async function getBusinesses(filters: {
   limit?: number;
   offset?: number;
 } = {}): Promise<{ businesses: Business[]; total: number }> {
-  let whereClauses: string[] = [];
-  let params: any[] = [];
+  const whereClauses: string[] = [];
+  const params: any[] = [];
   let paramCount = 0;
   
   if (filters.business_type) {

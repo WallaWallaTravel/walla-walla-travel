@@ -4,6 +4,7 @@
  */
 
 import { query } from '@/lib/db';
+import { logger } from '@/lib/logger';
 
 export interface Discrepancy {
   id: string;
@@ -25,7 +26,7 @@ export interface Discrepancy {
  * Detect all discrepancies for a business
  */
 export async function detectDiscrepancies(businessId: number): Promise<Discrepancy[]> {
-  console.log('[Discrepancy Detector] Analyzing business:', businessId);
+  logger.debug('Discrepancy Detector: Analyzing business', { businessId });
 
   const discrepancies: Discrepancy[] = [];
 
@@ -38,7 +39,7 @@ export async function detectDiscrepancies(businessId: number): Promise<Discrepan
   discrepancies.push(...detectVagueResponses(data));
   discrepancies.push(...detectInconsistencies(data));
 
-  console.log('[Discrepancy Detector] Found', discrepancies.length, 'discrepancies');
+  logger.debug('Discrepancy Detector: Found discrepancies', { count: discrepancies.length });
 
   return discrepancies;
 }

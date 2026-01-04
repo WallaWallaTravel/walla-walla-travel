@@ -4,6 +4,7 @@
  */
 
 import { query } from '@/lib/db';
+import { logger } from '@/lib/logger';
 
 const DEEPGRAM_API_KEY = process.env.DEEPGRAM_API_KEY;
 
@@ -27,7 +28,7 @@ export async function transcribeAudio(audioData: string | Buffer): Promise<Trans
     throw new Error('DEEPGRAM_API_KEY not configured');
   }
 
-  console.log('[Voice Transcriber] Starting transcription...');
+  logger.debug('Voice Transcriber: Starting transcription');
 
   try {
     // Convert data URL to buffer if needed
@@ -77,12 +78,12 @@ export async function transcribeAudio(audioData: string | Buffer): Promise<Trans
       }))
     };
 
-    console.log('[Voice Transcriber] Transcription complete:', transcription.transcription.substring(0, 100) + '...');
-    
+    logger.debug('Voice Transcriber: Transcription complete', { preview: transcription.transcription.substring(0, 100) });
+
     return transcription;
 
-  } catch (error: any) {
-    console.error('[Voice Transcriber] Error:', error);
+  } catch (error) {
+    logger.error('Voice Transcriber: Error', { error });
     throw error;
   }
 }
@@ -91,7 +92,7 @@ export async function transcribeAudio(audioData: string | Buffer): Promise<Trans
  * Process a voice entry from the database
  */
 export async function processVoiceEntry(voiceEntryId: number): Promise<TranscriptionResult> {
-  console.log('[Voice Transcriber] Processing voice entry:', voiceEntryId);
+  logger.debug('Voice Transcriber: Processing voice entry', { voiceEntryId });
 
   // Get the voice entry
   const result = await query(
@@ -122,7 +123,7 @@ export async function processVoiceEntry(voiceEntryId: number): Promise<Transcrip
     WHERE id = $1
   `, [voiceEntryId, transcription.transcription, transcription.confidence]);
 
-  console.log('[Voice Transcriber] Updated voice entry with transcription');
+  logger.debug('Voice Transcriber: Updated voice entry with transcription', { voiceEntryId });
 
   return transcription;
 }

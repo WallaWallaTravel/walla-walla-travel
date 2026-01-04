@@ -4,6 +4,7 @@
  */
 
 import { query } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import OpenAI from 'openai';
 
 const openai = new OpenAI({
@@ -23,7 +24,7 @@ export async function extractDataFromText(
   questionCategory: string,
   extractionPrompt?: string
 ): Promise<ExtractedData> {
-  console.log('[Text Extractor] Extracting data from text...');
+  logger.debug('Text Extractor: Extracting data from text');
 
   if (!process.env.OPENAI_API_KEY) {
     throw new Error('OPENAI_API_KEY not configured');
@@ -69,13 +70,13 @@ Extract all relevant factual data as JSON. Be precise and avoid assumptions.`;
     }
 
     const extracted = JSON.parse(extractedJson);
-    
-    console.log('[Text Extractor] Extracted data:', Object.keys(extracted).length, 'fields');
-    
+
+    logger.debug('Text Extractor: Extracted data', { fieldCount: Object.keys(extracted).length });
+
     return extracted;
 
-  } catch (error: any) {
-    console.error('[Text Extractor] Error:', error);
+  } catch (error) {
+    logger.error('Text Extractor: Error', { error });
     throw error;
   }
 }
@@ -84,7 +85,7 @@ Extract all relevant factual data as JSON. Be precise and avoid assumptions.`;
  * Process a text entry from the database
  */
 export async function processTextEntry(textEntryId: number): Promise<ExtractedData> {
-  console.log('[Text Extractor] Processing text entry:', textEntryId);
+  logger.debug('Text Extractor: Processing text entry', { textEntryId });
 
   // Get the text entry and question info
   const result = await query(`
@@ -122,7 +123,7 @@ export async function processTextEntry(textEntryId: number): Promise<ExtractedDa
     WHERE id = $1
   `, [textEntryId, JSON.stringify(extracted)]);
 
-  console.log('[Text Extractor] Updated text entry with extracted data');
+  logger.debug('Text Extractor: Updated text entry with extracted data', { textEntryId });
 
   return extracted;
 }
@@ -131,7 +132,7 @@ export async function processTextEntry(textEntryId: number): Promise<ExtractedDa
  * Process a voice transcription (same logic as text)
  */
 export async function processVoiceTranscription(voiceEntryId: number): Promise<ExtractedData> {
-  console.log('[Text Extractor] Processing voice transcription:', voiceEntryId);
+  logger.debug('Text Extractor: Processing voice transcription', { voiceEntryId });
 
   // Get the voice entry and question info
   const result = await query(`
@@ -173,7 +174,7 @@ export async function processVoiceTranscription(voiceEntryId: number): Promise<E
     WHERE id = $1
   `, [voiceEntryId, JSON.stringify(extracted)]);
 
-  console.log('[Text Extractor] Updated voice entry with extracted data');
+  logger.debug('Text Extractor: Updated voice entry with extracted data', { voiceEntryId });
 
   return extracted;
 }

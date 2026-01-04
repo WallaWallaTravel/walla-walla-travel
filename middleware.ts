@@ -2,6 +2,21 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getSessionFromRequest } from './lib/auth/session';
 
+// Correlation ID header name
+const CORRELATION_ID_HEADER = 'x-request-id';
+
+/**
+ * Generate a correlation ID for request tracing
+ */
+function generateCorrelationId(): string {
+  // Use crypto.randomUUID if available, otherwise fallback
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  // Fallback for edge runtime
+  return `${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 9)}`;
+}
+
 /**
  * Security headers for all responses
  */
@@ -246,11 +261,16 @@ export async function middleware(request: NextRequest) {
 
   // Add security headers to all responses
   const response = NextResponse.next();
-  
+
+  // Generate and add correlation ID for request tracing
+  const existingCorrelationId = request.headers.get(CORRELATION_ID_HEADER);
+  const correlationId = existingCorrelationId || generateCorrelationId();
+  response.headers.set(CORRELATION_ID_HEADER, correlationId);
+
   // Debug headers to verify middleware is running (can be removed after debugging)
   response.headers.set('X-Middleware-Subdomain', subdomain || 'none');
   response.headers.set('X-Middleware-Pathname', pathname);
-  
+
   return addSecurityHeaders(response);
 }
 

@@ -3,6 +3,7 @@
 
 import { Pool } from 'pg'
 import { searchBusinesses, formatBusinessForAI } from '@/lib/business-portal/business-knowledge'
+import { logger } from '@/lib/logger'
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -57,7 +58,7 @@ export async function getWineryContext(): Promise<WineryInfo[]> {
       location: row.location
     }))
   } catch (error) {
-    console.warn('[Context Builder] Wineries table not available:', error)
+    logger.warn('Context Builder: Wineries table not available', { error })
     return []
   }
 }
@@ -84,7 +85,7 @@ export async function getTourContext(): Promise<TourInfo[]> {
       max_guests: row.max_passengers || 14
     }))
   } catch (error) {
-    console.warn('[Context Builder] Tours table not available:', error)
+    logger.warn('Context Builder: Tours table not available', { error })
     return []
   }
 }
@@ -174,7 +175,7 @@ export async function getBusinessPortalContext(): Promise<string> {
     
     return context;
   } catch (error) {
-    console.warn('[Context Builder] Business Portal not available:', error);
+    logger.warn('Context Builder: Business Portal not available', { error });
     return '';
   }
 }
@@ -228,7 +229,7 @@ export async function getPricingGuidanceContext(): Promise<string> {
     
     return guidance;
   } catch (error) {
-    console.warn('[Context Builder] Could not load pricing guidance:', error);
+    logger.warn('Context Builder: Could not load pricing guidance', { error });
     return '';
   }
 }

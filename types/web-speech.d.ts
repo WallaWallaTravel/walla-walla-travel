@@ -93,5 +93,5 @@ interface Window {
 
 // Make SpeechRecognition available globally
 declare var SpeechRecognition: SpeechRecognitionConstructor;
-declare var webkitSpeechRecognition: SpeechRecognitionConstructor;
+declare let webkitSpeechRecognition: SpeechRecognitionConstructor;
 

@@ -20,6 +20,16 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { formatCurrency } from '@/lib/rate-config';
 
+interface Winery {
+  id: number;
+  name: string;
+  city: string;
+}
+
+interface SelectedWinery extends Winery {
+  display_order: number;
+}
+
 interface ServiceItem {
   id: string;
   service_type: string;
@@ -29,12 +39,16 @@ interface ServiceItem {
   start_time: string;
   party_size: number;
   calculated_price: number;
-  [key: string]: any;
+  duration_hours?: 4 | 6 | 8;
+  selected_wineries?: SelectedWinery[];
+  wait_hours?: number;
+  hourly_rate?: number;
+  [key: string]: string | number | boolean | SelectedWinery[] | undefined;
 }
 
 interface DraggableServiceItemsProps {
   items: ServiceItem[];
-  wineries: any[];
+  wineries: Winery[];
   onReorder: (items: ServiceItem[]) => void;
   onUpdate: (id: string, updates: Partial<ServiceItem>) => void;
   onRemove: (id: string) => void;
@@ -96,7 +110,7 @@ export function DraggableServiceItems({
 interface SortableServiceItemProps {
   item: ServiceItem;
   index: number;
-  wineries: any[];
+  wineries: Winery[];
   onUpdate: (id: string, updates: Partial<ServiceItem>) => void;
   onRemove: (id: string) => void;
 }
@@ -306,9 +320,9 @@ function SortableServiceItem({
 
 // Draggable Winery List Component
 interface DraggableWineryListProps {
-  selectedWineries: any[];
-  allWineries: any[];
-  onUpdate: (wineries: any[]) => void;
+  selectedWineries: SelectedWinery[];
+  allWineries: Winery[];
+  onUpdate: (wineries: SelectedWinery[]) => void;
 }
 
 function DraggableWineryList({ selectedWineries, allWineries, onUpdate }: DraggableWineryListProps) {
@@ -336,8 +350,8 @@ function DraggableWineryList({ selectedWineries, allWineries, onUpdate }: Dragga
     }
   };
 
-  const addWinery = (winery: any) => {
-    const newWinery = {
+  const addWinery = (winery: Winery) => {
+    const newWinery: SelectedWinery = {
       id: winery.id,
       name: winery.name,
       city: winery.city,
@@ -409,7 +423,13 @@ function DraggableWineryList({ selectedWineries, allWineries, onUpdate }: Dragga
   );
 }
 
-function SortableWineryItem({ winery, index, onRemove }: any) {
+interface SortableWineryItemProps {
+  winery: SelectedWinery;
+  index: number;
+  onRemove: (wineryId: number) => void;
+}
+
+function SortableWineryItem({ winery, index, onRemove }: SortableWineryItemProps) {
   const {
     attributes,
     listeners,

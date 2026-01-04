@@ -155,6 +155,180 @@ export default function NWTouringLandingPage() {
           </div>
         </div>
 
+        {/* Wine Tour Packages */}
+        <div className="mb-20">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-slate-900 mb-4">
+              Wine Tour Packages
+            </h2>
+            <p className="text-lg text-slate-600 max-w-3xl mx-auto">
+              All-inclusive experiences with transportation, tasting fees, and insider access.
+              Choose the pace that suits your group.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {/* Classic Tasting */}
+            <div className="bg-white border-2 border-slate-200 rounded-lg overflow-hidden hover:border-[#1e40af] transition-colors">
+              <div className="bg-slate-50 px-6 py-4 border-b border-slate-200">
+                <h3 className="text-xl font-bold text-slate-900">Classic Tasting</h3>
+                <p className="text-sm text-slate-500 mt-1">Perfect introduction to wine country</p>
+              </div>
+              <div className="p-6">
+                <div className="flex items-baseline gap-1 mb-4">
+                  <span className="text-3xl font-bold text-[#1e40af]">$500</span>
+                  <span className="text-slate-500">/ group</span>
+                </div>
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-center text-sm text-slate-700">
+                    <span className="text-[#1e40af] mr-2">◆</span>
+                    <strong>4 hours</strong>&nbsp;of guided touring
+                  </li>
+                  <li className="flex items-center text-sm text-slate-700">
+                    <span className="text-[#1e40af] mr-2">◆</span>
+                    <strong>3-4 wineries</strong>&nbsp;hand-selected
+                  </li>
+                  <li className="flex items-center text-sm text-slate-700">
+                    <span className="text-[#1e40af] mr-2">◆</span>
+                    Up to 6 guests in premium SUV
+                  </li>
+                  <li className="flex items-center text-sm text-slate-700">
+                    <span className="text-[#1e40af] mr-2">◆</span>
+                    Tasting fees included
+                  </li>
+                  <li className="flex items-center text-sm text-slate-700">
+                    <span className="text-[#1e40af] mr-2">◆</span>
+                    Hotel pickup & drop-off
+                  </li>
+                </ul>
+                <p className="text-xs text-slate-500 mb-4">
+                  Ideal for: Couples, small groups, first-time visitors
+                </p>
+                <Link
+                  href="/book?package=classic"
+                  className="block w-full text-center bg-[#1e40af] text-white py-3 font-semibold hover:bg-[#1e3a8a] transition-colors"
+                >
+                  Book Classic Tour
+                </Link>
+              </div>
+            </div>
+
+            {/* Deep Dive - Most Popular */}
+            <div className="bg-white border-2 border-[#1e40af] rounded-lg overflow-hidden relative shadow-lg">
+              <div className="absolute top-0 right-0 bg-[#1e40af] text-white text-xs font-bold px-3 py-1">
+                MOST POPULAR
+              </div>
+              <div className="bg-[#1e40af] px-6 py-4">
+                <h3 className="text-xl font-bold text-white">Deep Dive</h3>
+                <p className="text-sm text-blue-200 mt-1">The quintessential Walla Walla experience</p>
+              </div>
+              <div className="p-6">
+                <div className="flex items-baseline gap-1 mb-4">
+                  <span className="text-3xl font-bold text-[#1e40af]">$750</span>
+                  <span className="text-slate-500">/ group</span>
+                </div>
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-center text-sm text-slate-700">
+                    <span className="text-[#1e40af] mr-2">◆</span>
+                    <strong>6 hours</strong>&nbsp;of curated touring
+                  </li>
+                  <li className="flex items-center text-sm text-slate-700">
+                    <span className="text-[#1e40af] mr-2">◆</span>
+                    <strong>4-5 wineries</strong>&nbsp;with varietals focus
+                  </li>
+                  <li className="flex items-center text-sm text-slate-700">
+                    <span className="text-[#1e40af] mr-2">◆</span>
+                    Up to 10 guests in Sprinter van
+                  </li>
+                  <li className="flex items-center text-sm text-slate-700">
+                    <span className="text-[#1e40af] mr-2">◆</span>
+                    Lunch at wine-country restaurant
+                  </li>
+                  <li className="flex items-center text-sm text-slate-700">
+                    <span className="text-[#1e40af] mr-2">◆</span>
+                    All tasting fees included
+                  </li>
+                  <li className="flex items-center text-sm text-slate-700">
+                    <span className="text-[#1e40af] mr-2">◆</span>
+                    Bottled water & snacks
+                  </li>
+                </ul>
+                <p className="text-xs text-slate-500 mb-4">
+                  Ideal for: Wine enthusiasts, groups of friends, celebrations
+                </p>
+                <Link
+                  href="/book?package=deep-dive"
+                  className="block w-full text-center bg-[#1e40af] text-white py-3 font-semibold hover:bg-[#1e3a8a] transition-colors"
+                >
+                  Book Deep Dive
+                </Link>
+              </div>
+            </div>
+
+            {/* Full Valley Experience */}
+            <div className="bg-white border-2 border-slate-200 rounded-lg overflow-hidden hover:border-[#1e40af] transition-colors">
+              <div className="bg-slate-50 px-6 py-4 border-b border-slate-200">
+                <h3 className="text-xl font-bold text-slate-900">Full Valley Experience</h3>
+                <p className="text-sm text-slate-500 mt-1">The ultimate wine country immersion</p>
+              </div>
+              <div className="p-6">
+                <div className="flex items-baseline gap-1 mb-4">
+                  <span className="text-3xl font-bold text-[#1e40af]">$1,200</span>
+                  <span className="text-slate-500">/ group</span>
+                </div>
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-center text-sm text-slate-700">
+                    <span className="text-[#1e40af] mr-2">◆</span>
+                    <strong>8 hours</strong>&nbsp;full-day adventure
+                  </li>
+                  <li className="flex items-center text-sm text-slate-700">
+                    <span className="text-[#1e40af] mr-2">◆</span>
+                    <strong>6-7 wineries</strong>&nbsp;across sub-regions
+                  </li>
+                  <li className="flex items-center text-sm text-slate-700">
+                    <span className="text-[#1e40af] mr-2">◆</span>
+                    Up to 14 guests in luxury Sprinter
+                  </li>
+                  <li className="flex items-center text-sm text-slate-700">
+                    <span className="text-[#1e40af] mr-2">◆</span>
+                    Gourmet lunch + afternoon snacks
+                  </li>
+                  <li className="flex items-center text-sm text-slate-700">
+                    <span className="text-[#1e40af] mr-2">◆</span>
+                    VIP access & behind-the-scenes
+                  </li>
+                  <li className="flex items-center text-sm text-slate-700">
+                    <span className="text-[#1e40af] mr-2">◆</span>
+                    Professional photos of your group
+                  </li>
+                </ul>
+                <p className="text-xs text-slate-500 mb-4">
+                  Ideal for: Corporate groups, special occasions, serious collectors
+                </p>
+                <Link
+                  href="/book?package=full-valley"
+                  className="block w-full text-center bg-[#1e40af] text-white py-3 font-semibold hover:bg-[#1e3a8a] transition-colors"
+                >
+                  Book Full Valley
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          {/* Custom Tours Note */}
+          <div className="mt-8 text-center">
+            <p className="text-slate-600">
+              <strong>Need something different?</strong> We create custom itineraries for any group size or special request.
+            </p>
+            <Link
+              href="/book?type=custom"
+              className="inline-block mt-3 text-[#1e40af] font-semibold hover:underline"
+            >
+              Request Custom Tour →
+            </Link>
+          </div>
+        </div>
+
         {/* Why Choose Us */}
         <div className="bg-slate-100 border-l-4 border-[#1e40af] p-8 md:p-12 mb-20">
           <h2 className="text-2xl font-bold text-slate-900 mb-6">

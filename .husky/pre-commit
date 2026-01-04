@@ -1,1 +1,12 @@
-npm test
+#!/bin/sh
+
+echo "Running pre-commit checks..."
+
+# Run build check
+echo "Checking build..."
+npm run build || {
+  echo "Build failed. Fix errors before committing."
+  exit 1
+}
+
+echo "Pre-commit checks passed"

@@ -52,7 +52,7 @@ export interface SessionUser {
   id: number;
   email: string;
   name: string;
-  role: 'admin' | 'driver';
+  role: 'admin' | 'driver' | 'partner';
 }
 
 export interface SessionPayload {
@@ -82,7 +82,7 @@ export async function verifySession(token: string): Promise<SessionPayload | nul
     const { payload } = await jwtVerify(token, SESSION_SECRET);
     return payload as unknown as SessionPayload;
   } catch (error) {
-    logger.error('[Session] Verification failed:', error);
+    logger.error('[Session] Verification failed', { error });
     return null;
   }
 }
@@ -159,7 +159,7 @@ export function clearSessionCookie(response: NextResponse): NextResponse {
 /**
  * Require authentication (throws redirect if not authenticated)
  */
-export async function requireAuth(allowedRoles?: Array<'admin' | 'driver'>): Promise<SessionPayload> {
+export async function requireAuth(allowedRoles?: Array<'admin' | 'driver' | 'partner'>): Promise<SessionPayload> {
   const session = await getSession();
   
   if (!session) {
@@ -187,4 +187,12 @@ export async function isAdmin(): Promise<boolean> {
 export async function isDriver(): Promise<boolean> {
   const session = await getSession();
   return session?.user.role === 'driver';
+}
+
+/**
+ * Check if user has partner role
+ */
+export async function isPartner(): Promise<boolean> {
+  const session = await getSession();
+  return session?.user.role === 'partner';
 }

@@ -1,4 +1,3 @@
-
 /**
  * Email Service
  * Handles all email notifications for the system
@@ -6,6 +5,7 @@
  */
 
 import { Resend } from 'resend';
+import { logger } from '@/lib/logger';
 
 interface EmailOptions {
   to: string | string[];
@@ -29,9 +29,7 @@ const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
  */
 export async function sendEmail(options: EmailOptions): Promise<boolean> {
   if (!resend) {
-    console.warn('⚠️  RESEND_API_KEY not configured. Email would be sent:', options.subject);
-    console.log('   To:', options.to);
-    console.log('   Subject:', options.subject);
+    logger.warn('RESEND_API_KEY not configured - email not sent', { subject: options.subject, to: options.to });
     return false;
   }
 
@@ -48,15 +46,15 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
     });
 
     if (error) {
-      console.error('❌ Email send failed:', error);
+      logger.error('Email send failed', { error, subject: options.subject });
       return false;
     }
 
-    console.log('✅ Email sent via Resend:', data?.id);
+    logger.info('Email sent', { emailId: data?.id, subject: options.subject });
     return true;
 
   } catch (error) {
-    console.error('❌ Email send error:', error);
+    logger.error('Email send error', { error, subject: options.subject });
     return false;
   }
 }

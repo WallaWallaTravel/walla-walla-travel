@@ -195,9 +195,7 @@ export interface Database {
       };
     };
 
-    Views: {
-      // Add views here when created
-    };
+    Views: Record<string, never>;
 
     Functions: {
       check_driver_compliance_status: {
@@ -220,9 +218,7 @@ export interface Database {
       };
     };
 
-    Enums: {
-      // Add enums here when created
-    };
+    Enums: Record<string, never>;
   };
 }
 

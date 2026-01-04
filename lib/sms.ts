@@ -4,6 +4,8 @@
  * https://www.twilio.com/docs/sms
  */
 
+import { logger } from '@/lib/logger';
+
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
 const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
 const TWILIO_PHONE_NUMBER = process.env.TWILIO_PHONE_NUMBER;
@@ -52,8 +54,7 @@ function formatPhoneNumber(phone: string): string {
  */
 export async function sendSMS(options: SMSOptions): Promise<SMSResult> {
   if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_PHONE_NUMBER) {
-    console.warn('⚠️  Twilio not configured. SMS would be sent:', options.message);
-    console.log('   To:', options.to);
+    logger.warn('Twilio not configured - SMS not sent', { to: options.to, message: options.message.substring(0, 50) });
     return { success: false, error: 'Twilio not configured' };
   }
 
@@ -82,15 +83,15 @@ export async function sendSMS(options: SMSOptions): Promise<SMSResult> {
     const data = await response.json();
 
     if (!response.ok) {
-      console.error('❌ SMS send failed:', data);
+      logger.error('SMS send failed', { error: data });
       return { success: false, error: data.message || 'Failed to send SMS' };
     }
 
-    console.log('✅ SMS sent via Twilio:', data.sid);
+    logger.info('SMS sent via Twilio', { sid: data.sid });
     return { success: true, messageId: data.sid };
 
   } catch (error) {
-    console.error('❌ SMS send error:', error);
+    logger.error('SMS send error', { error });
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }

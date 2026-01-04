@@ -4,6 +4,7 @@
  */
 
 import { query } from '@/lib/db';
+import { logger } from '@/lib/logger';
 
 export interface PdfParseResult {
   text: string;
@@ -16,12 +17,12 @@ export interface PdfParseResult {
  * NOTE: For MVP, we're storing PDFs as base64. In production, use a proper PDF library.
  */
 export async function parsePdf(pdfData: string | Buffer): Promise<PdfParseResult> {
-  console.log('[PDF Parser] Parsing PDF...');
+  logger.debug('PDF Parser: Parsing PDF');
 
   try {
     // For now, return a placeholder
     // In production: Use pdf-parse or pdfjs-dist library
-    console.warn('[PDF Parser] PDF parsing not yet implemented - placeholder response');
+    logger.warn('PDF Parser: PDF parsing not yet implemented - placeholder response');
     
     return {
       text: 'PDF parsing coming soon. File uploaded successfully.',
@@ -29,8 +30,8 @@ export async function parsePdf(pdfData: string | Buffer): Promise<PdfParseResult
       hasImages: false
     };
 
-  } catch (error: any) {
-    console.error('[PDF Parser] Error:', error);
+  } catch (error) {
+    logger.error('PDF Parser: Error', { error });
     throw error;
   }
 }
@@ -39,7 +40,7 @@ export async function parsePdf(pdfData: string | Buffer): Promise<PdfParseResult
  * Process a PDF file from the database
  */
 export async function processPdfFile(fileId: number): Promise<PdfParseResult> {
-  console.log('[PDF Parser] Processing PDF file:', fileId);
+  logger.debug('PDF Parser: Processing PDF file', { fileId });
 
   // Get the file
   const result = await query(
@@ -70,7 +71,7 @@ export async function processPdfFile(fileId: number): Promise<PdfParseResult> {
     WHERE id = $1
   `, [fileId, parseResult.text]);
 
-  console.log('[PDF Parser] Updated file with extracted text');
+  logger.debug('PDF Parser: Updated file with extracted text', { fileId });
 
   return parseResult;
 }

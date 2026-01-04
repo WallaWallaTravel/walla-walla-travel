@@ -48,7 +48,7 @@ export function TipSelector({
   useEffect(() => {
     let newTipAmount = 0;
     let newTipPercentage: number | null = null;
-    let newTipType: 'percentage' | 'fixed' | 'none' = selectedType;
+    const newTipType: 'percentage' | 'fixed' | 'none' = selectedType;
 
     if (selectedType === 'percentage' && selectedPercentage) {
       newTipAmount = Math.round(baseAmount * selectedPercentage) / 100;

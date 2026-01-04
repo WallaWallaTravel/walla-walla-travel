@@ -61,6 +61,57 @@ npm run dev
 
 ---
 
+## 🧪 TESTING
+
+### Unit Tests
+
+```bash
+# Run all unit tests
+npm run test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run tests with coverage
+npm run test:coverage
+```
+
+### End-to-End Tests (Playwright)
+
+```bash
+# Run E2E tests
+npm run test:e2e
+
+# Run E2E tests with UI
+npm run test:e2e:ui
+
+# View E2E test report
+npm run test:e2e:report
+```
+
+### Smoke Tests
+
+```bash
+# Quick health check of all critical pages
+npm run test:smoke
+```
+
+### Security Tests
+
+```bash
+# Run security-focused tests
+npm run test:security
+```
+
+### All Validation
+
+```bash
+# Run linting, type-check, and tests
+npm run validate
+```
+
+---
+
 ## 📚 DOCUMENTATION
 
 **Complete documentation available in [`docs/`](./docs) folder**

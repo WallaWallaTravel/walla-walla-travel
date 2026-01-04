@@ -4,6 +4,7 @@
  */
 
 import { query } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { ParsedItinerary } from './itinerary-parser';
 
 export interface ConversionResult {
@@ -40,7 +41,7 @@ export async function convertCorporateRequestToProposal(
   // Build service items from AI data
   const serviceItems: any[] = [];
   const notes: string[] = [];
-  let estimatedTotal = 0;
+  const estimatedTotal = 0;
   
   // Determine primary date
   let primaryDate = new Date();
@@ -211,7 +212,7 @@ export async function ensureProposalColumns(): Promise<void> {
       `);
     }
   } catch (error) {
-    console.error('[Proposal Converter] Error ensuring columns:', error);
+    logger.warn('Proposal Converter: Error ensuring columns', { error });
     // Continue anyway - columns might already exist
   }
 }

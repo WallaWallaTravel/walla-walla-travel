@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useBookingTracking } from '@/lib/hooks/useBookingTracking';
 
 /**
@@ -81,11 +82,38 @@ const SERVICE_OPTIONS = [
   { value: 'other', label: 'Other' },
 ];
 
-export default function BookTourPage() {
-  const [step, setStep] = useState(1);
-  const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
+// Package configurations for tour packages from /nw-touring
+const TOUR_PACKAGES: Record<string, { name: string; hours: number; description: string }> = {
+  'classic': {
+    name: 'Classic Tasting',
+    hours: 4,
+    description: '4-hour tour with 3-4 wineries',
+  },
+  'deep-dive': {
+    name: 'Deep Dive',
+    hours: 6,
+    description: '6-hour tour with 4-5 wineries and lunch',
+  },
+  'full-valley': {
+    name: 'Full Valley Experience',
+    hours: 8,
+    description: '8-hour full-day tour with 6-7 wineries',
+  },
+};
+
+function BookTourPageContent() {
+  const searchParams = useSearchParams();
+  const prefilledWinery = searchParams.get('winery');
+  const prefilledPackage = searchParams.get('package');
+  const packageInfo = prefilledPackage ? TOUR_PACKAGES[prefilledPackage] : null;
+
+  const [step, setStep] = useState(packageInfo ? 2 : 1); // Skip provider selection if package selected
+  const [selectedProvider, setSelectedProvider] = useState<string | null>(packageInfo ? 'nw-touring' : null);
   const [isMultipleServices, setIsMultipleServices] = useState(false);
-  const [tourDays, setTourDays] = useState<TourDay[]>([createNewDay()]);
+  const [tourDays, setTourDays] = useState<TourDay[]>([{
+    ...createNewDay(),
+    hours: packageInfo?.hours || 4,
+  }]);
   const [additionalServices, setAdditionalServices] = useState<ServiceItem[]>([createNewService()]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
@@ -102,7 +130,11 @@ export default function BookTourPage() {
     name: '',
     email: '',
     phone: '',
-    notes: '',
+    notes: prefilledWinery
+      ? `I'd like to include ${prefilledWinery} in my tour.`
+      : packageInfo
+        ? `I'm interested in the ${packageInfo.name} package (${packageInfo.description}).`
+        : '',
     textConsent: true, // Pre-filled checkbox for text communications
   });
 
@@ -857,6 +889,40 @@ export default function BookTourPage() {
                 </label>
               </div>
 
+              {/* Prefilled Winery Indicator */}
+              {prefilledWinery && (
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <span className="text-xl">🍷</span>
+                    <div>
+                      <p className="text-sm font-medium text-purple-900">
+                        Starting point: {prefilledWinery}
+                      </p>
+                      <p className="text-xs text-purple-700 mt-1">
+                        We&apos;ll build your tour around this winery and add complementary stops nearby.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Prefilled Package Indicator */}
+              {packageInfo && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <span className="text-xl">📦</span>
+                    <div>
+                      <p className="text-sm font-medium text-blue-900">
+                        Selected package: {packageInfo.name}
+                      </p>
+                      <p className="text-xs text-blue-700 mt-1">
+                        {packageInfo.description}. We&apos;ll customize it to your preferences.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
                   Special Requests or Notes
@@ -951,5 +1017,26 @@ export default function BookTourPage() {
         )}
       </main>
     </div>
+  );
+}
+
+// Loading fallback for Suspense
+function BookingLoadingFallback() {
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin h-10 w-10 border-4 border-[#E07A5F] border-t-transparent rounded-full mx-auto mb-4" />
+        <p className="text-slate-600">Loading booking form...</p>
+      </div>
+    </div>
+  );
+}
+
+// Default export wrapped in Suspense for useSearchParams
+export default function BookTourPage() {
+  return (
+    <Suspense fallback={<BookingLoadingFallback />}>
+      <BookTourPageContent />
+    </Suspense>
   );
 }
