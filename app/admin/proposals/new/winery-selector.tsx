@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 
 interface WinerySelectorProps {
   selectedWineries: Array<{ id: number; name: string; city: string }>;
@@ -128,7 +128,7 @@ export function WinerySelector({ selectedWineries, allWineries, onUpdate, descri
         </div>
         {filteredWineries.length === 1 && searchTerm && (
           <p className="text-xs text-green-600 mt-1 font-bold">
-            ↵ Press Enter to select "{filteredWineries[0].name}"
+            ↵ Press Enter to select &quot;{filteredWineries[0].name}&quot;
           </p>
         )}
       </div>

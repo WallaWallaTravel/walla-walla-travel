@@ -227,7 +227,7 @@ export function calculateMinimumSampleSize(
   // Clamp p2 to valid range
   const p2Clamped = Math.min(0.99, Math.max(0.01, p2))
 
-  const pBar = (p1 + p2Clamped) / 2
+  const _pBar = (p1 + p2Clamped) / 2
 
   // Z-scores for alpha and power
   const zAlpha = inverseNormalCDF(1 - alpha / 2)
@@ -330,7 +330,7 @@ export function generateInsights(
   return insights
 }
 
-export default {
+const abTestingService = {
   calculateSignificance,
   calculateMinimumSampleSize,
   calculateDaysRemaining,
@@ -338,7 +338,9 @@ export default {
   calculateCTR,
   calculateConversionRate,
   generateInsights
-}
+};
+
+export default abTestingService;
 
 
 

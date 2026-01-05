@@ -8,7 +8,7 @@
  * - Image analysis
  */
 
-import { GoogleGenerativeAI, Content, Part } from '@google/generative-ai';
+import { GoogleGenerativeAI, Content } from '@google/generative-ai';
 import { BaseService } from './base.service';
 
 // ============================================================================

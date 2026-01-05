@@ -152,7 +152,7 @@ export default function CancellationPolicyPage() {
               
               <p>
                 <strong>2.2 Emergencies:</strong> We understand that true emergencies happen (medical, family, etc.). 
-                Contact us immediately and we'll work with you on a case-by-case basis to find a fair solution.
+                Contact us immediately and we&apos;ll work with you on a case-by-case basis to find a fair solution.
               </p>
             </div>
           </section>

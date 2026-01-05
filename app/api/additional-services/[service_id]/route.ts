@@ -16,7 +16,7 @@ export const PATCH = withErrorHandling(async (
 
   // Build update query dynamically
   const updates: string[] = [];
-  const values: any[] = [];
+  const values: (string | number | boolean)[] = [];
   let paramCount = 0;
 
   if (name !== undefined) {

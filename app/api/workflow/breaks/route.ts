@@ -5,7 +5,6 @@ import {
   errorResponse,
   requireAuth,
   parseRequestBody,
-  validateRequiredFields,
   logApiRequest,
   formatDateForDB
 } from '@/app/api/utils';

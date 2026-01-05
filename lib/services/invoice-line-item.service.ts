@@ -11,9 +11,6 @@
 import {
   InvoiceLineItem,
   PricingTemplate,
-  GenerateLineItemsRequest,
-  PriceBreakdown,
-  calculatePriceBreakdown,
   createLineItem,
   LineItemCategory,
   RateType,
@@ -22,15 +19,7 @@ import {
 import {
   calculateHourlyTourPrice,
   calculateSharedTourPrice,
-  calculateFixedTourPrice,
-  getHourlyTourRate,
   formatDayType,
-  formatPrice,
-  DayType,
-  HourlyTourPriceResult,
-  SharedTourPriceResult,
-  FixedTourPriceResult,
-  InvoiceLineItemCategory,
 } from '@/lib/types/pricing-models';
 
 const DEFAULT_TAX_RATE = 0.089; // WA state tax

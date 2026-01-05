@@ -52,8 +52,8 @@ function ReservationConfirmationContent() {
       
       const data = await response.json();
       setReservation(data.reservation);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
     }
@@ -202,7 +202,7 @@ function ReservationConfirmationContent() {
               <div className="flex-1">
                 <h3 className="font-bold text-gray-900 mb-1">Design Your Perfect Day</h3>
                 <p className="text-gray-600 text-sm">
-                  Together you'll choose wineries, timing, lunch spots, and any special touches. Ryan knows the area inside and out and will make sure it's perfect for your group.
+                  Together you&apos;ll choose wineries, timing, lunch spots, and any special touches. Ryan knows the area inside and out and will make sure it&apos;s perfect for your group.
                 </p>
               </div>
             </div>
@@ -246,7 +246,7 @@ function ReservationConfirmationContent() {
               Walla Walla, WA [ZIP]
             </div>
             <p className="text-xs text-gray-600 mt-4">
-              Make checks payable to "Walla Walla Travel"
+              Make checks payable to &quot;Walla Walla Travel&quot;
             </p>
           </div>
         )}
@@ -269,7 +269,7 @@ function ReservationConfirmationContent() {
 
         {/* Contact */}
         <div className="mt-8 text-center text-gray-600">
-          <p className="mb-2">Questions? We're here to help!</p>
+          <p className="mb-2">Questions? We&apos;re here to help!</p>
           <div className="flex items-center justify-center gap-6">
             <a href={`mailto:${reservation.customer_email}`} className="text-blue-600 hover:underline font-medium">
               📧 Email Us

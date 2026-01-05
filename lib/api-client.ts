@@ -440,7 +440,7 @@ export const clientServiceApi = {
 };
 
 // Export all APIs
-export default {
+const apiClient = {
   auth: authApi,
   inspection: inspectionApi,
   workflow: workflowApi,
@@ -449,3 +449,5 @@ export default {
   admin: adminApi,
   clientService: clientServiceApi,
 };
+
+export default apiClient;

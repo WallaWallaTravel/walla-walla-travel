@@ -6,8 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import {
-  saveVoiceResponse,
-  updateVoiceTranscription
+  saveVoiceResponse
 } from '@/lib/business-portal/question-service';
 import { logBusinessActivity } from '@/lib/business-portal/business-service';
 

@@ -12,7 +12,7 @@ export default function DriverDocuments() {
     { id: 4, name: 'Medical Card', status: 'current', expires: '2025-06-30' },
   ]
 
-  const handleFileUpload = async (docType: string, file: File) => {
+  const handleFileUpload = async (docType: string, _file: File) => {
     setUploading(true)
     
     // TODO: Implement file storage

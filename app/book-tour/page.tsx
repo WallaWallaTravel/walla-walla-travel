@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
@@ -65,7 +65,7 @@ export interface BookingData {
 }
 
 export default function BookTourPage() {
-  const router = useRouter();
+  const _router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [bookingData, setBookingData] = useState<BookingData>({
     tour_date: '',
@@ -217,7 +217,7 @@ export default function BookTourPage() {
         {/* Help Section */}
         {currentStep < 5 && (
           <div className="mt-8 text-center">
-            <p className="text-gray-600 mb-2">Need help? We're here for you!</p>
+            <p className="text-gray-600 mb-2">Need help? We&apos;re here for you!</p>
             <div className="flex items-center justify-center gap-6">
               <a
                 href="tel:+15092008000"

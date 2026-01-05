@@ -354,7 +354,7 @@ export async function getMediaByCategory(
         AND is_active = TRUE
     `;
     
-    const params: any[] = [category];
+    const params: (string | number)[] = [category];
     
     if (subcategory) {
       query += ` AND subcategory = $2`;

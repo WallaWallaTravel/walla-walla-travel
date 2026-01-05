@@ -10,12 +10,11 @@
  * USDOT: 3603851 | MC: 1225087
  */
 
-import { CANCELLATION_POLICY, CANCELLATION_TIERS } from './cancellation-policy';
+import { CANCELLATION_POLICY } from './cancellation-policy';
 import {
   NW_TOURING_COMPANY_INFO,
   NW_TOURING_LIABILITY_SECTIONS,
   VEHICLE_DAMAGE_FEES,
-  LiabilitySection,
 } from './nw-touring-terms';
 
 export interface TermsSection {

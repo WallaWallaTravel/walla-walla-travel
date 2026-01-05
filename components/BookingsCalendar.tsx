@@ -21,7 +21,7 @@ export function BookingsCalendar({ bookings }: BookingsCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   // Get calendar data
-  const { year, month, daysInMonth, firstDayOfMonth, weeks } = useMemo(() => {
+  const { year, month, daysInMonth: _daysInMonth, firstDayOfMonth: _firstDayOfMonth, weeks } = useMemo(() => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     const firstDay = new Date(year, month, 1);

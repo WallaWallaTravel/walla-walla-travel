@@ -80,7 +80,7 @@ async function getDashboardStats(): Promise<DashboardStats> {
       totalRevenue: parseFloat(revenueResult.rows[0]?.revenue || '0'),
       recentBookings: recentBookings.rows.map(booking => ({
         ...booking,
-        total_price: parseFloat(booking.total_price as any || '0')
+        total_price: parseFloat(String(booking.total_price) || '0')
       })),
       pendingProposals: parseInt(proposalsCount.rows[0]?.count || '0'),
       acceptedProposals: parseInt(acceptedProposalsCount.rows[0]?.count || '0'),
@@ -118,7 +118,7 @@ export default async function AdminDashboardPage() {
           Welcome back, {session.user.name}
         </h1>
         <p className="text-slate-500 mt-1">
-          Here's what's happening with your business today
+          Here&apos;s what&apos;s happening with your business today
         </p>
       </div>
       

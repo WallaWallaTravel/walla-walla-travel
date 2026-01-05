@@ -5,7 +5,7 @@ import { queryOne, query, withTransaction } from '@/lib/db-helpers';
 import { sendDriverAssignmentToCustomer } from '@/lib/services/email-automation.service';
 import { sendEmail, EmailTemplates } from '@/lib/email';
 import { withComplianceCheck } from '@/lib/api/middleware/compliance-check';
-import { complianceService } from '@/lib/services/compliance.service';
+// import { complianceService } from '@/lib/services/compliance.service';
 
 /**
  * PUT /api/admin/bookings/[booking_id]/assign
@@ -42,7 +42,7 @@ async function handleAssignment(
   }
 
   const body = await request.json();
-  const { driver_id, vehicle_id, notify_driver, notify_customer, compliance_override, compliance_override_reason } = body;
+  const { driver_id, vehicle_id, notify_driver, notify_customer, compliance_override: _compliance_override, compliance_override_reason: _compliance_override_reason } = body;
 
   if (!driver_id || !vehicle_id) {
     throw new BadRequestError('driver_id and vehicle_id are required');

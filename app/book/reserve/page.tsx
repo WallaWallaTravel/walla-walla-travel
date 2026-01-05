@@ -252,8 +252,8 @@ export default function ReserveRefinePage() {
         router.push(`/book/reserve/confirmation?id=${data.reservationId}`);
       }
       
-    } catch (error: any) {
-      alert(error.message || 'Something went wrong. Please try again.');
+    } catch (error: unknown) {
+      alert(error instanceof Error ? error.message : 'Something went wrong. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -365,7 +365,7 @@ export default function ReserveRefinePage() {
                   placeholder="john@example.com"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  We'll send your reservation confirmation here
+                  We&apos;ll send your reservation confirmation here
                 </p>
               </div>
 
@@ -435,7 +435,7 @@ export default function ReserveRefinePage() {
                   <option value={3}>NW Touring & Concierge (Corporate & professional)</option>
                 </select>
                 <p className="text-xs text-gray-600 mt-2">
-                  All providers offer the same quality service. During your consultation call, Ryan can help match you with the best fit for your group's style.
+                  All providers offer the same quality service. During your consultation call, Ryan can help match you with the best fit for your group&apos;s style.
                 </p>
               </div>
 
@@ -508,7 +508,7 @@ export default function ReserveRefinePage() {
                   showPopperArrow={false}
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  In case your preferred date isn't available
+                  In case your preferred date isn&apos;t available
                 </p>
               </div>
 
@@ -542,7 +542,7 @@ export default function ReserveRefinePage() {
                   placeholder="Any specific wineries you want to visit? Dietary restrictions? Celebrating something special? Share your thoughts..."
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  We'll discuss all the details when Ryan calls you
+                  We&apos;ll discuss all the details when Ryan calls you
                 </p>
               </div>
 
@@ -571,7 +571,7 @@ export default function ReserveRefinePage() {
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Reserve Your Date</h2>
               <p className="text-gray-600 mb-6">
                 Pay a <strong>${depositCalculated} deposit</strong> to hold your date and vehicle. 
-                We'll finalize pricing when Ryan calls you within 24 hours.
+                We&apos;ll finalize pricing when Ryan calls you within 24 hours.
               </p>
 
               <div className="bg-blue-50 rounded-lg p-6 mb-6 border border-blue-200">
@@ -587,7 +587,7 @@ export default function ReserveRefinePage() {
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-blue-600 font-bold">3.</span>
-                    <span>Together we'll design your perfect itinerary</span>
+                    <span>Together we&apos;ll design your perfect itinerary</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-blue-600 font-bold">4.</span>

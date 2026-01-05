@@ -58,7 +58,7 @@ export default function BusinessPortalAdminPage() {
         setProcessingStats(data.stats);
       }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to load data:', error);
       setMessage({ type: 'error', text: 'Failed to load data' });
     } finally {
@@ -81,9 +81,9 @@ export default function BusinessPortalAdminPage() {
       setMessage({ type: 'success', text: data.message });
       loadData(); // Reload stats
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Processing error:', error);
-      setMessage({ type: 'error', text: error.message });
+      setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Processing failed' });
     } finally {
       setProcessing(false);
     }
@@ -291,8 +291,8 @@ export default function BusinessPortalAdminPage() {
           <h3 className="text-lg font-semibold text-blue-900 mb-3">Quick Start</h3>
           <div className="space-y-2 text-sm text-blue-800">
             <p>• <strong>Invite a business:</strong> Create a new business and send them their unique code</p>
-            <p>• <strong>Process jobs:</strong> Click "Process Jobs" to transcribe audio, extract data, and analyze photos</p>
-            <p>• <strong>Review submissions:</strong> Click "Review" on any submitted business to check for discrepancies</p>
+            <p>• <strong>Process jobs:</strong> Click &quot;Process Jobs&quot; to transcribe audio, extract data, and analyze photos</p>
+            <p>• <strong>Review submissions:</strong> Click &quot;Review&quot; on any submitted business to check for discrepancies</p>
           </div>
           <button
             onClick={() => router.push('/admin/business-portal/invite')}

@@ -1,9 +1,9 @@
 'use client'
 
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useVoiceRecognition } from '@/lib/voice/use-voice-recognition'
 import { useTTS, formatForTTS } from '@/lib/voice/use-tts'
-import { InspectionCommand, getHelpText, formatCommandDisplay } from '@/lib/voice/command-parser'
+import type { InspectionCommand } from '@/lib/voice/command-parser'
 import { haptics } from '@/components/mobile'
 
 interface InspectionItem {
@@ -25,14 +25,14 @@ export function VoiceInspectionMode({
   items,
   onItemCheck,
   onComplete,
-  onCancel,
+  onCancel: _onCancel,
   onModeChange,
 }: VoiceInspectionModeProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [showHelp, setShowHelp] = useState(false)
-  const [processingCommand, setProcessingCommand] = useState(false)
+  const [_processingCommand, setProcessingCommand] = useState(false)
   const [commandFeedback, setCommandFeedback] = useState<string | null>(null)
-  const [lastCommand, setLastCommand] = useState<InspectionCommand | null>(null)
+  const [_lastCommand, setLastCommand] = useState<InspectionCommand | null>(null)
   
   const feedbackTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   
@@ -170,7 +170,7 @@ export function VoiceInspectionMode({
   const {
     isListening,
     isSupported,
-    transcript,
+    transcript: _transcript,
     interimTranscript,
     error: voiceError,
     startListening,
@@ -226,7 +226,7 @@ export function VoiceInspectionMode({
           <div className="text-6xl mb-4">🎤</div>
           <h2 className="text-xl font-bold mb-4">Voice Mode Not Available</h2>
           <p className="text-gray-400 mb-6">
-            Your browser doesn't support voice recognition. Please use a modern browser like Chrome.
+            Your browser doesn&apos;t support voice recognition. Please use a modern browser like Chrome.
           </p>
           <button
             onClick={() => onModeChange?.('manual')}
@@ -310,7 +310,7 @@ export function VoiceInspectionMode({
         {/* Interim transcript */}
         {interimTranscript && (
           <div className="text-gray-400 italic mb-4">
-            "{interimTranscript}"
+            &quot;{interimTranscript}&quot;
           </div>
         )}
 
@@ -344,10 +344,10 @@ export function VoiceInspectionMode({
       {/* Quick commands hint */}
       <div className="px-4 pb-2">
         <div className="flex justify-center gap-4 text-sm text-gray-500">
-          <span>🎤 "Pass"</span>
-          <span>🎤 "Fail"</span>
-          <span>🎤 "Repeat"</span>
-          <span>🎤 "Help"</span>
+          <span>🎤 &quot;Pass&quot;</span>
+          <span>🎤 &quot;Fail&quot;</span>
+          <span>🎤 &quot;Repeat&quot;</span>
+          <span>🎤 &quot;Help&quot;</span>
         </div>
       </div>
 

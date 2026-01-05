@@ -16,7 +16,7 @@ export interface PdfParseResult {
  * Parse PDF and extract text
  * NOTE: For MVP, we're storing PDFs as base64. In production, use a proper PDF library.
  */
-export async function parsePdf(pdfData: string | Buffer): Promise<PdfParseResult> {
+export async function parsePdf(_pdfData: string | Buffer): Promise<PdfParseResult> {
   logger.debug('PDF Parser: Parsing PDF');
 
   try {
@@ -79,7 +79,7 @@ export async function processPdfFile(fileId: number): Promise<PdfParseResult> {
 /**
  * Extract specific data from menu/wine list PDFs using GPT-4o
  */
-export async function extractMenuData(extractedText: string): Promise<any> {
+export async function extractMenuData(_extractedText: string): Promise<{ items: unknown[]; prices: unknown[]; categories: unknown[] }> {
   // This would use the text-extractor with menu-specific prompts
   // Coming in next iteration
   return {

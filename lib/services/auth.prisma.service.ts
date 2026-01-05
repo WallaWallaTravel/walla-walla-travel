@@ -7,7 +7,7 @@ import { logger } from '@/lib/logger';
  */
 
 import { PrismaBaseService } from './prisma-base.service';
-import { Prisma, users } from '@/lib/prisma';
+// Prisma and users types available for future use
 import { verifyPassword } from '@/lib/auth/passwords';
 import { createSession, SessionUser } from '@/lib/auth/session';
 import { UnauthorizedError, ForbiddenError } from '@/lib/api/middleware/error-handler';

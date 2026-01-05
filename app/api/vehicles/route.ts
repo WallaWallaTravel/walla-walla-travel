@@ -10,7 +10,7 @@ import { vehicleService } from '@/lib/services/vehicle.service';
  * 
  * ✅ REFACTORED: Now using service layer and Zod validation
  */
-export const GET = withOptionalAuth(async (request: NextRequest, session) => {
+export const GET = withOptionalAuth(async (request: NextRequest, _session) => {
   // ✅ Validate query parameters with Zod
   const filters = validateQuery(request, ListVehiclesQuerySchema);
 

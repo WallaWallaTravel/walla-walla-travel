@@ -187,7 +187,7 @@ export function useTTS(options: UseTTSOptions = {}) {
   }, [state.isSupported, state.isSpeaking, processQueue])
 
   // Speak items in sequence
-  const speakSequence = useCallback((items: string[], delay: number = 300) => {
+  const speakSequence = useCallback((items: string[], _delay: number = 300) => {
     if (!state.isSupported) return
 
     speechSynthesis.cancel()

@@ -29,7 +29,7 @@ export interface Visitor {
   converted_to_booking: boolean;
   total_bookings: number;
   total_revenue: string;
-  preferences: Record<string, any>;
+  preferences: Record<string, unknown>;
   gdpr_consent: boolean;
   marketing_consent: boolean;
 }
@@ -221,7 +221,7 @@ export async function logEmailCaptureAttempt(
 export async function getVisitorConversationHistory(
   visitorId: number,
   limit: number = 20
-): Promise<any[]> {
+): Promise<Array<{ id: number; query_text: string; response_text: string; model: string; user_rating: number | null; created_at: Date }>> {
   const result = await query(
     `SELECT 
       id,
@@ -245,7 +245,7 @@ export async function getVisitorConversationHistory(
  */
 export async function updateVisitorPreferences(
   visitorId: number,
-  preferences: Record<string, any>
+  preferences: Record<string, unknown>
 ): Promise<void> {
   await query(
     `UPDATE visitors 

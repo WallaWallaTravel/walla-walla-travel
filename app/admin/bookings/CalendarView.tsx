@@ -35,7 +35,7 @@ function DayView({ bookings, selectedDate, onBookingClick }: Omit<Props, 'view'>
   const dateStr = selectedDate.toISOString().split('T')[0];
   const dayBookings = bookings.filter(b => b.tour_date === dateStr);
 
-  const hours = Array.from({ length: 13 }, (_, i) => i + 7); // 7 AM to 7 PM
+  const _hours = Array.from({ length: 13 }, (_, i) => i + 7); // 7 AM to 7 PM
 
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden">

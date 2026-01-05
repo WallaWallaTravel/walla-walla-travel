@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import ReactCrop, { Crop, PixelCrop, centerCrop, makeAspectCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
@@ -204,6 +204,7 @@ export default function ImageCropModal({
             aspect={aspect}
             className="max-h-[60vh]"
           >
+            {/* eslint-disable-next-line @next/next/no-img-element -- Required for react-image-crop ref */}
             <img
               ref={imgRef}
               src={imageUrl}

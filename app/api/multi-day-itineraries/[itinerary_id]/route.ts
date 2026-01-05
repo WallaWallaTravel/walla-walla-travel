@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
-import { withErrorHandling, NotFoundError, BadRequestError } from '@/lib/api/middleware/error-handler';
+import { withErrorHandling, NotFoundError } from '@/lib/api/middleware/error-handler';
 
 // GET /api/multi-day-itineraries/[itinerary_id] - Get itinerary with all days and activities
 export const GET = withErrorHandling(async (

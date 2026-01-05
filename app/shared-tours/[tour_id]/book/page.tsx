@@ -281,7 +281,7 @@ export default function BookSharedTourPage({ params }: { params: Promise<{ tour_
                   <p className="font-medium text-amber-800">Payment Required</p>
                   <p className="text-sm text-amber-700">
                     Please complete payment within 24 hours to secure your tickets.
-                    We'll send payment instructions to your email.
+                    We&apos;ll send payment instructions to your email.
                   </p>
                 </div>
               </div>

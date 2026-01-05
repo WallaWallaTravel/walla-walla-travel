@@ -13,7 +13,7 @@ export interface BusinessKnowledge {
   status: 'approved' | 'pending' | 'draft';
   
   // Aggregated data
-  structured_data: any; // Extracted from answers
+  structured_data: Record<string, unknown>; // Extracted from answers
   photos: Array<{
     id: number;
     url: string;
@@ -21,7 +21,7 @@ export interface BusinessKnowledge {
     tags: string[];
     category: string;
     quality_rating: string;
-    detected_elements: any;
+    detected_elements: Record<string, unknown>;
   }>;
   
   insights: Array<{
@@ -108,7 +108,7 @@ export async function getBusinessKnowledge(businessId: number): Promise<Business
   );
   
   // Merge all extracted data
-  const structured_data: any = {};
+  const structured_data: Record<string, unknown> = {};
   answersResult.rows.forEach(row => {
     if (row.extracted_data) {
       Object.assign(structured_data, row.extracted_data);
@@ -138,9 +138,10 @@ export async function getBusinessKnowledge(businessId: number): Promise<Business
   });
   
   // From structured data
-  if (structured_data.amenities) {
-    Object.keys(structured_data.amenities).forEach(a => {
-      if (structured_data.amenities[a]) amenities.add(a.toLowerCase());
+  const structuredAmenities = structured_data.amenities as Record<string, boolean> | undefined;
+  if (structuredAmenities) {
+    Object.keys(structuredAmenities).forEach(a => {
+      if (structuredAmenities[a]) amenities.add(a.toLowerCase());
     });
   }
   
@@ -264,18 +265,25 @@ export function formatBusinessForAI(business: BusinessKnowledge): string {
   // Add structured data
   if (Object.keys(business.structured_data).length > 0) {
     sections.push('**Details:**');
-    
-    if (business.structured_data.hours) {
-      sections.push(`- Hours: ${JSON.stringify(business.structured_data.hours)}`);
+
+    const structuredData = business.structured_data as {
+      hours?: unknown;
+      tasting_fee?: unknown;
+      reservations?: unknown;
+      wines?: string[];
+    };
+
+    if (structuredData.hours) {
+      sections.push(`- Hours: ${JSON.stringify(structuredData.hours)}`);
     }
-    if (business.structured_data.tasting_fee) {
-      sections.push(`- Tasting Fee: ${business.structured_data.tasting_fee}`);
+    if (structuredData.tasting_fee) {
+      sections.push(`- Tasting Fee: ${structuredData.tasting_fee}`);
     }
-    if (business.structured_data.reservations) {
-      sections.push(`- Reservations: ${business.structured_data.reservations}`);
+    if (structuredData.reservations) {
+      sections.push(`- Reservations: ${structuredData.reservations}`);
     }
-    if (business.structured_data.wines) {
-      sections.push(`- Wines: ${business.structured_data.wines.join(', ')}`);
+    if (structuredData.wines) {
+      sections.push(`- Wines: ${structuredData.wines.join(', ')}`);
     }
     sections.push('');
   }

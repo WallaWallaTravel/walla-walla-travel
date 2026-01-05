@@ -44,13 +44,40 @@ export async function detectDiscrepancies(businessId: number): Promise<Discrepan
   return discrepancies;
 }
 
+interface VoiceEntry {
+  id: number;
+  question_id: number;
+  question_number: number;
+  question_text: string;
+  transcription?: string;
+  extracted_data?: Record<string, unknown>;
+}
+
+interface TextEntryData {
+  id: number;
+  question_id: number;
+  question_number: number;
+  question_text: string;
+  response_text?: string;
+  extracted_data?: Record<string, unknown>;
+}
+
+interface FileData {
+  id: number;
+  file_type: string;
+  original_filename: string;
+  ai_description?: string;
+  ai_tags?: string[];
+  category?: string;
+}
+
 interface BusinessData {
   business_id: number;
   business_name: string;
-  voiceEntries: any[];
-  textEntries: any[];
-  files: any[];
-  extractedData: Map<string, any[]>; // category -> extracted data
+  voiceEntries: VoiceEntry[];
+  textEntries: TextEntryData[];
+  files: FileData[];
+  extractedData: Map<string, Record<string, unknown>[]>; // category -> extracted data
 }
 
 /**
@@ -87,7 +114,7 @@ async function getBusinessData(businessId: number): Promise<BusinessData> {
   `, [businessId]);
 
   // Organize extracted data by category
-  const extractedData = new Map<string, any[]>();
+  const extractedData = new Map<string, Record<string, unknown>[]>();
   
   [...voiceResult.rows, ...textResult.rows].forEach(entry => {
     if (entry.extracted_data) {
@@ -116,10 +143,11 @@ function detectConflicts(data: BusinessData): Discrepancy[] {
   const conflicts: Discrepancy[] = [];
 
   // Check for capacity conflicts
-  const capacityMentions: Array<{ source: any; value: number; text: string }> = [];
+  const capacityMentions: Array<{ source: VoiceEntry | TextEntryData; value: number; text: string }> = [];
   
   [...data.voiceEntries, ...data.textEntries].forEach(entry => {
-    const text = entry.transcription || entry.response_text || '';
+    const text = ('transcription' in entry ? entry.transcription : undefined) ||
+                 ('response_text' in entry ? entry.response_text : undefined) || '';
     const capacityMatch = text.match(/(\d+)\s*(people|guests|person)/i);
     
     if (capacityMatch) {
@@ -143,7 +171,7 @@ function detectConflicts(data: BusinessData): Discrepancy[] {
         title: 'Conflicting capacity information',
         description: `Found ${uniqueValues.length} different capacity values: ${uniqueValues.join(', ')}`,
         sources: capacityMentions.map(m => ({
-          type: m.source.transcription ? 'voice' : 'text',
+          type: ('transcription' in m.source) ? 'voice' as const : 'text' as const,
           id: m.source.id,
           content: `"${m.text.substring(0, 100)}..."`
         })),
@@ -154,10 +182,11 @@ function detectConflicts(data: BusinessData): Discrepancy[] {
   }
 
   // Check for pricing conflicts
-  const priceMentions: Array<{ source: any; value: number; text: string }> = [];
+  const priceMentions: Array<{ source: VoiceEntry | TextEntryData; value: number; text: string }> = [];
   
   [...data.voiceEntries, ...data.textEntries].forEach(entry => {
-    const text = entry.transcription || entry.response_text || '';
+    const text = ('transcription' in entry ? entry.transcription : undefined) ||
+                 ('response_text' in entry ? entry.response_text : undefined) || '';
     const priceMatch = text.match(/\$(\d+)/g);
     
     if (priceMatch) {
@@ -185,7 +214,7 @@ function detectConflicts(data: BusinessData): Discrepancy[] {
         title: 'Multiple pricing values mentioned',
         description: `Found different prices: $${uniquePrices.join(', $')}`,
         sources: priceMentions.map(m => ({
-          type: m.source.transcription ? 'voice' : 'text',
+          type: ('transcription' in m.source) ? 'voice' as const : 'text' as const,
           id: m.source.id,
           content: `"${m.text.substring(0, 100)}..."`
         })),
@@ -206,7 +235,8 @@ function detectMissingInfo(data: BusinessData): Discrepancy[] {
 
   // Check if outdoor seating is mentioned but no outdoor photos
   const hasOutdoorMention = [...data.voiceEntries, ...data.textEntries].some(entry => {
-    const text = (entry.transcription || entry.response_text || '').toLowerCase();
+    const text = (('transcription' in entry ? entry.transcription : undefined) ||
+                 ('response_text' in entry ? entry.response_text : undefined) || '').toLowerCase();
     return text.includes('outdoor') || text.includes('patio') || text.includes('deck');
   });
 
@@ -262,7 +292,8 @@ function detectVagueResponses(data: BusinessData): Discrepancy[] {
   ];
 
   [...data.voiceEntries, ...data.textEntries].forEach(entry => {
-    const text = entry.transcription || entry.response_text || '';
+    const text = ('transcription' in entry ? entry.transcription : undefined) ||
+                 ('response_text' in entry ? entry.response_text : undefined) || '';
     
     vaguePatterns.forEach(pattern => {
       if (pattern.test(text)) {
@@ -274,7 +305,7 @@ function detectVagueResponses(data: BusinessData): Discrepancy[] {
           title: `Question ${entry.question_number}: Vague response`,
           description: `Response contains vague language that could be more specific`,
           sources: [{
-            type: entry.transcription ? 'voice' : 'text',
+            type: ('transcription' in entry) ? 'voice' as const : 'text' as const,
             id: entry.id,
             content: text.substring(0, 150)
           }],
@@ -291,7 +322,7 @@ function detectVagueResponses(data: BusinessData): Discrepancy[] {
 /**
  * Detect other inconsistencies
  */
-function detectInconsistencies(data: BusinessData): Discrepancy[] {
+function detectInconsistencies(_data: BusinessData): Discrepancy[] {
   const inconsistencies: Discrepancy[] = [];
 
   // Add more sophisticated checks here
@@ -306,7 +337,7 @@ function detectInconsistencies(data: BusinessData): Discrepancy[] {
 function generateConflictMessage(
   businessName: string,
   conflictType: string,
-  mentions: Array<{ source: any; value: number; text: string }>
+  mentions: Array<{ source: VoiceEntry | TextEntryData; value: number; text: string }>
 ): string {
   return `Hi!
 
@@ -314,7 +345,7 @@ Thank you for completing your ${businessName} profile. We're excited to feature 
 
 We noticed a small discrepancy regarding ${conflictType}:
 
-${mentions.map((m, i) => `• In question ${m.source.question_number}, you mentioned: ${m.value}`).join('\n')}
+${mentions.map((m) => `• In question ${m.source.question_number}, you mentioned: ${m.value}`).join('\n')}
 
 Could you clarify which is correct, or if there are different ${conflictType} options for different situations?
 

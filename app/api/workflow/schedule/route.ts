@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
     `, [driverId, startDate, endDate, pagination.limit, pagination.offset]);
 
     // Group by date for better organization
-    const scheduleByDate: Record<string, any[]> = {};
+    const scheduleByDate: Record<string, typeof result.rows> = {};
     result.rows.forEach(route => {
       const date = route.date;
       if (!scheduleByDate[date]) {
@@ -118,7 +118,7 @@ export async function GET(request: NextRequest) {
         AND date BETWEEN $2 AND $3
     `, [driverId, startDate, endDate]);
 
-    const timeOff = timeOffResult.rows.reduce((acc: Record<string, any>, row) => {
+    const timeOff = timeOffResult.rows.reduce((acc: Record<string, { available: boolean; reason: string }>, row) => {
       acc[row.date] = {
         available: row.is_available,
         reason: row.reason

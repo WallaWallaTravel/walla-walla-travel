@@ -1,6 +1,6 @@
 // Tour Stop Component - Individual winery stop
 
-import React from 'react';
+// import React from 'react';
 import { Stop } from '../types';
 
 interface TourStopProps {
@@ -27,7 +27,7 @@ interface TourStopProps {
 
 export const TourStop: React.FC<TourStopProps> = ({
   stop,
-  index,
+  index: _index,
   cascadeEnabled,
   onRemove,
   onTimeChange,

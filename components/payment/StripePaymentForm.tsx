@@ -48,9 +48,10 @@ export function StripePaymentForm({ amount, onSuccess, onError }: StripePaymentF
         onError('Payment processing failed');
         setProcessing(false);
       }
-    } catch (err: any) {
-      setErrorMessage(err.message || 'An unexpected error occurred');
-      onError(err.message || 'An unexpected error occurred');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'An unexpected error occurred';
+      setErrorMessage(message);
+      onError(message);
       setProcessing(false);
     }
   };

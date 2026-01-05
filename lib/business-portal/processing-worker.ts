@@ -10,7 +10,7 @@ import {
   markJobFailed
 } from './ai-processing';
 import { processVoiceEntry } from './processors/voice-transcriber';
-import { processTextEntry, processVoiceTranscription } from './processors/text-extractor';
+import { processTextEntry } from './processors/text-extractor';
 import { processPhotoFile } from './processors/photo-analyzer';
 import { processPdfFile } from './processors/pdf-parser';
 import { logger } from '@/lib/logger';
@@ -49,7 +49,7 @@ export async function processJobs(limit: number = 10): Promise<{
       try {
         await markJobProcessing(job.id);
 
-        let result: any;
+        let result: unknown;
 
         switch (job.job_type) {
           case 'voice_transcription':
@@ -116,7 +116,7 @@ export async function processJob(jobId: number): Promise<boolean> {
   try {
     await markJobProcessing(job.id);
 
-    let result: any;
+    let result: unknown;
 
     switch (job.job_type) {
       case 'voice_transcription':

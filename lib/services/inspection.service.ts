@@ -17,7 +17,7 @@
  */
 
 import { BaseService } from './base.service';
-import { NotFoundError, ConflictError, BadRequestError } from '@/lib/api/middleware/error-handler';
+import { ConflictError, BadRequestError } from '@/lib/api/middleware/error-handler';
 
 interface InspectionData {
   items: Record<string, boolean>;
@@ -167,7 +167,7 @@ export class InspectionService extends BaseService {
       throw new ConflictError('Post-trip inspection already completed for this shift');
     }
 
-    return this.withTransaction(async (db) => {
+    return this.withTransaction(async (_db) => {
       // Create inspection
       const inspection = await this.insert<Inspection>('inspections', {
         driver_id: driverId,

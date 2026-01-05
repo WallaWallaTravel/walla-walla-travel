@@ -9,10 +9,43 @@ import { useState, useEffect } from 'react';
 
 interface SystemSetting {
   setting_key: string;
-  setting_value: any;
+  setting_value: string | number | boolean | Record<string, unknown>;
   setting_type: string;
   description: string;
   updated_at: string;
+}
+
+// Type for day type definitions
+interface DayTypeDefinition {
+  icon: string;
+  label: string;
+  description: string;
+  days: number[];
+}
+
+interface DayTypes {
+  sun_wed: DayTypeDefinition;
+  thu_sat: DayTypeDefinition;
+}
+
+// Type for editable settings values
+interface EditableSettingsValue {
+  card_percentage?: number;
+  card_flat_fee?: number;
+  pass_to_customer_percentage?: number;
+  show_check_savings?: boolean;
+  sales_tax_rate?: number;
+  consultation_required_under?: number;
+  per_person_ranges_over?: number;
+  corporate_response_time_hours?: number;
+  reserve_refine_consultation_hours?: number;
+  quick_book_min_party_size?: number;
+  corporate_min_party_size?: number;
+  reserve_refine?: Record<string, number>;
+  show_per_person?: boolean;
+  include_tax_in_display?: boolean;
+  conservative_ranges?: boolean;
+  [key: string]: unknown;
 }
 
 export default function SystemSettingsPage() {
@@ -20,7 +53,7 @@ export default function SystemSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'payment' | 'pricing' | 'booking'>('payment');
   const [editingKey, setEditingKey] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState<any>(null);
+  const [editValue, setEditValue] = useState<EditableSettingsValue | null>(null);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -43,7 +76,7 @@ export default function SystemSettingsPage() {
     }
   };
 
-  const startEdit = (setting: SystemSetting) => {
+  const _startEdit = (setting: SystemSetting) => {
     setEditingKey(setting.setting_key);
     setEditValue(JSON.parse(JSON.stringify(setting.setting_value)));
   };
@@ -83,7 +116,7 @@ export default function SystemSettingsPage() {
     }
   };
 
-  const getSettingsByType = (type: string) => {
+  const _getSettingsByType = (type: string) => {
     return settings.filter(s => s.setting_type === type);
   };
 
@@ -98,12 +131,12 @@ export default function SystemSettingsPage() {
     );
   }
 
-  const paymentSettings = settings.find(s => s.setting_key === 'payment_processing')?.setting_value;
-  const depositSettings = settings.find(s => s.setting_key === 'deposit_rules')?.setting_value;
-  const pricingDisplay = settings.find(s => s.setting_key === 'pricing_display')?.setting_value;
-  const dayTypes = settings.find(s => s.setting_key === 'day_type_definitions')?.setting_value;
-  const taxSettings = settings.find(s => s.setting_key === 'tax_settings')?.setting_value;
-  const bookingFlow = settings.find(s => s.setting_key === 'booking_flow_settings')?.setting_value;
+  const paymentSettings = settings.find(s => s.setting_key === 'payment_processing')?.setting_value as EditableSettingsValue | undefined;
+  const depositSettings = settings.find(s => s.setting_key === 'deposit_rules')?.setting_value as EditableSettingsValue | undefined;
+  const pricingDisplay = settings.find(s => s.setting_key === 'pricing_display')?.setting_value as EditableSettingsValue | undefined;
+  const dayTypes = settings.find(s => s.setting_key === 'day_type_definitions')?.setting_value as DayTypes | undefined;
+  const taxSettings = settings.find(s => s.setting_key === 'tax_settings')?.setting_value as EditableSettingsValue | undefined;
+  const bookingFlow = settings.find(s => s.setting_key === 'booking_flow_settings')?.setting_value as EditableSettingsValue | undefined;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -137,7 +170,7 @@ export default function SystemSettingsPage() {
             ].map(tab => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id as 'payment' | 'pricing' | 'booking')}
                 className={`px-4 py-3 font-medium border-b-2 transition ${
                   activeTab === tab.id
                     ? 'border-blue-600 text-blue-600'
@@ -172,7 +205,7 @@ export default function SystemSettingsPage() {
                         type="number"
                         step="0.1"
                         min="0"
-                        value={editingKey === 'payment_processing' ? editValue?.card_percentage : paymentSettings.card_percentage}
+                        value={editingKey === 'payment_processing' ? editValue?.card_percentage : paymentSettings?.card_percentage}
                         onChange={(e) => {
                           const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
                           const newSettings = editingKey === 'payment_processing' 
@@ -197,7 +230,7 @@ export default function SystemSettingsPage() {
                         type="number"
                         step="0.01"
                         min="0"
-                        value={editingKey === 'payment_processing' ? editValue?.card_flat_fee : paymentSettings.card_flat_fee}
+                        value={editingKey === 'payment_processing' ? editValue?.card_flat_fee : paymentSettings?.card_flat_fee}
                         onChange={(e) => {
                           const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
                           const newSettings = editingKey === 'payment_processing' 
@@ -221,7 +254,7 @@ export default function SystemSettingsPage() {
                       type="range"
                       min="0"
                       max="100"
-                      value={editingKey === 'payment_processing' ? editValue?.pass_to_customer_percentage : paymentSettings.pass_to_customer_percentage}
+                      value={editingKey === 'payment_processing' ? editValue?.pass_to_customer_percentage : paymentSettings?.pass_to_customer_percentage}
                       onChange={(e) => {
                         const value = parseInt(e.target.value);
                         const newSettings = editingKey === 'payment_processing' 
@@ -233,15 +266,15 @@ export default function SystemSettingsPage() {
                       className="flex-1"
                     />
                     <span className="text-lg font-bold text-blue-600 w-16">
-                      {editingKey === 'payment_processing' ? editValue?.pass_to_customer_percentage : paymentSettings.pass_to_customer_percentage}%
+                      {editingKey === 'payment_processing' ? editValue?.pass_to_customer_percentage : paymentSettings?.pass_to_customer_percentage}%
                     </span>
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
-                    {((editingKey === 'payment_processing' ? editValue?.pass_to_customer_percentage : paymentSettings.pass_to_customer_percentage) === 0) && "You absorb all fees"}
-                    {((editingKey === 'payment_processing' ? editValue?.pass_to_customer_percentage : paymentSettings.pass_to_customer_percentage) === 100) && "Customer pays all fees"}
-                    {((editingKey === 'payment_processing' ? editValue?.pass_to_customer_percentage : paymentSettings.pass_to_customer_percentage) > 0) && 
-                     ((editingKey === 'payment_processing' ? editValue?.pass_to_customer_percentage : paymentSettings.pass_to_customer_percentage) < 100) && 
-                      `Customer pays ${editingKey === 'payment_processing' ? editValue?.pass_to_customer_percentage : paymentSettings.pass_to_customer_percentage}% of fees`}
+                    {((editingKey === 'payment_processing' ? editValue?.pass_to_customer_percentage : paymentSettings?.pass_to_customer_percentage) === 0) && "You absorb all fees"}
+                    {((editingKey === 'payment_processing' ? editValue?.pass_to_customer_percentage : paymentSettings?.pass_to_customer_percentage) === 100) && "Customer pays all fees"}
+                    {((editingKey === 'payment_processing' ? editValue?.pass_to_customer_percentage : paymentSettings?.pass_to_customer_percentage) ?? 0) > 0 &&
+                     ((editingKey === 'payment_processing' ? editValue?.pass_to_customer_percentage : paymentSettings?.pass_to_customer_percentage) ?? 0) < 100 &&
+                      `Customer pays ${editingKey === 'payment_processing' ? editValue?.pass_to_customer_percentage : paymentSettings?.pass_to_customer_percentage}% of fees`}
                   </p>
                 </div>
 
@@ -249,7 +282,7 @@ export default function SystemSettingsPage() {
                   <input
                     type="checkbox"
                     id="show_check_savings"
-                    checked={editingKey === 'payment_processing' ? editValue?.show_check_savings : paymentSettings.show_check_savings}
+                    checked={editingKey === 'payment_processing' ? editValue?.show_check_savings : paymentSettings?.show_check_savings}
                     onChange={(e) => {
                       const newSettings = editingKey === 'payment_processing' 
                         ? { ...editValue, show_check_savings: e.target.checked }
@@ -260,7 +293,7 @@ export default function SystemSettingsPage() {
                     className="w-4 h-4 text-blue-600"
                   />
                   <label htmlFor="show_check_savings" className="text-sm text-gray-700">
-                    Show "Save $XX with check" message to customers
+                    Show &quot;Save $XX with check&quot; message to customers
                   </label>
                 </div>
 
@@ -310,7 +343,7 @@ export default function SystemSettingsPage() {
                             const newSettings = {
                               ...currentSettings,
                               reserve_refine: {
-                                ...currentSettings.reserve_refine,
+                                ...currentSettings?.reserve_refine,
                                 '1-7': value
                               }
                             };
@@ -339,7 +372,7 @@ export default function SystemSettingsPage() {
                             const newSettings = {
                               ...currentSettings,
                               reserve_refine: {
-                                ...currentSettings.reserve_refine,
+                                ...currentSettings?.reserve_refine,
                                 '8-14': value
                               }
                             };
@@ -391,7 +424,7 @@ export default function SystemSettingsPage() {
                         type="number"
                         step="0.1"
                         min="0"
-                        value={editingKey === 'tax_settings' ? editValue?.sales_tax_rate : taxSettings.sales_tax_rate}
+                        value={editingKey === 'tax_settings' ? editValue?.sales_tax_rate : taxSettings?.sales_tax_rate}
                         onChange={(e) => {
                           const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
                           const newSettings = editingKey === 'tax_settings' 
@@ -445,7 +478,7 @@ export default function SystemSettingsPage() {
                     <input
                       type="checkbox"
                       id="show_per_person"
-                      checked={pricingDisplay.show_per_person}
+                      checked={pricingDisplay?.show_per_person}
                       onChange={(e) => {
                         const newSettings = { ...pricingDisplay, show_per_person: e.target.checked };
                         setEditingKey('pricing_display');
@@ -462,7 +495,7 @@ export default function SystemSettingsPage() {
                     <input
                       type="checkbox"
                       id="include_tax_in_display"
-                      checked={pricingDisplay.include_tax_in_display}
+                      checked={pricingDisplay?.include_tax_in_display}
                       onChange={(e) => {
                         const newSettings = { ...pricingDisplay, include_tax_in_display: e.target.checked };
                         setEditingKey('pricing_display');
@@ -479,7 +512,7 @@ export default function SystemSettingsPage() {
                     <input
                       type="checkbox"
                       id="conservative_ranges"
-                      checked={pricingDisplay.conservative_ranges}
+                      checked={pricingDisplay?.conservative_ranges}
                       onChange={(e) => {
                         const newSettings = { ...pricingDisplay, conservative_ranges: e.target.checked };
                         setEditingKey('pricing_display');
@@ -498,13 +531,13 @@ export default function SystemSettingsPage() {
                     <div className="space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          "Consultation Required" for groups under
+                          &quot;Consultation Required&quot; for groups under
                         </label>
                         <div className="flex items-center gap-2">
                           <input
                             type="number"
                             min="1"
-                            value={editingKey === 'pricing_display' ? editValue?.consultation_required_under : pricingDisplay.consultation_required_under}
+                            value={editingKey === 'pricing_display' ? editValue?.consultation_required_under : pricingDisplay?.consultation_required_under}
                             onChange={(e) => {
                               const value = e.target.value === '' ? 1 : parseInt(e.target.value);
                               const newSettings = editingKey === 'pricing_display' 
@@ -518,7 +551,7 @@ export default function SystemSettingsPage() {
                           <span className="text-gray-600">guests</span>
                         </div>
                         <p className="text-xs text-gray-500 mt-1">
-                          Groups ≤ this number directed to "Let's Talk First" (pricing too variable)
+                          Groups ≤ this number directed to &quot;Let&apos;s Talk First&quot; (pricing too variable)
                         </p>
                       </div>
 
@@ -530,7 +563,7 @@ export default function SystemSettingsPage() {
                           <input
                             type="number"
                             min="1"
-                            value={editingKey === 'pricing_display' ? editValue?.per_person_ranges_over : pricingDisplay.per_person_ranges_over}
+                            value={editingKey === 'pricing_display' ? editValue?.per_person_ranges_over : pricingDisplay?.per_person_ranges_over}
                             onChange={(e) => {
                               const value = e.target.value === '' ? 1 : parseInt(e.target.value);
                               const newSettings = editingKey === 'pricing_display' 
@@ -544,16 +577,16 @@ export default function SystemSettingsPage() {
                           <span className="text-gray-600">guests</span>
                         </div>
                         <p className="text-xs text-gray-500 mt-1">
-                          Groups ≥ this number see "$120-$145/person" style pricing
+                          Groups ≥ this number see &quot;$120-$145/person&quot; style pricing
                         </p>
                       </div>
 
                       <div className="bg-white rounded-lg p-3 text-xs text-gray-700">
                         <strong>Example with current settings:</strong>
                         <ul className="mt-2 space-y-1 ml-4">
-                          <li>• 1-{(editingKey === 'pricing_display' ? editValue?.consultation_required_under : pricingDisplay.consultation_required_under) - 1} guests → "Contact us for custom pricing"</li>
-                          <li>• {editingKey === 'pricing_display' ? editValue?.consultation_required_under : pricingDisplay.consultation_required_under}-{(editingKey === 'pricing_display' ? editValue?.per_person_ranges_over : pricingDisplay.per_person_ranges_over) - 1} guests → Standard pricing ($650-$750)</li>
-                          <li>• {editingKey === 'pricing_display' ? editValue?.per_person_ranges_over : pricingDisplay.per_person_ranges_over}+ guests → Per-person ranges ($120-$145/person)</li>
+                          <li>• 1-{((editingKey === 'pricing_display' ? editValue?.consultation_required_under : pricingDisplay?.consultation_required_under) ?? 1) - 1} guests → &quot;Contact us for custom pricing&quot;</li>
+                          <li>• {editingKey === 'pricing_display' ? editValue?.consultation_required_under : pricingDisplay?.consultation_required_under}-{((editingKey === 'pricing_display' ? editValue?.per_person_ranges_over : pricingDisplay?.per_person_ranges_over) ?? 1) - 1} guests → Standard pricing ($650-$750)</li>
+                          <li>• {editingKey === 'pricing_display' ? editValue?.per_person_ranges_over : pricingDisplay?.per_person_ranges_over}+ guests → Per-person ranges ($120-$145/person)</li>
                         </ul>
                       </div>
                     </div>
@@ -585,7 +618,7 @@ export default function SystemSettingsPage() {
               <div className="bg-white rounded-lg shadow-md p-6">
                 <h2 className="text-xl font-bold text-gray-900 mb-4">📅 Day Type Definitions</h2>
                 <p className="text-gray-600 mb-6">
-                  Define which days are "Standard" vs "Premium" for pricing
+                  Define which days are &quot;Standard&quot; vs &quot;Premium&quot; for pricing
                 </p>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -655,9 +688,9 @@ export default function SystemSettingsPage() {
                     <input
                       type="number"
                       min="1"
-                      value={editingKey === 'booking_flow_settings' && editValue ? editValue.corporate_response_time_hours : bookingFlow.corporate_response_time_hours}
+                      value={editingKey === 'booking_flow_settings' && editValue ? editValue.corporate_response_time_hours : bookingFlow?.corporate_response_time_hours}
                       onChange={(e) => {
-                        const value = e.target.value === '' ? '' : parseInt(e.target.value);
+                        const value = e.target.value === '' ? 0 : parseInt(e.target.value);
                         const currentSettings = editingKey === 'booking_flow_settings' && editValue ? editValue : bookingFlow;
                         const newSettings = { ...currentSettings, corporate_response_time_hours: value };
                         setEditingKey('booking_flow_settings');
@@ -686,9 +719,9 @@ export default function SystemSettingsPage() {
                     <input
                       type="number"
                       min="1"
-                      value={editingKey === 'booking_flow_settings' && editValue ? editValue.reserve_refine_consultation_hours : bookingFlow.reserve_refine_consultation_hours}
+                      value={editingKey === 'booking_flow_settings' && editValue ? editValue.reserve_refine_consultation_hours : bookingFlow?.reserve_refine_consultation_hours}
                       onChange={(e) => {
-                        const value = e.target.value === '' ? '' : parseInt(e.target.value);
+                        const value = e.target.value === '' ? 0 : parseInt(e.target.value);
                         const currentSettings = editingKey === 'booking_flow_settings' && editValue ? editValue : bookingFlow;
                         const newSettings = { ...currentSettings, reserve_refine_consultation_hours: value };
                         setEditingKey('booking_flow_settings');
@@ -705,7 +738,7 @@ export default function SystemSettingsPage() {
                     <span className="text-gray-600">hours</span>
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
-                    How soon you'll reach out after they reserve
+                    How soon you&apos;ll reach out after they reserve
                   </p>
                 </div>
 
@@ -717,9 +750,9 @@ export default function SystemSettingsPage() {
                     <input
                       type="number"
                       min="1"
-                      value={editingKey === 'booking_flow_settings' && editValue ? editValue.quick_book_min_party_size : bookingFlow.quick_book_min_party_size}
+                      value={editingKey === 'booking_flow_settings' && editValue ? editValue.quick_book_min_party_size : bookingFlow?.quick_book_min_party_size}
                       onChange={(e) => {
-                        const value = e.target.value === '' ? '' : parseInt(e.target.value);
+                        const value = e.target.value === '' ? 0 : parseInt(e.target.value);
                         const currentSettings = editingKey === 'booking_flow_settings' && editValue ? editValue : bookingFlow;
                         const newSettings = { ...currentSettings, quick_book_min_party_size: value };
                         setEditingKey('booking_flow_settings');
@@ -742,9 +775,9 @@ export default function SystemSettingsPage() {
                     <input
                       type="number"
                       min="1"
-                      value={editingKey === 'booking_flow_settings' && editValue ? editValue.corporate_min_party_size : bookingFlow.corporate_min_party_size}
+                      value={editingKey === 'booking_flow_settings' && editValue ? editValue.corporate_min_party_size : bookingFlow?.corporate_min_party_size}
                       onChange={(e) => {
-                        const value = e.target.value === '' ? '' : parseInt(e.target.value);
+                        const value = e.target.value === '' ? 0 : parseInt(e.target.value);
                         const currentSettings = editingKey === 'booking_flow_settings' && editValue ? editValue : bookingFlow;
                         const newSettings = { ...currentSettings, corporate_min_party_size: value };
                         setEditingKey('booking_flow_settings');

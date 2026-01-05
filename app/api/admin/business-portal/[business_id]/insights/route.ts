@@ -152,7 +152,7 @@ export async function POST(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ business_id: string }> }
+  { params: _params }: { params: Promise<{ business_id: string }> }
 ) {
   try {
     const { searchParams } = new URL(request.url);

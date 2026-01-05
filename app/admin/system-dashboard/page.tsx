@@ -8,7 +8,7 @@ interface HealthCheck {
   status: 'healthy' | 'degraded' | 'down';
   responseTime: number;
   error?: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 interface SystemHealth {

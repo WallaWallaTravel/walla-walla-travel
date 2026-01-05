@@ -21,8 +21,8 @@ export interface TrackEventParams {
   sessionId: string
   userId?: number | null
   eventType: EventType
-  eventData?: Record<string, any>
-  metadata?: Record<string, any>
+  eventData?: Record<string, unknown>
+  metadata?: Record<string, unknown>
   apiCost?: number | null
   bookingId?: number | null
   revenueAttributed?: number | null

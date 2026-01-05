@@ -86,8 +86,8 @@ interface ProposalData {
 
 export default function NewProposalPageV2() {
   const router = useRouter();
-  const [wineries, setWineries] = useState<any[]>([]);
-  const [availableAdditionalServices, setAvailableAdditionalServices] = useState<any[]>([]);
+  const [wineries, setWineries] = useState<Array<{ id: number; name: string; city: string }>>([]);
+  const [availableAdditionalServices, setAvailableAdditionalServices] = useState<Array<{ id: number; name: string; description: string; price: number; price_per: string }>>([]);
   const [saving, setSaving] = useState(false);
   const [pricingStrategy, setPricingStrategy] = useState<'conservative' | 'standard' | 'aggressive'>('standard');
   const [showPriceRange, setShowPriceRange] = useState(true); // Toggle between exact and range
@@ -1215,7 +1215,17 @@ function ServiceItemCard({ item, index, wineries, onUpdate, onRemove }: ServiceI
 }
 
 // Pricing Summary Component
-function PricingSummary({ formData, totals, saving, pricingStrategy, setPricingStrategy, showPriceRange, setShowPriceRange }: any) {
+interface PricingSummaryProps {
+  formData: ProposalData;
+  totals: { servicesSubtotal: number; additionalServicesTotal: number; subtotal: number; discount: number; afterDiscount: number; tax: number; total: number; deposit: number; balance: number; lowTotal: number; highTotal: number; showRange: boolean };
+  saving: boolean;
+  pricingStrategy: 'conservative' | 'standard' | 'aggressive';
+  setPricingStrategy: (strategy: 'conservative' | 'standard' | 'aggressive') => void;
+  showPriceRange: boolean;
+  setShowPriceRange: (show: boolean) => void;
+}
+
+function PricingSummary({ formData, totals, saving, pricingStrategy, setPricingStrategy, showPriceRange, setShowPriceRange }: PricingSummaryProps) {
   return (
     <div className="bg-white rounded-xl shadow-lg p-6 border-2 border-[#8B1538]">
       <h2 className="text-2xl font-bold text-gray-900 mb-4">💰 Pricing Summary</h2>

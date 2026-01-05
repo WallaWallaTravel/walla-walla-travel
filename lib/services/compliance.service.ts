@@ -10,7 +10,7 @@
  */
 
 import { BaseService } from './base.service';
-import { HOS_LIMITS, calculateAvailableHours } from '@/lib/hos-config';
+import { HOS_LIMITS } from '@/lib/hos-config';
 
 // ============================================================================
 // Types

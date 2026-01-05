@@ -6,13 +6,12 @@
  * Supports per-person, per-hour, and fixed rate items
  */
 
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import {
   InvoiceLineItem,
   LineItemCategory,
-  RateType,
   calculatePriceBreakdown,
-  formatLineItemDescription,
+  formatLineItemDescription
 } from '@/lib/types/invoice-line-items';
 
 interface InvoiceLineItemsProps {
@@ -101,8 +100,8 @@ export function InvoiceLineItems({
     onItemsChange(updatedItems);
   };
 
-  const hasDiscounts = breakdown.discountTotal < 0;
-  const hasAddOns = breakdown.addOnTotal > 0;
+  const _hasDiscounts = breakdown.discountTotal < 0;
+  const _hasAddOns = breakdown.addOnTotal > 0;
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">

@@ -525,7 +525,7 @@ export const sharedTourService = {
   /**
    * Get guest manifest for a tour
    */
-  async getTourManifest(tourId: string): Promise<any[]> {
+  async getTourManifest(tourId: string): Promise<Record<string, unknown>[]> {
     const result = await query(`
       SELECT * FROM shared_tour_manifest
       WHERE tour_id = $1

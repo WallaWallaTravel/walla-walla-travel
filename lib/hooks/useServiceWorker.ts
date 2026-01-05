@@ -131,7 +131,7 @@ export function useServiceWorker() {
     try {
       if ('sync' in state.registration) {
         // SyncManager is not in standard TypeScript definitions
-        const syncManager = (state.registration as any).sync
+        const syncManager = (state.registration as { sync: { register: (tag: string) => Promise<void> } }).sync
         await syncManager.register(tag)
         console.log('Background sync registered:', tag)
         return true

@@ -14,7 +14,7 @@
  */
 
 import { z } from 'zod';
-import type { UserRole } from '@/lib/types';
+// UserRole type available for future use
 
 /**
  * Email validation with comprehensive checks

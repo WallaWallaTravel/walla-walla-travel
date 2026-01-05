@@ -21,14 +21,14 @@ interface Media {
   created_at: string;
 }
 
-interface MediaGroup {
+interface _MediaGroup {
   category: string;
   count: number;
   media: Media[];
 }
 
 export default function MediaLibraryPage() {
-  const router = useRouter();
+  const _router = useRouter();
   const [media, setMedia] = useState<Media[]>([]);
   const [filteredMedia, setFilteredMedia] = useState<Media[]>([]);
   const [loading, setLoading] = useState(true);
@@ -260,9 +260,10 @@ export default function MediaLibraryPage() {
                 {/* Media Preview */}
                 <div className="relative aspect-square bg-gray-100">
                   {item.file_type === 'image' ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
                     <img
                       src={item.file_path}
-                      alt={item.alt_text}
+                      alt={item.alt_text || 'Media preview'}
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -350,9 +351,10 @@ export default function MediaLibraryPage() {
                     <td className="px-6 py-4">
                       <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100">
                         {item.file_type === 'image' ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
                           <img
                             src={item.file_path}
-                            alt={item.alt_text}
+                            alt={item.alt_text || 'Media thumbnail'}
                             className="w-full h-full object-cover"
                           />
                         ) : (

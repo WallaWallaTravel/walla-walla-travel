@@ -86,7 +86,7 @@ interface MediaItem {
 }
 
 export default function ClientProposalView({ params }: { params: Promise<{ proposal_id: string }> }) {
-  const router = useRouter();
+  const _router = useRouter();
   const [proposal, setProposal] = useState<Proposal | null>(null);
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -305,7 +305,7 @@ export default function ClientProposalView({ params }: { params: Promise<{ propo
               </div>
               <div className="ml-3">
                 <p className="text-sm text-green-800 font-medium">
-                  ✓ This proposal has been accepted. We'll be in touch shortly to finalize details!
+                  ✓ This proposal has been accepted. We&apos;ll be in touch shortly to finalize details!
                 </p>
               </div>
             </div>
@@ -316,6 +316,7 @@ export default function ClientProposalView({ params }: { params: Promise<{ propo
         {media.length > 0 && (
           <div className="mb-8 rounded-2xl overflow-hidden shadow-xl">
             <div className="relative h-96">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={media[0].file_path}
                 alt={media[0].title || 'Wine Country'}
@@ -485,7 +486,7 @@ export default function ClientProposalView({ params }: { params: Promise<{ propo
         <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
           <h3 className="text-2xl font-bold text-gray-900 mb-6">Your Experience</h3>
           <div className="space-y-6">
-            {proposal.service_items.map((item, index) => {
+            {proposal.service_items.map((item) => {
               const isWineTour = item.service_type === 'wine_tour';
               const hourlyRate = isWineTour && item.date ? getHourlyRate(item.party_size, new Date(item.date)) : null;
               
@@ -575,6 +576,7 @@ export default function ClientProposalView({ params }: { params: Promise<{ propo
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {media.slice(1).map((item) => (
                 <div key={item.id} className="relative aspect-video rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-shadow">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={item.file_path}
                     alt={item.title || item.file_name}
@@ -704,7 +706,7 @@ export default function ClientProposalView({ params }: { params: Promise<{ propo
             <div className="flex">
               <div className="ml-3">
                 <p className="text-sm text-gray-700 font-medium">
-                  This proposal was declined. If you'd like to discuss alternatives, please{' '}
+                  This proposal was declined. If you&apos;d like to discuss alternatives, please{' '}
                   <a href={`mailto:info@wallawalla.travel?subject=Re: Proposal ${proposal.proposal_number}`} className="text-[#8B1538] hover:underline">
                     contact us
                   </a>.
@@ -748,13 +750,13 @@ export default function ClientProposalView({ params }: { params: Promise<{ propo
               </div>
 
               <p className="text-gray-600 mb-6">
-                We'd love to understand what's not quite right so we can better meet your needs.
+                We&apos;d love to understand what&apos;s not quite right so we can better meet your needs.
               </p>
 
               {/* Category Selection */}
               <div className="mb-4">
                 <label className="block text-sm font-bold text-gray-700 mb-2">
-                  What's the main concern?
+                  What&apos;s the main concern?
                 </label>
                 <select
                   value={declineCategory}
@@ -763,8 +765,8 @@ export default function ClientProposalView({ params }: { params: Promise<{ propo
                 >
                   <option value="">Select a reason...</option>
                   <option value="price">Pricing is too high</option>
-                  <option value="dates">Dates don't work</option>
-                  <option value="services">Services don't match our needs</option>
+                  <option value="dates">Dates don&apos;t work</option>
+                  <option value="services">Services don&apos;t match our needs</option>
                   <option value="timing">Not the right time</option>
                   <option value="competitor">Going with another provider</option>
                   <option value="other">Other</option>
@@ -811,7 +813,7 @@ export default function ClientProposalView({ params }: { params: Promise<{ propo
                     className="w-5 h-5 text-[#8B1538] border-gray-300 rounded focus:ring-[#8B1538]"
                   />
                   <span className="text-gray-700">
-                    I'm open to receiving a revised proposal
+                    I&apos;m open to receiving a revised proposal
                   </span>
                 </label>
               </div>

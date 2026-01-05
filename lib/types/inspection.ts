@@ -66,7 +66,7 @@ export interface Inspection {
   /** Ending odometer reading (post-trip) */
   end_mileage?: number | null;
   /** Inspection checkpoint data (JSON) */
-  inspection_data: Record<string, any>;
+  inspection_data: Record<string, unknown>;
   /** Issues or notes description */
   issues_description?: string | null;
   /** Whether defects were found */
@@ -134,6 +134,8 @@ export interface DVIRInspection extends Inspection {
  * Supports both flat (items) and nested (exterior/interior/engine) formats
  */
 export interface PreTripCheckpoints {
+  /** Index signature for compatibility with Record<string, unknown> */
+  [key: string]: unknown;
   /** Flat items format (for form submission) */
   items?: Record<string, boolean>;
   /** Additional notes */
@@ -192,6 +194,8 @@ export interface PreTripCheckpoints {
  * All items that must be checked during post-trip
  */
 export interface PostTripCheckpoints {
+  /** Index signature for compatibility with Record<string, unknown> */
+  [key: string]: unknown;
   /** Items from pre-trip checks */
   items: Record<string, boolean>;
   /** Fuel level at end of shift */
@@ -226,6 +230,8 @@ export interface PostTripCheckpoints {
  * Federal DVIR compliance data
  */
 export interface DVIRData {
+  /** Index signature for compatibility with Record<string, unknown> */
+  [key: string]: unknown;
   /** List of defects found */
   defects: DefectItem[];
   /** Driver remarks */
@@ -528,7 +534,7 @@ export interface CreateInspectionData {
   /** Ending mileage (for post-trip) */
   end_mileage?: number;
   /** Inspection data */
-  inspection_data: Record<string, any>;
+  inspection_data: Record<string, unknown>;
   /** Issues description */
   issues_description?: string;
   /** Defects found */
@@ -547,7 +553,7 @@ export interface CreateInspectionData {
  */
 export interface UpdateInspectionData {
   /** Inspection data */
-  inspection_data?: Record<string, any>;
+  inspection_data?: Record<string, unknown>;
   /** Issues description */
   issues_description?: string;
   /** Defects found */

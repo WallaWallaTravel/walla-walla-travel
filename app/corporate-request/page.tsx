@@ -70,13 +70,13 @@ export default function CorporateRequestPage() {
       setRequestNumber(data.requestNumber);
       setSuccess(true);
       
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setSubmitting(false);
     }
   };
-  
+
   if (success) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 flex items-center justify-center p-4">
@@ -94,15 +94,15 @@ export default function CorporateRequestPage() {
               Request #{requestNumber}
             </p>
             <p className="text-gray-600 mb-8">
-              We'll review your request and respond within <strong>48 hours</strong> with a detailed proposal.
+              We&apos;ll review your request and respond within <strong>48 hours</strong> with a detailed proposal.
             </p>
             
             <div className="bg-blue-50 rounded-lg p-6 mb-8">
-              <h3 className="font-semibold text-gray-900 mb-3">What's next?</h3>
+              <h3 className="font-semibold text-gray-900 mb-3">What&apos;s next?</h3>
               <ul className="text-left space-y-2 text-gray-700">
                 <li className="flex items-start">
                   <span className="text-blue-600 mr-2">1.</span>
-                  <span>We'll analyze your itinerary (if uploaded) using AI</span>
+                  <span>We&apos;ll analyze your itinerary (if uploaded) using AI</span>
                 </li>
                 <li className="flex items-start">
                   <span className="text-blue-600 mr-2">2.</span>
@@ -110,7 +110,7 @@ export default function CorporateRequestPage() {
                 </li>
                 <li className="flex items-start">
                   <span className="text-blue-600 mr-2">3.</span>
-                  <span>We'll reach out to discuss details and finalize</span>
+                  <span>We&apos;ll reach out to discuss details and finalize</span>
                 </li>
                 <li className="flex items-start">
                   <span className="text-blue-600 mr-2">4.</span>
@@ -143,7 +143,7 @@ export default function CorporateRequestPage() {
             Planning a corporate event or large group tour?
           </p>
           <p className="text-gray-600">
-            Upload your itinerary or tell us about your event. We'll respond within <strong>48 hours</strong> with a detailed proposal.
+            Upload your itinerary or tell us about your event. We&apos;ll respond within <strong>48 hours</strong> with a detailed proposal.
           </p>
         </div>
         
@@ -328,7 +328,7 @@ export default function CorporateRequestPage() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg"
                 placeholder="e.g., June 15-17, 2025 or Flexible"
               />
-              <p className="text-xs text-gray-500 mt-1">Enter specific dates or indicate if you're flexible</p>
+              <p className="text-xs text-gray-500 mt-1">Enter specific dates or indicate if you&apos;re flexible</p>
             </div>
             
             <div>
@@ -386,7 +386,7 @@ export default function CorporateRequestPage() {
             </button>
             
             <p className="text-xs text-gray-500 text-center mt-4">
-              No deposit required. We'll contact you to discuss details before finalizing.
+              No deposit required. We&apos;ll contact you to discuss details before finalizing.
             </p>
           </div>
         </form>

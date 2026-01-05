@@ -4,8 +4,10 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { isProduction } from '@/lib/config/env';
 import { logger } from '@/lib/logger';
+
+// Environment check for rate limiting
+const isProduction = process.env.NODE_ENV === 'production';
 
 // ============================================================================
 // Rate Limiting
@@ -80,7 +82,7 @@ export async function rateLimit(
   }
   
   // Add rate limit headers
-  const remaining = config.maxRequests - entry.count;
+  const _remaining = config.maxRequests - entry.count;
   
   // Clean up old entries periodically (prevent memory leak)
   if (Math.random() < 0.01) { // 1% chance
@@ -180,8 +182,8 @@ export async function requireAuth(
  * Check if user has required role
  */
 export function requireRole(
-  user: { userId: number; email: string },
-  requiredRole: 'admin' | 'driver' | 'customer'
+  _user: { userId: number; email: string },
+  _requiredRole: 'admin' | 'driver' | 'customer'
 ): boolean {
   // TODO: Implement actual role checking
   // For now, return true

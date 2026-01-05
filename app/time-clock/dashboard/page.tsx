@@ -8,7 +8,7 @@ import {
   MobileCardGrid,
   StatusIndicator,
   AlertBanner,
-  AlertStack,
+  AlertStack
 } from '@/components/mobile';
 
 interface TodayStatus {
@@ -77,7 +77,7 @@ export default function UnifiedDashboard() {
         });
 
         // Convert API alerts to dashboard alerts
-        const dashboardAlerts: ComplianceAlert[] = (status.alerts || []).map((alert: any) => ({
+        const dashboardAlerts: ComplianceAlert[] = (status.alerts || []).map((alert: { type: string; message: string }) => ({
           type: alert.type,
           message: alert.message,
         }));
@@ -252,7 +252,7 @@ export default function UnifiedDashboard() {
         <MobileCard title="Compliance Status" variant="elevated">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-gray-700">Today's Inspection</span>
+              <span className="text-gray-700">Today&apos;s Inspection</span>
               <StatusIndicator
                 status={todayStatus.preTripCompleted ? 'completed' : 'pending'}
               />

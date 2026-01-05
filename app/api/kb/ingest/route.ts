@@ -16,7 +16,7 @@ import { z } from 'zod';
 import { logger } from '@/lib/logger';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { validateBody } from '@/lib/api/middleware/validation';
-import { kbService, CreateContributionSchema } from '@/lib/services/kb.service';
+import { kbService } from '@/lib/services/kb.service';
 import { geminiService } from '@/lib/services/gemini.service';
 
 // ============================================================================
@@ -50,7 +50,7 @@ const IngestRequestSchema = z.object({
   skip_prescreening: z.boolean().default(false),
 });
 
-type IngestRequest = z.infer<typeof IngestRequestSchema>;
+type _IngestRequest = z.infer<typeof IngestRequestSchema>;
 
 // ============================================================================
 // POST Handler

@@ -205,7 +205,7 @@ export function SmartServiceCard({ item, index, wineries, onUpdate, onRemove }: 
               <label className="block text-sm font-bold text-gray-900 mb-2">Tour Type</label>
               <select
                 value={item.tour_type || '3_winery'}
-                onChange={(e) => onUpdate({ tour_type: e.target.value as any })}
+                onChange={(e) => onUpdate({ tour_type: e.target.value as '2_winery' | '3_winery' | '4_winery' | 'custom' })}
                 className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-[#8B1538] focus:ring-4 focus:ring-[#FDF2F4]"
               >
                 <option value="2_winery">2 Winery Tour</option>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import ImageCropModal from '@/components/partner/ImageCropModal';
 
 // Pending image for cropping
@@ -459,6 +459,7 @@ export default function PhotosMediaPage() {
                           key={photo.id}
                           className="relative aspect-video rounded-lg overflow-hidden bg-slate-100 group"
                         >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={photo.url}
                             alt={photo.alt_text || category.title}

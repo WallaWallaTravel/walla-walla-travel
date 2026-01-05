@@ -83,8 +83,8 @@ function PaymentFormInner({ bookingNumber, baseAmount, depositAmount, isDeposit 
       if (paymentIntent && paymentIntent.status === 'succeeded') {
         setSuccess(true);
       }
-    } catch (err: any) {
-      setError(err.message || 'An error occurred');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
     }
@@ -222,8 +222,8 @@ export default function PaymentForm(props: PaymentFormProps) {
         const data = await response.json();
         if (!data.success) throw new Error(data.error || 'Failed to create payment intent');
         setClientSecret(data.data.client_secret);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Payment initialization failed');
       } finally {
         setLoading(false);
       }

@@ -20,7 +20,7 @@ export default function RevenueStats({ bookings, onClose }: Props) {
   // Calculate stats
   const totalBookings = bookings.length;
   const activeBookings = bookings.filter(b => b.status !== 'cancelled').length;
-  const cancelledBookings = bookings.filter(b => b.status === 'cancelled').length;
+  const _cancelledBookings = bookings.filter(b => b.status === 'cancelled').length;
   
   const totalRevenue = bookings
     .filter(b => b.status !== 'cancelled')

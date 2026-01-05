@@ -3,7 +3,7 @@
  * Provides type-safe request validation using Zod
  */
 
-import { ZodSchema, ZodError } from 'zod';
+import { ZodSchema, ZodError, ZodIssueCode } from 'zod';
 import { NextRequest } from 'next/server';
 
 // ============================================================================
@@ -42,9 +42,11 @@ export async function validateRequest<T>(
       throw error;
     }
     if (error instanceof SyntaxError) {
-      throw new ValidationError({
-        issues: [{ path: [], message: 'Invalid JSON' }],
-      } as any);
+      throw new ValidationError(new ZodError([{
+        code: ZodIssueCode.custom,
+        path: [],
+        message: 'Invalid JSON'
+      }]));
     }
     throw error;
   }
@@ -128,7 +130,7 @@ export function withQueryValidation<T>(schema: ZodSchema<T>) {
 /**
  * Check if error is a validation error
  */
-export function isValidationError(error: any): error is ValidationError {
+export function isValidationError(error: unknown): error is ValidationError {
   return error instanceof ValidationError;
 }
 

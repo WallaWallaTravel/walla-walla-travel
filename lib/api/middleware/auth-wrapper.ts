@@ -10,7 +10,7 @@ import { logger } from '@/lib/logger';
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling, UnauthorizedError, ForbiddenError, ApiHandler } from './error-handler';
+import { withErrorHandling, UnauthorizedError, ForbiddenError } from './error-handler';
 import { requireAdmin as checkAdminRole } from '@/lib/admin-auth';
 
 // Note: getSessionFromRequest is defined locally at bottom of file to handle
@@ -41,24 +41,21 @@ export interface RouteContext<P = Record<string, string>> {
 // ============================================================================
 
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type AuthenticatedHandler = (
   request: NextRequest,
   session: AuthSession,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  context?: any
-) => Promise<NextResponse<any>>;
+  context?: RouteContext | { params: Promise<any> }
+) => Promise<NextResponse<unknown>>;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type OptionalAuthHandler = (
   request: NextRequest,
   session: AuthSession | null,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  context?: any
-) => Promise<NextResponse<any>>;
+  context?: RouteContext
+) => Promise<NextResponse<unknown>>;
 
 // Error response type (matches error-handler)
-interface ErrorResponse {
+interface _ErrorResponse {
   success: false;
   error: {
     message: string;
@@ -73,10 +70,9 @@ interface ErrorResponse {
 // ============================================================================
 
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function withAuth(
   handler: AuthenticatedHandler
-): (request: NextRequest, context: RouteContext) => Promise<NextResponse<any>> {
+): (request: NextRequest, context: RouteContext) => Promise<NextResponse<unknown>> {
   return withErrorHandling(async (request: NextRequest, context: RouteContext) => {
     // Get session from request
     const session = await getSessionFromRequest();
@@ -108,10 +104,9 @@ export function withAuth(
 // ============================================================================
 
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function withAdminAuth(
   handler: AuthenticatedHandler
-): (request: NextRequest, context: RouteContext) => Promise<NextResponse<any>> {
+): (request: NextRequest, context: RouteContext) => Promise<NextResponse<unknown>> {
   return withAuth(async (request: NextRequest, session: AuthSession, context?: RouteContext) => {
     // Check admin role
     if (session.role !== 'admin') {
@@ -132,10 +127,9 @@ export function withAdminAuth(
 // ============================================================================
 
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function withDriverAuth(
   handler: AuthenticatedHandler
-): (request: NextRequest, context: RouteContext) => Promise<NextResponse<any>> {
+): (request: NextRequest, context: RouteContext) => Promise<NextResponse<unknown>> {
   return withAuth(async (request: NextRequest, session: AuthSession, context?: RouteContext) => {
     // Check driver role
     if (session.role !== 'driver' && session.role !== 'admin') {
@@ -152,10 +146,9 @@ export function withDriverAuth(
 // ============================================================================
 
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function withOptionalAuth(
   handler: OptionalAuthHandler
-): (request: NextRequest, context: RouteContext) => Promise<NextResponse<any>> {
+): (request: NextRequest, context: RouteContext) => Promise<NextResponse<unknown>> {
   return withErrorHandling(async (request: NextRequest, context: RouteContext) => {
     // Try to get session (don't throw if it fails)
     let session: AuthSession | null = null;
@@ -186,11 +179,10 @@ export function withOptionalAuth(
 // ============================================================================
 
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function withRoleAuth(
   allowedRoles: Array<'admin' | 'driver' | 'customer' | 'business'>,
   handler: AuthenticatedHandler
-): (request: NextRequest, context: RouteContext) => Promise<NextResponse<any>> {
+): (request: NextRequest, context: RouteContext) => Promise<NextResponse<unknown>> {
   return withAuth(async (request: NextRequest, session: AuthSession, context?: RouteContext) => {
     // Check if user has required role
     if (!allowedRoles.includes(session.role)) {

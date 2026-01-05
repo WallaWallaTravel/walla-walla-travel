@@ -13,8 +13,8 @@
 
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
-import { searchLocations, type Location } from '@/lib/data/locations';
+import { useState, useRef, useEffect } from 'react';
+import { searchLocations } from '@/lib/data/locations';
 
 export interface SmartLocationInputProps {
   id?: string;
@@ -215,7 +215,7 @@ export function SmartLocationInput({
           <p className="text-xs text-red-600 font-medium">{error}</p>
         ) : filteredLocations.length === 1 && searchTerm && showDropdown ? (
           <p className="text-xs text-green-600 font-medium">
-            ↵ Press Enter to select "{filteredLocations[0].name}"
+            ↵ Press Enter to select &quot;{filteredLocations[0].name}&quot;
           </p>
         ) : isFocused && searchTerm ? (
           <p className="text-xs text-gray-500">

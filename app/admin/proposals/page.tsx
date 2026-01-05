@@ -23,7 +23,7 @@ interface Proposal {
   viewed_at: string | null;
   accepted_at: string | null;
   view_count: number;
-  service_items: any[];
+  service_items: Array<{ service_type: string; name: string; calculated_price: number }>;
 }
 
 function ProposalsPageContent() {
@@ -177,7 +177,7 @@ function ProposalsPageContent() {
     });
   };
 
-  const formatDateTime = (dateString: string) => {
+  const _formatDateTime = (dateString: string) => {
     return new Date(dateString).toLocaleString('en-US', {
       month: 'short',
       day: 'numeric',

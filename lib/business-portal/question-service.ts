@@ -24,7 +24,7 @@ export interface VoiceEntry {
   question_number: number;
   audio_url?: string;
   transcription?: string;
-  extracted_data?: any;
+  extracted_data?: Record<string, unknown>;
   approved: boolean;
 }
 
@@ -33,7 +33,7 @@ export interface TextEntry {
   business_id: number;
   question_id: number;
   response_text: string;
-  extracted_data?: any;
+  extracted_data?: Record<string, unknown>;
   approved: boolean;
 }
 
@@ -167,7 +167,7 @@ export async function updateVoiceTranscription(
  */
 export async function updateVoiceExtraction(
   entryId: number,
-  extractedData: any
+  extractedData: Record<string, unknown>
 ): Promise<void> {
   await query(`
     UPDATE business_voice_entries
@@ -216,7 +216,7 @@ export async function saveTextResponse(data: {
  */
 export async function updateTextExtraction(
   entryId: number,
-  extractedData: any
+  extractedData: Record<string, unknown>
 ): Promise<void> {
   await query(`
     UPDATE business_text_entries

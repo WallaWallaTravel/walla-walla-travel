@@ -12,7 +12,7 @@ const openai = new OpenAI({
 });
 
 export interface ExtractedData {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**

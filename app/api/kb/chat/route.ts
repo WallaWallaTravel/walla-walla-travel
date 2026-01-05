@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
+import { withErrorHandling, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { validateBody, validateQuery } from '@/lib/api/middleware/validation';
 import { kbService } from '@/lib/services/kb.service';
 import { geminiService, ChatMessage } from '@/lib/services/gemini.service';

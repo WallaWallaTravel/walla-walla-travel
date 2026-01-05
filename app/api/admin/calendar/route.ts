@@ -102,7 +102,7 @@ export const GET = withErrorHandling(async (request: NextRequest): Promise<NextR
     const totalCapacity = vehiclesResult.rows.reduce((sum, v) => sum + (v.capacity || 14), 0);
 
     // Group bookings by date
-    const bookingsByDate: Record<string, any[]> = {};
+    const bookingsByDate: Record<string, typeof bookingsResult.rows> = {};
     for (const booking of bookingsResult.rows) {
       const dateStr = booking.tour_date.toISOString().split('T')[0];
       if (!bookingsByDate[dateStr]) bookingsByDate[dateStr] = [];
@@ -110,7 +110,7 @@ export const GET = withErrorHandling(async (request: NextRequest): Promise<NextR
     }
 
     // Group blocks by date and vehicle
-    const blocksByDate: Record<string, any[]> = {};
+    const blocksByDate: Record<string, typeof blocksResult.rows> = {};
     for (const block of blocksResult.rows) {
       const dateStr = block.block_date.toISOString().split('T')[0];
       if (!blocksByDate[dateStr]) blocksByDate[dateStr] = [];

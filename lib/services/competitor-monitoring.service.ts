@@ -433,7 +433,7 @@ export function generateRecommendations(change: CompetitorChange): string[] {
   return recommendations
 }
 
-export default {
+const competitorMonitoringService = {
   getCompetitorsDueForCheck,
   createContentHash,
   detectChanges,
@@ -445,7 +445,9 @@ export default {
   markChangeReviewed,
   dismissChange,
   generateRecommendations
-}
+};
+
+export default competitorMonitoringService;
 
 
 

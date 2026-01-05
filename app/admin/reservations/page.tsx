@@ -281,7 +281,7 @@ The Walla Walla Travel Team`;
             ].map(f => (
               <button
                 key={f.key}
-                onClick={() => setFilter(f.key as any)}
+                onClick={() => setFilter(f.key as 'all' | 'pending' | 'confirmed')}
                 className={`px-4 py-2 rounded-lg font-medium transition ${
                   filter === f.key
                     ? 'bg-blue-600 text-white'

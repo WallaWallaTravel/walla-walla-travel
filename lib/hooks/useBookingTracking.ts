@@ -28,7 +28,7 @@ export interface TrackingData {
   pickupLocation?: string;
   selectedWineries?: number[];
   stepReached?: string;
-  formData?: any;
+  formData?: Record<string, unknown>;
   brandId?: number;
 }
 

@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     const body = parseResult.data;
 
     // Start transaction by getting client
-    const client = await query('SELECT 1'); // Get a connection from pool
+    const _client = await query('SELECT 1'); // Get a connection from pool
 
     // 1. Verify time card exists and is active (not clocked out)
     const timeCardResult = await query(`

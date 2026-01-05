@@ -224,7 +224,7 @@ interface RateCardProps {
 export function RateCard({
   showWineTours = true,
   showSharedTours = true,
-  showTransfers = false,
+  showTransfers: _showTransfers = false,
 }: RateCardProps) {
   const tiers = ['1-2', '3-4', '5-6', '7-8', '9-11', '12-14'] as const;
 

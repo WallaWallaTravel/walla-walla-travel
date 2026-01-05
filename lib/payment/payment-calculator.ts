@@ -18,15 +18,27 @@ export interface PaymentOption {
   description?: string;
 }
 
+interface PaymentProcessingSettings {
+  card_percentage?: number;
+  card_flat_fee?: number;
+  pass_to_customer_percentage?: number;
+  show_check_savings?: boolean;
+}
+
 /**
  * Calculate all payment options for a given amount
  */
 export async function calculatePaymentOptions(baseAmount: number): Promise<PaymentOption[]> {
-  const settings = await getSetting('payment_processing');
-  
+  const settings = await getSetting('payment_processing') as PaymentProcessingSettings | null;
+
+  // Use defaults if settings not found
+  const cardPercentage = settings?.card_percentage ?? 2.9;
+  const cardFlatFee = settings?.card_flat_fee ?? 0.30;
+  const passToCustomerPercentage = settings?.pass_to_customer_percentage ?? 100;
+
   // Card payment (with processing fee)
-  const cardFee = (baseAmount * settings.card_percentage / 100) + settings.card_flat_fee;
-  const cardCustomerPays = cardFee * (settings.pass_to_customer_percentage / 100);
+  const cardFee = (baseAmount * cardPercentage / 100) + cardFlatFee;
+  const cardCustomerPays = cardFee * (passToCustomerPercentage / 100);
   const cardTotal = baseAmount + cardCustomerPays;
   
   // Check payment (no fee)
@@ -44,7 +56,7 @@ export async function calculatePaymentOptions(baseAmount: number): Promise<Payme
       total: checkTotal,
       savings: checkSavings,
       recommended: true,
-      description: settings.show_check_savings 
+      description: settings?.show_check_savings
         ? `Save $${checkSavings.toFixed(2)} in processing fees!`
         : undefined
     },
@@ -71,11 +83,16 @@ export async function calculateCardFee(amount: number): Promise<{
   customerPays: number;
   total: number;
 }> {
-  const settings = await getSetting('payment_processing');
-  
-  const processingFee = (amount * settings.card_percentage / 100) + settings.card_flat_fee;
-  const customerPays = processingFee * (settings.pass_to_customer_percentage / 100);
-  
+  const settings = await getSetting('payment_processing') as PaymentProcessingSettings | null;
+
+  // Use defaults if settings not found
+  const cardPercentage = settings?.card_percentage ?? 2.9;
+  const cardFlatFee = settings?.card_flat_fee ?? 0.30;
+  const passToCustomerPercentage = settings?.pass_to_customer_percentage ?? 100;
+
+  const processingFee = (amount * cardPercentage / 100) + cardFlatFee;
+  const customerPays = processingFee * (passToCustomerPercentage / 100);
+
   return {
     processingFee,
     customerPays,

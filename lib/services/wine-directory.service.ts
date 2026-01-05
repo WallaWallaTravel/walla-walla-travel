@@ -315,7 +315,7 @@ export class WineDirectoryService extends BaseService {
     contentType: string,
     content: string,
     title?: string,
-    metadata?: Record<string, any>
+    metadata?: Record<string, unknown>
   ): Promise<WineryContent> {
     this.log('Adding winery content', { wineryId, contentType });
 

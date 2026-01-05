@@ -10,8 +10,8 @@ interface RouteParams {
  * GET /api/admin/shared-tours/[tour_id]
  * Get tour details with tickets
  */
-export const GET = withAdminAuth(async (request: NextRequest, _session: AuthSession, { params }: RouteParams) => {
-  const { tour_id } = await params;
+export const GET = withAdminAuth(async (request: NextRequest, _session: AuthSession, context) => {
+  const { tour_id } = await (context as RouteParams).params;
 
   const tour = await sharedTourService.getTourWithAvailability(tour_id);
   if (!tour) {
@@ -38,8 +38,8 @@ export const GET = withAdminAuth(async (request: NextRequest, _session: AuthSess
  * PATCH /api/admin/shared-tours/[tour_id]
  * Update a tour
  */
-export const PATCH = withAdminAuth(async (request: NextRequest, _session: AuthSession, { params }: RouteParams) => {
-  const { tour_id } = await params;
+export const PATCH = withAdminAuth(async (request: NextRequest, _session: AuthSession, context) => {
+  const { tour_id } = await (context as RouteParams).params;
   const body = await request.json();
 
   // If changing date, validate day of week
@@ -73,8 +73,8 @@ export const PATCH = withAdminAuth(async (request: NextRequest, _session: AuthSe
  * DELETE /api/admin/shared-tours/[tour_id]
  * Cancel a tour
  */
-export const DELETE = withAdminAuth(async (request: NextRequest, _session: AuthSession, { params }: RouteParams) => {
-  const { tour_id } = await params;
+export const DELETE = withAdminAuth(async (request: NextRequest, _session: AuthSession, context) => {
+  const { tour_id } = await (context as RouteParams).params;
 
   const tour = await sharedTourService.cancelTour(tour_id);
   if (!tour) {

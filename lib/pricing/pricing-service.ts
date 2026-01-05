@@ -245,7 +245,7 @@ export async function calculateTransferPrice(params: {
   date: Date;
   applyModifiers?: boolean;
 }): Promise<PriceCalculation> {
-  const { transferType, partySize, date, applyModifiers = false } = params;
+  const { transferType, partySize, date: _date, applyModifiers: _applyModifiers = false } = params;
   
   // Get base tier - match by tier_name containing the transfer type
   const result = await query(`

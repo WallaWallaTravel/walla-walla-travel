@@ -65,9 +65,9 @@ export class OpenAIProvider extends AIModelProvider {
         model: this.config.model,
         provider: 'openai'
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('OpenAI API error:', error)
-      throw new Error(`OpenAI error: ${error.message}`)
+      throw new Error(`OpenAI error: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 

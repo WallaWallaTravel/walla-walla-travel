@@ -71,8 +71,8 @@ export async function POST(request: NextRequest) {
     const smsMessage = `🚨 URGENT: ${driver.name} needs vehicle assignment\nTime: ${timestamp}\nReason: ${reason || 'No vehicle assigned for pre-trip inspection'}\nLink: ${deepLink}`;
 
     // Email Message
-    const emailSubject = `Vehicle Assignment Needed - ${driver.name}`;
-    const emailBody = `
+    const _emailSubject = `Vehicle Assignment Needed - ${driver.name}`;
+    const _emailBody = `
 URGENT: Vehicle Assignment Request
 
 Driver: ${driver.name}

@@ -12,7 +12,7 @@ import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 import { validateBody } from '@/lib/api/middleware/validation';
 import { setSessionCookie } from '@/lib/auth/session';
 import { authService } from '@/lib/services/auth.service';
-import { auditService } from '@/lib/services/audit.service';
+// import { auditService } from '@/lib/services/audit.service';
 import { z } from 'zod';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 

@@ -101,7 +101,7 @@ export const getCachedSystemSettings = unstable_cache(
     `);
     
     // Convert to key-value object
-    const settings: Record<string, any> = {};
+    const settings: Record<string, string | number | boolean> = {};
     for (const row of result.rows) {
       const value = row.setting_value;
       settings[row.setting_key] = 

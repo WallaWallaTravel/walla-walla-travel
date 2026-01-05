@@ -35,7 +35,7 @@ export default function SharedToursPage() {
   const [tours, setTours] = useState<SharedTour[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
+  const [_selectedMonth, _setSelectedMonth] = useState<Date>(new Date());
 
   useEffect(() => {
     fetchTours();
@@ -57,7 +57,7 @@ export default function SharedToursPage() {
     }
   };
 
-  const formatDate = (dateStr: string) => {
+  const _formatDate = (dateStr: string) => {
     const date = new Date(dateStr + 'T00:00:00');
     return date.toLocaleDateString('en-US', {
       weekday: 'long',
@@ -159,7 +159,7 @@ export default function SharedToursPage() {
             Shared Wine Tours
           </h1>
           <p className="text-slate-600 text-lg">
-            Join fellow wine enthusiasts for a curated tasting journey through Walla Walla's finest wineries.
+            Join fellow wine enthusiasts for a curated tasting journey through Walla Walla&apos;s finest wineries.
           </p>
         </div>
       </header>
@@ -341,7 +341,7 @@ export default function SharedToursPage() {
           <h2 className="text-xl font-bold text-slate-900 mb-6">Frequently Asked Questions</h2>
           <div className="space-y-6">
             <div>
-              <h3 className="font-semibold text-slate-900 mb-2">What's included in the tour?</h3>
+              <h3 className="font-semibold text-slate-900 mb-2">What&apos;s included in the tour?</h3>
               <p className="text-slate-600">Transportation in our comfortable vehicle, wine tastings at 4-5 carefully selected wineries, a knowledgeable driver/guide, and water. The lunch option includes a meal at a local restaurant.</p>
             </div>
             <div>
@@ -353,7 +353,7 @@ export default function SharedToursPage() {
               <p className="text-slate-600">We cap our shared tours at 14 guests to ensure a personalized experience. Tours need a minimum of 2 guests to run.</p>
             </div>
             <div>
-              <h3 className="font-semibold text-slate-900 mb-2">What's your cancellation policy?</h3>
+              <h3 className="font-semibold text-slate-900 mb-2">What&apos;s your cancellation policy?</h3>
               <p className="text-slate-600">Full refunds are available up to 48 hours before the tour. Cancellations within 48 hours are non-refundable but can be rescheduled subject to availability.</p>
             </div>
           </div>

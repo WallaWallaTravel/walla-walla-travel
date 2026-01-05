@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { SmartTimeInput } from '@/components/shared/form-inputs/SmartTimeInput';
 import { SmartLocationInput } from '@/components/shared/form-inputs/SmartLocationInput';
-import { WinerySelector } from '@/app/admin/proposals/new/winery-selector';
+// import { WinerySelector } from '@/app/admin/proposals/new/winery-selector';
 import type { Itinerary, ItineraryDay, ItineraryActivity, ActivityType } from '@/types/itinerary';
 
 interface PageProps {
@@ -166,7 +166,7 @@ export default function ItineraryBuilderPage({ params }: PageProps) {
     return titles[type] || 'Activity';
   };
 
-  const getActivityIcon = (type: ActivityType): string => {
+  const _getActivityIcon = (type: ActivityType): string => {
     const icons = {
       winery_visit: '🍷',
       transfer: '🚐',
@@ -302,7 +302,7 @@ interface DayCardProps {
   onDeleteActivity: (dayId: number, activityId: number) => void;
 }
 
-function DayCard({ day, dayIndex, wineries, onAddActivity, onUpdateActivity, onDeleteActivity }: DayCardProps) {
+function DayCard({ day, dayIndex: _dayIndex, wineries, onAddActivity, onUpdateActivity, onDeleteActivity }: DayCardProps) {
   const [showActivityMenu, setShowActivityMenu] = useState(false);
 
   const activityTypes: Array<{ type: ActivityType; icon: string; label: string }> = [

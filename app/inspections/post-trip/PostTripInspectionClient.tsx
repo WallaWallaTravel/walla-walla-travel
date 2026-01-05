@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import api from '@/lib/api-client'
-import { sanitizeText, sanitizeNumber, patterns } from '@/lib/security'
+import { sanitizeText, sanitizeNumber } from '@/lib/security'
 import {
   TouchButton,
   BottomActionBar,
@@ -235,8 +235,9 @@ export function PostTripInspectionClient({ driver, beginningMileage = 0 }: Props
     input.type = 'file'
     input.accept = 'image/*'
     input.capture = 'environment'
-    input.onchange = (e: any) => {
-      const file = e.target.files[0]
+    input.onchange = (e: Event) => {
+      const target = e.target as HTMLInputElement
+      const file = target.files?.[0]
       if (file) {
         // In production, upload to storage and get URL
         const mockUrl = URL.createObjectURL(file)

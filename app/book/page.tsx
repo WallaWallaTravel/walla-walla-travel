@@ -398,19 +398,19 @@ function BookTourPageContent() {
 
               {/* What's Next */}
               <div className="bg-emerald-50 rounded-xl p-6 mt-6">
-                <h3 className="font-semibold text-emerald-800 mb-3">What's Next?</h3>
+                <h3 className="font-semibold text-emerald-800 mb-3">What&apos;s Next?</h3>
                 <ul className="space-y-2 text-sm text-emerald-700">
                   <li className="flex items-start gap-2">
                     <span className="text-emerald-500 mt-0.5">1.</span>
-                    <span>We'll review your request and check availability</span>
+                    <span>We&apos;ll review your request and check availability</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-emerald-500 mt-0.5">2.</span>
-                    <span>You'll receive a follow-up email or call within 24 hours</span>
+                    <span>You&apos;ll receive a follow-up email or call within 24 hours</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-emerald-500 mt-0.5">3.</span>
-                    <span>Once confirmed, we'll send deposit payment instructions</span>
+                    <span>Once confirmed, we&apos;ll send deposit payment instructions</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-emerald-500 mt-0.5">4.</span>
@@ -427,7 +427,7 @@ function BookTourPageContent() {
 
               {/* Contact Info */}
               <div className="text-center pt-4">
-                <p className="text-sm text-slate-500 mb-2">Questions? We're here to help!</p>
+                <p className="text-sm text-slate-500 mb-2">Questions? We&apos;re here to help!</p>
                 <p className="text-sm">
                   <a href="mailto:info@nwtouring.com" className="text-emerald-600 hover:text-emerald-700 font-medium">info@nwtouring.com</a>
                   <span className="text-slate-300 mx-2">|</span>
@@ -668,7 +668,7 @@ function BookTourPageContent() {
                             className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 text-sm"
                           />
                           <p className="text-xs text-slate-500 mt-1">
-                            We'll contact you to discuss vehicle options for your group size.
+                            We&apos;ll contact you to discuss vehicle options for your group size.
                           </p>
                         </div>
                       )}

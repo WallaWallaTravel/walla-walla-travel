@@ -409,13 +409,15 @@ export function getSuggestedTime(template: PostTemplate, dayOfWeek: number): str
   return template.bestTimes[timeIndex]
 }
 
-export default {
+const socialTemplatesApi = {
   templates: socialTemplates,
   getTemplatesByCategory,
   getTemplatesByPlatform,
   fillTemplate,
   getSuggestedTime
-}
+};
+
+export default socialTemplatesApi;
 
 
 

@@ -11,8 +11,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling, ValidationError, NotFoundError, ForbiddenError } from '@/lib/api/middleware/error-handler';
-import { vehicleAvailabilityService, BlockType } from '@/lib/services/vehicle-availability.service';
+import { withErrorHandling, ValidationError } from '@/lib/api/middleware/error-handler';
+import { vehicleAvailabilityService } from '@/lib/services/vehicle-availability.service';
 import { z } from 'zod';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';

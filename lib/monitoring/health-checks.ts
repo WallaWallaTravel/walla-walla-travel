@@ -4,7 +4,6 @@
  */
 
 import { query } from '@/lib/db';
-import { Pool } from 'pg';
 import { logger } from '@/lib/logger';
 
 export type HealthStatus = 'healthy' | 'degraded' | 'down';

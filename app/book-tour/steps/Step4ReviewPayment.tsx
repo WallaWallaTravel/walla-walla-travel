@@ -104,8 +104,8 @@ export default function Step4ReviewPayment({ bookingData, updateBookingData, nex
       setClientSecret(paymentResult.data.client_secret);
       setBookingCreated(true);
 
-    } catch (err: any) {
-      setError(err.message || 'Failed to process booking. Please try again.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to process booking. Please try again.');
     } finally {
       setProcessing(false);
     }
@@ -156,8 +156,8 @@ export default function Step4ReviewPayment({ bookingData, updateBookingData, nex
         nextStep();
       }
 
-    } catch (err: any) {
-      setError(err.message || 'Payment processing failed');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Payment processing failed');
     } finally {
       setProcessing(false);
     }

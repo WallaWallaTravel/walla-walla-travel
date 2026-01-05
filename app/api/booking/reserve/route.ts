@@ -56,13 +56,13 @@ export async function POST(request: NextRequest) {
     }
     
     // Get deposit settings
-    const depositSettings = await getSetting('deposit_rules');
-    const bookingSettings = await getSetting('booking_flow_settings');
-    
+    const depositSettings = await getSetting('deposit_rules') as { reserve_refine?: Record<string, number> } | undefined;
+    const bookingSettings = await getSetting('booking_flow_settings') as { reserve_refine_consultation_hours?: number } | undefined;
+
     // Validate deposit amount
-    const expectedDeposit = data.partySize <= 7 
-      ? depositSettings?.reserve_refine?.['1-7'] || 250
-      : depositSettings?.reserve_refine?.['8-14'] || 350;
+    const expectedDeposit = data.partySize <= 7
+      ? depositSettings?.reserve_refine?.['1-7'] ?? 250
+      : depositSettings?.reserve_refine?.['8-14'] ?? 350;
     
     if (Math.abs(data.depositAmount - expectedDeposit) > 50) {
       return NextResponse.json(

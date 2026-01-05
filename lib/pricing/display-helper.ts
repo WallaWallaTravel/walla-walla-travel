@@ -123,7 +123,7 @@ export function getRecommendedBookingFlow(strategy: PricingDisplayStrategy): {
  * Generate AI prompt guidance based on strategy
  */
 export async function getAIPricingGuidance(partySize: number): Promise<string> {
-  const { strategy, explanation } = await getPricingStrategy(partySize);
+  const { strategy, explanation: _explanation } = await getPricingStrategy(partySize);
   
   switch (strategy) {
     case 'consultation_required':

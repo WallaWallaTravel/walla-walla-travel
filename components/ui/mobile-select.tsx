@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 
 export interface SelectOption {
@@ -285,7 +285,7 @@ export interface RadioGroupProps {
 }
 
 export function RadioGroup({
-  name,
+  name: _name,
   options,
   value,
   onChange,

@@ -206,7 +206,7 @@ ${text}`;
 export async function parseItineraryFile(
   fileDataUrl: string,
   mimeType: string,
-  originalFilename: string
+  _originalFilename: string
 ): Promise<ParsedItinerary> {
   // Image files - use Vision
   if (mimeType.startsWith('image/')) {

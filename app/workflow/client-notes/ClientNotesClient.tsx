@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { sanitizeText, sanitizeHtml } from '@/lib/security'
+import { sanitizeText } from '@/lib/security'
 import DOMPurify from 'isomorphic-dompurify'
 
 interface Props {
@@ -61,14 +61,23 @@ export default function ClientNotesClient({ driver }: Props) {
     setCurrentScreen('detailed')
   }
 
-  const saveNotesToDatabase = async (completeData: any) => {
+  const saveNotesToDatabase = async (completeData: {
+    overallRating?: number;
+    customStops?: string;
+    detailedNotes?: string;
+    favoriteStop?: string;
+    wineryRatings?: Record<string, number>;
+    purchases?: string[];
+    willReturn?: string;
+    marketingInterests?: string[];
+  }) => {
     try {
       // Sanitize all text inputs
       const sanitizedData = {
         ...completeData,
-        customStops: sanitizeText(completeData.customStops),
-        detailedNotes: sanitizeText(completeData.detailedNotes),
-        favoriteStop: sanitizeText(completeData.favoriteStop)
+        customStops: sanitizeText(completeData.customStops ?? ''),
+        detailedNotes: sanitizeText(completeData.detailedNotes ?? ''),
+        favoriteStop: sanitizeText(completeData.favoriteStop ?? '')
       }
 
       // Save to database with parameterized query

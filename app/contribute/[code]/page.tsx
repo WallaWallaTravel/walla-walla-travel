@@ -5,7 +5,7 @@
  * Main interface for businesses to answer questions via voice or text
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAudioRecorder } from '@/lib/hooks/useAudioRecorder';
 
@@ -115,14 +115,14 @@ export default function BusinessPortalPage() {
         setCurrentQuestionIndex(firstUnanswered);
       }
       
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Load error:', err);
-      setError(err.message);
+      setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
     }
   };
-  
+
   const currentQuestion = questions[currentQuestionIndex];
   
   const handleSubmitVoice = async () => {
@@ -153,14 +153,14 @@ export default function BusinessPortalPage() {
         handleNext();
       }, 1000);
       
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Submit voice error:', err);
-      setError(err.message);
+      setError(err instanceof Error ? err.message : 'Failed to submit voice');
     } finally {
       setSubmitting(false);
     }
   };
-  
+
   const handleSubmitText = async () => {
     if (!textAnswer.trim() || !currentQuestion || !business) return;
     
@@ -190,14 +190,14 @@ export default function BusinessPortalPage() {
         handleNext();
       }, 1000);
       
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Submit text error:', err);
-      setError(err.message);
+      setError(err instanceof Error ? err.message : 'Failed to submit text');
     } finally {
       setSubmitting(false);
     }
   };
-  
+
   const handleNext = async () => {
     // Auto-save if there's unsaved content
     if (answerMode === 'text' && textAnswer.trim() && !submitting) {
@@ -237,8 +237,8 @@ export default function BusinessPortalPage() {
           // Reload to update question status
           await loadPortalData();
         }
-      } catch (err) {
-        console.error('Auto-save failed:', err);
+      } catch (_err) {
+        // Auto-save failed silently
       } finally {
         setSubmitting(false);
       }
@@ -299,11 +299,11 @@ export default function BusinessPortalPage() {
               🎉 All Questions Complete!
             </h1>
             <p className="text-xl text-gray-600 mb-8">
-              Great work, {business.name}! You've answered all questions.
+              Great work, {business.name}! You&apos;ve answered all questions.
             </p>
             
             <div className="bg-blue-50 rounded-lg p-6 mb-8">
-              <h3 className="font-semibold text-gray-900 mb-4">What's next?</h3>
+              <h3 className="font-semibold text-gray-900 mb-4">What&apos;s next?</h3>
               <ul className="text-left space-y-2 text-gray-700">
                 <li className="flex items-start">
                   <span className="text-blue-600 mr-2">1.</span>
@@ -315,7 +315,7 @@ export default function BusinessPortalPage() {
                 </li>
                 <li className="flex items-start">
                   <span className="text-blue-600 mr-2">3.</span>
-                  <span>We'll review and add you to the AI directory</span>
+                  <span>We&apos;ll review and add you to the AI directory</span>
                 </li>
               </ul>
             </div>

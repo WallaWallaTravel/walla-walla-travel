@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { getAllMenus, type MenuItem } from '@/lib/menus';
+import { getAllMenus } from '@/lib/menus';
 import { getSmartModifications } from '@/lib/ai-modifications';
 import RestaurantSelector from './components/RestaurantSelector';
 import MenuItemCard from './components/MenuItemCard';

@@ -7,7 +7,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Image from 'next/image';
+// import Image from 'next/image';
 
 interface Business {
   id: number;
@@ -27,7 +27,7 @@ interface Answer {
   question_text: string;
   response_text?: string;
   transcription?: string;
-  extracted_data?: any;
+  extracted_data?: Record<string, unknown>;
   category?: string;
   answered_at: string;
 }
@@ -52,7 +52,7 @@ interface Discrepancy {
   severity: string;
   title: string;
   description: string;
-  sources: any[];
+  sources: { type: string; value: string }[];
   suggestedResolution: string;
   draftMessage?: string;
 }
@@ -71,7 +71,7 @@ export default function BusinessReviewPage() {
   const [activeTab, setActiveTab] = useState<'answers' | 'files' | 'discrepancies' | 'insights'>('answers');
   const [processingAction, setProcessingAction] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [insights, setInsights] = useState<any[]>([]);
+  const [insights, setInsights] = useState<Array<{ id: number; insight_type: string; title: string; content: string; priority: number; is_public: boolean; best_for?: string[]; created_at: string }>>([]);
   const [showInsightForm, setShowInsightForm] = useState(false);
   const [insightForm, setInsightForm] = useState({
     insight_type: 'recommendation',
@@ -106,7 +106,7 @@ export default function BusinessReviewPage() {
       
       // Load insights
       loadInsights();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error loading business:', error);
     } finally {
       setLoading(false);
@@ -154,8 +154,8 @@ export default function BusinessReviewPage() {
         recommended_for: []
       });
       loadInsights();
-    } catch (error: any) {
-      setMessage({ type: 'error', text: error.message });
+    } catch (error: unknown) {
+      setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Failed to add insight' });
     } finally {
       setProcessingAction(false);
     }
@@ -180,8 +180,8 @@ export default function BusinessReviewPage() {
 
       setMessage({ type: 'success', text: 'File approved!' });
       loadBusinessData(); // Reload to show updated status
-    } catch (error: any) {
-      setMessage({ type: 'error', text: error.message });
+    } catch (error: unknown) {
+      setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Failed to approve file' });
     } finally {
       setProcessingAction(false);
     }
@@ -202,8 +202,8 @@ export default function BusinessReviewPage() {
 
       setMessage({ type: 'success', text: 'Business approved and published!' });
       loadBusinessData();
-    } catch (error: any) {
-      setMessage({ type: 'error', text: error.message });
+    } catch (error: unknown) {
+      setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Failed to approve business' });
     } finally {
       setProcessingAction(false);
     }
@@ -305,7 +305,7 @@ export default function BusinessReviewPage() {
             ].map(tab => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id as 'answers' | 'files' | 'discrepancies' | 'insights')}
                 className={`px-4 py-3 font-medium border-b-2 transition ${
                   activeTab === tab.id
                     ? 'border-blue-600 text-blue-600'

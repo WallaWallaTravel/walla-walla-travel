@@ -25,7 +25,7 @@ const ClockRequestSchema = z.object({
 
 type ClockRequest = z.infer<typeof ClockRequestSchema>;
 
-interface TimeCard {
+interface _TimeCard {
   id: number;
   driver_id: number;
   vehicle_id: number | null;
@@ -540,7 +540,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     // Use the new logger for comprehensive error logging
     const err = error instanceof Error ? error : new Error(String(error));
-    const loggedErrorId = logError('Clock API', err.message || 'Unknown error', error, {
+    const _loggedErrorId = logError('Clock API', err.message || 'Unknown error', error, {
       endpoint: '/api/workflow/clock',
       userId: session?.userId,
       action: body?.action,
@@ -556,7 +556,7 @@ export async function POST(request: NextRequest) {
 }
 
 // GET endpoint to check current clock status
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const authResult = await requireAuth();
     if ('status' in authResult) {
@@ -568,7 +568,7 @@ export async function GET(request: NextRequest) {
     logApiRequest('GET', '/api/workflow/clock', session.userId);
 
     const driverId = parseInt(session.userId);
-    const today = formatDateForDB(new Date());
+    const _today = formatDateForDB(new Date());
 
     // Get current status (check for any active time card, not just today)
     const currentStatus = await query(`

@@ -3,7 +3,7 @@
  * Unit tests for booking business logic
  */
 
-import { BookingService, CreateBookingData, Booking } from '../booking.service';
+import { BookingService, CreateBookingData } from '../booking.service';
 import { createMockQueryResult, getNextWeekDate } from '../../__tests__/test-utils';
 import { createMockBooking } from '../../__tests__/factories';
 

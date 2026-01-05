@@ -24,7 +24,7 @@ export default function ManualBookingModal({ onClose, onComplete }: Props) {
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [pricing, setPricing] = useState<any>(null);
+  const [pricing, setPricing] = useState<{ subtotal: number; taxes: number; total: number; deposit_required: number } | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -115,8 +115,8 @@ export default function ManualBookingModal({ onClose, onComplete }: Props) {
       });
 
       onComplete();
-    } catch (err: any) {
-      setError(err.message || 'Failed to create booking');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to create booking');
     } finally {
       setSaving(false);
     }

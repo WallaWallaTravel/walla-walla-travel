@@ -20,7 +20,7 @@ const CancelBookingSchema = z.object({
 
 export const POST = withCSRF(
   withRateLimit(rateLimiters.payment)(
-    withAuth(async (request: NextRequest, session) => {
+    withAuth(async (request: NextRequest, _session) => {
   // ✅ Validate
   const { booking_id, reason } = await validateBody(request, CancelBookingSchema);
 

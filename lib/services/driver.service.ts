@@ -174,8 +174,8 @@ export class DriverService extends BaseService {
 
     sql += ` GROUP BY b.id, i.id`;
 
-    const result = await this.queryOne<any>(sql, params);
-    
+    const result = await this.queryOne<DriverTour>(sql, params);
+
     if (!result) return null;
 
     return result;

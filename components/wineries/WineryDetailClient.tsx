@@ -34,7 +34,7 @@ export function WineryDetailClient({ winery, narrativeContent }: WineryDetailCli
   const philosophy = narrativeContent?.philosophy;
   const uniqueStory = narrativeContent?.uniqueStory;
   const insiderTips = narrativeContent?.insiderTips || [];
-  const hasNarrativeContent = originStory || philosophy || uniqueStory || insiderTips.length > 0;
+  const _hasNarrativeContent = originStory || philosophy || uniqueStory || insiderTips.length > 0;
 
   // Set page context for the chat widget and track view
   useEffect(() => {

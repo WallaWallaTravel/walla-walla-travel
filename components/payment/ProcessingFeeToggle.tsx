@@ -153,7 +153,7 @@ interface ProcessingFeeDisplayProps {
 }
 
 export function ProcessingFeeDisplay({
-  baseAmount,
+  baseAmount: _baseAmount,
   processingFee,
   showFee,
 }: ProcessingFeeDisplayProps) {

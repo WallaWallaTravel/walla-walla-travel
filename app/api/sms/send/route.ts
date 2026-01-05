@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
-import { validateBody } from '@/lib/api/middleware/validation';
+// import { validateBody } from '@/lib/api/middleware/validation';
 import { sendSMS, SMSTemplates, sendTourReminder, sendScheduleChangeAlert } from '@/lib/sms';
 
 /**

@@ -5,7 +5,7 @@
 
 import { ProposalService } from '../proposal-service';
 import { createMockQueryResult } from '../../__tests__/test-utils';
-import { createMockProposal, createMockProposalWithItems } from '../../__tests__/factories';
+import { createMockProposal } from '../../__tests__/factories';
 
 // Mock the db module - use inline object to avoid initialization order issues
 jest.mock('../../db', () => ({

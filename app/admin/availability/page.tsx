@@ -72,8 +72,8 @@ export default function AvailabilityManagement() {
         const errData = await response.json();
         setError(errData.error || 'Failed to load data');
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to load data');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load data');
     } finally {
       setLoading(false);
     }
@@ -106,8 +106,8 @@ export default function AvailabilityManagement() {
       setSuccessMessage(editingBlock ? 'Block updated successfully' : 'Block created successfully');
       resetForm();
       loadData();
-    } catch (err: any) {
-      setError(err.message || 'Failed to save');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to save');
     }
   };
 
@@ -130,8 +130,8 @@ export default function AvailabilityManagement() {
 
       setSuccessMessage('Block deleted successfully');
       loadData();
-    } catch (err: any) {
-      setError(err.message || 'Failed to delete');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to delete');
     }
   };
 
@@ -282,7 +282,7 @@ export default function AvailabilityManagement() {
                   <label className="block text-sm font-bold text-gray-900 mb-2">Block Type *</label>
                   <select
                     value={formData.block_type}
-                    onChange={(e) => setFormData({ ...formData, block_type: e.target.value as any })}
+                    onChange={(e) => setFormData({ ...formData, block_type: e.target.value as 'maintenance' | 'blackout' | 'hold' })}
                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-gray-900 font-semibold focus:border-blue-500"
                     required
                   >

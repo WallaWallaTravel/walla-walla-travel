@@ -44,7 +44,7 @@ export default function EnhancedAIDirectoryPage() {
     isRecording,
     duration,
     audioBlob,
-    error: recordingError,
+    error: _recordingError,
     startRecording,
     stopRecording,
     clearRecording
@@ -114,11 +114,11 @@ export default function EnhancedAIDirectoryPage() {
       } else {
         throw new Error(data.error || 'Query failed');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'ai',
-        text: `Sorry, I encountered an error: ${error.message}. Please try again.`,
+        text: `Sorry, I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`,
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMessage]);
@@ -159,7 +159,7 @@ export default function EnhancedAIDirectoryPage() {
         handleSubmitText();
       }, 100);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Voice submission error:', error);
       alert('Failed to process voice input. Please try again.');
     } finally {
@@ -208,11 +208,11 @@ export default function EnhancedAIDirectoryPage() {
       } else {
         throw new Error(data.error || 'Query failed');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'ai',
-        text: `Sorry, I encountered an error: ${error.message}. Please try again.`,
+        text: `Sorry, I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`,
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMessage]);
@@ -290,7 +290,7 @@ export default function EnhancedAIDirectoryPage() {
                   Welcome to Walla Walla!
                 </h2>
                 <p className="text-gray-600 max-w-xl mx-auto">
-                  I'm your AI guide to the best wineries, tours, and experiences in wine country. 
+                  I&apos;m your AI guide to the best wineries, tours, and experiences in wine country. 
                   Ask me anything!
                 </p>
               </div>

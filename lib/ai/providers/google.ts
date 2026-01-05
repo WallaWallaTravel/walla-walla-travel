@@ -58,9 +58,9 @@ export class GoogleProvider extends AIModelProvider {
         model: this.config.model,
         provider: 'google'
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Google API error:', error)
-      throw new Error(`Google error: ${error.message}`)
+      throw new Error(`Google error: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 

@@ -23,7 +23,7 @@ export default function BusinessInvitePage() {
   ]);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [results, setResults] = useState<any[]>([]);
+  const [results, setResults] = useState<Array<{ success: boolean; business?: { name: string }; unique_code?: string; error?: string }>>([]);
 
   const addInviteRow = () => {
     setInvites([...invites, { name: '', business_type: 'winery', contact_email: '', contact_phone: '' }]);
@@ -66,17 +66,18 @@ export default function BusinessInvitePage() {
         throw new Error(data.error || 'Failed to send invites');
       }
 
-      setResults(data.results || []);
-      setMessage({ 
-        type: 'success', 
-        text: `Successfully sent ${data.results.filter((r: any) => r.success).length} invite(s)!` 
+      const typedResults = (data.results || []) as Array<{ success: boolean; business?: { name: string }; unique_code?: string; error?: string }>;
+      setResults(typedResults);
+      setMessage({
+        type: 'success',
+        text: `Successfully sent ${typedResults.filter((r) => r.success).length} invite(s)!`
       });
       
       // Clear form
       setInvites([{ name: '', business_type: 'winery', contact_email: '', contact_phone: '' }]);
 
-    } catch (error: any) {
-      setMessage({ type: 'error', text: error.message });
+    } catch (error: unknown) {
+      setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Failed to send invites' });
     } finally {
       setSubmitting(false);
     }

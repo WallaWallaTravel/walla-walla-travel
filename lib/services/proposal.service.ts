@@ -42,7 +42,7 @@ import {
 } from '@/lib/proposals/proposal-utils';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
 
-interface ProposalRow {
+interface _ProposalRow {
   id: number;
   proposal_number: string;
   uuid: string;

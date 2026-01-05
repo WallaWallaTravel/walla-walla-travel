@@ -394,6 +394,7 @@ export default function PartnerPreviewPage() {
                               key={photo.id}
                               className="aspect-video rounded-lg overflow-hidden bg-slate-100"
                             >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
                                 src={photo.url}
                                 alt={photo.alt_text || category}

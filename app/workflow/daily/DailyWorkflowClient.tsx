@@ -38,8 +38,8 @@ interface WorkflowProgress {
 }
 
 export function DailyWorkflowClient({ user, userEmail }: Props) {
-  const router = useRouter()
-  const email = user?.email || userEmail || 'guest'
+  const _router = useRouter()
+  const _email = user?.email || userEmail || 'guest'
   
   const [currentStep, setCurrentStep] = useState(0)
   const [completedSteps, setCompletedSteps] = useState<string[]>([])

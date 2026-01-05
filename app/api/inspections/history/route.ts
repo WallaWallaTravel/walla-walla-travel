@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
 
     // Build query conditions
     const whereConditions = ['i.driver_id = $1'];
-    const queryParams: any[] = [parseInt(session.userId)];
+    const queryParams: (string | number)[] = [parseInt(session.userId)];
     let paramCount = 1;
 
     if (type && type !== 'all') {

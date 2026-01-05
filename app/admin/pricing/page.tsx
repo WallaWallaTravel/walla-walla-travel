@@ -44,7 +44,7 @@ function PricingCalculator() {
   const [transferType, setTransferType] = useState('seatac');
   const [waitHours, setWaitHours] = useState(2);
   const [calculating, setCalculating] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<{ success?: boolean; error?: string; tierUsed?: { tier_name: string; notes?: string }; baseRate: number; finalPrice: number; modifiers?: Array<{ name: string; amount: number }>; breakdown?: string[] } | null>(null);
 
   // Debounced auto-calculate whenever inputs change
   useEffect(() => {
@@ -132,7 +132,7 @@ function PricingCalculator() {
           <label className="block text-sm font-medium text-gray-700 mb-2">Service Type</label>
           <select
             value={serviceType}
-            onChange={(e) => setServiceType(e.target.value as any)}
+            onChange={(e) => setServiceType(e.target.value as 'wine_tour' | 'transfer' | 'wait_time')}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="wine_tour">🍷 Wine Tour</option>
@@ -235,7 +235,7 @@ function PricingCalculator() {
               {result.modifiers && result.modifiers.length > 0 && (
                 <div className="border-t pt-2">
                   <p className="text-xs font-semibold text-gray-600 mb-2">Applied Modifiers:</p>
-                  {result.modifiers.map((mod: any, i: number) => (
+                  {result.modifiers.map((mod, i) => (
                     <div key={i} className="flex justify-between text-xs ml-2">
                       <span className="text-gray-600">{mod.name}:</span>
                       <span className={mod.amount < 0 ? 'text-green-600' : 'text-red-600'}>
@@ -333,7 +333,7 @@ export default function PricingAdminPage() {
     }
   };
 
-  const handleQuickEdit = async (tierId: number, field: string, value: any) => {
+  const handleQuickEdit = async (tierId: number, field: string, value: string | number | boolean) => {
     try {
       const response = await fetch(`/api/admin/pricing/tiers/${tierId}`, {
         method: 'PATCH',
@@ -406,7 +406,7 @@ export default function PricingAdminPage() {
             ].map(tab => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id as 'tiers' | 'modifiers' | 'calculator')}
                 className={`px-4 py-3 font-medium border-b-2 transition ${
                   activeTab === tab.id
                     ? 'border-blue-600 text-blue-600'
@@ -561,7 +561,7 @@ export default function PricingAdminPage() {
               <h3 className="text-lg font-bold text-gray-900 mb-2">💡 About Modifiers</h3>
               <p className="text-gray-700 mb-3">
                 Modifiers allow you to apply discounts, surcharges, or seasonal adjustments to your pricing.
-                These are <strong>backend-only controls</strong> - they won't be publicly displayed unless you choose to.
+                These are <strong>backend-only controls</strong> - they won&apos;t be publicly displayed unless you choose to.
               </p>
               <p className="text-sm text-gray-600">
                 ✓ Early bird discounts | ✓ Volume discounts | ✓ Seasonal pricing | ✓ Holiday surcharges

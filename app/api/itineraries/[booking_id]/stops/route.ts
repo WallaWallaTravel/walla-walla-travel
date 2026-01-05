@@ -59,7 +59,7 @@ export async function PUT(
       }
 
       // Calculate and update total drive time
-      const totalDriveTime = stops.reduce((sum: number, stop: any) =>
+      const totalDriveTime = stops.reduce((sum: number, stop: { drive_time_to_next_minutes?: number }) =>
         sum + (stop.drive_time_to_next_minutes || 0), 0
       );
 

@@ -11,7 +11,6 @@ import { useState } from 'react';
 import {
   CANCELLATION_POLICY,
   CANCELLATION_TIERS,
-  getCancellationPolicySummaryText,
 } from './cancellation-policy';
 import {
   NW_TOURING_TERMS,
@@ -22,7 +21,6 @@ import {
 } from './nw-touring-terms';
 import {
   WWT_TERMS,
-  getKeyTermsSummary,
 } from './wwt-terms';
 
 // ============================================================================

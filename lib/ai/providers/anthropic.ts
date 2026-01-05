@@ -61,9 +61,9 @@ export class AnthropicProvider extends AIModelProvider {
         model: this.config.model,
         provider: 'anthropic'
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Anthropic API error:', error)
-      throw new Error(`Anthropic error: ${error.message}`)
+      throw new Error(`Anthropic error: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 

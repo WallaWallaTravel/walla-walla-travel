@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useVoiceRecognition } from '@/lib/hooks/useVoiceRecognition'
 import { useTextToSpeech } from '@/lib/hooks/useTextToSpeech'
-import { parseCommand, formatCommandDisplay, isConfidentCommand, getHelpText, type InspectionCommand } from '@/lib/voice/command-parser'
+import { parseCommand, formatCommandDisplay, isConfidentCommand, type InspectionCommand } from '@/lib/voice/command-parser'
 
 interface InspectionItem {
   id: string
@@ -164,6 +164,21 @@ export function VoiceInspector({
     }
   }, [voice])
 
+  const getHelpText = useCallback(() => {
+    return `Voice Commands:
+• "Pass" or "OK" - Mark item as passing
+• "Fail" - Mark item as failed
+• "Fail, [reason]" - Mark failed with note
+• "Skip" or "Next" - Skip to next item
+• "Back" or "Previous" - Go to previous item
+• "Stop" or "Cancel" - Stop inspection
+
+Tips:
+• Speak clearly and wait for the beep
+• Say "Fail, cracked mirror" to add notes
+• Tap the mic button to toggle listening`
+  }, [])
+
   // Handle transcript with all dependencies now defined
   const handleTranscript = useCallback((transcript: string, isFinal: boolean) => {
     if (!isFinal) return
@@ -232,7 +247,7 @@ export function VoiceInspector({
         <div className="bg-white rounded-lg shadow-lg p-6 max-w-md">
           <h2 className="text-xl font-bold text-red-600 mb-4">Voice Not Supported</h2>
           <p className="text-gray-700 mb-4">
-            Your browser doesn't support voice recognition. Please use a modern browser like Chrome, Edge, or Safari.
+            Your browser doesn&apos;t support voice recognition. Please use a modern browser like Chrome, Edge, or Safari.
           </p>
           <button
             onClick={onCancel}
@@ -310,7 +325,7 @@ export function VoiceInspector({
               </svg>
               <div className="flex-1">
                 <p className="text-sm font-medium text-yellow-800 mb-1">Voice prompts unavailable</p>
-                <p className="text-xs text-yellow-700">Your browser doesn't support text-to-speech. You can still use voice commands, but you won't hear audio prompts.</p>
+                <p className="text-xs text-yellow-700">Your browser doesn&apos;t support text-to-speech. You can still use voice commands, but you won&apos;t hear audio prompts.</p>
               </div>
             </div>
           </div>
@@ -321,7 +336,7 @@ export function VoiceInspector({
           <div className="text-center mb-6">
             <div className="text-sm text-gray-500 mb-2">Checking</div>
             <h2 className="text-2xl font-bold text-gray-900">{currentItem?.label}</h2>
-            <p className="text-sm text-gray-600 mt-2">Say: "Pass" or "Fail"</p>
+            <p className="text-sm text-gray-600 mt-2">Say: &quot;Pass&quot; or &quot;Fail&quot;</p>
             {repeatCount < 2 && (
               <button
                 onClick={() => speakCurrentItem()}

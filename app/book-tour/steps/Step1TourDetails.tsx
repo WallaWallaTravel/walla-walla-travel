@@ -89,8 +89,8 @@ export default function Step1TourDetails({ bookingData, updateBookingData, nextS
 
   return (
     <div>
-      <h2 className="text-3xl font-bold text-gray-900 mb-2">Let's Plan Your Tour</h2>
-      <p className="text-gray-600 mb-8">Tell us when you'd like to visit and how many guests</p>
+      <h2 className="text-3xl font-bold text-gray-900 mb-2">Let&apos;s Plan Your Tour</h2>
+      <p className="text-gray-600 mb-8">Tell us when you&apos;d like to visit and how many guests</p>
 
       <div className="space-y-6">
         {/* Tour Date */}

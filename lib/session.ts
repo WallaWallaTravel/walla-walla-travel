@@ -43,7 +43,7 @@ export async function getSession(): Promise<SessionData & { save: () => Promise<
   return {
     ...sessionData,
     save: async () => {
-      const token = await new SignJWT(sessionData as any)
+      const token = await new SignJWT(sessionData as unknown as Record<string, unknown>)
         .setProtectedHeader({ alg: 'HS256' })
         .setExpirationTime('7d')
         .sign(secret)

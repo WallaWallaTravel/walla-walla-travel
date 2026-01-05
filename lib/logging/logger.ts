@@ -12,7 +12,7 @@ import { env, isProduction, isDevelopment } from '@/lib/config/env';
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 export interface LogContext {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface LogEntry {
@@ -193,7 +193,7 @@ class Logger {
       errorDetails = {
         message: error.message,
         stack: error.stack,
-        code: (error as any).code,
+        code: (error as { code?: string }).code,
       };
     } else if (typeof error === 'string') {
       actualMessage = error;

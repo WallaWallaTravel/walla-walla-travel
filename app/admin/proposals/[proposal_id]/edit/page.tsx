@@ -56,7 +56,7 @@ export default function EditProposalPage({ params }: { params: Promise<{ proposa
   const [proposalId, setProposalId] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [wineries, setWineries] = useState<any[]>([]);
+  const [wineries, setWineries] = useState<Array<{ id: number; name: string; city: string }>>([]);
   const [proposalStatus, setProposalStatus] = useState<string>('');
   
   const [formData, setFormData] = useState<ProposalData>({
@@ -223,8 +223,8 @@ export default function EditProposalPage({ params }: { params: Promise<{ proposa
     if (item.service_type === 'wine_tour' && item.duration_hours && item.date) {
       const tourDate = new Date(item.date);
       const dayOfWeek = tourDate.getDay();
-      const isWeekend = dayOfWeek === 5 || dayOfWeek === 6 || dayOfWeek === 0;
-      
+      const _isWeekend = dayOfWeek === 5 || dayOfWeek === 6 || dayOfWeek === 0;
+
       const pricing = calculateWineTourPrice(
         item.duration_hours,
         item.party_size,
@@ -604,7 +604,15 @@ export default function EditProposalPage({ params }: { params: Promise<{ proposa
 }
 
 // Service Item Card Component (same as page-v2.tsx)
-function ServiceItemCard({ item, index, wineries, onUpdate, onRemove }: any) {
+interface ServiceItemCardProps {
+  item: ServiceItem;
+  index: number;
+  wineries: Array<{ id: number; name: string; city: string }>;
+  onUpdate: (updates: Partial<ServiceItem>) => void;
+  onRemove: () => void;
+}
+
+function ServiceItemCard({ item, index, wineries: _wineries, onUpdate, onRemove }: ServiceItemCardProps) {
   const [expanded, setExpanded] = useState(true);
 
   return (

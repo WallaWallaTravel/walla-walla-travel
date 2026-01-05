@@ -183,15 +183,20 @@ export async function getBusinessPortalContext(): Promise<string> {
 /**
  * Get pricing guidance for AI responses
  */
+interface PricingDisplaySettings {
+  consultation_required_under?: number;
+  per_person_ranges_over?: number;
+}
+
 export async function getPricingGuidanceContext(): Promise<string> {
   try {
     const { getSetting } = await import('@/lib/settings/settings-service');
-    const settings = await getSetting('pricing_display');
-    
+    const settings = await getSetting('pricing_display') as PricingDisplaySettings | null;
+
     if (!settings) {
       return '';
     }
-    
+
     const consultationUnder = settings.consultation_required_under || 4;
     const perPersonOver = settings.per_person_ranges_over || 6;
     

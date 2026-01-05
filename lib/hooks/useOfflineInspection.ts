@@ -133,7 +133,7 @@ export function useOfflineInspection(): UseOfflineInspectionReturn {
 
       for (const inspection of pending) {
         try {
-          const { id, synced: _synced, syncAttempts, timestamp, ...data } = inspection
+          const { id, synced: _synced, syncAttempts: _syncAttempts, timestamp: _timestamp, ...data } = inspection
 
           const response = await fetch('/api/inspections', {
             method: 'POST',

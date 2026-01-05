@@ -17,7 +17,6 @@ import {
   CommissionSummary,
   EntityRevenueSummary,
   ENTITY_CODES,
-  BOOKING_SOURCE_CODES,
   CommissionStatus,
   IncidentType,
 } from '@/lib/types/entities';
@@ -571,8 +570,8 @@ export async function getVehicleIncidents(filters: {
 
 export async function getEntityRevenueSummary(
   entityId?: string,
-  fromDate?: string,
-  toDate?: string
+  _fromDate?: string,
+  _toDate?: string
 ): Promise<EntityRevenueSummary[]> {
   let whereClause = '';
   const params: string[] = [];

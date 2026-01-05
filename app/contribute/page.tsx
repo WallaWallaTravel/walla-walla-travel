@@ -45,9 +45,9 @@ export default function ContributePage() {
       // Redirect to portal
       router.push(`/contribute/${code.toUpperCase()}`);
       
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Access error:', err);
-      setError(err.message || 'Invalid access code. Please check and try again.');
+      setError(err instanceof Error ? err.message : 'Invalid access code. Please check and try again.');
     } finally {
       setLoading(false);
     }
@@ -195,7 +195,7 @@ export default function ContributePage() {
 
         {/* Help text */}
         <div className="text-center mt-6 text-gray-600">
-          <p>Don't have a code?</p>
+          <p>Don&apos;t have a code?</p>
           <a
             href="mailto:info@wallawalla.travel"
             className="text-blue-600 hover:text-blue-700 font-medium"

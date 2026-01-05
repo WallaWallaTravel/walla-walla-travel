@@ -9,8 +9,21 @@ import type {
   ClockStatus,
   UserProfile,
   AssignedVehicle,
-  StatusMessage,
+  StatusMessage
 } from '@/lib/types'
+
+interface VehicleDocInfo {
+  url?: string;
+  expiresInDays?: number | null;
+  isExpired?: boolean;
+}
+
+interface VehicleDocs {
+  registration?: VehicleDocInfo;
+  insurance?: VehicleDocInfo;
+  inspection?: VehicleDocInfo;
+  maintenance?: VehicleDocInfo;
+}
 
 export default function WorkflowPage() {
   const router = useRouter();
@@ -22,7 +35,7 @@ export default function WorkflowPage() {
   const [clockingOut, setClockingOut] = useState(false);
   const [statusMessage, setStatusMessage] = useState<StatusMessage | null>(null);
   const [locationEnabled, setLocationEnabled] = useState(false);
-  const [vehicleDocs, setVehicleDocs] = useState<any>(null);
+  const [vehicleDocs, setVehicleDocs] = useState<VehicleDocs | null>(null);
   const [showVehicleSelector, setShowVehicleSelector] = useState(false);
   const [selectedVehicleId, setSelectedVehicleId] = useState<number | null>(null);
   const [isNonDrivingShift, setIsNonDrivingShift] = useState(false); // Track "No Vehicle" selection
@@ -847,7 +860,7 @@ export default function WorkflowPage() {
                 </div>
                 {vehicleDocs?.registration && (
                   <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>
-                    {vehicleDocs.registration.expiresInDays !== null && vehicleDocs.registration.expiresInDays > 0 && (
+                    {vehicleDocs.registration.expiresInDays != null && vehicleDocs.registration.expiresInDays > 0 && (
                       <span>Expires in {vehicleDocs.registration.expiresInDays} days</span>
                     )}
                     {vehicleDocs.registration.isExpired && (
@@ -893,7 +906,7 @@ export default function WorkflowPage() {
                 </div>
                 {vehicleDocs?.insurance && (
                   <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>
-                    {vehicleDocs.insurance.expiresInDays !== null && vehicleDocs.insurance.expiresInDays > 0 && (
+                    {vehicleDocs.insurance.expiresInDays != null && vehicleDocs.insurance.expiresInDays > 0 && (
                       <span>Expires in {vehicleDocs.insurance.expiresInDays} days</span>
                     )}
                     {vehicleDocs.insurance.isExpired && (

@@ -234,7 +234,7 @@ export async function findAvailableVehicles(
   startTime: string,
   endTime: string,
   partySize: number,
-  brandId?: number
+  _brandId?: number
 ): Promise<Array<{
   id: number;
   name: string;
@@ -246,7 +246,7 @@ export async function findAvailableVehicles(
     startTime,
     endTime,
     partySize,
-    brandId
+    brandId: _brandId
   });
 
   return vehicles.map(v => ({
@@ -289,7 +289,7 @@ export async function getCalendarData(
     blocks: blocks.map(b => ({
       id: b.id,
       vehicle_id: b.vehicle_id,
-      vehicle_name: (b as any).vehicle_name || '',
+      vehicle_name: (b as { vehicle_name?: string }).vehicle_name || '',
       block_date: b.block_date,
       start_time: b.start_time,
       end_time: b.end_time,

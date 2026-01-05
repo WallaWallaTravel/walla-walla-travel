@@ -37,7 +37,7 @@ export default function ItineraryBuilder({ params }: { params: Promise<{ booking
   // Custom hooks
   const {
     addMinutes,
-    formatTime,
+    formatTime: _formatTime,
     getMinutesDifference,
     calculateTimes,
     isLunchTime,
@@ -423,8 +423,8 @@ export default function ItineraryBuilder({ params }: { params: Promise<{ booking
           <div className="text-6xl mb-4">📋</div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">No Itinerary Found</h2>
           <p className="text-gray-700 mb-6">
-            There is no itinerary associated with booking #{bookingId}. 
-            This might be because the itinerary wasn't created yet or there was an error during creation.
+            There is no itinerary associated with booking #{bookingId}.
+            This might be because the itinerary wasn&apos;t created yet or there was an error during creation.
           </p>
           <div className="flex gap-3 justify-center">
             <button

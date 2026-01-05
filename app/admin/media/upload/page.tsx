@@ -148,6 +148,7 @@ export default function MediaUploadPage() {
               <div className="relative">
                 <div className="border-2 border-gray-300 rounded-xl overflow-hidden">
                   {fileType === 'image' ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
                     <img
                       src={preview}
                       alt="Preview"

@@ -3,19 +3,17 @@
  * Generate realistic test data for testing
  */
 
-import { 
-  generateRandomString, 
-  generateRandomEmail, 
-  generateRandomPhone,
-  getTomorrowDate,
-  getNextWeekDate 
+import {
+  generateRandomString,
+  generateRandomEmail,
+  generateRandomPhone
 } from './test-utils';
 
 // Re-export utility functions for convenience
 export { generateRandomEmail, generateRandomPhone, generateRandomString } from './test-utils';
 
 // Customer factory
-export function createMockCustomer(overrides: Partial<any> = {}) {
+export function createMockCustomer(overrides: Record<string, unknown> = {}) {
   return {
     id: Math.floor(Math.random() * 10000),
     email: generateRandomEmail(),
@@ -28,9 +26,9 @@ export function createMockCustomer(overrides: Partial<any> = {}) {
 }
 
 // Booking factory
-export function createMockBooking(overrides: Partial<any> = {}) {
-  const customerId = overrides.customer_id || Math.floor(Math.random() * 10000);
-  const partySize = overrides.party_size || 6;
+export function createMockBooking(overrides: Record<string, unknown> = {}) {
+  const customerId = (overrides.customer_id as number) || Math.floor(Math.random() * 10000);
+  const partySize = (overrides.party_size as number) || 6;
   
   return {
     id: Math.floor(Math.random() * 10000),
@@ -60,7 +58,7 @@ export function createMockBooking(overrides: Partial<any> = {}) {
 }
 
 // Booking with relations
-export function createMockBookingWithRelations(overrides: Partial<any> = {}) {
+export function createMockBookingWithRelations(overrides: Record<string, unknown> = {}) {
   const booking = createMockBooking(overrides);
   
   return {
@@ -101,7 +99,7 @@ export function createMockBookingWithRelations(overrides: Partial<any> = {}) {
 }
 
 // Proposal factory
-export function createMockProposal(overrides: Partial<any> = {}) {
+export function createMockProposal(overrides: Record<string, unknown> = {}) {
   return {
     id: Math.floor(Math.random() * 10000),
     proposal_number: `PROP-2025-${Math.floor(100000 + Math.random() * 900000)}`,
@@ -125,7 +123,7 @@ export function createMockProposal(overrides: Partial<any> = {}) {
 }
 
 // Proposal with items
-export function createMockProposalWithItems(overrides: Partial<any> = {}) {
+export function createMockProposalWithItems(overrides: Record<string, unknown> = {}) {
   const proposal = createMockProposal(overrides);
   
   return {
@@ -154,7 +152,7 @@ export function createMockProposalWithItems(overrides: Partial<any> = {}) {
 }
 
 // Reservation factory
-export function createMockReservation(overrides: Partial<any> = {}) {
+export function createMockReservation(overrides: Record<string, unknown> = {}) {
   return {
     id: Math.floor(Math.random() * 10000),
     reservation_number: `RES-2025-${Math.floor(100000 + Math.random() * 900000)}`,
@@ -181,11 +179,11 @@ export function createMockReservation(overrides: Partial<any> = {}) {
 }
 
 // Payment factory
-export function createMockPayment(overrides: Partial<any> = {}) {
+export function createMockPayment(overrides: Record<string, unknown> = {}) {
   return {
     id: Math.floor(Math.random() * 10000),
-    booking_id: overrides.booking_id || Math.floor(Math.random() * 10000),
-    reservation_id: overrides.reservation_id || null,
+    booking_id: (overrides.booking_id as number) || Math.floor(Math.random() * 10000),
+    reservation_id: (overrides.reservation_id as number | null) || null,
     customer_id: Math.floor(Math.random() * 10000),
     amount: 250.00,
     payment_method: 'card',
@@ -200,8 +198,8 @@ export function createMockPayment(overrides: Partial<any> = {}) {
 }
 
 // Winery factory
-export function createMockWinery(overrides: Partial<any> = {}) {
-  const name = overrides.name || `Test Winery ${generateRandomString(5)}`;
+export function createMockWinery(overrides: Record<string, unknown> = {}) {
+  const name = (overrides.name as string) || `Test Winery ${generateRandomString(5)}`;
   const slug = name.toLowerCase().replace(/\s+/g, '-');
   
   return {
@@ -221,7 +219,7 @@ export function createMockWinery(overrides: Partial<any> = {}) {
 }
 
 // Restaurant factory
-export function createMockRestaurant(overrides: Partial<any> = {}) {
+export function createMockRestaurant(overrides: Record<string, unknown> = {}) {
   return {
     id: Math.floor(Math.random() * 10000),
     name: `Test Restaurant ${generateRandomString(5)}`,
@@ -238,7 +236,7 @@ export function createMockRestaurant(overrides: Partial<any> = {}) {
 }
 
 // API request factory
-export function createMockBookingRequest(overrides: Partial<any> = {}) {
+export function createMockBookingRequest(overrides: Record<string, unknown> = {}) {
   return {
     customerName: `Test Customer ${generateRandomString(5)}`,
     customerEmail: generateRandomEmail(),
@@ -257,7 +255,7 @@ export function createMockBookingRequest(overrides: Partial<any> = {}) {
   };
 }
 
-export function createMockProposalRequest(overrides: Partial<any> = {}) {
+export function createMockProposalRequest(overrides: Record<string, unknown> = {}) {
   return {
     customerName: `Test Customer ${generateRandomString(5)}`,
     customerEmail: generateRandomEmail(),
@@ -278,7 +276,7 @@ export function createMockProposalRequest(overrides: Partial<any> = {}) {
   };
 }
 
-export function createMockReservationRequest(overrides: Partial<any> = {}) {
+export function createMockReservationRequest(overrides: Record<string, unknown> = {}) {
   return {
     customerName: `Test Customer ${generateRandomString(5)}`,
     customerEmail: generateRandomEmail(),

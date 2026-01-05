@@ -12,7 +12,7 @@ export interface ProcessingJob {
   job_type: 'voice_transcription' | 'text_extraction' | 'photo_analysis' | 'pdf_parsing';
   source_id: number; // ID of voice_entry, text_entry, or file
   status: 'pending' | 'processing' | 'completed' | 'failed';
-  result_data?: any;
+  result_data?: Record<string, unknown>;
   error_message?: string;
 }
 
@@ -128,7 +128,7 @@ export async function markJobProcessing(jobId: number): Promise<void> {
 /**
  * Mark job as completed
  */
-export async function markJobCompleted(jobId: number, resultData: any): Promise<void> {
+export async function markJobCompleted(jobId: number, resultData: Record<string, unknown>): Promise<void> {
   await query(`
     UPDATE processing_jobs
     SET 

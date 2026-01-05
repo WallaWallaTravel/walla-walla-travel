@@ -292,7 +292,7 @@ export class TenantService extends BaseService {
    * Get brand with tenant info
    */
   async getBrandWithTenant(brandId: number): Promise<Brand & { tenant: Tenant }> {
-    const result = await this.queryOne<any>(
+    const result = await this.queryOne<Brand & { tenant_slug: string; tenant_legal_name: string; tenant_display_name: string; tenant_is_platform_owner: boolean }>(
       `SELECT 
         b.*,
         t.slug as tenant_slug,

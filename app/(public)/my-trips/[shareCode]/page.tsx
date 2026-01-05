@@ -565,7 +565,7 @@ function HandoffModal({
       <div className="bg-white rounded-2xl max-w-md w-full p-6">
         <h2 className="text-xl font-semibold text-stone-900 mb-2">Hand Off to Walla Walla Travel</h2>
         <p className="text-stone-600 text-sm mb-4">
-          We'll review your trip and reach out to finalize bookings, transportation, and any special requests.
+          We&apos;ll review your trip and reach out to finalize bookings, transportation, and any special requests.
         </p>
         
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -610,7 +610,7 @@ function HandoffModal({
 
 export default function TripDetailPage() {
   const params = useParams();
-  const router = useRouter();
+  const _router = useRouter();
   const shareCode = params.shareCode as string;
 
   const loadTripByShareCode = useTripPlannerStore((state) => state.loadTripByShareCode);

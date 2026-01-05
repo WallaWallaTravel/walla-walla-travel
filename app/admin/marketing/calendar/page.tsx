@@ -20,7 +20,7 @@ interface ContentItem {
 export default function ContentCalendarPage() {
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [content, setContent] = useState<ContentItem[]>([])
-  const [loading, setLoading] = useState(true)
+  const [_loading, setLoading] = useState(true)
   const [selectedDay, setSelectedDay] = useState<Date | null>(null)
   const [showAddModal, setShowAddModal] = useState(false)
   const [view, setView] = useState<'month' | 'week' | 'list'>('month')

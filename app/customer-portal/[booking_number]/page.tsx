@@ -136,7 +136,7 @@ export default function CustomerPortalPage({ params }: { params: Promise<{ booki
           <div className="text-6xl mb-4">❌</div>
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Booking Not Found</h2>
           <p className="text-gray-600 mb-6">
-            We couldn't find a booking with number: <strong>{bookingNumber}</strong>
+            We couldn&apos;t find a booking with number: <strong>{bookingNumber}</strong>
           </p>
           <button
             onClick={() => router.push('/')}
@@ -266,7 +266,7 @@ export default function CustomerPortalPage({ params }: { params: Promise<{ booki
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">🍇 Your Itinerary</h2>
                 
                 <div className="space-y-4">
-                  {wineries.map((winery, index) => (
+                  {wineries.map((winery, _index) => (
                     <div key={winery.id} className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
                       <div className="w-10 h-10 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">
                         {winery.stop_order}

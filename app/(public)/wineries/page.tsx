@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
-import { getWineries, getWineryCount } from '@/lib/data/wineries';
+import { getWineries } from '@/lib/data/wineries';
 import { WineryGrid } from '@/components/wineries/WineryGrid';
 
 // ============================================================================

@@ -89,8 +89,8 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
         }
       }
 
-      mediaRecorder.onerror = (event: any) => {
-        console.error('MediaRecorder error:', event.error)
+      mediaRecorder.onerror = (event: Event) => {
+        console.error('MediaRecorder error:', event)
         setError('Recording failed. Please try again.')
         setIsRecording(false)
       }
@@ -105,12 +105,13 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
         setDuration(elapsed)
       }, 100)
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error accessing microphone:', err)
-      
-      if (err.name === 'NotAllowedError') {
+
+      const errorName = err instanceof Error && 'name' in err ? (err as { name: string }).name : ''
+      if (errorName === 'NotAllowedError') {
         setError('Microphone permission denied. Please allow microphone access.')
-      } else if (err.name === 'NotFoundError') {
+      } else if (errorName === 'NotFoundError') {
         setError('No microphone found. Please connect a microphone.')
       } else {
         setError('Could not access microphone. Please check your settings.')

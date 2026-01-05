@@ -12,13 +12,13 @@ import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
  * 
  * ✅ REFACTORED: Service layer + admin auth
  */
-export const GET = withAdminAuth(async (request: NextRequest, session) => {
+export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const searchParams = request.nextUrl.searchParams;
 
-  const filters: any = {};
+  const filters: { role?: string; is_active?: boolean; limit?: number; offset?: number } = {};
 
   if (searchParams.get('role')) {
-    filters.role = searchParams.get('role');
+    filters.role = searchParams.get('role') ?? undefined;
   }
   if (searchParams.get('is_active')) {
     filters.is_active = searchParams.get('is_active') === 'true';
@@ -65,7 +65,7 @@ const CreateUserSchema = z.object({
 
 export const POST = withCSRF(
   withRateLimit(rateLimiters.api)(
-    withAdminAuth(async (request: NextRequest, session) => {
+    withAdminAuth(async (request: NextRequest, _session) => {
   // ✅ Validate
   const data = await validateBody(request, CreateUserSchema);
 

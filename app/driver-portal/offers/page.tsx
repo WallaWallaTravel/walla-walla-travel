@@ -24,7 +24,7 @@ interface TourOffer {
 }
 
 export default function DriverOffersPage() {
-  const router = useRouter();
+  const _router = useRouter();
   const [offers, setOffers] = useState<TourOffer[]>([]);
   const [loading, setLoading] = useState(true);
   const [responding, setResponding] = useState<number | null>(null);
@@ -62,7 +62,7 @@ export default function DriverOffersPage() {
       });
 
       if (response.ok) {
-        const data = await response.json();
+        const _data = await response.json();
         if (action === 'accept') {
           alert('✅ Tour accepted! You have been assigned to this booking.');
         } else {

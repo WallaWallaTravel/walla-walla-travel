@@ -70,7 +70,7 @@ export async function transcribeAudio(audioData: string | Buffer): Promise<Trans
       transcription: alternative.transcript,
       confidence: alternative.confidence || 0,
       duration: result.metadata?.duration || 0,
-      words: alternative.words?.map((w: any) => ({
+      words: alternative.words?.map((w: { word: string; start: number; end: number; confidence: number }) => ({
         word: w.word,
         start: w.start,
         end: w.end,

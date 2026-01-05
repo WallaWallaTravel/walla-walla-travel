@@ -15,7 +15,7 @@ export interface CachedQuery {
   query_text: string
   model: string
   response_text: string
-  response_data: any
+  response_data: unknown
   hit_count: number
   created_at: Date
   last_hit_at: Date
@@ -77,7 +77,7 @@ export async function cacheQueryResponse(
   query: string,
   model: string,
   response: string,
-  responseData: any = null,
+  responseData: unknown = null,
   systemPromptHash?: string,
   ttlHours: number = 24
 ): Promise<void> {

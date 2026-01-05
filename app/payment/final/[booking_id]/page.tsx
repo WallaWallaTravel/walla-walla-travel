@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { loadStripe } from '@stripe/stripe-js';
 import { ErrorLogger } from '@/lib/error-logger';
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+const _stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 const errorLogger = ErrorLogger.getInstance();
 
 interface Invoice {
@@ -24,7 +24,7 @@ interface Invoice {
 
 export default function FinalInvoicePaymentPage() {
   const params = useParams();
-  const router = useRouter();
+  const _router = useRouter();
   const bookingId = params.booking_id as string;
   
   const [invoice, setInvoice] = useState<Invoice | null>(null);

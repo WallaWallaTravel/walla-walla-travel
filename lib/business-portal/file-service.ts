@@ -146,7 +146,7 @@ export async function getBusinessFiles(
   fileType?: string
 ): Promise<BusinessFile[]> {
   let sql = 'SELECT * FROM business_files WHERE business_id = $1';
-  const params: any[] = [businessId];
+  const params: (number | string)[] = [businessId];
   
   if (fileType) {
     sql += ' AND file_type = $2';

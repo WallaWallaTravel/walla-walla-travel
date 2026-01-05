@@ -17,13 +17,20 @@ const DEFAULT_DEPOSITS = {
   largeGroup: 350,
 };
 
+interface DepositSettings {
+  reserve_refine?: {
+    '1-7'?: number;
+    '8-14'?: number;
+  };
+}
+
 export default async function TermsPage() {
   // Fetch deposit settings from database
   let smallGroupDeposit = DEFAULT_DEPOSITS.smallGroup;
   let largeGroupDeposit = DEFAULT_DEPOSITS.largeGroup;
 
   try {
-    const depositSettings = await getSetting('deposit_rules');
+    const depositSettings = await getSetting('deposit_rules') as DepositSettings | null;
     if (depositSettings?.reserve_refine) {
       smallGroupDeposit = depositSettings.reserve_refine['1-7'] ?? DEFAULT_DEPOSITS.smallGroup;
       largeGroupDeposit = depositSettings.reserve_refine['8-14'] ?? DEFAULT_DEPOSITS.largeGroup;

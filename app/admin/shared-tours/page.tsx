@@ -55,7 +55,7 @@ export default function AdminSharedToursPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [selectedTour, setSelectedTour] = useState<SharedTour | null>(null);
+  const [_selectedTour, _setSelectedTour] = useState<SharedTour | null>(null);
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'past'>('upcoming');
 
   const [createForm, setCreateForm] = useState<CreateTourForm>({

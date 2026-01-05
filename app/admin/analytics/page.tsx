@@ -84,8 +84,8 @@ export default function AnalyticsPage() {
         const errData = await response.json();
         setError(errData.error || 'Failed to load analytics');
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to load analytics');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load analytics');
     } finally {
       setLoading(false);
     }
@@ -388,7 +388,7 @@ export default function AnalyticsPage() {
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
             <div className="p-4 bg-red-50 border-b-2 border-red-200">
               <h2 className="text-xl font-bold text-red-900">Recent Abandoned Carts</h2>
-              <p className="text-red-700 text-sm">Customers who started but didn't complete booking</p>
+              <p className="text-red-700 text-sm">Customers who started but didn&apos;t complete booking</p>
             </div>
             <div className="divide-y divide-gray-200">
               {data.recentAbandoned.map((cart) => (

@@ -25,10 +25,17 @@ function PaymentPageContent() {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [reservation, setReservation] = useState<any>(null);
+  const [reservation, setReservation] = useState<{
+    reservation_number?: string;
+    customer?: { email?: string; name?: string };
+    party_size?: number;
+    preferred_date?: string;
+    event_type?: string;
+    deposit_amount?: string;
+  } | null>(null);
 
   // Booking tracking
-  const { trackBookingProgress, trackPageView } = useBookingTracking();
+  const { trackBookingProgress, trackPageView: _trackPageView } = useBookingTracking();
 
   // Fetch reservation and create payment intent
   useEffect(() => {
@@ -69,8 +76,8 @@ function PaymentPageContent() {
         const { clientSecret } = await paymentResponse.json();
         setClientSecret(clientSecret);
         setLoading(false);
-      } catch (err: any) {
-        setError(err.message || 'Failed to load payment');
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Failed to load payment');
         setLoading(false);
       }
     }
@@ -105,8 +112,8 @@ function PaymentPageContent() {
 
       // Redirect to confirmation page
       router.push(`/book/reserve/confirmation?id=${reservationId}`);
-    } catch (err: any) {
-      setError(err.message || 'Payment confirmation failed');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Payment confirmation failed');
     }
   };
 
@@ -185,7 +192,7 @@ function PaymentPageContent() {
             <div className="flex justify-between">
               <span className="text-gray-600">Preferred Date:</span>
               <span className="font-semibold">
-                {new Date(reservation.preferred_date).toLocaleDateString('en-US', {
+                {reservation.preferred_date && new Date(reservation.preferred_date).toLocaleDateString('en-US', {
                   weekday: 'long',
                   month: 'long',
                   day: 'numeric',
@@ -200,7 +207,7 @@ function PaymentPageContent() {
             <div className="border-t border-gray-200 my-3"></div>
             <div className="flex justify-between text-lg">
               <span className="font-bold text-gray-900">Deposit:</span>
-              <span className="font-bold text-gray-900">${parseFloat(reservation.deposit_amount).toFixed(2)}</span>
+              <span className="font-bold text-gray-900">${parseFloat(reservation.deposit_amount ?? '0').toFixed(2)}</span>
             </div>
           </div>
         </div>
@@ -210,7 +217,7 @@ function PaymentPageContent() {
           <h2 className="font-bold text-gray-900 mb-6">Payment Information</h2>
           <Elements stripe={stripePromise} options={options}>
             <StripePaymentForm
-              amount={parseFloat(reservation.deposit_amount)}
+              amount={parseFloat(reservation.deposit_amount ?? '0')}
               onSuccess={handlePaymentSuccess}
               onError={handlePaymentError}
             />

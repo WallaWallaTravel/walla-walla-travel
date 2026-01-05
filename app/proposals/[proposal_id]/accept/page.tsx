@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { COMPANY_INFO, getPhoneLink, getEmailLink } from '@/lib/config/company';
+import { COMPANY_INFO } from '@/lib/config/company';
 import Footer from '@/components/Footer';
 
 interface Proposal {
@@ -176,8 +176,8 @@ export default function ProposalAcceptance({ params }: { params: Promise<{ propo
         throw new Error(data.error || 'Failed to accept proposal');
       }
 
-      const data = await response.json();
-      
+      const _data = await response.json();
+
       // Redirect to confirmation page
       router.push(`/proposals/${proposalId}/confirmation`);
     } catch (err) {

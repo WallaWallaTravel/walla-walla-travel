@@ -37,8 +37,8 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
 
   // Calculate totals
   const services_total = additional_services
-    .filter((s: any) => s.included)
-    .reduce((sum: number, s: any) => sum + s.price, 0);
+    .filter((s: { included: boolean; price: number }) => s.included)
+    .reduce((sum: number, s: { included: boolean; price: number }) => sum + s.price, 0);
   
   const subtotal = base_price + services_total;
   const discount_amount = subtotal * (discount_percentage / 100);
@@ -151,7 +151,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     WHERE 1=1
   `;
 
-  const params: any[] = [];
+  const params: string[] = [];
   let paramIndex = 1;
 
   if (status) {

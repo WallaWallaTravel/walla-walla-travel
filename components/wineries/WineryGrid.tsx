@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePageContextStore } from '@/lib/stores/pageContext';
 import { useAnalyticsStore } from '@/lib/stores/analytics-simple';
-import { EXPERIENCE_TAG_LABELS, ExperienceTag } from '@/lib/config/content-types';
+// EXPERIENCE_TAG_LABELS available for future use
 
 interface WinerySummary {
   id: number;

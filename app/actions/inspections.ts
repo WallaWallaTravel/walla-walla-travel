@@ -77,11 +77,12 @@ export async function savePreTripInspection(data: InspectionData) {
       success: true,
       inspectionId: result.rows[0].id
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Save pre-trip inspection error:', error)
 
     // Handle missing column error (migration not run yet)
-    if (error.code === '42703') {
+    const dbError = error as { code?: string }
+    if (dbError.code === '42703') {
       return {
         success: false,
         error: 'Database schema update required. Please contact administrator.'
@@ -148,11 +149,12 @@ export async function saveInspectionAction(data: {
       success: true,
       inspectionId: result.rows[0].id
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Save inspection error:', error)
 
     // Handle missing column error (migration not run yet)
-    if (error.code === '42703') {
+    const dbError = error as { code?: string }
+    if (dbError.code === '42703') {
       return {
         success: false,
         error: 'Database schema update required. Please contact administrator.'
@@ -208,11 +210,12 @@ export async function savePostTripInspection(data: InspectionData & { signature?
       success: true,
       inspectionId: result.rows[0].id
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Save post-trip inspection error:', error)
 
     // Handle missing column error (migration not run yet)
-    if (error.code === '42703') {
+    const dbError = error as { code?: string }
+    if (dbError.code === '42703') {
       return {
         success: false,
         error: 'Database schema update required. Please contact administrator.'

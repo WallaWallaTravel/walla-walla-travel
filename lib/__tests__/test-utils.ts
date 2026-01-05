@@ -65,7 +65,7 @@ export function createMockRequest(
     method?: string;
     url?: string;
     headers?: Record<string, string>;
-    body?: any;
+    body?: unknown;
     searchParams?: Record<string, string>;
   } = {}
 ) {
@@ -86,7 +86,7 @@ export function createMockRequest(
     nextUrl: {
       searchParams: url.searchParams,
     },
-  } as any;
+  } as unknown as ReturnType<typeof import('next/server').NextRequest['prototype']['constructor']>;
 }
 
 // Mock response object for API tests
@@ -95,7 +95,7 @@ export function createMockResponse() {
     status: jest.fn().mockReturnThis(),
     json: jest.fn().mockReturnThis(),
     text: jest.fn().mockReturnThis(),
-  } as any;
+  } as unknown as ReturnType<typeof import('next/server').NextResponse['prototype']['constructor']>;
 }
 
 // Wait for async operations
@@ -172,23 +172,23 @@ export function getNextWeekDate(): string {
 }
 
 // Test data matchers
-export function expectValidDate(value: any) {
+export function expectValidDate(value: unknown) {
   expect(value).toBeDefined();
   expect(new Date(value).toString()).not.toBe('Invalid Date');
 }
 
-export function expectValidUUID(value: any) {
+export function expectValidUUID(value: unknown) {
   expect(value).toBeDefined();
   expect(typeof value).toBe('number');
   expect(value).toBeGreaterThan(0);
 }
 
-export function expectValidBookingNumber(value: any) {
+export function expectValidBookingNumber(value: unknown) {
   expect(value).toBeDefined();
   expect(value).toMatch(/^(WWT|NWT|HCWT)-\d{4}-\d+$/);
 }
 
-export function expectValidProposalNumber(value: any) {
+export function expectValidProposalNumber(value: unknown) {
   expect(value).toBeDefined();
   expect(value).toMatch(/^PROP-\d{4}-\d+$/);
 }

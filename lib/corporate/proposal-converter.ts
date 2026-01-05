@@ -7,10 +7,25 @@ import { query } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { ParsedItinerary } from './itinerary-parser';
 
+interface ServiceItem {
+  service_type: string;
+  name: string;
+  description: string;
+  date: string;
+  party_size: number;
+  duration_hours?: number;
+  selected_wineries?: string[];
+  pickup_location?: string;
+  dropoff_location?: string;
+  transfer_type?: string;
+  pricing_type: string;
+  calculated_price: number;
+}
+
 export interface ConversionResult {
   proposalId: number;
   proposalNumber: string;
-  serviceItems: any[];
+  serviceItems: ServiceItem[];
   estimatedTotal: number;
   confidence: string;
   notes: string[];
@@ -39,7 +54,7 @@ export async function convertCorporateRequestToProposal(
   const proposalNumber = `PROP-${Date.now()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
   
   // Build service items from AI data
-  const serviceItems: any[] = [];
+  const serviceItems: ServiceItem[] = [];
   const notes: string[] = [];
   const estimatedTotal = 0;
   

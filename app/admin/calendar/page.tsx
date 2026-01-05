@@ -60,7 +60,7 @@ export default function CalendarView() {
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [dailySummaries, setDailySummaries] = useState<Record<string, DailySummary>>({});
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
+  const [_viewMode, _setViewMode] = useState<'month' | 'week'>('month');
 
   // Filters
   const [filterDriver, setFilterDriver] = useState<string>('all');

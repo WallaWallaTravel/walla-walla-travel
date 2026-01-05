@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+// import React from 'react';
 import { usePathname } from 'next/navigation';
 import { BottomNav } from '@/components/ui/bottom-nav';
 
@@ -23,10 +23,10 @@ export function ConditionalNavigation() {
     pathname.startsWith('/time-clock');
 
   // Admin portal routes - no nav here (handled by admin layout)
-  const isAdminRoute = pathname.startsWith('/admin');
+  const _isAdminRoute = pathname.startsWith('/admin');
 
   // Public/customer routes - no persistent navigation
-  const isPublicRoute = 
+  const _isPublicRoute = 
     pathname.startsWith('/book') ||
     pathname.startsWith('/client-portal') ||
     pathname.startsWith('/customer-portal') ||

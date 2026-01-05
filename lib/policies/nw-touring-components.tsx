@@ -12,7 +12,6 @@ import {
   NW_TOURING_FULL_TERMS,
   NW_TOURING_COMPLETE_TERMS,
   getNWTouringTermsSummary,
-  getDepositAmount,
 } from './nw-touring-full-terms';
 import {
   NW_TOURING_COMPANY_INFO,

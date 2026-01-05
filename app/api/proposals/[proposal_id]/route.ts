@@ -3,9 +3,7 @@ import { query } from '@/lib/db';
 import { withErrorHandling, BadRequestError, NotFoundError, ForbiddenError } from '@/lib/api/middleware/error-handler';
 import {
   ProposalData,
-  calculateProposalTotals,
-  validateProposalData,
-  logProposalActivity
+  calculateProposalTotals
 } from '@/lib/proposals/proposal-utils';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';

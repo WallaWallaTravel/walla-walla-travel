@@ -3,8 +3,7 @@ import { logger } from '@/lib/logger';
 import {
   runAllHealthChecks,
   logHealthCheck,
-  getOverallHealth,
-  type HealthCheckResult
+  getOverallHealth
 } from '@/lib/monitoring/health-checks';
 
 export const dynamic = 'force-dynamic';

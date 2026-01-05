@@ -101,7 +101,7 @@ export async function POST(request: Request) {
       ]
     );
 
-    const timeCard = result.rows[0];
+    const _timeCard = result.rows[0];
 
     // Update daily_trips end time
     await query(

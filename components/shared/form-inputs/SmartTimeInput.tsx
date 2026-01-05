@@ -1,7 +1,7 @@
 /**
  * SmartTimeInput Component
  * 
- * Ultra-fast time entry with intelligent AM/PM detection
+ * Fast time entry with intelligent AM/PM detection
  * 
  * Features:
  * - Type "115" → "01:15 PM"
@@ -14,7 +14,7 @@
 
 'use client';
 
-import React, { useRef, useEffect } from 'react';
+import { useRef } from 'react';
 import { useSmartTimeInput } from '@/lib/hooks/useSmartTimeInput';
 import type { ServiceType } from '@/lib/utils/timeParser';
 

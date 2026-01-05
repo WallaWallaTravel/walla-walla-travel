@@ -11,7 +11,7 @@ interface Winery {
 }
 
 export default function InvitePartnerPage() {
-  const router = useRouter();
+  const _router = useRouter();
   const [formData, setFormData] = useState({
     email: '',
     business_name: '',

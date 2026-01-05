@@ -3,7 +3,7 @@
  * Provides convenient wrappers for database operations
  */
 
-import { Pool, PoolClient, QueryResult, QueryResultRow } from 'pg';
+import { PoolClient, QueryResult, QueryResultRow } from 'pg';
 import { pool } from './db';
 
 /**

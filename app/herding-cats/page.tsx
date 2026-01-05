@@ -41,7 +41,7 @@ export default function HerdingCatsLandingPage() {
         <div className="prose prose-lg max-w-none mb-16">
           <p className="text-lg text-[#1A1614] leading-relaxed mb-6" style={{ fontFamily: 'Georgia, serif' }}>
             Much like orchestrating the singular focus of our feline namesakes, we expertly 
-            navigate discerning palates through Walla Walla's most distinguished estates.
+            navigate discerning palates through Walla Walla&apos;s most distinguished estates.
           </p>
           <p className="text-lg text-[#3A3633] leading-relaxed mb-6" style={{ fontFamily: 'Georgia, serif' }}>
             Each member of your party—like each vintage we encounter—possesses unique 
@@ -135,7 +135,7 @@ export default function HerdingCatsLandingPage() {
               </h3>
               <p className="text-sm text-[#3A3633]" style={{ fontFamily: 'Georgia, serif' }}>
                 Advanced Sommelier certification—credentials typically reserved for career wine 
-                professionals operating at industry's highest echelons.
+                professionals operating at industry&apos;s highest echelons.
               </p>
             </div>
 

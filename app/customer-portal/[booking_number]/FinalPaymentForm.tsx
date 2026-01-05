@@ -86,8 +86,8 @@ export default function FinalPaymentForm({ booking, onSuccess, onCancel }: Props
 
         onSuccess();
       }
-    } catch (err: any) {
-      setError(err.message || 'Payment processing failed');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Payment processing failed');
       setProcessing(false);
     }
   };

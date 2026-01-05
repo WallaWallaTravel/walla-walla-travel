@@ -160,9 +160,10 @@ export default function EditMediaPage() {
             <h2 className="text-xl font-bold text-gray-900 mb-4">Preview</h2>
             <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden mb-4">
               {media.file_type === 'image' ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
                 <img
                   src={media.file_path}
-                  alt={media.alt_text}
+                  alt={media.alt_text || 'Media preview'}
                   className="w-full h-full object-cover"
                 />
               ) : (

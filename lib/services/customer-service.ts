@@ -96,7 +96,7 @@ export class CustomerService extends BaseService {
   /**
    * Get customer with booking history (single query)
    */
-  async getCustomerWithHistory(id: number): Promise<any> {
+  async getCustomerWithHistory(id: number): Promise<Record<string, unknown> | null> {
     const result = await this.query(`
       SELECT 
         c.*,
@@ -124,7 +124,7 @@ export class CustomerService extends BaseService {
       throw new NotFoundError('Customer', id.toString());
     }
 
-    return result.rows[0];
+    return result.rows[0] as Record<string, unknown>;
   }
 
   /**

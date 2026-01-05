@@ -74,11 +74,11 @@ export default function BusinessUploadPage() {
       
       const data = await response.json();
       setBusiness(data.business);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
     }
   };
-  
+
   const loadFiles = async () => {
     // TODO: Implement file list API
     setFiles([]);
@@ -116,14 +116,14 @@ export default function BusinessUploadPage() {
               idx === i ? { ...p, status: 'complete', progress: 100 } : p
             )
           );
-        } catch (err: any) {
+        } catch (err: unknown) {
           failCount++;
           console.error(`Upload failed for ${file.name}:`, err);
           
           // Mark as error
           setUploadProgress(prev => 
             prev.map((p, idx) => 
-              idx === i ? { ...p, status: 'error', error: err.message } : p
+              idx === i ? { ...p, status: 'error', error: err instanceof Error ? err.message : 'Upload failed' } : p
             )
           );
         }
@@ -147,13 +147,13 @@ export default function BusinessUploadPage() {
       if (failCount === 0) {
         setTimeout(() => setUploadProgress([]), 3000);
       }
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Upload failed');
     } finally {
       setUploading(false);
     }
   };
-  
+
   const uploadFile = async (file: File, index: number) => {
     const formData = new FormData();
     formData.append('businessId', business!.id.toString());
@@ -202,7 +202,7 @@ export default function BusinessUploadPage() {
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
       }
-    } catch (err: any) {
+    } catch (_err: unknown) {
       setError('Camera access denied. Please allow camera permissions.');
     }
   };
@@ -263,14 +263,15 @@ export default function BusinessUploadPage() {
         
         // Clear progress after 3 seconds
         setTimeout(() => setUploadProgress([]), 3000);
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Upload failed';
         setUploadProgress([{
           fileName: file.name,
           status: 'error',
           progress: 0,
-          error: err.message
+          error: message
         }]);
-        setError(err.message);
+        setError(message);
       } finally {
         setUploading(false);
       }

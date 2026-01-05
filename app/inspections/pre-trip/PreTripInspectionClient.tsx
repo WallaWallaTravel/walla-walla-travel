@@ -32,7 +32,7 @@ export function PreTripInspectionClient({ driver }: Props) {
   const [beginningMileage, setBeginningMileage] = useState('')
   const [notes, setNotes] = useState('')
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({})
-  const [itemNotes, setItemNotes] = useState<Record<string, string>>({})
+  const [_itemNotes, setItemNotes] = useState<Record<string, string>>({})
   const [signature, setSignature] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -253,7 +253,7 @@ export function PreTripInspectionClient({ driver }: Props) {
 
   const totalItems = Object.values(inspectionItems).reduce((acc, items) => acc + items.length, 0)
   const checkedCount = Object.values(checkedItems).filter(Boolean).length
-  const allItemsChecked = checkedCount === totalItems
+  const _allItemsChecked = checkedCount === totalItems
 
   if (loadingVehicle) {
     return (
@@ -323,7 +323,7 @@ export function PreTripInspectionClient({ driver }: Props) {
                 <ul className="text-blue-700 space-y-1 list-disc list-inside">
                   <li>Supervisor receives SMS notification</li>
                   <li>Supervisor receives email with details</li>
-                  <li>You'll be assigned a vehicle promptly</li>
+                  <li>You&apos;ll be assigned a vehicle promptly</li>
                   <li>You can return and complete inspection</li>
                 </ul>
               </div>

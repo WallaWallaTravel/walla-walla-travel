@@ -126,11 +126,11 @@ export default function ProposalConfirmation({ params }: { params: Promise<{ pro
             <ol className="space-y-2 text-sm text-gray-700">
               <li className="flex items-start">
                 <span className="font-bold text-blue-600 mr-2">1.</span>
-                <span>You'll receive a confirmation email with your booking details</span>
+                <span>You&apos;ll receive a confirmation email with your booking details</span>
               </li>
               <li className="flex items-start">
                 <span className="font-bold text-blue-600 mr-2">2.</span>
-                <span>We'll send you a secure payment link for your deposit</span>
+                <span>We&apos;ll send you a secure payment link for your deposit</span>
               </li>
               <li className="flex items-start">
                 <span className="font-bold text-blue-600 mr-2">3.</span>
@@ -162,7 +162,7 @@ export default function ProposalConfirmation({ params }: { params: Promise<{ pro
 
           {/* Contact Info */}
           <div className="mt-8 pt-8 border-t text-center">
-            <p className="text-gray-600 mb-2">Questions? We're here to help!</p>
+            <p className="text-gray-600 mb-2">Questions? We&apos;re here to help!</p>
             <p className="text-gray-900 font-semibold">
               📞 (509) 200-8000 | 📧 info@wallawalla.travel
             </p>
