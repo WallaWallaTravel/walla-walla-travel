@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { logger } from '@/lib/logger';
 
 /**
  * Driver Portal Login
@@ -49,7 +50,7 @@ function DriverLoginContent() {
         setLoading(false);
       }
     } catch (err) {
-      console.error('Login error:', err);
+      logger.error('Login error', { error: err });
       setError('An error occurred. Please try again.');
       setLoading(false);
     }

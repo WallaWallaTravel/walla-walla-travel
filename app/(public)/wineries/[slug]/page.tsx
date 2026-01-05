@@ -4,6 +4,7 @@ import { getWineryBySlug, getAllWinerySlugs, getWineryNarrativeContent } from '@
 import { WineryDetailClient } from '@/components/wineries/WineryDetailClient';
 import { WineryJsonLd } from '@/components/seo/WineryJsonLd';
 import { BreadcrumbJsonLd } from '@/components/seo/BreadcrumbJsonLd';
+import { logger } from '@/lib/logger';
 
 // ============================================================================
 // Static Generation
@@ -20,7 +21,7 @@ export async function generateStaticParams() {
   } catch (error) {
     // If database is unavailable during build, return empty array
     // Pages will be generated on-demand instead
-    console.error('Error generating static params for wineries:', error);
+    logger.error('Error generating static params for wineries', { error });
     return [];
   }
 }

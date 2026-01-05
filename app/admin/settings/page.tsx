@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { logger } from '@/lib/logger';
 
 interface SystemSetting {
   setting_key: string;
@@ -70,7 +71,7 @@ export default function SystemSettingsPage() {
         setSettings(data.settings);
       }
     } catch (error) {
-      console.error('Failed to load settings:', error);
+      logger.error('Failed to load settings', { error });
     } finally {
       setLoading(false);
     }

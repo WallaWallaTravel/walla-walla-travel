@@ -5,6 +5,12 @@
  */
 
 import { z } from 'zod';
+// NOTE: Can't use @/ alias here - this file loads during next.config compilation
+// Using inline console for config-time errors only
+const configLog = {
+  warn: (msg: string) => console.warn(`[env.ts] ${msg}`),
+  error: (msg: string) => console.error(`[env.ts] ${msg}`),
+};
 
 const envSchema = z.object({
   // Database
@@ -59,7 +65,7 @@ try {
   }
 
   if (!isBuildTime) {
-    console.log('✅ Environment variables validated successfully');
+    // Environment validated - no need to log at config time
   }
 } catch (error) {
   // During build, we allow missing env vars since they'll be provided at runtime
@@ -73,12 +79,9 @@ try {
     } as Env;
   } else {
     if (error instanceof z.ZodError) {
-      console.error('❌ Invalid environment variables:');
-      error.issues.forEach((err) => {
-        console.error(`  - ${err.path.join('.')}: ${err.message}`);
-      });
+      configLog.error(`Invalid environment variables: ${error.issues.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')}`);
     } else {
-      console.error('❌ Environment validation error:', error);
+      configLog.error(`Environment validation error: ${error}`);
     }
 
     // Don't crash in development, but log the errors

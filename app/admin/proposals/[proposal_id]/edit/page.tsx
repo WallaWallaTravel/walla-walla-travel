@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { calculateWineTourPrice, calculateTransferPrice, calculateWaitTimePrice, calculateTax, calculateDeposit, formatCurrency } from '@/lib/rate-config';
+import { logger } from '@/lib/logger';
 
 interface ServiceItem {
   id: string;
@@ -129,7 +130,7 @@ export default function EditProposalPage({ params }: { params: Promise<{ proposa
       
       setLoading(false);
     } catch (error) {
-      console.error('Failed to load proposal:', error);
+      logger.error('Failed to load proposal', { error });
       alert('Failed to load proposal');
       router.push('/admin/proposals');
     }
@@ -143,7 +144,7 @@ export default function EditProposalPage({ params }: { params: Promise<{ proposa
         setWineries(result.data || []);
       }
     } catch (error) {
-      console.error('Failed to load wineries:', error);
+      logger.error('Failed to load wineries', { error });
     }
   };
 
@@ -322,7 +323,7 @@ export default function EditProposalPage({ params }: { params: Promise<{ proposa
       alert('Proposal updated successfully!');
       router.push('/admin/proposals');
     } catch (error) {
-      console.error('Failed to update proposal:', error);
+      logger.error('Failed to update proposal', { error });
       alert(error instanceof Error ? error.message : 'Failed to update proposal');
     } finally {
       setSaving(false);

@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useAudioRecorder } from '@/lib/hooks/useAudioRecorder';
 import MessageFeedback from '@/components/ai/MessageFeedback';
 import EmailCaptureModal from '@/components/ai/EmailCaptureModal';
+import { logger } from '@/lib/logger';
 
 interface Message {
   id: string;
@@ -160,7 +161,7 @@ export default function EnhancedAIDirectoryPage() {
       }, 100);
 
     } catch (error: unknown) {
-      console.error('Voice submission error:', error);
+      logger.error('Voice submission error', { error });
       alert('Failed to process voice input. Please try again.');
     } finally {
       setIsTranscribing(false);
@@ -244,7 +245,7 @@ export default function EnhancedAIDirectoryPage() {
         setShowEmailModal(false);
       }
     } catch (error) {
-      console.error('Email capture error:', error);
+      logger.error('Email capture error', { error });
     }
   };
 

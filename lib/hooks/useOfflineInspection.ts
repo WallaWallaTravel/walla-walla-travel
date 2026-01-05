@@ -8,6 +8,7 @@ import {
   isOnline,
   addConnectivityListeners,
 } from '@/lib/offline-storage'
+import { logger } from '@/lib/logger'
 
 interface InspectionData {
   driverId: string
@@ -40,7 +41,7 @@ export function useOfflineInspection(): UseOfflineInspectionReturn {
       const pending = await getPendingInspections()
       setPendingCount(pending.length)
     } catch (error) {
-      console.error('Failed to get pending inspections:', error)
+      logger.error('Failed to get pending inspections', { error })
     }
   }
 
@@ -55,13 +56,13 @@ export function useOfflineInspection(): UseOfflineInspectionReturn {
     // Listen for connectivity changes
     const cleanup = addConnectivityListeners(
       () => {
-        console.log('Device is online')
+        logger.info('Device is online')
         setIsOnlineStatus(true)
         // Auto-sync when coming back online
         syncPending()
       },
       () => {
-        console.log('Device is offline')
+        logger.info('Device is offline')
         setIsOnlineStatus(false)
       }
     )
@@ -86,13 +87,13 @@ export function useOfflineInspection(): UseOfflineInspectionReturn {
 
           if (response.ok) {
             const result = await response.json()
-            console.log('Inspection saved online:', result)
+            logger.info('Inspection saved online', { id: result.id })
             return { success: true, id: result.id }
           } else {
             throw new Error('Failed to save online')
           }
         } catch (error) {
-          console.warn('Online save failed, saving offline:', error)
+          logger.warn('Online save failed, saving offline', { error })
           // Fallback to offline
           const id = await saveInspectionOffline(data)
           await updatePendingCount()
@@ -100,13 +101,13 @@ export function useOfflineInspection(): UseOfflineInspectionReturn {
         }
       } else {
         // Save offline
-        console.log('Device is offline, saving locally')
+        logger.info('Device is offline, saving locally')
         const id = await saveInspectionOffline(data)
         await updatePendingCount()
         return { success: true, id, error: 'Saved offline - will sync when online' }
       }
     } catch (error) {
-      console.error('Failed to save inspection:', error)
+      logger.error('Failed to save inspection', { error })
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Failed to save inspection'
@@ -119,7 +120,7 @@ export function useOfflineInspection(): UseOfflineInspectionReturn {
    */
   const syncPending = async (): Promise<{ synced: number; failed: number }> => {
     if (!isOnline()) {
-      console.log('Device is offline, cannot sync')
+      logger.info('Device is offline, cannot sync')
       return { synced: 0, failed: 0 }
     }
 
@@ -129,7 +130,7 @@ export function useOfflineInspection(): UseOfflineInspectionReturn {
 
     try {
       const pending = await getPendingInspections()
-      console.log(`Syncing ${pending.length} pending inspections`)
+      logger.info(`Syncing ${pending.length} pending inspections`)
 
       for (const inspection of pending) {
         try {
@@ -147,20 +148,20 @@ export function useOfflineInspection(): UseOfflineInspectionReturn {
               await deleteInspection(id)
             }
             synced++
-            console.log(`Synced inspection ${id}`)
+            logger.info(`Synced inspection ${id}`)
           } else {
             failed++
-            console.error(`Failed to sync inspection ${id}:`, response.status)
+            logger.error(`Failed to sync inspection ${id}`, { status: response.status })
           }
         } catch (error) {
           failed++
-          console.error(`Error syncing inspection ${inspection.id}:`, error)
+          logger.error(`Error syncing inspection ${inspection.id}`, { error })
         }
       }
 
       await updatePendingCount()
     } catch (error) {
-      console.error('Sync error:', error)
+      logger.error('Sync error', { error })
     } finally {
       setIsSyncing(false)
     }

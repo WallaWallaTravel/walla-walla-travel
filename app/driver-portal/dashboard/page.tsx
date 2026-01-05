@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { logger } from '@/lib/logger';
 
 interface Tour {
   id: number;
@@ -59,7 +60,7 @@ export default function DriverDashboard() {
         setTours(data.data?.tours || data.tours || []);
       }
     } catch (error) {
-      console.error('Error loading tours:', error);
+      logger.error('Error loading tours', { error });
     } finally {
       setLoading(false);
     }

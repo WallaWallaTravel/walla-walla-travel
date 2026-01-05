@@ -7,6 +7,7 @@ import { getSession } from '@/lib/auth/session';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { query } from '@/lib/db';
+import { logger } from '@/lib/logger';
 
 interface BookingDetail {
   id: number;
@@ -67,7 +68,7 @@ async function getBooking(id: string): Promise<BookingDetail | null> {
     );
     return result.rows[0] || null;
   } catch (error) {
-    console.error('[Booking] Error fetching booking:', error);
+    logger.error('[Booking] Error fetching booking', { error });
     return null;
   }
 }

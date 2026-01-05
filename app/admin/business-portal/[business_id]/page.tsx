@@ -7,6 +7,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { logger } from '@/lib/logger';
 // import Image from 'next/image';
 
 interface Business {
@@ -107,7 +108,7 @@ export default function BusinessReviewPage() {
       // Load insights
       loadInsights();
     } catch (error: unknown) {
-      console.error('Error loading business:', error);
+      logger.error('Error loading business', { error });
     } finally {
       setLoading(false);
     }
@@ -121,7 +122,7 @@ export default function BusinessReviewPage() {
         setInsights(data.insights || []);
       }
     } catch (error) {
-      console.error('Error loading insights:', error);
+      logger.error('Error loading insights', { error });
     }
   };
 
@@ -415,7 +416,7 @@ export default function BusinessReviewPage() {
                               className="w-full h-full object-cover cursor-pointer group-hover:scale-105 transition-transform duration-200"
                               onClick={() => window.open(file.storage_url, '_blank')}
                               onError={() => {
-                                console.error('Image failed to load:', file.id, '- Size:', file.file_size_bytes);
+                                logger.error('Image failed to load', { fileId: file.id, fileSizeBytes: file.file_size_bytes });
                                 setImageErrors(prev => new Set(prev).add(file.id));
                               }}
                               loading="lazy"

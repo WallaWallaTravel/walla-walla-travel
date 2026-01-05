@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { INSIDER_TIP_TYPES } from '@/lib/config/content-types';
+import { logger } from '@/lib/logger';
 
 interface InsiderTip {
   id?: number;
@@ -107,7 +108,7 @@ export default function PartnerTipsPage() {
           setTips(data.tips || []);
         }
       } catch (error) {
-        console.error('Failed to load tips:', error);
+        logger.error('Failed to load tips', { error });
       } finally {
         setLoading(false);
       }

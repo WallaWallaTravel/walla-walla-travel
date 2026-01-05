@@ -7,6 +7,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { logger } from '@/lib/logger';
 
 interface Business {
   id: number;
@@ -59,7 +60,7 @@ export default function BusinessPortalAdminPage() {
       }
 
     } catch (error: unknown) {
-      console.error('Failed to load data:', error);
+      logger.error('Failed to load data', { error });
       setMessage({ type: 'error', text: 'Failed to load data' });
     } finally {
       setLoading(false);
@@ -82,7 +83,7 @@ export default function BusinessPortalAdminPage() {
       loadData(); // Reload stats
 
     } catch (error: unknown) {
-      console.error('Processing error:', error);
+      logger.error('Processing error', { error });
       setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Processing failed' });
     } finally {
       setProcessing(false);

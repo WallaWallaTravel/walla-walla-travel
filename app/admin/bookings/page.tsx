@@ -9,6 +9,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { logger } from '@/lib/logger';
 
 interface Booking {
   id: number;
@@ -55,7 +56,7 @@ function BookingsPageContent() {
         setBookings(result.data?.bookings || []);
       }
     } catch (error) {
-      console.error('Failed to load bookings:', error);
+      logger.error('Failed to load bookings', { error });
     } finally {
       setLoading(false);
     }

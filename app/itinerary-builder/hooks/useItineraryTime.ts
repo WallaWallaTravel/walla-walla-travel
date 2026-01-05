@@ -1,6 +1,7 @@
 // Custom hook for time calculations in itinerary builder
 
 import { Stop } from '../types';
+import { logger } from '@/lib/logger';
 
 export const useItineraryTime = () => {
   const addMinutes = (time: string, minutes: number): string => {
@@ -67,7 +68,7 @@ export const useItineraryTime = () => {
       const data = await response.json();
       return Math.ceil(data.duration / 60); // Convert seconds to minutes
     } catch (error) {
-      console.error('Error calculating travel time:', error);
+      logger.error('Error calculating travel time', { error });
       return 15; // Fallback to 15 minutes
     }
   };

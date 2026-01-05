@@ -8,6 +8,7 @@
  */
 
 import { useState, useRef, useEffect } from 'react';
+import { logger } from '@/lib/logger';
 
 // ============================================================================
 // Types
@@ -154,7 +155,7 @@ What brings you to Walla Walla? Are you planning a trip, or just curious about t
         ]);
       }
     } catch (error) {
-      console.error('Chat error:', error);
+      logger.error('Chat error', { error });
       setMessages((prev) => [
         ...prev,
         {

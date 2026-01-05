@@ -2,6 +2,7 @@
 // Generic event tracking system for all user interactions
 
 import { Pool } from 'pg'
+import { logger } from '@/lib/logger'
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -38,7 +39,7 @@ export async function trackEvent(params: TrackEventParams): Promise<void> {
   // For now, we're using the ai_queries table which covers most events
   // You could create a separate analytics_events table for more flexibility
   
-  console.log(`[Event] ${params.eventType} - Session: ${params.sessionId}`, params.eventData)
+  logger.info(`[Event] ${params.eventType} - Session: ${params.sessionId}`, { eventData: params.eventData })
   
   // If this is a booking event, link it to AI queries
   if (params.eventType === 'booking_completed' && params.bookingId && params.revenueAttributed) {

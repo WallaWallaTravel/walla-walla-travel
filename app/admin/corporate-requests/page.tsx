@@ -7,6 +7,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { logger } from '@/lib/logger';
 
 interface UploadedFile {
   filename: string;
@@ -70,7 +71,7 @@ export default function CorporateRequestsPage() {
         setRequests(data.requests);
       }
     } catch (error) {
-      console.error('Failed to load requests:', error);
+      logger.error('Failed to load requests', { error });
     } finally {
       setLoading(false);
     }

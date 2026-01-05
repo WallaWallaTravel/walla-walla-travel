@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { SendProposalModal } from '@/components/proposals/SendProposalModal';
+import { logger } from '@/lib/logger';
 
 interface Proposal {
   id: number;
@@ -75,7 +76,7 @@ function ProposalsPageContent() {
         setPagination(result.pagination);
       }
     } catch (error) {
-      console.error('Failed to load proposals:', error);
+      logger.error('Failed to load proposals', { error });
     } finally {
       setLoading(false);
     }
@@ -100,7 +101,7 @@ function ProposalsPageContent() {
         alert(result.error || 'Failed to delete proposal');
       }
     } catch (error) {
-      console.error('Failed to delete proposal:', error);
+      logger.error('Failed to delete proposal', { error });
       alert('Failed to delete proposal');
     }
   };
@@ -125,7 +126,7 @@ function ProposalsPageContent() {
         alert(result.error || 'Failed to convert proposal');
       }
     } catch (error) {
-      console.error('Failed to convert proposal:', error);
+      logger.error('Failed to convert proposal', { error });
       alert('Failed to convert proposal to booking');
     } finally {
       setConverting(null);

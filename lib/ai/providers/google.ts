@@ -3,6 +3,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { AIModelProvider, AIContext, AIResponse, AIProviderConfig } from './base'
 import { getModelConfig } from '@/lib/config/ai'
+import { logger } from '@/lib/logger'
 
 export class GoogleProvider extends AIModelProvider {
   readonly name = 'Google'
@@ -59,7 +60,7 @@ export class GoogleProvider extends AIModelProvider {
         provider: 'google'
       }
     } catch (error: unknown) {
-      console.error('Google API error:', error)
+      logger.error('Google API error', { error })
       throw new Error(`Google error: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }

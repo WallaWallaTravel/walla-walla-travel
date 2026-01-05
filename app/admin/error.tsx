@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { logger } from '@/lib/logger'
 
 export default function AdminError({
   error,
@@ -11,7 +12,7 @@ export default function AdminError({
 }) {
   useEffect(() => {
     // Log error to monitoring service in production
-    console.error('Admin error:', error)
+    logger.error('Admin error', { error })
   }, [error])
 
   return (

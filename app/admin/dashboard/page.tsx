@@ -8,6 +8,7 @@ import { getSession } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { query } from '@/lib/db';
+import { logger } from '@/lib/logger';
 
 interface DashboardStats {
   totalBookings: number;
@@ -87,7 +88,7 @@ async function getDashboardStats(): Promise<DashboardStats> {
       businessPortalSubmissions: parseInt(businessCount.rows[0]?.count || '0'),
     };
   } catch (error) {
-    console.error('[Dashboard] Error fetching stats:', error);
+    logger.error('[Dashboard] Error fetching stats', { error });
     return {
       totalBookings: 0,
       pendingBookings: 0,

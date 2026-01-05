@@ -23,6 +23,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { ServiceItem, ProposalData, PricingStrategy, Winery, AdditionalService, PriceCalculation } from '../types';
 import { calculateWineTourPrice, calculateTransferPrice, calculateWaitTimePrice, calculateTax, calculateDeposit } from '@/lib/rate-config';
+import { logger } from '@/lib/logger';
 
 /**
  * Initial form state
@@ -87,7 +88,7 @@ export function useProposalForm() {
           setWineries(result.data || []);
         }
       } catch (error) {
-        console.error('Failed to load wineries:', error);
+        logger.error('Failed to load wineries', { error });
       }
     };
     loadWineries();
@@ -103,7 +104,7 @@ export function useProposalForm() {
           setAdditionalServices(result.data || []);
         }
       } catch (error) {
-        console.error('Failed to load additional services:', error);
+        logger.error('Failed to load additional services', { error });
       }
     };
     loadServices();
@@ -176,7 +177,7 @@ export function useProposalForm() {
         return data.finalPrice;
       }
     } catch (error) {
-      console.error('Dynamic pricing fetch failed:', error);
+      logger.error('Dynamic pricing fetch failed', { error });
     }
 
     return calculateServicePrice(item);

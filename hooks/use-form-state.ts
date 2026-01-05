@@ -6,6 +6,7 @@
  */
 
 import { useState, useCallback, ChangeEvent } from 'react';
+import { logger } from '@/lib/logger';
 
 export interface FormErrors {
   [key: string]: string | undefined;
@@ -134,7 +135,7 @@ export function useFormState<T extends Record<string, unknown>>({
     try {
       await onSubmit(values);
     } catch (error) {
-      console.error('Form submission error:', error);
+      logger.error('Form submission error', { error });
       setErrors({
         submit: error instanceof Error ? error.message : 'Submission failed',
       });

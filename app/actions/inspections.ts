@@ -2,6 +2,7 @@
 
 import { query } from '@/lib/db'
 import { getCurrentUser } from '@/lib/session'
+import { logger } from '@/lib/logger'
 
 interface InspectionData {
   vehicleId: string
@@ -31,7 +32,7 @@ export async function getActiveTimeCardId(): Promise<number | null> {
 
     return result.rows[0]?.id || null
   } catch (error) {
-    console.error('Get active time card error:', error)
+    logger.error('Get active time card error', { error })
     return null
   }
 }
@@ -78,7 +79,7 @@ export async function savePreTripInspection(data: InspectionData) {
       inspectionId: result.rows[0].id
     }
   } catch (error: unknown) {
-    console.error('Save pre-trip inspection error:', error)
+    logger.error('Save pre-trip inspection error', { error })
 
     // Handle missing column error (migration not run yet)
     const dbError = error as { code?: string }
@@ -150,7 +151,7 @@ export async function saveInspectionAction(data: {
       inspectionId: result.rows[0].id
     }
   } catch (error: unknown) {
-    console.error('Save inspection error:', error)
+    logger.error('Save inspection error', { error })
 
     // Handle missing column error (migration not run yet)
     const dbError = error as { code?: string }
@@ -211,7 +212,7 @@ export async function savePostTripInspection(data: InspectionData & { signature?
       inspectionId: result.rows[0].id
     }
   } catch (error: unknown) {
-    console.error('Save post-trip inspection error:', error)
+    logger.error('Save post-trip inspection error', { error })
 
     // Handle missing column error (migration not run yet)
     const dbError = error as { code?: string }

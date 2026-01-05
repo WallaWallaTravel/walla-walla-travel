@@ -187,8 +187,8 @@ export const POST = withCSRF(
   const ext = file.name.split('.').pop() || 'jpg';
   const fileName = `winery-${profile.winery_id}/${category}/${timestamp}.${ext}`;
 
-  console.log('[PHOTO UPLOAD] Starting upload', { winery_id: profile.winery_id, category, fileName });
-  console.log('[PHOTO UPLOAD] SUPABASE_SERVICE_KEY exists:', !!process.env.SUPABASE_SERVICE_KEY);
+  logger.info('[PHOTO UPLOAD] Starting upload', { winery_id: profile.winery_id, category, fileName });
+  logger.debug('[PHOTO UPLOAD] SUPABASE_SERVICE_KEY exists', { exists: !!process.env.SUPABASE_SERVICE_KEY });
 
   // Read file content
   const arrayBuffer = await file.arrayBuffer();
@@ -198,11 +198,11 @@ export const POST = withCSRF(
 
   // Try Supabase Storage first, fallback to base64 data URL
   const supabaseAdmin = await getSupabaseAdmin();
-  console.log('[PHOTO UPLOAD] supabaseAdmin loaded:', !!supabaseAdmin);
+  logger.debug('[PHOTO UPLOAD] supabaseAdmin loaded', { loaded: !!supabaseAdmin });
 
   if (supabaseAdmin) {
     try {
-      console.log('[PHOTO UPLOAD] Attempting Supabase Storage upload...');
+      logger.debug('[PHOTO UPLOAD] Attempting Supabase Storage upload');
       const { error: uploadError } = await supabaseAdmin.storage
         .from('winery-photos')
         .upload(fileName, buffer, {
@@ -211,7 +211,7 @@ export const POST = withCSRF(
         });
 
       if (uploadError) {
-        console.log('[PHOTO UPLOAD] Storage upload failed:', uploadError.message);
+        logger.warn('[PHOTO UPLOAD] Storage upload failed', { error: uploadError.message });
         // Fallback to base64
         const base64 = buffer.toString('base64');
         publicUrl = `data:${file.type};base64,${base64}`;
@@ -221,21 +221,21 @@ export const POST = withCSRF(
           .from('winery-photos')
           .getPublicUrl(fileName);
         publicUrl = urlData.publicUrl;
-        console.log('[PHOTO UPLOAD] Storage upload SUCCESS, URL:', publicUrl);
+        logger.info('[PHOTO UPLOAD] Storage upload SUCCESS', { publicUrl });
       }
     } catch (storageError) {
-      console.log('[PHOTO UPLOAD] Storage exception:', storageError);
+      logger.error('[PHOTO UPLOAD] Storage exception', { error: storageError });
       const base64 = buffer.toString('base64');
       publicUrl = `data:${file.type};base64,${base64}`;
     }
   } else {
     // No service key configured, use base64 data URL
-    console.log('[PHOTO UPLOAD] No supabaseAdmin, using base64 fallback');
+    logger.debug('[PHOTO UPLOAD] No supabaseAdmin, using base64 fallback');
     const base64 = buffer.toString('base64');
     publicUrl = `data:${file.type};base64,${base64}`;
   }
 
-  console.log('[PHOTO UPLOAD] Final URL type:', publicUrl.startsWith('data:') ? 'base64' : 'storage');
+  logger.debug('[PHOTO UPLOAD] Final URL type', { type: publicUrl.startsWith('data:') ? 'base64' : 'storage' });
 
   // Get next display order
   const orderResult = await query(
@@ -267,7 +267,7 @@ export const POST = withCSRF(
   );
 
   const mediaId = mediaResult.rows[0].id;
-  console.log('[PHOTO UPLOAD] media_library record created, id:', mediaId);
+  logger.info('[PHOTO UPLOAD] media_library record created', { mediaId });
 
   // Create winery_media link
   const wmResult = await query(
@@ -282,7 +282,7 @@ export const POST = withCSRF(
       category === 'hero' && currentCount === 0,
     ]
   );
-  console.log('[PHOTO UPLOAD] winery_media link created, id:', wmResult.rows[0].id);
+  logger.info('[PHOTO UPLOAD] winery_media link created', { id: wmResult.rows[0].id });
 
   // Log activity
   await partnerService.logActivity(

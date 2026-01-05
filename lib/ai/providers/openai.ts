@@ -3,6 +3,7 @@
 import OpenAI from 'openai'
 import { AIModelProvider, AIContext, AIResponse, AIProviderConfig } from './base'
 import { getModelConfig } from '@/lib/config/ai'
+import { logger } from '@/lib/logger'
 
 export class OpenAIProvider extends AIModelProvider {
   readonly name = 'OpenAI'
@@ -66,7 +67,7 @@ export class OpenAIProvider extends AIModelProvider {
         provider: 'openai'
       }
     } catch (error: unknown) {
-      console.error('OpenAI API error:', error)
+      logger.error('OpenAI API error', { error })
       throw new Error(`OpenAI error: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }

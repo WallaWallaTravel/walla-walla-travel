@@ -10,6 +10,7 @@ import {
   AlertBanner,
   AlertStack
 } from '@/components/mobile';
+import { logger } from '@/lib/logger';
 
 interface TodayStatus {
   isClockedIn: boolean;
@@ -93,7 +94,7 @@ export default function UnifiedDashboard() {
         setAlerts(dashboardAlerts);
       }
     } catch (err) {
-      console.error('Error loading dashboard:', err);
+      logger.error('Error loading dashboard', { error: err });
       setAlerts([{
         type: 'error',
         message: 'Failed to load dashboard data',

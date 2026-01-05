@@ -7,6 +7,7 @@ import { calculateWineTourPrice, calculateTransferPrice, calculateWaitTimePrice,
 import { WinerySelector } from './winery-selector';
 import { SmartTimeInput } from '@/components/shared/form-inputs/SmartTimeInput';
 import { SmartLocationInput } from '@/components/shared/form-inputs/SmartLocationInput';
+import { logger } from '@/lib/logger';
 
 interface ServiceItem {
   id: string;
@@ -127,7 +128,7 @@ export default function NewProposalPageV2() {
         setWineries(result.data || []);
       }
     } catch (error) {
-      console.error('Failed to load wineries:', error);
+      logger.error('Failed to load wineries', { error });
     }
   };
 
@@ -139,7 +140,7 @@ export default function NewProposalPageV2() {
         setAvailableAdditionalServices(result.data || []);
       }
     } catch (error) {
-      console.error('Failed to load additional services:', error);
+      logger.error('Failed to load additional services', { error });
     }
   };
 
@@ -179,9 +180,9 @@ export default function NewProposalPageV2() {
     try {
       const dynamicPrice = await fetchDynamicPrice(newItem);
       newItem.calculated_price = dynamicPrice;
-      console.log('✅ Dynamic pricing:', dynamicPrice);
+      logger.debug('Dynamic pricing applied', { dynamicPrice });
     } catch (error) {
-      console.error('Failed to fetch dynamic price, using fallback:', error);
+      logger.error('Failed to fetch dynamic price, using fallback', { error });
       newItem.calculated_price = calculateServicePrice(newItem);
     }
 
@@ -237,9 +238,9 @@ export default function NewProposalPageV2() {
               item.id === id ? { ...item, calculated_price: dynamicPrice } : item
             )
           }));
-          console.log('✅ Price refreshed:', dynamicPrice);
+          logger.debug('Price refreshed', { dynamicPrice });
         } catch (error) {
-          console.error('Failed to refresh price, using fallback:', error);
+          logger.error('Failed to refresh price, using fallback', { error });
           const fallbackPrice = calculateServicePrice(updatedItem);
           setFormData(prev => ({
             ...prev,
@@ -295,9 +296,9 @@ export default function NewProposalPageV2() {
         return data.finalPrice;
       }
     } catch (error) {
-      console.error('Dynamic pricing fetch failed, using fallback:', error);
+      logger.error('Dynamic pricing fetch failed, using fallback', { error });
     }
-    
+
     // Fallback to hardcoded rates if API fails
     return calculateServicePriceFallback(item);
   };
@@ -430,7 +431,7 @@ export default function NewProposalPageV2() {
       alert(`Proposal created successfully! Proposal #${result.data.proposal_number}`);
       router.push('/admin/proposals');
     } catch (error) {
-      console.error('Failed to create proposal:', error);
+      logger.error('Failed to create proposal', { error });
       alert(error instanceof Error ? error.message : 'Failed to create proposal');
     } finally {
       setSaving(false);
@@ -1412,7 +1413,7 @@ function AdditionalServicesSection({ selectedServices, onChange }: AdditionalSer
         setAvailableServices(data.data || []);
       }
     } catch (error) {
-      console.error('Error fetching additional services:', error);
+      logger.error('Error fetching additional services', { error });
     } finally {
       setLoading(false);
     }

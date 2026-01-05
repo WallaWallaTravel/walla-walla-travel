@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { logger } from '@/lib/logger';
 
 interface NavItem {
   href: string;
@@ -52,7 +53,7 @@ export function PartnerSidebar() {
       router.push('/login?portal=partners');
       router.refresh();
     } catch (error) {
-      console.error('Logout error:', error);
+      logger.error('Logout error', { error });
     }
   };
 

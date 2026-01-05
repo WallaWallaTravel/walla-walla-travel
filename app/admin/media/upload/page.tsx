@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { logger } from '@/lib/logger';
 
 export default function MediaUploadPage() {
   const router = useRouter();
@@ -97,7 +98,7 @@ export default function MediaUploadPage() {
         alert(`Upload failed: ${result.error}`);
       }
     } catch (error) {
-      console.error('Upload error:', error);
+      logger.error('Upload error', { error });
       alert('Failed to upload media');
     } finally {
       setUploading(false);

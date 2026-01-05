@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import ReactCrop, { Crop, PixelCrop, centerCrop, makeAspectCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
+import { logger } from '@/lib/logger';
 
 // Aspect ratios by category
 const CATEGORY_ASPECTS: Record<string, number> = {
@@ -154,7 +155,7 @@ export default function ImageCropModal({
       const newFileName = `${baseName}-cropped.jpg`;
       onCropComplete(croppedBlob, newFileName);
     } catch (error) {
-      console.error('Error cropping image:', error);
+      logger.error('Error cropping image', { error });
       alert('Failed to crop image. Please try again.');
     } finally {
       setIsProcessing(false);

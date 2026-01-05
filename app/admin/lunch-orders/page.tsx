@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { logger } from '@/lib/logger'
 
 interface LunchOrder {
   id: number
@@ -49,7 +50,7 @@ export default function AdminLunchOrdersPage() {
       const data = await response.json()
       setOrders(data.orders || [])
     } catch (error) {
-      console.error('Error loading orders:', error)
+      logger.error('Error loading orders', { error })
     } finally {
       setLoading(false)
     }
@@ -72,7 +73,7 @@ export default function AdminLunchOrdersPage() {
         throw new Error('Failed to approve order')
       }
     } catch (error) {
-      console.error('Error approving order:', error)
+      logger.error('Error approving order', { error })
       alert('Failed to approve order. Please try again.')
     } finally {
       setApproving(null)
@@ -97,7 +98,7 @@ export default function AdminLunchOrdersPage() {
         throw new Error('Failed to reject order')
       }
     } catch (error) {
-      console.error('Error rejecting order:', error)
+      logger.error('Error rejecting order', { error })
       alert('Failed to reject order.')
     }
   }

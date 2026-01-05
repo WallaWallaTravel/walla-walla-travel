@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { formatCurrency } from '@/lib/rate-config';
+import { logger } from '@/lib/logger';
 
 // ============================================================================
 // Rate Configuration Types
@@ -74,7 +75,7 @@ export default function RatesManagementPage() {
         setRates(data.rates);
       }
     } catch (error) {
-      console.error('Error fetching rates:', error);
+      logger.error('Error fetching rates', { error });
     } finally {
       setLoading(false);
     }
@@ -122,7 +123,7 @@ export default function RatesManagementPage() {
         alert('Failed to update rates: ' + data.error);
       }
     } catch (error) {
-      console.error('Error saving rates:', error);
+      logger.error('Error saving rates', { error });
       alert('Failed to save changes');
     } finally {
       setSaving(false);

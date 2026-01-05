@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { SmartTimeInput } from '@/components/shared/form-inputs/SmartTimeInput';
 import { SmartLocationInput } from '@/components/shared/form-inputs/SmartLocationInput';
+import { logger } from '@/lib/logger';
 // import { WinerySelector } from '@/app/admin/proposals/new/winery-selector';
 import type { Itinerary, ItineraryDay, ItineraryActivity, ActivityType } from '@/types/itinerary';
 
@@ -39,7 +40,7 @@ export default function ItineraryBuilderPage({ params }: PageProps) {
         setItinerary(data.itinerary);
         setDays(data.days || []);
       } catch (error) {
-        console.error('Error loading itinerary:', error);
+        logger.error('Error loading itinerary', { error });
         alert('Failed to load itinerary');
       } finally {
         setLoading(false);
@@ -58,7 +59,7 @@ export default function ItineraryBuilderPage({ params }: PageProps) {
         const data = await response.json();
         setWineries(data);
       } catch (error) {
-        console.error('Error loading wineries:', error);
+        logger.error('Error loading wineries', { error });
       }
     };
 
@@ -195,7 +196,7 @@ export default function ItineraryBuilderPage({ params }: PageProps) {
 
       alert('Itinerary saved successfully!');
     } catch (error) {
-      console.error('Error saving itinerary:', error);
+      logger.error('Error saving itinerary', { error });
       alert('Failed to save itinerary');
     } finally {
       setSaving(false);

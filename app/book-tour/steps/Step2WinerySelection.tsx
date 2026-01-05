@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { BookingData } from '../page';
+import { logger } from '@/lib/logger';
 
 interface Props {
   bookingData: BookingData;
@@ -37,7 +38,7 @@ export default function Step2WinerySelection({ bookingData, updateBookingData, n
         setWineries(result.data || []);
       }
     } catch (error) {
-      console.error('Failed to load wineries:', error);
+      logger.error('Failed to load wineries', { error });
     } finally {
       setLoading(false);
     }

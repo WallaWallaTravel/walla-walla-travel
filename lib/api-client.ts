@@ -3,6 +3,7 @@
  * These functions handle API calls from React components
  */
 
+import { logger } from '@/lib/logger';
 import type {
   PreTripCheckpoints,
   PostTripCheckpoints,
@@ -140,7 +141,7 @@ async function apiRequest<T = unknown>(
       data: data.data,
     };
   } catch (error) {
-    console.error(`API request error for ${endpoint}:`, error);
+    logger.error(`API request error for ${endpoint}`, { error });
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Network error',

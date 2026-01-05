@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { logger } from '@/lib/logger'
 
 // Portal configuration for branding
 const portalConfig = {
@@ -139,7 +140,7 @@ function LoginPageContent() {
         setLoading(false)
       }
     } catch (err) {
-      console.error('Login error:', err)
+      logger.error('Login error', { error: err })
       setError('An unexpected error occurred')
       setLoading(false)
     }

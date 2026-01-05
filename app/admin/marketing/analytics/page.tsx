@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { MetricsChart, StatCard } from '@/components/marketing/MetricsChart'
+import { logger } from '@/lib/logger'
 
 interface MarketingMetrics {
   summary: {
@@ -63,7 +64,7 @@ export default function MarketingAnalyticsPage() {
         setMetrics(data)
       }
     } catch (error) {
-      console.error('Error loading metrics:', error)
+      logger.error('Error loading metrics', { error })
       // Use mock data for demo
       setMetrics({
         summary: {

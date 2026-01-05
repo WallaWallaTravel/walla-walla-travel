@@ -3,6 +3,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { AIModelProvider, AIContext, AIResponse, AIProviderConfig } from './base'
 import { getModelConfig } from '@/lib/config/ai'
+import { logger } from '@/lib/logger'
 
 export class AnthropicProvider extends AIModelProvider {
   readonly name = 'Anthropic'
@@ -62,7 +63,7 @@ export class AnthropicProvider extends AIModelProvider {
         provider: 'anthropic'
       }
     } catch (error: unknown) {
-      console.error('Anthropic API error:', error)
+      logger.error('Anthropic API error', { error })
       throw new Error(`Anthropic error: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }

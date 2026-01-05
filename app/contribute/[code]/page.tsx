@@ -8,6 +8,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAudioRecorder } from '@/lib/hooks/useAudioRecorder';
+import { logger } from '@/lib/logger';
 
 interface Question {
   id: number;
@@ -116,7 +117,7 @@ export default function BusinessPortalPage() {
       }
       
     } catch (err: unknown) {
-      console.error('Load error:', err);
+      logger.error('Load error', { error: err });
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
@@ -154,7 +155,7 @@ export default function BusinessPortalPage() {
       }, 1000);
       
     } catch (err: unknown) {
-      console.error('Submit voice error:', err);
+      logger.error('Submit voice error', { error: err });
       setError(err instanceof Error ? err.message : 'Failed to submit voice');
     } finally {
       setSubmitting(false);
@@ -191,7 +192,7 @@ export default function BusinessPortalPage() {
       }, 1000);
       
     } catch (err: unknown) {
-      console.error('Submit text error:', err);
+      logger.error('Submit text error', { error: err });
       setError(err instanceof Error ? err.message : 'Failed to submit text');
     } finally {
       setSubmitting(false);

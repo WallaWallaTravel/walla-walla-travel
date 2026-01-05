@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth/session';
 import { pool } from '@/lib/db';
+import { logger } from '@/lib/logger';
 
 export async function GET() {
   try {
@@ -103,7 +104,7 @@ export async function GET() {
 
     return NextResponse.json({ preview });
   } catch (error) {
-    console.error('Preview API error:', error);
+    logger.error('Preview API error', { error });
     return NextResponse.json({ error: 'Failed to load preview' }, { status: 500 });
   }
 }

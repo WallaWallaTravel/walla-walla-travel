@@ -7,6 +7,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { logger } from '@/lib/logger';
 
 interface Business {
   id: number;
@@ -118,7 +119,7 @@ export default function BusinessUploadPage() {
           );
         } catch (err: unknown) {
           failCount++;
-          console.error(`Upload failed for ${file.name}:`, err);
+          logger.error(`Upload failed for ${file.name}`, { error: err });
           
           // Mark as error
           setUploadProgress(prev => 
@@ -174,12 +175,12 @@ export default function BusinessUploadPage() {
     
     if (!response.ok) {
       const data = await response.json();
-      console.error('Upload API error:', data);
+      logger.error('Upload API error', { data });
       throw new Error(data.error || data.details || 'Upload failed');
     }
     
     const result = await response.json();
-    console.log('Upload successful:', result);
+    logger.info('Upload successful', { result });
   };
   
   const getCategoryFromFile = (file: File): string => {

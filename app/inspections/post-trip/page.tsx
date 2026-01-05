@@ -3,6 +3,7 @@ import { getSession } from '@/lib/auth/session'
 import { PostTripInspectionClient } from './PostTripInspectionClient'
 import { query } from '@/lib/db'
 import { formatDateForDB } from '@/app/api/utils'
+import { logger } from '@/lib/logger'
 
 export default async function PostTripInspection() {
   const session = await getSession()
@@ -36,7 +37,7 @@ export default async function PostTripInspection() {
       beginningMileage = preTripResult.rows[0].start_mileage || 0
     }
   } catch (error) {
-    console.error('Failed to fetch beginning mileage:', error)
+    logger.error('Failed to fetch beginning mileage', { error })
   }
 
   return <PostTripInspectionClient driver={driver} beginningMileage={beginningMileage} />

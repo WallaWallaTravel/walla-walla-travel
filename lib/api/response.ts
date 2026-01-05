@@ -5,6 +5,7 @@
 
 import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
+import { logger } from '@/lib/logger';
 
 // ============================================================================
 // Types
@@ -284,7 +285,7 @@ export function withErrorHandling<T = unknown, P = Record<string, string>>(
     try {
       return await handler(request, context);
     } catch (error: unknown) {
-      console.error('[API Error]', error);
+      logger.error('[API Error]', { error });
 
       if (error instanceof ZodError) {
         return APIResponse.validation(error);

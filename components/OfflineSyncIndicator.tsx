@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { getPendingInspections, isOnline } from '@/lib/offline-storage'
+import { logger } from '@/lib/logger'
 
 export function OfflineSyncIndicator() {
   const [mounted, setMounted] = useState(false)
@@ -14,7 +15,7 @@ export function OfflineSyncIndicator() {
       const pending = await getPendingInspections()
       setPendingCount(pending.length)
     } catch (error) {
-      console.error('Failed to get pending count:', error)
+      logger.error('Failed to get pending count', { error })
     }
   }
 

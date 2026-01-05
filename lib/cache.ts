@@ -6,6 +6,7 @@
 
 import { unstable_cache } from 'next/cache';
 import { query } from './db';
+import { logger } from '@/lib/logger';
 
 // ============================================================================
 // Cache Configuration
@@ -337,9 +338,7 @@ export function logCacheMetrics(
   duration: number
 ) {
   if (process.env.NODE_ENV === 'development') {
-    console.log(
-      `[Cache ${hit ? 'HIT' : 'MISS'}] ${cacheKey} (${duration}ms)`
-    );
+    logger.debug(`[Cache ${hit ? 'HIT' : 'MISS'}] ${cacheKey}`, { duration: `${duration}ms` });
   }
 }
 

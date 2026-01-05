@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import api from '@/lib/api-client';
 import { TouchButton, MobileCard, AlertBanner } from '@/components/mobile';
 import type { SelectableVehicle, AvailableVehiclesResponse } from '@/lib/types';
+import { logger } from '@/lib/logger';
 
 interface VehicleSelectorProps {
   onSelect: (vehicleId: number | null) => void;
@@ -39,7 +40,7 @@ export function VehicleSelector({ onSelect, onCancel, selectedVehicleId }: Vehic
         setError('Unable to load vehicles. Please try again.');
       }
     } catch (err) {
-      console.error('Error loading vehicles:', err);
+      logger.error('Error loading vehicles', { error: err });
       setError('Failed to load available vehicles');
     } finally {
       setLoading(false);

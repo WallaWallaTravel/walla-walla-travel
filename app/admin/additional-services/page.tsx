@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { logger } from '@/lib/logger';
 
 interface AdditionalService {
   id: number;
@@ -38,7 +39,7 @@ export default function AdditionalServicesPage() {
         setServices(result.data);
       }
     } catch (error) {
-      console.error('Failed to load services:', error);
+      logger.error('Failed to load services', { error });
     } finally {
       setLoading(false);
     }
@@ -75,7 +76,7 @@ export default function AdditionalServicesPage() {
         alert(result.error || 'Failed to save service');
       }
     } catch (error) {
-      console.error('Failed to save service:', error);
+      logger.error('Failed to save service', { error });
       alert('Failed to save service');
     }
   };
@@ -108,7 +109,7 @@ export default function AdditionalServicesPage() {
         alert(result.error || 'Failed to delete service');
       }
     } catch (error) {
-      console.error('Failed to delete service:', error);
+      logger.error('Failed to delete service', { error });
       alert('Failed to delete service');
     }
   };
@@ -129,7 +130,7 @@ export default function AdditionalServicesPage() {
         alert(result.error || 'Failed to update service');
       }
     } catch (error) {
-      console.error('Failed to update service:', error);
+      logger.error('Failed to update service', { error });
       alert('Failed to update service');
     }
   };

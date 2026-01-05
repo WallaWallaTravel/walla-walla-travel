@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { logger } from '@/lib/logger'
 
 // Web Speech API type declarations
 interface SpeechRecognitionResultItem {
@@ -144,7 +145,7 @@ export function useVoiceRecognition(options: VoiceRecognitionOptions = {}): Voic
     }
 
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-      console.error('Speech recognition error:', event.error, event.message)
+      logger.error('Speech recognition error', { error: event.error, message: event.message })
       const errorMessage = getErrorMessage(event.error)
       setError(errorMessage)
       setIsListening(false)
@@ -155,13 +156,13 @@ export function useVoiceRecognition(options: VoiceRecognitionOptions = {}): Voic
     }
 
     recognition.onend = () => {
-      console.log('Speech recognition ended')
+      logger.debug('Speech recognition ended')
       setIsListening(false)
       setInterimTranscript('')
     }
 
     recognition.onstart = () => {
-      console.log('Speech recognition started')
+      logger.debug('Speech recognition started')
       setIsListening(true)
       setError(null)
     }
@@ -181,14 +182,14 @@ export function useVoiceRecognition(options: VoiceRecognitionOptions = {}): Voic
     }
 
     if (isListening) {
-      console.warn('Already listening')
+      logger.warn('Already listening')
       return
     }
 
     try {
       recognition.start()
     } catch (err: unknown) {
-      console.error('Failed to start recognition:', err)
+      logger.error('Failed to start recognition', { error: err })
       setError('Failed to start voice recognition')
     }
   }, [isListening])
@@ -198,14 +199,14 @@ export function useVoiceRecognition(options: VoiceRecognitionOptions = {}): Voic
     if (!recognition) return
 
     if (!isListening) {
-      console.warn('Not currently listening')
+      logger.warn('Not currently listening')
       return
     }
 
     try {
       recognition.stop()
     } catch (err: unknown) {
-      console.error('Failed to stop recognition:', err)
+      logger.error('Failed to stop recognition', { error: err })
     }
   }, [isListening])
 

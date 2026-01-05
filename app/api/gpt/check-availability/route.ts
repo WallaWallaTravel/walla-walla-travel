@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db-helpers';
+import { logger } from '@/lib/logger';
 
 interface BookingRow {
   id: number;
@@ -209,7 +210,7 @@ export async function GET(request: NextRequest) {
       { headers: corsHeaders }
     );
   } catch (error) {
-    console.error('GPT check-availability error:', error);
+    logger.error('GPT check-availability error', { error });
     return NextResponse.json(
       {
         success: false,

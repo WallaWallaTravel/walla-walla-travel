@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { logger } from '@/lib/logger'
 
 interface Winery {
   id: number
@@ -80,7 +81,7 @@ export default function AIContentGenerator() {
           }
         }
       } catch (err) {
-        console.error('Failed to fetch wineries:', err)
+        logger.error('Failed to fetch wineries', { error: err })
       } finally {
         setLoadingWineries(false)
       }

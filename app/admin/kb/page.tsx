@@ -8,6 +8,7 @@ import { getSession } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { query } from '@/lib/db';
 import Link from 'next/link';
+import { logger } from '@/lib/logger';
 
 // ============================================================================
 // Types
@@ -92,7 +93,7 @@ async function getKBStats(): Promise<KBStats> {
       depositsCollected: parseInt(depositsResult.rows[0]?.count || '0'),
     };
   } catch (error) {
-    console.error('[KB Dashboard] Error fetching stats:', error);
+    logger.error('[KB Dashboard] Error fetching stats', { error });
     return {
       totalBusinesses: 0,
       verifiedBusinesses: 0,

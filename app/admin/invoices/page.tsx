@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { logger } from '@/lib/logger';
 
 interface PendingInvoice {
   booking_id: number;
@@ -38,7 +39,7 @@ export default function AdminInvoicesPage() {
         setInvoices(data.invoices);
       }
     } catch (error) {
-      console.error('Error loading invoices:', error);
+      logger.error('Error loading invoices', { error });
     } finally {
       setLoading(false);
     }
@@ -62,8 +63,8 @@ export default function AdminInvoicesPage() {
         alert(`❌ Error: ${data.error}`);
       }
     } catch (error) {
-      console.error('Error approving invoice:', error);
-      alert('❌ Failed to send invoice');
+      logger.error('Error approving invoice', { error });
+      alert('Failed to send invoice');
     } finally {
       setApproving(null);
     }

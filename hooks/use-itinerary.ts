@@ -7,6 +7,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { apiGet, apiPost, apiPut } from '@/lib/utils/fetch-utils';
+import { logger } from '@/lib/logger';
 
 export interface Stop {
   id?: number;
@@ -86,7 +87,7 @@ export function useItinerary(bookingId: string): UseItineraryReturn {
       }
     } catch (err) {
       setError('An unexpected error occurred');
-      console.error('Error loading itinerary:', err);
+      logger.error('Error loading itinerary', { error: err });
     } finally {
       setLoading(false);
     }
@@ -141,7 +142,7 @@ export function useItinerary(bookingId: string): UseItineraryReturn {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to save';
       setError(errorMessage);
-      console.error('Error saving itinerary:', err);
+      logger.error('Error saving itinerary', { error: err });
       return false;
     } finally {
       setSaving(false);
@@ -268,7 +269,7 @@ export function useItinerary(bookingId: string): UseItineraryReturn {
     const toStop = itinerary.stops[fromIndex + 1];
 
     if (!fromStop.winery?.address || !toStop.winery?.address) {
-      console.warn('Missing address information for stops');
+      logger.warn('Missing address information for stops');
       return;
     }
 
@@ -282,7 +283,7 @@ export function useItinerary(bookingId: string): UseItineraryReturn {
         updateStop(fromIndex, { drive_time_to_next_minutes: travelMinutes });
       }
     } catch (error) {
-      console.error('Error calculating travel time:', error);
+      logger.error('Error calculating travel time', { error });
     }
   }, [itinerary, updateStop]);
 
@@ -305,7 +306,7 @@ export function useItinerary(bookingId: string): UseItineraryReturn {
         updateItinerary({ pickup_drive_time_minutes: travelMinutes });
       }
     } catch (error) {
-      console.error('Error calculating pickup travel time:', error);
+      logger.error('Error calculating pickup travel time', { error });
     }
   }, [itinerary, updateItinerary]);
 
@@ -328,7 +329,7 @@ export function useItinerary(bookingId: string): UseItineraryReturn {
         updateItinerary({ dropoff_drive_time_minutes: travelMinutes });
       }
     } catch (error) {
-      console.error('Error calculating dropoff travel time:', error);
+      logger.error('Error calculating dropoff travel time', { error });
     }
   }, [itinerary, updateItinerary]);
 

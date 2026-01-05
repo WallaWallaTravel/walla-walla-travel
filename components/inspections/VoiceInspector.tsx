@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { useVoiceRecognition } from '@/lib/hooks/useVoiceRecognition'
 import { useTextToSpeech } from '@/lib/hooks/useTextToSpeech'
 import { parseCommand, formatCommandDisplay, isConfidentCommand, type InspectionCommand } from '@/lib/voice/command-parser'
+import { logger } from '@/lib/logger'
 
 interface InspectionItem {
   id: string
@@ -51,7 +52,7 @@ export function VoiceInspector({
       await tts.speak(text)
       setRepeatCount(prev => prev + 1)
     } catch (error) {
-      console.error('TTS error:', error)
+      logger.error('TTS error', { error })
       // If TTS fails, don't keep retrying
       setRepeatCount(2) // Max out to prevent infinite retries
     }
@@ -71,7 +72,7 @@ export function VoiceInspector({
   const voice = useVoiceRecognition({
     continuous: false,
     interimResults: true,
-    onError: (error) => console.error('Voice error:', error),
+    onError: (error) => logger.error('Voice error', { error }),
   })
 
   // Define these first to avoid circular dependencies
@@ -101,7 +102,7 @@ export function VoiceInspector({
 
     // Speak confirmation
     const confirmText = status === 'pass' ? 'Passed' : note ? `Failed: ${note}` : 'Failed'
-    tts.speak(confirmText).catch(err => console.error('TTS error:', err))
+    tts.speak(confirmText).catch(err => logger.error('TTS error', { error: err }))
 
     // Move to next item
     setTimeout(() => {
@@ -130,7 +131,7 @@ export function VoiceInspector({
     try {
       await tts.speak('Inspection complete. Good job!')
     } catch (err) {
-      console.error('TTS error:', err)
+      logger.error('TTS error', { error: err })
     }
     setTimeout(() => {
       onComplete(results)
@@ -208,7 +209,7 @@ Tips:
               note: command.text,
             },
           }))
-          tts.speak('Note added').catch(err => console.error('TTS error:', err))
+          tts.speak('Note added').catch(err => logger.error('TTS error', { error: err }))
         }
         break
 
@@ -229,7 +230,7 @@ Tips:
         break
 
       case 'UNKNOWN':
-        tts.speak('I didn\'t understand. Say pass, fail, or help.').catch(err => console.error('TTS error:', err))
+        tts.speak('I didn\'t understand. Say pass, fail, or help.').catch(err => logger.error('TTS error', { error: err }))
         break
     }
   }, [currentItem, tts, speakCurrentItem, voice.confidence, handleInspectionCommand, goToNext, handleCancel])

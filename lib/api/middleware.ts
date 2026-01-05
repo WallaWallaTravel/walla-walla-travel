@@ -130,7 +130,9 @@ export const rateLimiters = {
 // ============================================================================
 
 /**
- * Check if request has valid authentication
+ * @deprecated Use requireAdmin() from '@/lib/admin-auth' for server-side auth.
+ * This function is kept for reference but should not be used.
+ * The actual auth implementation uses session cookies validated against the database.
  */
 export async function requireAuth(
   request: NextRequest
@@ -138,7 +140,7 @@ export async function requireAuth(
   // Get session from cookies or header
   const authHeader = request.headers.get('authorization');
   const sessionCookie = request.cookies.get('session');
-  
+
   if (!authHeader && !sessionCookie) {
     return NextResponse.json(
       {
@@ -152,42 +154,33 @@ export async function requireAuth(
       { status: 401 }
     );
   }
-  
-  try {
-    // TODO: Implement actual JWT verification
-    // For now, return a mock user
-    // const token = authHeader?.replace('Bearer ', '') || sessionCookie?.value;
-    // const decoded = await verifyJWT(token);
-    
-    return {
-      userId: 1, // Mock
-      email: 'user@example.com', // Mock
-    };
-  } catch (_error) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: {
-          code: 'UNAUTHORIZED',
-          message: 'Invalid or expired token',
-          statusCode: 401,
-        },
+
+  // NOTE: For proper auth, use requireAdmin() from '@/lib/admin-auth'
+  // This parses the session cookie and validates against the database
+  logger.warn('requireAuth from middleware.ts is deprecated - use @/lib/admin-auth');
+
+  return NextResponse.json(
+    {
+      success: false,
+      error: {
+        code: 'NOT_IMPLEMENTED',
+        message: 'Use requireAdmin() from @/lib/admin-auth instead',
+        statusCode: 501,
       },
-      { status: 401 }
-    );
-  }
+    },
+    { status: 501 }
+  );
 }
 
 /**
- * Check if user has required role
+ * @deprecated Use requireAdmin() or isAdmin() from '@/lib/admin-auth' for role checking.
  */
 export function requireRole(
   _user: { userId: number; email: string },
   _requiredRole: 'admin' | 'driver' | 'customer'
 ): boolean {
-  // TODO: Implement actual role checking
-  // For now, return true
-  return true;
+  logger.warn('requireRole from middleware.ts is deprecated - use @/lib/admin-auth');
+  return false;
 }
 
 // ============================================================================

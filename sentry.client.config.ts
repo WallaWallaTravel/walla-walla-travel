@@ -7,6 +7,7 @@
  */
 
 import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/lib/logger';
 
 const SENTRY_DSN = process.env.NEXT_PUBLIC_SENTRY_DSN;
 
@@ -74,7 +75,7 @@ if (SENTRY_DSN) {
     beforeSend(event, hint) {
       // Don't send errors in development
       if (process.env.NODE_ENV === 'development') {
-        console.error('[Sentry] Would send:', event, hint);
+        logger.debug('[Sentry] Would send', { event, hint });
         return null;
       }
 

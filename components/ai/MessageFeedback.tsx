@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from 'react';
+import { logger } from '@/lib/logger';
 
 interface MessageFeedbackProps {
   queryId: number;
@@ -35,7 +36,7 @@ export default function MessageFeedback({ queryId, onFeedbackSubmit }: MessageFe
         }
       }
     } catch (error) {
-      console.error('Failed to submit feedback:', error);
+      logger.error('Failed to submit feedback', { error });
     } finally {
       setIsSubmitting(false);
     }
@@ -47,11 +48,11 @@ export default function MessageFeedback({ queryId, onFeedbackSubmit }: MessageFe
     setIsSubmitting(true);
     try {
       // In future, this could update the feedback with a comment
-      console.log('Comment submitted:', comment);
+      logger.debug('Comment submitted', { comment });
       setShowComment(false);
       setComment('');
     } catch (error) {
-      console.error('Failed to submit comment:', error);
+      logger.error('Failed to submit comment', { error });
     } finally {
       setIsSubmitting(false);
     }

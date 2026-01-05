@@ -13,6 +13,7 @@ import { PaymentMethodSelector } from '@/components/payment/PaymentMethodSelecto
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { useBookingTracking } from '@/lib/hooks/useBookingTracking';
+import { logger } from '@/lib/logger';
 
 const FORM_STORAGE_KEY = 'ww_reserve_form_data';
 const STEP_STORAGE_KEY = 'ww_reserve_form_step';
@@ -93,7 +94,7 @@ export default function ReserveRefinePage() {
           }
           setFormData(parsed);
         } catch (e) {
-          console.error('Failed to load saved form data:', e);
+          logger.error('Failed to load saved form data', { error: e });
         }
       }
       

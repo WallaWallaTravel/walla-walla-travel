@@ -12,6 +12,7 @@ import {
   MobileCheckbox,
   MobileInput,
 } from '@/components/mobile'
+import { logger } from '@/lib/logger'
 
 /**
  * QUICK INSPECTION PAGE
@@ -103,7 +104,7 @@ export default function QuickInspectionPage() {
         setError(data.error || 'Failed to save inspection')
       }
     } catch (err) {
-      console.error('Submit error:', err)
+      logger.error('Submit error', { error: err })
       setError('Network error - inspection saved locally')
       // Save to localStorage as backup
       const backup = {

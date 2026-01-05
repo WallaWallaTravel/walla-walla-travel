@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { logger } from '@/lib/logger';
 
 export interface PaymentOption {
   method: 'card' | 'check' | 'ach';
@@ -48,7 +49,7 @@ export function PaymentMethodSelector({
         setOptions(data.options);
       }
     } catch (error) {
-      console.error('Failed to load payment options:', error);
+      logger.error('Failed to load payment options', { error });
     } finally {
       setLoading(false);
     }

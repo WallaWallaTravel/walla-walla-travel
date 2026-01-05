@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { logger } from '@/lib/logger';
 
 interface Props {
   onClose: () => void;
@@ -57,7 +58,7 @@ export default function ManualBookingModal({ onClose, onComplete }: Props) {
         setPricing(result.data.pricing);
       }
     } catch (err) {
-      console.error('Failed to calculate pricing:', err);
+      logger.error('Failed to calculate pricing', { error: err });
     }
   };
 

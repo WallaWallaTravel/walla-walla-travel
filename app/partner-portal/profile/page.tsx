@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { logger } from '@/lib/logger';
 
 interface ProfileData {
   business_name: string;
@@ -37,7 +38,7 @@ export default function PartnerProfilePage() {
           setProfile(data.profile);
         }
       } catch (error) {
-        console.error('Failed to load profile:', error);
+        logger.error('Failed to load profile', { error });
       } finally {
         setLoading(false);
       }

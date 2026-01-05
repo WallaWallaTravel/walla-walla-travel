@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { logger } from '@/lib/logger';
 
 export default function ClientPortalPage() {
   const [lookupValue, setLookupValue] = useState('');
@@ -56,7 +57,7 @@ export default function ClientPortalPage() {
         setLoading(false);
       }
     } catch (err) {
-      console.error('Lookup error:', err);
+      logger.error('Lookup error', { error: err });
       setError('Unable to look up booking. Please try again.');
       setLoading(false);
     }

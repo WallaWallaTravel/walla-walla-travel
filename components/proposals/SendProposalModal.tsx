@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { logger } from '@/lib/logger';
 
 interface SendProposalModalProps {
   proposalNumber: string;
@@ -48,7 +49,7 @@ export function SendProposalModal({
       onSuccess();
       onClose();
     } catch (error) {
-      console.error('Failed to send proposal:', error);
+      logger.error('Failed to send proposal', { error });
       alert(error instanceof Error ? error.message : 'Failed to send proposal');
     } finally {
       setSending(false);

@@ -24,6 +24,7 @@ export * from './supabase/index';
 // Also provide a default 'supabase' export for legacy compatibility
 // This creates a browser client - for server-side use createServerClient instead
 import { createClient } from './supabase/client';
+import { logger } from '@/lib/logger';
 
 // Lazy-initialize browser client for legacy imports
 let _browserClient: ReturnType<typeof createClient> | null = null;
@@ -36,9 +37,7 @@ export const supabase = new Proxy({} as ReturnType<typeof createClient>, {
   get(_target, prop) {
     if (typeof window === 'undefined') {
       // Server-side: warn and return a stub
-      console.warn(
-        '[Supabase] Accessed browser client on server. Use createServerClient() for server components.'
-      );
+      logger.warn('[Supabase] Accessed browser client on server. Use createServerClient() for server components.');
       return () => Promise.resolve({ data: null, error: new Error('Use createServerClient on server') });
     }
 

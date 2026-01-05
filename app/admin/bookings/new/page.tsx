@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { logger } from '@/lib/logger';
 
 // Component that uses search params - must be wrapped in Suspense
 function BookingFormContent() {
@@ -59,7 +60,7 @@ function BookingFormContent() {
           setHotels(data.data || []);
         }
       } catch (error) {
-        console.error('Error fetching hotels:', error);
+        logger.error('Error fetching hotels', { error });
       }
     };
     fetchHotels();
@@ -136,17 +137,17 @@ function BookingFormContent() {
 
       if (!itineraryResponse.ok) {
         const errorData = await itineraryResponse.json();
-        console.error('Itinerary creation error:', errorData);
+        logger.error('Itinerary creation error', { errorData });
         throw new Error(errorData.error || 'Failed to create itinerary');
       }
 
       const itineraryData = await itineraryResponse.json();
-      console.log('Itinerary created:', itineraryData);
+      logger.info('Itinerary created', { itineraryData });
 
       alert('Booking created successfully!');
       router.push(`/itinerary-builder/${bookingId}`);
     } catch (error) {
-      console.error('Error creating booking:', error);
+      logger.error('Error creating booking', { error });
       alert('Error creating booking. Please try again.');
     } finally {
       setSaving(false);

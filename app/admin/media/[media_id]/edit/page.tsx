@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
+import { logger } from '@/lib/logger';
 
 interface Media {
   id: number;
@@ -75,7 +76,7 @@ export default function EditMediaPage() {
         router.push('/admin/media');
       }
     } catch (error) {
-      console.error('Failed to load media:', error);
+      logger.error('Failed to load media', { error });
       alert('Failed to load media');
       router.push('/admin/media');
     } finally {
@@ -111,7 +112,7 @@ export default function EditMediaPage() {
         alert(`Update failed: ${result.error}`);
       }
     } catch (error) {
-      console.error('Update error:', error);
+      logger.error('Update error', { error });
       alert('Failed to update media');
     } finally {
       setSaving(false);

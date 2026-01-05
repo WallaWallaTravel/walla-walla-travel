@@ -4,6 +4,7 @@
  */
 
 import { NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 
 /**
  * Error details can be various shapes depending on the error type
@@ -177,7 +178,7 @@ export function formatErrorResponse(error: ApiError): ErrorResponse {
  * Handle API errors and return appropriate NextResponse
  */
 export function handleApiError(error: unknown): NextResponse {
-  console.error('API Error:', error);
+  logger.error('API Error', { error });
 
   // Handle known API errors
   if (error instanceof ApiError) {

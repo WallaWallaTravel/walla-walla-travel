@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { loadStripe } from '@stripe/stripe-js';
 import { ErrorLogger } from '@/lib/error-logger';
+import { logger } from '@/lib/logger';
 
 const _stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 const errorLogger = ErrorLogger.getInstance();
@@ -46,7 +47,7 @@ export default function FinalInvoicePaymentPage() {
         setInvoice(data.invoice);
       }
     } catch (error) {
-      console.error('Error loading invoice:', error);
+      logger.error('Error loading invoice', { error });
       errorLogger.logError('Invoice Load Failed', error);
     } finally {
       setLoading(false);
@@ -91,7 +92,7 @@ export default function FinalInvoicePaymentPage() {
         window.location.href = data.payment_url;
       }
     } catch (error) {
-      console.error('Payment error:', error);
+      logger.error('Payment error', { error });
       errorLogger.logError('Payment Failed', error);
       alert('Payment failed. Please try again.');
     } finally {

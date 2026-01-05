@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db-helpers';
 import { z } from 'zod';
+import { logger } from '@/lib/logger';
 
 // CORS headers for ChatGPT
 const corsHeaders = {
@@ -160,7 +161,7 @@ export async function POST(request: NextRequest) {
       { status: 201, headers: corsHeaders }
     );
   } catch (error) {
-    console.error('GPT create-inquiry error:', error);
+    logger.error('GPT create-inquiry error', { error });
     return NextResponse.json(
       {
         success: false,

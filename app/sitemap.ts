@@ -1,5 +1,6 @@
 import { MetadataRoute } from 'next';
 import { getAllWinerySlugs } from '@/lib/data/wineries';
+import { logger } from '@/lib/logger';
 
 /**
  * Dynamic Sitemap Generation
@@ -76,7 +77,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }));
   } catch (error) {
     // If database is unavailable, return only static pages
-    console.error('Error fetching winery slugs for sitemap:', error);
+    logger.error('Error fetching winery slugs for sitemap', { error });
   }
 
   return [...staticPages, ...wineryPages];

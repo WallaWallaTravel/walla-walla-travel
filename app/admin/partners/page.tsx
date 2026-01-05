@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { logger } from '@/lib/logger';
 
 interface Partner {
   id: number;
@@ -43,7 +44,7 @@ export default function AdminPartnersPage() {
           setPartners(data.partners);
         }
       } catch (error) {
-        console.error('Failed to load partners:', error);
+        logger.error('Failed to load partners', { error });
       } finally {
         setLoading(false);
       }

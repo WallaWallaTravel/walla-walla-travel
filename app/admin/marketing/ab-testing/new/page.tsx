@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { logger } from '@/lib/logger'
 
 interface VariantData {
   name: string
@@ -103,7 +104,7 @@ export default function NewABTestPage() {
         alert('Failed to create test. Please try again.')
       }
     } catch (error) {
-      console.error('Error creating test:', error)
+      logger.error('Error creating test', { error })
       alert('Failed to create test. Please try again.')
     } finally {
       setLoading(false)

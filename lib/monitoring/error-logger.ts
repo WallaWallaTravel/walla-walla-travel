@@ -4,6 +4,7 @@
  */
 
 import { query } from '@/lib/db';
+import { logger } from '@/lib/logger';
 
 export type ErrorSeverity = 'warning' | 'error' | 'critical';
 
@@ -103,7 +104,7 @@ export async function logError(entry: ErrorLogEntry): Promise<number | null> {
     return result.rows[0]?.id;
   } catch (error) {
     // If error logging fails, log to console but don't throw
-    console.error('[Error Logger] Failed to log error to database:', error);
+    logger.error('[Error Logger] Failed to log error to database', { error });
     return null;
   }
 }
@@ -159,7 +160,7 @@ export async function getRecentErrors(options: {
     const result = await query(sql, params);
     return result.rows;
   } catch (error) {
-    console.error('[Error Logger] Failed to fetch recent errors:', error);
+    logger.error('[Error Logger] Failed to fetch recent errors', { error });
     return [];
   }
 }
@@ -211,7 +212,7 @@ export async function getErrorStats(hoursBack: number = 24): Promise<{
       unresolved: parseInt(row?.unresolved || '0')
     };
   } catch (error) {
-    console.error('[Error Logger] Failed to get error stats:', error);
+    logger.error('[Error Logger] Failed to get error stats', { error });
     return {
       total: 0,
       byType: {},
@@ -241,7 +242,7 @@ export async function resolveError(
     
     return true;
   } catch (error) {
-    console.error('[Error Logger] Failed to resolve error:', error);
+    logger.error('[Error Logger] Failed to resolve error', { error });
     return false;
   }
 }
@@ -318,7 +319,7 @@ export async function detectErrorPatterns(): Promise<{
       newErrorTypes: newErrorTypes.rows
     };
   } catch (error) {
-    console.error('[Error Logger] Failed to detect patterns:', error);
+    logger.error('[Error Logger] Failed to detect patterns', { error });
     return {
       repeatingErrors: [],
       errorSpikes: [],

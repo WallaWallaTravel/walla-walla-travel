@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { logger } from '@/lib/logger';
 
 interface NavItem {
   label: string;
@@ -77,7 +78,7 @@ export function AdminSidebar() {
           }));
         }
       } catch (error) {
-        console.error('Failed to fetch badge counts:', error);
+        logger.error('Failed to fetch badge counts', { error });
       }
     }
 
@@ -210,7 +211,7 @@ export function AdminMobileNav() {
     try {
       await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
     } catch (err) {
-      console.error('Logout error:', err);
+      logger.error('Logout error', { error: err });
     } finally {
       router.push('/login');
     }

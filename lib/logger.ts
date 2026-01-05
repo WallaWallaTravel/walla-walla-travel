@@ -23,14 +23,18 @@ interface LogContext {
   [key: string]: unknown;
 }
 
-// Try to import request context (may not be available in all environments)
+// Try to import request context (server-side only)
 let getRequestId: () => string = () => '';
-try {
-  // Dynamic import to avoid circular dependencies
-  const requestContext = require('./api/middleware/request-context');
-  getRequestId = requestContext.getRequestId;
-} catch {
-  // Request context not available
+
+// Only load request context on server (uses async_hooks which is Node.js-only)
+if (typeof window === 'undefined') {
+  try {
+    // Dynamic import to avoid circular dependencies and webpack bundling for client
+    const requestContext = require('./api/middleware/request-context');
+    getRequestId = requestContext.getRequestId;
+  } catch {
+    // Request context not available
+  }
 }
 
 interface LogEntry {

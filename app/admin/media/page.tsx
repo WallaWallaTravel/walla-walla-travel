@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { logger } from '@/lib/logger';
 
 interface Media {
   id: number;
@@ -63,7 +64,7 @@ export default function MediaLibraryPage() {
         setMedia(result.data || []);
       }
     } catch (error) {
-      console.error('Failed to load media:', error);
+      logger.error('Failed to load media', { error });
     } finally {
       setLoading(false);
     }
@@ -104,7 +105,7 @@ export default function MediaLibraryPage() {
         alert('Media deleted successfully');
       }
     } catch (error) {
-      console.error('Failed to delete media:', error);
+      logger.error('Failed to delete media', { error });
       alert('Failed to delete media');
     }
   };

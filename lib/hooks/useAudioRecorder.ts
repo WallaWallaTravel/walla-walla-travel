@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
+import { logger } from '@/lib/logger'
 
 export interface AudioRecorderState {
   isRecording: boolean
@@ -90,7 +91,7 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
       }
 
       mediaRecorder.onerror = (event: Event) => {
-        console.error('MediaRecorder error:', event)
+        logger.error('MediaRecorder error', { event })
         setError('Recording failed. Please try again.')
         setIsRecording(false)
       }
@@ -106,7 +107,7 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
       }, 100)
 
     } catch (err: unknown) {
-      console.error('Error accessing microphone:', err)
+      logger.error('Error accessing microphone', { error: err })
 
       const errorName = err instanceof Error && 'name' in err ? (err as { name: string }).name : ''
       if (errorName === 'NotAllowedError') {

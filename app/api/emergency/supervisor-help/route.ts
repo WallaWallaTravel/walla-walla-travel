@@ -3,6 +3,7 @@ import { successResponse, errorResponse, requireAuth } from '@/app/api/utils';
 import { query } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
+import { COMPANY_INFO } from '@/lib/config/company';
 
 // Request body schema
 const SupervisorHelpSchema = z.object({
@@ -57,9 +58,9 @@ export async function POST(request: NextRequest) {
     );
     const driver = driverResult.rows[0];
 
-    // Supervisor contact info (hardcoded for now)
-    const supervisorPhone = 'office-phone-number'; // TODO: Replace with actual phone
-    const supervisorEmail = 'evcritchlow@gmail.com'; // Eric as supervisor
+    // Supervisor contact info from company config
+    const supervisorPhone = process.env.SUPERVISOR_PHONE || COMPANY_INFO.phone.dialable;
+    const supervisorEmail = process.env.SUPERVISOR_EMAIL || 'evcritchlow@gmail.com';
 
     // Deep link for assigning vehicle
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://wallawalla.travel';
@@ -100,9 +101,8 @@ Driver ID: ${driverId}
       deepLink,
     });
 
-    // TODO: In production, integrate with:
-    // - Twilio for SMS: await twilioClient.messages.create({ to: supervisorPhone, body: smsMessage })
-    // - SendGrid/AWS SES for Email: await sendEmail({ to: supervisorEmail, subject, body })
+    // NOTE: In production, integrate with Twilio for SMS and SendGrid/AWS SES for email
+    // For now, notifications are logged and stored in database
 
     // Log to database for tracking
     try {

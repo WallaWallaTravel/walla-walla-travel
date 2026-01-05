@@ -17,6 +17,7 @@ import {
   haptics
 } from '@/components/mobile'
 import type { Vehicle } from '@/lib/types'
+import { logger } from '@/lib/logger'
 
 interface Props {
   driver: {
@@ -329,7 +330,7 @@ export function PostTripInspectionClient({ driver, beginningMileage = 0 }: Props
       router.push('/workflow')
       
     } catch (error) {
-      console.error('Submission error:', error)
+      logger.error('Submission error', { error })
       setError(error instanceof Error ? error.message : 'Error saving inspection')
       haptics.error()
       setSubmitting(false)

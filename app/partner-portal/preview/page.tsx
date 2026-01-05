@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { logger } from '@/lib/logger';
 
 interface PreviewData {
   business_name: string;
@@ -67,7 +68,7 @@ export default function PartnerPreviewPage() {
           setPreview(data.preview);
         }
       } catch (error) {
-        console.error('Failed to load preview:', error);
+        logger.error('Failed to load preview', { error });
       } finally {
         setLoading(false);
       }

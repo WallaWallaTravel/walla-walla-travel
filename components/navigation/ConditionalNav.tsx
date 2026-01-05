@@ -3,6 +3,7 @@
 // import React from 'react';
 import { usePathname } from 'next/navigation';
 import { BottomNav } from '@/components/ui/bottom-nav';
+import { logger } from '@/lib/logger';
 
 /**
  * Conditional Navigation Component
@@ -50,7 +51,7 @@ export function ConditionalNavigation() {
           // Ignore logout API errors
         });
       } catch (err) {
-        console.error('Logout error:', String(err));
+        logger.error('Logout error', { error: String(err) });
       } finally {
         window.location.href = '/login';
       }

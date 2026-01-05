@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { logger } from '@/lib/logger';
 
 interface Booking {
   id: number;
@@ -62,7 +63,7 @@ export default function TourOffersPage() {
 
       setLoading(false);
     } catch (error) {
-      console.error('Error loading data:', error);
+      logger.error('Error loading data', { error });
       setLoading(false);
     }
   };
@@ -99,7 +100,7 @@ export default function TourOffersPage() {
         throw new Error('Failed to create offer');
       }
     } catch (error) {
-      console.error('Error creating offer:', error);
+      logger.error('Error creating offer', { error });
       alert('Failed to create offer. Please try again.');
     } finally {
       setCreating(false);

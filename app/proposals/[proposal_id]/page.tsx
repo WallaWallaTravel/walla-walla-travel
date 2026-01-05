@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { COMPANY_INFO, getPhoneLink, getEmailLink } from '@/lib/config/company';
 import Footer from '@/components/Footer';
 import { getHourlyRate } from '@/lib/rate-config';
+import { logger } from '@/lib/logger';
 
 interface ServiceItem {
   id: string;
@@ -148,7 +149,7 @@ export default function ClientProposalView({ params }: { params: Promise<{ propo
         setMedia(data.data || []);
       }
     } catch (err) {
-      console.error('Failed to load media:', err);
+      logger.error('Failed to load media', { error: err });
     }
   };
 
@@ -218,7 +219,7 @@ export default function ClientProposalView({ params }: { params: Promise<{ propo
         alert(result.error || 'Failed to submit your response');
       }
     } catch (err) {
-      console.error('Error declining proposal:', err);
+      logger.error('Error declining proposal', { error: err });
       alert('Failed to submit your response. Please try again.');
     } finally {
       setDeclining(false);

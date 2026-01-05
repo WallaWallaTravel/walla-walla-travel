@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
+import { logger } from '@/lib/logger';
 
 /**
  * Shared Tour Ticket Booking Page
@@ -103,7 +104,7 @@ export default function BookSharedTourPage({ params }: { params: Promise<{ tour_
             setPricing(data.data);
           }
         } catch (err) {
-          console.error('Failed to fetch pricing:', err);
+          logger.error('Failed to fetch pricing', { error: err });
         }
       };
 

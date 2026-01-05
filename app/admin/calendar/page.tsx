@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { logger } from '@/lib/logger';
 
 interface Booking {
   id: number;
@@ -99,7 +100,7 @@ export default function CalendarView() {
         setDailySummaries(data.dailySummaries || {});
       }
     } catch (error) {
-      console.error('Error loading calendar data:', error);
+      logger.error('Error loading calendar data', { error });
     } finally {
       setLoading(false);
     }

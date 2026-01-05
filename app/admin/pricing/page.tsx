@@ -7,6 +7,7 @@
 
 import { useState, useEffect } from 'react';
 import { formatCurrency } from '@/lib/rate-config';
+import { logger } from '@/lib/logger';
 
 interface PricingTier {
   id: number;
@@ -109,7 +110,7 @@ function PricingCalculator() {
         });
       }
     } catch (error) {
-      console.error('Calculation error:', error);
+      logger.error('Calculation error', { error });
       // Show a fallback when API fails
       setResult({
         success: false,
@@ -327,7 +328,7 @@ export default function PricingAdminPage() {
         setModifiers(data.modifiers);
       }
     } catch (error) {
-      console.error('Error loading pricing:', error);
+      logger.error('Error loading pricing', { error });
     } finally {
       setLoading(false);
     }
@@ -348,7 +349,7 @@ export default function PricingAdminPage() {
         loadPricingData();
       }
     } catch (error) {
-      console.error('Error updating tier:', error);
+      logger.error('Error updating tier', { error });
     }
   };
 
@@ -809,7 +810,7 @@ export default function PricingAdminPage() {
                     setShowEditModal(false);
                     setEditingTier(null);
                   } catch (error) {
-                    console.error('Failed to save changes:', error);
+                    logger.error('Failed to save changes', { error });
                   }
                 }}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition"

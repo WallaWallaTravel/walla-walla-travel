@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import api from '@/lib/api-client'
 import { VehicleSelector } from '@/components/mobile'
+import { logger } from '@/lib/logger'
 import type {
   ClockStatus,
   UserProfile,
@@ -54,7 +55,7 @@ export default function WorkflowPage() {
         const permission = await navigator.permissions.query({ name: 'geolocation' });
         setLocationEnabled(permission.state === 'granted');
       } catch (_e) {
-        console.log('Location permission check failed');
+        logger.debug('Location permission check failed');
       }
     }
   }
@@ -121,7 +122,7 @@ export default function WorkflowPage() {
               }
             }
           } catch (error) {
-            console.error('Failed to load vehicle documents:', error);
+            logger.error('Failed to load vehicle documents', { error });
           }
         }
       }
@@ -153,7 +154,7 @@ export default function WorkflowPage() {
       }
 
     } catch (error) {
-      console.error('Dashboard load error:', error);
+      logger.error('Dashboard load error', { error });
       setStatusMessage({
         type: 'error',
         message: 'Failed to load dashboard data',
@@ -355,7 +356,7 @@ export default function WorkflowPage() {
       await fetch('/api/auth/logout', { method: 'POST' });
       router.push('/login');
     } catch (error) {
-      console.error('Logout error:', error);
+      logger.error('Logout error', { error });
     }
   }
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { logger } from '@/lib/logger'
 
 export default function WorkflowError({
   error,
@@ -10,7 +11,7 @@ export default function WorkflowError({
   reset: () => void
 }) {
   useEffect(() => {
-    console.error('Workflow error:', error)
+    logger.error('Workflow error', { error })
   }, [error])
 
   return (

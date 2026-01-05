@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { TouchButton, MobileCard, AlertBanner, BottomActionBar, BottomActionBarSpacer } from '@/components/mobile';
+import { logger } from '@/lib/logger';
 
 interface Driver {
   id: number;
@@ -61,7 +62,7 @@ export default function ClockInPage() {
         setVehicles(Array.isArray(vehiclesList) ? vehiclesList : []);
       }
     } catch (err) {
-      console.error('Error loading data:', err);
+      logger.error('Error loading data', { error: err });
       // Provide fallback vehicles for emergency use
       setVehicles([
         { id: 2, vehicle_number: 'Vehicle #2', capacity: 14, make: 'Mercedes', model: 'Sprinter' },
@@ -126,7 +127,7 @@ export default function ClockInPage() {
         setError(data.error || 'Failed to clock in');
       }
     } catch (err) {
-      console.error('Clock in error:', err);
+      logger.error('Clock in error', { error: err });
       setError('Network error. Please try again.');
     } finally {
       setLoading(false);

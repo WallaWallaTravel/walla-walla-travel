@@ -8,6 +8,7 @@
 import { wineryService, Winery, WinerySummary } from '@/lib/services/winery.service';
 import { cache } from 'react';
 import { query } from '@/lib/db';
+import { logger } from '@/lib/logger';
 
 // ============================================================================
 // Narrative Content Types
@@ -112,7 +113,7 @@ export const getWineryNarrativeContent = cache(async (wineryId: number): Promise
     };
   } catch (error) {
     // Return empty content if query fails (tables may not exist yet)
-    console.error('Error fetching narrative content:', error);
+    logger.error('Error fetching narrative content', { error });
     return {
       originStory: null,
       philosophy: null,

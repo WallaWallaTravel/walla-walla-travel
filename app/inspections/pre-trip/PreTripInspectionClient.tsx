@@ -17,6 +17,7 @@ import {
 } from '@/components/mobile'
 import { VoiceInspectionMode, VoiceModeFloatingButton } from '@/components/voice'
 import type { AssignedVehicle } from '@/lib/types'
+import { logger } from '@/lib/logger'
 
 interface Props {
   driver: {
@@ -244,7 +245,7 @@ export function PreTripInspectionClient({ driver }: Props) {
       router.push('/workflow')
       
     } catch (error) {
-      console.error('Submission error:', error)
+      logger.error('Submission error', { error })
       setError(error instanceof Error ? error.message : 'Error saving inspection')
       haptics.error()
       setSubmitting(false)

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import ImageCropModal from '@/components/partner/ImageCropModal';
+import { logger } from '@/lib/logger';
 
 // Pending image for cropping
 interface PendingImage {
@@ -120,7 +121,7 @@ export default function PhotosMediaPage() {
           setPhotos(data.photos);
         }
       } catch (err) {
-        console.error('Error fetching photos:', err);
+        logger.error('Error fetching photos', { error: err });
         setError(err instanceof Error ? err.message : 'Failed to load photos');
       } finally {
         setLoading(false);
@@ -228,7 +229,7 @@ export default function PhotosMediaPage() {
         [categoryId]: [...(prev[categoryId] || []), newPhoto],
       }));
     } catch (error) {
-      console.error('Upload error:', error);
+      logger.error('Upload error', { error });
       alert(error instanceof Error ? error.message : 'Failed to upload photo. Please try again.');
     } finally {
       setUploading(null);
@@ -289,7 +290,7 @@ export default function PhotosMediaPage() {
         [categoryId]: (prev[categoryId] || []).filter(p => p.id !== photoId),
       }));
     } catch (error) {
-      console.error('Delete error:', error);
+      logger.error('Delete error', { error });
       alert(error instanceof Error ? error.message : 'Failed to delete photo');
     }
   }, []);

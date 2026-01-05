@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { logger } from '@/lib/logger'
 
 export default function PartnerPortalError({
   error,
@@ -10,7 +11,7 @@ export default function PartnerPortalError({
   reset: () => void
 }) {
   useEffect(() => {
-    console.error('Partner portal error:', error)
+    logger.error('Partner portal error', { error })
   }, [error])
 
   return (

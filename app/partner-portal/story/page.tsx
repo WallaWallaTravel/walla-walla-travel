@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { WINERY_CONTENT_TYPES, CONTENT_TYPE_LABELS } from '@/lib/config/content-types';
+import { logger } from '@/lib/logger';
 
 interface StoryContent {
   id?: number;
@@ -99,7 +100,7 @@ export default function PartnerStoryPage() {
           }
         }
       } catch (error) {
-        console.error('Failed to load stories:', error);
+        logger.error('Failed to load stories', { error });
       } finally {
         setLoading(false);
       }

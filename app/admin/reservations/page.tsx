@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { logger } from '@/lib/logger';
 
 interface TourDayDetails {
   date: string;
@@ -83,7 +84,7 @@ export default function AdminReservationsPage() {
         setReservations(data.reservations);
       }
     } catch (error) {
-      console.error('Failed to load reservations:', error);
+      logger.error('Failed to load reservations', { error });
     } finally {
       setLoading(false);
     }
@@ -99,7 +100,7 @@ export default function AdminReservationsPage() {
         loadReservations();
       }
     } catch (error) {
-      console.error('Failed to mark as contacted:', error);
+      logger.error('Failed to mark as contacted', { error });
     }
   };
 
@@ -189,7 +190,7 @@ The Walla Walla Travel Team`;
         alert(`Failed to send: ${error.message || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error('Failed to send deposit request:', error);
+      logger.error('Failed to send deposit request', { error });
       alert('Failed to send deposit request');
     } finally {
       setSending(false);

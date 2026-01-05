@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { logger } from '@/lib/logger';
 
 interface Announcement {
   id: number;
@@ -95,7 +96,7 @@ export function AnnouncementBanner({ position = 'top' }: AnnouncementBannerProps
           setAnnouncements(data.announcements || []);
         }
       } catch (error) {
-        console.error('Failed to fetch announcements:', error);
+        logger.error('Failed to fetch announcements', { error });
       } finally {
         setLoading(false);
       }

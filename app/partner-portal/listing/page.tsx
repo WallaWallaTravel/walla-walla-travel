@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { EXPERIENCE_TAGS, EXPERIENCE_TAG_LABELS } from '@/lib/config/content-types';
+import { logger } from '@/lib/logger';
 
 interface ListingData {
   description: string;
@@ -96,7 +97,7 @@ export default function PartnerListingPage() {
           }
         }
       } catch (error) {
-        console.error('Failed to load listing:', error);
+        logger.error('Failed to load listing', { error });
       } finally {
         setLoading(false);
       }

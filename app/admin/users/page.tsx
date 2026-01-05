@@ -8,6 +8,7 @@ import { getSession } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { query } from '@/lib/db';
+import { logger } from '@/lib/logger';
 
 interface User {
   id: number;
@@ -28,7 +29,7 @@ async function getUsers(): Promise<User[]> {
     );
     return result.rows;
   } catch (error) {
-    console.error('[Users] Error fetching users:', error);
+    logger.error('[Users] Error fetching users', { error });
     return [];
   }
 }

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { logger } from '@/lib/logger';
 
 interface Winery {
   id: number;
@@ -34,7 +35,7 @@ export default function InvitePartnerPage() {
           setWineries(data.wineries || []);
         }
       } catch (error) {
-        console.error('Failed to load wineries:', error);
+        logger.error('Failed to load wineries', { error });
       }
     }
     fetchWineries();

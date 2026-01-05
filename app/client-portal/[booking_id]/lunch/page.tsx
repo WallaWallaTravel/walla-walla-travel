@@ -8,6 +8,7 @@ import RestaurantSelector from './components/RestaurantSelector';
 import MenuItemCard from './components/MenuItemCard';
 import OrderSummary from './components/OrderSummary';
 import SpecialRequests from './components/SpecialRequests';
+import { logger } from '@/lib/logger';
 
 interface Restaurant {
   id: number;
@@ -76,7 +77,7 @@ export default function LunchOrderPage() {
       if (restaurantsRes.ok) setRestaurants(await restaurantsRes.json());
       if (itineraryRes.ok) setItinerary(await itineraryRes.json());
     } catch (error) {
-      console.error('Error loading data:', error);
+      logger.error('Error loading data', { error });
     } finally {
       setLoading(false);
     }
@@ -165,7 +166,7 @@ export default function LunchOrderPage() {
         throw new Error('Failed to submit order');
       }
     } catch (error) {
-      console.error('Error submitting order:', error);
+      logger.error('Error submitting order', { error });
       alert('Failed to submit order. Please try again.');
     } finally {
       setSubmitting(false);

@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers'
 import { SignJWT, jwtVerify } from 'jose'
 import { query } from './db'
+import { logger } from '@/lib/logger'
 
 const secret = new TextEncoder().encode(
   process.env.SESSION_SECRET || 'development-secret-key-change-in-production'
@@ -80,7 +81,7 @@ export async function getCurrentUser(): Promise<User | null> {
 
     return users.rows[0] as User
   } catch (error) {
-    console.error('Error fetching user:', error)
+    logger.error('Error fetching user', { error })
     return null
   }
 }

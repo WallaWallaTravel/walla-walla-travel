@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { logger } from '@/lib/logger';
 
 interface Proposal {
   id: number;
@@ -35,7 +36,7 @@ export default function ProposalConfirmation({ params }: { params: Promise<{ pro
       const data = await response.json();
       setProposal(data.data);
     } catch (err) {
-      console.error('Error fetching proposal:', err);
+      logger.error('Error fetching proposal', { error: err });
     } finally {
       setLoading(false);
     }

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
+import { logger } from '@/lib/logger';
 
 interface Stop {
   id?: number;
@@ -75,7 +76,7 @@ export default function DriverTourDetailPage() {
       const data = await response.json();
       setTour(data.tour || data.data || data);
     } catch (err) {
-      console.error('Error loading tour:', err);
+      logger.error('Error loading tour', { error: err });
       setError('Failed to load tour details. Please try again.');
     } finally {
       setLoading(false);

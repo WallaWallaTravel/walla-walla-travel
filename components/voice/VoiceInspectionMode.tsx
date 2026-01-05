@@ -5,6 +5,7 @@ import { useVoiceRecognition } from '@/lib/voice/use-voice-recognition'
 import { useTTS, formatForTTS } from '@/lib/voice/use-tts'
 import type { InspectionCommand } from '@/lib/voice/command-parser'
 import { haptics } from '@/components/mobile'
+import { logger } from '@/lib/logger'
 
 interface InspectionItem {
   id: string
@@ -56,7 +57,7 @@ export function VoiceInspectionMode({
 
   // Handle voice command
   const handleVoiceResult = useCallback((command: InspectionCommand, transcript: string) => {
-    console.log('[VoiceMode] Command:', command, 'Transcript:', transcript)
+    logger.debug('[VoiceMode] Command received', { command, transcript })
     
     setLastCommand(command)
     setProcessingCommand(true)
@@ -179,7 +180,7 @@ export function VoiceInspectionMode({
     continuous: false, // We'll restart after each command
     onResult: handleVoiceResult,
     onError: (error) => {
-      console.error('[VoiceMode] Error:', error)
+      logger.error('[VoiceMode] Error', { error })
       setCommandFeedback(`⚠️ ${error}`)
       haptics.error()
     },

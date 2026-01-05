@@ -9,6 +9,7 @@ import { TourStop } from '../components/TourStop';
 import { PickupDropoff } from '../components/PickupDropoff';
 import { WinerySearch } from '../components/WinerySearch';
 import { AddWineryModal } from '../components/AddWineryModal';
+import { logger } from '@/lib/logger';
 
 export default function ItineraryBuilder({ params }: { params: Promise<{ booking_id: string }> }) {
   const unwrappedParams = use(params);
@@ -80,7 +81,7 @@ export default function ItineraryBuilder({ params }: { params: Promise<{ booking
         }
       } else {
         const errorData = await itineraryRes.json().catch(() => ({ error: 'Unknown error' }));
-        console.error('Failed to load itinerary:', errorData);
+        logger.error('Failed to load itinerary', { error: errorData });
       }
 
       if (wineriesRes.ok) {
@@ -88,7 +89,7 @@ export default function ItineraryBuilder({ params }: { params: Promise<{ booking
         setWineries(wineriesData.data || []);
       }
     } catch (error) {
-      console.error('Error loading data:', error);
+      logger.error('Error loading data', { error });
     } finally {
       setLoading(false);
     }
@@ -148,7 +149,7 @@ export default function ItineraryBuilder({ params }: { params: Promise<{ booking
         });
       }
     } catch (error) {
-      console.error('Error creating winery:', error);
+      logger.error('Error creating winery', { error });
       alert('Failed to create winery. Please try again.');
     }
   };
@@ -272,7 +273,7 @@ export default function ItineraryBuilder({ params }: { params: Promise<{ booking
       
       alert(`Travel time updated: ${travelMinutes} minutes`);
     } catch (error) {
-      console.error('Error calculating travel time:', error);
+      logger.error('Error calculating travel time', { error });
       alert('Could not calculate travel time. Using default.');
     }
   };
@@ -291,7 +292,7 @@ export default function ItineraryBuilder({ params }: { params: Promise<{ booking
       setItinerary({ ...itinerary, pickup_drive_time_minutes: travelMinutes });
       alert(`Pickup travel time updated: ${travelMinutes} minutes`);
     } catch (error) {
-      console.error('Error calculating pickup travel time:', error);
+      logger.error('Error calculating pickup travel time', { error });
       alert('Could not calculate pickup travel time.');
     }
   };
@@ -310,7 +311,7 @@ export default function ItineraryBuilder({ params }: { params: Promise<{ booking
       setItinerary({ ...itinerary, dropoff_drive_time_minutes: travelMinutes });
       alert(`Dropoff travel time updated: ${travelMinutes} minutes`);
     } catch (error) {
-      console.error('Error calculating dropoff travel time:', error);
+      logger.error('Error calculating dropoff travel time', { error });
       alert('Could not calculate dropoff travel time.');
     }
   };
@@ -457,7 +458,7 @@ export default function ItineraryBuilder({ params }: { params: Promise<{ booking
                     alert(`Failed to create itinerary: ${error.error || 'Unknown error'}`);
                   }
                 } catch (error) {
-                  console.error('Error creating itinerary:', error);
+                  logger.error('Error creating itinerary', { error });
                   alert('Failed to create itinerary. Please try again or contact support.');
                 }
               }}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { parseCommand, InspectionCommand } from './command-parser'
+import { logger } from '@/lib/logger'
 
 interface UseVoiceRecognitionOptions {
   continuous?: boolean
@@ -73,13 +74,13 @@ export function useVoiceRecognition(options: UseVoiceRecognitionOptions = {}) {
     recognition.maxAlternatives = 3
 
     recognition.onstart = () => {
-      console.log('[Voice] Recognition started')
+      logger.debug('[Voice] Recognition started')
       setState(prev => ({ ...prev, isListening: true, error: null }))
       onListening?.(true)
     }
 
     recognition.onend = () => {
-      console.log('[Voice] Recognition ended')
+      logger.debug('[Voice] Recognition ended')
       setState(prev => ({ ...prev, isListening: false }))
       onListening?.(false)
 
@@ -89,7 +90,7 @@ export function useVoiceRecognition(options: UseVoiceRecognitionOptions = {}) {
           try {
             recognitionRef.current?.start()
           } catch (_e) {
-            console.log('[Voice] Could not restart:', _e)
+            logger.debug('[Voice] Could not restart', { error: _e })
           }
         }, 100)
       }
@@ -118,7 +119,7 @@ export function useVoiceRecognition(options: UseVoiceRecognitionOptions = {}) {
       }
 
       if (finalTranscript) {
-        console.log('[Voice] Final transcript:', finalTranscript, 'Confidence:', bestConfidence)
+        logger.debug('[Voice] Final transcript', { finalTranscript, bestConfidence })
         
         const command = parseCommand(finalTranscript, bestConfidence)
         
@@ -135,7 +136,7 @@ export function useVoiceRecognition(options: UseVoiceRecognitionOptions = {}) {
     }
 
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-      console.error('[Voice] Recognition error:', event.error)
+      logger.error('[Voice] Recognition error', { error: event.error })
       
       let errorMessage = 'Voice recognition error'
       
@@ -196,13 +197,13 @@ export function useVoiceRecognition(options: UseVoiceRecognitionOptions = {}) {
     if (recognitionRef.current) {
       try {
         recognitionRef.current.start()
-        console.log('[Voice] Starting recognition...')
+        logger.debug('[Voice] Starting recognition...')
       } catch (error) {
-        console.error('[Voice] Failed to start:', error)
-        setState(prev => ({ 
-          ...prev, 
+        logger.error('[Voice] Failed to start', { error })
+        setState(prev => ({
+          ...prev,
           error: 'Failed to start voice recognition',
-          isListening: false 
+          isListening: false
         }))
       }
     }
@@ -210,7 +211,7 @@ export function useVoiceRecognition(options: UseVoiceRecognitionOptions = {}) {
 
   // Stop listening
   const stopListening = useCallback(() => {
-    console.log('[Voice] Stopping recognition...')
+    logger.debug('[Voice] Stopping recognition...')
     
     // Clear restart timeout
     if (restartTimeoutRef.current) {

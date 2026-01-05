@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import { prisma } from '@/lib/prisma'
+import { logger } from '@/lib/logger'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -178,7 +179,7 @@ Respond in this exact JSON format:
       imagePrompt: parsedResponse.imagePrompt,
     })
   } catch (error) {
-    console.error('Content generation error:', error)
+    logger.error('Content generation error', { error })
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to generate content' },
       { status: 500 }

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { sanitizeText } from '@/lib/security'
 import DOMPurify from 'isomorphic-dompurify'
+import { logger } from '@/lib/logger'
 
 interface Props {
   driver: {
@@ -49,7 +50,7 @@ export default function ClientNotesClient({ driver }: Props) {
           setItineraryWineries(['Rotie', 'Saviah', 'Zerba', 'Amavi'])
         }
       } catch (error) {
-        console.error('Error loading itinerary:', error)
+        logger.error('Error loading itinerary', { error })
         setItineraryWineries(['Rotie', 'Saviah', 'Zerba', 'Amavi'])
       }
     }
@@ -115,7 +116,7 @@ export default function ClientNotesClient({ driver }: Props) {
         })
 
     } catch (error) {
-      console.error('Error saving notes:', error)
+      logger.error('Error saving notes', { error })
       throw error
     }
   }

@@ -11,6 +11,7 @@ import {
   haptics
 } from '@/components/mobile'
 import { useRouter } from 'next/navigation'
+import { logger } from '@/lib/logger'
 
 interface Props {
   user?: {
@@ -133,7 +134,7 @@ export function DailyWorkflowClient({ user, userEmail }: Props) {
           }
         }
       } catch (error) {
-        console.error('Error loading progress:', error)
+        logger.error('Error loading progress', { error })
       } finally {
         setLoading(false)
       }
@@ -152,7 +153,7 @@ export function DailyWorkflowClient({ user, userEmail }: Props) {
       }
       localStorage.setItem('workflowProgress', JSON.stringify(progressData))
     } catch (error) {
-      console.error('Error saving progress:', error)
+      logger.error('Error saving progress', { error })
     }
   }
 
@@ -214,7 +215,7 @@ export function DailyWorkflowClient({ user, userEmail }: Props) {
     try {
       localStorage.removeItem('workflowProgress')
     } catch (error) {
-      console.error('Error resetting workflow:', error)
+      logger.error('Error resetting workflow', { error })
     }
     
     haptics.medium()

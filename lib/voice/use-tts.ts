@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { logger } from '@/lib/logger'
 
 interface UseTTSOptions {
   rate?: number // 0.1 to 10, default 1
@@ -139,7 +140,7 @@ export function useTTS(options: UseTTSOptions = {}) {
     }
 
     utterance.onerror = (event) => {
-      console.error('[TTS] Error:', event.error)
+      logger.error('[TTS] Error', { error: event.error })
       isProcessingRef.current = false
       setState(prev => ({ 
         ...prev, 

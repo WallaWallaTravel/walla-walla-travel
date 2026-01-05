@@ -7,6 +7,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiGet, ApiResponse } from '@/lib/utils/fetch-utils';
+import { logger } from '@/lib/logger';
 
 export interface UseDataFetchOptions {
   enabled?: boolean;
@@ -108,7 +109,7 @@ export function useDataFetch<T = any>(
       }
 
       setError(errorMessage);
-      console.error('Data fetch error:', errorMessage);
+      logger.error('Data fetch error', { error: errorMessage });
     } finally {
       if (isMounted.current) {
         setLoading(false);

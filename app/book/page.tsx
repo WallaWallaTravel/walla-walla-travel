@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useBookingTracking } from '@/lib/hooks/useBookingTracking';
+import { logger } from '@/lib/logger';
 
 /**
  * Book a Tour - Entry Point
@@ -266,7 +267,7 @@ function BookTourPageContent() {
         throw new Error(result.error || 'Failed to submit booking request');
       }
 
-      console.log('Booking Request Created:', result);
+      logger.info('Booking Request Created', { result });
 
       // Track successful submission
       trackBookingProgress({
@@ -291,7 +292,7 @@ function BookTourPageContent() {
       });
       setSubmitStatus('success');
     } catch (error) {
-      console.error('Booking error:', error);
+      logger.error('Booking error', { error });
       setSubmitStatus('error');
     } finally {
       setIsSubmitting(false);

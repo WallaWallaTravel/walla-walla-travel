@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { logger } from '@/lib/logger';
 
 interface Tour {
   id: number;
@@ -40,7 +41,7 @@ export default function DriverSchedulePage() {
         setTours(data.tours || []);
       }
     } catch (error) {
-      console.error('Error loading tours:', error);
+      logger.error('Error loading tours', { error });
     } finally {
       setLoading(false);
     }

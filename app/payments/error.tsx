@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import Link from 'next/link'
+import { logger } from '@/lib/logger'
 
 export default function PaymentsError({
   error,
@@ -12,7 +13,7 @@ export default function PaymentsError({
 }) {
   useEffect(() => {
     // Log payment errors - critical for debugging
-    console.error('Payment error:', error)
+    logger.error('Payment error', { error })
   }, [error])
 
   return (

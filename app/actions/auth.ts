@@ -2,27 +2,30 @@
 
 import { login } from '@/lib/auth'
 import { redirect } from 'next/navigation'
+import { logger } from '@/lib/logger'
 
 export async function loginAction(email: string, password: string) {
-  console.log('🔵 Login attempt:', email)
-  
+  logger.debug('Login attempt', { email })
+
   try {
-    console.log('🔵 Calling login function...')
+    logger.debug('Calling login function')
     const result = await login(email, password)
-    console.log('🔵 Login result:', result)
-    
+    logger.debug('Login result', { result })
+
     if (!result.success) {
-      console.log('🔴 Login failed:', result.error)
+      logger.debug('Login failed', { error: result.error })
       return { error: result.error }
     }
-    
-    console.log('✅ Login successful, redirecting...')
+
+    logger.debug('Login successful, redirecting')
     // Redirect to workflow on success
     redirect('/workflow')
   } catch (error) {
-    console.error('🔴 Login action error:', error)
-    console.error('🔴 Error type:', error instanceof Error ? error.constructor.name : typeof error)
-    console.error('🔴 Error message:', error instanceof Error ? error.message : String(error))
+    logger.error('Login action error', {
+      error,
+      errorType: error instanceof Error ? error.constructor.name : typeof error,
+      errorMessage: error instanceof Error ? error.message : String(error)
+    })
     return { error: 'An error occurred during login' }
   }
 }

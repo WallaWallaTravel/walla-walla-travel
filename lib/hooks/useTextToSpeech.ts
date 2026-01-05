@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { logger } from '@/lib/logger'
 
 interface TextToSpeechOptions {
   lang?: string
@@ -101,13 +102,13 @@ export function useTextToSpeech(options: TextToSpeechOptions = {}): TextToSpeech
         }
 
         utterance.onstart = () => {
-          console.log('TTS started')
+          logger.debug('TTS started')
           setIsSpeaking(true)
           setIsPaused(false)
         }
 
         utterance.onend = () => {
-          console.log('TTS ended')
+          logger.debug('TTS ended')
           setIsSpeaking(false)
           setIsPaused(false)
           if (onEnd) onEnd()
@@ -115,7 +116,7 @@ export function useTextToSpeech(options: TextToSpeechOptions = {}): TextToSpeech
         }
 
         utterance.onerror = (event) => {
-          console.error('TTS error:', event)
+          logger.error('TTS error', { error: event.error })
           setIsSpeaking(false)
           setIsPaused(false)
           const error = new Error(`Speech synthesis error: ${event.error}`)

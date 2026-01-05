@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { logger } from '@/lib/logger';
 
 interface HealthCheck {
   type: string;
@@ -32,7 +33,7 @@ export default function SystemDashboardPage() {
       setHealth(data);
       setLastUpdate(new Date());
     } catch (error) {
-      console.error('Failed to fetch system health:', error);
+      logger.error('Failed to fetch system health', { error });
     } finally {
       setLoading(false);
     }

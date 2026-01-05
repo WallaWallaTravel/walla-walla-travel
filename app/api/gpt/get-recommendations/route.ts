@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db-helpers';
+import { logger } from '@/lib/logger';
 
 interface WineryRow {
   id: number;
@@ -251,7 +252,7 @@ export async function POST(request: NextRequest) {
       { headers: corsHeaders }
     );
   } catch (error) {
-    console.error('GPT get-recommendations error:', error);
+    logger.error('GPT get-recommendations error', { error });
     return NextResponse.json(
       {
         success: false,

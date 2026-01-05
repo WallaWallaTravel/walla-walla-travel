@@ -7,6 +7,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { logger } from '@/lib/logger';
 
 export default function ContributePage() {
   const router = useRouter();
@@ -46,7 +47,7 @@ export default function ContributePage() {
       router.push(`/contribute/${code.toUpperCase()}`);
       
     } catch (err: unknown) {
-      console.error('Access error:', err);
+      logger.error('Access error', { error: err });
       setError(err instanceof Error ? err.message : 'Invalid access code. Please check and try again.');
     } finally {
       setLoading(false);

@@ -86,7 +86,7 @@ function EmbedBookingContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Submit to API
+    // Embed widget communicates via postMessage - parent page handles actual booking
     setSubmitted(true);
     
     // Notify parent of successful submission

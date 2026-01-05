@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { logger } from '@/lib/logger'
 
 interface ServiceWorkerState {
   isSupported: boolean
@@ -22,7 +23,7 @@ export function useServiceWorker() {
   useEffect(() => {
     // Skip service worker registration in development
     if (process.env.NODE_ENV === 'development') {
-      console.log('Service Worker disabled in development mode')
+      logger.debug('Service Worker disabled in development mode')
       setState(prev => ({ ...prev, isSupported: false }))
       return
     }
@@ -42,7 +43,7 @@ export function useServiceWorker() {
           scope: '/',
         })
 
-        console.log('Service Worker registered:', registration)
+        logger.info('Service Worker registered', { scope: registration.scope })
 
         setState(prev => ({
           ...prev,
@@ -53,17 +54,17 @@ export function useServiceWorker() {
         // Listen for updates
         registration.addEventListener('updatefound', () => {
           const newWorker = registration.installing
-          console.log('Service Worker update found')
+          logger.info('Service Worker update found')
 
           newWorker?.addEventListener('statechange', () => {
             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              console.log('New Service Worker available - reload to update')
+              logger.info('New Service Worker available - reload to update')
               // Optionally show a toast to user about update
             }
           })
         })
       } catch (error) {
-        console.error('Service Worker registration failed:', error)
+        logger.error('Service Worker registration failed', { error })
         setState(prev => ({
           ...prev,
           error: error as Error,
@@ -75,7 +76,7 @@ export function useServiceWorker() {
 
     // Listen for online/offline events
     const handleOnline = () => {
-      console.log('App is online')
+      logger.info('App is online')
       setState(prev => ({ ...prev, isOnline: true }))
       
       // Trigger sync when coming back online
@@ -88,7 +89,7 @@ export function useServiceWorker() {
     }
 
     const handleOffline = () => {
-      console.log('App is offline')
+      logger.info('App is offline')
       setState(prev => ({ ...prev, isOnline: false }))
     }
 
@@ -100,15 +101,15 @@ export function useServiceWorker() {
 
     // Listen for messages from service worker
     const handleMessage = (event: MessageEvent) => {
-      console.log('Message from Service Worker:', event.data)
+      logger.debug('Message from Service Worker', { data: event.data })
 
       if (event.data.type === 'SYNC_COMPLETE') {
-        console.log('Sync complete:', event.data.tag)
+        logger.info('Sync complete', { tag: event.data.tag })
         // Optionally trigger a UI update
       }
 
       if (event.data.type === 'SYNC_FAILED') {
-        console.error('Sync failed:', event.data.error)
+        logger.error('Sync failed', { error: event.data.error })
       }
     }
 
@@ -124,7 +125,7 @@ export function useServiceWorker() {
   // Method to manually trigger sync
   const triggerSync = async (tag: string = 'inspections') => {
     if (!state.registration) {
-      console.warn('Service Worker not registered')
+      logger.warn('Service Worker not registered')
       return false
     }
 
@@ -133,7 +134,7 @@ export function useServiceWorker() {
         // SyncManager is not in standard TypeScript definitions
         const syncManager = (state.registration as { sync: { register: (tag: string) => Promise<void> } }).sync
         await syncManager.register(tag)
-        console.log('Background sync registered:', tag)
+        logger.info('Background sync registered', { tag })
         return true
       } else {
         // Fallback: manual sync via message
@@ -144,7 +145,7 @@ export function useServiceWorker() {
         return true
       }
     } catch (error) {
-      console.error('Failed to trigger sync:', error)
+      logger.error('Failed to trigger sync', { error })
       return false
     }
   }

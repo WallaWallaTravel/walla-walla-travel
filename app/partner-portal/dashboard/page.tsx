@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { logger } from '@/lib/logger';
 
 interface PartnerProfile {
   id: number;
@@ -48,7 +49,7 @@ export default function PartnerDashboardPage() {
           setStats(data.stats);
         }
       } catch (error) {
-        console.error('Failed to load dashboard:', error);
+        logger.error('Failed to load dashboard', { error });
       } finally {
         setLoading(false);
       }

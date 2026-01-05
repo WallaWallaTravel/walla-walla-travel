@@ -8,6 +8,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { logger } from '@/lib/logger';
 
 // ============================================================================
 // Types
@@ -75,7 +76,7 @@ export default function KBIngestPage() {
         setBusinesses(data.data || []);
       }
     } catch (error) {
-      console.error('Failed to fetch businesses:', error);
+      logger.error('Failed to fetch businesses', { error });
     }
   }
 
@@ -104,7 +105,7 @@ export default function KBIngestPage() {
         alert(error.error?.message || 'Failed to create business');
       }
     } catch (error) {
-      console.error('Failed to create business:', error);
+      logger.error('Failed to create business', { error });
       alert('Failed to create business');
     } finally {
       setCreatingBusiness(false);
@@ -144,7 +145,7 @@ export default function KBIngestPage() {
         setTopics('');
       }
     } catch (error) {
-      console.error('Ingestion failed:', error);
+      logger.error('Ingestion failed', { error });
       setResult({
         success: false,
         error: { message: 'Failed to submit content' },

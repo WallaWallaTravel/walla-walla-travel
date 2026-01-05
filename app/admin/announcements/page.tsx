@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { logger } from '@/lib/logger';
 
 interface Announcement {
   id: number;
@@ -81,7 +82,7 @@ export default function AdminAnnouncementsPage() {
         setAnnouncements(data.announcements || []);
       }
     } catch (error) {
-      console.error('Failed to load announcements:', error);
+      logger.error('Failed to load announcements', { error });
       setMessage({ type: 'error', text: 'Failed to load announcements' });
     } finally {
       setLoading(false);

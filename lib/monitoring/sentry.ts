@@ -14,6 +14,7 @@
  */
 
 import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/lib/logger';
 
 interface ErrorContext {
   [key: string]: unknown;
@@ -57,7 +58,7 @@ class ErrorMonitoring {
    */
   captureException(error: Error, context?: ErrorContext): string | undefined {
     if (!this.enabled) {
-      console.error('[Error]', error.message, context);
+      logger.error('[Error]', { message: error.message, context });
       return undefined;
     }
 
@@ -79,7 +80,7 @@ class ErrorMonitoring {
     context?: ErrorContext
   ): string | undefined {
     if (!this.enabled) {
-      console.log(`[${level.toUpperCase()}] ${message}`, context);
+      logger.info(`[${level.toUpperCase()}] ${message}`, { context });
       return undefined;
     }
 

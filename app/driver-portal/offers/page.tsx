@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { logger } from '@/lib/logger';
 
 interface TourOffer {
   id: number;
@@ -45,7 +46,7 @@ export default function DriverOffersPage() {
       const data = await response.json();
       setOffers(data.offers || []);
     } catch (error) {
-      console.error('Error loading offers:', error);
+      logger.error('Error loading offers', { error });
     } finally {
       setLoading(false);
     }
@@ -73,7 +74,7 @@ export default function DriverOffersPage() {
         throw new Error('Failed to respond to offer');
       }
     } catch (error) {
-      console.error('Error responding to offer:', error);
+      logger.error('Error responding to offer', { error });
       alert('Failed to respond. Please try again.');
     } finally {
       setResponding(null);
