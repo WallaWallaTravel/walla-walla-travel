@@ -208,3 +208,20 @@ export async function expectErrorResponse(response: Response, expectedStatus: nu
   expect(data.error).toBeDefined();
   return data.error;
 }
+
+
+// Test utility smoke tests
+describe('Test Utilities', () => {
+  it('should export createMockQueryResult', () => {
+    expect(typeof require('./test-utils').createMockQueryResult).toBe('function');
+  });
+
+  it('should export generateRandomEmail', () => {
+    expect(typeof require('./test-utils').generateRandomEmail).toBe('function');
+  });
+
+  it('should generate valid email format', () => {
+    const email = require('./test-utils').generateRandomEmail();
+    expect(email).toMatch(/@example\.com$/);
+  });
+});

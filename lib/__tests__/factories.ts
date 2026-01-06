@@ -6,11 +6,12 @@
 import {
   generateRandomString,
   generateRandomEmail,
-  generateRandomPhone
+  generateRandomPhone,
+  getNextWeekDate
 } from './test-utils';
 
 // Re-export utility functions for convenience
-export { generateRandomEmail, generateRandomPhone, generateRandomString } from './test-utils';
+export { generateRandomEmail, generateRandomPhone, generateRandomString, getNextWeekDate } from './test-utils';
 
 // Customer factory
 export function createMockCustomer(overrides: Record<string, unknown> = {}) {
@@ -294,4 +295,164 @@ export function createMockReservationRequest(overrides: Record<string, unknown> 
   };
 }
 
+// ============================================================================
+// Payment & Pricing Factories (Phase 1)
+// ============================================================================
 
+// Stripe payment intent factory
+export function createMockPaymentIntent(overrides: Record<string, unknown> = {}) {
+  return {
+    id: `pi_test_${generateRandomString(20)}`,
+    object: 'payment_intent',
+    amount: 15000,
+    currency: 'usd',
+    status: 'succeeded',
+    client_secret: `pi_test_${generateRandomString(20)}_secret_test`,
+    created: Math.floor(Date.now() / 1000),
+    metadata: {},
+    ...overrides,
+  };
+}
+
+// Pricing rule factory (for database mocks)
+export function createMockPricingRule(overrides: Record<string, unknown> = {}) {
+  return {
+    id: Math.floor(Math.random() * 10000),
+    vehicle_type: 'sprinter',
+    duration_hours: 6,
+    base_price: '800.00',
+    weekend_multiplier: '1.20',
+    is_active: true,
+    priority: 1,
+    is_weekend: false,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    ...overrides,
+  };
+}
+
+// Pricing result factory
+export function createMockPricingDetails(overrides: Record<string, unknown> = {}) {
+  const basePrice = (overrides.basePrice as number) || 800;
+  const gratuity = basePrice * 0.15;
+  const taxes = basePrice * 0.09;
+  const totalPrice = basePrice + gratuity + taxes;
+  const depositAmount = totalPrice * 0.5;
+  const finalPaymentAmount = totalPrice - depositAmount;
+
+  return {
+    basePrice: Math.round(basePrice * 100) / 100,
+    gratuity: Math.round(gratuity * 100) / 100,
+    taxes: Math.round(taxes * 100) / 100,
+    totalPrice: Math.round(totalPrice * 100) / 100,
+    depositAmount: Math.round(depositAmount * 100) / 100,
+    finalPaymentAmount: Math.round(finalPaymentAmount * 100) / 100,
+    vehicleType: 'sprinter' as const,
+    ...overrides,
+  };
+}
+
+// ============================================================================
+// Vehicle & Availability Factories (Phase 2)
+// ============================================================================
+
+// Vehicle factory
+export function createMockVehicle(overrides: Record<string, unknown> = {}) {
+  return {
+    id: Math.floor(Math.random() * 10000),
+    name: `Vehicle ${generateRandomString(5)}`,
+    make: 'Mercedes',
+    model: 'Sprinter',
+    year: 2024,
+    license_plate: `WA-${generateRandomString(6).toUpperCase()}`,
+    capacity: 14,
+    vehicle_type: 'sprinter',
+    status: 'available',
+    brand_id: 1,
+    is_active: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    ...overrides,
+  };
+}
+
+// Availability block factory
+export function createMockAvailabilityBlock(overrides: Record<string, unknown> = {}) {
+  const startTime = new Date();
+  const endTime = new Date(startTime.getTime() + 6 * 60 * 60 * 1000);
+
+  return {
+    id: Math.floor(Math.random() * 10000),
+    vehicle_id: Math.floor(Math.random() * 10000),
+    booking_id: null,
+    block_type: 'booking',
+    start_time: startTime.toISOString(),
+    end_time: endTime.toISOString(),
+    reason: null,
+    hold_expires_at: null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    ...overrides,
+  };
+}
+
+// Availability check result factory
+export function createMockAvailabilityResult(overrides: Record<string, unknown> = {}) {
+  return {
+    available: true,
+    vehicle_id: Math.floor(Math.random() * 10000),
+    vehicle_name: 'Mercedes Sprinter',
+    conflicts: [],
+    ...overrides,
+  };
+}
+
+// ============================================================================
+// Auth & User Factories (Phase 3)
+// ============================================================================
+
+// User factory
+export function createMockUser(overrides: Record<string, unknown> = {}) {
+  return {
+    id: Math.floor(Math.random() * 10000),
+    email: generateRandomEmail(),
+    name: `Test User ${generateRandomString(5)}`,
+    password_hash: '$2b$10$testhashedpassword',
+    role: 'admin',
+    is_active: true,
+    last_login: new Date().toISOString(),
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    ...overrides,
+  };
+}
+
+// Session factory
+export function createMockSession(overrides: Record<string, unknown> = {}) {
+  return {
+    userId: Math.floor(Math.random() * 10000).toString(),
+    email: generateRandomEmail(),
+    name: `Test User ${generateRandomString(5)}`,
+    role: 'admin',
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.now() / 1000) + 3600,
+    ...overrides,
+  };
+}
+
+
+
+// Factory smoke tests - ensure factories are properly exported
+describe('Test Factories', () => {
+  it('should export createMockCustomer', () => {
+    expect(typeof require('./factories').createMockCustomer).toBe('function');
+  });
+
+  it('should export createMockBooking', () => {
+    expect(typeof require('./factories').createMockBooking).toBe('function');
+  });
+
+  it('should export createMockProposal', () => {
+    expect(typeof require('./factories').createMockProposal).toBe('function');
+  });
+});
