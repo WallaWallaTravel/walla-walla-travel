@@ -15,7 +15,7 @@ export default defineConfig({
     ['list'],
   ],
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: 'http://localhost:4100',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
@@ -31,8 +31,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:3000',
+    command: 'PORT=4100 npm run dev',
+    url: 'http://localhost:4100',
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
   },

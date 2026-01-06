@@ -7,18 +7,24 @@ test.describe('Booking Flow', () => {
 
   test('displays booking page correctly', async ({ page }) => {
     await expect(page).toHaveTitle(/Book|Walla Walla/i);
-    await expect(page.getByRole('main')).toBeVisible();
+    // Use specific selector since there are nested main elements (layout + page)
+    await expect(page.locator('#main-content')).toBeVisible();
   });
 
   test('shows tour options', async ({ page }) => {
-    // Look for tour selection elements
-    const tourCards = page.locator('[data-testid="tour-card"], .tour-card, [class*="tour"]');
-    await expect(tourCards.first()).toBeVisible({ timeout: 10000 });
+    // Step 1 shows provider selection cards (buttons with provider info)
+    // Look for provider selection buttons or the heading
+    const providerSection = page.locator('button:has-text("NW Touring"), button:has-text("Herding Cats"), h1:has-text("Choose Your Experience")');
+    await expect(providerSection.first()).toBeVisible({ timeout: 10000 });
   });
 
-  test('shows date picker', async ({ page }) => {
-    // Find date selection element
-    const datePicker = page.locator('input[type="date"], [data-testid="date-picker"], [class*="calendar"]');
+  test('shows date picker after selecting provider', async ({ page }) => {
+    // Step 1: Select a provider first
+    const providerButton = page.locator('button:has-text("NW Touring")');
+    await providerButton.click();
+
+    // Step 2: Now date picker should be visible
+    const datePicker = page.locator('input[type="date"]');
     await expect(datePicker.first()).toBeVisible({ timeout: 10000 });
   });
 
@@ -52,7 +58,8 @@ test.describe('Booking Flow', () => {
     await page.setViewportSize({ width: 375, height: 667 });
     await page.reload();
 
-    await expect(page.getByRole('main')).toBeVisible();
+    // Use specific selector since there are nested main elements
+    await expect(page.locator('#main-content')).toBeVisible();
     // Ensure content is not horizontally scrollable
     const scrollWidth = await page.evaluate(() => document.body.scrollWidth);
     const clientWidth = await page.evaluate(() => document.body.clientWidth);
