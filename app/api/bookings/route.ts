@@ -50,23 +50,24 @@ const CreateBookingSchema = z.object({
  * GET /api/bookings
  * List bookings with optional year/month filter
  */
-export const GET = withErrorHandling(async (request: NextRequest) => {
-  const searchParams = request.nextUrl.searchParams;
-  const year = searchParams.get('year');
-  const month = searchParams.get('month');
+export const GET = withRateLimit(rateLimiters.api)(
+  withErrorHandling(async (request: NextRequest) => {
+    const searchParams = request.nextUrl.searchParams;
+    const year = searchParams.get('year');
+    const month = searchParams.get('month');
 
-  const result = await bookingService.list({
-    year: year || undefined,
-    month: month || undefined,
-    limit: 500, // Higher limit for admin views
-  });
+    const result = await bookingService.list({
+      year: year || undefined,
+      month: month || undefined,
+      limit: 500, // Higher limit for admin views
+    });
 
-  return NextResponse.json({ 
-    success: true, 
-    bookings: result.data,
-    total: result.total,
-  });
-});
+    return NextResponse.json({
+      success: true,
+      bookings: result.data,
+      total: result.total,
+    });
+  }));
 
 /**
  * POST /api/bookings
