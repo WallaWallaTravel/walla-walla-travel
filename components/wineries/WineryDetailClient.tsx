@@ -7,10 +7,12 @@ import { usePageContextStore } from '@/lib/stores/pageContext';
 import { useAnalyticsStore } from '@/lib/stores/analytics-simple';
 import type { Winery, WineryNarrativeContent } from '@/lib/data/wineries';
 import { INSIDER_TIP_TYPES } from '@/lib/config/content-types';
+import type { FAQ } from '@/components/seo/FAQJsonLd';
 
 interface WineryDetailClientProps {
   winery: Winery;
   narrativeContent?: WineryNarrativeContent;
+  faqs?: FAQ[];
 }
 
 // Map tip types to icons and labels
@@ -24,7 +26,7 @@ const TIP_TYPE_CONFIG: Record<string, { icon: string; label: string }> = {
   [INSIDER_TIP_TYPES.PRACTICAL]: { icon: '📋', label: 'Practical Tip' },
 };
 
-export function WineryDetailClient({ winery, narrativeContent }: WineryDetailClientProps) {
+export function WineryDetailClient({ winery, narrativeContent, faqs = [] }: WineryDetailClientProps) {
   const setWineryContext = usePageContextStore((state) => state.setWineryContext);
   const clearContext = usePageContextStore((state) => state.clearContext);
   const analytics = useAnalyticsStore();
@@ -285,6 +287,36 @@ export function WineryDetailClient({ winery, narrativeContent }: WineryDetailCli
                       );
                     })}
                   </div>
+                </div>
+              </section>
+            )}
+
+            {/* Frequently Asked Questions */}
+            {faqs.length > 0 && (
+              <section className="mt-12 pt-8 border-t border-gray-100">
+                <h2 className="text-2xl font-serif font-bold text-gray-900 mb-6 flex items-center gap-2">
+                  <span className="text-2xl">❓</span>
+                  Frequently Asked Questions
+                </h2>
+                <div className="space-y-4">
+                  {faqs.map((faq, index) => (
+                    <details
+                      key={index}
+                      className="group bg-white rounded-xl border border-gray-200 hover:border-[#8B1538]/30 transition-colors"
+                    >
+                      <summary className="flex items-center justify-between p-4 cursor-pointer list-none">
+                        <span className="font-medium text-gray-900 pr-4">{faq.question}</span>
+                        <span className="text-[#8B1538] group-open:rotate-180 transition-transform">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </span>
+                      </summary>
+                      <div className="px-4 pb-4 text-gray-600 border-t border-gray-100 pt-3">
+                        {faq.answer}
+                      </div>
+                    </details>
+                  ))}
                 </div>
               </section>
             )}

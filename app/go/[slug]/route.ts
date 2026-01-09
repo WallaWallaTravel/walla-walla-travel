@@ -1,0 +1,97 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { logger } from '@/lib/logger';
+
+/**
+ * GET /go/[slug]
+ *
+ * Smart redirect for booking tracking:
+ * 1. Looks up winery by slug
+ * 2. Logs the click for revenue attribution
+ * 3. Redirects to winery's website/booking page
+ *
+ * Usage: <a href="/go/sleight-of-hand">Book Tasting</a>
+ */
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ slug: string }> }
+) {
+  const { slug } = await params;
+
+  try {
+    // Look up winery by slug
+    const winery = await prisma.wineries.findUnique({
+      where: { slug },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        website: true,
+        is_active: true,
+      },
+    });
+
+    if (!winery) {
+      logger.warn(`[Booking Redirect] Winery not found: ${slug}`);
+      // Redirect to wineries listing if not found
+      return NextResponse.redirect(new URL('/wineries', request.url));
+    }
+
+    if (!winery.is_active) {
+      logger.warn(`[Booking Redirect] Winery inactive: ${slug}`);
+      return NextResponse.redirect(new URL('/wineries', request.url));
+    }
+
+    // Get tracking metadata from request
+    const referrer = request.headers.get('referer') || null;
+    const userAgent = request.headers.get('user-agent') || null;
+    const forwardedFor = request.headers.get('x-forwarded-for');
+    const ip = forwardedFor?.split(',')[0]?.trim() || null;
+
+    // Log the click for analytics
+    try {
+      await prisma.$executeRaw`
+        INSERT INTO booking_clicks (
+          winery_id,
+          winery_slug,
+          referrer,
+          user_agent,
+          ip_address,
+          created_at
+        ) VALUES (
+          ${winery.id},
+          ${winery.slug},
+          ${referrer},
+          ${userAgent},
+          ${ip},
+          NOW()
+        )
+      `;
+    } catch (logError) {
+      // Don't block redirect if logging fails - table might not exist yet
+      logger.warn(`[Booking Redirect] Failed to log click: ${logError}`);
+    }
+
+    logger.info(`[Booking Redirect] ${winery.name} (${slug}) → ${winery.website || 'no website'}`, {
+      winery_id: winery.id,
+      referrer,
+    });
+
+    // Determine destination URL
+    const destination = winery.website || `https://wallawalla.travel/wineries/${slug}`;
+
+    // Ensure destination is a full URL
+    const redirectUrl = destination.startsWith('http')
+      ? destination
+      : `https://${destination}`;
+
+    // Redirect to winery's website
+    return NextResponse.redirect(redirectUrl, {
+      status: 302, // Temporary redirect (allows tracking changes)
+    });
+  } catch (error) {
+    logger.error(`[Booking Redirect] Error for ${slug}:`, error);
+    // On error, redirect to winery page
+    return NextResponse.redirect(new URL(`/wineries/${slug}`, request.url));
+  }
+}

@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <!-- Gold gradient for premium look -->
+    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#D4AF37"/>
+      <stop offset="50%" style="stop-color:#F4E4A1"/>
+      <stop offset="100%" style="stop-color:#C5A028"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Dark green background (matching NW Touring brand) -->
+  <rect width="512" height="512" fill="#0D4D2C"/>
+
+  <!-- Subtle inner border -->
+  <rect x="8" y="8" width="496" height="496" fill="none" stroke="#1A6B3F" stroke-width="1"/>
+
+  <!-- Crown/Vineyard Symbol - Gold line art -->
+  <g transform="translate(256, 200)" fill="none" stroke="url(#goldGradient)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Central crown peak -->
+    <path d="M0,-80 L0,-100"/>
+    <circle cx="0" cy="-108" r="8" fill="url(#goldGradient)" stroke="none"/>
+
+    <!-- Crown/vineyard arch structure -->
+    <path d="M-100,20
+             C-100,-20 -60,-60 0,-80
+             C60,-60 100,-20 100,20"/>
+
+    <!-- Left decorative peak -->
+    <path d="M-80,0 L-70,-30"/>
+    <circle cx="-70" cy="-38" r="6" fill="url(#goldGradient)" stroke="none"/>
+
+    <!-- Right decorative peak -->
+    <path d="M80,0 L70,-30"/>
+    <circle cx="70" cy="-38" r="6" fill="url(#goldGradient)" stroke="none"/>
+
+    <!-- Vineyard rows beneath crown -->
+    <path d="M-90,40 C-45,30 45,30 90,40"/>
+    <path d="M-75,60 C-35,52 35,52 75,60"/>
+    <path d="M-55,80 C-25,74 25,74 55,80"/>
+  </g>
+
+  <!-- "NW TOURING" text -->
+  <text x="256" y="340"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="36"
+        font-weight="600"
+        fill="url(#goldGradient)"
+        text-anchor="middle"
+        letter-spacing="4">NW TOURING</text>
+
+  <!-- "& CONCIERGE" subtitle -->
+  <text x="256" y="378"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="22"
+        font-weight="400"
+        fill="url(#goldGradient)"
+        text-anchor="middle"
+        letter-spacing="6">&amp; CONCIERGE</text>
+</svg>

@@ -4,6 +4,8 @@ import { getWineryBySlug, getAllWinerySlugs, getWineryNarrativeContent } from '@
 import { WineryDetailClient } from '@/components/wineries/WineryDetailClient';
 import { WineryJsonLd } from '@/components/seo/WineryJsonLd';
 import { BreadcrumbJsonLd } from '@/components/seo/BreadcrumbJsonLd';
+import { FAQJsonLd } from '@/components/seo/FAQJsonLd';
+import { generateWineryFAQs } from '@/lib/utils/generateWineryFAQs';
 import { logger } from '@/lib/logger';
 
 // ============================================================================
@@ -114,14 +116,23 @@ export default async function WineryDetailPage({ params }: PageProps) {
     { name: winery.name, url: `https://wallawalla.travel/wineries/${winery.slug}` },
   ];
 
+  // Generate dynamic FAQs for AEO (Answer Engine Optimization)
+  const faqs = generateWineryFAQs(winery);
+
   return (
     <>
       {/* Structured Data for SEO */}
       <WineryJsonLd winery={winery} />
       <BreadcrumbJsonLd items={breadcrumbs} />
+      {faqs.length > 0 && (
+        <FAQJsonLd
+          faqs={faqs}
+          pageUrl={`https://wallawalla.travel/wineries/${winery.slug}`}
+        />
+      )}
 
       {/* Interactive Content */}
-      <WineryDetailClient winery={winery} narrativeContent={narrativeContent} />
+      <WineryDetailClient winery={winery} narrativeContent={narrativeContent} faqs={faqs} />
     </>
   );
 }

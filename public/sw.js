@@ -1,23 +1,18 @@
 // Service Worker for Offline Inspection Support
-// Version 1.0.0
+// Version 2.0.0 - Fixed to respect subdomain routing
 
-const CACHE_NAME = 'walla-walla-v1';
+const CACHE_NAME = 'walla-walla-v2';  // Bumped version to clear old caches
 const OFFLINE_URL = '/offline';
 
-// Critical assets to cache for offline functionality
+// Only cache truly static assets, NOT HTML pages
 const STATIC_ASSETS = [
-  '/',
   '/offline',
-  '/inspections/pre-trip',
-  '/inspections/post-trip',
-  '/driver-portal/dashboard',
   '/manifest.json',
-  // Add more critical routes as needed
 ];
 
-// Install event - cache critical assets
+// Install event - cache only critical static assets
 self.addEventListener('install', (event) => {
-  console.log('[Service Worker] Installing...');
+  console.log('[Service Worker] Installing v2...');
   
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -27,7 +22,6 @@ self.addEventListener('install', (event) => {
       })
       .then(() => {
         console.log('[Service Worker] Installation complete');
-        // Force the waiting service worker to become active
         return self.skipWaiting();
       })
       .catch((error) => {
@@ -36,15 +30,16 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Activate event - clean up old caches
+// Activate event - clean up ALL old caches
 self.addEventListener('activate', (event) => {
-  console.log('[Service Worker] Activating...');
+  console.log('[Service Worker] Activating v2...');
   
   event.waitUntil(
     caches.keys()
       .then((cacheNames) => {
         return Promise.all(
           cacheNames.map((cacheName) => {
+            // Delete ALL old caches to ensure fresh content
             if (cacheName !== CACHE_NAME) {
               console.log('[Service Worker] Deleting old cache:', cacheName);
               return caches.delete(cacheName);
@@ -54,13 +49,12 @@ self.addEventListener('activate', (event) => {
       })
       .then(() => {
         console.log('[Service Worker] Activation complete');
-        // Take control of all clients immediately
         return self.clients.claim();
       })
   );
 });
 
-// Fetch event - serve from cache when offline, with network-first strategy
+// Fetch event - NETWORK FIRST for HTML, cache-first only for static assets
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
@@ -75,66 +69,72 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // API requests: BYPASS IN DEVELOPMENT - Always use network
+  // API requests: Always use network
   if (url.pathname.startsWith('/api/')) {
-    // Don't intercept API calls - let them go directly to network
-    // This prevents offline errors during development
     return;
   }
 
-  // Inspection pages and critical routes: Cache-first, then network
+  // HTML pages (navigation requests): ALWAYS network-first
+  // This ensures middleware redirects are respected!
+  if (request.mode === 'navigate' || request.headers.get('accept')?.includes('text/html')) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          // Only cache successful responses, NOT redirects
+          if (response.ok && response.status === 200) {
+            // Don't cache HTML pages at all to ensure fresh routing
+            // Just return the response without caching
+          }
+          return response;
+        })
+        .catch(() => {
+          // Network failed, show offline page
+          return caches.match(OFFLINE_URL);
+        })
+    );
+    return;
+  }
+
+  // Static assets (JS, CSS, images): Cache-first for performance
   if (
-    url.pathname.startsWith('/inspections/') ||
-    url.pathname.startsWith('/driver-portal/') ||
-    STATIC_ASSETS.includes(url.pathname)
+    url.pathname.startsWith('/_next/static/') ||
+    url.pathname.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2)$/)
   ) {
     event.respondWith(
       caches.match(request)
         .then((cachedResponse) => {
           if (cachedResponse) {
-            // Return cached version and update in background
+            // Update cache in background
             fetch(request).then((response) => {
-              caches.open(CACHE_NAME).then((cache) => {
-                cache.put(request, response);
-              });
-            }).catch(() => {
-              // Ignore network errors in background update
-            });
+              if (response.ok) {
+                caches.open(CACHE_NAME).then((cache) => {
+                  cache.put(request, response);
+                });
+              }
+            }).catch(() => {});
             return cachedResponse;
           }
 
-          // Not in cache, fetch from network
           return fetch(request)
             .then((response) => {
-              const responseToCache = response.clone();
-              caches.open(CACHE_NAME).then((cache) => {
-                cache.put(request, responseToCache);
-              });
+              if (response.ok) {
+                const responseToCache = response.clone();
+                caches.open(CACHE_NAME).then((cache) => {
+                  cache.put(request, responseToCache);
+                });
+              }
               return response;
-            })
-            .catch(() => {
-              // Network failed and not in cache
-              return caches.match(OFFLINE_URL);
             });
         })
     );
     return;
   }
 
-  // All other requests: Network-first, then cache
+  // All other requests: Network-first
   event.respondWith(
     fetch(request)
-      .then((response) => {
-        const responseToCache = response.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(request, responseToCache);
-        });
-        return response;
-      })
       .catch(() => {
-        return caches.match(request).then((cachedResponse) => {
-          return cachedResponse || caches.match(OFFLINE_URL);
-        });
+        return caches.match(request);
       })
   );
 });
@@ -148,7 +148,6 @@ self.addEventListener('sync', (event) => {
       syncInspections()
         .then(() => {
           console.log('[Service Worker] Inspection sync complete');
-          // Notify clients that sync is complete
           return self.clients.matchAll().then((clients) => {
             clients.forEach((client) => {
               client.postMessage({
@@ -160,7 +159,6 @@ self.addEventListener('sync', (event) => {
         })
         .catch((error) => {
           console.error('[Service Worker] Inspection sync failed:', error);
-          // Notify clients of failure
           return self.clients.matchAll().then((clients) => {
             clients.forEach((client) => {
               client.postMessage({
@@ -182,7 +180,6 @@ self.addEventListener('sync', (event) => {
 // Sync inspections from IndexedDB to server
 async function syncInspections() {
   try {
-    // Open IndexedDB
     const db = await openDB();
     const tx = db.transaction('pending-inspections', 'readonly');
     const store = tx.objectStore('pending-inspections');
@@ -190,7 +187,6 @@ async function syncInspections() {
 
     console.log(`[Service Worker] Found ${pendingInspections.length} pending inspections`);
 
-    // Upload each inspection
     for (const inspection of pendingInspections) {
       try {
         const response = await fetch('/api/inspections', {
@@ -200,7 +196,6 @@ async function syncInspections() {
         });
 
         if (response.ok) {
-          // Remove from IndexedDB after successful upload
           const deleteTx = db.transaction('pending-inspections', 'readwrite');
           const deleteStore = deleteTx.objectStore('pending-inspections');
           await deleteStore.delete(inspection.id);
@@ -210,7 +205,6 @@ async function syncInspections() {
         }
       } catch (error) {
         console.error(`[Service Worker] Error syncing inspection ${inspection.id}:`, error);
-        // Continue with next inspection
       }
     }
 
@@ -278,7 +272,6 @@ function openDB() {
     request.onupgradeneeded = (event) => {
       const db = event.target.result;
       
-      // Create object stores if they don't exist
       if (!db.objectStoreNames.contains('pending-inspections')) {
         db.createObjectStore('pending-inspections', { keyPath: 'id', autoIncrement: true });
       }
@@ -298,6 +291,17 @@ self.addEventListener('message', (event) => {
     self.skipWaiting();
   }
 
+  if (event.data.type === 'CLEAR_CACHE') {
+    // Clear all caches when requested
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => caches.delete(cacheName))
+      );
+    }).then(() => {
+      event.ports[0]?.postMessage({ success: true });
+    });
+  }
+
   if (event.data.type === 'TRIGGER_SYNC') {
     if (event.data.tag === 'inspections') {
       syncInspections()
@@ -311,7 +315,6 @@ self.addEventListener('message', (event) => {
   }
 
   if (event.data.type === 'CACHE_URLS') {
-    // Cache specific URLs on demand
     const urls = event.data.urls || [];
     caches.open(CACHE_NAME)
       .then((cache) => cache.addAll(urls))
@@ -324,7 +327,7 @@ self.addEventListener('message', (event) => {
   }
 });
 
-// Push notification support (for future use)
+// Push notification support
 self.addEventListener('push', (event) => {
   console.log('[Service Worker] Push notification received');
   
@@ -351,14 +354,12 @@ self.addEventListener('notificationclick', (event) => {
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true })
       .then((clientList) => {
-        // If a window is already open, focus it
         for (let i = 0; i < clientList.length; i++) {
           const client = clientList[i];
           if (client.url === event.notification.data && 'focus' in client) {
             return client.focus();
           }
         }
-        // Otherwise, open a new window
         if (self.clients.openWindow) {
           return self.clients.openWindow(event.notification.data);
         }
@@ -366,5 +367,4 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
-console.log('[Service Worker] Loaded and ready');
-
+console.log('[Service Worker] v2 loaded and ready');

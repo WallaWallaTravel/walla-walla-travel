@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="hcwtBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#5B3256"/>
+      <stop offset="100%" style="stop-color:#2E1A2C"/>
+    </linearGradient>
+    <linearGradient id="hcwtCream" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#F5E6D3"/>
+      <stop offset="100%" style="stop-color:#E0D0B8"/>
+    </linearGradient>
+    <linearGradient id="hcwtWine" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#8B3A62"/>
+      <stop offset="100%" style="stop-color:#5C2845"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="80" fill="url(#hcwtBg)"/>
+
+  <!-- Elegant cat silhouette - sophisticated, wine-themed -->
+  <g transform="translate(256, 235)">
+    <!-- Cat head - stylized, elegant -->
+    <ellipse cx="0" cy="0" rx="120" ry="100" fill="url(#hcwtCream)"/>
+
+    <!-- Left ear -->
+    <path d="M-90 -55 L-120 -150 L-45 -75 Z" fill="url(#hcwtCream)"/>
+    <path d="M-85 -65 L-105 -125 L-55 -75 Z" fill="url(#hcwtWine)" opacity="0.4"/>
+
+    <!-- Right ear -->
+    <path d="M90 -55 L120 -150 L45 -75 Z" fill="url(#hcwtCream)"/>
+    <path d="M85 -65 L105 -125 L55 -75 Z" fill="url(#hcwtWine)" opacity="0.4"/>
+
+    <!-- Eyes - almond shaped, knowing look -->
+    <ellipse cx="-45" cy="-10" rx="28" ry="35" fill="url(#hcwtWine)"/>
+    <ellipse cx="45" cy="-10" rx="28" ry="35" fill="url(#hcwtWine)"/>
+
+    <!-- Eye highlights -->
+    <ellipse cx="-40" cy="-18" rx="10" ry="12" fill="#FFFFFF" opacity="0.5"/>
+    <ellipse cx="50" cy="-18" rx="10" ry="12" fill="#FFFFFF" opacity="0.5"/>
+
+    <!-- Pupils - vertical slits -->
+    <ellipse cx="-45" cy="-5" rx="6" ry="18" fill="#1A0D15"/>
+    <ellipse cx="45" cy="-5" rx="6" ry="18" fill="#1A0D15"/>
+
+    <!-- Nose -->
+    <path d="M0 35 L-15 55 L15 55 Z" fill="url(#hcwtWine)"/>
+
+    <!-- Subtle smile -->
+    <path d="M-30 65 Q0 80 30 65" fill="none" stroke="url(#hcwtWine)" stroke-width="5" stroke-linecap="round"/>
+
+    <!-- Whiskers - elegant -->
+    <g stroke="url(#hcwtWine)" stroke-width="3" stroke-linecap="round" opacity="0.5">
+      <line x1="-60" y1="40" x2="-110" y2="25"/>
+      <line x1="-60" y1="50" x2="-115" y2="50"/>
+      <line x1="-60" y1="60" x2="-110" y2="75"/>
+      <line x1="60" y1="40" x2="110" y2="25"/>
+      <line x1="60" y1="50" x2="115" y2="50"/>
+      <line x1="60" y1="60" x2="110" y2="75"/>
+    </g>
+  </g>
+
+  <!-- Small wine glass accent - top right -->
+  <g transform="translate(405, 95)" opacity="0.6">
+    <ellipse cx="0" cy="0" rx="30" ry="24" fill="none" stroke="url(#hcwtCream)" stroke-width="5"/>
+    <ellipse cx="0" cy="8" rx="22" ry="12" fill="url(#hcwtWine)" opacity="0.5"/>
+    <rect x="-4" y="24" width="8" height="28" fill="url(#hcwtCream)"/>
+    <ellipse cx="0" cy="55" rx="20" ry="5" fill="url(#hcwtCream)"/>
+  </g>
+</svg>
