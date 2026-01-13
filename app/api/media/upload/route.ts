@@ -1,25 +1,31 @@
 import { NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import { existsSync } from 'fs';
-import path from 'path';
 import { query } from '@/lib/db';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
+import {
+  uploadFile,
+  ensureMediaBucket,
+  ALLOWED_TYPES,
+  ALLOWED_IMAGE_TYPES,
+} from '@/lib/storage/supabase-storage';
 
 /**
  * POST /api/media/upload
- * Upload media files
+ * Upload media files to Supabase Storage
  *
  * Supports: Images (jpg, png, webp, gif) and Videos (mp4, webm)
  */
 export const POST = withErrorHandling(async (request: Request) => {
+  // Ensure the storage bucket exists
+  await ensureMediaBucket();
+
   const formData = await request.formData();
   const file = formData.get('file') as File;
   const category = formData.get('category') as string;
-  const subcategory = formData.get('subcategory') as string || '';
-  const title = formData.get('title') as string || '';
-  const description = formData.get('description') as string || '';
-  const alt_text = formData.get('alt_text') as string || '';
-  const tags = formData.get('tags') as string || '';
+  const subcategory = (formData.get('subcategory') as string) || '';
+  const title = (formData.get('title') as string) || '';
+  const description = (formData.get('description') as string) || '';
+  const alt_text = (formData.get('alt_text') as string) || '';
+  const tags = (formData.get('tags') as string) || '';
   const is_hero = formData.get('is_hero') === 'true';
 
   if (!file) {
@@ -31,41 +37,26 @@ export const POST = withErrorHandling(async (request: Request) => {
   }
 
   // Validate file type
-  const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
-  const allowedVideoTypes = ['video/mp4', 'video/webm'];
-  const allowedTypes = [...allowedImageTypes, ...allowedVideoTypes];
-
-  if (!allowedTypes.includes(file.type)) {
-    throw new BadRequestError('Invalid file type. Allowed: JPG, PNG, WebP, GIF, MP4, WebM');
+  if (!ALLOWED_TYPES.includes(file.type)) {
+    throw new BadRequestError(
+      'Invalid file type. Allowed: JPG, PNG, WebP, GIF, MP4, WebM'
+    );
   }
 
-  // Determine file type
-  const fileType = allowedImageTypes.includes(file.type) ? 'image' : 'video';
+  // Upload to Supabase Storage
+  const uploadResult = await uploadFile(file, file.type, {
+    category,
+    subcategory: subcategory || undefined,
+    fileName: file.name,
+  });
 
-  // Generate unique filename
-  const timestamp = Date.now();
-  const randomString = Math.random().toString(36).substring(7);
-  const ext = file.name.split('.').pop();
-  const safeFileName = `${timestamp}-${randomString}.${ext}`;
+  // Determine file type for database
+  const fileType = ALLOWED_IMAGE_TYPES.includes(file.type) ? 'image' : 'video';
 
-  // Create directory structure
-  const uploadDir = path.join(process.cwd(), 'public', 'media', category, subcategory || '');
-  if (!existsSync(uploadDir)) {
-    await mkdir(uploadDir, { recursive: true });
-  }
-
-  // Save file
-  const filePath = path.join(uploadDir, safeFileName);
-  const bytes = await file.arrayBuffer();
-  const buffer = Buffer.from(bytes);
-  await writeFile(filePath, buffer);
-
-  // Generate public URL path
-  const publicPath = `/media/${category}/${subcategory ? subcategory + '/' : ''}${safeFileName}`;
+  // Parse tags
+  const tagsArray = tags ? tags.split(',').map((t) => t.trim()) : [];
 
   // Save to database
-  const tagsArray = tags ? tags.split(',').map(t => t.trim()) : [];
-
   const result = await query(
     `INSERT INTO media_library (
       file_name,
@@ -84,7 +75,7 @@ export const POST = withErrorHandling(async (request: Request) => {
     RETURNING *`,
     [
       file.name,
-      publicPath,
+      uploadResult.publicUrl, // Store the full public URL from Supabase
       fileType,
       file.size,
       file.type,
@@ -94,13 +85,13 @@ export const POST = withErrorHandling(async (request: Request) => {
       description,
       alt_text || title || file.name,
       tagsArray,
-      is_hero
+      is_hero,
     ]
   );
 
   return NextResponse.json({
     success: true,
     data: result.rows[0],
-    message: 'File uploaded successfully'
+    message: 'File uploaded successfully',
   });
 });

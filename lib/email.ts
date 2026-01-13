@@ -1108,6 +1108,94 @@ export async function sendProposalDeclineNotification(data: {
 /**
  * Send admin notification for new corporate request
  */
+/**
+ * Send magic link for trip planner access
+ */
+export async function sendTripMagicLink(data: {
+  email: string;
+  owner_name?: string;
+  share_code: string;
+  trip_title: string;
+}) {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://wallawalla.travel';
+  const magicLink = `${baseUrl}/my-trips/${data.share_code}`;
+
+  return sendEmail({
+    to: data.email,
+    subject: `Your Trip Link: ${data.trip_title}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: #f9fafb;">
+        <div style="max-width: 500px; margin: 0 auto; padding: 40px 20px;">
+          <div style="background: white; border-radius: 16px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); overflow: hidden;">
+
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #8B1538 0%, #722F37 100%); padding: 32px 24px; text-align: center;">
+              <div style="font-size: 48px; margin-bottom: 12px;">🍷</div>
+              <h1 style="color: white; margin: 0; font-size: 24px; font-weight: 600;">Your Trip Link</h1>
+            </div>
+
+            <!-- Content -->
+            <div style="padding: 32px 24px;">
+              <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 24px 0;">
+                Hi${data.owner_name ? ` ${data.owner_name}` : ''},
+              </p>
+
+              <p style="color: #4b5563; font-size: 15px; line-height: 1.6; margin: 0 0 24px 0;">
+                Here's your link to continue planning <strong>"${data.trip_title}"</strong>.
+                Click the button below to pick up where you left off.
+              </p>
+
+              <!-- Magic Link Button -->
+              <div style="text-align: center; margin: 32px 0;">
+                <a href="${magicLink}" style="display: inline-block; background: #8B1538; color: white; padding: 16px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
+                  Open My Trip
+                </a>
+              </div>
+
+              <p style="color: #6b7280; font-size: 13px; line-height: 1.5; margin: 0; text-align: center;">
+                This link will take you directly to your trip planner.
+                <br>Bookmark it to easily return anytime!
+              </p>
+            </div>
+
+            <!-- Footer -->
+            <div style="background: #f9fafb; padding: 24px; border-top: 1px solid #e5e7eb; text-align: center;">
+              <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+                Walla Walla Travel<br>
+                Planning unforgettable wine country experiences
+              </p>
+            </div>
+          </div>
+
+          <p style="color: #9ca3af; font-size: 11px; text-align: center; margin: 16px 0 0 0;">
+            If the button doesn't work, copy this link:<br>
+            <a href="${magicLink}" style="color: #8B1538; word-break: break-all;">${magicLink}</a>
+          </p>
+        </div>
+      </body>
+      </html>
+    `,
+    text: `
+Hi${data.owner_name ? ` ${data.owner_name}` : ''},
+
+Here's your link to continue planning "${data.trip_title}":
+
+${magicLink}
+
+Click the link to pick up where you left off. Bookmark it to easily return anytime!
+
+Walla Walla Travel
+Planning unforgettable wine country experiences
+    `,
+  });
+}
+
 export async function sendCorporateRequestNotification(data: {
   request_number: string;
   company_name: string;

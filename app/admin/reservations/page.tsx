@@ -353,7 +353,7 @@ The Walla Walla Travel Team`;
                       <div className="text-sm">
                         <div><strong>{reservation.party_size} guests</strong></div>
                         <div>{formatDate(reservation.preferred_date)}</div>
-                        <div className="capitalize">{reservation.event_type.replace('_', ' ')}</div>
+                        <div className="capitalize">{reservation.event_type?.replace('_', ' ') || 'N/A'}</div>
                       </div>
                     </div>
 

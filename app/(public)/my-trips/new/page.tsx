@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useTripPlannerStore } from '@/lib/stores/trip-planner';
 import { TripType, TripPreferences } from '@/lib/types/trip-planner';
+import { getItineraryBySlug, type Itinerary } from '@/lib/data/itineraries';
 
 // ============================================================================
 // Trip Type Options
@@ -23,13 +24,16 @@ const tripTypes: { value: TripType; label: string; icon: string; description: st
 // New Trip Page
 // ============================================================================
 
-export default function NewTripPage() {
+function NewTripForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const createTrip = useTripPlannerStore((state) => state.createTrip);
+  const addStop = useTripPlannerStore((state) => state.addStop);
   const isSaving = useTripPlannerStore((state) => state.isSaving);
   const error = useTripPlannerStore((state) => state.error);
 
   const [step, setStep] = useState(1);
+  const [template, setTemplate] = useState<Itinerary | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     trip_type: 'wine_tour' as TripType,
@@ -48,10 +52,44 @@ export default function NewTripPage() {
     } as TripPreferences,
   });
 
+  // Load template if provided
+  useEffect(() => {
+    const templateSlug = searchParams.get('template');
+    if (templateSlug) {
+      const itinerary = getItineraryBySlug(templateSlug);
+      if (itinerary) {
+        setTemplate(itinerary);
+        // Pre-fill form with template data
+        setFormData(prev => ({
+          ...prev,
+          title: `My ${itinerary.shortTitle}`,
+          description: itinerary.description,
+        }));
+      }
+    }
+  }, [searchParams]);
+
   const handleSubmit = async () => {
     const result = await createTrip(formData);
     if (result) {
-      router.push(`/my-trips/${result.trip.share_code}`);
+      // If we have a template, add the stops from it
+      if (template) {
+        // Add stops from each day of the template
+        for (const day of template.days) {
+          for (const stop of day.stops) {
+            // Map itinerary stop type to trip stop type
+            const stopType = stop.type === 'lodging' ? 'accommodation' : stop.type;
+            await addStop(result.id, {
+              name: stop.name,
+              stop_type: stopType as 'winery' | 'restaurant' | 'activity' | 'accommodation',
+              day_number: day.dayNumber,
+              notes: stop.description + (stop.tip ? `\n\nTip: ${stop.tip}` : ''),
+              planned_arrival: stop.time,
+            });
+          }
+        }
+      }
+      router.push(`/my-trips/${result.share_code}`);
     }
   };
 
@@ -68,8 +106,19 @@ export default function NewTripPage() {
           </Link>
           <h1 className="text-2xl md:text-3xl font-bold">Create New Trip</h1>
           <p className="text-stone-300 mt-1">
-            Let&apos;s plan your perfect Walla Walla adventure
+            {template ? (
+              <>Using template: <span className="text-white font-medium">{template.shortTitle}</span></>
+            ) : (
+              <>Let&apos;s plan your perfect Walla Walla adventure</>
+            )}
           </p>
+          {template && (
+            <div className="mt-3 inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-sm">
+              <span>Based on {template.duration} itinerary</span>
+              <span className="text-white/60">•</span>
+              <span>{template.days.reduce((acc, day) => acc + day.stops.length, 0)} stops included</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -355,3 +404,33 @@ export default function NewTripPage() {
   );
 }
 
+// Loading fallback for Suspense
+function NewTripFormLoading() {
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-stone-50 to-white">
+      <div className="bg-gradient-to-r from-stone-800 to-stone-900 text-white py-8 px-4">
+        <div className="max-w-2xl mx-auto">
+          <div className="h-4 w-24 bg-white/20 rounded animate-pulse mb-4" />
+          <div className="h-8 w-64 bg-white/30 rounded animate-pulse mb-2" />
+          <div className="h-4 w-80 bg-white/20 rounded animate-pulse" />
+        </div>
+      </div>
+      <div className="max-w-2xl mx-auto px-4 py-6">
+        <div className="h-8 w-full bg-stone-200 rounded animate-pulse mb-8" />
+        <div className="space-y-4">
+          <div className="h-32 w-full bg-stone-100 rounded-xl animate-pulse" />
+          <div className="h-12 w-full bg-stone-100 rounded-xl animate-pulse" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Export with Suspense wrapper for useSearchParams
+export default function NewTripPage() {
+  return (
+    <Suspense fallback={<NewTripFormLoading />}>
+      <NewTripForm />
+    </Suspense>
+  );
+}

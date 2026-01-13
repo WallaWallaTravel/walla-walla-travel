@@ -9,11 +9,11 @@ import { WineryGrid } from '@/components/wineries/WineryGrid';
 
 export const metadata: Metadata = {
   title: 'Walla Walla Wineries | Wine Tasting & Tours',
-  description: 'Discover over 120 wineries in Walla Walla Valley, Washington\'s premier wine region. Find tasting rooms, tour options, and plan your wine country experience.',
+  description: 'Explore curated wineries in Walla Walla Valley, Washington\'s award-winning wine region. Find tasting rooms, tour options, and plan your wine country experience.',
   keywords: ['Walla Walla wineries', 'wine tasting', 'wine tours', 'Washington wine', 'wine country'],
   openGraph: {
     title: 'Walla Walla Wineries | Wine Tasting & Tours',
-    description: 'Discover over 120 wineries in Walla Walla Valley. From historic estates to boutique tasting rooms, find your perfect pour.',
+    description: 'Explore curated wineries in Walla Walla Valley. From historic estates to boutique tasting rooms, find your perfect pour.',
     type: 'website',
     url: 'https://wallawalla.travel/wineries',
     images: [
@@ -45,13 +45,13 @@ export default async function WineriesPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-stone-50 to-white">
       {/* Hero Section - Static content for SEO */}
-      <div className="bg-gradient-to-r from-stone-800 to-stone-900 text-white py-16 px-4">
+      <div className="bg-gradient-to-r from-stone-800 to-stone-900 text-white py-12 px-4">
         <div className="max-w-6xl mx-auto">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
             Walla Walla Wineries
           </h1>
           <p className="text-xl text-stone-300 max-w-2xl">
-            Discover over 120 wineries in Washington&apos;s premier wine region.
+            Explore wineries in Washington&apos;s premier wine region.
             From historic estates to boutique tasting rooms, find your perfect pour.
           </p>
         </div>
@@ -63,10 +63,19 @@ export default async function WineriesPage() {
         <section className="mb-8 text-center">
           <h2 className="sr-only">About Walla Walla Wineries</h2>
           <p className="text-lg text-stone-600 max-w-3xl mx-auto">
-            Explore <strong>{wineries.length} wineries</strong> in Walla Walla Valley, Washington&apos;s
-            award-winning wine region. Filter by experience style, group size, or amenities.
-            Each listing includes <strong>verified information</strong> and <strong>insider tips</strong> from
-            local experts. Verified wineries show a green badge.
+            {wineries.length > 0 ? (
+              <>
+                Explore <strong>{wineries.length} partner-verified {wineries.length === 1 ? 'winery' : 'wineries'}</strong> in
+                Walla Walla Valley. Each listing is managed directly by the winery with accurate hours,
+                reservation info, and <strong>insider tips</strong>. More wineries joining soon.
+              </>
+            ) : (
+              <>
+                Our curated winery directory is coming soon. We&apos;re partnering directly with
+                Walla Walla wineries to bring you <strong>accurate, up-to-date information</strong> managed
+                by the wineries themselves.
+              </>
+            )}
           </p>
         </section>
 

@@ -40,10 +40,11 @@ export interface WineryNarrativeContent {
 // ============================================================================
 
 /**
- * Get all active wineries (cached per request)
+ * Get all verified wineries (cached per request)
+ * Only shows wineries that have been verified by partners or admin
  */
 export const getWineries = cache(async (): Promise<WinerySummary[]> => {
-  return wineryService.getAll();
+  return wineryService.getVerified();
 });
 
 /**

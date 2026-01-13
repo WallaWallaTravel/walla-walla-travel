@@ -193,11 +193,29 @@ export async function middleware(request: NextRequest) {
 
   // Role-based route protection
   if (session) {
-    // Admin-only routes
-    if (pathname.startsWith('/admin') && session.user.role !== 'admin') {
-      return addSecurityHeaders(
-        NextResponse.redirect(new URL('/login?error=forbidden', request.url))
-      );
+    // Admin routes - check role-based access
+    if (pathname.startsWith('/admin')) {
+      const userRole = session.user.role as string;
+
+      // Full admins can access everything
+      if (userRole === 'admin') {
+        // Access granted
+      }
+      // Geology admins can only access /admin/geology/* routes
+      else if (userRole === 'geology_admin') {
+        if (!pathname.startsWith('/admin/geology')) {
+          return addSecurityHeaders(
+            NextResponse.redirect(new URL('/admin/geology', request.url))
+          );
+        }
+        // Access granted to geology routes
+      }
+      // All other roles are forbidden from admin
+      else {
+        return addSecurityHeaders(
+          NextResponse.redirect(new URL('/login?error=forbidden', request.url))
+        );
+      }
     }
 
     // Driver-only routes (admins can also access for oversight)
@@ -232,6 +250,8 @@ export async function middleware(request: NextRequest) {
       dashboardUrl = '/driver-portal/dashboard';
     } else if (userRole === 'partner') {
       dashboardUrl = '/partner-portal/dashboard';
+    } else if (userRole === 'geology_admin') {
+      dashboardUrl = '/admin/geology';
     }
     return NextResponse.redirect(new URL(dashboardUrl, request.url));
   }

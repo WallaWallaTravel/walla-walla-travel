@@ -49,7 +49,7 @@ Like all of Walla Walla's districts, you'll find a diverse range of winery style
       'Range of tasting experiences',
     ],
     practicalInfo: 'Many wineries here have generous parking and outdoor spaces. Proximity to each other makes multi-winery visits easy.',
-    approximateWineries: 25,
+    approximateWineries: 17,
   },
   {
     slug: 'downtown',
@@ -74,7 +74,7 @@ Downtown attracts a wide range of producers, from prestigious names to small-lot
       'Evening hours at many locations',
     ],
     practicalInfo: 'Park once and walk. Many tasting rooms are reservation-only due to limited space. Great option when you want to combine wine with dinner.',
-    approximateWineries: 35,
+    approximateWineries: 30,
   },
   {
     slug: 'southside',
@@ -99,7 +99,7 @@ Some of Walla Walla's founding wineries established themselves on the Southside,
       'Mix of acclaimed names and hidden gems',
     ],
     practicalInfo: 'Driving required between wineries. Some offer vineyard tours. Reservations often required, especially for smaller operations.',
-    approximateWineries: 20,
+    approximateWineries: 23,
   },
   {
     slug: 'westside',
@@ -124,6 +124,81 @@ The Westside is still developing as a wine district, which means you're likely t
       'More casual atmosphere',
     ],
     practicalInfo: 'Wineries are more spread out than downtown. Good for visitors who enjoy discovering off-the-beaten-path spots.',
+    approximateWineries: 15,
+  },
+  {
+    slug: 'eastside-mill-creek',
+    name: 'Eastside / Mill Creek',
+    shortName: 'Eastside',
+    description: 'East of town along Mill Creek Road, this scenic corridor features established wineries with beautiful grounds and Blue Mountain views.',
+    longDescription: `The Eastside along Mill Creek Road offers one of Walla Walla's most scenic wine touring routes. This corridor follows the base of the Blue Mountains, with wineries set against dramatic foothill backdrops.
+
+Many of the valley's well-known producers have established themselves here, drawn by the combination of excellent growing conditions and beautiful settings. The Mill Creek drainage provides natural irrigation and creates a distinct microclimate.
+
+The drive along Mill Creek Road is part of the experience—winding through vineyards and farmland with the mountains rising to the east. Wineries here often feature expansive grounds with picnic areas and outdoor seating.`,
+    whatYoullFind: [
+      'Scenic Blue Mountain views',
+      'Established, respected producers',
+      'Beautiful winery grounds',
+      'Creek-side vineyards',
+    ],
+    highlights: [
+      'Some of the valley\'s most acclaimed wineries',
+      'Dramatic mountain backdrop',
+      'Well-developed visitor facilities',
+      'Excellent for photography',
+    ],
+    practicalInfo: 'Mill Creek Road winds east from town. Wineries are spread along the route, so plan for driving time. Many offer outdoor seating with views.',
+    approximateWineries: 8,
+  },
+  {
+    slug: 'the-rocks-district',
+    name: 'The Rocks District',
+    shortName: 'The Rocks',
+    description: 'A unique AVA defined by its distinctive cobblestone soils—dark basalt rocks that store heat and produce bold, concentrated wines.',
+    longDescription: `The Rocks District of Milton-Freewater is one of America's most unique wine appellations. This AVA (American Viticultural Area) is defined not by geography but by its distinctive soil: dark basalt cobblestones deposited by ancient floods.
+
+These fist-sized rocks absorb heat during the day and radiate it back at night, creating a microclimate that produces intensely flavored wines. Syrah thrives here, making up 40% of plantings, followed by Cabernet Sauvignon at 32%.
+
+Though technically in Oregon, The Rocks is integral to the greater Walla Walla wine experience. Wines from this area are known for their bold, concentrated character and distinctive minerality that reflects the unique terroir.`,
+    whatYoullFind: [
+      'Distinctive cobblestone soils',
+      'Bold, concentrated wines',
+      'World-class Syrah producers',
+      'Unique terroir experience',
+    ],
+    highlights: [
+      'Walk among the famous cobblestones',
+      'Learn about terroir firsthand',
+      'Taste wines shaped by unique geology',
+      'Experience Oregon\'s Walla Walla connection',
+    ],
+    practicalInfo: 'Located in Milton-Freewater, Oregon, about 10 minutes south of Walla Walla. Worth the drive for wine enthusiasts interested in terroir.',
+    approximateWineries: 6,
+  },
+  {
+    slug: 'red-mountain',
+    name: 'Red Mountain AVA',
+    shortName: 'Red Mountain',
+    description: 'Washington\'s most acclaimed Cabernet region, about an hour west near the Tri-Cities. Known for powerful reds and dramatic desert landscapes.',
+    longDescription: `Red Mountain is one of Washington's smallest yet most prestigious wine regions, located near Benton City about an hour west of Walla Walla. This AVA has earned a reputation for producing some of the state's most powerful and age-worthy Cabernet Sauvignon.
+
+The southwest-facing slope of Red Mountain receives intense afternoon sun and consistent winds, creating one of the warmest growing sites in Washington. The combination of heat, well-drained soils, and stress on the vines produces wines with remarkable concentration and structure.
+
+While outside the Walla Walla Valley, Red Mountain is a natural addition to a Washington wine tour. Many serious wine enthusiasts consider it essential to compare the bold Cabernets of Red Mountain with Walla Walla's more diverse offerings.`,
+    whatYoullFind: [
+      'World-class Cabernet Sauvignon',
+      'Dramatic desert landscape',
+      'Prestigious estate wineries',
+      'Bold, structured red wines',
+    ],
+    highlights: [
+      'Home to acclaimed producers like Hedges, Col Solare, and Fidelitas',
+      'Distinct terroir from Walla Walla—great for comparison',
+      'Spectacular views of the Yakima Valley',
+      'Less crowded than more touristy regions',
+    ],
+    practicalInfo: 'About 1 hour west of Walla Walla via I-82. We offer day trips that combine Red Mountain with Walla Walla for a comprehensive Washington wine experience.',
     approximateWineries: 15,
   },
 ];

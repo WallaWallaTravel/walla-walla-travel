@@ -45,7 +45,6 @@ const SORT_OPTIONS = [
   { value: 'featured', label: 'Featured' },
   { value: 'name-asc', label: 'Name A-Z' },
   { value: 'name-desc', label: 'Name Z-A' },
-  { value: 'rating', label: 'Highest Rated' },
   { value: 'price-low', label: 'Price: Low to High' },
   { value: 'price-high', label: 'Price: High to Low' },
 ];
@@ -53,10 +52,10 @@ const SORT_OPTIONS = [
 // Group size options
 const GROUP_SIZE_OPTIONS = [
   { value: '', label: 'Any Group Size' },
-  { value: '2', label: 'Just 2 of us' },
-  { value: '6', label: 'Small group (up to 6)' },
-  { value: '10', label: 'Medium group (7-10)' },
-  { value: '15', label: 'Large group (11+)' },
+  { value: '2', label: 'Couple (2)' },
+  { value: '6', label: 'Small (3-6)' },
+  { value: '11', label: 'Medium (7-11)' },
+  { value: '12', label: 'Large (12+)' },
 ];
 
 export function WineryGrid({ initialWineries }: WineryGridProps) {
@@ -162,9 +161,6 @@ export function WineryGrid({ initialWineries }: WineryGridProps) {
       case 'name-desc':
         results = [...results].sort((a, b) => b.name.localeCompare(a.name));
         break;
-      case 'rating':
-        results = [...results].sort((a, b) => (b.rating || 0) - (a.rating || 0));
-        break;
       case 'price-low':
         results = [...results].sort((a, b) => (a.tasting_fee || 0) - (b.tasting_fee || 0));
         break;
@@ -172,11 +168,11 @@ export function WineryGrid({ initialWineries }: WineryGridProps) {
         results = [...results].sort((a, b) => (b.tasting_fee || 0) - (a.tasting_fee || 0));
         break;
       default:
-        // Featured: verified first, then by rating
+        // Featured: verified first, then alphabetical
         results = [...results].sort((a, b) => {
           if (a.verified && !b.verified) return -1;
           if (!a.verified && b.verified) return 1;
-          return (b.rating || 0) - (a.rating || 0);
+          return a.name.localeCompare(b.name);
         });
     }
 
@@ -345,9 +341,9 @@ export function WineryGrid({ initialWineries }: WineryGridProps) {
 
       {/* Winery Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredWineries.map((winery) => (
+        {filteredWineries.map((winery, index) => (
           <Link
-            key={winery.id}
+            key={winery.slug || `winery-${index}`}
             href={`/wineries/${winery.slug}`}
             className="group bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden hover:shadow-lg transition-all duration-300"
           >
@@ -381,12 +377,6 @@ export function WineryGrid({ initialWineries }: WineryGridProps) {
                 <h3 className="text-lg font-semibold text-stone-900 group-hover:text-[#722F37] transition-colors">
                   {winery.name}
                 </h3>
-                {winery.rating && (
-                  <div className="flex items-center gap-1 text-amber-500">
-                    <span>★</span>
-                    <span className="text-sm font-medium">{winery.rating}</span>
-                  </div>
-                )}
               </div>
 
               <p className="text-stone-600 text-sm mb-3 line-clamp-2">

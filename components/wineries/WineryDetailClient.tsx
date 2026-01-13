@@ -8,6 +8,7 @@ import { useAnalyticsStore } from '@/lib/stores/analytics-simple';
 import type { Winery, WineryNarrativeContent } from '@/lib/data/wineries';
 import { INSIDER_TIP_TYPES } from '@/lib/config/content-types';
 import type { FAQ } from '@/components/seo/FAQJsonLd';
+import { Accordion } from '@/components/Accordion';
 
 interface WineryDetailClientProps {
   winery: Winery;
@@ -114,18 +115,6 @@ export function WineryDetailClient({ winery, narrativeContent, faqs = [] }: Wine
               </div>
 
               <h1 className="text-4xl md:text-5xl font-bold mb-4">{winery.name}</h1>
-
-              {winery.rating && (
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="flex items-center gap-1">
-                    <span className="text-amber-400">★</span>
-                    <span className="font-semibold">{winery.rating}</span>
-                    {winery.review_count && (
-                      <span className="text-white/70">({winery.review_count} reviews)</span>
-                    )}
-                  </div>
-                </div>
-              )}
 
               <p className="text-lg text-white/90 mb-6">{winery.description}</p>
 
@@ -298,26 +287,7 @@ export function WineryDetailClient({ winery, narrativeContent, faqs = [] }: Wine
                   <span className="text-2xl">❓</span>
                   Frequently Asked Questions
                 </h2>
-                <div className="space-y-4">
-                  {faqs.map((faq, index) => (
-                    <details
-                      key={index}
-                      className="group bg-white rounded-xl border border-gray-200 hover:border-[#8B1538]/30 transition-colors"
-                    >
-                      <summary className="flex items-center justify-between p-4 cursor-pointer list-none">
-                        <span className="font-medium text-gray-900 pr-4">{faq.question}</span>
-                        <span className="text-[#8B1538] group-open:rotate-180 transition-transform">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </span>
-                      </summary>
-                      <div className="px-4 pb-4 text-gray-600 border-t border-gray-100 pt-3">
-                        {faq.answer}
-                      </div>
-                    </details>
-                  ))}
-                </div>
+                <Accordion items={faqs} />
               </section>
             )}
           </div>

@@ -5,6 +5,9 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTripPlannerStore, useCurrentTrip, useTripLoading, useTripError } from '@/lib/stores/trip-planner';
 import { TripStop, TripGuest, AddStopRequest, AddGuestRequest } from '@/lib/types/trip-planner';
+import { AddToHomeScreen } from '@/components/AddToHomeScreen';
+import { TripAssistant } from '@/components/trip-planner/TripAssistant';
+import { SmartSuggestions } from '@/components/trip-planner/SmartSuggestions';
 
 // ============================================================================
 // Tab Navigation
@@ -43,13 +46,15 @@ function TabNav({ activeTab, onTabChange }: { activeTab: TabType; onTabChange: (
 // Itinerary Tab
 // ============================================================================
 
-function ItineraryTab({ 
-  stops, 
+function ItineraryTab({
+  stops,
   tripId,
-  onAddStop 
-}: { 
-  stops: TripStop[]; 
+  shareCode,
+  onAddStop
+}: {
+  stops: TripStop[];
   tripId: number;
+  shareCode: string;
   onAddStop: () => void;
 }) {
   const removeStop = useTripPlannerStore((state) => state.removeStop);
@@ -133,9 +138,16 @@ function ItineraryTab({
         </div>
       ))}
 
+      {/* Smart Suggestions */}
+      <SmartSuggestions
+        shareCode={shareCode}
+        tripId={tripId}
+        className="mt-6"
+      />
+
       <button
         onClick={onAddStop}
-        className="w-full py-3 border-2 border-dashed border-stone-300 rounded-xl text-stone-500 hover:border-[#722F37] hover:text-[#722F37] transition-colors"
+        className="w-full py-3 border-2 border-dashed border-stone-300 rounded-xl text-stone-500 hover:border-[#722F37] hover:text-[#722F37] transition-colors mt-4"
       >
         + Add Stop
       </button>
@@ -288,6 +300,9 @@ function ShareTab({
           >
             {copied ? '✓ Copied!' : 'Copy'}
           </button>
+        </div>
+        <div className="mt-3">
+          <AddToHomeScreen />
         </div>
       </div>
 
@@ -539,25 +554,54 @@ function AddGuestModal({
 // Handoff Modal
 // ============================================================================
 
-function HandoffModal({ 
-  tripId, 
-  onClose 
-}: { 
-  tripId: number; 
+interface TripData {
+  id: number;
+  share_code: string;
+  title: string;
+  trip_type: string;
+  owner_name?: string;
+  owner_email?: string;
+  owner_phone?: string;
+  expected_guests: number;
+  start_date?: string;
+  description?: string;
+}
+
+function HandoffModal({
+  trip,
+  onClose
+}: {
+  trip: TripData;
   onClose: () => void;
 }) {
-  const requestHandoff = useTripPlannerStore((state) => state.requestHandoff);
+  const router = useRouter();
+  const updateTrip = useTripPlannerStore((state) => state.updateTrip);
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    const success = await requestHandoff(tripId, notes);
-    if (success) {
-      onClose();
-    }
-    setIsSubmitting(false);
+
+    // Update trip status to handed_off
+    await updateTrip(trip.share_code, {
+      status: 'handed_off',
+    });
+
+    // Build query params for the booking form
+    const params = new URLSearchParams();
+    params.set('tripId', trip.share_code);
+    if (trip.owner_name) params.set('name', trip.owner_name);
+    if (trip.owner_email) params.set('email', trip.owner_email);
+    if (trip.owner_phone) params.set('phone', trip.owner_phone);
+    params.set('partySize', String(trip.expected_guests));
+    if (trip.start_date) params.set('date', trip.start_date);
+    if (trip.trip_type) params.set('eventType', trip.trip_type);
+    if (notes) params.set('notes', notes);
+    if (trip.description) params.set('description', trip.description);
+
+    // Redirect to booking form with pre-filled data
+    router.push(`/book?${params.toString()}`);
   };
 
   return (
@@ -565,9 +609,9 @@ function HandoffModal({
       <div className="bg-white rounded-2xl max-w-md w-full p-6">
         <h2 className="text-xl font-semibold text-stone-900 mb-2">Hand Off to Walla Walla Travel</h2>
         <p className="text-stone-600 text-sm mb-4">
-          We&apos;ll review your trip and reach out to finalize bookings, transportation, and any special requests.
+          We&apos;ll take your trip plan and turn it into a full booking with transportation, reservations, and everything handled.
         </p>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-stone-700 mb-2">
@@ -595,10 +639,66 @@ function HandoffModal({
               disabled={isSubmitting}
               className="flex-1 py-2.5 bg-gradient-to-r from-[#722F37] to-[#8B1538] text-white rounded-xl font-medium hover:shadow-lg disabled:opacity-50 transition-all"
             >
-              {isSubmitting ? 'Submitting...' : 'Submit'}
+              {isSubmitting ? 'Continuing...' : 'Continue to Booking'}
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// Mobile Chat Button & Bottom Sheet
+// ============================================================================
+
+function MobileChatButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="fixed bottom-6 right-6 w-14 h-14 bg-[#722F37] text-white rounded-full shadow-lg hover:bg-[#8B1538] transition-all flex items-center justify-center lg:hidden z-40"
+    >
+      <span className="text-2xl">💬</span>
+    </button>
+  );
+}
+
+function MobileChatSheet({
+  shareCode,
+  tripTitle,
+  onClose,
+}: {
+  shareCode: string;
+  tripTitle?: string;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 lg:hidden">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/50"
+        onClick={onClose}
+      />
+
+      {/* Sheet */}
+      <div className="absolute bottom-0 left-0 right-0 h-[80vh] bg-white rounded-t-2xl shadow-2xl flex flex-col animate-slide-up">
+        {/* Handle */}
+        <div className="flex-shrink-0 py-2 flex justify-center">
+          <div className="w-10 h-1 bg-stone-300 rounded-full" />
+        </div>
+
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-4 text-stone-400 hover:text-stone-600"
+        >
+          ✕
+        </button>
+
+        {/* Chat Content */}
+        <div className="flex-1 overflow-hidden">
+          <TripAssistant shareCode={shareCode} tripTitle={tripTitle} />
+        </div>
       </div>
     </div>
   );
@@ -622,6 +722,7 @@ export default function TripDetailPage() {
   const [showAddStop, setShowAddStop] = useState(false);
   const [showAddGuest, setShowAddGuest] = useState(false);
   const [showHandoff, setShowHandoff] = useState(false);
+  const [showMobileChat, setShowMobileChat] = useState(false);
 
   useEffect(() => {
     loadTripByShareCode(shareCode);
@@ -656,7 +757,9 @@ export default function TripDetailPage() {
     );
   }
 
-  const { trip, stops, guests, stats } = currentTrip;
+  // Trip data is flat - access properties directly from currentTrip
+  const { stops, guests, stats } = currentTrip;
+  const trip = currentTrip; // Trip extends TripBase, so all trip fields are on currentTrip
 
   const tripTypeIcons: Record<string, string> = {
     wine_tour: '🍷',
@@ -668,10 +771,10 @@ export default function TripDetailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-stone-50 to-white pb-20">
-      {/* Header */}
+    <div className="min-h-screen bg-gradient-to-b from-stone-50 to-white">
+      {/* Header - Full Width */}
       <div className="bg-gradient-to-r from-stone-800 to-stone-900 text-white py-6 px-4">
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           <Link
             href="/my-trips"
             className="inline-flex items-center gap-1 text-stone-300 hover:text-white mb-3 text-sm"
@@ -697,56 +800,82 @@ export default function TripDetailPage() {
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="max-w-2xl mx-auto px-4 -mt-4">
-        <div className="bg-white rounded-xl shadow-sm border border-stone-100 p-4 flex items-center justify-around">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-stone-900">{stats.total_stops}</div>
-            <div className="text-xs text-stone-500">Stops</div>
+      {/* Main Layout: Content + Sidebar */}
+      <div className="max-w-7xl mx-auto lg:flex">
+        {/* Main Content Area */}
+        <div className="flex-1 pb-20 lg:pb-6 lg:pr-80">
+          {/* Stats */}
+          <div className="max-w-2xl mx-auto lg:mx-0 lg:max-w-none lg:px-4 px-4 -mt-4">
+            <div className="bg-white rounded-xl shadow-sm border border-stone-100 p-4 flex items-center justify-around lg:max-w-lg">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-stone-900">{stats.total_stops}</div>
+                <div className="text-xs text-stone-500">Stops</div>
+              </div>
+              <div className="h-8 w-px bg-stone-200" />
+              <div className="text-center">
+                <div className="text-2xl font-bold text-stone-900">{stats.attending_guests}</div>
+                <div className="text-xs text-stone-500">Attending</div>
+              </div>
+              <div className="h-8 w-px bg-stone-200" />
+              <div className="text-center">
+                <div className="text-2xl font-bold text-stone-900">{stats.pending_rsvps}</div>
+                <div className="text-xs text-stone-500">Pending</div>
+              </div>
+            </div>
           </div>
-          <div className="h-8 w-px bg-stone-200" />
-          <div className="text-center">
-            <div className="text-2xl font-bold text-stone-900">{stats.attending_guests}</div>
-            <div className="text-xs text-stone-500">Attending</div>
+
+          {/* Tabs */}
+          <div className="max-w-2xl mx-auto lg:mx-0 lg:max-w-none lg:px-4 mt-6">
+            <div className="lg:max-w-lg">
+              <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
+
+              {activeTab === 'itinerary' && (
+                <ItineraryTab
+                  stops={stops}
+                  tripId={trip.id}
+                  shareCode={shareCode}
+                  onAddStop={() => setShowAddStop(true)}
+                />
+              )}
+
+              {activeTab === 'guests' && (
+                <GuestsTab
+                  guests={guests}
+                  tripId={trip.id}
+                  onAddGuest={() => setShowAddGuest(true)}
+                />
+              )}
+
+              {activeTab === 'share' && (
+                <ShareTab
+                  shareCode={trip.share_code}
+                  isPublic={trip.is_public}
+                  tripId={trip.id}
+                  status={trip.status}
+                  onRequestHandoff={() => setShowHandoff(true)}
+                />
+              )}
+            </div>
           </div>
-          <div className="h-8 w-px bg-stone-200" />
-          <div className="text-center">
-            <div className="text-2xl font-bold text-stone-900">{stats.pending_rsvps}</div>
-            <div className="text-xs text-stone-500">Pending</div>
-          </div>
+        </div>
+
+        {/* Desktop Sidebar - Trip Assistant */}
+        <div className="hidden lg:fixed lg:block lg:right-0 lg:top-0 w-80 h-screen border-l border-stone-200 bg-white overflow-hidden z-40">
+          <TripAssistant shareCode={shareCode} tripTitle={trip.title} />
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="max-w-2xl mx-auto mt-6">
-        <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
+      {/* Mobile Chat Button */}
+      <MobileChatButton onClick={() => setShowMobileChat(true)} />
 
-        {activeTab === 'itinerary' && (
-          <ItineraryTab 
-            stops={stops} 
-            tripId={trip.id}
-            onAddStop={() => setShowAddStop(true)} 
-          />
-        )}
-
-        {activeTab === 'guests' && (
-          <GuestsTab 
-            guests={guests} 
-            tripId={trip.id}
-            onAddGuest={() => setShowAddGuest(true)} 
-          />
-        )}
-
-        {activeTab === 'share' && (
-          <ShareTab 
-            shareCode={trip.share_code}
-            isPublic={trip.is_public}
-            tripId={trip.id}
-            status={trip.status}
-            onRequestHandoff={() => setShowHandoff(true)}
-          />
-        )}
-      </div>
+      {/* Mobile Chat Bottom Sheet */}
+      {showMobileChat && (
+        <MobileChatSheet
+          shareCode={shareCode}
+          tripTitle={trip.title}
+          onClose={() => setShowMobileChat(false)}
+        />
+      )}
 
       {/* Modals */}
       {showAddStop && (
@@ -756,7 +885,7 @@ export default function TripDetailPage() {
         <AddGuestModal tripId={trip.id} onClose={() => setShowAddGuest(false)} />
       )}
       {showHandoff && (
-        <HandoffModal tripId={trip.id} onClose={() => setShowHandoff(false)} />
+        <HandoffModal trip={trip} onClose={() => setShowHandoff(false)} />
       )}
     </div>
   );

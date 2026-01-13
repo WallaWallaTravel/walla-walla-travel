@@ -108,12 +108,35 @@ function BookTourPageContent() {
   const prefilledPackage = searchParams.get('package');
   const packageInfo = prefilledPackage ? TOUR_PACKAGES[prefilledPackage] : null;
 
-  const [step, setStep] = useState(packageInfo ? 2 : 1); // Skip provider selection if package selected
-  const [selectedProvider, setSelectedProvider] = useState<string | null>(packageInfo ? 'nw-touring' : null);
+  // Trip planner handoff params
+  const tripId = searchParams.get('tripId');
+  const prefilledName = searchParams.get('name');
+  const prefilledEmail = searchParams.get('email');
+  const prefilledPhone = searchParams.get('phone');
+  const prefilledPartySize = searchParams.get('partySize');
+  const prefilledDate = searchParams.get('date');
+  const prefilledEventType = searchParams.get('eventType');
+  const prefilledNotes = searchParams.get('notes');
+  const prefilledDescription = searchParams.get('description');
+
+  // Map trip types to tour types
+  const tripTypeToTourType: Record<string, string> = {
+    wine_tour: 'wine_tour',
+    bachelorette: 'bachelorette',
+    corporate: 'corporate',
+    wedding: 'wedding',
+    anniversary: 'anniversary',
+    custom: 'other',
+  };
+
+  const [step, setStep] = useState(packageInfo || tripId ? 2 : 1); // Skip provider selection if package or trip selected
+  const [selectedProvider, setSelectedProvider] = useState<string | null>(packageInfo || tripId ? 'nw-touring' : null);
   const [isMultipleServices, setIsMultipleServices] = useState(false);
   const [tourDays, setTourDays] = useState<TourDay[]>([{
     ...createNewDay(),
     hours: packageInfo?.hours || 4,
+    date: prefilledDate || '',
+    guests: prefilledPartySize ? parseInt(prefilledPartySize, 10) : 2,
   }]);
   const [additionalServices, setAdditionalServices] = useState<ServiceItem[]>([createNewService()]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -126,16 +149,36 @@ function BookTourPageContent() {
     tourDays: TourDay[];
     estimatedTotal: string;
   } | null>(null);
+
+  // Build initial notes based on available prefill data
+  const buildInitialNotes = () => {
+    const parts: string[] = [];
+
+    if (tripId) {
+      parts.push(`[From Trip Planner: ${tripId}]`);
+    }
+    if (prefilledDescription) {
+      parts.push(prefilledDescription);
+    }
+    if (prefilledNotes) {
+      parts.push(prefilledNotes);
+    }
+    if (prefilledWinery) {
+      parts.push(`I'd like to include ${prefilledWinery} in my tour.`);
+    }
+    if (packageInfo) {
+      parts.push(`I'm interested in the ${packageInfo.name} package (${packageInfo.description}).`);
+    }
+
+    return parts.join('\n\n');
+  };
+
   const [formData, setFormData] = useState({
-    tourType: 'wine_tour',
-    name: '',
-    email: '',
-    phone: '',
-    notes: prefilledWinery
-      ? `I'd like to include ${prefilledWinery} in my tour.`
-      : packageInfo
-        ? `I'm interested in the ${packageInfo.name} package (${packageInfo.description}).`
-        : '',
+    tourType: prefilledEventType ? (tripTypeToTourType[prefilledEventType] || 'wine_tour') : 'wine_tour',
+    name: prefilledName || '',
+    email: prefilledEmail || '',
+    phone: prefilledPhone || '',
+    notes: buildInitialNotes(),
     textConsent: true, // Pre-filled checkbox for text communications
   });
 

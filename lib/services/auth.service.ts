@@ -118,8 +118,26 @@ export class AuthService extends BaseService {
         name: user.name,
         role: user.role,
       },
-      redirectTo: user.role === 'admin' ? '/admin/dashboard' : '/driver-portal/dashboard',
+      redirectTo: this.getRedirectUrl(user.role),
     };
+  }
+
+  /**
+   * Get redirect URL based on user role
+   */
+  private getRedirectUrl(role: string): string {
+    switch (role) {
+      case 'admin':
+        return '/admin/dashboard';
+      case 'geology_admin':
+        return '/admin/geology';
+      case 'driver':
+        return '/driver-portal/dashboard';
+      case 'partner':
+        return '/partner-portal/dashboard';
+      default:
+        return '/';
+    }
   }
 
   /**

@@ -12,58 +12,103 @@ interface NavItem {
   badge?: number;
   section?: string;
   dynamicBadge?: string; // Key to look up dynamic badge count
+  requiredAccess?: string; // 'admin' = full admin only, 'geology' = geology admins, undefined = all roles
 }
 
 const NAV_ITEMS: NavItem[] = [
-  // Overview
-  { label: 'Dashboard', icon: '📊', href: '/admin/dashboard', section: 'Overview' },
-  { label: 'Calendar', icon: '📆', href: '/admin/calendar', section: 'Overview' },
-  { label: 'System Status', icon: '🖥️', href: '/admin/system-dashboard', section: 'Overview' },
-  
-  // Operations
-  { label: 'Bookings', icon: '📅', href: '/admin/bookings', section: 'Operations' },
-  { label: 'Reservations', icon: '🎨', href: '/admin/reservations', section: 'Operations', dynamicBadge: 'pendingReservations' },
-  { label: 'Proposals', icon: '📄', href: '/admin/proposals', section: 'Operations' },
-  { label: 'Tour Offers', icon: '🎫', href: '/admin/tour-offers', section: 'Operations' },
-  { label: 'Corporate Requests', icon: '🏢', href: '/admin/corporate-requests', section: 'Operations' },
-  
-  // Financial
-  { label: 'Invoices', icon: '💰', href: '/admin/invoices', section: 'Financial' },
-  { label: 'Pricing Calculator', icon: '🧮', href: '/admin/pricing', section: 'Financial' },
-  { label: 'Rate Configuration', icon: '💵', href: '/admin/rates', section: 'Financial' },
-  { label: 'Payment Settings', icon: '💳', href: '/admin/payment-settings', section: 'Financial' },
-  
-  // Content
-  { label: 'Business Portal', icon: '🏪', href: '/admin/business-portal', section: 'Content' },
-  { label: 'Media Library', icon: '📸', href: '/admin/media', section: 'Content' },
-  { label: 'Wine Directory', icon: '🍷', href: '/admin/wine-directory', section: 'Content' },
-  
-  // Marketing
-  { label: 'Marketing Hub', icon: '📊', href: '/admin/marketing', section: 'Marketing' },
-  { label: 'Analytics', icon: '📈', href: '/admin/marketing/analytics', section: 'Marketing' },
-  { label: 'A/B Testing', icon: '🧪', href: '/admin/marketing/ab-testing', section: 'Marketing' },
-  { label: 'Leads', icon: '🎯', href: '/admin/marketing/leads', section: 'Marketing' },
-  { label: 'Social Media', icon: '📱', href: '/admin/marketing/social', section: 'Marketing' },
-  { label: 'Email Campaigns', icon: '📧', href: '/admin/marketing/email', section: 'Marketing' },
-  { label: 'Content Calendar', icon: '📅', href: '/admin/marketing/calendar', section: 'Marketing' },
-  { label: 'Competitors', icon: '👁️', href: '/admin/marketing/competitors', section: 'Marketing' },
-  
-  // Services
-  { label: 'Additional Services', icon: '➕', href: '/admin/additional-services', section: 'Services' },
-  { label: 'Lunch Orders', icon: '🍽️', href: '/admin/lunch-orders', section: 'Services' },
-  
-  // Partners
-  { label: 'Partners', icon: '🤝', href: '/admin/partners', section: 'Partners' },
-  
-  // System
-  { label: 'Users', icon: '👥', href: '/admin/users', section: 'System' },
-  { label: 'Settings', icon: '⚙️', href: '/admin/settings', section: 'System' },
+  // Overview (admin only)
+  { label: 'Dashboard', icon: '📊', href: '/admin/dashboard', section: 'Overview', requiredAccess: 'admin' },
+  { label: 'Calendar', icon: '📆', href: '/admin/calendar', section: 'Overview', requiredAccess: 'admin' },
+  { label: 'System Status', icon: '🖥️', href: '/admin/system-dashboard', section: 'Overview', requiredAccess: 'admin' },
+
+  // Operations (admin only)
+  { label: 'Bookings', icon: '📅', href: '/admin/bookings', section: 'Operations', requiredAccess: 'admin' },
+  { label: 'Reservations', icon: '🎨', href: '/admin/reservations', section: 'Operations', dynamicBadge: 'pendingReservations', requiredAccess: 'admin' },
+  { label: 'Proposals', icon: '📄', href: '/admin/proposals', section: 'Operations', requiredAccess: 'admin' },
+  { label: 'Tour Offers', icon: '🎫', href: '/admin/tour-offers', section: 'Operations', requiredAccess: 'admin' },
+  { label: 'Corporate Requests', icon: '🏢', href: '/admin/corporate-requests', section: 'Operations', requiredAccess: 'admin' },
+
+  // Financial (admin only)
+  { label: 'Invoices', icon: '💰', href: '/admin/invoices', section: 'Financial', requiredAccess: 'admin' },
+  { label: 'Pricing Calculator', icon: '🧮', href: '/admin/pricing', section: 'Financial', requiredAccess: 'admin' },
+  { label: 'Rate Configuration', icon: '💵', href: '/admin/rates', section: 'Financial', requiredAccess: 'admin' },
+  { label: 'Payment Settings', icon: '💳', href: '/admin/payment-settings', section: 'Financial', requiredAccess: 'admin' },
+
+  // Content (admin only)
+  { label: 'Business Portal', icon: '🏪', href: '/admin/business-portal', section: 'Content', requiredAccess: 'admin' },
+  { label: 'Media Library', icon: '📸', href: '/admin/media', section: 'Content', requiredAccess: 'admin' },
+  { label: 'Wine Directory', icon: '🍷', href: '/admin/wine-directory', section: 'Content', requiredAccess: 'admin' },
+
+  // Geology (geology_admin and admin)
+  { label: 'Geology Dashboard', icon: '🪨', href: '/admin/geology', section: 'Geology', requiredAccess: 'geology' },
+  { label: 'Topics', icon: '📚', href: '/admin/geology/topics', section: 'Geology', requiredAccess: 'geology' },
+  { label: 'Quick Facts', icon: '💡', href: '/admin/geology/facts', section: 'Geology', requiredAccess: 'geology' },
+  { label: 'Sites', icon: '📍', href: '/admin/geology/sites', section: 'Geology', requiredAccess: 'geology' },
+  { label: 'AI Guidance', icon: '🤖', href: '/admin/geology/ai-guidance', section: 'Geology', requiredAccess: 'geology' },
+
+  // Marketing (admin only)
+  { label: 'Marketing Hub', icon: '📊', href: '/admin/marketing', section: 'Marketing', requiredAccess: 'admin' },
+  { label: 'Analytics', icon: '📈', href: '/admin/marketing/analytics', section: 'Marketing', requiredAccess: 'admin' },
+  { label: 'A/B Testing', icon: '🧪', href: '/admin/marketing/ab-testing', section: 'Marketing', requiredAccess: 'admin' },
+  { label: 'Leads', icon: '🎯', href: '/admin/marketing/leads', section: 'Marketing', requiredAccess: 'admin' },
+  { label: 'Social Media', icon: '📱', href: '/admin/marketing/social', section: 'Marketing', requiredAccess: 'admin' },
+  { label: 'Email Campaigns', icon: '📧', href: '/admin/marketing/email', section: 'Marketing', requiredAccess: 'admin' },
+  { label: 'Content Calendar', icon: '📅', href: '/admin/marketing/calendar', section: 'Marketing', requiredAccess: 'admin' },
+  { label: 'Competitors', icon: '👁️', href: '/admin/marketing/competitors', section: 'Marketing', requiredAccess: 'admin' },
+
+  // Services (admin only)
+  { label: 'Additional Services', icon: '➕', href: '/admin/additional-services', section: 'Services', requiredAccess: 'admin' },
+  { label: 'Lunch Orders', icon: '🍽️', href: '/admin/lunch-orders', section: 'Services', requiredAccess: 'admin' },
+
+  // Partners (admin only)
+  { label: 'Partners', icon: '🤝', href: '/admin/partners', section: 'Partners', requiredAccess: 'admin' },
+
+  // System (admin only)
+  { label: 'Users', icon: '👥', href: '/admin/users', section: 'System', requiredAccess: 'admin' },
+  { label: 'Settings', icon: '⚙️', href: '/admin/settings', section: 'System', requiredAccess: 'admin' },
 ];
+
+// Helper to check if user can access an item
+function canAccessItem(item: NavItem, userRole: string | undefined): boolean {
+  // If no requiredAccess, anyone with any role can see it
+  if (!item.requiredAccess) return true;
+
+  // Admin can access everything
+  if (userRole === 'admin') return true;
+
+  // Geology admin can access geology items
+  if (item.requiredAccess === 'geology' && userRole === 'geology_admin') return true;
+
+  // Staff can access some items (future expansion)
+  if (item.requiredAccess === 'staff' && (userRole === 'staff' || userRole === 'admin')) return true;
+
+  return false;
+}
 
 export function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [badgeCounts, setBadgeCounts] = useState<Record<string, number>>({});
+  const [userRole, setUserRole] = useState<string | undefined>(undefined);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch user role on mount
+  useEffect(() => {
+    async function fetchUserRole() {
+      try {
+        const response = await fetch('/api/auth/me');
+        if (response.ok) {
+          const data = await response.json();
+          setUserRole(data.user?.role);
+        }
+      } catch (error) {
+        logger.error('Failed to fetch user role', { error });
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchUserRole();
+  }, []);
 
   // Fetch dynamic badge counts
   useEffect(() => {
@@ -88,9 +133,9 @@ export function AdminSidebar() {
     return () => clearInterval(interval);
   }, []);
 
-  // Group items by section
+  // Filter and group items by section based on user role
   const sections: { [key: string]: NavItem[] } = {};
-  NAV_ITEMS.forEach(item => {
+  NAV_ITEMS.filter(item => canAccessItem(item, userRole)).forEach(item => {
     const section = item.section || 'Other';
     if (!sections[section]) {
       sections[section] = [];
@@ -201,11 +246,33 @@ export function AdminSidebar() {
 export function AdminMobileNav() {
   const pathname = usePathname();
   const router = useRouter();
+  const [userRole, setUserRole] = useState<string | undefined>(undefined);
 
-  // Show only most important items on mobile
-  const mobileItems = NAV_ITEMS.filter(item => 
-    ['Dashboard', 'Bookings', 'Calendar', 'Settings'].includes(item.label)
-  );
+  // Fetch user role on mount
+  useEffect(() => {
+    async function fetchUserRole() {
+      try {
+        const response = await fetch('/api/auth/me');
+        if (response.ok) {
+          const data = await response.json();
+          setUserRole(data.user?.role);
+        }
+      } catch (error) {
+        logger.error('Failed to fetch user role', { error });
+      }
+    }
+    fetchUserRole();
+  }, []);
+
+  // Show role-appropriate items on mobile
+  // Full admins see Dashboard, Bookings, Calendar, Settings
+  // Geology admins see Geology Dashboard only
+  const mobileItems = userRole === 'geology_admin'
+    ? NAV_ITEMS.filter(item => item.label === 'Geology Dashboard')
+    : NAV_ITEMS.filter(item =>
+        ['Dashboard', 'Bookings', 'Calendar', 'Settings'].includes(item.label) &&
+        canAccessItem(item, userRole)
+      );
 
   const handleLogout = async () => {
     try {

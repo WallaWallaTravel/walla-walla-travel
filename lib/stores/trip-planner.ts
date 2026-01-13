@@ -1,5 +1,15 @@
 import { create } from 'zustand';
-import { Trip, TripBase, CreateTripInput, TripSummary, AddStopRequest, AddGuestRequest } from '@/lib/types/trip-planner';
+import {
+  Trip,
+  TripBase,
+  CreateTripInput,
+  TripSummary,
+  AddStopRequest,
+  AddGuestRequest,
+  TripChatMessage,
+  TripAIAction,
+  StopSuggestion,
+} from '@/lib/types/trip-planner';
 
 export interface TripPlannerState {
   trips: TripSummary[];
@@ -7,6 +17,13 @@ export interface TripPlannerState {
   isSaving: boolean;
   isLoading: boolean;
   error: string | null;
+
+  // AI Chat State
+  chatMessages: TripChatMessage[];
+  isSendingMessage: boolean;
+  suggestions: StopSuggestion[];
+  isLoadingSuggestions: boolean;
+  proactiveTip: string | null;
 
   // Core Actions
   createTrip: (input: CreateTripInput) => Promise<Trip | null>;
@@ -27,6 +44,12 @@ export interface TripPlannerState {
 
   // Handoff Actions
   requestHandoff: (tripId: number, notes?: string) => Promise<boolean>;
+
+  // AI Chat Actions
+  sendChatMessage: (shareCode: string, message: string) => Promise<void>;
+  loadSuggestions: (shareCode: string, focusDay?: number) => Promise<void>;
+  applySuggestion: (suggestion: StopSuggestion) => Promise<void>;
+  clearChat: () => void;
 }
 
 export const useTripPlannerStore = create<TripPlannerState>((set, get) => ({
@@ -35,6 +58,13 @@ export const useTripPlannerStore = create<TripPlannerState>((set, get) => ({
   isSaving: false,
   isLoading: false,
   error: null,
+
+  // AI Chat State
+  chatMessages: [],
+  isSendingMessage: false,
+  suggestions: [],
+  isLoadingSuggestions: false,
+  proactiveTip: null,
 
   createTrip: async (input: CreateTripInput) => {
     set({ isSaving: true, error: null });
@@ -162,7 +192,7 @@ export const useTripPlannerStore = create<TripPlannerState>((set, get) => ({
         currentTrip: updatedTrip,
         isSaving: false,
         trips: get().trips.map(t =>
-          t.share_code === (typeof tripIdOrShareCode === 'string' ? tripIdOrShareCode : updatedTrip?.trip?.share_code)
+          t.share_code === (typeof tripIdOrShareCode === 'string' ? tripIdOrShareCode : updatedTrip?.share_code)
             ? { ...t, ...updates }
             : t
         )
@@ -369,16 +399,13 @@ export const useTripPlannerStore = create<TripPlannerState>((set, get) => ({
         return false;
       }
 
-      // Update local state
+      // Update local state (Trip has flat structure)
       const currentTrip = get().currentTrip;
       if (currentTrip) {
         set({
           currentTrip: {
             ...currentTrip,
-            trip: {
-              ...currentTrip.trip,
-              status: 'handed_off',
-            },
+            status: 'handed_off',
           },
           isSaving: false,
         });
@@ -395,6 +422,133 @@ export const useTripPlannerStore = create<TripPlannerState>((set, get) => ({
   },
 
   clearError: () => set({ error: null }),
+
+  // ==========================================================================
+  // AI Chat Actions
+  // ==========================================================================
+
+  sendChatMessage: async (shareCode: string, message: string) => {
+    const { chatMessages } = get();
+
+    // Add user message immediately
+    const userMessage: TripChatMessage = {
+      id: `msg-${Date.now()}-user`,
+      role: 'user',
+      content: message,
+      timestamp: new Date().toISOString(),
+    };
+
+    set({
+      chatMessages: [...chatMessages, userMessage],
+      isSendingMessage: true,
+      error: null,
+    });
+
+    try {
+      const response = await fetch(`/api/trips/${shareCode}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message,
+          history: [...chatMessages, userMessage],
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        const errorMessage =
+          typeof data.error === 'string'
+            ? data.error
+            : data.error?.message || 'Failed to send message';
+        set({ error: errorMessage, isSendingMessage: false });
+        return;
+      }
+
+      // Add assistant response
+      const assistantMessage: TripChatMessage = {
+        id: `msg-${Date.now()}-assistant`,
+        role: 'assistant',
+        content: data.data.message,
+        timestamp: new Date().toISOString(),
+        actions: data.data.actions,
+      };
+
+      set({
+        chatMessages: [...get().chatMessages, assistantMessage],
+        isSendingMessage: false,
+        proactiveTip: data.data.proactiveTip || null,
+      });
+
+      // Refresh suggestions if the AI indicated we should
+      if (data.data.refreshSuggestions) {
+        get().loadSuggestions(shareCode);
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to send message';
+      set({ error: errorMessage, isSendingMessage: false });
+    }
+  },
+
+  loadSuggestions: async (shareCode: string, focusDay?: number) => {
+    set({ isLoadingSuggestions: true });
+
+    try {
+      const response = await fetch(`/api/trips/${shareCode}/suggestions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ focusDay }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        set({ isLoadingSuggestions: false });
+        return;
+      }
+
+      set({
+        suggestions: data.data.suggestions || [],
+        proactiveTip: data.data.proactiveTip || get().proactiveTip,
+        isLoadingSuggestions: false,
+      });
+    } catch (err) {
+      set({ isLoadingSuggestions: false });
+    }
+  },
+
+  applySuggestion: async (suggestion: StopSuggestion) => {
+    const { currentTrip } = get();
+    if (!currentTrip) return;
+
+    // Convert suggestion to AddStopRequest
+    const stopRequest: AddStopRequest = {
+      name: suggestion.name,
+      stop_type: suggestion.type,
+      day_number: suggestion.dayRecommendation,
+      planned_arrival: suggestion.arrivalTime,
+      winery_id: suggestion.wineryId,
+      notes: suggestion.reason,
+    };
+
+    // Use existing addStop action
+    await get().addStop(currentTrip.id, stopRequest);
+
+    // Remove the applied suggestion from the list
+    set({
+      suggestions: get().suggestions.filter((s) => s.id !== suggestion.id),
+    });
+
+    // Reload suggestions after adding
+    get().loadSuggestions(currentTrip.share_code);
+  },
+
+  clearChat: () => {
+    set({
+      chatMessages: [],
+      proactiveTip: null,
+    });
+  },
 }));
 
 // Selector hooks for convenience
@@ -402,3 +556,10 @@ export const useMyTrips = () => useTripPlannerStore((state) => state.trips);
 export const useCurrentTrip = () => useTripPlannerStore((state) => state.currentTrip);
 export const useTripLoading = () => useTripPlannerStore((state) => state.isLoading);
 export const useTripError = () => useTripPlannerStore((state) => state.error);
+
+// AI Chat selectors
+export const useChatMessages = () => useTripPlannerStore((state) => state.chatMessages);
+export const useIsSendingMessage = () => useTripPlannerStore((state) => state.isSendingMessage);
+export const useSuggestions = () => useTripPlannerStore((state) => state.suggestions);
+export const useIsLoadingSuggestions = () => useTripPlannerStore((state) => state.isLoadingSuggestions);
+export const useProactiveTip = () => useTripPlannerStore((state) => state.proactiveTip);

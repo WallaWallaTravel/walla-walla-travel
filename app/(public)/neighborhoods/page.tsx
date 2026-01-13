@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import { getAllNeighborhoods } from '@/lib/data/neighborhoods';
 import { BreadcrumbJsonLd } from '@/components/seo/BreadcrumbJsonLd';
+import { PageHero } from '@/components/PageHero';
 
 export const metadata: Metadata = {
   title: 'Walla Walla Wine Districts & Neighborhoods',
@@ -37,23 +38,12 @@ export default function NeighborhoodsPage() {
       <BreadcrumbJsonLd items={breadcrumbs} />
 
       <div className="min-h-screen bg-gradient-to-b from-[#faf7f5] to-white">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-[#722F37] to-[#8B1538] text-white">
-          <div className="max-w-6xl mx-auto px-4 py-16">
-            <nav className="mb-6">
-              <Link href="/" className="text-white/70 hover:text-white text-sm">
-                ← Back to Home
-              </Link>
-            </nav>
-            <h1 className="text-4xl md:text-5xl font-serif font-bold mb-4">
-              Wine Country Districts
-            </h1>
-            <p className="text-xl text-white/90 max-w-2xl">
-              Walla Walla wine country is spread across several areas. This guide helps
-              you understand the geography—great wineries exist in every district.
-            </p>
-          </div>
-        </div>
+        {/* Hero with background image */}
+        <PageHero
+          title="Wine Country Districts"
+          description="Walla Walla wine country is spread across several areas. This guide helps you understand the geography—great wineries exist in every district."
+          backLink={{ href: '/', label: 'Back to Home' }}
+        />
 
         {/* Neighborhood Grid */}
         <div className="max-w-6xl mx-auto px-4 py-12">

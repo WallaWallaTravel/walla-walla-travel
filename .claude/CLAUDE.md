@@ -1,5 +1,24 @@
 # Walla Walla Ecosystem - Claude Code Master Context
 
+## 🎯 CONTENT PHILOSOPHY: ACCURACY AS COMPETITIVE ADVANTAGE
+
+**Walla Walla Travel aims to be THE authoritative, trustworthy source for Walla Walla wine country information - for both humans and AI systems.**
+
+In a web flooded with AI-generated content recycling stale or incorrect data, we differentiate by being:
+- **Locally verified** - The founder lives here and knows the region firsthand
+- **Regularly updated** - Current data, not recycled information from years ago
+- **Honest about limitations** - We say "~6 wineries" when verified, not "15" when guessing
+- **Research-backed** - Every specific claim is verified before publishing
+
+**Why this matters:**
+- Search engines and AI models use E-E-A-T (Experience, Expertise, Authoritativeness, Trustworthiness) to determine source reliability
+- Being the accurate source means we get cited, which builds authority
+- Accuracy is the long game that compounds over time
+
+**The rule: If we can't verify it, we don't publish it.**
+
+---
+
 ## 🏗️ ECOSYSTEM OVERVIEW
 
 This is a **multi-product ecosystem** with modular architecture designed for:
@@ -17,24 +36,32 @@ This is a **multi-product ecosystem** with modular architecture designed for:
 
 ### Business Entities
 
+**These are SEPARATE businesses with a partnership relationship:**
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │              WALLA WALLA TRAVEL                              │
-│         (Marketing & Customer-Facing Brand)                  │
+│         (Destination Management Company / DMC)               │
 │                                                              │
 │   URL: wallawalla.travel                                     │
-│   Role: Takes bookings, promotes services                   │
-└──────────────────────────┬──────────────────────────────────┘
+│   Role: Travel planning, winery directory, experience       │
+│         coordination, free visitor resources                │
+│   Type: Independent business                                │
+└─────────────────────────────────────────────────────────────┘
+                           │
+                    (preferred partner)
                            │
                            ▼
 ┌─────────────────────────────────────────────────────────────┐
-│              NORTHWEST TOURING LLC                           │
+│         NW TOURING & CONCIERGE                               │
+│         (Northwest Touring LLC)                              │
 │            (Regulated Motor Carrier)                         │
 │                                                              │
 │   USDOT: 3603851  |  MC: 1225087                            │
-│   DBA: NW Touring & Concierge                               │
 │   Operation: Charter & Tour, Passenger                      │
 │   Scope: Interstate AND Intrastate                          │
+│   Role: Luxury transportation for tours                     │
+│   Type: Independent business, separate from WWT             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -301,7 +328,9 @@ export const POST = withErrorHandling(async (request) => {
 3. **Default to Charter & Tour** carrier type
 4. **RLS is enabled** - queries filter by operator_id
 5. **User prefers robust, long-term solutions** over quick fixes
-6. **Northwest Touring LLC** is the real company (USDOT 3603851)
+6. **NW Touring & Concierge** (Northwest Touring LLC, USDOT 3603851) is a **separate business** and preferred transportation partner - NOT the same company as Walla Walla Travel
+7. **Public pages MUST be in `app/(public)/`** route group to get the shared navigation header (PublicHeader). Pages outside this group will have NO navigation!
+8. **NEVER estimate or guess specific data** - All numbers, stats, counts, and factual claims (e.g., number of wineries, distances, dates, prices) MUST be researched and verified. Use WebSearch to confirm before adding. Accuracy is essential for credibility.
 
 ---
 
@@ -353,5 +382,76 @@ npm run dev  # http://localhost:3000
 
 ---
 
-**Last Updated:** December 25, 2025
+## 🔁 RALPH WORKFLOW (Project-Specific)
+
+For TDD + iterative AI development on this project. See global `@RALPH_WORKFLOW.md` for full documentation.
+
+### Project Test Commands
+
+**Walla Walla Travel (Next.js):**
+```bash
+# Validation sequence (run in order)
+npm run type-check      # TypeScript compilation
+npm run lint            # ESLint
+npm test                # Jest unit/integration tests
+npm run test:e2e        # Playwright E2E tests
+
+# Specific test targets
+npm test -- ComponentName           # Single component
+npm run test:api                    # API tests only
+npm run test:security               # Security tests
+npm run test:integration            # Integration tests
+```
+
+**Auditor's Dream (Vite+React):**
+```bash
+cd auditors-dream/apps/operator
+npm run type-check      # TypeScript
+npm run lint            # ESLint
+npm test                # Vitest tests
+```
+
+### Ralph Completion Criteria (This Project)
+
+**UI Component:**
+```
+[ ] npm run type-check passes
+[ ] npm run lint passes
+[ ] npm test -- ComponentName passes
+[ ] Accessibility (axe-core) passes
+```
+
+**API Endpoint:**
+```
+[ ] npm run type-check passes
+[ ] npm run test:api passes
+[ ] Returns correct status codes
+[ ] Input validation (Zod) works
+```
+
+**E2E Flow:**
+```
+[ ] npm run type-check passes
+[ ] npm test passes (unit tests)
+[ ] npm run test:e2e passes (Playwright)
+[ ] Mobile viewport works
+```
+
+### Existing Test Structure
+
+```
+__tests__/
+├── api/           # API endpoint tests
+├── app/           # Route/page tests
+├── lib/           # Service & utility tests
+├── integration/   # Integration tests
+├── security/      # Security tests
+└── resilience/    # Resilience tests
+```
+
+When adding tests, follow existing patterns in `__tests__/`.
+
+---
+
+**Last Updated:** January 9, 2026
 **Active Focus:** Auditor's Dream Supabase setup + Walla Walla Travel commercial readiness

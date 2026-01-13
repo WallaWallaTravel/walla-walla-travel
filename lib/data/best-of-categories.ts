@@ -47,31 +47,6 @@ We've compiled this list based on factors like outdoor space availability, staff
     amenityFilter: 'dog-friendly',
   },
   {
-    slug: 'large-groups',
-    title: 'Best Wineries for Large Groups in Walla Walla',
-    shortTitle: 'Large Groups',
-    description: 'Walla Walla wineries perfect for group tastings, corporate events, and celebrations.',
-    metaDescription: 'Planning a group wine tour in Walla Walla? These wineries excel at hosting large parties with private spaces, group rates, and memorable experiences for 10+ guests.',
-    intro: `Planning a wine tour for a large group requires finding venues that can accommodate everyone without sacrificing the quality of the experience. Not all wineries are equipped for groups—some intimate tasting rooms simply can't handle 15+ guests at once.
-
-The wineries on this list specialize in group experiences. They offer private tasting areas, group pricing, and staff experienced in managing larger parties while keeping the experience personal and enjoyable.`,
-    criteria: [
-      'Capacity for 15+ guests',
-      'Private tasting rooms or reserved areas',
-      'Group pricing available',
-      'Experience hosting corporate and celebration groups',
-      'Adequate parking for multiple vehicles or tour buses',
-    ],
-    tips: [
-      'Book at least 2-3 weeks in advance for groups over 12',
-      'Ask about group pricing—many offer discounts for 10+',
-      'Consider a private tour for the best experience',
-      'Coordinate with a tour company for hassle-free logistics',
-      'Confirm dietary restrictions and preferences in advance',
-    ],
-    filterField: 'max_group_size',
-  },
-  {
     slug: 'romantic',
     title: 'Most Romantic Wineries in Walla Walla',
     shortTitle: 'Romantic',

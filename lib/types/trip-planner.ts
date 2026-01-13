@@ -83,9 +83,8 @@ export interface TripStats {
   pending_rsvps: number;
 }
 
-// Full Trip with nested data (as returned by API)
-export interface Trip {
-  trip: TripBase;
+// Full Trip with related data (as returned by API - flat structure)
+export interface Trip extends TripBase {
   stops: TripStop[];
   guests: TripGuest[];
   stats: TripStats;
@@ -136,4 +135,41 @@ export interface AddGuestRequest {
   name: string;
   email?: string;
   dietary_restrictions?: string;
+}
+
+// ============================================================================
+// AI Chat Types
+// ============================================================================
+
+export interface TripChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: string;
+  actions?: TripAIAction[];
+}
+
+export interface TripAIAction {
+  type: 'add_stop' | 'move_stop' | 'suggest_restaurant' | 'show_details' | 'refresh_suggestions';
+  label: string;
+  data?: {
+    name?: string;
+    stopType?: StopType;
+    dayNumber?: number;
+    wineryId?: number;
+    notes?: string;
+    arrivalTime?: string;
+  };
+}
+
+export interface StopSuggestion {
+  id: string;
+  name: string;
+  type: StopType;
+  reason: string;
+  dayRecommendation: number;
+  arrivalTime?: string;
+  wineryId?: number;
+  wineStyles?: string[];
+  experienceTags?: string[];
 }

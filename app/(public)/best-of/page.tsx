@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import { getAllBestOfCategories } from '@/lib/data/best-of-categories';
 import { BreadcrumbJsonLd } from '@/components/seo/BreadcrumbJsonLd';
+import { PageHero } from '@/components/PageHero';
 
 export const metadata: Metadata = {
   title: 'Best Wineries in Walla Walla by Category',
@@ -28,7 +29,6 @@ export const metadata: Metadata = {
 // Category icons
 const categoryIcons: Record<string, string> = {
   'dog-friendly': '🐕',
-  'large-groups': '👥',
   'romantic': '💕',
   'views': '🏔️',
 };
@@ -46,24 +46,12 @@ export default function BestOfIndexPage() {
       <BreadcrumbJsonLd items={breadcrumbs} />
 
       <div className="min-h-screen bg-gradient-to-b from-[#faf7f5] to-white">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-[#722F37] to-[#8B1538] text-white">
-          <div className="max-w-6xl mx-auto px-4 py-16">
-            <nav className="mb-6">
-              <Link href="/" className="text-white/70 hover:text-white text-sm">
-                ← Back to Home
-              </Link>
-            </nav>
-            <h1 className="text-4xl md:text-5xl font-serif font-bold mb-4">
-              Best Wineries in Walla Walla
-            </h1>
-            <p className="text-xl text-white/90 max-w-2xl">
-              Curated lists to help you find the perfect winery for any occasion.
-              Whether you&apos;re traveling with your dog, planning a group outing, or
-              seeking romance, we&apos;ve got you covered.
-            </p>
-          </div>
-        </div>
+        {/* Hero with background image */}
+        <PageHero
+          title="Best Wineries in Walla Walla"
+          description="Curated lists to help you find the perfect winery for any occasion. Whether you're traveling with your dog, planning a group outing, or seeking romance, we've got you covered."
+          backLink={{ href: '/', label: 'Back to Home' }}
+        />
 
         {/* Categories Grid */}
         <div className="max-w-6xl mx-auto px-4 py-12">

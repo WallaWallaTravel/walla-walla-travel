@@ -9,6 +9,7 @@ import {
 import { getWineries } from '@/lib/data/wineries';
 import { BreadcrumbJsonLd } from '@/components/seo/BreadcrumbJsonLd';
 import { FAQJsonLd, FAQ } from '@/components/seo/FAQJsonLd';
+import { FAQSection } from '@/components/FAQSection';
 
 // Generate static params for all categories
 export async function generateStaticParams() {
@@ -93,10 +94,10 @@ export default async function BestOfCategoryPage({ params }: PageProps) {
     );
   }
 
-  // If no matches, show top-rated wineries as fallback
+  // If no matches, show wineries alphabetically as fallback
   if (filteredWineries.length < 5) {
     filteredWineries = allWineries
-      .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+      .sort((a, b) => a.name.localeCompare(b.name))
       .slice(0, 10);
   }
 
@@ -116,7 +117,6 @@ export default async function BestOfCategoryPage({ params }: PageProps) {
   // Category-specific icons
   const categoryIcons: Record<string, string> = {
     'dog-friendly': '🐕',
-    'large-groups': '👥',
     'romantic': '💕',
     'views': '🏔️',
   };
@@ -200,12 +200,6 @@ export default async function BestOfCategoryPage({ params }: PageProps) {
                                   {winery.region} • {winery.tasting_fee > 0 ? `$${winery.tasting_fee} tasting` : 'By appointment'}
                                 </p>
                               </div>
-                              {winery.rating && (
-                                <div className="flex items-center gap-1 text-amber-500">
-                                  <span>⭐</span>
-                                  <span className="font-medium">{winery.rating}</span>
-                                </div>
-                              )}
                             </div>
 
                             <p className="text-gray-600 mt-3 line-clamp-2">
@@ -261,31 +255,7 @@ export default async function BestOfCategoryPage({ params }: PageProps) {
               </section>
 
               {/* FAQ Section */}
-              <section>
-                <h2 className="text-2xl font-serif font-bold text-gray-900 mb-6">
-                  Frequently Asked Questions
-                </h2>
-                <div className="space-y-4">
-                  {faqs.map((faq, index) => (
-                    <details
-                      key={index}
-                      className="group bg-white rounded-xl border border-gray-200 hover:border-[#8B1538]/30 transition-colors"
-                    >
-                      <summary className="flex items-center justify-between p-4 cursor-pointer list-none">
-                        <span className="font-medium text-gray-900 pr-4">{faq.question}</span>
-                        <span className="text-[#8B1538] group-open:rotate-180 transition-transform flex-shrink-0">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </span>
-                      </summary>
-                      <div className="px-4 pb-4 text-gray-600 border-t border-gray-100 pt-3">
-                        {faq.answer}
-                      </div>
-                    </details>
-                  ))}
-                </div>
-              </section>
+              <FAQSection faqs={faqs} />
             </div>
 
             {/* Sidebar */}
@@ -327,6 +297,22 @@ export default async function BestOfCategoryPage({ params }: PageProps) {
                     </li>
                   ))}
                 </ul>
+              </div>
+
+              {/* Explore by District */}
+              <div className="bg-white rounded-xl border border-gray-200 p-4">
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                  Explore by District
+                </h3>
+                <div className="grid grid-cols-2 gap-2">
+                  <Link href="/neighborhoods/downtown" className="text-sm text-gray-600 hover:text-[#8B1538] transition-colors">Downtown</Link>
+                  <Link href="/neighborhoods/airport-district" className="text-sm text-gray-600 hover:text-[#8B1538] transition-colors">Airport</Link>
+                  <Link href="/neighborhoods/southside" className="text-sm text-gray-600 hover:text-[#8B1538] transition-colors">Southside</Link>
+                  <Link href="/neighborhoods/westside" className="text-sm text-gray-600 hover:text-[#8B1538] transition-colors">Westside</Link>
+                </div>
+                <Link href="/neighborhoods" className="block mt-3 text-xs text-[#8B1538] font-medium hover:underline">
+                  View All Districts →
+                </Link>
               </div>
 
               {/* Other Categories */}
