@@ -52,7 +52,7 @@ export interface SessionUser {
   id: number;
   email: string;
   name: string;
-  role: 'admin' | 'driver' | 'partner';
+  role: 'admin' | 'geology_admin' | 'driver' | 'partner';
 }
 
 export interface SessionPayload {

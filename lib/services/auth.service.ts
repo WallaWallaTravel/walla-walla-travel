@@ -42,7 +42,7 @@ export interface LoginResult {
     id: number;
     email: string;
     name: string;
-    role: 'admin' | 'driver';
+    role: 'admin' | 'geology_admin' | 'driver' | 'partner';
   };
   redirectTo: string;
 }
@@ -52,7 +52,7 @@ interface UserRow {
   email: string;
   name: string;
   password_hash: string;
-  role: 'admin' | 'driver';
+  role: 'admin' | 'geology_admin' | 'driver' | 'partner';
   is_active: boolean;
 }
 
