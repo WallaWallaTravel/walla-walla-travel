@@ -358,14 +358,15 @@ class WineryService extends BaseService {
   }
 
   /**
-   * Get featured wineries (top rated)
+   * Get featured wineries (marked as featured in database)
    */
   async getFeatured(limit: number = 6): Promise<WinerySummary[]> {
     const result = await this.query<WinerySummary>(
       `SELECT ${SUMMARY_COLUMNS}
       FROM wineries
-      WHERE COALESCE(is_active, true) = true AND average_rating IS NOT NULL
-      ORDER BY average_rating DESC
+      WHERE COALESCE(is_active, true) = true
+        AND COALESCE(is_featured, false) = true
+      ORDER BY average_rating DESC NULLS LAST
       LIMIT $1`,
       [limit]
     );
