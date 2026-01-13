@@ -38,13 +38,12 @@ const SESSION_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 /**
  * Get cookie domain for cross-subdomain sharing
- * In production, cookies are shared across all *.wallawalla.travel subdomains
- * In development, no domain is set (localhost doesn't support subdomain cookies)
+ * In production on wallawalla.travel, cookies are shared across all subdomains
+ * On vercel.app URLs or development, no domain is set (allows cookie to work on current hostname)
  */
 function getCookieDomain(): string | undefined {
-  if (process.env.NODE_ENV === 'production') {
-    return '.wallawalla.travel';
-  }
+  // Don't set domain - let cookie work on current hostname
+  // This allows both wallawalla.travel and vercel.app deployments to work
   return undefined;
 }
 
