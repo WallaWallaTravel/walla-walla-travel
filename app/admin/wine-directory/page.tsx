@@ -27,143 +27,51 @@ export default function WineDirectoryPage() {
   const [filter, setFilter] = useState<'all' | 'featured' | 'verified'>('all')
   const [search, setSearch] = useState('')
   const [selectedWinery, setSelectedWinery] = useState<Winery | null>(null)
+  const [updating, setUpdating] = useState<number | null>(null)
 
   useEffect(() => {
-    // Simulated data - runs once on mount
-    setTimeout(() => {
-      setWineries([
-        {
-          id: 1,
-          name: "L'Ecole No 41",
-          slug: 'lecole-no-41',
-          city: 'Lowden',
-          ava: 'Walla Walla Valley',
-          is_verified: true,
-          is_featured: true,
-          is_active: true,
-          tasting_room_fee: 20,
-          reservation_required: false,
-          walk_ins_welcome: true,
-          amenities: ['picnic_area', 'dog_friendly', 'food_available'],
-          logo_url: null,
-          hero_image_url: null,
-        },
-        {
-          id: 2,
-          name: 'Leonetti Cellar',
-          slug: 'leonetti-cellar',
-          city: 'Walla Walla',
-          ava: 'Walla Walla Valley',
-          is_verified: true,
-          is_featured: true,
-          is_active: true,
-          tasting_room_fee: 50,
-          reservation_required: true,
-          walk_ins_welcome: false,
-          amenities: ['private_tasting'],
-          logo_url: null,
-          hero_image_url: null,
-        },
-        {
-          id: 3,
-          name: 'Woodward Canyon',
-          slug: 'woodward-canyon',
-          city: 'Lowden',
-          ava: 'Walla Walla Valley',
-          is_verified: true,
-          is_featured: true,
-          is_active: true,
-          tasting_room_fee: 25,
-          reservation_required: false,
-          walk_ins_welcome: true,
-          amenities: ['picnic_area', 'wheelchair_accessible'],
-          logo_url: null,
-          hero_image_url: null,
-        },
-        {
-          id: 4,
-          name: 'Cayuse Vineyards',
-          slug: 'cayuse-vineyards',
-          city: 'Walla Walla',
-          ava: 'The Rocks District',
-          is_verified: true,
-          is_featured: false,
-          is_active: true,
-          tasting_room_fee: 75,
-          reservation_required: true,
-          walk_ins_welcome: false,
-          amenities: ['private_tasting', 'vineyard_tour'],
-          logo_url: null,
-          hero_image_url: null,
-        },
-        {
-          id: 5,
-          name: 'Amavi Cellars',
-          slug: 'amavi-cellars',
-          city: 'Walla Walla',
-          ava: 'Walla Walla Valley',
-          is_verified: true,
-          is_featured: false,
-          is_active: true,
-          tasting_room_fee: 15,
-          reservation_required: false,
-          walk_ins_welcome: true,
-          amenities: ['picnic_area', 'dog_friendly', 'wheelchair_accessible'],
-          logo_url: null,
-          hero_image_url: null,
-        },
-        {
-          id: 6,
-          name: 'Gramercy Cellars',
-          slug: 'gramercy-cellars',
-          city: 'Walla Walla',
-          ava: 'Walla Walla Valley',
-          is_verified: false,
-          is_featured: false,
-          is_active: true,
-          tasting_room_fee: 20,
-          reservation_required: true,
-          walk_ins_welcome: false,
-          amenities: [],
-          logo_url: null,
-          hero_image_url: null,
-        },
-        {
-          id: 7,
-          name: 'Beresan Winery',
-          slug: 'beresan-winery',
-          city: 'Walla Walla',
-          ava: 'Walla Walla Valley',
-          is_verified: true,
-          is_featured: false,
-          is_active: true,
-          tasting_room_fee: 10,
-          reservation_required: false,
-          walk_ins_welcome: true,
-          amenities: ['picnic_area', 'food_available', 'live_music'],
-          logo_url: null,
-          hero_image_url: null,
-        },
-        {
-          id: 8,
-          name: 'College Cellars',
-          slug: 'college-cellars',
-          city: 'Walla Walla',
-          ava: 'Walla Walla Valley',
-          is_verified: false,
-          is_featured: false,
-          is_active: false,
-          tasting_room_fee: null,
-          reservation_required: false,
-          walk_ins_welcome: true,
-          amenities: [],
-          logo_url: null,
-          hero_image_url: null,
-        },
-      ])
-      setLoading(false)
-    }, 500)
+    fetchWineries()
   }, [])
+
+  async function fetchWineries() {
+    try {
+      const res = await fetch('/api/admin/wine-directory')
+      const data = await res.json()
+      if (data.wineries) {
+        setWineries(data.wineries)
+      }
+    } catch (error) {
+      console.error('Failed to fetch wineries:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function toggleFeatured(winery: Winery) {
+    setUpdating(winery.id)
+    try {
+      const res = await fetch(`/api/admin/wine-directory/${winery.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_featured: !winery.is_featured })
+      })
+
+      if (res.ok) {
+        // Update local state
+        const newFeatured = !winery.is_featured
+        setWineries(prev => prev.map(w =>
+          w.id === winery.id ? { ...w, is_featured: newFeatured } : w
+        ))
+        if (selectedWinery?.id === winery.id) {
+          setSelectedWinery({ ...selectedWinery, is_featured: newFeatured })
+        }
+      }
+    } catch (error) {
+      console.error('Failed to update winery:', error)
+    } finally {
+      setUpdating(null)
+    }
+  }
 
   const filteredWineries = wineries.filter(w => {
     if (filter === 'featured' && !w.is_featured) return false
@@ -198,7 +106,7 @@ export default function WineDirectoryPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">🍷 Wine Directory</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Wine Directory</h1>
             <p className="text-gray-600 mt-1">Manage wineries for tours and recommendations</p>
           </div>
           <Link
@@ -220,7 +128,7 @@ export default function WineDirectoryPage() {
             <p className="text-2xl font-bold text-green-600">{stats.active}</p>
           </div>
           <div className="bg-white rounded-lg p-4 shadow-sm">
-            <p className="text-sm text-gray-500">Featured</p>
+            <p className="text-sm text-gray-500">Featured on Homepage</p>
             <p className="text-2xl font-bold text-purple-600">{stats.featured}</p>
           </div>
           <div className="bg-white rounded-lg p-4 shadow-sm">
@@ -242,7 +150,7 @@ export default function WineDirectoryPage() {
                     : 'bg-white text-gray-700 hover:bg-gray-100'
                 }`}
               >
-                {f === 'featured' ? '⭐ Featured' : f === 'verified' ? '✓ Verified' : 'All'}
+                {f === 'featured' ? 'Featured' : f === 'verified' ? 'Verified' : 'All'}
               </button>
             ))}
           </div>
@@ -299,22 +207,22 @@ export default function WineDirectoryPage() {
                       <div className="absolute top-2 right-2 flex gap-1">
                         {winery.is_featured && (
                           <span className="px-2 py-0.5 bg-yellow-400 text-yellow-900 rounded text-xs font-medium">
-                            ⭐ Featured
+                            Featured
                           </span>
                         )}
                         {winery.is_verified && (
                           <span className="px-2 py-0.5 bg-blue-500 text-white rounded text-xs font-medium">
-                            ✓ Verified
+                            Verified
                           </span>
                         )}
                       </div>
                     </div>
                     <div className="p-4">
                       <h3 className="font-semibold text-gray-900">{winery.name}</h3>
-                      <p className="text-sm text-gray-500">{winery.city} • {winery.ava}</p>
+                      <p className="text-sm text-gray-500">{winery.city || 'Walla Walla'} {winery.ava ? `• ${winery.ava}` : ''}</p>
                       <div className="flex items-center justify-between mt-3">
                         <div className="flex gap-1">
-                          {winery.amenities.slice(0, 3).map((amenity) => (
+                          {(winery.amenities || []).slice(0, 3).map((amenity) => (
                             <span key={amenity} title={amenity.replace('_', ' ')}>
                               {getAmenityIcon(amenity)}
                             </span>
@@ -348,14 +256,9 @@ export default function WineDirectoryPage() {
                   <div className="flex items-start justify-between mb-4">
                     <div>
                       <h2 className="text-xl font-bold text-gray-900">{selectedWinery.name}</h2>
-                      <p className="text-gray-500">{selectedWinery.city}, WA</p>
+                      <p className="text-gray-500">{selectedWinery.city || 'Walla Walla'}, WA</p>
                     </div>
                     <div className="flex flex-col gap-1">
-                      {selectedWinery.is_featured && (
-                        <span className="px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded text-xs font-medium">
-                          Featured
-                        </span>
-                      )}
                       {selectedWinery.is_verified && (
                         <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs font-medium">
                           Verified
@@ -369,11 +272,36 @@ export default function WineDirectoryPage() {
                     </div>
                   </div>
 
-                  <div className="space-y-4">
-                    <div>
-                      <h4 className="text-xs font-medium text-gray-500 uppercase mb-2">AVA Region</h4>
-                      <p className="text-gray-900">{selectedWinery.ava}</p>
+                  {/* Featured Toggle */}
+                  <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-yellow-900">Homepage Featured</p>
+                        <p className="text-xs text-yellow-700">Show on homepage featured section</p>
+                      </div>
+                      <button
+                        onClick={() => toggleFeatured(selectedWinery)}
+                        disabled={updating === selectedWinery.id}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                          selectedWinery.is_featured ? 'bg-yellow-500' : 'bg-gray-300'
+                        } ${updating === selectedWinery.id ? 'opacity-50' : ''}`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            selectedWinery.is_featured ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
                     </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    {selectedWinery.ava && (
+                      <div>
+                        <h4 className="text-xs font-medium text-gray-500 uppercase mb-2">AVA Region</h4>
+                        <p className="text-gray-900">{selectedWinery.ava}</p>
+                      </div>
+                    )}
 
                     <div>
                       <h4 className="text-xs font-medium text-gray-500 uppercase mb-2">Tasting Room</h4>
@@ -384,7 +312,7 @@ export default function WineDirectoryPage() {
                       </div>
                     </div>
 
-                    {selectedWinery.amenities.length > 0 && (
+                    {(selectedWinery.amenities || []).length > 0 && (
                       <div>
                         <h4 className="text-xs font-medium text-gray-500 uppercase mb-2">Amenities</h4>
                         <div className="flex flex-wrap gap-2">
@@ -400,21 +328,25 @@ export default function WineDirectoryPage() {
 
                   <div className="flex gap-2 mt-6 pt-4 border-t border-gray-100">
                     <Link
-                      href={`/admin/wine-directory/${selectedWinery.id}/edit`}
+                      href={`/admin/wine-directory/${selectedWinery.id}`}
                       className="flex-1 px-4 py-2 bg-purple-600 text-white text-center rounded-lg text-sm font-medium hover:bg-purple-700"
                     >
                       Edit Winery
                     </Link>
-                    <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200">
+                    <Link
+                      href={`/wineries/${selectedWinery.slug}`}
+                      target="_blank"
+                      className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200"
+                    >
                       View Public
-                    </button>
+                    </Link>
                   </div>
                 </div>
               </div>
             ) : (
               <div className="bg-white rounded-xl shadow-sm p-8 text-center sticky top-4">
                 <div className="text-4xl mb-4">👆</div>
-                <p className="text-gray-500">Select a winery to view details</p>
+                <p className="text-gray-500">Select a winery to view details and toggle featured status</p>
               </div>
             )}
           </div>
@@ -423,10 +355,3 @@ export default function WineDirectoryPage() {
     </div>
   )
 }
-
-
-
-
-
-
-
