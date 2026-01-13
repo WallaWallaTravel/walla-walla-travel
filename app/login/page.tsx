@@ -114,10 +114,16 @@ function LoginPageContent() {
         
         // Use role-based default if redirect is not allowed
         const userRole = data.data?.user?.role
-        if (isRedirectAllowed && customRedirect) {
+
+        // First, use the server's redirectTo if provided (most reliable)
+        if (data.data?.redirectTo) {
+          redirectTo = data.data.redirectTo
+        } else if (isRedirectAllowed && customRedirect) {
           redirectTo = customRedirect
         } else if (userRole === 'admin') {
           redirectTo = '/admin/dashboard'
+        } else if (userRole === 'geology_admin') {
+          redirectTo = '/admin/geology'
         } else if (userRole === 'driver') {
           redirectTo = '/driver-portal/dashboard'
         } else if (userRole === 'partner') {
