@@ -165,45 +165,54 @@ export async function POST(request: NextRequest) {
         driver_id,
         vehicle_id,
         clock_in_time,
-        clock_in_location,
-        clock_in_gps_accuracy,
-        notes
-      ) VALUES ($1, $2, CURRENT_TIMESTAMP, $3, $4, $5)
-      RETURNING 
+        work_reporting_location,
+        work_reporting_lat,
+        work_reporting_lng,
+        notes,
+        date,
+        status
+      ) VALUES ($1, $2, CURRENT_TIMESTAMP, $3, $4, $5, $6, CURRENT_DATE, 'active')
+      RETURNING
         id,
         driver_id,
         vehicle_id,
         clock_in_time,
-        clock_in_location,
+        work_reporting_location,
         notes`,
       [
         driverId,
         vehicleId,
         location ? `${location.latitude},${location.longitude}` : null,
-        location?.accuracy || null,
+        location?.latitude || null,
+        location?.longitude || null,
         notes || null
       ]
     );
 
     const timeCard = result.rows[0];
 
-    // Also create a daily_trips record
-    await query(
-      `INSERT INTO daily_trips (
-        driver_id,
-        vehicle_id,
-        trip_date,
-        start_time,
-        start_location
-      ) VALUES ($1, $2, CURRENT_DATE, CURRENT_TIMESTAMP, $3)
-      ON CONFLICT (driver_id, trip_date) 
-      DO NOTHING`,
-      [
-        driverId,
-        vehicleId,
-        location ? `${location.latitude},${location.longitude}` : null
-      ]
-    );
+    // Also create a daily_trips record for distance tracking (if not exists)
+    try {
+      await query(
+        `INSERT INTO daily_trips (
+          time_card_id,
+          driver_id,
+          vehicle_id,
+          date,
+          base_location_lat,
+          base_location_lng
+        ) VALUES ($1, $2, $3, CURRENT_DATE, $4, $5)`,
+        [
+          timeCard.id,
+          driverId,
+          vehicleId,
+          location?.latitude || null,
+          location?.longitude || null
+        ]
+      );
+    } catch {
+      // Ignore if daily_trips record already exists
+    }
 
     // Get driver and vehicle details for response
     const detailsResult = await query(

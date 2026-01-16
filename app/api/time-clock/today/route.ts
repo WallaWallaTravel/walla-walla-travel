@@ -52,15 +52,15 @@ export async function GET(request: Request) {
     const tripResult = await query(
       `SELECT * FROM daily_trips
       WHERE driver_id = $1
-      AND trip_date = CURRENT_DATE
+      AND date = CURRENT_DATE
       LIMIT 1`,
       [driverId]
     );
 
     // Get weekly hours
     const weeklyResult = await query(
-      `SELECT 
-        COALESCE(SUM(total_hours_worked), 0) as weekly_hours
+      `SELECT
+        COALESCE(SUM(on_duty_hours), 0) as weekly_hours
       FROM time_cards
       WHERE driver_id = $1
       AND clock_in_time >= DATE_TRUNC('week', CURRENT_DATE)
@@ -118,7 +118,7 @@ export async function GET(request: Request) {
       });
     }
 
-    if (trip?.air_miles_from_base >= 140) {
+    if (trip?.max_air_miles >= 140) {
       alerts.push({
         type: 'warning',
         message: 'Approaching 150-mile exemption limit',

@@ -552,41 +552,41 @@ class ComplianceServiceImpl extends BaseService {
     const violations: ComplianceViolation[] = [];
     const warnings: ComplianceViolation[] = [];
 
-    // Get driving hours for the day
+    // Get driving and on-duty hours for the day from time_cards
+    // time_cards stores: driving_hours, on_duty_hours (calculated on clock-out)
+    // For active shifts, calculate from clock_in_time to now
     const dailyHours = await this.queryOne<{
       driving_hours: number;
       on_duty_hours: number;
-      off_duty_hours: number;
     }>(
       `SELECT
          COALESCE(SUM(
-           CASE WHEN activity_type = 'driving'
-           THEN EXTRACT(EPOCH FROM (end_time - start_time))/3600
-           ELSE 0 END
+           CASE WHEN clock_out_time IS NOT NULL THEN driving_hours
+           ELSE EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - clock_in_time))/3600
+           END
          ), 0) as driving_hours,
          COALESCE(SUM(
-           CASE WHEN activity_type IN ('driving', 'on_duty')
-           THEN EXTRACT(EPOCH FROM (end_time - start_time))/3600
-           ELSE 0 END
-         ), 0) as on_duty_hours,
-         COALESCE(SUM(
-           CASE WHEN activity_type = 'off_duty'
-           THEN EXTRACT(EPOCH FROM (end_time - start_time))/3600
-           ELSE 0 END
-         ), 0) as off_duty_hours
+           CASE WHEN clock_out_time IS NOT NULL THEN on_duty_hours
+           ELSE EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - clock_in_time))/3600
+           END
+         ), 0) as on_duty_hours
        FROM time_cards
        WHERE driver_id = $1
          AND DATE(clock_in_time) = $2`,
       [driverId, tourDate.toISOString().split('T')[0]]
     );
 
-    // Get weekly hours (last 7 or 8 days based on cycle)
+    // Get weekly hours (last 7 days)
     const weeklyHours = await this.queryOne<{ total_hours: number }>(
-      `SELECT COALESCE(SUM(total_hours_worked), 0) as total_hours
+      `SELECT COALESCE(SUM(
+         CASE WHEN clock_out_time IS NOT NULL THEN on_duty_hours
+         ELSE EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - clock_in_time))/3600
+         END
+       ), 0) as total_hours
        FROM time_cards
        WHERE driver_id = $1
-         AND DATE(clock_in_time) >= $2 - INTERVAL '7 days'
-         AND DATE(clock_in_time) <= $2`,
+         AND DATE(clock_in_time) >= ($2::date - INTERVAL '7 days')
+         AND DATE(clock_in_time) <= $2::date`,
       [driverId, tourDate.toISOString().split('T')[0]]
     );
 

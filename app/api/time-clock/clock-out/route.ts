@@ -82,19 +82,18 @@ export async function POST(request: Request) {
     // Update time card with clock out
     const result = await query(
       `UPDATE time_cards
-      SET 
+      SET
         clock_out_time = CURRENT_TIMESTAMP,
-        clock_out_location = $2,
-        clock_out_gps_accuracy = $3,
-        total_hours_worked = $4,
-        driver_signature = $5,
-        notes = COALESCE(notes || E'\n\n', '') || COALESCE($6, '')
+        on_duty_hours = $2,
+        driving_hours = $2,
+        driver_signature = $3,
+        signature_timestamp = CURRENT_TIMESTAMP,
+        status = 'complete',
+        notes = COALESCE(notes || E'\n\n', '') || COALESCE($4, '')
       WHERE id = $1
       RETURNING *`,
       [
         timeCardId,
-        location ? `${location.latitude},${location.longitude}` : null,
-        location?.accuracy || null,
         hoursWorked,
         signature || null,
         notes || null
@@ -104,18 +103,18 @@ export async function POST(request: Request) {
     const _timeCard = result.rows[0];
 
     // Update daily_trips end time
-    await query(
-      `UPDATE daily_trips
-      SET 
-        end_time = CURRENT_TIMESTAMP,
-        end_location = $2
-      WHERE driver_id = $1
-      AND trip_date = CURRENT_DATE`,
-      [
-        driverId,
-        location ? `${location.latitude},${location.longitude}` : null
-      ]
-    );
+    try {
+      await query(
+        `UPDATE daily_trips
+        SET
+          end_time = CURRENT_TIMESTAMP
+        WHERE driver_id = $1
+        AND date = CURRENT_DATE`,
+        [driverId]
+      );
+    } catch {
+      // Ignore if daily_trips update fails (record may not exist)
+    }
 
     // Get driver and vehicle details for response
     const detailsResult = await query(
