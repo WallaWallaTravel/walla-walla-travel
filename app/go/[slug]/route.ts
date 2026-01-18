@@ -90,7 +90,7 @@ export async function GET(
       status: 302, // Temporary redirect (allows tracking changes)
     });
   } catch (error) {
-    logger.error(`[Booking Redirect] Error for ${slug}:`, error);
+    logger.error(`[Booking Redirect] Error for ${slug}:`, { error });
     // On error, redirect to winery page
     return NextResponse.redirect(new URL(`/wineries/${slug}`, request.url));
   }

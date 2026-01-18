@@ -159,7 +159,7 @@ class TripService extends BaseService {
     ]);
 
     return {
-      trip: this.mapTripRow(trip),
+      ...this.mapTripRow(trip),
       stops,
       guests,
       stats,
@@ -184,7 +184,7 @@ class TripService extends BaseService {
     ]);
 
     return {
-      trip: this.mapTripRow(trip),
+      ...this.mapTripRow(trip),
       stops,
       guests,
       stats,

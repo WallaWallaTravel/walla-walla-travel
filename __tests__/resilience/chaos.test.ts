@@ -222,7 +222,7 @@ describe('Chaos Scenarios', () => {
   describe('Exponential Backoff', () => {
     it('should calculate increasing delays for retries', async () => {
       // Test internal behavior through queue service retry scheduling
-      const operationId = await queueService.enqueue('test_backoff', {});
+      const operationId = await queueService.enqueue('email_send', {});
 
       // First failure
       await queueService.markProcessing(operationId);

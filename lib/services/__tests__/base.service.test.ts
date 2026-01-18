@@ -162,7 +162,7 @@ describe('BaseService', () => {
         const mockResult = { rows: [{ count: 5 }], rowCount: 1 };
         mockQuery.mockResolvedValueOnce(mockResult);
 
-        const result = await service.testQuery('SELECT COUNT(*) FROM users');
+        const result = await service.testQuery<{ count: number }>('SELECT COUNT(*) FROM users');
 
         expect(mockQuery).toHaveBeenCalledWith('SELECT COUNT(*) FROM users', undefined);
         expect(result.rows[0].count).toBe(5);
@@ -661,11 +661,11 @@ describe('BaseService', () => {
     const originalEnv = process.env.NODE_ENV;
 
     afterEach(() => {
-      process.env.NODE_ENV = originalEnv;
+      (process.env as { NODE_ENV: string }).NODE_ENV = originalEnv as string;
     });
 
     it('should log info messages in development', () => {
-      process.env.NODE_ENV = 'development';
+      (process.env as { NODE_ENV: string }).NODE_ENV = 'development';
       const { logger } = require('../../logger');
 
       service.testLog('Operation completed', { id: 1 });
@@ -677,7 +677,7 @@ describe('BaseService', () => {
     });
 
     it('should log warnings in any environment', () => {
-      process.env.NODE_ENV = 'production';
+      (process.env as { NODE_ENV: string }).NODE_ENV = 'production';
       const { logger } = require('../../logger');
 
       service.testWarn('Slow query detected', { duration: 5000 });

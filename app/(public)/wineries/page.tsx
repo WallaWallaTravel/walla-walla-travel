@@ -1,7 +1,8 @@
 import { Metadata } from 'next';
+import { Suspense } from 'react';
 import Link from 'next/link';
 import { getWineries } from '@/lib/data/wineries';
-import { WineryGrid } from '@/components/wineries/WineryGrid';
+import { WineryDirectoryClient } from '@/components/wineries/WineryDirectoryClient';
 
 // ============================================================================
 // SEO Metadata
@@ -98,8 +99,10 @@ export default async function WineriesPage() {
           </Link>
         </div>
 
-        {/* Interactive Client Component */}
-        <WineryGrid initialWineries={wineries} />
+        {/* Interactive Client Component - wrapped in Suspense for useSearchParams */}
+        <Suspense fallback={<div className="animate-pulse">Loading wineries...</div>}>
+          <WineryDirectoryClient wineries={wineries} />
+        </Suspense>
       </div>
     </div>
   );

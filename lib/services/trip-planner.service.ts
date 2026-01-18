@@ -1,9 +1,9 @@
 import { BaseService } from './base.service';
 import { query } from '@/lib/db';
-import { 
-  Trip, 
-  TripStop, 
-  TripGuest, 
+import {
+  Trip,
+  TripStop,
+  TripGuest,
   TripMessage,
   TripActivityLog,
   TripSuggestion,
@@ -18,7 +18,7 @@ import {
   TripStatus,
   RSVPStatus,
 } from '@/lib/types/trip-planner';
-import { NotFoundError, BadRequestError } from '@/lib/api/errors';
+import { NotFoundError, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { nanoid } from 'nanoid';
 
 // ============================================================================
@@ -261,6 +261,7 @@ class TripPlannerService extends BaseService {
       confirmed_guests: row.confirmed_guests,
       stops_count: parseInt(row.stops_count) || 0,
       created_at: row.created_at,
+      updated_at: row.updated_at,
       last_activity_at: row.last_activity_at,
     }));
   }
@@ -712,6 +713,10 @@ class TripPlannerService extends BaseService {
       created_at: row.created_at as string,
       updated_at: row.updated_at as string,
       last_activity_at: row.last_activity_at as string,
+      // Default empty arrays for collections - will be populated separately
+      stops: [],
+      guests: [],
+      stats: { total_stops: 0, attending_guests: 0, pending_rsvps: 0 },
     };
   }
 

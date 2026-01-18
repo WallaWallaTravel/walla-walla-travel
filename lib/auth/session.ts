@@ -158,17 +158,17 @@ export function clearSessionCookie(response: NextResponse): NextResponse {
 /**
  * Require authentication (throws redirect if not authenticated)
  */
-export async function requireAuth(allowedRoles?: Array<'admin' | 'driver' | 'partner'>): Promise<SessionPayload> {
+export async function requireAuth(allowedRoles?: Array<'admin' | 'geology_admin' | 'driver' | 'partner'>): Promise<SessionPayload> {
   const session = await getSession();
-  
+
   if (!session) {
     throw new Error('REDIRECT:/login');
   }
-  
+
   if (allowedRoles && !allowedRoles.includes(session.user.role)) {
     throw new Error('REDIRECT:/login?error=forbidden');
   }
-  
+
   return session;
 }
 

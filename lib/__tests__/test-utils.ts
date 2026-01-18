@@ -86,7 +86,7 @@ export function createMockRequest(
     nextUrl: {
       searchParams: url.searchParams,
     },
-  } as unknown as ReturnType<typeof import('next/server').NextRequest['prototype']['constructor']>;
+  } as unknown as import('next/server').NextRequest;
 }
 
 // Mock response object for API tests
@@ -95,7 +95,7 @@ export function createMockResponse() {
     status: jest.fn().mockReturnThis(),
     json: jest.fn().mockReturnThis(),
     text: jest.fn().mockReturnThis(),
-  } as unknown as ReturnType<typeof import('next/server').NextResponse['prototype']['constructor']>;
+  } as unknown as import('next/server').NextResponse;
 }
 
 // Wait for async operations
@@ -174,7 +174,7 @@ export function getNextWeekDate(): string {
 // Test data matchers
 export function expectValidDate(value: unknown) {
   expect(value).toBeDefined();
-  expect(new Date(value).toString()).not.toBe('Invalid Date');
+  expect(new Date(value as string | number | Date).toString()).not.toBe('Invalid Date');
 }
 
 export function expectValidUUID(value: unknown) {

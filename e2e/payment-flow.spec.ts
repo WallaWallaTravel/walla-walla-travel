@@ -95,7 +95,7 @@ test.describe('Payment Security', () => {
 
     for (const link of links) {
       const href = await link.getAttribute('href');
-      if (href && href.includes('payment') || href.includes('stripe')) {
+      if (href && (href.includes('payment') || href.includes('stripe'))) {
         expect(href).toMatch(/^https:/);
       }
     }

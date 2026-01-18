@@ -80,7 +80,13 @@ const ATMOSPHERE_KEYWORDS: Record<string, string[]> = {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    let body = await request.json();
+
+    // Handle case where body is a string (can happen in test environments)
+    if (typeof body === 'string') {
+      body = JSON.parse(body);
+    }
+
     const {
       preferences = {} as Preferences,
       party_size = 4,
