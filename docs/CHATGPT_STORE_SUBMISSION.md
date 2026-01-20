@@ -12,7 +12,7 @@ Three GPT apps sharing one backend API, each targeting different market segments
 | App | Target Market | Brand Param |
 |-----|---------------|-------------|
 | Walla Walla Wine Concierge | B2B, corporate, events, full-service | `brand=wwt` |
-| NW Wine Country Transportation | Private tours, retail clients | `brand=nwtc` |
+| NW Touring & Concierge | Private tours, retail clients | `brand=nwtc` |
 | Herding Cats Wine Guide | Casual wine enthusiasts, couples, friends | `brand=hcwt` |
 
 ---
@@ -75,14 +75,14 @@ Lifestyle > Travel
 
 ---
 
-## App 2: NW Wine Country Transportation
+## App 2: NW Touring & Concierge
 
 ### Icon
 `public/brands/nwtc-icon-512.png` (512x512 PNG)
 
 ### App Name
 ```
-NW Wine Country Transportation
+NW Touring & Concierge
 ```
 
 ### Description (Short - 80 chars)

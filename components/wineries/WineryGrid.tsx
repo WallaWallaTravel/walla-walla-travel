@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePageContextStore } from '@/lib/stores/pageContext';
 import { useAnalyticsStore } from '@/lib/stores/analytics-simple';
-// EXPERIENCE_TAG_LABELS available for future use
+import { FavoriteButtonCompact } from './FavoriteButton';
 
 interface WinerySummary {
   id: number;
@@ -18,8 +19,8 @@ interface WinerySummary {
   reservation_required: boolean;
   rating?: number;
   image_url?: string;
-  // Enhanced fields
   experience_tags?: string[];
+  features?: string[];
   max_group_size?: number;
   verified?: boolean;
 }
@@ -58,31 +59,130 @@ const GROUP_SIZE_OPTIONS = [
   { value: '12', label: 'Large (12+)' },
 ];
 
+// Tasting fee bucket options
+const FEE_BUCKET_OPTIONS = [
+  { value: '', label: 'Any Price' },
+  { value: 'free', label: 'Free' },
+  { value: 'under20', label: 'Under $20' },
+  { value: '20-40', label: '$20 - $40' },
+  { value: 'over40', label: '$40+' },
+];
+
+// Common amenities/features for filtering
+const AMENITY_OPTIONS: { value: string; label: string; icon: string }[] = [
+  { value: 'outdoor seating', label: 'Outdoor Seating', icon: '☀️' },
+  { value: 'picnic area', label: 'Picnic Area', icon: '🧺' },
+  { value: 'food available', label: 'Food Available', icon: '🍽️' },
+  { value: 'private tastings', label: 'Private Tastings', icon: '🥂' },
+  { value: 'tours available', label: 'Tours', icon: '🚶' },
+  { value: 'wheelchair accessible', label: 'Accessible', icon: '♿' },
+  { value: 'event space', label: 'Event Space', icon: '🎉' },
+  { value: 'club membership', label: 'Wine Club', icon: '🏆' },
+];
+
+// Helper function to check if winery matches amenity
+function wineryHasAmenity(wineryFeatures: string[] | undefined, amenity: string): boolean {
+  if (!wineryFeatures || wineryFeatures.length === 0) return false;
+  const lowerAmenity = amenity.toLowerCase();
+  return wineryFeatures.some(f => f.toLowerCase().includes(lowerAmenity));
+}
+
+// Helper function to check fee bucket
+function matchesFeeBucket(fee: number, bucket: string): boolean {
+  switch (bucket) {
+    case 'free':
+      return fee === 0;
+    case 'under20':
+      return fee > 0 && fee < 20;
+    case '20-40':
+      return fee >= 20 && fee <= 40;
+    case 'over40':
+      return fee > 40;
+    default:
+      return true;
+  }
+}
+
 export function WineryGrid({ initialWineries }: WineryGridProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const setDirectoryContext = usePageContextStore((state) => state.setDirectoryContext);
   const analytics = useAnalyticsStore();
-  const [filter, setFilter] = useState<'all' | 'reservation' | 'walk-in'>('all');
-  const [searchQuery, setSearchQuery] = useState('');
+
+  // Initialize state from URL params
+  const [filter, setFilter] = useState<'all' | 'reservation' | 'walk-in'>(
+    (searchParams.get('reservation') as 'all' | 'reservation' | 'walk-in') || 'all'
+  );
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // New filter/sort state
-  const [sortBy, setSortBy] = useState('featured');
-  const [groupSize, setGroupSize] = useState('');
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  // Filter/sort state
+  const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'featured');
+  const [groupSize, setGroupSize] = useState(searchParams.get('groupSize') || '');
+  const [selectedTags, setSelectedTags] = useState<string[]>(
+    searchParams.get('tags')?.split(',').filter(Boolean) || []
+  );
   const [showFilters, setShowFilters] = useState(false);
+
+  // New filter states
+  const [selectedRegion, setSelectedRegion] = useState(searchParams.get('region') || '');
+  const [feeBucket, setFeeBucket] = useState(searchParams.get('fee') || '');
+  const [selectedAmenities, setSelectedAmenities] = useState<string[]>(
+    searchParams.get('amenities')?.split(',').filter(Boolean) || []
+  );
+  const [selectedWineStyles, setSelectedWineStyles] = useState<string[]>(
+    searchParams.get('wines')?.split(',').filter(Boolean) || []
+  );
+
+  // Extract unique regions from data
+  const availableRegions = useMemo(() => {
+    const regions = new Set<string>();
+    initialWineries.forEach(w => {
+      if (w.region) regions.add(w.region);
+    });
+    return Array.from(regions).sort();
+  }, [initialWineries]);
+
+  // Extract unique wine styles from data
+  const availableWineStyles = useMemo(() => {
+    const styles = new Set<string>();
+    initialWineries.forEach(w => {
+      w.wine_styles?.forEach(style => styles.add(style));
+    });
+    return Array.from(styles).sort();
+  }, [initialWineries]);
 
   // Set page context for the chat widget
   useEffect(() => {
     setDirectoryContext({ category: 'wineries' });
   }, [setDirectoryContext]);
 
+  // Sync filters to URL
+  const updateURL = useCallback((params: Record<string, string | string[] | null>) => {
+    const newParams = new URLSearchParams(searchParams.toString());
+
+    Object.entries(params).forEach(([key, value]) => {
+      if (value === null || value === '' || (Array.isArray(value) && value.length === 0)) {
+        newParams.delete(key);
+      } else if (Array.isArray(value)) {
+        newParams.set(key, value.join(','));
+      } else {
+        newParams.set(key, value);
+      }
+    });
+
+    const newURL = newParams.toString() ? `?${newParams.toString()}` : window.location.pathname;
+    router.replace(newURL, { scroll: false });
+  }, [router, searchParams]);
+
   // Track filter changes
   const handleFilterChange = useCallback((newFilter: typeof filter) => {
     setFilter(newFilter);
+    updateURL({ reservation: newFilter === 'all' ? null : newFilter });
     if (newFilter !== 'all') {
       analytics.trackFilterApplied('reservation', newFilter);
     }
-  }, [analytics]);
+  }, [analytics, updateURL]);
 
   // Track search with debounce
   useEffect(() => {
@@ -92,24 +192,78 @@ export function WineryGrid({ initialWineries }: WineryGridProps) {
       }
       searchTimeoutRef.current = setTimeout(() => {
         analytics.trackSearch(searchQuery, 'wineries', filteredWineries.length);
+        updateURL({ search: searchQuery || null });
       }, 1000);
+    } else if (searchQuery === '') {
+      updateURL({ search: null });
     }
     return () => {
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current);
       }
     };
-    // Note: filteredWineries.length is intentionally not in deps - we only want to track
-    // when searchQuery changes, capturing the count at that moment
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery, analytics]);
 
   // Toggle experience tag
   const toggleExperienceTag = useCallback((tag: string) => {
-    setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    );
-  }, []);
+    setSelectedTags((prev) => {
+      const newTags = prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag];
+      updateURL({ tags: newTags.length > 0 ? newTags : null });
+      return newTags;
+    });
+  }, [updateURL]);
+
+  // Toggle amenity
+  const toggleAmenity = useCallback((amenity: string) => {
+    setSelectedAmenities((prev) => {
+      const newAmenities = prev.includes(amenity) ? prev.filter((a) => a !== amenity) : [...prev, amenity];
+      updateURL({ amenities: newAmenities.length > 0 ? newAmenities : null });
+      return newAmenities;
+    });
+  }, [updateURL]);
+
+  // Toggle wine style
+  const toggleWineStyle = useCallback((style: string) => {
+    setSelectedWineStyles((prev) => {
+      const newStyles = prev.includes(style) ? prev.filter((s) => s !== style) : [...prev, style];
+      updateURL({ wines: newStyles.length > 0 ? newStyles : null });
+      return newStyles;
+    });
+  }, [updateURL]);
+
+  // Handle region change
+  const handleRegionChange = useCallback((region: string) => {
+    setSelectedRegion(region);
+    updateURL({ region: region || null });
+    if (region) {
+      analytics.trackFilterApplied('region', region);
+    }
+  }, [updateURL, analytics]);
+
+  // Handle fee bucket change
+  const handleFeeBucketChange = useCallback((bucket: string) => {
+    setFeeBucket(bucket);
+    updateURL({ fee: bucket || null });
+    if (bucket) {
+      analytics.trackFilterApplied('fee', bucket);
+    }
+  }, [updateURL, analytics]);
+
+  // Handle sort change
+  const handleSortChange = useCallback((sort: string) => {
+    setSortBy(sort);
+    updateURL({ sort: sort === 'featured' ? null : sort });
+  }, [updateURL]);
+
+  // Handle group size change
+  const handleGroupSizeChange = useCallback((size: string) => {
+    setGroupSize(size);
+    updateURL({ groupSize: size || null });
+    if (size) {
+      analytics.trackFilterApplied('groupSize', size);
+    }
+  }, [updateURL, analytics]);
 
   // Clear all filters
   const clearFilters = useCallback(() => {
@@ -118,7 +272,12 @@ export function WineryGrid({ initialWineries }: WineryGridProps) {
     setGroupSize('');
     setSortBy('featured');
     setSearchQuery('');
-  }, []);
+    setSelectedRegion('');
+    setFeeBucket('');
+    setSelectedAmenities([]);
+    setSelectedWineStyles([]);
+    router.replace(window.location.pathname, { scroll: false });
+  }, [router]);
 
   // Client-side filtering and sorting
   const filteredWineries = useMemo(() => {
@@ -127,10 +286,27 @@ export function WineryGrid({ initialWineries }: WineryGridProps) {
       if (filter === 'reservation' && !winery.reservation_required) return false;
       if (filter === 'walk-in' && winery.reservation_required) return false;
 
+      // Filter by region
+      if (selectedRegion && winery.region !== selectedRegion) return false;
+
+      // Filter by tasting fee bucket
+      if (feeBucket && !matchesFeeBucket(winery.tasting_fee || 0, feeBucket)) return false;
+
       // Filter by experience tags
       if (selectedTags.length > 0) {
         const wineryTags = winery.experience_tags || [];
         if (!selectedTags.some((tag) => wineryTags.includes(tag))) return false;
+      }
+
+      // Filter by amenities
+      if (selectedAmenities.length > 0) {
+        if (!selectedAmenities.some((amenity) => wineryHasAmenity(winery.features, amenity))) return false;
+      }
+
+      // Filter by wine styles
+      if (selectedWineStyles.length > 0) {
+        const wineryStyles = winery.wine_styles || [];
+        if (!selectedWineStyles.some((style) => wineryStyles.includes(style))) return false;
       }
 
       // Filter by group size
@@ -177,14 +353,25 @@ export function WineryGrid({ initialWineries }: WineryGridProps) {
     }
 
     return results;
-  }, [initialWineries, filter, selectedTags, groupSize, searchQuery, sortBy]);
+  }, [initialWineries, filter, selectedRegion, feeBucket, selectedTags, selectedAmenities, selectedWineStyles, groupSize, searchQuery, sortBy]);
 
   // Count active filters
   const activeFilterCount = [
     filter !== 'all',
     selectedTags.length > 0,
     groupSize !== '',
+    selectedRegion !== '',
+    feeBucket !== '',
+    selectedAmenities.length > 0,
+    selectedWineStyles.length > 0,
   ].filter(Boolean).length;
+
+  // Check if any advanced filters are active (to auto-expand)
+  useEffect(() => {
+    if (activeFilterCount > 1 || selectedAmenities.length > 0 || selectedWineStyles.length > 0) {
+      setShowFilters(true);
+    }
+  }, [activeFilterCount, selectedAmenities.length, selectedWineStyles.length]);
 
   return (
     <>
@@ -196,10 +383,10 @@ export function WineryGrid({ initialWineries }: WineryGridProps) {
             placeholder="Search wineries by name, wine style, or region..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full px-4 py-3 pl-12 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8B1538]/30 focus:border-[#8B1538]"
+            className="w-full px-4 py-3 pl-12 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8B1538]/30 focus:border-[#8B1538] placeholder-gray-600"
           />
           <svg
-            className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400"
+            className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -239,13 +426,36 @@ export function WineryGrid({ initialWineries }: WineryGridProps) {
 
         <div className="flex-1" />
 
-        {/* Sort & More Filters */}
-        <div className="flex gap-3">
+        {/* Sort & Dropdowns */}
+        <div className="flex gap-3 flex-wrap">
+          {/* Region Filter */}
+          <select
+            value={selectedRegion}
+            onChange={(e) => handleRegionChange(e.target.value)}
+            className="px-3 py-1.5 border border-stone-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#8B1538]/30 text-stone-700"
+          >
+            <option value="">All Regions</option>
+            {availableRegions.map((region) => (
+              <option key={region} value={region}>{region}</option>
+            ))}
+          </select>
+
+          {/* Fee Bucket Filter */}
+          <select
+            value={feeBucket}
+            onChange={(e) => handleFeeBucketChange(e.target.value)}
+            className="px-3 py-1.5 border border-stone-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#8B1538]/30 text-stone-700"
+          >
+            {FEE_BUCKET_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+
           {/* Group Size */}
           <select
             value={groupSize}
-            onChange={(e) => setGroupSize(e.target.value)}
-            className="px-3 py-1.5 border border-stone-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#8B1538]/30"
+            onChange={(e) => handleGroupSizeChange(e.target.value)}
+            className="px-3 py-1.5 border border-stone-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#8B1538]/30 text-stone-700"
           >
             {GROUP_SIZE_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -255,8 +465,8 @@ export function WineryGrid({ initialWineries }: WineryGridProps) {
           {/* Sort */}
           <select
             value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="px-3 py-1.5 border border-stone-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#8B1538]/30"
+            onChange={(e) => handleSortChange(e.target.value)}
+            className="px-3 py-1.5 border border-stone-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#8B1538]/30 text-stone-700"
           >
             {SORT_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -275,7 +485,7 @@ export function WineryGrid({ initialWineries }: WineryGridProps) {
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
             </svg>
-            Filters
+            More Filters
             {activeFilterCount > 0 && (
               <span className="w-5 h-5 bg-white text-[#8B1538] rounded-full text-xs flex items-center justify-center font-bold">
                 {activeFilterCount}
@@ -285,45 +495,126 @@ export function WineryGrid({ initialWineries }: WineryGridProps) {
         </div>
       </div>
 
-      {/* Experience Tags Filter (Expandable) */}
+      {/* Advanced Filters Panel (Expandable) */}
       {showFilters && (
-        <div className="mb-6 p-4 bg-stone-50 rounded-xl border border-stone-200">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-medium text-stone-900">Experience Style</h3>
-            {selectedTags.length > 0 && (
-              <button
-                onClick={() => setSelectedTags([])}
-                className="text-sm text-[#8B1538] hover:underline"
-              >
-                Clear tags
-              </button>
-            )}
+        <div className="mb-6 p-4 bg-stone-50 rounded-xl border border-stone-200 space-y-4">
+          {/* Experience Style Section */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-medium text-stone-900">Experience Style</h3>
+              {selectedTags.length > 0 && (
+                <button
+                  onClick={() => {
+                    setSelectedTags([]);
+                    updateURL({ tags: null });
+                  }}
+                  className="text-sm text-[#8B1538] hover:underline"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {EXPERIENCE_TAG_OPTIONS.map((tag) => (
+                <button
+                  key={tag.value}
+                  onClick={() => toggleExperienceTag(tag.value)}
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                    selectedTags.includes(tag.value)
+                      ? 'bg-[#8B1538] text-white shadow-md'
+                      : 'bg-white text-stone-700 border border-stone-200 hover:border-[#8B1538]/50'
+                  }`}
+                >
+                  <span className="mr-1">{tag.icon}</span>
+                  {tag.label}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {EXPERIENCE_TAG_OPTIONS.map((tag) => (
-              <button
-                key={tag.value}
-                onClick={() => toggleExperienceTag(tag.value)}
-                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-                  selectedTags.includes(tag.value)
-                    ? 'bg-[#8B1538] text-white shadow-md'
-                    : 'bg-white text-stone-700 border border-stone-200 hover:border-[#8B1538]/50'
-                }`}
-              >
-                <span className="mr-1">{tag.icon}</span>
-                {tag.label}
-              </button>
-            ))}
+
+          {/* Amenities Section */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-medium text-stone-900">Amenities</h3>
+              {selectedAmenities.length > 0 && (
+                <button
+                  onClick={() => {
+                    setSelectedAmenities([]);
+                    updateURL({ amenities: null });
+                  }}
+                  className="text-sm text-[#8B1538] hover:underline"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {AMENITY_OPTIONS.map((amenity) => (
+                <button
+                  key={amenity.value}
+                  onClick={() => toggleAmenity(amenity.value)}
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                    selectedAmenities.includes(amenity.value)
+                      ? 'bg-[#8B1538] text-white shadow-md'
+                      : 'bg-white text-stone-700 border border-stone-200 hover:border-[#8B1538]/50'
+                  }`}
+                >
+                  <span className="mr-1">{amenity.icon}</span>
+                  {amenity.label}
+                </button>
+              ))}
+            </div>
           </div>
+
+          {/* Wine Styles Section */}
+          {availableWineStyles.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-medium text-stone-900">Wine Styles</h3>
+                {selectedWineStyles.length > 0 && (
+                  <button
+                    onClick={() => {
+                      setSelectedWineStyles([]);
+                      updateURL({ wines: null });
+                    }}
+                    className="text-sm text-[#8B1538] hover:underline"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {availableWineStyles.slice(0, 12).map((style) => (
+                  <button
+                    key={style}
+                    onClick={() => toggleWineStyle(style)}
+                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                      selectedWineStyles.includes(style)
+                        ? 'bg-[#8B1538] text-white shadow-md'
+                        : 'bg-white text-stone-700 border border-stone-200 hover:border-[#8B1538]/50'
+                    }`}
+                  >
+                    🍷 {style}
+                  </button>
+                ))}
+                {availableWineStyles.length > 12 && (
+                  <span className="px-3 py-1.5 text-stone-500 text-sm">
+                    +{availableWineStyles.length - 12} more
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
       {/* Results Count & Clear Filters */}
       <div className="flex items-center justify-between mb-6">
-        <p className="text-stone-600">
-          Showing {filteredWineries.length} winer{filteredWineries.length !== 1 ? 'ies' : 'y'}
+        <p className="text-stone-700">
+          <span className="font-semibold text-[#8B1538]">{filteredWineries.length}</span>
+          {' '}winer{filteredWineries.length !== 1 ? 'ies' : 'y'}
           {activeFilterCount > 0 && (
-            <span className="text-stone-400"> (filtered)</span>
+            <span className="text-stone-500"> matching your filters</span>
           )}
         </p>
         {(activeFilterCount > 0 || searchQuery) && (
@@ -369,6 +660,18 @@ export function WineryGrid({ initialWineries }: WineryGridProps) {
                   👥 Groups Welcome
                 </div>
               )}
+              {/* Favorite Button */}
+              <FavoriteButtonCompact
+                winery={{
+                  id: winery.id,
+                  name: winery.name,
+                  slug: winery.slug,
+                  region: winery.region,
+                  image_url: winery.image_url,
+                  tasting_fee: winery.tasting_fee,
+                }}
+                source="grid"
+              />
             </div>
 
             {/* Content */}
@@ -378,6 +681,11 @@ export function WineryGrid({ initialWineries }: WineryGridProps) {
                   {winery.name}
                 </h3>
               </div>
+
+              {/* Region Badge */}
+              {winery.region && (
+                <p className="text-sm text-stone-500 mb-2">{winery.region}</p>
+              )}
 
               <p className="text-stone-600 text-sm mb-3 line-clamp-2">
                 {winery.description}
@@ -398,7 +706,7 @@ export function WineryGrid({ initialWineries }: WineryGridProps) {
                     );
                   })}
                   {winery.experience_tags.length > 3 && (
-                    <span className="px-2 py-0.5 text-stone-400 text-xs">
+                    <span className="px-2 py-0.5 text-stone-500 text-xs">
                       +{winery.experience_tags.length - 3}
                     </span>
                   )}
@@ -424,8 +732,8 @@ export function WineryGrid({ initialWineries }: WineryGridProps) {
 
               {/* Footer */}
               <div className="flex items-center justify-between text-sm">
-                <span className="text-stone-500">
-                  {winery.tasting_fee > 0 ? `$${winery.tasting_fee} tasting` : 'By appointment'}
+                <span className="text-stone-600 font-medium">
+                  {winery.tasting_fee > 0 ? `$${winery.tasting_fee} tasting` : 'Free tasting'}
                 </span>
                 {winery.reservation_required && (
                   <span className="px-2 py-1 bg-amber-50 text-amber-700 text-xs rounded-full font-medium">
@@ -443,7 +751,13 @@ export function WineryGrid({ initialWineries }: WineryGridProps) {
         <div className="text-center py-16">
           <span className="text-6xl mb-4 block">🔍</span>
           <h3 className="text-xl font-semibold text-stone-900 mb-2">No wineries found</h3>
-          <p className="text-stone-600">Try adjusting your search or filters</p>
+          <p className="text-stone-600 mb-4">Try adjusting your search or filters</p>
+          <button
+            onClick={clearFilters}
+            className="px-4 py-2 bg-[#8B1538] text-white rounded-lg hover:bg-[#722F37] transition-colors"
+          >
+            Clear all filters
+          </button>
         </div>
       )}
     </>
