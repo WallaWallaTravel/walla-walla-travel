@@ -61,6 +61,7 @@ export interface WinerySummary {
   rating?: number;
   image_url?: string;
   experience_tags: string[];
+  features: string[];
   max_group_size?: number;
   verified: boolean;
 }
@@ -124,6 +125,7 @@ const SUMMARY_COLUMNS = `
   average_rating as rating,
   cover_photo_url as image_url,
   COALESCE(experience_tags, ARRAY[]::text[]) as experience_tags,
+  COALESCE(amenities, ARRAY[]::text[]) as features,
   max_group_size,
   COALESCE(verified, false) as verified
 `;

@@ -334,6 +334,38 @@ export const POST = withErrorHandling(async (request) => {
 
 ---
 
+## 🤖 AI ENGINEERING TEAM
+
+This project is managed by an 8-agent AI engineering team. The team framework provides:
+- **Specialized agents** for different domains (Frontend, Backend, Quality, etc.)
+- **Escalation rules** for when to involve the user
+- **Runbooks** for common operations
+
+### Team Skills
+
+| Command | Agent | Purpose |
+|---------|-------|---------|
+| `/team` | Orchestrator | Route requests through team |
+| `/simplify` | Technical Strategist | Review for unnecessary complexity |
+| `/audit` | Quality Engineer | Full quality/security audit |
+| `/steward` | Codebase Steward | File organization review |
+
+### Team Documentation
+
+Located in `.claude/team-wiki/`:
+- `TEAM_CHARTER.md` - All 8 agents, roles, protocols
+- `ESCALATION_RULES.md` - When to consult user
+- `AGENT_PROMPTS/` - Detailed agent prompts
+- `RUNBOOKS/` - Deployment, incidents, health checks
+
+### User Involvement
+
+**You will be consulted on**: Strategic decisions, business rules, costs, trade-offs
+
+**Handled autonomously**: Technical implementation, code quality, routine operations
+
+---
+
 ## 📚 KEY FILES TO READ
 
 ### For Auditor's Dream
