@@ -155,7 +155,7 @@ Before deploying to production:
 - [ ] Use production Stripe keys
 - [ ] Verify domain with Resend for emails
 - [ ] Configure custom domain in Vercel
-- [ ] Configure subdomains (staff/driver/business.wallawalla.travel)
+- [ ] Configure domain (wallawalla.travel)
 - [ ] Create real admin user (strong password)
 - [ ] Delete test users
 - [ ] Run all database migrations

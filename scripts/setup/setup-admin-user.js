@@ -72,9 +72,9 @@ async function setupAdminUser() {
     console.log('   Role: admin (full access)');
     console.log('   User ID:', result.rows[0].id);
     console.log('\n🎉 You can now login at:');
-    console.log('   - https://admin.wallawalla.travel');
-    console.log('   - https://partner.wallawalla.travel');
-    console.log('   - https://driver.wallawalla.travel\n');
+    console.log('   - https://wallawalla.travel/admin');
+    console.log('   - https://wallawalla.travel/partner');
+    console.log('   - https://wallawalla.travel/driver\n');
   } catch (error) {
     console.error('❌ Error setting up admin user:', error.message);
     throw error;

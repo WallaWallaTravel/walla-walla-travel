@@ -2,7 +2,7 @@
  * Walla Walla Travel - Embeddable Widgets
  * 
  * Include this script in your website to easily embed WWT widgets:
- * <script src="https://app.wallawalla.travel/embed/walla-widgets.js"></script>
+ * <script src="https://wallawalla.travel/embed/walla-widgets.js"></script>
  * 
  * Then add widgets using data attributes:
  * <div data-walla-widget="booking"></div>
@@ -13,7 +13,7 @@
 (function() {
   'use strict';
 
-  const APP_URL = 'https://app.wallawalla.travel';
+  const APP_URL = 'https://wallawalla.travel';
   
   // Default styles for widget containers
   const DEFAULT_STYLES = {

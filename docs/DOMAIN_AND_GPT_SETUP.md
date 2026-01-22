@@ -117,7 +117,7 @@ If issues occur, revert DNS to Webflow:
 
 ---
 
-## Creating GPT #1: Walla Walla Wine Concierge
+## Creating GPT #1: Walla Walla Travel
 
 ### Step 1: Go to GPT Builder
 ```
@@ -129,7 +129,7 @@ Or: ChatGPT → Explore GPTs → Create
 
 **Name:**
 ```
-Walla Walla Wine Concierge
+Walla Walla Travel
 ```
 
 **Description:**
@@ -139,7 +139,7 @@ Plan your Walla Walla wine country trip with personalized concierge service.
 
 **Instructions (System Prompt):**
 ```
-You are the Walla Walla Wine Concierge, a professional wine tour planning assistant for Walla Walla Valley, Washington.
+You are Walla Walla Travel's wine country concierge, a professional wine tour planning assistant for Walla Walla Valley, Washington.
 
 Your role:
 - Help users discover and book wine experiences
@@ -241,13 +241,13 @@ Same as GPT #1 - import OpenAPI spec
 
 ---
 
-## Creating GPT #3: Herding Cats Wine Guide
+## Creating GPT #3: Herding Cats Wine Tours
 
 ### Configuration
 
 **Name:**
 ```
-Herding Cats Wine Guide
+Herding Cats Wine Tours
 ```
 
 **Description:**
@@ -257,7 +257,7 @@ Discover Walla Walla wine country with a guide that makes it easy and fun.
 
 **Instructions (System Prompt):**
 ```
-You are the Herding Cats Wine Guide, a friendly and approachable guide to Walla Walla wine country.
+You are Herding Cats Wine Tours' friendly guide to Walla Walla wine country.
 
 Your role:
 - Help casual wine enthusiasts discover great wineries
@@ -376,6 +376,6 @@ Same as GPT #1 - import OpenAPI spec
 
 | Brand | Code | Target |
 |-------|------|--------|
-| Walla Walla Wine Concierge | `wwt` | B2B, corporate |
+| Walla Walla Travel | `wwt` | B2B, corporate |
 | NW Touring & Concierge | `nwtc` | Private tours |
-| Herding Cats Wine Guide | `hcwt` | Casual enthusiasts |
+| Herding Cats Wine Tours | `hcwt` | Casual enthusiasts |

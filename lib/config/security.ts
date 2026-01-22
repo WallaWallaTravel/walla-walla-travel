@@ -11,13 +11,10 @@ import { env } from './env';
  * CORS Configuration
  */
 export const corsConfig = {
-  allowedOrigins: env.NODE_ENV === 'production' 
+  allowedOrigins: env.NODE_ENV === 'production'
     ? [
         'https://wallawalla.travel',
         'https://www.wallawalla.travel',
-        'https://admin.wallawalla.travel',
-        'https://driver.wallawalla.travel',
-        'https://business.wallawalla.travel',
       ]
     : [
         'http://localhost:3000',

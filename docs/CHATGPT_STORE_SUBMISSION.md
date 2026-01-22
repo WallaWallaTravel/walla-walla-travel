@@ -11,9 +11,9 @@ Three GPT apps sharing one backend API, each targeting different market segments
 
 | App | Target Market | Brand Param |
 |-----|---------------|-------------|
-| Walla Walla Wine Concierge | B2B, corporate, events, full-service | `brand=wwt` |
+| Walla Walla Travel | B2B, corporate, events, full-service | `brand=wwt` |
 | NW Touring & Concierge | Private tours, retail clients | `brand=nwtc` |
-| Herding Cats Wine Guide | Casual wine enthusiasts, couples, friends | `brand=hcwt` |
+| Herding Cats Wine Tours | Casual wine enthusiasts, couples, friends | `brand=hcwt` |
 
 ---
 
@@ -21,23 +21,23 @@ Three GPT apps sharing one backend API, each targeting different market segments
 
 ### API Endpoint (shared)
 ```
-https://app.wallawalla.travel/api/openapi
+https://wallawalla.travel/api/openapi
 ```
 
 ### Legal Pages
-- **Privacy Policy:** https://app.wallawalla.travel/privacy
-- **Terms of Service:** https://app.wallawalla.travel/terms
+- **Privacy Policy:** https://wallawalla.travel/privacy
+- **Terms of Service:** https://wallawalla.travel/terms
 
 ---
 
-## App 1: Walla Walla Wine Concierge
+## App 1: Walla Walla Travel
 
 ### Icon
 `public/brands/wwt-icon-512.png` (512x512 PNG)
 
 ### App Name
 ```
-Walla Walla Wine Concierge
+Walla Walla Travel
 ```
 
 ### Description (Short - 80 chars)
@@ -123,14 +123,14 @@ Lifestyle > Travel
 
 ---
 
-## App 3: Herding Cats Wine Guide
+## App 3: Herding Cats Wine Tours
 
 ### Icon
 `public/brands/hcwt-icon-512.png` (512x512 PNG)
 
 ### App Name
 ```
-Herding Cats Wine Guide
+Herding Cats Wine Tours
 ```
 
 ### Description (Short - 80 chars)
@@ -195,18 +195,18 @@ Lifestyle > Travel
 
 ### Screenshot Pages to Capture
 
-**For Walla Walla Wine Concierge:**
-1. https://app.wallawalla.travel - Homepage
-2. https://app.wallawalla.travel/book - Booking page
-3. https://app.wallawalla.travel/wineries - Winery directory
+**For Walla Walla Travel:**
+1. https://wallawalla.travel - Homepage
+2. https://wallawalla.travel/book - Booking page
+3. https://wallawalla.travel/wineries - Winery directory
 
 **For NW Touring:**
-1. https://app.wallawalla.travel/nw-touring - NW Touring landing
-2. https://app.wallawalla.travel/book - Booking flow
+1. https://wallawalla.travel/nw-touring - NW Touring landing
+2. https://wallawalla.travel/book - Booking flow
 
 **For Herding Cats:**
-1. https://app.wallawalla.travel/herding-cats - Herding Cats landing
-2. https://app.wallawalla.travel/wineries - Winery browser
+1. https://wallawalla.travel/herding-cats - Herding Cats landing
+2. https://wallawalla.travel/wineries - Winery browser
 
 ---
 
@@ -252,7 +252,7 @@ Type: None (public endpoints)
 ## Submission Checklist
 
 ### Before Submission
-- [x] API deployed and accessible at https://app.wallawalla.travel/api/openapi
+- [x] API deployed and accessible at https://wallawalla.travel/api/openapi
 - [x] Privacy policy live at /privacy
 - [x] Terms of service live at /terms
 - [x] 512x512 PNG icons created for all 3 brands
@@ -288,4 +288,4 @@ All requests from ChatGPT apps will have:
 - `brand`: The brand code for attribution
 
 Monitor performance in admin dashboard at:
-https://admin.wallawalla.travel/analytics
+https://wallawalla.travel/admin/analytics

@@ -20,6 +20,7 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY;
 // Domain verified in Resend - wallawalla.travel
 const FROM_EMAIL = process.env.FROM_EMAIL || 'Walla Walla Travel <bookings@wallawalla.travel>';
 const COMPANY_NAME = 'Walla Walla Travel';
+const STAFF_EMAIL = process.env.STAFF_NOTIFICATION_EMAIL || 'info@wallawalla.travel';
 
 // Initialize Resend client
 const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
@@ -57,6 +58,253 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
     logger.error('Email send error', { error, subject: options.subject });
     return false;
   }
+}
+
+/**
+ * Send consultation request notification to staff
+ */
+export async function sendConsultationRequestNotification(data: {
+  tripTitle: string;
+  shareCode: string;
+  ownerName: string | null;
+  ownerEmail: string | null;
+  ownerPhone?: string | null;
+  expectedGuests: number;
+  startDate?: string | null;
+  endDate?: string | null;
+  notes?: string | null;
+  tripType?: string;
+  wineryCount?: number;
+}): Promise<boolean> {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const adminUrl = `${appUrl}/admin/consultations`;
+  const tripUrl = `${appUrl}/my-trips/${data.shareCode}`;
+
+  const dateInfo = data.startDate
+    ? data.endDate && data.endDate !== data.startDate
+      ? `${new Date(data.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${new Date(data.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+      : new Date(data.startDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+    : 'Dates flexible';
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6;">
+      <div style="max-width: 600px; margin: 0 auto; background: #ffffff;">
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #8B1538 0%, #722F37 100%); padding: 32px 24px; text-align: center;">
+          <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: bold;">🍷 New Consultation Request</h1>
+          <p style="color: #fecaca; margin: 8px 0 0 0; font-size: 14px;">A customer needs help planning their wine tour</p>
+        </div>
+
+        <!-- Main Content -->
+        <div style="padding: 32px 24px;">
+          <!-- Customer Info Card -->
+          <div style="background: #fef3c7; border: 2px solid #fbbf24; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+            <h2 style="color: #92400e; margin: 0 0 16px 0; font-size: 16px; font-weight: bold;">👤 Customer Details</h2>
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 6px 0; color: #78350f; font-size: 14px; font-weight: 600; width: 120px;">Name:</td>
+                <td style="padding: 6px 0; color: #1f2937; font-size: 14px;">${data.ownerName || 'Not provided'}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; color: #78350f; font-size: 14px; font-weight: 600;">Email:</td>
+                <td style="padding: 6px 0; color: #1f2937; font-size: 14px;">${data.ownerEmail ? `<a href="mailto:${data.ownerEmail}" style="color: #8B1538;">${data.ownerEmail}</a>` : 'Not provided'}</td>
+              </tr>
+              ${data.ownerPhone ? `
+              <tr>
+                <td style="padding: 6px 0; color: #78350f; font-size: 14px; font-weight: 600;">Phone:</td>
+                <td style="padding: 6px 0; color: #1f2937; font-size: 14px;"><a href="tel:${data.ownerPhone}" style="color: #8B1538;">${data.ownerPhone}</a></td>
+              </tr>
+              ` : ''}
+            </table>
+          </div>
+
+          <!-- Trip Details Card -->
+          <div style="background: #f9fafb; border: 2px solid #e5e7eb; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+            <h2 style="color: #374151; margin: 0 0 16px 0; font-size: 16px; font-weight: bold;">📋 Trip Details</h2>
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 6px 0; color: #6b7280; font-size: 14px; font-weight: 600; width: 120px;">Trip Title:</td>
+                <td style="padding: 6px 0; color: #1f2937; font-size: 14px; font-weight: bold;">${data.tripTitle}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; color: #6b7280; font-size: 14px; font-weight: 600;">Type:</td>
+                <td style="padding: 6px 0; color: #1f2937; font-size: 14px;">${data.tripType?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Wine Tour'}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; color: #6b7280; font-size: 14px; font-weight: 600;">Dates:</td>
+                <td style="padding: 6px 0; color: #1f2937; font-size: 14px;">${dateInfo}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; color: #6b7280; font-size: 14px; font-weight: 600;">Guests:</td>
+                <td style="padding: 6px 0; color: #1f2937; font-size: 14px;">${data.expectedGuests} guest${data.expectedGuests !== 1 ? 's' : ''}</td>
+              </tr>
+              ${data.wineryCount ? `
+              <tr>
+                <td style="padding: 6px 0; color: #6b7280; font-size: 14px; font-weight: 600;">Wineries Saved:</td>
+                <td style="padding: 6px 0; color: #1f2937; font-size: 14px;">${data.wineryCount} winer${data.wineryCount !== 1 ? 'ies' : 'y'}</td>
+              </tr>
+              ` : ''}
+            </table>
+          </div>
+
+          ${data.notes ? `
+          <!-- Notes -->
+          <div style="background: #eff6ff; border: 2px solid #3b82f6; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+            <h2 style="color: #1e40af; margin: 0 0 12px 0; font-size: 16px; font-weight: bold;">💬 Customer Notes</h2>
+            <p style="color: #1f2937; font-size: 14px; line-height: 1.6; margin: 0; white-space: pre-wrap;">${data.notes}</p>
+          </div>
+          ` : ''}
+
+          <!-- Action Buttons -->
+          <div style="text-align: center; margin-top: 32px;">
+            <a href="${tripUrl}" style="display: inline-block; background: #8B1538; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-size: 16px; font-weight: bold; margin-right: 12px;">View Trip</a>
+            <a href="${adminUrl}" style="display: inline-block; background: #374151; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-size: 16px; font-weight: bold;">Open Admin</a>
+          </div>
+
+          <p style="text-align: center; color: #9ca3af; font-size: 12px; margin-top: 24px;">
+            Share Code: <code style="background: #f3f4f6; padding: 2px 6px; border-radius: 4px;">${data.shareCode}</code>
+          </p>
+        </div>
+
+        <!-- Footer -->
+        <div style="background: #f9fafb; padding: 20px 24px; text-align: center; border-top: 1px solid #e5e7eb;">
+          <p style="color: #6b7280; font-size: 12px; margin: 0;">
+            This is an automated notification from ${COMPANY_NAME}
+          </p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const text = `
+New Consultation Request
+
+Customer: ${data.ownerName || 'Not provided'}
+Email: ${data.ownerEmail || 'Not provided'}
+${data.ownerPhone ? `Phone: ${data.ownerPhone}` : ''}
+
+Trip: ${data.tripTitle}
+Type: ${data.tripType?.replace(/_/g, ' ') || 'Wine Tour'}
+Dates: ${dateInfo}
+Guests: ${data.expectedGuests}
+${data.wineryCount ? `Wineries Saved: ${data.wineryCount}` : ''}
+
+${data.notes ? `Notes:\n${data.notes}` : ''}
+
+View Trip: ${tripUrl}
+Admin: ${adminUrl}
+Share Code: ${data.shareCode}
+`;
+
+  return sendEmail({
+    to: STAFF_EMAIL,
+    subject: `🍷 New Consultation Request: ${data.tripTitle}`,
+    html,
+    text,
+    replyTo: data.ownerEmail || undefined,
+  });
+}
+
+/**
+ * Send confirmation to customer that their consultation request was received
+ */
+export async function sendConsultationConfirmationToCustomer(data: {
+  customerEmail: string;
+  customerName: string | null;
+  tripTitle: string;
+  shareCode: string;
+}): Promise<boolean> {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const tripUrl = `${appUrl}/my-trips/${data.shareCode}`;
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6;">
+      <div style="max-width: 600px; margin: 0 auto; background: #ffffff;">
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #8B1538 0%, #722F37 100%); padding: 40px 24px; text-align: center;">
+          <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">🍷 Request Received!</h1>
+          <p style="color: #fecaca; margin: 12px 0 0 0; font-size: 16px;">We're excited to help plan your wine tour</p>
+        </div>
+
+        <!-- Main Content -->
+        <div style="padding: 40px 24px;">
+          <p style="font-size: 18px; color: #1f2937; margin: 0 0 20px 0;">Hi ${data.customerName || 'there'},</p>
+
+          <p style="font-size: 16px; color: #4b5563; line-height: 1.6; margin: 0 0 24px 0;">
+            Thank you for reaching out! We've received your consultation request for <strong>"${data.tripTitle}"</strong> and our team is already reviewing it.
+          </p>
+
+          <div style="background: #f0fdf4; border: 2px solid #22c55e; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+            <h2 style="color: #166534; margin: 0 0 12px 0; font-size: 16px; font-weight: bold;">✅ What happens next?</h2>
+            <ol style="color: #1f2937; font-size: 14px; line-height: 1.8; margin: 0; padding-left: 20px;">
+              <li>Our team reviews your trip details and winery preferences</li>
+              <li>We'll reach out within 24-48 hours to discuss your vision</li>
+              <li>Together we'll finalize your itinerary and make reservations</li>
+              <li>You'll receive a detailed proposal with pricing</li>
+            </ol>
+          </div>
+
+          <p style="font-size: 14px; color: #6b7280; line-height: 1.6; margin: 0 0 32px 0;">
+            In the meantime, feel free to keep exploring and adding wineries to your trip. You can always access your trip using the link below.
+          </p>
+
+          <div style="text-align: center;">
+            <a href="${tripUrl}" style="display: inline-block; background: #8B1538; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-size: 16px; font-weight: bold;">View Your Trip</a>
+          </div>
+
+          <p style="font-size: 14px; color: #9ca3af; text-align: center; margin-top: 24px;">
+            Questions? Reply to this email or call us at (509) 200-8000
+          </p>
+        </div>
+
+        <!-- Footer -->
+        <div style="background: #f9fafb; padding: 24px; text-align: center; border-top: 1px solid #e5e7eb;">
+          <p style="color: #6b7280; font-size: 14px; margin: 0 0 8px 0; font-weight: bold;">${COMPANY_NAME}</p>
+          <p style="color: #9ca3af; font-size: 12px; margin: 0;">Your local wine country experts</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const text = `
+Hi ${data.customerName || 'there'},
+
+Thank you for reaching out! We've received your consultation request for "${data.tripTitle}" and our team is already reviewing it.
+
+What happens next?
+1. Our team reviews your trip details and winery preferences
+2. We'll reach out within 24-48 hours to discuss your vision
+3. Together we'll finalize your itinerary and make reservations
+4. You'll receive a detailed proposal with pricing
+
+View your trip: ${tripUrl}
+
+Questions? Reply to this email or call us at (509) 200-8000
+
+${COMPANY_NAME}
+Your local wine country experts
+`;
+
+  return sendEmail({
+    to: data.customerEmail,
+    subject: `✅ We received your request for "${data.tripTitle}"`,
+    html,
+    text,
+  });
 }
 
 /**
@@ -864,6 +1112,177 @@ Looking forward to showing you Walla Walla wine country!
 
 Ryan & the ${COMPANY_NAME} Team
     `,
+  }),
+
+  /**
+   * Proposal Accepted Confirmation Email
+   */
+  proposalAccepted: (data: {
+    client_name: string;
+    proposal_number: string;
+    proposal_title?: string;
+    final_total: number;
+    deposit_amount: number;
+    payment_url: string;
+    service_count: number;
+  }) => ({
+    subject: `Proposal Accepted - ${data.proposal_number} | ${COMPANY_NAME}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Proposal Accepted</title>
+      </head>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+          <h1 style="margin: 0; font-size: 28px;">✓ Proposal Accepted!</h1>
+          <p style="margin: 10px 0 0 0; opacity: 0.9;">${COMPANY_NAME}</p>
+        </div>
+
+        <!-- Content -->
+        <div style="background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 10px 10px;">
+          <p>Hi ${data.client_name},</p>
+
+          <p>Thank you for accepting our proposal! We're excited to create an amazing experience for you.</p>
+
+          <!-- Summary -->
+          <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981;">
+            <h3 style="margin-top: 0; color: #166534;">Proposal ${data.proposal_number}</h3>
+            ${data.proposal_title ? `<p style="margin: 10px 0;"><strong>Title:</strong> ${data.proposal_title}</p>` : ''}
+            <p style="margin: 10px 0;"><strong>Services:</strong> ${data.service_count} item${data.service_count !== 1 ? 's' : ''}</p>
+            <p style="margin: 10px 0;"><strong>Total:</strong> $${data.final_total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+            <p style="margin: 10px 0;"><strong>Deposit Required:</strong> $${data.deposit_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (50%)</p>
+          </div>
+
+          <!-- Payment CTA -->
+          <div style="text-align: center; margin: 30px 0;">
+            <p style="color: #374151; margin-bottom: 15px;">Complete your deposit to confirm your booking:</p>
+            <a href="${data.payment_url}" style="display: inline-block; background: #8B1538; color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">Pay Deposit Now</a>
+          </div>
+
+          <p style="color: #6b7280; font-size: 14px;">Once your deposit is received, we'll begin finalizing all the details for your experience.</p>
+
+          <!-- What's Next -->
+          <div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #374151;">What's Next?</h3>
+            <ol style="margin: 0; padding-left: 20px; color: #4b5563;">
+              <li style="margin-bottom: 10px;">Complete your deposit payment</li>
+              <li style="margin-bottom: 10px;">We'll confirm your booking details</li>
+              <li style="margin-bottom: 10px;">Receive your final itinerary</li>
+              <li>Enjoy your wine country experience!</li>
+            </ol>
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+    text: `
+Hi ${data.client_name},
+
+Thank you for accepting our proposal (${data.proposal_number})!
+
+${data.proposal_title ? `Title: ${data.proposal_title}\n` : ''}Services: ${data.service_count} item${data.service_count !== 1 ? 's' : ''}
+Total: $${data.final_total.toFixed(2)}
+Deposit Required: $${data.deposit_amount.toFixed(2)} (50%)
+
+Complete your deposit payment here: ${data.payment_url}
+
+What's Next?
+1. Complete your deposit payment
+2. We'll confirm your booking details
+3. Receive your final itinerary
+4. Enjoy your wine country experience!
+
+Best regards,
+${COMPANY_NAME}
+    `
+  }),
+
+  /**
+   * Counter-Proposal Email
+   */
+  counterProposal: (data: {
+    client_name: string;
+    original_proposal_number: string;
+    new_proposal_number: string;
+    counter_notes?: string;
+    service_count: number;
+    discount_percentage?: number;
+    new_total: number;
+    valid_until: string;
+    proposal_url: string;
+  }) => ({
+    subject: `Updated Proposal from ${COMPANY_NAME} - ${data.new_proposal_number}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Updated Proposal</title>
+      </head>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #8B1538 0%, #6B1028 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+          <h1 style="margin: 0; font-size: 28px;">${COMPANY_NAME}</h1>
+          <p style="margin: 10px 0 0 0; opacity: 0.9;">Updated Proposal</p>
+        </div>
+
+        <!-- Content -->
+        <div style="background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 10px 10px;">
+          <h2 style="color: #8B1538; margin-top: 0;">We've Updated Your Proposal</h2>
+
+          <p>Hi ${data.client_name},</p>
+
+          <p>Based on your feedback, we've prepared an updated proposal for your review.</p>
+
+          ${data.counter_notes ? `
+          <div style="background: #FDF2F4; padding: 15px; border-left: 4px solid #8B1538; border-radius: 4px; margin: 20px 0;">
+            <strong>What's Changed:</strong>
+            <p style="margin: 10px 0 0 0;">${data.counter_notes}</p>
+          </div>
+          ` : ''}
+
+          <!-- Proposal Summary -->
+          <div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #374151;">Proposal ${data.new_proposal_number}</h3>
+            <p style="color: #6b7280; font-size: 13px; margin: 5px 0 15px 0;">Updated from ${data.original_proposal_number}</p>
+            <p style="margin: 10px 0;"><strong>Services:</strong> ${data.service_count} service${data.service_count !== 1 ? 's' : ''}</p>
+            ${data.discount_percentage && data.discount_percentage > 0 ? `<p style="margin: 10px 0;"><strong>Discount:</strong> ${data.discount_percentage}% off</p>` : ''}
+            <p style="margin: 10px 0;"><strong>New Total:</strong> <span style="font-size: 24px; color: #8B1538; font-weight: bold;">$${data.new_total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
+            <p style="margin: 10px 0;"><strong>Valid Until:</strong> ${new Date(data.valid_until).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+          </div>
+
+          <!-- CTA Button -->
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${data.proposal_url}" style="display: inline-block; background: #8B1538; color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">Review Updated Proposal</a>
+          </div>
+
+          <p style="color: #6b7280; font-size: 14px;">This proposal is valid until ${new Date(data.valid_until).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}. We'd love to make this work for you!</p>
+        </div>
+      </body>
+      </html>
+    `,
+    text: `
+Hi ${data.client_name},
+
+Based on your feedback, we've prepared an updated proposal for your review.
+
+${data.counter_notes ? `What's Changed: ${data.counter_notes}\n\n` : ''}Proposal ${data.new_proposal_number} (Updated from ${data.original_proposal_number})
+Services: ${data.service_count} service${data.service_count !== 1 ? 's' : ''}
+${data.discount_percentage && data.discount_percentage > 0 ? `Discount: ${data.discount_percentage}% off\n` : ''}New Total: $${data.new_total.toFixed(2)}
+Valid Until: ${new Date(data.valid_until).toLocaleDateString()}
+
+View your updated proposal: ${data.proposal_url}
+
+We'd love to make this work for you!
+
+Best regards,
+${COMPANY_NAME}
+    `
   }),
 };
 

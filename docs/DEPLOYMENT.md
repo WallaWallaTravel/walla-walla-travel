@@ -56,7 +56,7 @@ Click "Deploy" - Vercel handles everything automatically.
 ### Custom Domain
 
 1. Go to Project Settings → Domains
-2. Add your domain (e.g., `app.wallawalla.travel`)
+2. Add your domain (e.g., `wallawalla.travel`)
 3. Update DNS records as instructed
 4. SSL is automatic
 

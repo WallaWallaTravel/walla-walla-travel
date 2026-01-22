@@ -29,6 +29,9 @@ export default function ProposalAcceptance({ params }: { params: Promise<{ propo
   // Multi-step flow
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = proposal?.gratuity_enabled ? 4 : 3;
+
+  // UX polish - show success state before redirect
+  const [acceptanceState, setAcceptanceState] = useState<'idle' | 'submitting' | 'success' | 'redirecting'>('idle');
   
   // Form data
   const [formData, setFormData] = useState({
@@ -157,6 +160,7 @@ export default function ProposalAcceptance({ params }: { params: Promise<{ propo
 
   const handleSubmit = async () => {
     setSubmitting(true);
+    setAcceptanceState('submitting');
     setError(null);
 
     try {
@@ -178,11 +182,18 @@ export default function ProposalAcceptance({ params }: { params: Promise<{ propo
 
       const _data = await response.json();
 
-      // Redirect to confirmation page
-      router.push(`/proposals/${proposalId}/confirmation`);
+      // Show success state with animation before redirecting
+      setAcceptanceState('success');
+
+      // Brief delay to show success message, then redirect
+      setTimeout(() => {
+        setAcceptanceState('redirecting');
+        router.push(`/proposals/${proposalId}/pay`);
+      }, 1500);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to accept proposal');
       setSubmitting(false);
+      setAcceptanceState('idle');
     }
   };
 
@@ -220,6 +231,51 @@ export default function ProposalAcceptance({ params }: { params: Promise<{ propo
   const gratuityAmount = calculateGratuity(formData.gratuity_option);
   const proposalTotal = typeof proposal.total === 'string' ? parseFloat(proposal.total) : proposal.total;
   const finalTotal = proposalTotal + gratuityAmount;
+
+  // Success/Redirecting overlay
+  if (acceptanceState === 'success' || acceptanceState === 'redirecting') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md text-center">
+          {acceptanceState === 'success' ? (
+            <>
+              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 animate-[bounce_0.6s_ease-in-out]">
+                <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Proposal Accepted!</h2>
+              <p className="text-gray-600 mb-4">Redirecting to payment...</p>
+
+              {/* Journey Progress Indicator */}
+              <div className="flex items-center justify-center gap-2 text-sm mt-6">
+                <span className="flex items-center text-green-600 font-medium">
+                  <span className="w-6 h-6 rounded-full bg-green-600 text-white flex items-center justify-center text-xs mr-1">✓</span>
+                  Accept
+                </span>
+                <span className="text-gray-400">→</span>
+                <span className="flex items-center text-[#8B1538] font-medium animate-pulse">
+                  <span className="w-6 h-6 rounded-full bg-[#8B1538] text-white flex items-center justify-center text-xs mr-1">2</span>
+                  Payment
+                </span>
+                <span className="text-gray-400">→</span>
+                <span className="flex items-center text-gray-400">
+                  <span className="w-6 h-6 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-xs mr-1">3</span>
+                  Confirm
+                </span>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[#8B1538] mx-auto mb-6"></div>
+              <h2 className="text-xl font-bold text-gray-900 mb-2">Preparing Payment...</h2>
+              <p className="text-gray-600">Setting up secure payment form</p>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">

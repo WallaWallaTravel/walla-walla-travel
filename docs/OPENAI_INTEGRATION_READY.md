@@ -246,7 +246,6 @@ import { Input, Select, Textarea, Button } from '@/components/forms';
 
 #### Phase 4: Production Deployment (TODO)
 - [ ] Deploy to Vercel with custom domain
-- [ ] Set up subdomain routing (staff.wallawalla.travel, etc.)
 - [ ] Configure environment variables
 - [ ] Test API endpoints in production
 - [ ] Submit to OpenAI Store
@@ -306,7 +305,7 @@ import { Input, Select, Textarea, Button } from '@/components/forms';
 
 ### Production (When Deployed)
 - **API Base**: https://wallawalla.travel/api/v1
-- **Staff Portal**: https://staff.wallawalla.travel
+- **Staff Portal**: https://wallawalla.travel/staff
 - **OpenAPI Spec**: https://wallawalla.travel/api/openapi
 
 ---

@@ -55,12 +55,17 @@ export const GET = withErrorHandling(async (
 
   const proposal = result.rows[0];
 
-  // Log view (for analytics)
-  await query(
-    `INSERT INTO proposal_activity_log (proposal_id, activity_type, description, metadata)
-     VALUES ($1, $2, $3, $4)`,
-    [proposal.id, 'viewed', 'Proposal viewed by client', JSON.stringify({ viewed_at: new Date().toISOString() })]
-  );
+  // Log view (for analytics) - wrapped in try/catch to not break main functionality
+  try {
+    await query(
+      `INSERT INTO proposal_activity_log (proposal_id, activity_type, description, metadata)
+       VALUES ($1, $2, $3, $4)`,
+      [proposal.id, 'viewed', 'Proposal viewed by client', JSON.stringify({ viewed_at: new Date().toISOString() })]
+    );
+  } catch (logError) {
+    // Don't fail the request if logging fails
+    console.error('Failed to log proposal view:', logError);
+  }
 
   return NextResponse.json({
     success: true,

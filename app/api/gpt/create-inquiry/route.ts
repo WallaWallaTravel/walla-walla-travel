@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
         estimated_response_time: '24 hours',
         next_steps: [
           `Check your email (${data.email}) for confirmation`,
-          'Our team will send you a custom proposal',
+          'Our team will follow up with availability and pricing details',
           'You can reply to the email with any questions'
         ]
       },

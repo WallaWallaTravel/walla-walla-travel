@@ -12,9 +12,9 @@ Finalize components for ChatGPT Store submission to capture the AI assistant opp
 ### Three GPT Apps Planned
 | App | Brand | Target |
 |-----|-------|--------|
-| Walla Walla Wine Concierge | `wwt` | B2B, corporate, full-service |
+| Walla Walla Travel | `wwt` | B2B, corporate, full-service |
 | NW Touring & Concierge | `nwtc` | Private tours, retail |
-| Herding Cats Wine Guide | `hcwt` | Casual enthusiasts |
+| Herding Cats Wine Tours | `hcwt` | Casual enthusiasts |
 
 ### What's Ready
 - [x] API endpoints at `/api/gpt/*` (booking-status, create-inquiry, check-availability, get-recommendations, search-wineries)

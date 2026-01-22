@@ -7,7 +7,7 @@ import { useSearchParams } from 'next/navigation';
  * Embeddable Directory Widget
  * 
  * AI-powered local directory search. Designed to be embedded in Webflow:
- * <iframe src="https://app.wallawalla.travel/embed/directory" />
+ * <iframe src="https://wallawalla.travel/embed/directory" />
  * 
  * URL Parameters:
  * - category: Filter to specific category (winery, restaurant, lodging, activity)

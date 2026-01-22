@@ -142,10 +142,6 @@ export const generateOpenAPISpec = (): OpenAPISchema => {
         description: 'Production Server'
       },
       {
-        url: 'https://staff.wallawalla.travel/api/v1',
-        description: 'Staff Portal'
-      },
-      {
         url: 'http://localhost:3000/api/v1',
         description: 'Local Development'
       }

@@ -36,8 +36,7 @@ export function WineryFinderWidget() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { toggleFavorite, isHydrated } = useFavoritesStore();
-  const isFavorite = useFavoritesStore(state => (id: number) => state.favorites.some(f => f.id === id));
+  const { toggleFavorite, isHydrated, isFavorite } = useFavoritesStore();
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

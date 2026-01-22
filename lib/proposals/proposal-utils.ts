@@ -99,6 +99,9 @@ export interface ServiceItem {
 }
 
 export interface ProposalData {
+  // Brand Selection
+  brand_id?: number | null;
+
   // Client Information
   client_name: string;
   client_email: string;

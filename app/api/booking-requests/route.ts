@@ -391,18 +391,30 @@ info@nwtouring.com | (509) 540-3600
 
 /**
  * GET /api/booking-requests
- * Get pending booking requests count (for sidebar badge)
+ * Get pending booking requests count and consultation counts (for sidebar badges)
  */
 export async function GET() {
   try {
-    const result = await query(
+    // Get reservation count
+    const reservationResult = await query(
       `SELECT COUNT(*) as count
        FROM reservations
        WHERE status = 'pending'`
     );
 
+    // Get consultation count (trips handed off but not yet assigned)
+    const consultationResult = await query(
+      `SELECT COUNT(*) as count
+       FROM trips
+       WHERE status = 'handed_off'
+         AND assigned_staff_id IS NULL
+         AND handoff_requested_at IS NOT NULL`
+    );
+
     return NextResponse.json({
-      pendingCount: parseInt(result.rows[0].count, 10),
+      pendingCount: parseInt(reservationResult.rows[0].count, 10),
+      pendingReservations: parseInt(reservationResult.rows[0].count, 10),
+      pendingConsultations: parseInt(consultationResult.rows[0].count, 10),
     });
   } catch (error) {
     logger.error('Booking Request API error fetching count', { error });

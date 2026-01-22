@@ -7,6 +7,7 @@ import { COMPANY_INFO, getPhoneLink, getEmailLink } from '@/lib/config/company';
 import Footer from '@/components/Footer';
 import { getHourlyRate } from '@/lib/rate-config';
 import { logger } from '@/lib/logger';
+import { ProposalFeedbackPanel } from '@/components/proposals/ProposalFeedbackPanel';
 
 interface ServiceItem {
   id: string;
@@ -681,6 +682,14 @@ export default function ClientProposalView({ params }: { params: Promise<{ propo
               </p>
             </div>
           </div>
+        )}
+
+        {/* Feedback Panel - for questions and suggestions */}
+        {proposalId && ['sent', 'viewed'].includes(proposal.status) && !isExpired && (
+          <ProposalFeedbackPanel
+            proposalId={proposalId}
+            proposalStatus={proposal.status}
+          />
         )}
 
         {/* Decline Success Message */}

@@ -526,9 +526,9 @@ export default function ReserveRefinePage() {
                   <option value="birthday">Birthday Celebration</option>
                   <option value="anniversary">Anniversary</option>
                   <option value="bachelorette">Bachelorette Party</option>
-                  <option value="corporate">Corporate Outing</option>
                   <option value="other">Other</option>
                 </select>
+                {/* Corporate events use /corporate page for proposal workflow */}
               </div>
 
               <div>
