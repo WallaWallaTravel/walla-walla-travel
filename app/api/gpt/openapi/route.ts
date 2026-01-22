@@ -293,7 +293,7 @@ Walla Walla is one of the premier wine regions in the Pacific Northwest, known f
       post: {
         operationId: 'createInquiry',
         summary: 'Create a booking inquiry',
-        description: 'Submit a booking inquiry to request a wine tour. The Walla Walla Travel team will follow up with availability and a proposal.',
+        description: 'Submit a booking inquiry to request a wine tour. The Walla Walla Travel team will follow up with availability and pricing details.',
         requestBody: {
           required: true,
           content: {

@@ -29,6 +29,13 @@ function getStripeClient(): Stripe {
 }
 
 /**
+ * Get the Stripe client instance (exported for webhook handlers)
+ */
+export function getStripe(): Stripe {
+  return getStripeClient();
+}
+
+/**
  * Check if Stripe client is available
  */
 export function isStripeConfigured(): boolean {

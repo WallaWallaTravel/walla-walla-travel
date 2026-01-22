@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import FinalPaymentForm from './FinalPaymentForm';
+import { MultiDayItineraryView } from '@/components/client-portal/MultiDayItineraryView';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '');
 
@@ -34,6 +35,10 @@ interface Booking {
   driver_name?: string;
   vehicle_make?: string;
   vehicle_model?: string;
+  // Multi-day support
+  tour_duration_type?: 'single_day' | 'multi_day';
+  tour_start_date?: string;
+  tour_end_date?: string;
 }
 
 interface Winery {
@@ -44,6 +49,7 @@ interface Winery {
   arrival_time: string;
   departure_time: string;
   stop_order: number;
+  day_number?: number;
 }
 
 export default function CustomerPortalPage({ params }: { params: Promise<{ booking_number: string }> }) {
@@ -200,40 +206,66 @@ export default function CustomerPortalPage({ params }: { params: Promise<{ booki
           <div className="lg:col-span-2 space-y-6">
             {/* Tour Details */}
             <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">🍷 Tour Details</h2>
-              
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <p className="text-gray-600 font-semibold text-sm mb-1">Date</p>
-                  <p className="text-gray-900 font-bold text-lg">
-                    {tourDate.toLocaleDateString('en-US', { 
-                      weekday: 'long', 
-                      month: 'long', 
-                      day: 'numeric', 
-                      year: 'numeric' 
-                    })}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-gray-600 font-semibold text-sm mb-1">Time</p>
-                  <p className="text-gray-900 font-bold text-lg">
-                    {booking.start_time} - {booking.end_time}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-gray-600 font-semibold text-sm mb-1">Duration</p>
-                  <p className="text-gray-900 font-bold text-lg">{booking.duration_hours} hours</p>
-                </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                {booking.tour_duration_type === 'multi_day' ? 'Multi-Day Tour' : 'Tour Details'}
+              </h2>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {/* Date Display - Different for multi-day vs single-day */}
+                {booking.tour_duration_type === 'multi_day' && booking.tour_start_date && booking.tour_end_date ? (
+                  <div className="sm:col-span-2">
+                    <p className="text-gray-600 font-semibold text-sm mb-1">Tour Dates</p>
+                    <p className="text-gray-900 font-bold text-lg">
+                      {new Date(booking.tour_start_date).toLocaleDateString('en-US', {
+                        weekday: 'short',
+                        month: 'long',
+                        day: 'numeric',
+                      })} — {new Date(booking.tour_end_date).toLocaleDateString('en-US', {
+                        weekday: 'short',
+                        month: 'long',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}
+                    </p>
+                    <p className="text-purple-600 font-semibold text-sm mt-1">
+                      {Math.ceil((new Date(booking.tour_end_date).getTime() - new Date(booking.tour_start_date).getTime()) / (1000 * 60 * 60 * 24)) + 1} days
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      <p className="text-gray-600 font-semibold text-sm mb-1">Date</p>
+                      <p className="text-gray-900 font-bold text-lg">
+                        {tourDate.toLocaleDateString('en-US', {
+                          weekday: 'long',
+                          month: 'long',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600 font-semibold text-sm mb-1">Time</p>
+                      <p className="text-gray-900 font-bold text-lg">
+                        {booking.start_time} - {booking.end_time}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600 font-semibold text-sm mb-1">Duration</p>
+                      <p className="text-gray-900 font-bold text-lg">{booking.duration_hours} hours</p>
+                    </div>
+                  </>
+                )}
                 <div>
                   <p className="text-gray-600 font-semibold text-sm mb-1">Party Size</p>
                   <p className="text-gray-900 font-bold text-lg">{booking.party_size} guests</p>
                 </div>
-                <div className="col-span-2">
+                <div className="sm:col-span-2">
                   <p className="text-gray-600 font-semibold text-sm mb-1">Pickup Location</p>
                   <p className="text-gray-900 font-bold">{booking.pickup_location}</p>
                 </div>
                 {booking.special_requests && (
-                  <div className="col-span-2">
+                  <div className="sm:col-span-2">
                     <p className="text-gray-600 font-semibold text-sm mb-1">Special Requests</p>
                     <p className="text-gray-700">{booking.special_requests}</p>
                   </div>
@@ -260,23 +292,39 @@ export default function CustomerPortalPage({ params }: { params: Promise<{ booki
               )}
             </div>
 
-            {/* Itinerary */}
-            {wineries.length > 0 && (
+            {/* Itinerary - Multi-day or Single-day */}
+            {booking.tour_duration_type === 'multi_day' && booking.tour_start_date && booking.tour_end_date ? (
+              <MultiDayItineraryView
+                stops={wineries}
+                startDate={new Date(booking.tour_start_date)}
+                endDate={new Date(booking.tour_end_date)}
+              />
+            ) : wineries.length > 0 && (
               <div className="bg-white rounded-xl shadow-lg p-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">🍇 Your Itinerary</h2>
-                
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">Your Itinerary</h2>
+
+                {/* Guideline Notice */}
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-6">
+                  <p className="text-sm text-amber-800">
+                    <span className="font-semibold">Please Note:</span> This itinerary is a guideline.
+                    The final order of winery visits may vary based on appointment times and availability.
+                  </p>
+                </div>
+
                 <div className="space-y-4">
-                  {wineries.map((winery, _index) => (
+                  {wineries.map((winery) => (
                     <div key={winery.id} className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
                       <div className="w-10 h-10 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">
                         {winery.stop_order}
                       </div>
-                      <div className="flex-1">
-                        <h3 className="font-bold text-gray-900 text-lg">{winery.name}</h3>
-                        <p className="text-gray-600 text-sm mb-2">📍 {winery.address}, {winery.city}</p>
-                        <p className="text-gray-500 text-sm">
-                          ⏰ {winery.arrival_time} - {winery.departure_time}
-                        </p>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-gray-900 text-lg truncate">{winery.name}</h3>
+                        <p className="text-gray-600 text-sm mb-2 truncate">{winery.address}, {winery.city}</p>
+                        {winery.arrival_time && winery.departure_time && (
+                          <p className="text-gray-500 text-sm">
+                            {winery.arrival_time} - {winery.departure_time}
+                          </p>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -287,7 +335,7 @@ export default function CustomerPortalPage({ params }: { params: Promise<{ booki
                     onClick={() => window.print()}
                     className="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-900 rounded-lg font-bold transition-colors"
                   >
-                    🖨️ Print
+                    Print
                   </button>
                   <a
                     href={`/api/bookings/${booking.id}/itinerary-pdf`}
@@ -295,7 +343,7 @@ export default function CustomerPortalPage({ params }: { params: Promise<{ booki
                     rel="noopener noreferrer"
                     className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold transition-colors text-center"
                   >
-                    📄 Download PDF
+                    Download PDF
                   </a>
                 </div>
               </div>

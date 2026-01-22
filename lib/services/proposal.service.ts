@@ -170,7 +170,7 @@ export class ProposalService extends BaseService {
     // Insert proposal
     const result = await this.query(
       `INSERT INTO proposals (
-        proposal_number, client_name, client_email, client_phone, client_company,
+        proposal_number, brand_id, client_name, client_email, client_phone, client_company,
         proposal_title, introduction, wine_tour_description, transfer_description,
         wait_time_description, special_notes, cancellation_policy, footer_notes,
         terms_and_conditions, service_items, additional_services, subtotal,
@@ -182,10 +182,11 @@ export class ProposalService extends BaseService {
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
         $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
         $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
-        $31, $32
+        $31, $32, $33
       ) RETURNING id, proposal_number, uuid` as const,
       [
         proposalNumber,
+        data.brand_id || 1, // Default to Walla Walla Travel (ID 1)
         data.client_name,
         data.client_email,
         data.client_phone,

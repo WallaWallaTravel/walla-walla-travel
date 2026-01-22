@@ -1,7 +1,7 @@
 'use client';
 
-import { useFavoritesStore, FavoriteWinery } from '@/lib/stores/favorites';
-import { useCallback, useState, useEffect } from 'react';
+import { useFavoritesStore } from '@/lib/stores/favorites';
+import { useCallback, useState } from 'react';
 
 interface FavoriteButtonProps {
   winery: {

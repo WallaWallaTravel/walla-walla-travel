@@ -8,6 +8,8 @@ import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { query } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { BookingActions } from './BookingActions';
+import { BookingAssignment } from './BookingAssignment';
 
 interface BookingDetail {
   id: number;
@@ -315,56 +317,15 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
           </div>
 
           {/* Assignment */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Assignment</h2>
-            
-            <div className="grid grid-cols-2 gap-6">
-              <div>
-                <label className="text-sm font-medium text-gray-500">Driver</label>
-                {booking.driver_name ? (
-                  <p className="text-lg font-semibold text-gray-900 mt-1">
-                    {booking.driver_name}
-                  </p>
-                ) : (
-                  <p className="text-lg font-semibold text-red-600 mt-1">
-                    ⚠️ Not Assigned
-                  </p>
-                )}
-                <select className="mt-2 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
-                  <option value="">Select Driver...</option>
-                  {drivers.map(d => (
-                    <option key={d.id} value={d.id} selected={d.id === booking.driver_id}>
-                      {d.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">Vehicle</label>
-                {booking.vehicle_number ? (
-                  <p className="text-lg font-semibold text-gray-900 mt-1">
-                    {booking.vehicle_number}
-                  </p>
-                ) : (
-                  <p className="text-lg font-semibold text-gray-400 mt-1">
-                    Not Assigned
-                  </p>
-                )}
-                <select className="mt-2 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
-                  <option value="">Select Vehicle...</option>
-                  {vehicles.map(v => (
-                    <option key={v.id} value={v.id} selected={v.id === booking.vehicle_id}>
-                      {v.vehicle_number} - {v.make} {v.model}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            
-            <button className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
-              Update Assignment
-            </button>
-          </div>
+          <BookingAssignment
+            bookingId={booking.id}
+            currentDriverId={booking.driver_id}
+            currentDriverName={booking.driver_name}
+            currentVehicleId={booking.vehicle_id}
+            currentVehicleNumber={booking.vehicle_number}
+            drivers={drivers}
+            vehicles={vehicles}
+          />
         </div>
 
         {/* Sidebar - Right column */}
@@ -415,35 +376,12 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
           </div>
 
           {/* Quick Actions */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Actions</h2>
-            
-            <div className="space-y-3">
-              {booking.status === 'pending' && (
-                <button className="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg font-medium transition-colors">
-                  ✓ Confirm Booking
-                </button>
-              )}
-              
-              <button className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-medium transition-colors">
-                ✉️ Send Reminder Email
-              </button>
-              
-              <button className="w-full border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-3 rounded-lg font-medium transition-colors">
-                📋 View Itinerary
-              </button>
-              
-              <button className="w-full border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-3 rounded-lg font-medium transition-colors">
-                🖨️ Print Details
-              </button>
-              
-              {booking.status !== 'cancelled' && booking.status !== 'completed' && (
-                <button className="w-full border border-red-300 hover:bg-red-50 text-red-600 px-4 py-3 rounded-lg font-medium transition-colors">
-                  ✕ Cancel Booking
-                </button>
-              )}
-            </div>
-          </div>
+          <BookingActions
+            bookingId={booking.id}
+            bookingNumber={booking.booking_number}
+            status={booking.status}
+            customerEmail={booking.customer_email}
+          />
 
           {/* Timeline */}
           <div className="bg-white rounded-xl border border-gray-200 p-6">

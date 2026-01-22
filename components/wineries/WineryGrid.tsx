@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { usePageContextStore } from '@/lib/stores/pageContext';
 import { useAnalyticsStore } from '@/lib/stores/analytics-simple';
 import { FavoriteButtonCompact } from './FavoriteButton';
+import { AddToTripButtonCompact } from './AddToTripButton';
 
 interface WinerySummary {
   id: number;
@@ -660,7 +661,15 @@ export function WineryGrid({ initialWineries }: WineryGridProps) {
                   👥 Groups Welcome
                 </div>
               )}
-              {/* Favorite Button */}
+              {/* Add to Trip Button (left side) */}
+              <AddToTripButtonCompact
+                winery={{
+                  id: winery.id,
+                  name: winery.name,
+                  slug: winery.slug,
+                }}
+              />
+              {/* Favorite Button (right side) */}
               <FavoriteButtonCompact
                 winery={{
                   id: winery.id,

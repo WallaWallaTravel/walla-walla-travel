@@ -1,13 +1,60 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState, Suspense } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useTripPlannerStore, useCurrentTrip, useTripLoading, useTripError } from '@/lib/stores/trip-planner';
 import { TripStop, TripGuest, AddStopRequest, AddGuestRequest } from '@/lib/types/trip-planner';
 import { AddToHomeScreen } from '@/components/AddToHomeScreen';
 import { TripAssistant } from '@/components/trip-planner/TripAssistant';
 import { SmartSuggestions } from '@/components/trip-planner/SmartSuggestions';
+
+// ============================================================================
+// Consultation Success Banner
+// ============================================================================
+
+function ConsultationBanner() {
+  const searchParams = useSearchParams();
+  const [showBanner, setShowBanner] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get('consultation') === 'requested') {
+      setShowBanner(true);
+    }
+  }, [searchParams]);
+
+  if (!showBanner) return null;
+
+  return (
+    <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-b border-green-200 px-4 py-4">
+      <div className="max-w-7xl mx-auto flex items-start gap-3">
+        <div className="flex-shrink-0 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <div className="flex-1">
+          <h3 className="font-semibold text-green-900">Planning help requested!</h3>
+          <p className="text-sm text-green-700 mt-1">
+            We&apos;ve received your trip with all your saved wineries. Our team will reach out shortly
+            to create a personalized proposal with optimized routes, reservations, and transportation.
+          </p>
+          <p className="text-sm text-green-600 mt-2">
+            <strong>What happens next:</strong> Check your email for a custom proposal within 24-48 hours.
+          </p>
+        </div>
+        <button
+          onClick={() => setShowBanner(false)}
+          className="text-green-400 hover:text-green-600 transition-colors flex-shrink-0"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+}
 
 // ============================================================================
 // Tab Navigation
@@ -772,6 +819,11 @@ export default function TripDetailPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-stone-50 to-white">
+      {/* Consultation Success Banner */}
+      <Suspense fallback={null}>
+        <ConsultationBanner />
+      </Suspense>
+
       {/* Header - Full Width */}
       <div className="bg-gradient-to-r from-stone-800 to-stone-900 text-white py-6 px-4">
         <div className="max-w-7xl mx-auto">

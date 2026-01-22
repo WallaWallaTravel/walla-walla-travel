@@ -53,7 +53,19 @@ interface ServiceItem {
   calculated_price: number;
 }
 
+interface Brand {
+  id: number;
+  brand_code: string;
+  brand_name: string;
+  display_name: string;
+  primary_color: string | null;
+  default_brand: boolean | null;
+}
+
 interface ProposalData {
+  // Brand Selection
+  brand_id: number | null;
+
   // Client Information
   client_name: string;
   client_email: string;
@@ -87,6 +99,7 @@ interface ProposalData {
 
 export default function NewProposalPageV2() {
   const router = useRouter();
+  const [brands, setBrands] = useState<Brand[]>([]);
   const [wineries, setWineries] = useState<Array<{ id: number; name: string; city: string }>>([]);
   const [availableAdditionalServices, setAvailableAdditionalServices] = useState<Array<{ id: number; name: string; description: string; price: number; price_per: string }>>([]);
   const [saving, setSaving] = useState(false);
@@ -94,6 +107,7 @@ export default function NewProposalPageV2() {
   const [showPriceRange, setShowPriceRange] = useState(true); // Toggle between exact and range
   
   const [formData, setFormData] = useState<ProposalData>({
+    brand_id: null, // Will be set when brands load
     client_name: '',
     client_email: '',
     client_phone: '',
@@ -111,14 +125,32 @@ export default function NewProposalPageV2() {
   });
 
   useEffect(() => {
+    loadBrands();
     loadWineries();
     loadAdditionalServices();
-    
+
     // Set valid until date (30 days from now)
     const validUntil = new Date();
     validUntil.setDate(validUntil.getDate() + 30);
     setFormData(prev => ({ ...prev, valid_until: validUntil.toISOString().split('T')[0] }));
   }, []);
+
+  const loadBrands = async () => {
+    try {
+      const response = await fetch('/api/brands');
+      const result = await response.json();
+      if (result.success) {
+        setBrands(result.data || []);
+        // Set default brand
+        const defaultBrand = result.data?.find((b: Brand) => b.default_brand);
+        if (defaultBrand) {
+          setFormData(prev => ({ ...prev, brand_id: defaultBrand.id }));
+        }
+      }
+    } catch (error) {
+      logger.error('Failed to load brands', { error });
+    }
+  };
 
   const loadWineries = async () => {
     try {
@@ -458,10 +490,45 @@ export default function NewProposalPageV2() {
             {/* Left Column - Form */}
             <div className="lg:col-span-2 space-y-6">
               
+              {/* Brand Selection */}
+              <div className="bg-white rounded-xl shadow-md p-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">🏢 Send As</h2>
+                <p className="text-gray-600 text-sm mb-4">Choose which brand this proposal comes from</p>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {brands.map((brand) => (
+                    <button
+                      key={brand.id}
+                      type="button"
+                      onClick={() => setFormData({...formData, brand_id: brand.id})}
+                      className={`p-4 rounded-lg border-2 text-left transition-all ${
+                        formData.brand_id === brand.id
+                          ? 'border-[#8B1538] bg-[#FDF2F4] ring-2 ring-[#8B1538]/20'
+                          : 'border-gray-200 hover:border-gray-300 bg-white'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="w-4 h-4 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: brand.primary_color || '#8B1538' }}
+                        />
+                        <div>
+                          <div className="font-bold text-gray-900">{brand.display_name}</div>
+                          <div className="text-xs text-gray-500">{brand.brand_code}</div>
+                        </div>
+                      </div>
+                      {formData.brand_id === brand.id && (
+                        <div className="mt-2 text-xs text-[#8B1538] font-bold">✓ Selected</div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Client Information */}
               <div className="bg-white rounded-xl shadow-md p-6">
                 <h2 className="text-2xl font-bold text-gray-900 mb-4">👤 Client Information</h2>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-bold text-gray-900 mb-2">Client Name *</label>

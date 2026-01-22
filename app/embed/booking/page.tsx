@@ -7,7 +7,7 @@ import { useSearchParams } from 'next/navigation';
  * Embeddable Booking Widget
  * 
  * Designed to be embedded in Webflow via iframe:
- * <iframe src="https://app.wallawalla.travel/embed/booking" />
+ * <iframe src="https://wallawalla.travel/embed/booking" />
  * 
  * URL Parameters:
  * - provider: Pre-select a provider (nw-touring, herding-cats)

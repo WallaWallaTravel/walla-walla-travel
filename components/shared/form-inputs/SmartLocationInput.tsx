@@ -13,7 +13,7 @@
 
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { searchLocations } from '@/lib/data/locations';
 
 export interface SmartLocationInputProps {
@@ -47,6 +47,20 @@ export function SmartLocationInput({
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Use refs to track latest values for blur handler (fixes stale closure issue)
+  const searchTermRef = useRef(searchTerm);
+  const valueRef = useRef(value);
+  const selectionMadeRef = useRef(false);  // Track if a selection was made
+
+  // Keep refs in sync
+  useEffect(() => {
+    searchTermRef.current = searchTerm;
+  }, [searchTerm]);
+
+  useEffect(() => {
+    valueRef.current = value;
+  }, [value]);
+
   // Update search term when value changes externally
   useEffect(() => {
     if (!isFocused) {
@@ -69,11 +83,13 @@ export function SmartLocationInput({
   };
 
   // Handle location selection
-  const selectLocation = (locationName: string) => {
+  const selectLocation = useCallback((locationName: string) => {
+    // Mark that a selection was made (prevents blur from overwriting)
+    selectionMadeRef.current = true;
     setSearchTerm(locationName);
     onChange(locationName);
     setShowDropdown(false);
-    
+
     // Auto-advance to next field if provided
     if (nextFieldId) {
       setTimeout(() => {
@@ -83,7 +99,7 @@ export function SmartLocationInput({
         }
       }, 100);
     }
-  };
+  }, [onChange, nextFieldId]);
 
   // Handle keyboard shortcuts
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -125,18 +141,28 @@ export function SmartLocationInput({
   };
 
   // Handle blur
-  const handleBlur = () => {
+  const handleBlur = useCallback(() => {
     // Delay to allow click on dropdown
     setTimeout(() => {
       setIsFocused(false);
       setShowDropdown(false);
-      
+
+      // If a selection was just made via click, don't interfere
+      if (selectionMadeRef.current) {
+        selectionMadeRef.current = false;
+        return;
+      }
+
+      // Use refs to get latest values (fixes stale closure issue)
+      const currentSearchTerm = searchTermRef.current;
+      const currentValue = valueRef.current;
+
       // If user typed something but didn't select, accept it as custom
-      if (searchTerm && searchTerm !== value) {
-        onChange(searchTerm);
+      if (currentSearchTerm && currentSearchTerm !== currentValue) {
+        onChange(currentSearchTerm);
       }
     }, 200);
-  };
+  }, [onChange]);
 
   // Close dropdown when clicking outside
   useEffect(() => {

@@ -22,6 +22,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'System Status', icon: '🖥️', href: '/admin/system-dashboard', section: 'Overview', requiredAccess: 'admin' },
 
   // Operations (admin only)
+  { label: 'Consultations', icon: '🗓️', href: '/admin/consultations', section: 'Operations', dynamicBadge: 'pendingConsultations', requiredAccess: 'admin' },
   { label: 'Bookings', icon: '📅', href: '/admin/bookings', section: 'Operations', requiredAccess: 'admin' },
   { label: 'Reservations', icon: '🎨', href: '/admin/reservations', section: 'Operations', dynamicBadge: 'pendingReservations', requiredAccess: 'admin' },
   { label: 'Proposals', icon: '📄', href: '/admin/proposals', section: 'Operations', requiredAccess: 'admin' },
@@ -119,7 +120,8 @@ export function AdminSidebar() {
           const data = await response.json();
           setBadgeCounts(prev => ({
             ...prev,
-            pendingReservations: data.pendingCount || 0,
+            pendingReservations: data.pendingReservations || data.pendingCount || 0,
+            pendingConsultations: data.pendingConsultations || 0,
           }));
         }
       } catch (error) {

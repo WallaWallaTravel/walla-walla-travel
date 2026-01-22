@@ -1,11 +1,59 @@
 'use client';
 
+import { useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { useFavoritesStore } from '@/lib/stores/favorites';
+import { useTripPlannerStore } from '@/lib/stores/trip-planner';
 import Link from 'next/link';
 import Image from 'next/image';
+import { AddToTripButton } from '@/components/wineries/AddToTripButton';
 
 export default function MyFavoritesPage() {
+  const router = useRouter();
   const { favorites, removeFavorite, clearFavorites, isHydrated } = useFavoritesStore();
+  const { createTrip, addStop, requestHandoff } = useTripPlannerStore();
+  const [isCreatingConsultation, setIsCreatingConsultation] = useState(false);
+
+  // Create a trip from all favorites and request planning help
+  const handleRequestPlanningHelp = useCallback(async () => {
+    if (favorites.length === 0) return;
+
+    setIsCreatingConsultation(true);
+
+    try {
+      // Create a new trip
+      const newTrip = await createTrip({
+        title: `My Walla Walla Wine Trip`,
+        trip_type: 'wine_tour',
+      });
+
+      if (newTrip) {
+        // Add all favorites as stops
+        for (const fav of favorites) {
+          await addStop(newTrip.id, {
+            name: fav.name,
+            winery_id: fav.id,
+            stop_type: 'winery',
+            day_number: 1,
+            notes: fav.note || undefined,
+          });
+        }
+
+        // Request handoff to WWT staff
+        await requestHandoff(newTrip.id,
+          `Created from ${favorites.length} saved winer${favorites.length !== 1 ? 'ies' : 'y'}. Client would like planning assistance.`
+        );
+
+        // Navigate to the trip page
+        router.push(`/my-trips/${newTrip.share_code}?consultation=requested`);
+      }
+    } catch (error) {
+      console.error('Failed to create consultation request:', error);
+      alert('Something went wrong. Please try again.');
+    } finally {
+      setIsCreatingConsultation(false);
+    }
+  }, [favorites, createTrip, addStop, requestHandoff, router]);
 
   // Loading state while hydrating
   if (!isHydrated) {
@@ -40,12 +88,31 @@ export default function MyFavoritesPage() {
             </p>
           </div>
           {favorites.length > 0 && (
-            <div className="flex gap-3">
-              <Link
-                href="/itinerary-builder"
-                className="px-4 py-2 bg-[#8B1538] text-white rounded-lg hover:bg-[#722F37] transition-colors text-sm font-medium"
+            <div className="flex gap-3 flex-wrap">
+              <button
+                onClick={handleRequestPlanningHelp}
+                disabled={isCreatingConsultation}
+                className="px-4 py-2 bg-[#8B1538] text-white rounded-lg hover:bg-[#722F37] transition-colors text-sm font-medium disabled:opacity-50 flex items-center gap-2"
               >
-                Plan a Trip
+                {isCreatingConsultation ? (
+                  <>
+                    <span className="animate-spin">🍷</span>
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                    Request Planning Help
+                  </>
+                )}
+              </button>
+              <Link
+                href="/my-trips/new"
+                className="px-4 py-2 border border-[#8B1538] text-[#8B1538] rounded-lg hover:bg-[#8B1538]/5 transition-colors text-sm font-medium"
+              >
+                Plan My Own Trip
               </Link>
               <button
                 onClick={() => {
@@ -136,15 +203,26 @@ export default function MyFavoritesPage() {
                           ? `$${winery.tasting_fee}`
                           : 'Free tasting'}
                       </span>
-                      <button
-                        onClick={() => removeFavorite(winery.id)}
-                        className="text-red-500 hover:text-red-600 p-1 rounded-full hover:bg-red-50 transition-colors"
-                        aria-label={`Remove ${winery.name} from favorites`}
-                      >
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-                        </svg>
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <AddToTripButton
+                          winery={{
+                            id: winery.id,
+                            name: winery.name,
+                            slug: winery.slug,
+                          }}
+                          variant="text"
+                          size="sm"
+                        />
+                        <button
+                          onClick={() => removeFavorite(winery.id)}
+                          className="text-red-500 hover:text-red-600 p-1 rounded-full hover:bg-red-50 transition-colors"
+                          aria-label={`Remove ${winery.name} from favorites`}
+                        >
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -157,22 +235,39 @@ export default function MyFavoritesPage() {
                 Ready to plan your visit?
               </h2>
               <p className="text-stone-600 mb-6 max-w-lg mx-auto">
-                Turn your saved wineries into a personalized itinerary, or let our local experts handle the details for you.
+                Let our local experts turn your saved wineries into a perfect itinerary with reservations,
+                transportation, and everything you need.
               </p>
               <div className="flex gap-3 justify-center flex-wrap">
-                <Link
-                  href="/itinerary-builder"
-                  className="px-6 py-3 bg-[#8B1538] text-white rounded-lg hover:bg-[#722F37] transition-colors font-medium"
+                <button
+                  onClick={handleRequestPlanningHelp}
+                  disabled={isCreatingConsultation}
+                  className="px-6 py-3 bg-[#8B1538] text-white rounded-lg hover:bg-[#722F37] transition-colors font-medium disabled:opacity-50 flex items-center gap-2"
                 >
-                  Build Itinerary
-                </Link>
+                  {isCreatingConsultation ? (
+                    <>
+                      <span className="animate-spin">🍷</span>
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                      </svg>
+                      Request Planning Help
+                    </>
+                  )}
+                </button>
                 <Link
-                  href="/concierge"
+                  href="/my-trips/new"
                   className="px-6 py-3 border border-[#8B1538] text-[#8B1538] rounded-lg hover:bg-[#8B1538]/5 transition-colors font-medium"
                 >
-                  Talk to Concierge
+                  Plan My Own Trip
                 </Link>
               </div>
+              <p className="text-sm text-stone-500 mt-4">
+                Our team will create a custom proposal based on your favorites. No commitment required!
+              </p>
             </div>
           </>
         )}

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, NotFoundError, RouteContext } from '@/lib/api/middleware/error-handler';
 import { query } from '@/lib/db';
 import { requestHandoffSchema } from '@/lib/validation/schemas/trip';
+import { sendConsultationRequestNotification, sendConsultationConfirmationToCustomer } from '@/lib/email';
+import { logger } from '@/lib/logger';
 
 interface RouteParams {
   shareCode: string;
@@ -17,10 +19,12 @@ export const POST = withErrorHandling<unknown, RouteParams>(
     const body = await request.json();
     const validated = requestHandoffSchema.parse(body);
 
-    // Get trip
+    // Get trip with full details for notification
     const tripResult = await query(
-      `SELECT id, title, owner_name, owner_email, status
-       FROM trips WHERE share_code = $1`,
+      `SELECT t.id, t.title, t.owner_name, t.owner_email, t.owner_phone, t.status,
+              t.trip_type, t.start_date, t.end_date, t.expected_guests, t.share_code,
+              (SELECT COUNT(*) FROM trip_stops WHERE trip_id = t.id AND stop_type = 'winery') as winery_count
+       FROM trips t WHERE t.share_code = $1`,
       [shareCode]
     );
 
@@ -65,6 +69,39 @@ export const POST = withErrorHandling<unknown, RouteParams>(
         }),
       ]
     );
+
+    // Send notification emails (don't block on failure)
+    try {
+      // Notify staff
+      await sendConsultationRequestNotification({
+        tripTitle: trip.title,
+        shareCode: trip.share_code,
+        ownerName: trip.owner_name,
+        ownerEmail: trip.owner_email,
+        ownerPhone: trip.owner_phone,
+        expectedGuests: trip.expected_guests || 2,
+        startDate: trip.start_date,
+        endDate: trip.end_date,
+        notes: validated.notes,
+        tripType: trip.trip_type,
+        wineryCount: parseInt(trip.winery_count) || 0,
+      });
+      logger.info('Staff notification sent for consultation request', { shareCode, tripId: trip.id });
+
+      // Send confirmation to customer if they provided email
+      if (trip.owner_email) {
+        await sendConsultationConfirmationToCustomer({
+          customerEmail: trip.owner_email,
+          customerName: trip.owner_name,
+          tripTitle: trip.title,
+          shareCode: trip.share_code,
+        });
+        logger.info('Customer confirmation sent for consultation request', { shareCode, email: trip.owner_email });
+      }
+    } catch (emailError) {
+      // Log but don't fail the request if emails fail
+      logger.error('Failed to send consultation notification emails', { error: emailError, shareCode });
+    }
 
     return NextResponse.json({
       success: true,
