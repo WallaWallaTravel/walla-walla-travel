@@ -40,12 +40,12 @@ interface Message {
 }
 
 const SUGGESTED_QUERIES = [
-  "Find dog-friendly wineries with outdoor seating",
-  "Romantic spots for our anniversary",
-  "Walk-in friendly, no reservation needed",
-  "Wineries good for groups of 10+",
-  "Boutique wineries with unique experiences",
-  "Best scenic views and picnic areas",
+  "I have my dog, need outdoor seating",
+  "Planning our anniversary celebration",
+  "Walk-ins welcome, no reservation needed",
+  "We have a group of 10+ people",
+  "Looking for intimate boutique experiences",
+  "Want scenic views and picnic spots",
 ];
 
 export default function WineryDiscoverPage() {

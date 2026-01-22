@@ -41,11 +41,11 @@ interface WineryFinderDrawerProps {
 }
 
 const SUGGESTED_QUERIES = [
-  "Dog-friendly with outdoor seating",
-  "Romantic with great views",
-  "Good for groups of 10+",
-  "No reservation needed",
-  "Boutique experiences",
+  "I have my dog with me",
+  "Planning a romantic date",
+  "We have a large group",
+  "Walk-ins welcome, no reservation",
+  "Small boutique wineries",
 ];
 
 export function WineryFinderDrawer({ isOpen, onClose, onApplyFilters }: WineryFinderDrawerProps) {
