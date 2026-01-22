@@ -42,7 +42,7 @@ interface Message {
 const SUGGESTED_QUERIES = [
   "Find dog-friendly wineries with outdoor seating",
   "Romantic spots for our anniversary",
-  "Great Cabernet under $25",
+  "Walk-in friendly, no reservation needed",
   "Wineries good for groups of 10+",
   "Boutique wineries with unique experiences",
   "Best scenic views and picnic areas",

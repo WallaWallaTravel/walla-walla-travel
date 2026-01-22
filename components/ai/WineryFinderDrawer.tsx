@@ -44,7 +44,7 @@ const SUGGESTED_QUERIES = [
   "Dog-friendly with outdoor seating",
   "Romantic with great views",
   "Good for groups of 10+",
-  "Best Cabernet under $25",
+  "No reservation needed",
   "Boutique experiences",
 ];
 
