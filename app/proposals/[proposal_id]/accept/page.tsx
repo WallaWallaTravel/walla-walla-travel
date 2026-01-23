@@ -178,7 +178,7 @@ export default function ProposalAcceptance({ params }: { params: Promise<{ propo
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || 'Failed to accept proposal');
+        throw new Error(data.error?.message || data.error || 'Failed to accept proposal');
       }
 
       const _data = await response.json();

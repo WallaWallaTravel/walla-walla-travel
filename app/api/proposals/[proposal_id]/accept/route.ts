@@ -49,7 +49,7 @@ export const POST = withRateLimit(rateLimiters.api)(
   // Get proposal
   const proposalResult = await query(
     `SELECT * FROM proposals
-     WHERE proposal_number = $1 OR id::text = $1`,
+     WHERE proposal_number = $1 OR id::text = $1 OR uuid::text = $1`,
     [proposal_id]
   );
 
