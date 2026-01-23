@@ -417,7 +417,7 @@ export const EmailTemplates = {
                   <td style="padding: 12px 0 0 0; color: #065f46; font-size: 18px; font-weight: bold; text-align: right;">$${data.balance_due.toFixed(2)}</td>
                 </tr>
                 <tr>
-                  <td colspan="2" style="padding: 8px 0 0 0; color: #6b7280; font-size: 13px; font-style: italic;">Final payment will be automatically charged 48 hours before your tour.</td>
+                  <td colspan="2" style="padding: 8px 0 0 0; color: #6b7280; font-size: 13px; font-style: italic;">Final payment will be charged 48 hours after your tour concludes.</td>
                 </tr>
               </table>
             </div>
@@ -430,7 +430,7 @@ export const EmailTemplates = {
                 <li style="margin: 0 0 12px 0; line-height: 1.6;">We'll send you a detailed itinerary 7 days before your tour</li>
                 <li style="margin: 0 0 12px 0; line-height: 1.6;">Your driver will be assigned and you'll receive their contact info</li>
                 <li style="margin: 0 0 12px 0; line-height: 1.6;">You'll receive a reminder 72 hours before your tour</li>
-                <li style="margin: 0 0 12px 0; line-height: 1.6;">Final payment will be processed 48 hours before your tour</li>
+                <li style="margin: 0 0 12px 0; line-height: 1.6;">Final payment will be processed 48 hours after your tour concludes</li>
                 <li style="margin: 0; line-height: 1.6;">On tour day, your driver will arrive at your pickup location</li>
               </ul>
             </div>
@@ -484,13 +484,13 @@ PAYMENT SUMMARY:
 Total: $${data.total_price.toFixed(2)}
 Deposit Paid: $${data.deposit_paid.toFixed(2)} ✓
 Balance Due: $${data.balance_due.toFixed(2)}
-(Final payment will be charged 48 hours before tour)
+(Final payment will be charged 48 hours after tour concludes)
 
 WHAT'S NEXT:
 • Detailed itinerary sent 7 days before tour
 • Driver assignment notification
 • Reminder 72 hours before tour
-• Final payment 48 hours before tour
+• Final payment 48 hours after tour concludes
 
 Questions? Contact us:
 Email: info@wallawallatravel.com

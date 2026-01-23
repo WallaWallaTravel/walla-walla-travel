@@ -60,9 +60,9 @@ export const BRAND_EMAIL_CONFIGS: Record<number, BrandEmailConfig> = {
   3: {
     id: 3,
     name: 'NW Touring & Concierge',
-    from_email: 'reservations@nwtc.com',
-    reply_to: 'info@nwtc.com',
-    phone: '(509) 200-8000',
+    from_email: 'reservations@nwtouring.com',
+    reply_to: 'info@nwtouring.com',
+    phone: '(509) 540-3600',
     website: 'nwtouring.com',
     
     primary_color: '#1e40af', // Professional blue

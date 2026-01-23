@@ -208,8 +208,8 @@ export async function getDefaultProposalText(pool: Pool, templateName: string = 
       wine_tour_description: 'Visit 3 premier wineries in the Walla Walla Valley. Your private guide will provide insights into the region\'s rich wine-making heritage while ensuring a comfortable and memorable experience.',
       transfer_description: 'Professional transportation service with experienced drivers and comfortable, well-maintained vehicles.',
       wait_time_description: 'Professional wait time service while you attend meetings, events, or other activities.',
-      terms_and_conditions: 'Full payment is required 48 hours before the tour date. Cancellations made 7+ days before the tour date will receive a full refund minus a 10% processing fee. Cancellations made 3-6 days before will receive a 50% refund. Cancellations made less than 3 days before are non-refundable.',
-      cancellation_policy: 'Cancellations made 7+ days in advance: Full refund minus 10% processing fee. 3-6 days: 50% refund. Less than 3 days: Non-refundable.',
+      terms_and_conditions: 'A 50% deposit is required to confirm your booking. The remaining balance is due 48 hours after your tour concludes. Cancellations 45+ days before: 100% refund of deposit. Cancellations 21-44 days before: 50% refund of deposit. Cancellations within 21 days: No refund.',
+      cancellation_policy: 'Cancellations 45+ days before: 100% refund of deposit. 21-44 days before: 50% refund of deposit. Within 21 days: No refund.',
       footer_notes: 'Looking forward to hosting you!'
     };
   }

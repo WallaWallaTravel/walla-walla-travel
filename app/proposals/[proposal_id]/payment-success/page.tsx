@@ -230,7 +230,7 @@ export default function PaymentSuccessPage({ params }: { params: Promise<{ propo
               </li>
               <li className="flex items-start">
                 <span className="font-bold text-blue-600 mr-2">3.</span>
-                <span>The remaining balance is due 48 hours before your tour</span>
+                <span>The remaining balance is due 48 hours after your tour concludes</span>
               </li>
               <li className="flex items-start">
                 <span className="font-bold text-blue-600 mr-2">4.</span>

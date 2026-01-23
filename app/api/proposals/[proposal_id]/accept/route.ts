@@ -72,8 +72,9 @@ export const POST = withRateLimit(rateLimiters.api)(
     throw new BadRequestError('This proposal has expired');
   }
 
-  // Calculate final total with gratuity
-  const finalTotal = proposal.total + (gratuity_amount || 0);
+  // Calculate final total with gratuity (ensure numbers, not strings from DB)
+  const proposalTotal = typeof proposal.total === 'string' ? parseFloat(proposal.total) : proposal.total;
+  const finalTotal = proposalTotal + (gratuity_amount || 0);
   const depositAmount = finalTotal * 0.5;
 
   // Update proposal status
@@ -103,24 +104,28 @@ export const POST = withRateLimit(rateLimiters.api)(
     ]
   );
 
-  // Log activity
-  await query(
-    `INSERT INTO proposal_activity_log (proposal_id, activity_type, description, metadata)
-     VALUES ($1, $2, $3, $4)`,
-    [
-      proposal.id,
-      'accepted',
-      `Proposal accepted by ${name}`,
-      JSON.stringify({
-        accepted_by: name,
-        email,
-        phone,
-        gratuity_amount: gratuity_amount || 0,
-        final_total: finalTotal,
-        timestamp: new Date().toISOString()
-      })
-    ]
-  );
+  // Log activity (wrapped in try-catch to not fail main operation)
+  try {
+    await query(
+      `INSERT INTO proposal_activity_log (proposal_id, activity_type, description, metadata)
+       VALUES ($1, $2, $3, $4)`,
+      [
+        proposal.id,
+        'accepted',
+        `Proposal accepted by ${name}`,
+        JSON.stringify({
+          accepted_by: name,
+          email,
+          phone,
+          gratuity_amount: gratuity_amount || 0,
+          final_total: finalTotal,
+          timestamp: new Date().toISOString()
+        })
+      ]
+    );
+  } catch (logError) {
+    logger.error('Failed to log proposal acceptance:', logError);
+  }
 
   // Create Stripe payment intent for deposit (using brand-specific Stripe account)
   let paymentIntent: Stripe.PaymentIntent | null = null;
@@ -153,11 +158,16 @@ export const POST = withRateLimit(rateLimiters.api)(
 
       clientSecret = paymentIntent.client_secret;
 
-      // Store payment intent ID on proposal
-      await query(
-        `UPDATE proposals SET payment_intent_id = $1 WHERE id = $2`,
-        [paymentIntent.id, proposal.id]
-      );
+      // Store payment intent ID on proposal (if column exists)
+      try {
+        await query(
+          `UPDATE proposals SET payment_intent_id = $1 WHERE id = $2`,
+          [paymentIntent.id, proposal.id]
+        );
+      } catch {
+        // Column may not exist yet - non-critical
+        logger.warn('Could not store payment_intent_id on proposal - column may not exist');
+      }
 
       logger.info('Stripe payment intent created for proposal', {
         proposalNumber: proposal.proposal_number,

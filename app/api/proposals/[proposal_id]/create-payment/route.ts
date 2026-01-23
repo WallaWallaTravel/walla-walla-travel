@@ -15,10 +15,10 @@ export const POST = withErrorHandling(async (
 ) => {
   const { proposal_id } = await params;
 
-  // Get proposal by ID or proposal_number
+  // Get proposal by ID, proposal_number, or uuid
   const proposal = await queryOne(
     `SELECT * FROM proposals
-     WHERE proposal_number = $1 OR id::text = $1`,
+     WHERE proposal_number = $1 OR id::text = $1 OR uuid::text = $1`,
     [proposal_id]
   );
 
@@ -111,21 +111,25 @@ export const POST = withErrorHandling(async (
     });
   }
 
-  // Log activity
-  await query(
-    `INSERT INTO proposal_activity_log (proposal_id, activity_type, description, metadata)
-     VALUES ($1, $2, $3, $4)`,
-    [
-      proposal.id,
-      'payment_initiated',
-      'Payment process initiated',
-      JSON.stringify({
-        payment_intent_id: paymentIntent.id,
-        amount: depositAmount / 100,
-        timestamp: new Date().toISOString(),
-      }),
-    ]
-  );
+  // Log activity (wrapped in try-catch to not fail main operation)
+  try {
+    await query(
+      `INSERT INTO proposal_activity_log (proposal_id, activity_type, description, metadata)
+       VALUES ($1, $2, $3, $4)`,
+      [
+        proposal.id,
+        'payment_initiated',
+        'Payment process initiated',
+        JSON.stringify({
+          payment_intent_id: paymentIntent.id,
+          amount: depositAmount / 100,
+          timestamp: new Date().toISOString(),
+        }),
+      ]
+    );
+  } catch (logError) {
+    logger.warn('Failed to log payment initiation:', logError);
+  }
 
   logger.info('[Proposal Payment] Payment intent created', {
     proposalId: proposal.id,

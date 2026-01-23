@@ -229,7 +229,7 @@ export default function Step1TourDetails({ bookingData, updateBookingData, nextS
                 <span className="font-bold">${bookingData.pricing.deposit_required.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-sm text-gray-600">
-                <span>Balance (due 48hrs before tour):</span>
+                <span>Balance (due 48hrs after tour):</span>
                 <span className="font-bold">
                   ${(bookingData.pricing.total - bookingData.pricing.deposit_required).toFixed(2)}
                 </span>

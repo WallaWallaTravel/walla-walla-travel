@@ -139,7 +139,7 @@ export default function ProposalConfirmation({ params }: { params: Promise<{ pro
               </li>
               <li className="flex items-start">
                 <span className="font-bold text-blue-600 mr-2">4.</span>
-                <span>The remaining balance is due 48 hours before your tour</span>
+                <span>The remaining balance is due 48 hours after your tour concludes</span>
               </li>
             </ol>
           </div>

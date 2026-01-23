@@ -76,7 +76,7 @@ function PaymentForm({ proposalId, amount }: { proposalId: string; amount: numbe
           <span className="text-2xl font-bold text-[#8B1538]">{formatCurrency(amount)}</span>
         </div>
         <p className="text-sm text-gray-600 mt-2">
-          50% deposit to confirm your booking. The remaining balance is due 48 hours before your tour.
+          50% deposit to confirm your booking. The remaining balance is due 48 hours after your tour concludes.
         </p>
       </div>
 
@@ -173,7 +173,7 @@ export default function ProposalPaymentPage({ params }: { params: Promise<{ prop
 
       if (!paymentResponse.ok) {
         const errorData = await paymentResponse.json();
-        throw new Error(errorData.error || 'Failed to initialize payment');
+        throw new Error(errorData.error?.message || errorData.error || 'Failed to initialize payment');
       }
 
       const paymentData = await paymentResponse.json();
