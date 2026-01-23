@@ -5,7 +5,7 @@
 
 export const COMPANY_INFO = {
   name: 'Walla Walla Travel',
-  tagline: 'Wine Country Tours & Transportation',
+  tagline: 'Your Walla Walla wine country resource',
   
   // Contact Information
   phone: {

@@ -34,7 +34,7 @@ export const BRAND_EMAIL_CONFIGS: Record<number, BrandEmailConfig> = {
     primary_color: '#7c3aed', // Purple
     secondary_color: '#5b21b6', // Dark purple
     
-    tagline: 'We handle everything. You enjoy.',
+    tagline: 'Your Walla Walla wine country resource',
     closing: 'Looking forward to hosting your wine country experience',
     signature: 'The Walla Walla Travel Team'
   },
