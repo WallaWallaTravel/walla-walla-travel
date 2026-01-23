@@ -331,6 +331,38 @@ export const POST = withErrorHandling(async (request) => {
 6. **NW Touring & Concierge** (Northwest Touring LLC, USDOT 3603851) is a **separate business** and preferred transportation partner - NOT the same company as Walla Walla Travel
 7. **Public pages MUST be in `app/(public)/`** route group to get the shared navigation header (PublicHeader). Pages outside this group will have NO navigation!
 8. **NEVER estimate or guess specific data** - All numbers, stats, counts, and factual claims (e.g., number of wineries, distances, dates, prices) MUST be researched and verified. Use WebSearch to confirm before adding. Accuracy is essential for credibility.
+9. **When making changes, search the ENTIRE codebase** for all occurrences. Never assume there's only one place where something is defined. Use Grep to find all instances before and after making changes.
+
+---
+
+## 💰 PAYMENT & CANCELLATION POLICIES (CRITICAL BUSINESS RULES)
+
+**These rules apply to NW Touring & Concierge. Always use these exact terms.**
+
+### Payment Terms
+- **Deposit**: 50% required at booking
+- **Balance Due**: 48 hours **AFTER** your tour **CONCLUDES** (NOT before!)
+- ⚠️ **NEVER** say "48 hours before tour" - this is WRONG
+
+### Cancellation Policy
+- **45+ days before**: 100% refund of deposit
+- **21-44 days before**: 50% refund of deposit
+- **Within 21 days**: No refund of deposit
+
+### Vehicle & Conduct Policies
+- No alcohol in vehicle
+- No smoking/vaping in or around vehicle
+- Right to refuse service for misconduct/inebriation
+- $250 cleaning fee if significant cleaning required
+- Right to change tour locations/order/vehicles as necessary
+- Right to terminate tour for safety/legal reasons
+- Termination for bad behavior = no refund
+
+### Brand Contact Info
+| Brand | Phone | Email | Website |
+|-------|-------|-------|---------|
+| Walla Walla Travel | (509) 200-8000 | info@wallawalla.travel | wallawalla.travel |
+| NW Touring & Concierge | (509) 540-3600 | info@nwtouring.com | nwtouring.com |
 
 ---
 

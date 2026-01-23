@@ -46,10 +46,10 @@ export const POST = withErrorHandling(async (request: Request) => {
     vehicle_type: selectedVehicleType
   });
 
-  // Calculate final payment date (48 hours before tour)
+  // Calculate final payment date (48 hours after tour concludes)
   const tourDate = new Date(date);
   const finalPaymentDate = new Date(tourDate);
-  finalPaymentDate.setHours(finalPaymentDate.getHours() - 48);
+  finalPaymentDate.setHours(finalPaymentDate.getHours() + 48);
 
   return NextResponse.json({
     success: true,
@@ -74,7 +74,7 @@ export const POST = withErrorHandling(async (request: Request) => {
       balance: {
         amount: pricing.total - pricing.deposit_required,
         due_date: finalPaymentDate.toISOString().split('T')[0],
-        due_description: '48 hours before tour'
+        due_description: '48 hours after tour concludes'
       },
       vehicle: {
         type: selectedVehicleType,
@@ -82,13 +82,13 @@ export const POST = withErrorHandling(async (request: Request) => {
       },
       policies: {
         cancellation: {
-          '72_hours_plus': 'Full refund minus processing fee',
-          '72_to_24_hours': '50% refund',
-          'less_than_24_hours': 'No refund'
+          '45_days_plus': '100% refund of deposit',
+          '21_to_44_days': '50% refund of deposit',
+          'within_21_days': 'No refund'
         },
         payment_schedule: {
           deposit: 'Due at booking (50%)',
-          final_payment: 'Auto-charged 48 hours before tour (50%)'
+          final_payment: 'Charged 48 hours after tour concludes (50%)'
         }
       }
     },

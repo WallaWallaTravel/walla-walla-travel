@@ -379,9 +379,7 @@ export default function CustomerPortalPage({ params }: { params: Promise<{ booki
                     <p className="text-green-600 text-sm mt-2 font-semibold">✓ Paid</p>
                   ) : (
                     <p className="text-gray-500 text-sm mt-2">
-                      {hoursUntilTour > 48 
-                        ? 'Auto-charged 48 hours before tour'
-                        : 'Payment required now'}
+                      Charged 48 hours after tour concludes
                     </p>
                   )}
                 </div>

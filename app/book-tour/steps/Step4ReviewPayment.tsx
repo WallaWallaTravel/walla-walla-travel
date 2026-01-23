@@ -282,7 +282,7 @@ export default function Step4ReviewPayment({ bookingData, updateBookingData, nex
 
                 <div className="text-sm text-gray-600 space-y-1">
                   <p>• Balance due: ${(bookingData.pricing.total - bookingData.pricing.deposit_required).toFixed(2)}</p>
-                  <p>• Charged automatically 48 hours before tour</p>
+                  <p>• Charged 48 hours after tour concludes</p>
                   <p>• Suggested gratuity: ${bookingData.pricing.estimated_gratuity.toFixed(2)} (15%)</p>
                 </div>
               </div>
