@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { query } from '@/lib/db';
 import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
-import { withCSRF } from '@/lib/api/middleware/csrf';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 import { sendEmail } from '@/lib/email';
 import { COMPANY_INFO } from '@/lib/config/company';
@@ -14,10 +13,10 @@ import { logger } from '@/lib/logger';
 /**
  * POST /api/proposals/[proposal_id]/accept
  * Accept a proposal and create a booking
+ * Note: No CSRF required - this is a public client-facing endpoint
  */
-export const POST = withCSRF(
-  withRateLimit(rateLimiters.api)(
-    withErrorHandling(async (
+export const POST = withRateLimit(rateLimiters.api)(
+  withErrorHandling(async (
   request: NextRequest,
   { params }: { params: Promise<{ proposal_id: string }> }
 ): Promise<NextResponse> => {
@@ -279,4 +278,4 @@ export const POST = withCSRF(
       message: 'Proposal accepted! Complete payment to confirm your booking.'
     }
   });
-})));
+}));
