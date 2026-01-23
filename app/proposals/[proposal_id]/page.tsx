@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { COMPANY_INFO, getPhoneLink, getEmailLink } from '@/lib/config/company';
+import { getBrandEmailConfig } from '@/lib/email-brands';
 import Footer from '@/components/Footer';
 import { getHourlyRate } from '@/lib/rate-config';
 import { logger } from '@/lib/logger';
@@ -39,6 +39,7 @@ interface Proposal {
   valid_until: string;
   status: string;
   created_at: string;
+  brand_id?: number;
   
   // Optional modules
   modules?: {
@@ -260,6 +261,9 @@ export default function ClientProposalView({ params }: { params: Promise<{ propo
   // Client can accept if proposal is sent OR viewed (not already accepted/declined/converted) and not expired
   const canAccept = ['sent', 'viewed'].includes(proposal.status) && !isExpired;
 
+  // Get brand-specific config for display
+  const brandConfig = getBrandEmailConfig(proposal.brand_id);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
@@ -267,8 +271,8 @@ export default function ClientProposalView({ params }: { params: Promise<{ propo
         <div className="max-w-6xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">{COMPANY_INFO.name}</h1>
-              <p className="text-sm text-gray-600">{COMPANY_INFO.tagline}</p>
+              <h1 className="text-2xl font-bold text-gray-900">{brandConfig.name}</h1>
+              <p className="text-sm text-gray-600">{brandConfig.tagline}</p>
             </div>
             <div className="text-right">
               <p className="text-sm text-gray-600">Proposal</p>
@@ -672,12 +676,12 @@ export default function ClientProposalView({ params }: { params: Promise<{ propo
               </div>
               <p className="text-sm text-gray-600 mt-4">
                 Questions? Call us at{' '}
-                <a href={getPhoneLink()} className="text-[#8B1538] hover:underline">
-                  {COMPANY_INFO.phone.formatted}
+                <a href={`tel:${brandConfig.phone.replace(/[^+\d]/g, '')}`} className="text-[#8B1538] hover:underline">
+                  {brandConfig.phone}
                 </a>
                 {' '}or email{' '}
-                <a href={getEmailLink()} className="text-[#8B1538] hover:underline">
-                  {COMPANY_INFO.email.general}
+                <a href={`mailto:${brandConfig.reply_to}`} className="text-[#8B1538] hover:underline">
+                  {brandConfig.reply_to}
                 </a>
               </p>
             </div>
