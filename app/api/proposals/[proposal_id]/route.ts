@@ -43,7 +43,8 @@ export const GET = withErrorHandling(async (
       multi_day_itinerary,
       b2b_details,
       special_event_details,
-      group_coordination
+      group_coordination,
+      brand_id
      FROM proposals
      WHERE proposal_number = $1 OR id::text = $1 OR uuid::text = $1`,
     [proposal_id]
