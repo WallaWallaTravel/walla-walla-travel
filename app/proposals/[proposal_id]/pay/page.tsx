@@ -1,15 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { loadStripe } from '@stripe/stripe-js';
+import { loadStripe, Stripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { logger } from '@/lib/logger';
 import Footer from '@/components/Footer';
 
-// Load Stripe outside of component to avoid recreation
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '');
+// Cache for Stripe instances by publishable key
+const stripePromiseCache: Record<string, Promise<Stripe | null>> = {};
 
 interface Proposal {
   id: number;
@@ -124,9 +124,20 @@ export default function ProposalPaymentPage({ params }: { params: Promise<{ prop
   const [proposalId, setProposalId] = useState<string | null>(null);
   const [proposal, setProposal] = useState<Proposal | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [publishableKey, setPublishableKey] = useState<string | null>(null);
   const [amount, setAmount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Memoize Stripe promise based on publishable key
+  const stripePromise = useMemo(() => {
+    if (!publishableKey) return null;
+    // Cache stripe instances to avoid recreation
+    if (!stripePromiseCache[publishableKey]) {
+      stripePromiseCache[publishableKey] = loadStripe(publishableKey);
+    }
+    return stripePromiseCache[publishableKey];
+  }, [publishableKey]);
 
   useEffect(() => {
     params.then(p => setProposalId(p.proposal_id));
@@ -168,6 +179,7 @@ export default function ProposalPaymentPage({ params }: { params: Promise<{ prop
       const paymentData = await paymentResponse.json();
       setClientSecret(paymentData.data.client_secret);
       setAmount(paymentData.data.amount);
+      setPublishableKey(paymentData.data.publishable_key);
     } catch (err) {
       logger.error('Payment initialization error', { error: err });
       setError(err instanceof Error ? err.message : 'Failed to initialize payment');
@@ -212,7 +224,7 @@ export default function ProposalPaymentPage({ params }: { params: Promise<{ prop
     );
   }
 
-  if (!proposal || !clientSecret) {
+  if (!proposal || !clientSecret || !stripePromise) {
     return null;
   }
 

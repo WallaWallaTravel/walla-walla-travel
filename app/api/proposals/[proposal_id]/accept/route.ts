@@ -7,20 +7,9 @@ import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 import { sendEmail } from '@/lib/email';
 import { COMPANY_INFO } from '@/lib/config/company';
 import { getBrandEmailConfig } from '@/lib/email-brands';
+import { getBrandStripeClient } from '@/lib/stripe-brands';
 import { healthService } from '@/lib/services/health.service';
 import { logger } from '@/lib/logger';
-
-// Initialize Stripe with error handling
-let stripe: Stripe | null = null;
-try {
-  if (process.env.STRIPE_SECRET_KEY) {
-    stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-      apiVersion: '2025-10-29.clover',
-    });
-  }
-} catch (error) {
-  logger.error('Failed to initialize Stripe client', { error: String(error) });
-}
 
 /**
  * POST /api/proposals/[proposal_id]/accept
@@ -134,9 +123,11 @@ export const POST = withCSRF(
     ]
   );
 
-  // Create Stripe payment intent for deposit
+  // Create Stripe payment intent for deposit (using brand-specific Stripe account)
   let paymentIntent: Stripe.PaymentIntent | null = null;
   let clientSecret: string | null = null;
+
+  const stripe = getBrandStripeClient(proposal.brand_id);
 
   if (stripe) {
     try {
@@ -147,6 +138,7 @@ export const POST = withCSRF(
           metadata: {
             proposal_id: proposal.id.toString(),
             proposal_number: proposal.proposal_number,
+            brand_id: (proposal.brand_id || 1).toString(),
             type: 'proposal_deposit',
             customer_email: email,
           },
@@ -172,17 +164,20 @@ export const POST = withCSRF(
         proposalNumber: proposal.proposal_number,
         paymentIntentId: paymentIntent.id,
         amount: depositAmount,
+        brandId: proposal.brand_id,
       });
     } catch (stripeError) {
       logger.error('Failed to create Stripe payment intent', {
         error: String(stripeError),
         proposalNumber: proposal.proposal_number,
+        brandId: proposal.brand_id,
       });
       // Continue without payment intent - admin can manually process
     }
   } else {
-    logger.warn('Stripe not configured - payment intent not created', {
+    logger.warn('Stripe not configured for brand - payment intent not created', {
       proposalNumber: proposal.proposal_number,
+      brandId: proposal.brand_id,
     });
   }
 
