@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { COMPANY_INFO } from '@/lib/config/company';
+import { getBrandEmailConfig } from '@/lib/email-brands';
 import Footer from '@/components/Footer';
 
 interface Proposal {
@@ -16,6 +16,7 @@ interface Proposal {
   deposit_amount: number;
   gratuity_enabled: boolean;
   gratuity_percentage?: number;
+  brand_id?: number;
 }
 
 export default function ProposalAcceptance({ params }: { params: Promise<{ proposal_id: string }> }) {
@@ -227,6 +228,9 @@ export default function ProposalAcceptance({ params }: { params: Promise<{ propo
   }
 
   if (!proposal) return null;
+
+  // Get brand-specific config
+  const brandConfig = getBrandEmailConfig(proposal.brand_id);
 
   const gratuityAmount = calculateGratuity(formData.gratuity_option);
   const proposalTotal = typeof proposal.total === 'string' ? parseFloat(proposal.total) : proposal.total;
@@ -478,20 +482,20 @@ export default function ProposalAcceptance({ params }: { params: Promise<{ propo
                 <h3 className="font-bold text-gray-900 mb-3">Terms of Service</h3>
                 <div className="space-y-3 text-sm text-gray-700">
                   <p>
-                    <strong>Payment Terms:</strong> A 50% deposit is required to confirm your booking. 
-                    The remaining balance is due 48 hours before your tour date.
+                    <strong>Payment Terms:</strong> A 50% deposit is required to confirm your booking.
+                    The remaining balance is due 48 hours after your tour concludes.
                   </p>
                   <p>
-                    <strong>Cancellation Policy:</strong> Cancellations made 72+ hours before the tour 
+                    <strong>Cancellation Policy:</strong> Cancellations made 72+ hours before the tour
                     receive a full refund. Cancellations within 72 hours forfeit the deposit.
                   </p>
                   <p>
-                    <strong>Weather Policy:</strong> Tours operate rain or shine. In case of severe 
+                    <strong>Weather Policy:</strong> Tours operate rain or shine. In case of severe
                     weather, we will work with you to reschedule at no additional charge.
                   </p>
                   <p>
-                    <strong>Liability:</strong> Guests participate at their own risk. {COMPANY_INFO.name} 
-                    is not responsible for personal injury or property damage.
+                    <strong>Liability:</strong> Guests participate at their own risk. {brandConfig.name} is
+                    not responsible for personal injury or property damage.
                   </p>
                 </div>
               </div>
