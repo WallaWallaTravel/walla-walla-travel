@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
-import { getStripe } from '@/lib/stripe';
+import { getBrandStripeClient } from '@/lib/stripe-brands';
 import { query, queryOne, withTransaction } from '@/lib/db-helpers';
 import { logger } from '@/lib/logger';
 import { sendBookingConfirmationEmail } from '@/lib/services/email-automation.service';
@@ -50,8 +50,14 @@ export const POST = withErrorHandling(async (
     });
   }
 
+  // Get brand-specific Stripe client
+  const stripe = getBrandStripeClient(proposal.brand_id);
+  if (!stripe) {
+    logger.error('Stripe not configured for brand', { brandId: proposal.brand_id });
+    throw new BadRequestError('Payment service not configured. Please contact support.');
+  }
+
   // Verify payment with Stripe
-  const stripe = getStripe();
   const paymentIntent = await stripe.paymentIntents.retrieve(payment_intent_id);
 
   if (paymentIntent.status !== 'succeeded') {
@@ -245,6 +251,7 @@ export const POST = withErrorHandling(async (
     bookingId: result.id,
     bookingNumber: result.booking_number,
     paymentIntentId: payment_intent_id,
+    brandId: proposal.brand_id,
   });
 
   return NextResponse.json({

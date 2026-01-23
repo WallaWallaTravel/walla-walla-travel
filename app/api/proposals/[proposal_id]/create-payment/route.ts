@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
-import { getStripe, probeStripeHealth } from '@/lib/stripe';
+import { getBrandStripeClient, getBrandStripePublishableKey } from '@/lib/stripe-brands';
+import { getBrandEmailConfig } from '@/lib/email-brands';
 import { query, queryOne } from '@/lib/db-helpers';
 import { logger } from '@/lib/logger';
 
@@ -13,12 +14,6 @@ export const POST = withErrorHandling(async (
   { params }: { params: Promise<{ proposal_id: string }> }
 ) => {
   const { proposal_id } = await params;
-
-  // Check Stripe health
-  const stripeHealth = await probeStripeHealth();
-  if (!stripeHealth.available) {
-    throw new BadRequestError('Payment service temporarily unavailable. Please try again.');
-  }
 
   // Get proposal by ID or proposal_number
   const proposal = await queryOne(
@@ -36,10 +31,21 @@ export const POST = withErrorHandling(async (
     throw new BadRequestError('This proposal must be accepted before payment');
   }
 
+  // Get brand-specific Stripe client
+  const stripe = getBrandStripeClient(proposal.brand_id);
+  if (!stripe) {
+    logger.error('Stripe not configured for brand', { brandId: proposal.brand_id });
+    throw new BadRequestError('Payment service not configured. Please contact support.');
+  }
+
+  const brand = getBrandEmailConfig(proposal.brand_id);
+
+  // Get publishable key for client-side Stripe
+  const publishableKey = getBrandStripePublishableKey(proposal.brand_id);
+
   // Check if payment already exists
   if (proposal.payment_intent_id) {
     // Return existing payment intent
-    const stripe = getStripe();
     try {
       const existingIntent = await stripe.paymentIntents.retrieve(proposal.payment_intent_id);
       if (existingIntent.status !== 'canceled' && existingIntent.status !== 'succeeded') {
@@ -49,6 +55,7 @@ export const POST = withErrorHandling(async (
             client_secret: existingIntent.client_secret,
             amount: existingIntent.amount / 100,
             payment_intent_id: existingIntent.id,
+            publishable_key: publishableKey,
             existing: true,
           },
         });
@@ -68,19 +75,22 @@ export const POST = withErrorHandling(async (
   }
 
   // Create Stripe PaymentIntent
-  const stripe = getStripe();
   const paymentIntent = await stripe.paymentIntents.create({
     amount: depositAmount,
     currency: 'usd',
     metadata: {
       proposal_id: proposal.id.toString(),
       proposal_number: proposal.proposal_number,
+      brand_id: (proposal.brand_id || 1).toString(),
       client_name: proposal.client_name || proposal.accepted_by_name || '',
       client_email: proposal.client_email || proposal.accepted_by_email || '',
       payment_type: 'proposal_deposit',
     },
-    description: `Deposit for ${proposal.title || proposal.proposal_number}`,
+    description: `${brand.name} - Deposit for ${proposal.title || proposal.proposal_number}`,
     receipt_email: proposal.accepted_by_email || proposal.client_email || undefined,
+    automatic_payment_methods: {
+      enabled: true,
+    },
   });
 
   // Store payment intent ID on proposal (if columns exist)
@@ -122,6 +132,8 @@ export const POST = withErrorHandling(async (
     proposalNumber: proposal.proposal_number,
     paymentIntentId: paymentIntent.id,
     amount: depositAmount / 100,
+    brandId: proposal.brand_id,
+    brandName: brand.name,
   });
 
   return NextResponse.json({
@@ -130,6 +142,7 @@ export const POST = withErrorHandling(async (
       client_secret: paymentIntent.client_secret,
       amount: depositAmount / 100,
       payment_intent_id: paymentIntent.id,
+      publishable_key: publishableKey,
     },
   });
 });
