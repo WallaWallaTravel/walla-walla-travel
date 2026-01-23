@@ -485,18 +485,28 @@ export default function ProposalAcceptance({ params }: { params: Promise<{ propo
                     <strong>Payment Terms:</strong> A 50% deposit is required to confirm your booking.
                     The remaining balance is due 48 hours after your tour concludes.
                   </p>
-                  <p>
-                    <strong>Cancellation Policy:</strong> Cancellations made 72+ hours before the tour
-                    receive a full refund. Cancellations within 72 hours forfeit the deposit.
-                  </p>
-                  <p>
-                    <strong>Weather Policy:</strong> Tours operate rain or shine. In case of severe
-                    weather, we will work with you to reschedule at no additional charge.
-                  </p>
-                  <p>
-                    <strong>Liability:</strong> Guests participate at their own risk. {brandConfig.name} is
-                    not responsible for personal injury or property damage.
-                  </p>
+
+                  <p><strong>Cancellation Policy:</strong></p>
+                  <ul className="list-disc list-inside ml-2 space-y-1">
+                    <li>100% refund of deposit if cancelled 45+ days before scheduled service/event.</li>
+                    <li>50% refund of deposit if cancelled 21-44 days before scheduled service/event.</li>
+                    <li>No refund of deposit if cancelled within 21 days of the service date.</li>
+                  </ul>
+
+                  <p><strong>Vehicle &amp; Conduct Policies:</strong></p>
+                  <ul className="list-disc list-inside ml-2 space-y-1">
+                    <li>Drinking alcoholic beverages inside the vehicle is not permitted.</li>
+                    <li>Smoking of any kind (including vaping) in and around the vehicle is not permitted.</li>
+                    <li>{brandConfig.name} and each individual location/winery reserves the right to refuse service to any guest(s) for misconduct or inebriation. If service is refused mid-tour, a separate vehicle will return the guest(s) to the pick-up location at the guest(s)&apos;s expense.</li>
+                    <li>Should significant cleaning be necessary to restore the vehicle to pre-tour condition, a cleaning fee of $250 will be charged to the responsible guest(s).</li>
+                  </ul>
+
+                  <p><strong>Tour Operations:</strong></p>
+                  <ul className="list-disc list-inside ml-2 space-y-1">
+                    <li>{brandConfig.name} reserves the right to make changes to tour locations, order, or vehicles as necessary.</li>
+                    <li>{brandConfig.name} reserves the right to terminate any tour at any time in the interest of guest safety, driver safety, vehicle safety, and/or compliance with federal/state/local laws.</li>
+                    <li>Unruly, violent, inappropriate, illegal, or dangerous behavior will result in immediate termination of the tour without refund.</li>
+                  </ul>
                 </div>
               </div>
               
