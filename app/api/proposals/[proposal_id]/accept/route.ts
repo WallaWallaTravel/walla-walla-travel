@@ -3,7 +3,7 @@ import Stripe from 'stripe';
 import { query } from '@/lib/db';
 import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
-import { sendEmail } from '@/lib/email';
+import { sendEmailAfterResponse } from '@/lib/email-async';
 import { COMPANY_INFO } from '@/lib/config/company';
 import { getBrandEmailConfig } from '@/lib/email-brands';
 import { getBrandStripeClient } from '@/lib/stripe-brands';
@@ -261,14 +261,18 @@ export const POST = withRateLimit(rateLimiters.api)(
     </html>
   `;
 
-  await sendEmail({
-    to: email,
-    subject: `Proposal Accepted - ${proposal.proposal_number} | ${brand.name}`,
-    html: confirmationEmailHtml,
-    text: `Hi ${name},\n\nThank you for accepting our proposal (${proposal.proposal_number})!\n\nTotal: $${finalTotal.toFixed(2)}\nDeposit Required: $${depositAmount.toFixed(2)} (50%)\n\nComplete your deposit payment here: ${paymentUrl}\n\nOnce your deposit is received, we'll begin finalizing all the details for your experience.\n\nBest regards,\n${brand.name}\n${brand.phone}`
-  });
+  // Send confirmation email after response (non-blocking)
+  sendEmailAfterResponse(
+    {
+      to: email,
+      subject: `Proposal Accepted - ${proposal.proposal_number} | ${brand.name}`,
+      html: confirmationEmailHtml,
+      text: `Hi ${name},\n\nThank you for accepting our proposal (${proposal.proposal_number})!\n\nTotal: $${finalTotal.toFixed(2)}\nDeposit Required: $${depositAmount.toFixed(2)} (50%)\n\nComplete your deposit payment here: ${paymentUrl}\n\nOnce your deposit is received, we'll begin finalizing all the details for your experience.\n\nBest regards,\n${brand.name}\n${brand.phone}`,
+    },
+    { proposalNumber: proposal.proposal_number }
+  );
 
-  logger.info('Proposal accepted and confirmation email sent', {
+  logger.info('Proposal accepted, confirmation email queued', {
     proposalNumber: proposal.proposal_number,
     acceptedBy: name,
     finalTotal,

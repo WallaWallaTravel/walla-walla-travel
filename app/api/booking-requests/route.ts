@@ -7,11 +7,13 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { query, queryOne } from '@/lib/db-helpers';
 import { sendEmail } from '@/lib/email';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
+import { crmSyncService } from '@/lib/services/crm-sync.service';
+import { crmTaskAutomationService } from '@/lib/services/crm-task-automation.service';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -186,6 +188,23 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       customerName: data.contact.name,
       days: data.tourDays.length,
       provider: data.provider,
+    });
+
+    // Sync to CRM (async, don't block booking request)
+    syncBookingRequestToCrm({
+      customerId,
+      customerName: data.contact.name,
+      customerEmail: data.contact.email,
+      customerPhone: data.contact.phone,
+      reservationNumber,
+      partySize,
+      tourType: data.tourType,
+      startDate,
+      provider: data.provider,
+      estimatedTotal: data.estimatedTotal,
+      notes: data.notes,
+    }).catch((err) => {
+      logger.error('Failed to sync booking request to CRM', { error: err, reservationNumber });
     });
 
     // Send confirmation email via Postmark
@@ -402,3 +421,104 @@ export const GET = withErrorHandling(async () => {
     pendingConsultations: parseInt(consultationResult.rows[0].count, 10),
   });
 });
+
+// ============================================================================
+// CRM Integration Helper
+// ============================================================================
+
+interface SyncBookingRequestParams {
+  customerId: number;
+  customerName: string;
+  customerEmail: string;
+  customerPhone?: string;
+  reservationNumber: string;
+  partySize: number;
+  tourType: string;
+  startDate: string;
+  provider: string;
+  estimatedTotal: string;
+  notes?: string;
+}
+
+async function syncBookingRequestToCrm(params: SyncBookingRequestParams): Promise<void> {
+  // Find or create CRM contact
+  let contact = await queryOne<{ id: number; email: string }>(
+    `SELECT id, email FROM crm_contacts WHERE LOWER(email) = LOWER($1)`,
+    [params.customerEmail]
+  );
+
+  if (!contact) {
+    // Create new contact as a lead
+    contact = await queryOne<{ id: number; email: string }>(
+      `INSERT INTO crm_contacts (
+        email, name, phone, customer_id, contact_type, lifecycle_stage,
+        lead_temperature, source, source_detail,
+        notes, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, 'individual', 'lead', 'hot', 'booking_request', $5, $6, NOW(), NOW())
+      RETURNING id, email`,
+      [
+        params.customerEmail,
+        params.customerName,
+        params.customerPhone || null,
+        params.customerId,
+        params.provider,
+        `Booking Request ${params.reservationNumber}: ${params.tourType} for ${params.partySize} guests on ${params.startDate}`,
+      ]
+    );
+
+    logger.info('[CRM] Created contact for booking request', { contactId: contact?.id, reservationNumber: params.reservationNumber });
+  } else {
+    // Update existing contact with booking request info
+    await query(
+      `UPDATE crm_contacts
+       SET customer_id = COALESCE(customer_id, $1),
+           lead_temperature = 'hot',
+           notes = COALESCE(notes || E'\\n\\n---\\n', '') || $2,
+           last_contacted_at = NOW(),
+           updated_at = NOW()
+       WHERE id = $3`,
+      [
+        params.customerId,
+        `[Booking Request ${params.reservationNumber}] ${params.tourType} for ${params.partySize} guests on ${params.startDate}`,
+        contact.id,
+      ]
+    );
+
+    logger.info('[CRM] Updated contact for booking request', { contactId: contact.id, reservationNumber: params.reservationNumber });
+  }
+
+  if (!contact) return;
+
+  // Log the booking request as a CRM activity
+  await crmSyncService.logActivity({
+    contactId: contact.id,
+    activityType: 'note',
+    subject: `Booking Request: ${params.reservationNumber}`,
+    body: formatBookingRequestDetails(params),
+  });
+
+  // Create follow-up task for the new booking request (hot lead!)
+  await crmTaskAutomationService.onNewLead({
+    contactId: contact.id,
+    customerName: params.customerName,
+    source: 'booking_request',
+  });
+}
+
+function formatBookingRequestDetails(params: SyncBookingRequestParams): string {
+  const lines = [
+    `Reservation #: ${params.reservationNumber}`,
+    `Name: ${params.customerName}`,
+    `Email: ${params.customerEmail}`,
+  ];
+
+  if (params.customerPhone) lines.push(`Phone: ${params.customerPhone}`);
+  lines.push(`Party Size: ${params.partySize}`);
+  lines.push(`Tour Type: ${params.tourType}`);
+  lines.push(`Date: ${params.startDate}`);
+  lines.push(`Provider: ${params.provider}`);
+  lines.push(`Estimated Total: ${params.estimatedTotal}`);
+  if (params.notes) lines.push(`Notes: ${params.notes}`);
+
+  return lines.join('\n');
+}

@@ -7,6 +7,7 @@ import { useTripPlannerStore } from '@/lib/stores/trip-planner';
 import Link from 'next/link';
 import Image from 'next/image';
 import { AddToTripButton } from '@/components/wineries/AddToTripButton';
+import { logger } from '@/lib/logger';
 
 export default function MyFavoritesPage() {
   const router = useRouter();
@@ -52,7 +53,7 @@ export default function MyFavoritesPage() {
         router.push(`/my-trips/${newTrip.share_code}?consultation=requested`);
       }
     } catch (error) {
-      console.error('Failed to create consultation request:', error);
+      logger.error('Failed to create consultation request', { error, favoriteCount: favorites.length });
       alert('Something went wrong. Please try again.');
     } finally {
       setIsCreatingConsultation(false);

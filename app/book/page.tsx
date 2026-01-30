@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useBookingTracking } from '@/lib/hooks/useBookingTracking';
 import { logger } from '@/lib/logger';
+import { generateSecureString } from '@/lib/utils';
 
 /**
  * Book a Tour - Entry Point
@@ -61,7 +62,7 @@ const PROVIDERS: Provider[] = [
 ];
 
 const createNewDay = (): TourDay => ({
-  id: Math.random().toString(36).substring(7),
+  id: generateSecureString(7),
   date: '',
   guests: 2,
   largeGroupSize: '',
@@ -69,7 +70,7 @@ const createNewDay = (): TourDay => ({
 });
 
 const createNewService = (): ServiceItem => ({
-  id: Math.random().toString(36).substring(7),
+  id: generateSecureString(7),
   serviceType: '',
   details: '',
 });

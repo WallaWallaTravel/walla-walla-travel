@@ -1,12 +1,7 @@
 // Query Logger
 // Logs all AI queries for analytics and review
 
-import { Pool } from 'pg'
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
-})
+import { pool } from '@/lib/db'
 
 export interface LogQueryParams {
   sessionId: string

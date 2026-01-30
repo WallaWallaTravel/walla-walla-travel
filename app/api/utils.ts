@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import type { NextRequest } from 'next/server';
 import { logger } from '@/lib/logger';
+import { generateSecureString } from '@/lib/utils';
 
 // Standard API response format
 interface ApiResponse<T = unknown> {
@@ -277,7 +278,7 @@ export function isValidPhone(phone: string): boolean {
 
 // Generate a random ID (for temporary use)
 export function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  return `${Date.now()}-${generateSecureString(9)}`;
 }
 
 // Sleep helper for testing

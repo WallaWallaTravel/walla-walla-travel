@@ -4,6 +4,7 @@ import { logger } from '@/lib/logger';
 import { withErrorHandling, BadRequestError, NotFoundError, InternalServerError } from '@/lib/api-errors';
 import { queryOne, withTransaction } from '@/lib/db-helpers';
 import { sendPaymentReceiptEmail } from '@/lib/services/email-automation.service';
+import { crmSyncService } from '@/lib/services/crm-sync.service';
 import { validateBody, ConfirmPaymentSchema } from '@/lib/api/middleware/validation';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
@@ -145,6 +146,26 @@ export const POST = withCSRF(
   // Send payment receipt email (async, don't wait)
   sendPaymentReceiptEmail(payment.id).catch(err => {
     logger.error('Payment: Failed to send receipt email', { error: err, paymentId: payment.id });
+  });
+
+  // Log payment to CRM (async, don't wait)
+  // We need to get customer_id from the booking
+  queryOne<{ customer_id: number }>(
+    `SELECT customer_id FROM bookings WHERE id = $1`,
+    [bookingId]
+  ).then(bookingData => {
+    if (bookingData?.customer_id) {
+      crmSyncService.logPaymentReceived(
+        bookingData.customer_id,
+        parseFloat(payment.amount),
+        paymentType,
+        bookingId
+      ).catch(err => {
+        logger.error('Payment: Failed to log to CRM', { error: err, paymentId: payment.id });
+      });
+    }
+  }).catch(err => {
+    logger.error('Payment: Failed to get customer for CRM', { error: err, bookingId });
   });
 
   return NextResponse.json({

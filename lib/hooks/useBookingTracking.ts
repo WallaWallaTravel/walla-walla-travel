@@ -12,6 +12,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { generateSecureString } from '@/lib/utils';
 
 // ============================================================================
 // Types
@@ -43,10 +44,10 @@ interface TrackingState {
 // ============================================================================
 
 /**
- * Generate a unique ID
+ * Generate a unique ID using cryptographically secure random
  */
 function generateId(): string {
-  return `${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 11)}`;
+  return `${Date.now().toString(36)}-${generateSecureString(9)}`;
 }
 
 /**

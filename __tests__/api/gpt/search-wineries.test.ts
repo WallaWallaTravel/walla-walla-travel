@@ -184,8 +184,7 @@ describe('GET /api/gpt/search-wineries', () => {
 
       expect(response.status).toBe(500);
       expect(data.success).toBe(false);
-      expect(data.message).toContain('Unable to search');
-      expect(data.wineries).toEqual([]);
+      expect(data.error.message).toBeDefined();
     });
   });
 

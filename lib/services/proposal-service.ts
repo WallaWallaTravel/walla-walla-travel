@@ -7,6 +7,7 @@
 import { BaseService } from './base.service';
 import { NotFoundError, ValidationError } from '@/lib/api/middleware/error-handler';
 import { z } from 'zod';
+import { generateSecureString } from '@/lib/utils';
 
 // ============================================================================
 // Types & Schemas
@@ -81,9 +82,9 @@ export const CreateProposalSchema = z.object({
   partySize: z.number().int().min(1).max(50),
   tourDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   durationHours: z.number().min(4).max(24),
-  subtotal: z.number().min(0),
-  taxes: z.number().min(0),
-  total: z.number().min(0),
+  subtotal: z.number().min(0), // Can be $0 for complimentary proposals
+  taxes: z.number().min(0), // Can be $0 if no tax applies
+  total: z.number().positive('Total must be greater than $0'),
   validUntil: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   brandId: z.number().int().positive().optional(),
   notes: z.string().optional(),
@@ -443,7 +444,7 @@ export class ProposalService extends BaseService {
     const prefix = 'PROP';
     const year = new Date().getFullYear();
     const timestamp = Date.now().toString().slice(-6);
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    const random = generateSecureString(3, '0123456789');
 
     return `${prefix}-${year}-${timestamp}${random}`;
   }

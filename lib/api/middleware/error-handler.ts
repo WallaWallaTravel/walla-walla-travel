@@ -1,7 +1,7 @@
 import { logger } from '@/lib/logger';
 /**
  * Enhanced Error Handling Middleware
- * 
+ *
  * Provides consistent error handling across all API routes with:
  * - Automatic error logging
  * - Type-safe error responses
@@ -11,6 +11,7 @@ import { logger } from '@/lib/logger';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { logError } from '@/lib/monitoring/error-logger';
+import { generateSecureString } from '@/lib/utils';
 
 // ============================================================================
 // Custom Error Classes
@@ -314,7 +315,7 @@ export function withErrorHandling<T = unknown, P = Record<string, string>>(
 // ============================================================================
 
 function generateRequestId(): string {
-  return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  return `req_${Date.now()}_${generateSecureString(9)}`;
 }
 
 /** Zod error structure for type safety */

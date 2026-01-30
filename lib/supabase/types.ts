@@ -193,6 +193,98 @@ export interface Database {
         >;
         Update: Partial<Database['public']['Tables']['sync_log']['Insert']>;
       };
+
+      // Client Notes (driver feedback after tours)
+      client_notes: {
+        Row: {
+          id: number;
+          driver_id: string;
+          date: string;
+          overall_rating: number | null;
+          winery_ratings: Record<string, number> | null;
+          purchases: string[] | null;
+          favorite_stop: string | null;
+          will_return: string | null;
+          custom_stops: string | null;
+          detailed_notes: string | null;
+          marketing_interests: string[] | null;
+          created_at: string;
+        };
+        Insert: {
+          driver_id: string;
+          date: string;
+          overall_rating?: number | null;
+          winery_ratings?: Record<string, number> | null;
+          purchases?: string[] | null;
+          favorite_stop?: string | null;
+          will_return?: string | null;
+          custom_stops?: string | null;
+          detailed_notes?: string | null;
+          marketing_interests?: string[] | null;
+          created_at?: string;
+        };
+        Update: {
+          driver_id?: string;
+          date?: string;
+          overall_rating?: number | null;
+          winery_ratings?: Record<string, number> | null;
+          purchases?: string[] | null;
+          favorite_stop?: string | null;
+          will_return?: string | null;
+          custom_stops?: string | null;
+          detailed_notes?: string | null;
+          marketing_interests?: string[] | null;
+          created_at?: string;
+        };
+      };
+
+      // Workflow Progress (driver daily workflow tracking)
+      workflow_progress: {
+        Row: {
+          id: number;
+          driver_email: string;
+          completed_steps: string[];
+          current_step: number;
+          date: string;
+          updated_at: string;
+        };
+        Insert: {
+          driver_email: string;
+          completed_steps: string[];
+          current_step: number;
+          date: string;
+          updated_at?: string;
+        };
+        Update: {
+          driver_email?: string;
+          completed_steps?: string[];
+          current_step?: number;
+          date?: string;
+          updated_at?: string;
+        };
+      };
+
+      // Itineraries (tour schedules for drivers)
+      itineraries: {
+        Row: {
+          id: number;
+          driver_id: string;
+          date: string;
+          wineries: string[];
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          driver_id: string;
+          date: string;
+          wineries: string[];
+        };
+        Update: {
+          driver_id?: string;
+          date?: string;
+          wineries?: string[];
+        };
+      };
     };
 
     Views: Record<string, never>;

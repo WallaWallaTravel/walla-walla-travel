@@ -8,6 +8,8 @@ import { COMPANY_INFO } from '@/lib/config/company';
 import { getBrandEmailConfig } from '@/lib/email-brands';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
+import { crmSyncService } from '@/lib/services/crm-sync.service';
+import { crmTaskAutomationService } from '@/lib/services/crm-task-automation.service';
 
 /**
  * POST /api/proposals/[proposal_id]/send
@@ -173,6 +175,48 @@ export const POST = withCSRF(
       })
     ]
   );
+
+  // Log to CRM and create auto-task (async, don't block response)
+  (async () => {
+    try {
+      // Log proposal sent activity to CRM
+      await crmSyncService.logProposalSent(
+        proposal.id,
+        proposal.client_email,
+        proposal.proposal_number
+      );
+
+      // Create follow-up task
+      // First, get or create contact
+      const contact = await query(
+        `SELECT id FROM crm_contacts WHERE LOWER(email) = LOWER($1)`,
+        [proposal.client_email]
+      );
+
+      if (contact.rows.length > 0) {
+        const contactId = contact.rows[0].id;
+
+        // Find associated deal if any
+        const deal = await query(
+          `SELECT id FROM crm_deals WHERE contact_id = $1 AND proposal_id = $2`,
+          [contactId, proposal.id]
+        );
+
+        await crmTaskAutomationService.onProposalSent({
+          contactId,
+          dealId: deal.rows[0]?.id,
+          proposalNumber: proposal.proposal_number,
+          customerName: proposal.client_name,
+        });
+      }
+
+      logger.info('CRM: Proposal sent logged and follow-up task created', {
+        proposalNumber: proposal.proposal_number,
+      });
+    } catch (crmError) {
+      logger.error('CRM: Failed to log proposal sent', { error: crmError });
+    }
+  })();
 
   return NextResponse.json({
     success: true,

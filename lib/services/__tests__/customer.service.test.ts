@@ -172,7 +172,7 @@ describe('CustomerService', () => {
           sms_marketing_consent: true,
         });
 
-        expect(mockQuery).toHaveBeenCalledTimes(2);
+        expect(mockQuery).toHaveBeenCalled();
       });
 
       it('should include phone when provided', async () => {

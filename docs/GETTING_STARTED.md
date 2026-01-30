@@ -95,12 +95,12 @@ lib/
 │   ├── validate.ts            # Request validation
 │   └── middleware.ts          # Rate limiting, auth
 ├── services/
-│   ├── base-service.ts        # Base class
-│   ├── booking-service.ts     # Bookings
-│   ├── proposal-service.ts    # Proposals
-│   ├── customer-service.ts    # Customers
-│   ├── reservation-service.ts # Reservations
-│   └── payment-service.ts     # Payments
+│   ├── base.service.ts        # Base class
+│   ├── booking.service.ts     # Bookings
+│   ├── proposal.service.ts    # Proposals (template-based)
+│   ├── customer.service.ts    # Customers
+│   ├── reservation.service.ts # Reservations
+│   └── payment.service.ts     # Payments
 ├── logging/logger.ts          # Enhanced logging
 └── cache.ts                   # Caching layer
 
@@ -117,10 +117,10 @@ app/api/v1/
 
 ```typescript
 import { bookingService } from '@/lib/services/booking.service';
-import { proposalService } from '@/lib/services/proposal-service';
-import { customerService } from '@/lib/services/customer-service';
-import { reservationService } from '@/lib/services/reservation-service';
-import { paymentService } from '@/lib/services/payment-service';
+import { proposalService } from '@/lib/services/proposal.service';
+import { customerService } from '@/lib/services/customer.service';
+import { reservationService } from '@/lib/services/reservation.service';
+import { paymentService } from '@/lib/services/payment.service';
 ```
 
 ### Example: Booking Service

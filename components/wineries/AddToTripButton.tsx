@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useTripPlannerStore } from '@/lib/stores/trip-planner';
 import { TripSummary } from '@/lib/types/trip-planner';
+import { logger } from '@/lib/logger';
 
 interface WineryInfo {
   id: number;
@@ -61,7 +62,7 @@ export function AddToTripButton({
 
       setTimeout(() => setShowSuccess(false), 2000);
     } catch (error) {
-      console.error('Failed to add to trip:', error);
+      logger.error('Failed to add winery to existing trip', { error, wineryId: winery.id, wineryName: winery.name });
     } finally {
       setIsAdding(false);
     }
@@ -92,7 +93,7 @@ export function AddToTripButton({
         setTimeout(() => setShowSuccess(false), 2000);
       }
     } catch (error) {
-      console.error('Failed to create trip:', error);
+      logger.error('Failed to create new trip with winery', { error, wineryId: winery.id, wineryName: winery.name });
     } finally {
       setIsAdding(false);
     }
@@ -362,7 +363,7 @@ export function AddToTripButtonCompact({ winery }: { winery: WineryInfo }) {
 
       setTimeout(() => setShowSuccess(false), 2000);
     } catch (error) {
-      console.error('Failed to add to trip:', error);
+      logger.error('Failed to add winery to trip', { error, wineryId: winery.id, wineryName: winery.name });
     } finally {
       setIsAdding(false);
     }
@@ -391,7 +392,7 @@ export function AddToTripButtonCompact({ winery }: { winery: WineryInfo }) {
         setTimeout(() => setShowSuccess(false), 2000);
       }
     } catch (error) {
-      console.error('Failed to create trip:', error);
+      logger.error('Failed to create trip with winery', { error, wineryId: winery.id, wineryName: winery.name });
     } finally {
       setIsAdding(false);
     }

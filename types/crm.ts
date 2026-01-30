@@ -271,7 +271,7 @@ export interface CrmTask {
   due_date: string;
   due_time: string | null;
   reminder_at: string | null;
-  assigned_to: number;
+  assigned_to: number | null;
   created_by: number | null;
   completed_at: string | null;
   completed_by: number | null;

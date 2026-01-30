@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { logger } from '@/lib/logger';
 
 interface FeedbackItem {
   id: number;
@@ -57,7 +58,7 @@ export function ProposalFeedbackPanel({
         setFeedbackItems(data.data || []);
       }
     } catch (error) {
-      console.error('Failed to load feedback:', error);
+      logger.error('Failed to load feedback', { error, proposalId });
     } finally {
       setIsLoading(false);
     }
@@ -96,7 +97,7 @@ export function ProposalFeedbackPanel({
         alert(error.message || 'Failed to submit feedback');
       }
     } catch (error) {
-      console.error('Failed to submit feedback:', error);
+      logger.error('Failed to submit feedback', { error, proposalId });
       alert('Failed to submit feedback. Please try again.');
     } finally {
       setIsSubmitting(false);
