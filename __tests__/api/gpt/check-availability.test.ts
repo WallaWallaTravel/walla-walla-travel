@@ -40,7 +40,7 @@ describe('GET /api/gpt/check-availability', () => {
       const request = new NextRequest(
         'http://localhost:3000/api/gpt/check-availability?party_size=4'
       );
-      const response = await GET(request);
+      const response = await GET(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(response.status).toBe(400);
@@ -53,7 +53,7 @@ describe('GET /api/gpt/check-availability', () => {
       const request = new NextRequest(
         `http://localhost:3000/api/gpt/check-availability?date=${futureDate}`
       );
-      const response = await GET(request);
+      const response = await GET(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(response.status).toBe(400);
@@ -66,7 +66,7 @@ describe('GET /api/gpt/check-availability', () => {
       const request = new NextRequest(
         `http://localhost:3000/api/gpt/check-availability?date=${pastDate}&party_size=4`
       );
-      const response = await GET(request);
+      const response = await GET(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(response.status).toBe(400);
@@ -79,7 +79,7 @@ describe('GET /api/gpt/check-availability', () => {
       const request = new NextRequest(
         `http://localhost:3000/api/gpt/check-availability?date=${futureDate}&party_size=0`
       );
-      const response = await GET(request);
+      const response = await GET(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(response.status).toBe(400);
@@ -92,7 +92,7 @@ describe('GET /api/gpt/check-availability', () => {
       const request = new NextRequest(
         `http://localhost:3000/api/gpt/check-availability?date=${futureDate}&party_size=20`
       );
-      const response = await GET(request);
+      const response = await GET(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(response.status).toBe(400);
@@ -109,7 +109,7 @@ describe('GET /api/gpt/check-availability', () => {
       const request = new NextRequest(
         `http://localhost:3000/api/gpt/check-availability?date=${futureDate}&party_size=4`
       );
-      const response = await GET(request);
+      const response = await GET(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -129,7 +129,7 @@ describe('GET /api/gpt/check-availability', () => {
       const request = new NextRequest(
         `http://localhost:3000/api/gpt/check-availability?date=${futureDate}&party_size=${partySize}`
       );
-      const response = await GET(request);
+      const response = await GET(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(data.tour_options[0].total_price).toBe(
@@ -149,7 +149,7 @@ describe('GET /api/gpt/check-availability', () => {
       const request = new NextRequest(
         `http://localhost:3000/api/gpt/check-availability?date=${futureDate}&party_size=10`
       );
-      const response = await GET(request);
+      const response = await GET(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -171,7 +171,7 @@ describe('GET /api/gpt/check-availability', () => {
       const request = new NextRequest(
         `http://localhost:3000/api/gpt/check-availability?date=${futureDate}&party_size=4`
       );
-      const response = await GET(request);
+      const response = await GET(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(data.available).toBe(false);
@@ -188,7 +188,7 @@ describe('GET /api/gpt/check-availability', () => {
       const request = new NextRequest(
         `http://localhost:3000/api/gpt/check-availability?date=${futureDate}&party_size=4`
       );
-      const response = await GET(request);
+      const response = await GET(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(data).toHaveProperty('success');
@@ -206,7 +206,7 @@ describe('GET /api/gpt/check-availability', () => {
       const request = new NextRequest(
         `http://localhost:3000/api/gpt/check-availability?date=${futureDate}&party_size=2`
       );
-      const response = await GET(request);
+      const response = await GET(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       const tourOption = data.tour_options[0];
@@ -225,7 +225,7 @@ describe('GET /api/gpt/check-availability', () => {
       const request = new NextRequest(
         `http://localhost:3000/api/gpt/check-availability?date=${futureDate}&party_size=4`
       );
-      const response = await GET(request);
+      const response = await GET(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(response.status).toBe(500);
@@ -242,7 +242,7 @@ describe('GET /api/gpt/check-availability', () => {
       const request = new NextRequest(
         `http://localhost:3000/api/gpt/check-availability?date=${futureDate}&party_size=4`
       );
-      const response = await GET(request);
+      const response = await GET(request, { params: Promise.resolve({}) });
 
       expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*');
     });

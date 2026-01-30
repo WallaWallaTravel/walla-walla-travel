@@ -126,7 +126,7 @@ export default async function AdminDashboardPage() {
       {/* Action Required Alert - Accepted Proposals */}
       {stats.acceptedProposals > 0 && (
         <Link 
-          href="/admin/proposals?status=accepted"
+          href="/admin/trip-proposals"
           className="block mb-6 bg-emerald-50 border border-emerald-200 rounded-lg p-4 hover:shadow-soft hover:border-emerald-300 transition-all"
         >
           <div className="flex items-center justify-between">

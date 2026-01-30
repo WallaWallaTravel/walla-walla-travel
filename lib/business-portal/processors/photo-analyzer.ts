@@ -1,15 +1,19 @@
 /**
  * Photo Analyzer
- * Uses GPT-4o Vision to analyze and describe photos
+ * Uses Gemini Vision to analyze and describe photos
  */
 
 import { query } from '@/lib/db';
 import { logger } from '@/lib/logger';
-import OpenAI from 'openai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
+function getGeminiClient() {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error('GEMINI_API_KEY not configured');
+  }
+  return new GoogleGenerativeAI(apiKey);
+}
 
 export interface PhotoAnalysis {
   description: string;
@@ -28,17 +32,23 @@ export interface PhotoAnalysis {
 }
 
 /**
- * Analyze a photo using GPT-4o Vision
+ * Analyze a photo using Gemini Vision
  */
 export async function analyzePhoto(imageData: string): Promise<PhotoAnalysis> {
   logger.debug('Photo Analyzer: Analyzing photo');
 
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error('OPENAI_API_KEY not configured');
-  }
-
   try {
-    const systemPrompt = `You are a professional photo analyst for a wine country business directory.
+    const client = getGeminiClient();
+    const model = client.getGenerativeModel({
+      model: 'gemini-1.5-flash',
+      generationConfig: {
+        temperature: 0.3,
+        maxOutputTokens: 1000,
+        responseMimeType: 'application/json',
+      },
+    });
+
+    const prompt = `You are a professional photo analyst for a wine country business directory.
 Analyze photos of wineries, restaurants, and venues to extract useful information.
 
 Provide:
@@ -49,9 +59,9 @@ Provide:
 5. Quality assessment
 6. Whether it's suitable for public directory
 
-Be objective and descriptive. Focus on what would help visitors understand the venue.`;
+Be objective and descriptive. Focus on what would help visitors understand the venue.
 
-    const userPrompt = `Analyze this photo from a Walla Walla Valley winery/restaurant.
+Analyze this photo from a Walla Walla Valley winery/restaurant.
 
 Return JSON with this structure:
 {
@@ -70,32 +80,39 @@ Return JSON with this structure:
   "usableForDirectory": true/false
 }`;
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: userPrompt },
-            {
-              type: 'image_url',
-              image_url: {
-                url: imageData.startsWith('data:') ? imageData : `data:image/jpeg;base64,${imageData}`
-              }
-            }
-          ]
-        }
-      ],
-      temperature: 0.3,
-      max_tokens: 1000,
-      response_format: { type: 'json_object' }
-    });
+    // Prepare image data for Gemini
+    let base64Data: string;
+    let mimeType: string;
 
-    const resultJson = completion.choices[0].message.content;
-    
+    if (imageData.startsWith('data:')) {
+      const matches = imageData.match(/^data:([^;]+);base64,(.+)$/);
+      if (matches) {
+        mimeType = matches[1];
+        base64Data = matches[2];
+      } else {
+        mimeType = 'image/jpeg';
+        base64Data = imageData;
+      }
+    } else {
+      mimeType = 'image/jpeg';
+      base64Data = imageData;
+    }
+
+    const result = await model.generateContent([
+      prompt,
+      {
+        inlineData: {
+          mimeType,
+          data: base64Data,
+        },
+      },
+    ]);
+
+    const response = result.response;
+    const resultJson = response.text();
+
     if (!resultJson) {
-      throw new Error('No analysis result from GPT-4o Vision');
+      throw new Error('No analysis result from Gemini Vision');
     }
 
     const analysis: PhotoAnalysis = JSON.parse(resultJson);
@@ -190,12 +207,12 @@ export async function batchAnalyzePhotos(fileIds: number[]): Promise<Map<number,
  * Estimate cost for photo analysis
  */
 export function estimatePhotoAnalysisCost(): number {
-  // GPT-4o Vision pricing: ~$2.50 per 1M input tokens (images count as ~85 tokens)
-  // Plus text tokens for prompt/response
-  // Average: ~300 input tokens, ~200 output tokens per image
-  const inputCost = (300 / 1000000) * 2.50;
-  const outputCost = (200 / 1000000) * 10.00;
-  
-  return inputCost + outputCost; // ~$0.002 per image
+  // Gemini 1.5 Flash pricing: ~$0.075 per 1M input tokens, ~$0.30 per 1M output tokens
+  // Images count as ~258 tokens per image
+  // Average: ~500 input tokens, ~200 output tokens per image
+  const inputCost = (500 / 1000000) * 0.075;
+  const outputCost = (200 / 1000000) * 0.30;
+
+  return inputCost + outputCost; // ~$0.0001 per image (much cheaper than GPT-4o)
 }
 

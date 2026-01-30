@@ -4,8 +4,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { logger } from '@/lib/logger';
 import { query } from '@/lib/db';
+import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -14,53 +14,35 @@ export const dynamic = 'force-dynamic';
  * GET /api/booking/reserve/[id]
  * Get reservation details
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const reservationId = parseInt(id);
-    
-    if (isNaN(reservationId)) {
-      return NextResponse.json(
-        { error: 'Invalid reservation ID' },
-        { status: 400 }
-      );
-    }
-    
-    const result = await query(
-      `SELECT 
-        r.*,
-        c.name as customer_name,
-        c.email as customer_email,
-        c.phone as customer_phone
-       FROM reservations r
-       JOIN customers c ON r.customer_id = c.id
-       WHERE r.id = $1`,
-      [reservationId]
-    );
-    
-    if (result.rows.length === 0) {
-      return NextResponse.json(
-        { error: 'Reservation not found' },
-        { status: 404 }
-      );
-    }
-    
-    return NextResponse.json({
-      success: true,
-      reservation: result.rows[0]
-    });
-    
-  } catch (error) {
-    logger.error('Get Reservation API error', { error });
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json(
-      { error: 'Failed to fetch reservation', details: message },
-      { status: 500 }
-    );
+export const GET = withErrorHandling(async (
+  _request: NextRequest,
+  context
+) => {
+  const { id } = await context.params;
+  const reservationId = parseInt(id);
+
+  if (isNaN(reservationId)) {
+    throw new BadRequestError('Invalid reservation ID');
   }
-}
 
+  const result = await query(
+    `SELECT
+      r.*,
+      c.name as customer_name,
+      c.email as customer_email,
+      c.phone as customer_phone
+     FROM reservations r
+     JOIN customers c ON r.customer_id = c.id
+     WHERE r.id = $1`,
+    [reservationId]
+  );
 
+  if (result.rows.length === 0) {
+    throw new NotFoundError('Reservation not found');
+  }
+
+  return NextResponse.json({
+    success: true,
+    reservation: result.rows[0]
+  });
+});

@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { logger } from '@/lib/logger';
+import { withErrorHandling, NotFoundError, RouteContext } from '@/lib/api/middleware/error-handler';
 import { query } from '@/lib/db';
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ booking_id: string }> }
-) {
-  try {
-    const { booking_id: bookingId } = await params;
+/**
+ * PUT /api/itineraries/[booking_id]/stops
+ * Save/update stops for an itinerary
+ *
+ * Uses withErrorHandling middleware for consistent error handling
+ */
+export const PUT = withErrorHandling<unknown, { booking_id: string }>(
+  async (request: NextRequest, context: RouteContext<{ booking_id: string }>) => {
+    const { booking_id: bookingId } = await context.params;
     const { stops } = await request.json();
 
     // Get itinerary ID for this booking
@@ -17,7 +20,7 @@ export async function PUT(
     );
 
     if (itineraryResult.rows.length === 0) {
-      return NextResponse.json({ error: 'Itinerary not found' }, { status: 404 });
+      throw new NotFoundError('Itinerary not found');
     }
 
     const itineraryId = itineraryResult.rows[0].id;
@@ -82,10 +85,5 @@ export async function PUT(
       await query('ROLLBACK');
       throw error;
     }
-
-  } catch (error) {
-    logger.error('Error saving stops', { error });
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ error: message }, { status: 500 });
   }
-}
+);

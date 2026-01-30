@@ -25,7 +25,9 @@ export function FavoriteButton({
   showLabel = false,
   className = ''
 }: FavoriteButtonProps) {
-  const { toggleFavorite, isHydrated } = useFavoritesStore();
+  // Use individual selectors to prevent infinite re-renders
+  const toggleFavorite = useFavoritesStore(state => state.toggleFavorite);
+  const isHydrated = useFavoritesStore(state => state.isHydrated);
   const isFavorite = useFavoritesStore(state => state.favorites.some(f => f.id === winery.id));
   const [isAnimating, setIsAnimating] = useState(false);
 
@@ -132,7 +134,9 @@ function HeartIcon({ filled, size }: { filled: boolean; size: 'sm' | 'md' | 'lg'
 
 // Compact heart badge for grid cards
 export function FavoriteButtonCompact({ winery, source = 'grid' }: Pick<FavoriteButtonProps, 'winery' | 'source'>) {
-  const { toggleFavorite, isHydrated } = useFavoritesStore();
+  // Use individual selectors to prevent infinite re-renders
+  const toggleFavorite = useFavoritesStore(state => state.toggleFavorite);
+  const isHydrated = useFavoritesStore(state => state.isHydrated);
   const isFavorite = useFavoritesStore(state => state.favorites.some(f => f.id === winery.id));
   const [isAnimating, setIsAnimating] = useState(false);
 

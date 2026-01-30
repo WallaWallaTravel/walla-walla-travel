@@ -10,7 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
-import { openaiChatService, ChatMessage, TripTags } from '@/lib/services/openai-chat.service';
+import { anthropicChatService, ChatMessage, TripTags } from '@/lib/services/anthropic-chat.service';
 import { partnerContextService } from '@/lib/services/partner-context.service';
 
 // ============================================================================
@@ -53,7 +53,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   const partnerContext = await partnerContextService.getRelevantPartners(tripContext);
 
   // Get AI response with trip context AND real partner data
-  const response = await openaiChatService.chat(
+  const response = await anthropicChatService.chat(
     message,
     conversationHistory as ChatMessage[],
     {
@@ -73,7 +73,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   let tags: TripTags = {};
   if (fullConversation.length >= 2) {
     // Only extract tags after at least one exchange
-    tags = await openaiChatService.extractTags(fullConversation);
+    tags = await anthropicChatService.extractTags(fullConversation);
   }
 
   return NextResponse.json({

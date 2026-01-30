@@ -227,6 +227,46 @@ export const rateLimiters = {
     message: 'Rate limit exceeded for admin operations.',
     identifier: 'admin',
   }),
+
+  // SMS sending (5 per minute) - cost-bearing, Twilio charges
+  sms: new RateLimiter({
+    maxAttempts: 5,
+    windowMs: 60 * 1000,
+    message: 'Too many SMS requests. Please wait before trying again.',
+    identifier: 'sms',
+  }),
+
+  // Voice transcription (10 per minute) - cost-bearing, AI API charges
+  transcription: new RateLimiter({
+    maxAttempts: 10,
+    windowMs: 60 * 1000,
+    message: 'Too many transcription requests. Please wait before trying again.',
+    identifier: 'transcription',
+  }),
+
+  // AI content generation (10 per minute) - cost-bearing, Anthropic API charges
+  aiGeneration: new RateLimiter({
+    maxAttempts: 10,
+    windowMs: 60 * 1000,
+    message: 'Too many AI generation requests. Please wait before trying again.',
+    identifier: 'ai-generation',
+  }),
+
+  // Public form submissions (10 per hour) - prevent spam
+  publicSubmit: new RateLimiter({
+    maxAttempts: 10,
+    windowMs: 60 * 60 * 1000,
+    message: 'Too many submissions. Please try again later.',
+    identifier: 'public-submit',
+  }),
+
+  // Maps/distance API (30 per minute) - cost-bearing, Google Maps charges
+  maps: new RateLimiter({
+    maxAttempts: 30,
+    windowMs: 60 * 1000,
+    message: 'Too many map requests. Please wait before trying again.',
+    identifier: 'maps',
+  }),
 };
 
 /**

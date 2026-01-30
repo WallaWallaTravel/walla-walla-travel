@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
+import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 import {
   submitBusiness,
   getBusinessStats
@@ -16,8 +17,9 @@ export const dynamic = 'force-dynamic';
 /**
  * POST /api/business-portal/submit
  * Submit business profile for review
+ * Rate limited to 10 per hour to prevent spam
  */
-export async function POST(request: NextRequest) {
+export const POST = withRateLimit(rateLimiters.publicSubmit)(async (request: NextRequest) => {
   try {
     const { businessId } = await request.json();
     
@@ -60,5 +62,5 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});
 

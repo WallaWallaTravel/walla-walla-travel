@@ -128,7 +128,7 @@ export const POST = withErrorHandling(async (
       ]
     );
   } catch (logError) {
-    logger.warn('Failed to log payment initiation:', logError);
+    logger.warn('Failed to log payment initiation:', { error: logError instanceof Error ? logError.message : String(logError) });
   }
 
   logger.info('[Proposal Payment] Payment intent created', {

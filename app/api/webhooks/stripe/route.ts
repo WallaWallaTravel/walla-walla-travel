@@ -324,14 +324,15 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
     amountRefunded: amount_refunded / 100,
   });
 
-  // Update payment record
+  // Update payment record - extract ID if payment_intent is an object
+  const paymentIntentId = typeof payment_intent === 'string' ? payment_intent : payment_intent?.id;
   await query(
     `UPDATE payments
      SET status = 'refunded',
          refunded_at = NOW(),
          updated_at = NOW()
      WHERE stripe_payment_intent_id = $1`,
-    [payment_intent]
+    [paymentIntentId]
   );
 }
 
@@ -348,13 +349,14 @@ async function handleDisputeCreated(dispute: Stripe.Dispute) {
     reason,
   });
 
-  // Find the payment
+  // Find the payment - extract ID if charge is an object
+  const chargeId = typeof charge === 'string' ? charge : charge?.id;
   const payment = await queryOne(
     `SELECT p.*, b.booking_number
      FROM payments p
      LEFT JOIN bookings b ON p.booking_id = b.id
      WHERE p.stripe_charge_id = $1`,
-    [charge]
+    [chargeId]
   );
 
   if (payment) {

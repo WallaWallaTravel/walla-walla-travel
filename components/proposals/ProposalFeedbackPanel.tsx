@@ -16,6 +16,7 @@ interface FeedbackItem {
 interface ProposalFeedbackPanelProps {
   proposalId: string;
   proposalStatus: string;
+  brandName?: string;
   className?: string;
 }
 
@@ -32,6 +33,7 @@ const FEEDBACK_TYPES = [
 export function ProposalFeedbackPanel({
   proposalId,
   proposalStatus,
+  brandName = 'Walla Walla Travel',
   className = '',
 }: ProposalFeedbackPanelProps) {
   const [feedbackItems, setFeedbackItems] = useState<FeedbackItem[]>([]);
@@ -257,7 +259,7 @@ export function ProposalFeedbackPanel({
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="font-medium text-stone-900 text-sm">
-                        {item.sender === 'wwt' ? 'Walla Walla Travel' : 'You'}
+                        {item.sender === 'wwt' ? brandName : 'You'}
                       </span>
                       {item.feedback_type && (
                         <span className="px-2 py-0.5 bg-stone-100 text-stone-500 text-xs rounded-full">

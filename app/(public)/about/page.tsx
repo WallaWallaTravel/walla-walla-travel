@@ -15,18 +15,18 @@ import { FAQJsonLd } from '@/components/seo/FAQJsonLd';
 
 export const metadata: Metadata = {
   title: 'About Us | Walla Walla Travel',
-  description: 'Meet Ryan, founder of Walla Walla Travel. 15 years local, wine tour industry experience, licensed carrier (USDOT 3603851). We help guests create meaningful connections in wine country.',
+  description: 'Meet Ryan, founder of Walla Walla Travel. 15 years local, wine tour industry experience. We help guests create meaningful connections in Walla Walla wine country.',
   keywords: [
     'Walla Walla Travel',
-    'wine tour company',
+    'wine country planning',
     'Washington wine tours',
     'Walla Walla Valley',
-    'licensed tour operator',
-    'Ryan Walla Walla',
+    'destination management',
+    'winery recommendations',
   ],
   openGraph: {
     title: 'About Walla Walla Travel',
-    description: 'Founded by Ryan with 15 years in Walla Walla and wine tour industry experience. Licensed, insured, and focused on genuine hospitality.',
+    description: 'Founded by Ryan with 15 years in Walla Walla and wine tour industry experience. Focused on genuine hospitality and meaningful connections.',
     type: 'website',
     url: 'https://wallawalla.travel/about',
   },
@@ -67,7 +67,7 @@ export default function AboutPage() {
         pageUrl="https://wallawalla.travel/about"
       />
 
-      <div className="min-h-screen bg-gradient-to-b from-[#faf7f5] to-white">
+      <div className="min-h-screen bg-gradient-to-b from-stone-50 to-white">
         {/* Hero Section with Background Image */}
         <div className="relative text-white overflow-hidden">
           {/* Background Image */}
@@ -89,8 +89,8 @@ export default function AboutPage() {
               About Walla Walla Travel
             </h1>
             <p className="text-xl text-white/95 max-w-2xl drop-shadow">
-              Helping you create meaningful connections in wine country.
-              Licensed, insured, and genuinely invested in your experience.
+              Your destination management partner for Walla Walla wine country.
+              Helping you create meaningful connections through curated experiences.
             </p>
           </div>
         </div>
@@ -98,16 +98,16 @@ export default function AboutPage() {
         {/* Main Content */}
         <div className="max-w-5xl mx-auto px-4 py-12">
           {/* Quick Summary - AI Extractable */}
-          <section className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-12">
-            <h2 className="text-xl font-bold text-blue-900 mb-4">Quick Summary</h2>
-            <ul className="space-y-2 text-blue-800">
+          <section className="bg-stone-100 border border-stone-200 rounded-xl p-6 mb-12">
+            <h2 className="text-xl font-bold text-stone-900 mb-4">Quick Summary</h2>
+            <ul className="space-y-2 text-stone-700">
               <li className="flex items-start gap-2">
                 <span className="text-green-600 mt-0.5">✓</span>
                 <span><strong>Relationships first</strong> — We care about the connections you&apos;re here to strengthen</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-green-600 mt-0.5">✓</span>
-                <span><strong>Licensed &amp; insured</strong> — USDOT 3603851, MC 1225087 (verify at FMCSA)</span>
+                <span><strong>Licensed transportation partner</strong> — NW Touring &amp; Concierge (USDOT 3603851)</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-green-600 mt-0.5">✓</span>
@@ -167,8 +167,8 @@ export default function AboutPage() {
                 <div className="text-3xl mb-3">🛡️</div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">Safe & Legal</h3>
                 <p className="text-gray-600">
-                  Fully licensed motor carrier (USDOT 3603851) with proper insurance
-                  and safety certifications. Your safety is non-negotiable.
+                  Transportation through NW Touring &amp; Concierge, a fully licensed
+                  motor carrier (USDOT 3603851). Your safety is non-negotiable.
                 </p>
               </div>
               <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
@@ -272,7 +272,7 @@ export default function AboutPage() {
             <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
               <p className="text-gray-700 mb-4">
                 We specialize in the <strong>Walla Walla Valley American Viticultural Area (AVA)</strong>,
-                which spans both Washington and Oregon. Our tours cover:
+                which spans both Washington and Oregon. We can help you explore:
               </p>
               <ul className="grid md:grid-cols-2 gap-2 text-gray-700">
                 <li className="flex items-center gap-2">

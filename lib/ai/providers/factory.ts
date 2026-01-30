@@ -2,11 +2,10 @@
 // Creates the appropriate provider based on configuration
 
 import { AIModelProvider, AIProviderConfig } from './base'
-import { OpenAIProvider } from './openai'
 import { AnthropicProvider } from './anthropic'
 import { GoogleProvider } from './google'
 
-export type ProviderType = 'openai' | 'anthropic' | 'google'
+export type ProviderType = 'anthropic' | 'google'
 
 /**
  * Create an AI provider instance
@@ -16,15 +15,12 @@ export function createAIProvider(
   config: AIProviderConfig
 ): AIModelProvider {
   switch (provider) {
-    case 'openai':
-      return new OpenAIProvider(config)
-    
     case 'anthropic':
       return new AnthropicProvider(config)
-    
+
     case 'google':
       return new GoogleProvider(config)
-    
+
     default:
       throw new Error(`Unknown provider: ${provider}`)
   }
@@ -35,15 +31,12 @@ export function createAIProvider(
  */
 export function getProviderAPIKey(provider: ProviderType): string {
   switch (provider) {
-    case 'openai':
-      return process.env.OPENAI_API_KEY || ''
-    
     case 'anthropic':
       return process.env.ANTHROPIC_API_KEY || ''
-    
+
     case 'google':
-      return process.env.GOOGLE_AI_API_KEY || ''
-    
+      return process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY || ''
+
     default:
       throw new Error(`Unknown provider: ${provider}`)
   }
@@ -62,11 +55,10 @@ export function isProviderConfigured(provider: ProviderType): boolean {
  */
 export function getConfiguredProviders(): ProviderType[] {
   const providers: ProviderType[] = []
-  
-  if (isProviderConfigured('openai')) providers.push('openai')
+
   if (isProviderConfigured('anthropic')) providers.push('anthropic')
   if (isProviderConfigured('google')) providers.push('google')
-  
+
   return providers
 }
 

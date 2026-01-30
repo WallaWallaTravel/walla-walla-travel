@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import { convertCorporateRequestToProposal, ensureProposalColumns } from '@/lib/corporate/proposal-converter';
+import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -14,39 +15,25 @@ export const dynamic = 'force-dynamic';
  * POST /api/corporate-request/convert
  * Convert a corporate request to a proposal
  */
-export async function POST(request: NextRequest) {
-  try {
-    const { requestId } = await request.json();
-    
-    if (!requestId) {
-      return NextResponse.json(
-        { error: 'requestId is required' },
-        { status: 400 }
-      );
-    }
-    
-    // Ensure proposal table has needed columns
-    await ensureProposalColumns();
+export const POST = withErrorHandling(async (request: NextRequest) => {
+  const { requestId } = await request.json();
 
-    // Convert to proposal
-    logger.info('Converting corporate request', { requestId });
-    const result = await convertCorporateRequestToProposal(requestId);
-
-    logger.info('Conversion successful', { proposalNumber: result.proposalNumber });
-    
-    return NextResponse.json({
-      success: true,
-      ...result,
-      message: 'Corporate request converted to proposal successfully'
-    });
-    
-  } catch (error) {
-    logger.error('Convert API error', { error });
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json(
-      { error: 'Failed to convert corporate request', details: message },
-      { status: 500 }
-    );
+  if (!requestId) {
+    throw new BadRequestError('requestId is required');
   }
-}
 
+  // Ensure proposal table has needed columns
+  await ensureProposalColumns();
+
+  // Convert to proposal
+  logger.info('Converting corporate request', { requestId });
+  const result = await convertCorporateRequestToProposal(requestId);
+
+  logger.info('Conversion successful', { proposalNumber: result.proposalNumber });
+
+  return NextResponse.json({
+    success: true,
+    ...result,
+    message: 'Corporate request converted to proposal successfully'
+  });
+});

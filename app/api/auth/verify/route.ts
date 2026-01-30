@@ -1,43 +1,54 @@
 import { NextRequest } from 'next/server';
 import {
   successResponse,
-  errorResponse,
   requireAuth,
 } from '@/app/api/utils';
-import { logger, logApiRequest } from '@/lib/logger';
+import { logApiRequest } from '@/lib/logger';
+import { withErrorHandling, UnauthorizedError } from '@/lib/api/middleware/error-handler';
 
 /**
  * Session verification endpoint
- * ✅ REFACTORED: Structured logging
+ * ✅ REFACTORED: Structured logging + withErrorHandling middleware
  */
-export async function GET(_request: NextRequest) {
-  try {
-    logApiRequest('GET', '/api/auth/verify');
+export const GET = withErrorHandling(async () => {
+  logApiRequest('GET', '/api/auth/verify');
 
-    // Check if user has valid session
-    const authResult = await requireAuth();
-    if ('status' in authResult) {
-      return authResult; // This is an error response
-    }
-    const session = authResult;
-
-    // Session is valid
-    return successResponse({
-      authenticated: true,
-      user: {
-        email: session.email,
-        userId: session.userId,
-        name: session.name,
-      }
-    }, 'Session is valid');
-
-  } catch (error) {
-    logger.error('Session verification error', { error });
-    return errorResponse('Session verification failed', 500);
+  // Check if user has valid session
+  const authResult = await requireAuth();
+  if ('status' in authResult) {
+    throw new UnauthorizedError('Session invalid or expired');
   }
-}
+  const session = authResult;
 
-export async function POST(request: NextRequest) {
+  // Session is valid
+  return successResponse({
+    authenticated: true,
+    user: {
+      email: session.email,
+      userId: session.userId,
+      name: session.name,
+    }
+  }, 'Session is valid');
+});
+
+export const POST = withErrorHandling(async (request: NextRequest) => {
   // Alternative POST endpoint for session verification
-  return GET(request);
-}
+  logApiRequest('POST', '/api/auth/verify');
+
+  // Check if user has valid session
+  const authResult = await requireAuth();
+  if ('status' in authResult) {
+    throw new UnauthorizedError('Session invalid or expired');
+  }
+  const session = authResult;
+
+  // Session is valid
+  return successResponse({
+    authenticated: true,
+    user: {
+      email: session.email,
+      userId: session.userId,
+      name: session.name,
+    }
+  }, 'Session is valid');
+});

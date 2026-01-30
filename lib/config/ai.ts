@@ -1,7 +1,7 @@
 // AI Configuration and Model Registry
 
 export interface AIModelConfig {
-  provider: 'openai' | 'anthropic' | 'google'
+  provider: 'anthropic' | 'google'
   model: string
   displayName: string
   costPerInputToken: number
@@ -13,37 +13,15 @@ export interface AIModelConfig {
 }
 
 export const AI_MODELS: Record<string, AIModelConfig> = {
-  'gpt-4o': {
-    provider: 'openai',
-    model: 'gpt-4o',
-    displayName: 'GPT-4o (Recommended)',
-    costPerInputToken: 0.0000025,
-    costPerOutputToken: 0.00001,
-    supportsFineTuning: true,
-    supportsMultimodal: true,
-    description: 'Best quality, supports images and fine-tuning',
-    maxTokens: 4096
-  },
-  'gpt-4o-mini': {
-    provider: 'openai',
-    model: 'gpt-4o-mini',
-    displayName: 'GPT-4o Mini',
-    costPerInputToken: 0.00000015,
-    costPerOutputToken: 0.0000006,
-    supportsFineTuning: true,
-    supportsMultimodal: true,
-    description: 'Budget-friendly, still excellent quality',
-    maxTokens: 4096
-  },
   'claude-sonnet': {
     provider: 'anthropic',
-    model: 'claude-3-5-sonnet-20241022',
-    displayName: 'Claude 3.5 Sonnet',
+    model: 'claude-sonnet-4-20250514',
+    displayName: 'Claude Sonnet (Recommended)',
     costPerInputToken: 0.000003,
     costPerOutputToken: 0.000015,
     supportsFineTuning: false,
     supportsMultimodal: true,
-    description: 'Excellent reasoning, no fine-tuning support',
+    description: 'Excellent reasoning, great for conversational AI',
     maxTokens: 8192
   },
   'claude-haiku': {
@@ -76,12 +54,12 @@ export const AI_MODELS: Record<string, AIModelConfig> = {
     costPerOutputToken: 0.0000003,
     supportsFineTuning: true,
     supportsMultimodal: true,
-    description: 'Very fast and cheap',
+    description: 'Very fast and cheap, great for extraction tasks',
     maxTokens: 8192
   }
 }
 
-export const DEFAULT_MODEL = 'gpt-4o'
+export const DEFAULT_MODEL = 'claude-sonnet'
 export const DEFAULT_TEMPERATURE = 0.7
 export const DEFAULT_MAX_TOKENS = 600
 

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getBrandEmailConfig } from '@/lib/email-brands';
-import Footer from '@/components/Footer';
+import BrandFooter from '@/components/BrandFooter';
 
 interface Proposal {
   id: number;
@@ -629,8 +629,8 @@ export default function ProposalAcceptance({ params }: { params: Promise<{ propo
         </div>
       </main>
 
-      {/* Footer */}
-      <Footer />
+      {/* Footer - Brand Specific */}
+      <BrandFooter brandId={proposal.brand_id} />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { PublicHeader } from '@/components/PublicHeader';
+import Footer from '@/components/Footer';
 import { WineryFinderWidget } from '@/components/ai/WineryFinderWidget';
 
 export default function PublicLayout({
@@ -10,6 +11,7 @@ export default function PublicLayout({
     <>
       <PublicHeader />
       {children}
+      <Footer />
       <WineryFinderWidget />
     </>
   );

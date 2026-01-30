@@ -57,7 +57,7 @@ describe('GET /api/gpt/booking-status', () => {
       const request = new NextRequest(
         'http://localhost:3000/api/gpt/booking-status'
       );
-      const response = await GET(request);
+      const response = await GET(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(response.status).toBe(400);
@@ -76,7 +76,7 @@ describe('GET /api/gpt/booking-status', () => {
       const request = new NextRequest(
         'http://localhost:3000/api/gpt/booking-status?booking_number=WWT-2024-001234'
       );
-      const response = await GET(request);
+      const response = await GET(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -93,7 +93,7 @@ describe('GET /api/gpt/booking-status', () => {
       const request = new NextRequest(
         'http://localhost:3000/api/gpt/booking-status?booking_number=wwt-2024-001234'
       );
-      const response = await GET(request);
+      const response = await GET(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -111,7 +111,7 @@ describe('GET /api/gpt/booking-status', () => {
       const request = new NextRequest(
         'http://localhost:3000/api/gpt/booking-status?booking_number=INVALID-123'
       );
-      const response = await GET(request);
+      const response = await GET(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(response.status).toBe(404);
@@ -129,7 +129,7 @@ describe('GET /api/gpt/booking-status', () => {
       const request = new NextRequest(
         'http://localhost:3000/api/gpt/booking-status?email=john@example.com'
       );
-      const response = await GET(request);
+      const response = await GET(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -145,7 +145,7 @@ describe('GET /api/gpt/booking-status', () => {
       const request = new NextRequest(
         'http://localhost:3000/api/gpt/booking-status?email=JOHN@EXAMPLE.COM'
       );
-      const response = await GET(request);
+      const response = await GET(request, { params: Promise.resolve({}) });
 
       expect(mockQuery).toHaveBeenCalledWith(
         expect.stringContaining('LOWER'),
@@ -159,7 +159,7 @@ describe('GET /api/gpt/booking-status', () => {
       const request = new NextRequest(
         'http://localhost:3000/api/gpt/booking-status?email=nobody@example.com'
       );
-      const response = await GET(request);
+      const response = await GET(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(response.status).toBe(404);
@@ -176,7 +176,7 @@ describe('GET /api/gpt/booking-status', () => {
       const request = new NextRequest(
         'http://localhost:3000/api/gpt/booking-status?booking_number=WWT-2024-001234'
       );
-      const response = await GET(request);
+      const response = await GET(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(data.message).toContain('confirmed');
@@ -191,7 +191,7 @@ describe('GET /api/gpt/booking-status', () => {
       const request = new NextRequest(
         'http://localhost:3000/api/gpt/booking-status?booking_number=WWT-2024-001234'
       );
-      const response = await GET(request);
+      const response = await GET(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(data.message).toContain('pending');
@@ -205,7 +205,7 @@ describe('GET /api/gpt/booking-status', () => {
       const request = new NextRequest(
         'http://localhost:3000/api/gpt/booking-status?booking_number=WWT-2024-001234'
       );
-      const response = await GET(request);
+      const response = await GET(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(data.message).toContain('completed');
@@ -220,7 +220,7 @@ describe('GET /api/gpt/booking-status', () => {
       const request = new NextRequest(
         'http://localhost:3000/api/gpt/booking-status?booking_number=WWT-2024-001234'
       );
-      const response = await GET(request);
+      const response = await GET(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(data.message).toContain('cancelled');
@@ -236,7 +236,7 @@ describe('GET /api/gpt/booking-status', () => {
       const request = new NextRequest(
         'http://localhost:3000/api/gpt/booking-status?booking_number=WWT-2024-001234'
       );
-      const response = await GET(request);
+      const response = await GET(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(data.booking.wineries).toContain('Test Winery 1');
@@ -251,7 +251,7 @@ describe('GET /api/gpt/booking-status', () => {
       const request = new NextRequest(
         'http://localhost:3000/api/gpt/booking-status?booking_number=WWT-2024-001234'
       );
-      const response = await GET(request);
+      const response = await GET(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(data.booking.total_paid).toBe(250);
@@ -266,7 +266,7 @@ describe('GET /api/gpt/booking-status', () => {
       const request = new NextRequest(
         'http://localhost:3000/api/gpt/booking-status?booking_number=WWT-2024-001234'
       );
-      const response = await GET(request);
+      const response = await GET(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(data.message).toContain('Mike Smith');
@@ -288,7 +288,7 @@ describe('GET /api/gpt/booking-status', () => {
       const request = new NextRequest(
         'http://localhost:3000/api/gpt/booking-status?booking_number=WWT-2024-001234'
       );
-      const response = await GET(request);
+      const response = await GET(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(data.message).toContain('10:00 AM');
@@ -303,7 +303,7 @@ describe('GET /api/gpt/booking-status', () => {
       const request = new NextRequest(
         'http://localhost:3000/api/gpt/booking-status?booking_number=WWT-2024-001234'
       );
-      const response = await GET(request);
+      const response = await GET(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(response.status).toBe(500);
@@ -321,7 +321,7 @@ describe('GET /api/gpt/booking-status', () => {
       const request = new NextRequest(
         'http://localhost:3000/api/gpt/booking-status?booking_number=WWT-2024-001234'
       );
-      const response = await GET(request);
+      const response = await GET(request, { params: Promise.resolve({}) });
 
       expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*');
     });

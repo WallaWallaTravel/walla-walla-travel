@@ -34,7 +34,7 @@ export const PATCH = withErrorHandling(async (
   const parsed = UpdateStatusSchema.safeParse(body);
 
   if (!parsed.success) {
-    throw new BadRequestError(`Invalid request: ${parsed.error.errors[0]?.message}`);
+    throw new BadRequestError(`Invalid request: ${parsed.error.issues[0]?.message}`);
   }
 
   const { status, reason } = parsed.data;

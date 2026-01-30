@@ -1,22 +1,26 @@
 /**
  * Text Data Extractor
- * Uses GPT-4o to extract structured data from text responses
+ * Uses Gemini to extract structured data from text responses
  */
 
 import { query } from '@/lib/db';
 import { logger } from '@/lib/logger';
-import OpenAI from 'openai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
+function getGeminiClient() {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error('GEMINI_API_KEY not configured');
+  }
+  return new GoogleGenerativeAI(apiKey);
+}
 
 export interface ExtractedData {
   [key: string]: unknown;
 }
 
 /**
- * Extract structured data from text using GPT-4o
+ * Extract structured data from text using Gemini
  */
 export async function extractDataFromText(
   text: string,
@@ -26,12 +30,17 @@ export async function extractDataFromText(
 ): Promise<ExtractedData> {
   logger.debug('Text Extractor: Extracting data from text');
 
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error('OPENAI_API_KEY not configured');
-  }
-
   try {
-    const systemPrompt = `You are a data extraction specialist for a wine country business directory. 
+    const client = getGeminiClient();
+    const model = client.getGenerativeModel({
+      model: 'gemini-1.5-flash',
+      generationConfig: {
+        temperature: 0.1, // Low temperature for factual extraction
+        responseMimeType: 'application/json',
+      },
+    });
+
+    const prompt = `You are a data extraction specialist for a wine country business directory.
 Extract structured, factual information from business owners' responses to questions.
 
 Extract relevant data points such as:
@@ -42,9 +51,9 @@ Extract relevant data points such as:
 - Policies (reservations, food, accessibility)
 - Contact info (phone, email, booking methods)
 
-Return ONLY valid JSON. If information is not present, omit the field.`;
+Return ONLY valid JSON. If information is not present, omit the field.
 
-    const userPrompt = `Question Category: ${questionCategory}
+Question Category: ${questionCategory}
 Question: ${questionText}
 ${extractionPrompt ? `\nExtraction Guide: ${extractionPrompt}` : ''}
 
@@ -53,20 +62,12 @@ Business Owner's Answer:
 
 Extract all relevant factual data as JSON. Be precise and avoid assumptions.`;
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt }
-      ],
-      temperature: 0.1, // Low temperature for factual extraction
-      response_format: { type: 'json_object' }
-    });
+    const result = await model.generateContent(prompt);
+    const response = result.response;
+    const extractedJson = response.text();
 
-    const extractedJson = completion.choices[0].message.content;
-    
     if (!extractedJson) {
-      throw new Error('No extraction result from GPT-4o');
+      throw new Error('No extraction result from Gemini');
     }
 
     const extracted = JSON.parse(extractedJson);
@@ -183,15 +184,15 @@ export async function processVoiceTranscription(voiceEntryId: number): Promise<E
  * Estimate cost for extraction
  */
 export function estimateExtractionCost(textLength: number): number {
-  // GPT-4o pricing: ~$2.50 per 1M input tokens, ~$10 per 1M output tokens
+  // Gemini 1.5 Flash pricing: ~$0.075 per 1M input tokens, ~$0.30 per 1M output tokens
   // Estimate ~1 token per 4 characters for input
   // System prompt ~200 tokens, output ~100-300 tokens
   const inputTokens = 200 + (textLength / 4);
   const outputTokens = 200; // Average
-  
-  const inputCost = (inputTokens / 1000000) * 2.50;
-  const outputCost = (outputTokens / 1000000) * 10.00;
-  
-  return inputCost + outputCost;
+
+  const inputCost = (inputTokens / 1000000) * 0.075;
+  const outputCost = (outputTokens / 1000000) * 0.30;
+
+  return inputCost + outputCost; // Much cheaper than GPT-4o
 }
 

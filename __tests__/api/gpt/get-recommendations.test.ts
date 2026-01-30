@@ -85,7 +85,7 @@ describe('POST /api/gpt/get-recommendations', () => {
           }),
         }
       );
-      const response = await POST(request);
+      const response = await POST(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -105,7 +105,7 @@ describe('POST /api/gpt/get-recommendations', () => {
           }),
         }
       );
-      const response = await POST(request);
+      const response = await POST(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       const recommendation = data.recommendations[0];
@@ -129,7 +129,7 @@ describe('POST /api/gpt/get-recommendations', () => {
           }),
         }
       );
-      const response = await POST(request);
+      const response = await POST(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       // Cabernet House should rank higher due to matching specialty
@@ -153,7 +153,7 @@ describe('POST /api/gpt/get-recommendations', () => {
           }),
         }
       );
-      const response = await POST(request);
+      const response = await POST(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       // Riesling Gardens has dog friendly feature
@@ -176,7 +176,7 @@ describe('POST /api/gpt/get-recommendations', () => {
           }),
         }
       );
-      const response = await POST(request);
+      const response = await POST(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       // Syrah Valley has rustic in description
@@ -201,7 +201,7 @@ describe('POST /api/gpt/get-recommendations', () => {
           }),
         }
       );
-      const response = await POST(request);
+      const response = await POST(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(data.success).toBe(true);
@@ -221,7 +221,7 @@ describe('POST /api/gpt/get-recommendations', () => {
           }),
         }
       );
-      const response = await POST(request);
+      const response = await POST(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(data.suggested_itinerary).toBeDefined();
@@ -239,7 +239,7 @@ describe('POST /api/gpt/get-recommendations', () => {
           }),
         }
       );
-      const response = await POST(request);
+      const response = await POST(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(data.suggested_itinerary.stops.length).toBeLessThanOrEqual(5);
@@ -256,7 +256,7 @@ describe('POST /api/gpt/get-recommendations', () => {
           }),
         }
       );
-      const response = await POST(request);
+      const response = await POST(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(data.suggested_itinerary.stops.length).toBeGreaterThanOrEqual(2);
@@ -272,7 +272,7 @@ describe('POST /api/gpt/get-recommendations', () => {
           }),
         }
       );
-      const response = await POST(request);
+      const response = await POST(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       const stop = data.suggested_itinerary.stops[0];
@@ -292,7 +292,7 @@ describe('POST /api/gpt/get-recommendations', () => {
           }),
         }
       );
-      const response = await POST(request);
+      const response = await POST(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(data.suggested_itinerary.estimated_cost_per_person).toBeGreaterThan(0);
@@ -308,7 +308,7 @@ describe('POST /api/gpt/get-recommendations', () => {
           }),
         }
       );
-      const response = await POST(request);
+      const response = await POST(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(data.suggested_itinerary.total_duration_hours).toBeGreaterThan(0);
@@ -328,7 +328,7 @@ describe('POST /api/gpt/get-recommendations', () => {
           }),
         }
       );
-      const response = await POST(request);
+      const response = await POST(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(response.status).toBe(500);
@@ -348,7 +348,7 @@ describe('POST /api/gpt/get-recommendations', () => {
           }),
         }
       );
-      const response = await POST(request);
+      const response = await POST(request, { params: Promise.resolve({}) });
 
       expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*');
     });

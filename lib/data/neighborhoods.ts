@@ -38,9 +38,9 @@ This area features a mix of established producers and newer wineries, many with 
 Like all of Walla Walla's districts, you'll find a diverse range of winery styles here—from intimate family operations to larger venues. The proximity of wineries to each other makes it easy to visit several in one trip.`,
     whatYoullFind: [
       'Convenient access from Highway 12',
-      'Often ample parking',
       'Mix of large and small producers',
       'Vineyard-surrounded tasting rooms',
+      'Spacious outdoor areas',
     ],
     highlights: [
       'Close to the regional airport',
@@ -105,25 +105,25 @@ Some of Walla Walla's founding wineries established themselves on the Southside,
     slug: 'westside',
     name: 'Westside',
     shortName: 'Westside',
-    description: 'West of downtown, this evolving area features a mix of wineries, cideries, and craft beverage producers.',
-    longDescription: `The Westside has grown as a wine destination in recent years, with new tasting rooms joining established operations west of downtown Walla Walla.
+    description: 'West of downtown, this area is home to some of the valley\'s most established and respected wineries with beautiful grounds.',
+    longDescription: `The Westside extends west of downtown Walla Walla and includes some of the valley's most established wineries. Several pioneering producers have called this area home for decades.
 
-This area has a slightly more eclectic feel, with wineries joined by cideries and other craft beverage producers. You'll find everything from traditional approaches to experimental styles.
+This is a mature wine district with well-developed tasting rooms and visitor facilities. Many wineries here have beautiful grounds and outdoor spaces that invite lingering.
 
-The Westside is still developing as a wine district, which means you're likely to discover producers you won't find mentioned in the usual guides.`,
+The Westside offers a more relaxed pace than downtown, with room to spread out and enjoy the wine country atmosphere without feeling rushed.`,
     whatYoullFind: [
-      'Mix of wine, cider, and craft beverages',
-      'Newer and establishing wineries',
-      'Range of traditional to experimental styles',
-      'Less touristy atmosphere',
+      'Established, respected wineries',
+      'Beautiful winery grounds',
+      'Well-developed visitor facilities',
+      'Relaxed wine country atmosphere',
     ],
     highlights: [
-      'Craft beverage variety beyond wine',
-      'Emerging producers to discover',
+      'Some of the valley\'s pioneering producers',
+      'Spacious tasting rooms and grounds',
       'Meet winemakers directly',
-      'More casual atmosphere',
+      'Less crowded than downtown',
     ],
-    practicalInfo: 'Wineries are more spread out than downtown. Good for visitors who enjoy discovering off-the-beaten-path spots.',
+    practicalInfo: 'Wineries are more spread out than downtown. Driving required between stops. Many offer outdoor seating and picnic areas.',
     approximateWineries: 15,
   },
   {

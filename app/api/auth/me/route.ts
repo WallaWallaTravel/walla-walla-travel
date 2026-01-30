@@ -4,35 +4,24 @@
  *
  * Returns current authenticated user or 401
  *
- * ✅ REFACTORED: Structured logging
+ * ✅ REFACTORED: Structured logging + withErrorHandling middleware
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromRequest } from '@/lib/auth/session';
-import { logger } from '@/lib/logger';
+import { withErrorHandling, UnauthorizedError } from '@/lib/api/middleware/error-handler';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(request: NextRequest) {
-  try {
-    const session = await getSessionFromRequest(request);
+export const GET = withErrorHandling(async (request: NextRequest) => {
+  const session = await getSessionFromRequest(request);
 
-    if (!session) {
-      return NextResponse.json(
-        { error: 'Not authenticated' },
-        { status: 401 }
-      );
-    }
-
-    return NextResponse.json({
-      user: session.user,
-    });
-  } catch (error) {
-    logger.error('Auth Me error', { error });
-    return NextResponse.json(
-      { error: 'An error occurred' },
-      { status: 500 }
-    );
+  if (!session) {
+    throw new UnauthorizedError('Not authenticated');
   }
-}
+
+  return NextResponse.json({
+    user: session.user,
+  });
+});
 

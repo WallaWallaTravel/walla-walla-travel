@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { logger } from '@/lib/logger';
 import { wineryAIService, WineryFilters } from '@/lib/services/winery-ai.service';
 import { wineryService, WinerySummary } from '@/lib/services/winery.service';
@@ -14,100 +15,77 @@ export const dynamic = 'force-dynamic';
  * - Applies filters to winery database
  * - Returns matching wineries with explanations
  */
-export async function POST(request: NextRequest) {
+export const POST = withErrorHandling(async (request: NextRequest) => {
   const startTime = Date.now();
 
-  try {
-    const { query, includeExplanations = true } = await request.json();
+  const { query, includeExplanations = true } = await request.json();
 
-    if (!query || typeof query !== 'string') {
-      return NextResponse.json(
-        { error: 'Query is required' },
-        { status: 400 }
-      );
-    }
+  if (!query || typeof query !== 'string') {
+    throw new BadRequestError('Query is required');
+  }
 
-    // Validate query length
-    if (query.length > 500) {
-      return NextResponse.json(
-        { error: 'Query too long (max 500 characters)' },
-        { status: 400 }
-      );
-    }
+  // Validate query length
+  if (query.length > 500) {
+    throw new BadRequestError('Query too long (max 500 characters)');
+  }
 
-    logger.info('Winery recommendation request', { query: query.substring(0, 100) });
+  logger.info('Winery recommendation request', { query: query.substring(0, 100) });
 
-    // Step 1: Extract filters from natural language query
-    const recommendation = await wineryAIService.extractFilters(query);
+  // Step 1: Extract filters from natural language query
+  const recommendation = await wineryAIService.extractFilters(query);
 
-    logger.info('Filters extracted', {
-      filters: recommendation.filters,
-      confidence: recommendation.confidence,
-    });
+  logger.info('Filters extracted', {
+    filters: recommendation.filters,
+    confidence: recommendation.confidence,
+  });
 
-    // Step 2: Get all wineries and apply filters
-    const allWineries = await wineryService.getVerified();
-    const filteredWineries = applyFilters(allWineries, recommendation.filters);
+  // Step 2: Get all wineries and apply filters
+  const allWineries = await wineryService.getVerified();
+  const filteredWineries = applyFilters(allWineries, recommendation.filters);
 
-    logger.info('Wineries filtered', {
-      total: allWineries.length,
-      filtered: filteredWineries.length,
-    });
+  logger.info('Wineries filtered', {
+    total: allWineries.length,
+    filtered: filteredWineries.length,
+  });
 
-    // Step 3: Optionally generate match explanations
-    let explanations = null;
-    if (includeExplanations && filteredWineries.length > 0 && filteredWineries.length <= 20) {
-      explanations = await wineryAIService.explainMatches(
-        query,
-        recommendation.filters,
-        filteredWineries.map((w) => ({
-          id: w.id,
-          name: w.name,
-          description: w.description,
-          wine_styles: w.wine_styles,
-          features: w.features,
-          experience_tags: w.experience_tags,
-          tasting_fee: w.tasting_fee,
-          region: w.region,
-        }))
-      );
-    }
-
-    const duration = Date.now() - startTime;
-
-    return NextResponse.json({
-      success: true,
+  // Step 3: Optionally generate match explanations
+  let explanations = null;
+  if (includeExplanations && filteredWineries.length > 0 && filteredWineries.length <= 20) {
+    explanations = await wineryAIService.explainMatches(
       query,
-      recommendation: {
-        filters: recommendation.filters,
-        explanation: recommendation.explanation,
-        followUpSuggestions: recommendation.followUpSuggestions,
-        confidence: recommendation.confidence,
-      },
-      results: {
-        total: filteredWineries.length,
-        wineries: filteredWineries.slice(0, 20), // Limit to 20 results
-        explanations,
-      },
-      duration,
-    });
-  } catch (error) {
-    logger.error('Winery recommendation error', { error });
-
-    const duration = Date.now() - startTime;
-    const message = error instanceof Error ? error.message : 'Unknown error';
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Recommendation failed',
-        details: message,
-        duration,
-      },
-      { status: 500 }
+      recommendation.filters,
+      filteredWineries.map((w) => ({
+        id: w.id,
+        name: w.name,
+        description: w.description,
+        wine_styles: w.wine_styles,
+        features: w.features,
+        experience_tags: w.experience_tags,
+        tasting_fee: w.tasting_fee,
+        region: w.region,
+      }))
     );
   }
-}
+
+  const duration = Date.now() - startTime;
+
+  return NextResponse.json({
+    success: true,
+    query,
+    recommendation: {
+      filters: recommendation.filters,
+      explanation: recommendation.explanation,
+      followUpSuggestions: recommendation.followUpSuggestions,
+      confidence: recommendation.confidence,
+    },
+    results: {
+      total: filteredWineries.length,
+      wineries: filteredWineries.slice(0, 20), // Limit to 20 results
+      explanations,
+    },
+    duration,
+  });
+});
 
 /**
  * Apply extracted filters to winery list

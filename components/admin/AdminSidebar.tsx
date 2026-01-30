@@ -9,62 +9,62 @@ interface NavItem {
   label: string;
   icon: string;
   href: string;
-  badge?: number;
+  badge?: number | string; // Number for counts, string for labels like "Soon"
   section?: string;
   dynamicBadge?: string; // Key to look up dynamic badge count
   requiredAccess?: string; // 'admin' = full admin only, 'geology' = geology admins, undefined = all roles
 }
 
 const NAV_ITEMS: NavItem[] = [
-  // Overview (admin only)
+  // Overview (admin only) - reduced from 3 to 2 items
   { label: 'Dashboard', icon: '📊', href: '/admin/dashboard', section: 'Overview', requiredAccess: 'admin' },
   { label: 'Calendar', icon: '📆', href: '/admin/calendar', section: 'Overview', requiredAccess: 'admin' },
-  { label: 'System Status', icon: '🖥️', href: '/admin/system-dashboard', section: 'Overview', requiredAccess: 'admin' },
 
-  // Operations (admin only)
-  { label: 'Consultations', icon: '🗓️', href: '/admin/consultations', section: 'Operations', dynamicBadge: 'pendingConsultations', requiredAccess: 'admin' },
-  { label: 'Bookings', icon: '📅', href: '/admin/bookings', section: 'Operations', requiredAccess: 'admin' },
-  { label: 'Reservations', icon: '🎨', href: '/admin/reservations', section: 'Operations', dynamicBadge: 'pendingReservations', requiredAccess: 'admin' },
-  { label: 'Proposals', icon: '📄', href: '/admin/proposals', section: 'Operations', requiredAccess: 'admin' },
-  { label: 'Tour Offers', icon: '🎫', href: '/admin/tour-offers', section: 'Operations', requiredAccess: 'admin' },
-  { label: 'Corporate Requests', icon: '🏢', href: '/admin/corporate-requests', section: 'Operations', requiredAccess: 'admin' },
+  // Sales Pipeline (formerly Operations) - consolidated from 7 to 4 items
+  // Consultations, Corporate Requests, Reservations → merged into "Leads"
+  // Proposals → replaced by Trip Proposals
+  // Tour Offers → renamed to "Shared Tours", marked as coming soon
+  { label: 'Leads', icon: '🎯', href: '/admin/leads', section: 'Sales Pipeline', dynamicBadge: 'pendingLeads', requiredAccess: 'admin' },
+  { label: 'Trip Proposals', icon: '🗺️', href: '/admin/trip-proposals', section: 'Sales Pipeline', requiredAccess: 'admin' },
+  { label: 'Bookings', icon: '📅', href: '/admin/bookings', section: 'Sales Pipeline', requiredAccess: 'admin' },
+  { label: 'Shared Tours', icon: '🎫', href: '/admin/shared-tours', section: 'Sales Pipeline', badge: 'Soon', requiredAccess: 'admin' },
 
-  // Financial (admin only)
+  // CRM (admin only) - unified customer relationship management
+  { label: 'CRM', icon: '👤', href: '/admin/crm', section: 'CRM', requiredAccess: 'admin' },
+  { label: 'Contacts', icon: '📇', href: '/admin/crm/contacts', section: 'CRM', requiredAccess: 'admin' },
+  { label: 'Pipeline', icon: '📊', href: '/admin/crm/pipeline', section: 'CRM', requiredAccess: 'admin' },
+  { label: 'Tasks', icon: '✅', href: '/admin/crm/tasks', section: 'CRM', dynamicBadge: 'overdueTasks', requiredAccess: 'admin' },
+
+  // Financial (admin only) - reduced from 4 to 2 items
+  // Rate Configuration, Payment Settings → moved to System > Settings
   { label: 'Invoices', icon: '💰', href: '/admin/invoices', section: 'Financial', requiredAccess: 'admin' },
-  { label: 'Pricing Calculator', icon: '🧮', href: '/admin/pricing', section: 'Financial', requiredAccess: 'admin' },
-  { label: 'Rate Configuration', icon: '💵', href: '/admin/rates', section: 'Financial', requiredAccess: 'admin' },
-  { label: 'Payment Settings', icon: '💳', href: '/admin/payment-settings', section: 'Financial', requiredAccess: 'admin' },
+  { label: 'Pricing', icon: '🧮', href: '/admin/pricing', section: 'Financial', requiredAccess: 'admin' },
 
-  // Content (admin only)
+  // Content (admin only) - unchanged
   { label: 'Business Portal', icon: '🏪', href: '/admin/business-portal', section: 'Content', requiredAccess: 'admin' },
   { label: 'Media Library', icon: '📸', href: '/admin/media', section: 'Content', requiredAccess: 'admin' },
   { label: 'Wine Directory', icon: '🍷', href: '/admin/wine-directory', section: 'Content', requiredAccess: 'admin' },
 
-  // Geology (geology_admin and admin)
+  // Geology (geology_admin and admin) - unchanged
   { label: 'Geology Dashboard', icon: '🪨', href: '/admin/geology', section: 'Geology', requiredAccess: 'geology' },
   { label: 'Topics', icon: '📚', href: '/admin/geology/topics', section: 'Geology', requiredAccess: 'geology' },
   { label: 'Quick Facts', icon: '💡', href: '/admin/geology/facts', section: 'Geology', requiredAccess: 'geology' },
   { label: 'Sites', icon: '📍', href: '/admin/geology/sites', section: 'Geology', requiredAccess: 'geology' },
   { label: 'AI Guidance', icon: '🤖', href: '/admin/geology/ai-guidance', section: 'Geology', requiredAccess: 'geology' },
 
-  // Marketing (admin only)
+  // Marketing (admin only) - reduced from 8 to 2 visible items
+  // Other items (Analytics, A/B Testing, Social Media, Email, Content Calendar, Competitors)
+  // are now sub-navigation inside Marketing Hub
   { label: 'Marketing Hub', icon: '📊', href: '/admin/marketing', section: 'Marketing', requiredAccess: 'admin' },
-  { label: 'Analytics', icon: '📈', href: '/admin/marketing/analytics', section: 'Marketing', requiredAccess: 'admin' },
-  { label: 'A/B Testing', icon: '🧪', href: '/admin/marketing/ab-testing', section: 'Marketing', requiredAccess: 'admin' },
   { label: 'Leads', icon: '🎯', href: '/admin/marketing/leads', section: 'Marketing', requiredAccess: 'admin' },
-  { label: 'Social Media', icon: '📱', href: '/admin/marketing/social', section: 'Marketing', requiredAccess: 'admin' },
-  { label: 'Email Campaigns', icon: '📧', href: '/admin/marketing/email', section: 'Marketing', requiredAccess: 'admin' },
-  { label: 'Content Calendar', icon: '📅', href: '/admin/marketing/calendar', section: 'Marketing', requiredAccess: 'admin' },
-  { label: 'Competitors', icon: '👁️', href: '/admin/marketing/competitors', section: 'Marketing', requiredAccess: 'admin' },
 
-  // Services (admin only)
-  { label: 'Additional Services', icon: '➕', href: '/admin/additional-services', section: 'Services', requiredAccess: 'admin' },
-  { label: 'Lunch Orders', icon: '🍽️', href: '/admin/lunch-orders', section: 'Services', requiredAccess: 'admin' },
+  // Services section REMOVED - features live inside Trip Proposals
+  // Additional Services, Lunch Orders → managed within Trip Proposals
 
-  // Partners (admin only)
+  // Partners (admin only) - unchanged
   { label: 'Partners', icon: '🤝', href: '/admin/partners', section: 'Partners', requiredAccess: 'admin' },
 
-  // System (admin only)
+  // System (admin only) - expanded to include moved config items
   { label: 'Users', icon: '👥', href: '/admin/users', section: 'System', requiredAccess: 'admin' },
   { label: 'Settings', icon: '⚙️', href: '/admin/settings', section: 'System', requiredAccess: 'admin' },
 ];
@@ -115,6 +115,7 @@ export function AdminSidebar() {
   useEffect(() => {
     async function fetchBadgeCounts() {
       try {
+        // Fetch booking requests
         const response = await fetch('/api/booking-requests');
         if (response.ok) {
           const data = await response.json();
@@ -122,6 +123,16 @@ export function AdminSidebar() {
             ...prev,
             pendingReservations: data.pendingReservations || data.pendingCount || 0,
             pendingConsultations: data.pendingConsultations || 0,
+          }));
+        }
+
+        // Fetch CRM task counts
+        const crmResponse = await fetch('/api/admin/crm/tasks?overdue=true');
+        if (crmResponse.ok) {
+          const crmData = await crmResponse.json();
+          setBadgeCounts(prev => ({
+            ...prev,
+            overdueTasks: crmData.overdue || 0,
           }));
         }
       } catch (error) {
@@ -211,6 +222,17 @@ export function AdminSidebar() {
                       const badgeValue = item.dynamicBadge
                         ? badgeCounts[item.dynamicBadge]
                         : item.badge;
+
+                      // Handle string badges (like "Soon")
+                      if (typeof badgeValue === 'string') {
+                        return (
+                          <span className="bg-slate-400 text-white text-xs font-medium px-2 py-0.5 rounded-full">
+                            {badgeValue}
+                          </span>
+                        );
+                      }
+
+                      // Handle number badges (counts)
                       return badgeValue !== undefined && badgeValue > 0 && (
                         <span className="bg-[#B87333] text-white text-xs font-bold px-2 py-0.5 rounded-full">
                           {badgeValue > 99 ? '99+' : badgeValue}
@@ -267,12 +289,13 @@ export function AdminMobileNav() {
   }, []);
 
   // Show role-appropriate items on mobile
-  // Full admins see Dashboard, Bookings, Calendar, Settings
+  // Full admins see Dashboard, Leads, Trip Proposals, Bookings
   // Geology admins see Geology Dashboard only
   const mobileItems = userRole === 'geology_admin'
     ? NAV_ITEMS.filter(item => item.label === 'Geology Dashboard')
     : NAV_ITEMS.filter(item =>
-        ['Dashboard', 'Bookings', 'Calendar', 'Settings'].includes(item.label) &&
+        ['Dashboard', 'Leads', 'Trip Proposals', 'Bookings'].includes(item.label) &&
+        item.section !== 'Marketing' && // Exclude Marketing Leads
         canAccessItem(item, userRole)
       );
 
@@ -308,10 +331,16 @@ export function AdminMobileNav() {
                 )}>
                   {item.icon}
                 </span>
-                {item.badge !== undefined && item.badge > 0 && (
-                  <div className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 bg-[#B87333] text-white text-xs font-bold rounded-full flex items-center justify-center">
-                    {item.badge > 99 ? '99+' : item.badge}
-                  </div>
+                {item.badge !== undefined && (
+                  typeof item.badge === 'string' ? (
+                    <div className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 bg-slate-400 text-white text-[10px] font-medium rounded-full flex items-center justify-center">
+                      {item.badge}
+                    </div>
+                  ) : item.badge > 0 && (
+                    <div className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 bg-[#B87333] text-white text-xs font-bold rounded-full flex items-center justify-center">
+                      {item.badge > 99 ? '99+' : item.badge}
+                    </div>
+                  )
                 )}
               </div>
               <span className={cn(

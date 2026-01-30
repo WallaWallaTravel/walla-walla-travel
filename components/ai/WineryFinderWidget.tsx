@@ -24,7 +24,7 @@ const QUICK_PROMPTS = [
   "Dog-friendly",
   "Romantic",
   "Groups 10+",
-  "Free tasting",
+  "Outdoor seating",
   "Best views",
 ];
 
@@ -36,7 +36,10 @@ export function WineryFinderWidget() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { toggleFavorite, isHydrated, isFavorite } = useFavoritesStore();
+  // Use individual selectors to prevent infinite re-renders
+  const toggleFavorite = useFavoritesStore(state => state.toggleFavorite);
+  const isHydrated = useFavoritesStore(state => state.isHydrated);
+  const isFavorite = useFavoritesStore(state => state.isFavorite);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

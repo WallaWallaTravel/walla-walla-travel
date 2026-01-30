@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
-import OpenAI from 'openai'
+import Anthropic from '@anthropic-ai/sdk'
 import { prisma } from '@/lib/prisma'
 import { logger } from '@/lib/logger'
+import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit'
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+function getAnthropicClient() {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    throw new Error('ANTHROPIC_API_KEY not configured');
+  }
+  return new Anthropic({ apiKey });
+}
 
 interface GenerateRequest {
   wineryId: number
@@ -50,7 +55,7 @@ const TONE_DESCRIPTIONS: Record<string, string> = {
   educational: 'Informative, teaching-focused, accessible',
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withRateLimit(rateLimiters.aiGeneration)(async (request: NextRequest) => {
   try {
     const body: GenerateRequest = await request.json()
     const { wineryId, platform, contentType, tone, customPrompt } = body
@@ -140,17 +145,21 @@ Respond in this exact JSON format:
   "imagePrompt": "A brief description of what kind of photo would pair well with this post"
 }`
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+    const anthropic = getAnthropicClient();
+    const completion = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      system: systemPrompt,
       messages: [
-        { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
-      temperature: 0.8,
       max_tokens: 1000,
     })
 
-    const responseText = completion.choices[0]?.message?.content || ''
+    // Extract text from Anthropic response
+    const responseText = completion.content
+      .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+      .map((block) => block.text)
+      .join('') || ''
 
     // Parse the JSON response
     let parsedResponse
@@ -185,4 +194,4 @@ Respond in this exact JSON format:
       { status: 500 }
     )
   }
-}
+});

@@ -10,7 +10,7 @@ import { logger } from '@/lib/logger';
  *
  * Body: { to?: string } - defaults to STAFF_NOTIFICATION_EMAIL
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withErrorHandling<unknown>(async (request: NextRequest) => {
   const session = await getSessionFromRequest(request);
 
   if (!session || session.user.role !== 'admin') {

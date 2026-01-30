@@ -173,9 +173,9 @@ export const guides: Guide[] = [
         title: 'Tasting Room Basics',
         content: `New to wine tasting? Here's what to expect:
 
-**Tasting Fees**: Most wineries charge $15-30 for a flight of 4-6 wines. Fees are often waived with purchase.
+**Tasting Fees**: Most wineries charge $15-30 for a flight of 4-6 wines. Fees are typically waived with purchase.
 
-**Reservations**: Some wineries require reservations, especially on weekends. Check ahead.
+**Reservations**: Most wineries require reservations, especially on weekends. Check ahead.
 
 **What Happens**: A staff member guides you through several wines, explaining each. Ask questions! That's what they're there for.
 
@@ -183,7 +183,9 @@ export const guides: Guide[] = [
 
 **Purchasing**: No pressure to buy, but if you find something you love, take it home. Many wines sell out and aren't available elsewhere.
 
-**Time Per Winery**: Plan 45-60 minutes per stop for a relaxed experience.`,
+**Time Per Winery**: Depending on group size, plan 45-80 minutes per stop for a relaxed, complete experience.
+
+**Dress Code**: Casual is fine. Comfortable shoes recommended.`,
       },
       {
         title: 'Tasting Etiquette Tips',
@@ -199,24 +201,22 @@ export const guides: Guide[] = [
 - Wear strong perfume or cologne
 - Talk loudly on phones
 - Rush - savor the experience
-- Feel obligated to finish every pour
-
-**Dress Code**: Casual is fine. Comfortable shoes recommended (you'll be standing).`,
+- Feel obligated to finish every pour`,
       },
       {
         title: 'How Many Wineries in One Day?',
         content: `This is the most common question from first-timers:
 
-**3-4 Wineries**: Ideal for a relaxed, quality experience. You'll remember each stop.
+**3 Wineries**: Ideal for a relaxed, quality experience. You'll remember each stop.
 
-**5-6 Wineries**: Possible but ambitious. Consider using a pour/spit strategy.
+**4 Wineries**: Possible but ambitious. Consider using a pour/spit strategy.
 
-**7+ Wineries**: Only recommended for quick stops or wine club pickups. Quality of experience diminishes.
+**More than 4 wineries** is not recommended, even if that's been done in other regions. Pours tend to be generous in the Walla Walla Valley and even at 4 wineries, the experience tends to decline before the day concludes.
 
-**Our Recommendation**: Less is more. Three great wineries with time to enjoy lunch beats rushing through six.
+**Our Recommendation**: Less is more. Three great wineries with time to enjoy a quality lunch makes for a fantastic day.
 
 **Pacing Tips**:
-- Start around 11am when most wineries open
+- Start around 11am when most wineries open (some open at 10am)
 - Take a lunch break mid-day
 - Save one special winery for late afternoon
 - Drink water between stops`,

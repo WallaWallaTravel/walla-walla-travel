@@ -8,13 +8,13 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { APIResponse } from '@/lib/api/response';
-import { validateRequest, ValidationError } from '@/lib/api/validate';
+import { validateRequest } from '@/lib/api/validate';
 import { rateLimiters } from '@/lib/api/middleware';
 import {
   experienceRequestService,
   CreateExperienceRequestSchema,
 } from '@/lib/services/experience-request.service';
-import { ServiceError } from '@/lib/api/middleware/error-handler';
+import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 
 // ============================================================================
 // POST /api/v1/experience-requests - Create new experience request
@@ -52,55 +52,32 @@ import { ServiceError } from '@/lib/api/middleware/error-handler';
  *   }
  * }
  */
-export async function POST(request: NextRequest): Promise<NextResponse> {
+export const POST = withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
   // Apply rate limiting (public endpoint)
   const rateLimitResult = await rateLimiters.public(request);
   if (rateLimitResult) return rateLimitResult;
 
-  try {
-    // Validate request body
-    const data = await validateRequest(CreateExperienceRequestSchema, request);
+  // Validate request body
+  const data = await validateRequest(CreateExperienceRequestSchema, request);
 
-    // Create experience request via service
-    const experienceRequest = await experienceRequestService.create(data);
+  // Create experience request via service
+  const experienceRequest = await experienceRequestService.create(data);
 
-    // Build response with helpful next steps
-    const responseData = {
-      ...experienceRequest,
-      next_steps: [
-        'We\'ll contact you within 24 hours to discuss your tour',
-        'We\'ll coordinate all winery reservations on your behalf',
-        'You\'ll receive a complete itinerary once confirmed',
-        'No payment required until your experience is finalized',
-      ],
-    };
+  // Build response with helpful next steps
+  const responseData = {
+    ...experienceRequest,
+    next_steps: [
+      'We\'ll contact you within 24 hours to discuss your tour',
+      'We\'ll coordinate all winery reservations on your behalf',
+      'You\'ll receive a complete itinerary once confirmed',
+      'No payment required until your experience is finalized',
+    ],
+  };
 
-    return APIResponse.success(responseData, {
-      request_number: experienceRequest.request_number,
-    });
-
-  } catch (error) {
-    // Handle validation errors
-    if (error instanceof ValidationError) {
-      return APIResponse.validation(error.errors);
-    }
-
-    // Handle service errors
-    if (error instanceof ServiceError) {
-      return APIResponse.error({
-        code: error.code,
-        message: error.message,
-        details: error.details,
-      }, 400);
-    }
-
-    // Handle unexpected errors
-    return APIResponse.internalError(
-      'Failed to submit experience request',
-      error instanceof Error ? error.message : undefined
-    );
-  }
-}
+  return APIResponse.success(responseData, {
+    request_number: experienceRequest.request_number,
+  });
+});
 
 // ============================================================================
 // GET /api/v1/experience-requests - List requests (admin)
@@ -119,55 +96,39 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
  * - limit: Results per page (default: 50)
  * - offset: Pagination offset (default: 0)
  */
-export async function GET(request: NextRequest): Promise<NextResponse> {
+export const GET = withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
   // Apply rate limiting (authenticated endpoint)
   const rateLimitResult = await rateLimiters.authenticated(request);
   if (rateLimitResult) return rateLimitResult;
 
-  try {
-    const { searchParams } = new URL(request.url);
+  const { searchParams } = new URL(request.url);
 
-    // Parse filters
-    const filters = {
-      status: searchParams.get('status') as 'new' | 'contacted' | 'in_progress' | 'confirmed' | 'declined' | 'completed' | 'cancelled' | undefined,
-      brand: searchParams.get('brand') as 'wwt' | 'nwtc' | 'hcwt' | undefined,
-      source: searchParams.get('source') as 'website' | 'chatgpt' | 'phone' | 'email' | 'referral' | undefined,
-      assignedTo: searchParams.get('assigned_to')
-        ? parseInt(searchParams.get('assigned_to')!, 10)
-        : undefined,
-      fromDate: searchParams.get('from_date') || undefined,
-      toDate: searchParams.get('to_date') || undefined,
-      limit: searchParams.get('limit')
-        ? parseInt(searchParams.get('limit')!, 10)
-        : 50,
-      offset: searchParams.get('offset')
-        ? parseInt(searchParams.get('offset')!, 10)
-        : 0,
-    };
+  // Parse filters
+  const filters = {
+    status: searchParams.get('status') as 'new' | 'contacted' | 'in_progress' | 'confirmed' | 'declined' | 'completed' | 'cancelled' | undefined,
+    brand: searchParams.get('brand') as 'wwt' | 'nwtc' | 'hcwt' | undefined,
+    source: searchParams.get('source') as 'website' | 'chatgpt' | 'phone' | 'email' | 'referral' | undefined,
+    assignedTo: searchParams.get('assigned_to')
+      ? parseInt(searchParams.get('assigned_to')!, 10)
+      : undefined,
+    fromDate: searchParams.get('from_date') || undefined,
+    toDate: searchParams.get('to_date') || undefined,
+    limit: searchParams.get('limit')
+      ? parseInt(searchParams.get('limit')!, 10)
+      : 50,
+    offset: searchParams.get('offset')
+      ? parseInt(searchParams.get('offset')!, 10)
+      : 0,
+  };
 
-    // Get requests from service
-    const result = await experienceRequestService.findMany(filters);
+  // Get requests from service
+  const result = await experienceRequestService.findMany(filters);
 
-    return APIResponse.success(result.requests, {
-      total: result.total,
-      limit: filters.limit,
-      offset: filters.offset,
-      page: Math.floor(filters.offset / filters.limit) + 1,
-      pages: Math.ceil(result.total / filters.limit),
-    });
-
-  } catch (error) {
-    if (error instanceof ServiceError) {
-      return APIResponse.error({
-        code: error.code,
-        message: error.message,
-        details: error.details,
-      }, 400);
-    }
-
-    return APIResponse.internalError(
-      'Failed to fetch experience requests',
-      error instanceof Error ? error.message : undefined
-    );
-  }
-}
+  return APIResponse.success(result.requests, {
+    total: result.total,
+    limit: filters.limit,
+    offset: filters.offset,
+    page: Math.floor(filters.offset / filters.limit) + 1,
+    pages: Math.ceil(result.total / filters.limit),
+  });
+});

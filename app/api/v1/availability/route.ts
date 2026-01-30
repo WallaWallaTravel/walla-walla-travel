@@ -15,8 +15,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { vehicleAvailabilityService } from '@/lib/services/vehicle-availability.service';
 import { z } from 'zod';
-import { logger } from '@/lib/logger';
 import { addCacheHeaders, CachePresets } from '@/lib/api/middleware/cache';
+import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
 
 // ============================================================================
 // Validation Schemas
@@ -54,37 +54,22 @@ const GetCalendarSchema = z.object({
 // GET Handler
 // ============================================================================
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
-  try {
-    const searchParams = request.nextUrl.searchParams;
-    const action = searchParams.get('action') || 'check';
+export const GET = withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
+  const searchParams = request.nextUrl.searchParams;
+  const action = searchParams.get('action') || 'check';
 
-    switch (action) {
-      case 'dates':
-        return handleGetDates(searchParams);
-      case 'slots':
-        return handleGetSlots(searchParams);
-      case 'calendar':
-        return handleGetCalendar(searchParams);
-      case 'check':
-      default:
-        return handleCheckAvailability(searchParams);
-    }
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Validation error', details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error('Availability API error', { error });
-    const message = error instanceof Error ? error.message : 'Internal server error';
-    return NextResponse.json(
-      { error: message },
-      { status: 500 }
-    );
+  switch (action) {
+    case 'dates':
+      return handleGetDates(searchParams);
+    case 'slots':
+      return handleGetSlots(searchParams);
+    case 'calendar':
+      return handleGetCalendar(searchParams);
+    case 'check':
+    default:
+      return handleCheckAvailability(searchParams);
   }
-}
+});
 
 // ============================================================================
 // Action Handlers
@@ -255,19 +240,13 @@ async function handleGetCalendar(searchParams: URLSearchParams): Promise<NextRes
   const end = new Date(validated.end_date);
 
   if (end < start) {
-    return NextResponse.json(
-      { error: 'End date must be after start date' },
-      { status: 400 }
-    );
+    throw new BadRequestError('End date must be after start date');
   }
 
   // Limit range to 90 days
   const daysDiff = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
   if (daysDiff > 90) {
-    return NextResponse.json(
-      { error: 'Date range cannot exceed 90 days' },
-      { status: 400 }
-    );
+    throw new BadRequestError('Date range cannot exceed 90 days');
   }
 
   const blocks = await vehicleAvailabilityService.getBlocksInRange(
