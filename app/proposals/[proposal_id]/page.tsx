@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getBrandEmailConfig } from '@/lib/email-brands';
-import Footer from '@/components/Footer';
+import BrandFooter from '@/components/BrandFooter';
 import { getHourlyRate } from '@/lib/rate-config';
 import { logger } from '@/lib/logger';
 import { ProposalFeedbackPanel } from '@/components/proposals/ProposalFeedbackPanel';
@@ -693,6 +693,7 @@ export default function ClientProposalView({ params }: { params: Promise<{ propo
           <ProposalFeedbackPanel
             proposalId={proposalId}
             proposalStatus={proposal.status}
+            brandName={brandConfig.name}
           />
         )}
 
@@ -721,7 +722,7 @@ export default function ClientProposalView({ params }: { params: Promise<{ propo
               <div className="ml-3">
                 <p className="text-sm text-gray-700 font-medium">
                   This proposal was declined. If you&apos;d like to discuss alternatives, please{' '}
-                  <a href={`mailto:info@wallawalla.travel?subject=Re: Proposal ${proposal.proposal_number}`} className="text-[#8B1538] hover:underline">
+                  <a href={`mailto:${brandConfig.reply_to}?subject=Re: Proposal ${proposal.proposal_number}`} className="text-[#8B1538] hover:underline">
                     contact us
                   </a>.
                 </p>
@@ -736,7 +737,7 @@ export default function ClientProposalView({ params }: { params: Promise<{ propo
               Have questions or need to make changes?
             </p>
             <a
-              href={`mailto:info@wallawalla.travel?subject=Proposal ${proposal.proposal_number}`}
+              href={`mailto:${brandConfig.reply_to}?subject=Proposal ${proposal.proposal_number}`}
               className="inline-block bg-gray-800 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-700 transition-colors"
             >
               Contact Us
@@ -745,8 +746,8 @@ export default function ClientProposalView({ params }: { params: Promise<{ propo
         )}
       </main>
 
-      {/* Footer */}
-      <Footer />
+      {/* Footer - Brand Specific */}
+      <BrandFooter brandId={proposal.brand_id} />
 
       {/* Decline Modal */}
       {showDeclineModal && (

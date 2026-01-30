@@ -49,32 +49,9 @@ export async function login(email: string, password: string) {
 
   } catch (error) {
     logger.error('Login error', { error });
-
-    // Check if it's a network error
-    if (error instanceof TypeError && error.message.includes('fetch')) {
-      // Fallback to mock login for development if API is not available
-      if (process.env.NODE_ENV === 'development' && 
-          email === 'driver@test.com' && 
-          password === 'test123456') {
-        const cookieStore = await cookies();
-        cookieStore.set('session', JSON.stringify({
-          email,
-          userId: '1',
-          name: 'Test Driver',
-        }), {
-          httpOnly: true,
-          secure: false,
-          sameSite: 'lax',
-          maxAge: 60 * 60 * 24 * 7,
-          path: '/',
-        });
-        return { success: true };
-      }
-    }
-    
-    return { 
-      success: false, 
-      error: 'Unable to connect to server. Please try again later.' 
+    return {
+      success: false,
+      error: 'Unable to connect to server. Please try again later.'
     };
   }
 }

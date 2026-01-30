@@ -12,39 +12,27 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { vehicleAvailabilityService } from '@/lib/services/vehicle-availability.service';
-import { logger } from '@/lib/logger';
+import { withErrorHandling, UnauthorizedError } from '@/lib/api/middleware/error-handler';
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+export const GET = withErrorHandling(async (request: NextRequest) => {
   // Verify cron secret (for Vercel cron jobs)
   const authHeader = request.headers.get('authorization');
   const cronSecret = process.env.CRON_SECRET;
 
   // In production, require authorization
   if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json(
-      { error: 'Unauthorized' },
-      { status: 401 }
-    );
+    throw new UnauthorizedError('Unauthorized');
   }
 
-  try {
-    const deletedCount = await vehicleAvailabilityService.cleanupExpiredHolds();
+  const deletedCount = await vehicleAvailabilityService.cleanupExpiredHolds();
 
-    return NextResponse.json({
-      success: true,
-      message: `Cleaned up ${deletedCount} expired hold${deletedCount !== 1 ? 's' : ''}`,
-      deleted_count: deletedCount,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    logger.error('Cron cleanup-holds error', { error });
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json(
-      { error: 'Cleanup failed', details: message },
-      { status: 500 }
-    );
-  }
-}
+  return NextResponse.json({
+    success: true,
+    message: `Cleaned up ${deletedCount} expired hold${deletedCount !== 1 ? 's' : ''}`,
+    deleted_count: deletedCount,
+    timestamp: new Date().toISOString(),
+  });
+});
 
 // Also support POST for manual triggering
 export const POST = GET;

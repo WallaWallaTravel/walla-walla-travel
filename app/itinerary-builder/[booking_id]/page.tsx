@@ -586,7 +586,7 @@ export default function ItineraryBuilder({ params }: { params: Promise<{ booking
           <div className="mb-6">
             <label className="block text-base font-bold text-gray-900 mb-2">Driver Notes</label>
             <textarea
-              value={itinerary.driver_notes}
+              value={itinerary.driver_notes || ''}
               onChange={(e) => setItinerary({ ...itinerary, driver_notes: e.target.value })}
               onFocus={handleFocusSelect}
               rows={3}

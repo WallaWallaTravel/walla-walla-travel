@@ -27,11 +27,11 @@ export interface AIProviderConfig {
 
 /**
  * Base class for all AI providers
- * Provides common interface for OpenAI, Anthropic, Google, etc.
+ * Provides common interface for Anthropic, Google, etc.
  */
 export abstract class AIModelProvider {
   abstract readonly name: string
-  abstract readonly provider: 'openai' | 'anthropic' | 'google'
+  abstract readonly provider: 'anthropic' | 'google'
   abstract readonly supportsFineTuning: boolean
   abstract readonly supportsMultimodal: boolean
   

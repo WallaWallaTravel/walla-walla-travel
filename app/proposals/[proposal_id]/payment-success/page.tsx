@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { logger } from '@/lib/logger';
-import Footer from '@/components/Footer';
+import BrandFooter from '@/components/BrandFooter';
+import { getBrandEmailConfig, type BrandEmailConfig } from '@/lib/email-brands';
 
 interface Proposal {
   id: number;
@@ -13,7 +14,9 @@ interface Proposal {
   client_name: string;
   accepted_by_name: string;
   accepted_by_email: string;
-  final_total: number;
+  total: number | string;
+  final_total?: number | string;
+  brand_id?: number;
   converted_to_booking_id: number | null;
 }
 
@@ -34,6 +37,7 @@ export default function PaymentSuccessPage({ params }: { params: Promise<{ propo
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<'succeeded' | 'processing' | 'failed'>('processing');
+  const [brandConfig, setBrandConfig] = useState<BrandEmailConfig>(getBrandEmailConfig(1));
 
   useEffect(() => {
     params.then(p => setProposalId(p.proposal_id));
@@ -59,6 +63,11 @@ export default function PaymentSuccessPage({ params }: { params: Promise<{ propo
         }
         const proposalData = await proposalResponse.json();
         setProposal(proposalData.data);
+
+        // Set brand-specific config
+        if (proposalData.data?.brand_id) {
+          setBrandConfig(getBrandEmailConfig(proposalData.data.brand_id));
+        }
 
         // Confirm payment and convert to booking
         const confirmResponse = await fetch(`/api/proposals/${proposalId}/confirm-payment`, {
@@ -95,6 +104,12 @@ export default function PaymentSuccessPage({ params }: { params: Promise<{ propo
       style: 'currency',
       currency: 'USD',
     }).format(amount);
+  };
+
+  // Helper to get proposal total (handles string/number and fallback to final_total)
+  const getProposalTotal = (p: Proposal): number => {
+    const value = p.total ?? p.final_total ?? 0;
+    return typeof value === 'string' ? parseFloat(value) || 0 : value || 0;
   };
 
   if (loading) {
@@ -203,13 +218,13 @@ export default function PaymentSuccessPage({ params }: { params: Promise<{ propo
                 <div className="border-t pt-3 flex justify-between text-lg">
                   <span className="font-bold text-gray-900">Deposit Paid</span>
                   <span className="font-bold text-green-600">
-                    {formatCurrency((proposal.final_total || proposal.final_total) * 0.5)}
+                    {formatCurrency(getProposalTotal(proposal) * 0.5)}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Remaining Balance</span>
                   <span className="font-semibold text-gray-900">
-                    {formatCurrency((proposal.final_total || proposal.final_total) * 0.5)}
+                    {formatCurrency(getProposalTotal(proposal) * 0.5)}
                   </span>
                 </div>
               </div>
@@ -256,17 +271,20 @@ export default function PaymentSuccessPage({ params }: { params: Promise<{ propo
             </Link>
           </div>
 
-          {/* Contact Info */}
+          {/* Contact Info - Brand Specific */}
           <div className="mt-8 pt-8 border-t text-center">
             <p className="text-gray-600 mb-2">Questions? We&apos;re here to help!</p>
             <p className="text-gray-900 font-semibold">
-              📞 (509) 200-8000 | 📧 info@wallawalla.travel
+              📞 {brandConfig.phone} | 📧 {brandConfig.reply_to}
+            </p>
+            <p className="text-gray-500 text-sm mt-2">
+              {brandConfig.name} • {brandConfig.website}
             </p>
           </div>
         </div>
       </main>
 
-      <Footer />
+      <BrandFooter brandId={proposal?.brand_id} />
     </div>
   );
 }

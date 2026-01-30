@@ -76,35 +76,40 @@ export class ItineraryService extends BaseService {
     const result = await this.query(`
       SELECT
         i.*,
-        json_agg(
-          json_build_object(
-            'id', s.id,
-            'winery_id', s.winery_id,
-            'stop_order', s.stop_order,
-            'arrival_time', s.arrival_time,
-            'departure_time', s.departure_time,
-            'duration_minutes', s.duration_minutes,
-            'drive_time_to_next_minutes', s.drive_time_to_next_minutes,
-            'stop_type', s.stop_type,
-            'reservation_confirmed', s.reservation_confirmed,
-            'special_notes', s.special_notes,
-            'is_lunch_stop', s.is_lunch_stop,
-            'winery', json_build_object(
-              'id', w.id,
-              'name', w.name,
-              'slug', w.slug,
-              'address', w.address,
-              'city', w.city,
-              'tasting_fee', w.tasting_fee,
-              'average_visit_duration', w.average_visit_duration
+        COALESCE(
+          (
+            SELECT json_agg(
+              json_build_object(
+                'id', s.id,
+                'winery_id', s.winery_id,
+                'stop_order', s.stop_order,
+                'arrival_time', s.arrival_time,
+                'departure_time', s.departure_time,
+                'duration_minutes', s.duration_minutes,
+                'drive_time_to_next_minutes', s.drive_time_to_next_minutes,
+                'stop_type', s.stop_type,
+                'reservation_confirmed', s.reservation_confirmed,
+                'special_notes', s.special_notes,
+                'is_lunch_stop', s.is_lunch_stop,
+                'winery', json_build_object(
+                  'id', w.id,
+                  'name', w.name,
+                  'slug', w.slug,
+                  'address', w.address,
+                  'city', w.city,
+                  'tasting_fee', w.tasting_fee,
+                  'average_visit_duration', w.average_visit_duration
+                )
+              ) ORDER BY s.stop_order
             )
-          ) ORDER BY s.stop_order
-        ) FILTER (WHERE s.id IS NOT NULL) as stops
+            FROM itinerary_stops s
+            LEFT JOIN wineries w ON s.winery_id = w.id
+            WHERE s.itinerary_id = i.id
+          ),
+          '[]'::json
+        ) as stops
       FROM itineraries i
-      LEFT JOIN itinerary_stops s ON i.id = s.itinerary_id
-      LEFT JOIN wineries w ON s.winery_id = w.id
       WHERE i.booking_id = $1
-      GROUP BY i.id
     `, [bookingId]);
 
     if (result.rows.length === 0) {

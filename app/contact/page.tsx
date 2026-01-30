@@ -42,15 +42,15 @@ function ContactForm() {
     return (
       <div className="text-center py-12">
         <div className="text-5xl mb-4">🎉</div>
-        <h2 className="text-2xl font-bold text-purple-900 mb-3">Thank You!</h2>
+        <h2 className="text-2xl font-bold text-stone-900 mb-3">Thank You!</h2>
         <p className="text-gray-600 mb-6">
           We&apos;ve received your inquiry and will be in touch within 24 hours.
         </p>
         <Link
-          href="/chat"
-          className="inline-block px-6 py-3 bg-purple-600 text-white font-semibold rounded-xl hover:bg-purple-700 transition-colors"
+          href="/"
+          className="inline-block px-6 py-3 bg-[#8B1538] text-white font-semibold rounded-xl hover:bg-[#722F37] transition-colors"
         >
-          Back to Chat
+          Back to Home
         </Link>
       </div>
     );
@@ -69,7 +69,7 @@ function ContactForm() {
             required
             value={formData.name}
             onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent placeholder-gray-500"
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#8B1538] focus:border-transparent placeholder-gray-500"
             placeholder="Your name"
           />
         </div>
@@ -83,7 +83,7 @@ function ContactForm() {
             required
             value={formData.email}
             onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent placeholder-gray-500"
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#8B1538] focus:border-transparent placeholder-gray-500"
             placeholder="you@email.com"
           />
         </div>
@@ -99,7 +99,7 @@ function ContactForm() {
             id="phone"
             value={formData.phone}
             onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent placeholder-gray-500"
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#8B1538] focus:border-transparent placeholder-gray-500"
             placeholder="(555) 123-4567"
           />
         </div>
@@ -111,7 +111,7 @@ function ContactForm() {
             id="groupSize"
             value={formData.groupSize}
             onChange={(e) => setFormData(prev => ({ ...prev, groupSize: e.target.value }))}
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-700"
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#8B1538] focus:border-transparent text-gray-700"
           >
             <option value="">Select...</option>
             <option value="2">2 guests</option>
@@ -132,7 +132,7 @@ function ContactForm() {
           id="dates"
           value={formData.dates}
           onChange={(e) => setFormData(prev => ({ ...prev, dates: e.target.value }))}
-          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent placeholder-gray-500"
+          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#8B1538] focus:border-transparent placeholder-gray-500"
           placeholder="e.g., March 15-17 or 'flexible in April'"
         />
       </div>
@@ -147,7 +147,7 @@ function ContactForm() {
           rows={4}
           value={formData.message}
           onChange={(e) => setFormData(prev => ({ ...prev, message: e.target.value }))}
-          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent placeholder-gray-500 resize-none"
+          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#8B1538] focus:border-transparent placeholder-gray-500 resize-none"
           placeholder="What brings you to Walla Walla? Any special requests or preferences?"
         />
       </div>
@@ -155,7 +155,7 @@ function ContactForm() {
       <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full py-3 px-4 bg-purple-600 text-white font-semibold rounded-xl hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        className="w-full py-3 px-4 bg-[#8B1538] text-white font-semibold rounded-xl hover:bg-[#722F37] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
         {isSubmitting ? 'Sending...' : 'Send Inquiry'}
       </button>
@@ -177,14 +177,14 @@ function ContactContent() {
   const isFullPlanning = service === 'full-planning';
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
+    <div className="min-h-screen bg-gradient-to-b from-stone-50 to-white">
       <div className="max-w-xl mx-auto px-4 py-12">
         {/* Header */}
         <div className="text-center mb-8">
-          <Link href="/concierge" className="text-purple-600 hover:text-purple-700 text-sm mb-4 inline-block">
-            ← Back
+          <Link href="/" className="text-[#8B1538] hover:text-[#722F37] text-sm mb-4 inline-block">
+            ← Back to Home
           </Link>
-          <h1 className="text-3xl font-bold text-purple-900 mb-3">
+          <h1 className="text-3xl font-bold text-stone-900 mb-3">
             {isFullPlanning ? "Let's Plan Your Trip" : "Get in Touch"}
           </h1>
           <p className="text-gray-600">
@@ -196,7 +196,7 @@ function ContactContent() {
         </div>
 
         {/* Form Card */}
-        <div className="bg-white rounded-2xl shadow-lg border border-purple-100 p-6">
+        <div className="bg-white rounded-2xl shadow-lg border border-stone-200 p-6">
           <ContactForm />
         </div>
 
@@ -204,11 +204,16 @@ function ContactContent() {
         <div className="mt-8 text-center">
           <p className="text-sm text-gray-500 mb-2">Prefer to talk?</p>
           <a
-            href="tel:+15095551234"
-            className="text-purple-600 font-semibold hover:text-purple-700"
+            href="tel:+15092008000"
+            className="text-[#8B1538] font-semibold hover:text-[#722F37]"
           >
-            (509) 555-1234
+            (509) 200-8000
           </a>
+          <p className="text-sm text-gray-500 mt-2">
+            <a href="mailto:info@wallawalla.travel" className="text-[#8B1538] hover:text-[#722F37]">
+              info@wallawalla.travel
+            </a>
+          </p>
         </div>
       </div>
     </div>
@@ -217,7 +222,7 @@ function ContactContent() {
 
 export default function ContactPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-gradient-to-b from-purple-50 to-white" />}>
+    <Suspense fallback={<div className="min-h-screen bg-gradient-to-b from-stone-50 to-white" />}>
       <ContactContent />
     </Suspense>
   );

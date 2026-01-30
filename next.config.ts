@@ -3,10 +3,10 @@ import { securityHeaders, getCSPHeader } from './lib/config/security'
 
 const nextConfig: NextConfig = {
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false,
   },
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   
   // ============================================================================

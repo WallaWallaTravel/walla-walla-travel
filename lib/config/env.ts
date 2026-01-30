@@ -20,7 +20,6 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().optional(),
   STRIPE_SECRET_KEY: z.string().optional(),
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().optional(),
-  OPENAI_API_KEY: z.string().optional(),
   
   // App Configuration
   NEXT_PUBLIC_APP_URL: z.string().optional(),

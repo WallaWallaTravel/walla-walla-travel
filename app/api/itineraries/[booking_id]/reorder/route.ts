@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { logger } from '@/lib/logger';
+import { withErrorHandling, NotFoundError, RouteContext } from '@/lib/api/middleware/error-handler';
 import { query } from '@/lib/db';
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ booking_id: string }> }
-) {
-  try {
-    const { booking_id: bookingId } = await params;
+/**
+ * PUT /api/itineraries/[booking_id]/reorder
+ * Reorder stops in an itinerary
+ *
+ * Uses withErrorHandling middleware for consistent error handling
+ */
+export const PUT = withErrorHandling<unknown, { booking_id: string }>(
+  async (request: NextRequest, context: RouteContext<{ booking_id: string }>) => {
+    const { booking_id: bookingId } = await context.params;
     const { stops } = await request.json();
 
     // Get itinerary ID for this booking
@@ -17,7 +20,7 @@ export async function PUT(
     );
 
     if (itineraryResult.rows.length === 0) {
-      return NextResponse.json({ error: 'Itinerary not found' }, { status: 404 });
+      throw new NotFoundError('Itinerary not found');
     }
 
     const itineraryId = itineraryResult.rows[0].id;
@@ -25,21 +28,21 @@ export async function PUT(
     // Update stop orders in a transaction
     await query('BEGIN');
 
-    for (const stop of stops) {
-      await query(`
-        UPDATE itinerary_stops
-        SET stop_order = $1
-        WHERE id = $2 AND itinerary_id = $3
-      `, [stop.stop_order, stop.id, itineraryId]);
+    try {
+      for (const stop of stops) {
+        await query(`
+          UPDATE itinerary_stops
+          SET stop_order = $1
+          WHERE id = $2 AND itinerary_id = $3
+        `, [stop.stop_order, stop.id, itineraryId]);
+      }
+
+      await query('COMMIT');
+    } catch (error) {
+      await query('ROLLBACK');
+      throw error;
     }
 
-    await query('COMMIT');
-
     return NextResponse.json({ success: true, message: 'Stops reordered successfully' });
-  } catch (error) {
-    await query('ROLLBACK');
-    logger.error('Error reordering stops', { error });
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ error: message }, { status: 500 });
   }
-}
+);

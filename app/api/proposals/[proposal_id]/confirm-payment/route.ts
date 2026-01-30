@@ -9,7 +9,7 @@ import { sendBookingConfirmationEmail } from '@/lib/services/email-automation.se
  * POST /api/proposals/[proposal_id]/confirm-payment
  * Confirm payment succeeded and convert proposal to booking
  */
-export const POST = withErrorHandling(async (
+export const POST = withErrorHandling<unknown, { proposal_id: string }>(async (
   request: NextRequest,
   { params }: { params: Promise<{ proposal_id: string }> }
 ) => {
@@ -179,6 +179,10 @@ export const POST = withErrorHandling(async (
       client
     );
 
+    if (!booking) {
+      throw new BadRequestError('Failed to create booking');
+    }
+
     // Link proposal to booking
     await query(
       `UPDATE proposals
@@ -237,6 +241,10 @@ export const POST = withErrorHandling(async (
 
     return booking;
   });
+
+  if (!result) {
+    throw new BadRequestError('Failed to create booking');
+  }
 
   // Send confirmation email (async, don't block)
   if (result.id) {

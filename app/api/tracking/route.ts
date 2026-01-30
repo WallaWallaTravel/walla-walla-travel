@@ -10,6 +10,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { bookingTrackingService } from '@/lib/services/booking-tracking.service';
 import { z } from 'zod';
 import { logger } from '@/lib/logger';
@@ -62,14 +63,14 @@ const TrackSessionSchema = z.object({
 // POST Handler
 // ============================================================================
 
-export async function POST(request: NextRequest): Promise<NextResponse> {
+export const POST = withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
+  const body = await request.json();
+  const action = body.action || 'booking';
+
+  // Get user agent from headers
+  const userAgent = request.headers.get('user-agent') || '';
+
   try {
-    const body = await request.json();
-    const action = body.action || 'booking';
-
-    // Get user agent from headers
-    const userAgent = request.headers.get('user-agent') || '';
-
     switch (action) {
       case 'booking': {
         const data = TrackBookingSchema.parse(body);
@@ -112,24 +113,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       }
 
       default:
-        return NextResponse.json(
-          { error: 'Unknown action' },
-          { status: 400 }
-        );
+        throw new BadRequestError('Unknown action');
     }
   } catch (error) {
-    // Log but don't fail - tracking should never break the user experience
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    logger.warn('Tracking error', { error: message });
-
+    // For Zod validation errors, let the middleware handle them
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Validation error', details: error.issues },
-        { status: 400 }
-      );
+      throw error;
     }
 
-    // Return success anyway - we don't want tracking issues to affect UX
+    // For tracking-specific errors, log but return graceful failure
+    // We don't want tracking issues to affect UX
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    logger.warn('Tracking error', { error: message });
     return NextResponse.json({ success: false, error: 'Tracking failed' });
   }
-}
+});

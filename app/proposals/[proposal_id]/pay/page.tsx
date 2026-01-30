@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { loadStripe, Stripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { logger } from '@/lib/logger';
-import Footer from '@/components/Footer';
+import BrandFooter from '@/components/BrandFooter';
 
 // Cache for Stripe instances by publishable key
 const stripePromiseCache: Record<string, Promise<Stripe | null>> = {};
@@ -21,6 +21,7 @@ interface Proposal {
   total: number;
   final_total: number;
   status: string;
+  brand_id?: number;
 }
 
 function PaymentForm({ proposalId, amount }: { proposalId: string; amount: number }) {
@@ -307,7 +308,7 @@ export default function ProposalPaymentPage({ params }: { params: Promise<{ prop
         </div>
       </main>
 
-      <Footer />
+      <BrandFooter brandId={proposal.brand_id} />
     </div>
   );
 }

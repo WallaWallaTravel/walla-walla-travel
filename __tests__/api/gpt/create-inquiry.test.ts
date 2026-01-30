@@ -65,7 +65,7 @@ describe('POST /api/gpt/create-inquiry', () => {
         'http://localhost:3000/api/gpt/create-inquiry',
         incomplete
       );
-      const response = await POST(request);
+      const response = await POST(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(response.status).toBe(400);
@@ -77,7 +77,7 @@ describe('POST /api/gpt/create-inquiry', () => {
         'http://localhost:3000/api/gpt/create-inquiry',
         { ...validInquiry, email: 'invalid-email' }
       );
-      const response = await POST(request);
+      const response = await POST(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(response.status).toBe(400);
@@ -91,7 +91,7 @@ describe('POST /api/gpt/create-inquiry', () => {
         'http://localhost:3000/api/gpt/create-inquiry',
         incomplete
       );
-      const response = await POST(request);
+      const response = await POST(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(response.status).toBe(400);
@@ -104,7 +104,7 @@ describe('POST /api/gpt/create-inquiry', () => {
         'http://localhost:3000/api/gpt/create-inquiry',
         incomplete
       );
-      const response = await POST(request);
+      const response = await POST(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(response.status).toBe(400);
@@ -116,7 +116,7 @@ describe('POST /api/gpt/create-inquiry', () => {
         'http://localhost:3000/api/gpt/create-inquiry',
         { ...validInquiry, party_size: 0 }
       );
-      const response = await POST(request);
+      const response = await POST(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(response.status).toBe(400);
@@ -128,7 +128,7 @@ describe('POST /api/gpt/create-inquiry', () => {
         'http://localhost:3000/api/gpt/create-inquiry',
         { ...validInquiry, party_size: 20 }
       );
-      const response = await POST(request);
+      const response = await POST(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(response.status).toBe(400);
@@ -140,7 +140,7 @@ describe('POST /api/gpt/create-inquiry', () => {
         'http://localhost:3000/api/gpt/create-inquiry',
         { ...validInquiry, tour_type: 'invalid_type' }
       );
-      const response = await POST(request);
+      const response = await POST(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(response.status).toBe(400);
@@ -154,7 +154,7 @@ describe('POST /api/gpt/create-inquiry', () => {
         'http://localhost:3000/api/gpt/create-inquiry',
         { ...validInquiry, tour_date: '2020-01-01' }
       );
-      const response = await POST(request);
+      const response = await POST(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(response.status).toBe(400);
@@ -168,7 +168,7 @@ describe('POST /api/gpt/create-inquiry', () => {
         'http://localhost:3000/api/gpt/create-inquiry',
         { ...validInquiry, tour_date: tomorrow }
       );
-      const response = await POST(request);
+      const response = await POST(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(response.status).toBe(400);
@@ -183,7 +183,7 @@ describe('POST /api/gpt/create-inquiry', () => {
         'http://localhost:3000/api/gpt/create-inquiry',
         validInquiry
       );
-      const response = await POST(request);
+      const response = await POST(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(response.status).toBe(201);
@@ -197,7 +197,7 @@ describe('POST /api/gpt/create-inquiry', () => {
         'http://localhost:3000/api/gpt/create-inquiry',
         validInquiry
       );
-      const response = await POST(request);
+      const response = await POST(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(data.message).toContain('Jane Doe');
@@ -210,7 +210,7 @@ describe('POST /api/gpt/create-inquiry', () => {
         'http://localhost:3000/api/gpt/create-inquiry',
         validInquiry
       );
-      const response = await POST(request);
+      const response = await POST(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(data.estimated_response_time).toBe('24 hours');
@@ -221,7 +221,7 @@ describe('POST /api/gpt/create-inquiry', () => {
         'http://localhost:3000/api/gpt/create-inquiry',
         validInquiry
       );
-      const response = await POST(request);
+      const response = await POST(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(data.next_steps).toBeDefined();
@@ -241,7 +241,7 @@ describe('POST /api/gpt/create-inquiry', () => {
         'http://localhost:3000/api/gpt/create-inquiry',
         minimalInquiry
       );
-      const response = await POST(request);
+      const response = await POST(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(response.status).toBe(201);
@@ -254,7 +254,7 @@ describe('POST /api/gpt/create-inquiry', () => {
         'http://localhost:3000/api/gpt/create-inquiry',
         withoutType
       );
-      const response = await POST(request);
+      const response = await POST(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(response.status).toBe(201);
@@ -270,7 +270,7 @@ describe('POST /api/gpt/create-inquiry', () => {
         'http://localhost:3000/api/gpt/create-inquiry',
         validInquiry
       );
-      const response = await POST(request);
+      const response = await POST(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(response.status).toBe(201);
@@ -292,7 +292,7 @@ describe('POST /api/gpt/create-inquiry', () => {
         'http://localhost:3000/api/gpt/create-inquiry',
         validInquiry
       );
-      const response = await POST(request);
+      const response = await POST(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(response.status).toBe(500);
@@ -307,7 +307,7 @@ describe('POST /api/gpt/create-inquiry', () => {
         'http://localhost:3000/api/gpt/create-inquiry',
         validInquiry
       );
-      const response = await POST(request);
+      const response = await POST(request, { params: Promise.resolve({}) });
 
       expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*');
     });

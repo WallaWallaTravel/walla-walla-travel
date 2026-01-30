@@ -7,11 +7,10 @@
  * - Smart stop suggestions based on itinerary state
  * - Action parsing from AI responses
  *
- * Built on top of existing openaiChatService and partnerContextService.
+ * Built on top of partnerContextService for partner data.
  */
 
 import { BaseService } from './base.service';
-import { openaiChatService, ChatMessage, ChatResponse } from './openai-chat.service';
 import { partnerContextService, TripContext } from './partner-context.service';
 import {
   Trip,
@@ -22,7 +21,13 @@ import {
   TripAIAction,
   StopSuggestion,
 } from '@/lib/types/trip-planner';
-import OpenAI from 'openai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
+// Local types for chat functionality
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
 
 // ============================================================================
 // Types (only service-specific response types)
@@ -235,15 +240,15 @@ class TripAIService extends BaseService {
     return 'TripAIService';
   }
 
-  private client: OpenAI | null = null;
+  private client: GoogleGenerativeAI | null = null;
 
-  private getClient(): OpenAI {
+  private getClient(): GoogleGenerativeAI {
     if (!this.client) {
-      const apiKey = process.env.OPENAI_API_KEY;
+      const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) {
-        throw new Error('OPENAI_API_KEY environment variable is not set');
+        throw new Error('GEMINI_API_KEY environment variable is not set');
       }
-      this.client = new OpenAI({ apiKey });
+      this.client = new GoogleGenerativeAI(apiKey);
     }
     return this.client;
   }
@@ -281,31 +286,26 @@ ${tripContextPrompt}
 
 ${partnerSection}`;
 
-      // Convert history to ChatMessage format
-      const chatHistory: ChatMessage[] = history.map((m) => ({
-        role: m.role,
-        content: m.content,
-      }));
+      // Build conversation prompt with history
+      let conversationPrompt = systemPrompt + '\n\n';
+      for (const h of history) {
+        conversationPrompt += `${h.role === 'user' ? 'User' : 'Assistant'}: ${h.content}\n\n`;
+      }
+      conversationPrompt += `User: ${message}\n\nAssistant:`;
 
-      // Call OpenAI
+      // Call Gemini
       const client = this.getClient();
-      const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-        { role: 'system', content: systemPrompt },
-        ...chatHistory.map((m) => ({
-          role: m.role as 'user' | 'assistant',
-          content: m.content,
-        })),
-        { role: 'user', content: message },
-      ];
-
-      const completion = await client.chat.completions.create({
-        model: 'gpt-4o',
-        messages,
-        temperature: 0.7,
-        max_tokens: 1024,
+      const model = client.getGenerativeModel({
+        model: 'gemini-1.5-flash',
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 1024,
+        },
       });
 
-      const responseText = completion.choices[0]?.message?.content || '';
+      const result = await model.generateContent(conversationPrompt);
+      const response = result.response;
+      const responseText = response.text() || '';
 
       // Parse actions from response
       const { cleanMessage, actions } = this.parseActionsFromResponse(responseText);
@@ -415,21 +415,19 @@ ${partnerSection}
 ${focusDay ? `Focus suggestions for Day ${focusDay}.` : ''}`;
 
       const client = this.getClient();
-      const completion = await client.chat.completions.create({
-        model: 'gpt-4o',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          {
-            role: 'user',
-            content: 'Generate smart stop suggestions for this trip. Return JSON only.',
-          },
-        ],
-        temperature: 0.7,
-        max_tokens: 1024,
-        response_format: { type: 'json_object' },
+      const model = client.getGenerativeModel({
+        model: 'gemini-1.5-flash',
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 1024,
+          responseMimeType: 'application/json',
+        },
       });
 
-      const responseText = completion.choices[0]?.message?.content || '{}';
+      const prompt = `${systemPrompt}\n\nGenerate smart stop suggestions for this trip. Return JSON only.`;
+      const result = await model.generateContent(prompt);
+      const response = result.response;
+      const responseText = response.text() || '{}';
       const parsed = JSON.parse(responseText);
 
       // Map suggestions with IDs

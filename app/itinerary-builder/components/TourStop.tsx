@@ -68,7 +68,7 @@ export const TourStop: React.FC<TourStopProps> = ({
                 <label className="text-sm font-semibold text-gray-700">Arrival:</label>
                 <input
                   type="time"
-                  value={stop.arrival_time}
+                  value={stop.arrival_time || ''}
                   onChange={(e) => onTimeChange('arrival_time', e.target.value)}
                   onFocus={handleFocusSelect}
                   className="px-3 py-1 border-2 border-gray-300 rounded-lg text-blue-600 font-bold text-lg focus:border-blue-500"
@@ -79,7 +79,7 @@ export const TourStop: React.FC<TourStopProps> = ({
                 <label className="text-sm font-semibold text-gray-700">Departure:</label>
                 <input
                   type="time"
-                  value={stop.departure_time}
+                  value={stop.departure_time || ''}
                   onChange={(e) => onTimeChange('departure_time', e.target.value)}
                   onFocus={handleFocusSelect}
                   className="px-3 py-1 border-2 border-gray-300 rounded-lg text-blue-600 font-bold text-lg focus:border-blue-500"
@@ -123,7 +123,7 @@ export const TourStop: React.FC<TourStopProps> = ({
             </button>
             <input
               type="number"
-              value={stop.duration_minutes}
+              value={stop.duration_minutes ?? ''}
               onChange={(e) => onDurationChange(parseInt(e.target.value) || 0)}
               className="w-20 px-3 py-2 border-2 border-gray-300 rounded-lg text-center text-gray-900 font-bold text-lg focus:border-blue-500"
             />
@@ -158,7 +158,7 @@ export const TourStop: React.FC<TourStopProps> = ({
             </button>
             <input
               type="number"
-              value={stop.drive_time_to_next_minutes}
+              value={stop.drive_time_to_next_minutes ?? ''}
               onChange={(e) => onDriveTimeChange(parseInt(e.target.value) || 0)}
               className="w-20 px-3 py-2 border-2 border-gray-300 rounded-lg text-center text-gray-900 font-bold text-lg focus:border-blue-500"
             />
@@ -220,7 +220,7 @@ export const TourStop: React.FC<TourStopProps> = ({
           {(stop.special_notes !== undefined && stop.special_notes !== null) && (
             <div className="mt-2">
               <textarea
-                value={stop.special_notes}
+                value={stop.special_notes || ''}
                 onChange={(e) => onNotesChange(e.target.value)}
                 onFocus={handleFocusSelect}
                 rows={3}

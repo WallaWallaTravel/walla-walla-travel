@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { logger } from '@/lib/logger';
+import { withErrorHandling, RouteContext } from '@/lib/api/middleware/error-handler';
 import { updatePricingTier } from '@/lib/pricing/pricing-service';
 
 export const runtime = 'nodejs';
@@ -14,34 +14,24 @@ export const dynamic = 'force-dynamic';
  * PATCH /api/admin/pricing/tiers/[id]
  * Update a pricing tier
  */
-export async function PATCH(
+export const PATCH = withErrorHandling(async (
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id: idStr } = await params;
-    const id = parseInt(idStr);
-    const body = await request.json();
-    const { changeReason, ...updates } = body;
-    
-    await updatePricingTier(
-      id,
-      updates,
-      1, // TODO: Get actual user ID from session
-      changeReason || 'Admin update'
-    );
-    
-    return NextResponse.json({
-      success: true,
-      message: 'Pricing tier updated'
-    });
-  } catch (error) {
-    logger.error('Update Pricing Tier API error', { error });
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json(
-      { error: 'Failed to update pricing tier', details: message },
-      { status: 500 }
-    );
-  }
-}
+  context: RouteContext<{ id: string }>
+) => {
+  const { id: idStr } = await context.params;
+  const id = parseInt(idStr);
+  const body = await request.json();
+  const { changeReason, ...updates } = body;
 
+  await updatePricingTier(
+    id,
+    updates,
+    1, // TODO: Get actual user ID from session
+    changeReason || 'Admin update'
+  );
+
+  return NextResponse.json({
+    success: true,
+    message: 'Pricing tier updated'
+  });
+});

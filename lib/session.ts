@@ -3,9 +3,18 @@ import { SignJWT, jwtVerify } from 'jose'
 import { query } from './db'
 import { logger } from '@/lib/logger'
 
-const secret = new TextEncoder().encode(
-  process.env.SESSION_SECRET || 'development-secret-key-change-in-production'
-)
+function getSessionSecret(): Uint8Array {
+  const sessionSecret = process.env.SESSION_SECRET;
+  if (!sessionSecret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('SESSION_SECRET environment variable is required in production');
+    }
+    console.warn('[session.ts] WARNING: Using development session secret');
+    return new TextEncoder().encode('dev-only-session-secret-not-for-production');
+  }
+  return new TextEncoder().encode(sessionSecret);
+}
+const secret = getSessionSecret();
 
 export interface SessionData {
   userId: string

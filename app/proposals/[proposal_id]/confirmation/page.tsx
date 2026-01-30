@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { logger } from '@/lib/logger';
+import { getBrandEmailConfig, type BrandEmailConfig } from '@/lib/email-brands';
+import BrandFooter from '@/components/BrandFooter';
 
 interface Proposal {
   id: number;
@@ -12,6 +14,7 @@ interface Proposal {
   final_total: number;
   deposit_amount: number;
   accepted_at: string;
+  brand_id?: number;
 }
 
 export default function ProposalConfirmation({ params }: { params: Promise<{ proposal_id: string }> }) {
@@ -22,6 +25,7 @@ export default function ProposalConfirmation({ params }: { params: Promise<{ pro
   }, [params]);
   const [proposal, setProposal] = useState<Proposal | null>(null);
   const [loading, setLoading] = useState(true);
+  const [brandConfig, setBrandConfig] = useState<BrandEmailConfig>(getBrandEmailConfig(1));
 
   useEffect(() => {
     if (proposal_id) {
@@ -35,6 +39,11 @@ export default function ProposalConfirmation({ params }: { params: Promise<{ pro
       const response = await fetch(`/api/proposals/${proposal_id}`);
       const data = await response.json();
       setProposal(data.data);
+
+      // Set brand-specific config
+      if (data.data?.brand_id) {
+        setBrandConfig(getBrandEmailConfig(data.data.brand_id));
+      }
     } catch (err) {
       logger.error('Error fetching proposal', { error: err });
     } finally {
@@ -91,7 +100,7 @@ export default function ProposalConfirmation({ params }: { params: Promise<{ pro
             Proposal Accepted! 🎉
           </h1>
           <p className="text-xl text-gray-600 mb-8">
-            Thank you for booking with Walla Walla Travel
+            Thank you for booking with {brandConfig.name}
           </p>
 
           {/* Confirmation Details */}
@@ -161,15 +170,20 @@ export default function ProposalConfirmation({ params }: { params: Promise<{ pro
             </Link>
           </div>
 
-          {/* Contact Info */}
+          {/* Contact Info - Brand Specific */}
           <div className="mt-8 pt-8 border-t text-center">
             <p className="text-gray-600 mb-2">Questions? We&apos;re here to help!</p>
             <p className="text-gray-900 font-semibold">
-              📞 (509) 200-8000 | 📧 info@wallawalla.travel
+              📞 {brandConfig.phone} | 📧 {brandConfig.reply_to}
+            </p>
+            <p className="text-gray-500 text-sm mt-2">
+              {brandConfig.name} • {brandConfig.website}
             </p>
           </div>
         </div>
       </main>
+
+      <BrandFooter brandId={proposal?.brand_id} />
     </div>
   );
 }

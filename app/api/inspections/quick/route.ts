@@ -1,25 +1,24 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { logger } from '@/lib/logger'
-import { withAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper'
-import { query } from '@/lib/db'
+import { NextRequest, NextResponse } from 'next/server';
+import { withErrorHandling, UnauthorizedError } from '@/lib/api/middleware/error-handler';
+import { withAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper';
+import { query } from '@/lib/db';
 
 /**
  * POST /api/inspections/quick
  * Quick inspection endpoint for emergency use
+ *
+ * Uses withErrorHandling middleware for consistent error handling
  */
-export const POST = withAuth(async (request: NextRequest, session: AuthSession) => {
-  try {
-    const body = await request.json()
-    const { vehicleId, startMileage, type, inspectionData } = body
+export const POST = withErrorHandling(
+  withAuth(async (request: NextRequest, session: AuthSession) => {
+    const body = await request.json();
+    const { vehicleId, startMileage, type, inspectionData } = body;
 
     // Get user ID from session (AuthSession provides userId directly)
-    const userId = session.userId
+    const userId = session.userId;
 
     if (!userId) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'User not authenticated' 
-      }, { status: 401 })
+      throw new UnauthorizedError('User not authenticated');
     }
 
     // Save inspection to database using correct column names
@@ -46,9 +45,9 @@ export const POST = withAuth(async (request: NextRequest, session: AuthSession) 
           signature: inspectionData?.signature ? 'captured' : null
         })
       ]
-    )
+    );
 
-    const inspection = result.rows[0]
+    const inspection = result.rows[0];
 
     return NextResponse.json({
       success: true,
@@ -59,13 +58,6 @@ export const POST = withAuth(async (request: NextRequest, session: AuthSession) 
         mileage: startMileage
       },
       message: 'Inspection saved successfully'
-    })
-  } catch (error) {
-    logger.error('Quick inspection error', { error })
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to save inspection',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 })
-  }
-})
+    });
+  })
+);

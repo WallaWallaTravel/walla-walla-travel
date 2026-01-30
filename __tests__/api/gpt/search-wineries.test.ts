@@ -51,7 +51,7 @@ describe('GET /api/gpt/search-wineries', () => {
       });
 
       const request = new NextRequest('http://localhost:3000/api/gpt/search-wineries');
-      const response = await GET(request);
+      const response = await GET(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -85,7 +85,7 @@ describe('GET /api/gpt/search-wineries', () => {
       const request = new NextRequest(
         'http://localhost:3000/api/gpt/search-wineries?query=cabernet'
       );
-      const response = await GET(request);
+      const response = await GET(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -121,7 +121,7 @@ describe('GET /api/gpt/search-wineries', () => {
       const request = new NextRequest(
         'http://localhost:3000/api/gpt/search-wineries?style=red'
       );
-      const response = await GET(request);
+      const response = await GET(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -134,7 +134,7 @@ describe('GET /api/gpt/search-wineries', () => {
       const request = new NextRequest(
         'http://localhost:3000/api/gpt/search-wineries?limit=5'
       );
-      await GET(request);
+      await GET(request, { params: Promise.resolve({}) });
 
       expect(mockQuery).toHaveBeenCalledWith(
         expect.stringContaining('LIMIT'),
@@ -148,7 +148,7 @@ describe('GET /api/gpt/search-wineries', () => {
       const request = new NextRequest(
         'http://localhost:3000/api/gpt/search-wineries?limit=100'
       );
-      await GET(request);
+      await GET(request, { params: Promise.resolve({}) });
 
       expect(mockQuery).toHaveBeenCalledWith(
         expect.any(String),
@@ -164,7 +164,7 @@ describe('GET /api/gpt/search-wineries', () => {
       const request = new NextRequest(
         'http://localhost:3000/api/gpt/search-wineries?query=nonexistent'
       );
-      const response = await GET(request);
+      const response = await GET(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -179,7 +179,7 @@ describe('GET /api/gpt/search-wineries', () => {
       mockQuery.mockRejectedValueOnce(new Error('Database connection failed'));
 
       const request = new NextRequest('http://localhost:3000/api/gpt/search-wineries');
-      const response = await GET(request);
+      const response = await GET(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       expect(response.status).toBe(500);
@@ -194,7 +194,7 @@ describe('GET /api/gpt/search-wineries', () => {
       mockQuery.mockResolvedValueOnce({ rows: [] });
 
       const request = new NextRequest('http://localhost:3000/api/gpt/search-wineries');
-      const response = await GET(request);
+      const response = await GET(request, { params: Promise.resolve({}) });
 
       expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*');
       expect(response.headers.get('Access-Control-Allow-Methods')).toContain('GET');
@@ -224,7 +224,7 @@ describe('GET /api/gpt/search-wineries', () => {
       });
 
       const request = new NextRequest('http://localhost:3000/api/gpt/search-wineries');
-      const response = await GET(request);
+      const response = await GET(request, { params: Promise.resolve({}) });
       const data = await response.json();
 
       // Should provide defaults for null values

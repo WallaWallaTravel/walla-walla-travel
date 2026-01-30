@@ -2,10 +2,10 @@
  * Winery AI Service
  *
  * Specialized AI service for winery discovery and filter extraction.
- * Uses OpenAI GPT-4o to convert natural language queries into structured filters.
+ * Uses Google Gemini to convert natural language queries into structured filters.
  */
 
-import OpenAI from 'openai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { BaseService } from './base.service';
 
 // ============================================================================
@@ -161,18 +161,18 @@ class WineryAIServiceClass extends BaseService {
     return 'WineryAIService';
   }
 
-  private client: OpenAI | null = null;
+  private client: GoogleGenerativeAI | null = null;
 
   /**
-   * Get or create OpenAI client
+   * Get or create Gemini client
    */
-  private getClient(): OpenAI {
+  private getClient(): GoogleGenerativeAI {
     if (!this.client) {
-      const apiKey = process.env.OPENAI_API_KEY;
+      const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) {
-        throw new Error('OPENAI_API_KEY environment variable is not set');
+        throw new Error('GEMINI_API_KEY environment variable is not set');
       }
-      this.client = new OpenAI({ apiKey });
+      this.client = new GoogleGenerativeAI(apiKey);
     }
     return this.client;
   }
@@ -183,33 +183,33 @@ class WineryAIServiceClass extends BaseService {
   async extractFilters(query: string): Promise<WineryRecommendation> {
     try {
       const client = this.getClient();
-
-      const completion = await client.chat.completions.create({
-        model: 'gpt-4o',
-        messages: [
-          { role: 'system', content: FILTER_EXTRACTION_PROMPT },
-          { role: 'user', content: query },
-        ],
-        temperature: 0.3, // Lower temperature for more consistent extraction
-        max_tokens: 1000,
-        response_format: { type: 'json_object' },
+      const model = client.getGenerativeModel({
+        model: 'gemini-1.5-flash',
+        generationConfig: {
+          temperature: 0.3, // Lower temperature for more consistent extraction
+          maxOutputTokens: 1000,
+          responseMimeType: 'application/json',
+        },
       });
 
-      const responseText = completion.choices[0]?.message?.content || '{}';
+      const prompt = `${FILTER_EXTRACTION_PROMPT}\n\nUser Query: ${query}`;
+      const result = await model.generateContent(prompt);
+      const response = result.response;
+      const responseText = response.text() || '{}';
 
       this.log('Filter extraction completed', {
         queryLength: query.length,
         responseLength: responseText.length,
       });
 
-      const result = JSON.parse(responseText) as WineryRecommendation;
+      const parsed = JSON.parse(responseText) as WineryRecommendation;
 
       // Ensure required fields
       return {
-        filters: result.filters || {},
-        explanation: result.explanation || 'Processing your request...',
-        followUpSuggestions: result.followUpSuggestions || [],
-        confidence: result.confidence || 'medium',
+        filters: parsed.filters || {},
+        explanation: parsed.explanation || 'Processing your request...',
+        followUpSuggestions: parsed.followUpSuggestions || [],
+        confidence: parsed.confidence || 'medium',
       };
     } catch (error: unknown) {
       this.handleError(error, 'extractFilters');
@@ -250,6 +250,14 @@ class WineryAIServiceClass extends BaseService {
 
     try {
       const client = this.getClient();
+      const model = client.getGenerativeModel({
+        model: 'gemini-1.5-flash', // Fast and cost-effective for explanations
+        generationConfig: {
+          temperature: 0.5,
+          maxOutputTokens: 2000,
+          responseMimeType: 'application/json',
+        },
+      });
 
       // Prepare winery data for the prompt
       const wineryData = wineries.slice(0, 10).map((w) => ({
@@ -263,25 +271,15 @@ class WineryAIServiceClass extends BaseService {
         region: w.region,
       }));
 
-      const completion = await client.chat.completions.create({
-        model: 'gpt-4o-mini', // Use mini for explanations (cost-effective)
-        messages: [
-          { role: 'system', content: MATCH_EXPLANATION_PROMPT },
-          {
-            role: 'user',
-            content: JSON.stringify({
-              originalQuery: query,
-              appliedFilters: filters,
-              matchingWineries: wineryData,
-            }),
-          },
-        ],
-        temperature: 0.5,
-        max_tokens: 2000,
-        response_format: { type: 'json_object' },
-      });
+      const prompt = `${MATCH_EXPLANATION_PROMPT}\n\n${JSON.stringify({
+        originalQuery: query,
+        appliedFilters: filters,
+        matchingWineries: wineryData,
+      })}`;
 
-      const responseText = completion.choices[0]?.message?.content || '{"explanations":[]}';
+      const result = await model.generateContent(prompt);
+      const response = result.response;
+      const responseText = response.text() || '{"explanations":[]}';
 
       this.log('Match explanations generated', {
         wineryCount: wineries.length,
@@ -319,6 +317,13 @@ class WineryAIServiceClass extends BaseService {
   }> {
     try {
       const client = this.getClient();
+      const model = client.getGenerativeModel({
+        model: 'gemini-1.5-flash',
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 1000,
+        },
+      });
 
       const systemPrompt = `You are a friendly wine country concierge for Walla Walla. Help visitors discover wineries based on their preferences.
 
@@ -338,23 +343,16 @@ If you think the user wants to search or refine their search, include a JSON blo
 
 Always end with a helpful question or suggestion.`;
 
-      const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-        { role: 'system', content: systemPrompt },
-        ...history.map((h) => ({
-          role: h.role as 'user' | 'assistant',
-          content: h.content,
-        })),
-        { role: 'user', content: message },
-      ];
+      // Build conversation as a single prompt with history
+      let conversationPrompt = systemPrompt + '\n\n';
+      for (const h of history) {
+        conversationPrompt += `${h.role === 'user' ? 'User' : 'Assistant'}: ${h.content}\n\n`;
+      }
+      conversationPrompt += `User: ${message}\n\nAssistant:`;
 
-      const completion = await client.chat.completions.create({
-        model: 'gpt-4o',
-        messages,
-        temperature: 0.7,
-        max_tokens: 1000,
-      });
-
-      const responseText = completion.choices[0]?.message?.content || '';
+      const result = await model.generateContent(conversationPrompt);
+      const response = result.response;
+      const responseText = response.text() || '';
 
       // Try to extract filter suggestions
       let suggestedFilters: WineryFilters | undefined;

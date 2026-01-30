@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
+import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -8,7 +9,7 @@ export const dynamic = 'force-dynamic';
  * GET /api/distance
  * Calculate travel time and distance between two addresses using Google Distance Matrix API
  */
-export async function GET(request: NextRequest) {
+export const GET = withRateLimit(rateLimiters.maps)(async (request: NextRequest) => {
   try {
     const { searchParams } = request.nextUrl;
     const origin = searchParams.get('origin');
@@ -68,7 +69,7 @@ export async function GET(request: NextRequest) {
       estimated: true
     });
   }
-}
+});
 
 
 

@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getSessionFromRequest } from './lib/auth/session';
-import { logger } from '@/lib/logger';
 
 // Correlation ID header name
 const CORRELATION_ID_HEADER = 'x-request-id';
@@ -277,7 +276,7 @@ export async function middleware(request: NextRequest) {
     if (process.env.NODE_ENV === 'production') {
       return addSecurityHeaders(new NextResponse('Not Found', { status: 404 }));
     }
-    logger.debug('Test route accessed', { pathname });
+    // Test route accessed in development
   }
 
   // Add security headers to all responses

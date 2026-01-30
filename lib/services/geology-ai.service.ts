@@ -17,7 +17,7 @@ import {
   GeologyChatResponse,
   GeologyContext,
 } from '@/lib/types/geology';
-import OpenAI from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
 
 // ============================================================================
 // Types
@@ -96,15 +96,15 @@ class GeologyAIService extends BaseService {
     return 'GeologyAIService';
   }
 
-  private client: OpenAI | null = null;
+  private client: Anthropic | null = null;
 
-  private getClient(): OpenAI {
+  private getClient(): Anthropic {
     if (!this.client) {
-      const apiKey = process.env.OPENAI_API_KEY;
+      const apiKey = process.env.ANTHROPIC_API_KEY;
       if (!apiKey) {
-        throw new Error('OPENAI_API_KEY environment variable is not set');
+        throw new Error('ANTHROPIC_API_KEY environment variable is not set');
       }
-      this.client = new OpenAI({ apiKey });
+      this.client = new Anthropic({ apiKey });
     }
     return this.client;
   }
@@ -140,31 +140,31 @@ ${contextPrompt}
 
 ${topicContext ? `\n## CURRENT PAGE CONTEXT\n${topicContext}` : ''}`;
 
-      // Convert history to ChatMessage format
-      const chatHistory: ChatMessage[] = history.map((m) => ({
-        role: m.role,
+      // Convert history to Anthropic message format
+      const chatHistory: Anthropic.MessageParam[] = history.map((m) => ({
+        role: m.role === 'assistant' ? 'assistant' : 'user',
         content: m.content,
       }));
 
-      // Call OpenAI
+      // Call Anthropic
       const client = this.getClient();
-      const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-        { role: 'system', content: systemPrompt },
-        ...chatHistory.map((m) => ({
-          role: m.role as 'user' | 'assistant',
-          content: m.content,
-        })),
+      const messages: Anthropic.MessageParam[] = [
+        ...chatHistory,
         { role: 'user', content: message },
       ];
 
-      const completion = await client.chat.completions.create({
-        model: 'gpt-4o',
+      const completion = await client.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        system: systemPrompt,
         messages,
-        temperature: 0.7,
         max_tokens: 1024,
       });
 
-      const responseText = completion.choices[0]?.message?.content || '';
+      // Extract text from response
+      const responseText = completion.content
+        .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+        .map((block) => block.text)
+        .join('');
 
       // Parse suggestions from response
       const { cleanMessage, suggestedTopics, suggestedSites, suggestedTours } =

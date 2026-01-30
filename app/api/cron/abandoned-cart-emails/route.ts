@@ -17,95 +17,86 @@ import { NextRequest, NextResponse } from 'next/server';
 import { bookingTrackingService } from '@/lib/services/booking-tracking.service';
 import { Resend } from 'resend';
 import { logger } from '@/lib/logger';
+import { withErrorHandling, UnauthorizedError } from '@/lib/api/middleware/error-handler';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+export const GET = withErrorHandling<unknown>(async (request: NextRequest) => {
   // Verify cron secret
   const authHeader = request.headers.get('authorization');
   const cronSecret = process.env.CRON_SECRET;
 
   if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    throw new UnauthorizedError('Unauthorized');
   }
 
-  try {
-    // Get abandoned bookings ready for follow-up
-    const abandoned = await bookingTrackingService.getAbandonedForFollowUp({
-      minAgeMinutes: 30,  // Wait 30 min before emailing
-      maxAgeHours: 48,    // Don't email if older than 48 hours
-      limit: 20           // Process in batches
-    });
+  // Get abandoned bookings ready for follow-up
+  const abandoned = await bookingTrackingService.getAbandonedForFollowUp({
+    minAgeMinutes: 30,  // Wait 30 min before emailing
+    maxAgeHours: 48,    // Don't email if older than 48 hours
+    limit: 20           // Process in batches
+  });
 
-    if (abandoned.length === 0) {
-      return NextResponse.json({
-        success: true,
-        message: 'No abandoned carts to process',
-        processed: 0
-      });
-    }
-
-    let sent = 0;
-    let failed = 0;
-
-    for (const attempt of abandoned) {
-      if (!attempt.email) continue;
-
-      try {
-        // Build personalized email
-        const tourDateStr = attempt.tour_date
-          ? new Date(attempt.tour_date).toLocaleDateString('en-US', {
-              weekday: 'long',
-              month: 'long',
-              day: 'numeric'
-            })
-          : null;
-
-        const emailResult = await resend.emails.send({
-          from: 'Walla Walla Travel <bookings@wallawalla.travel>',
-          to: attempt.email,
-          subject: tourDateStr
-            ? `Still planning your ${tourDateStr} wine tour?`
-            : 'Complete your Walla Walla wine tour booking',
-          html: generateAbandonedCartEmail({
-            name: attempt.name,
-            tourDate: tourDateStr,
-            partySize: attempt.party_size,
-            step: attempt.step_reached
-          })
-        });
-
-        // Mark as sent
-        await bookingTrackingService.markFollowUpSent(
-          attempt.id,
-          emailResult.data?.id || 'unknown'
-        );
-        sent++;
-
-      } catch (emailError) {
-        const message = emailError instanceof Error ? emailError.message : 'Unknown error';
-        logger.error('Failed to send abandoned cart email', { email: attempt.email, error: message });
-        failed++;
-      }
-    }
-
+  if (abandoned.length === 0) {
     return NextResponse.json({
       success: true,
-      message: `Processed ${abandoned.length} abandoned carts`,
-      sent,
-      failed,
-      timestamp: new Date().toISOString()
+      message: 'No abandoned carts to process',
+      processed: 0
     });
-
-  } catch (error) {
-    logger.error('Abandoned cart cron error', { error });
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json(
-      { error: 'Processing failed', details: message },
-      { status: 500 }
-    );
   }
-}
+
+  let sent = 0;
+  let failed = 0;
+
+  for (const attempt of abandoned) {
+    if (!attempt.email) continue;
+
+    try {
+      // Build personalized email
+      const tourDateStr = attempt.tour_date
+        ? new Date(attempt.tour_date).toLocaleDateString('en-US', {
+            weekday: 'long',
+            month: 'long',
+            day: 'numeric'
+          })
+        : null;
+
+      const emailResult = await resend.emails.send({
+        from: 'Walla Walla Travel <bookings@wallawalla.travel>',
+        to: attempt.email,
+        subject: tourDateStr
+          ? `Still planning your ${tourDateStr} wine tour?`
+          : 'Complete your Walla Walla wine tour booking',
+        html: generateAbandonedCartEmail({
+          name: attempt.name,
+          tourDate: tourDateStr,
+          partySize: attempt.party_size,
+          step: attempt.step_reached
+        })
+      });
+
+      // Mark as sent
+      await bookingTrackingService.markFollowUpSent(
+        attempt.id,
+        emailResult.data?.id || 'unknown'
+      );
+      sent++;
+
+    } catch (emailError) {
+      const message = emailError instanceof Error ? emailError.message : 'Unknown error';
+      logger.error('Failed to send abandoned cart email', { email: attempt.email, error: message });
+      failed++;
+    }
+  }
+
+  return NextResponse.json({
+    success: true,
+    message: `Processed ${abandoned.length} abandoned carts`,
+    sent,
+    failed,
+    timestamp: new Date().toISOString()
+  });
+});
 
 export const POST = GET;
 

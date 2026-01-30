@@ -91,7 +91,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
  * PATCH /api/admin/consultations
  * Update consultation (assign staff, change status)
  */
-export const PATCH = withErrorHandling(async (request: NextRequest) => {
+export const PATCH = withErrorHandling<unknown>(async (request: NextRequest) => {
   const session = await getSessionFromRequest(request);
 
   if (!session || session.user.role !== 'admin') {

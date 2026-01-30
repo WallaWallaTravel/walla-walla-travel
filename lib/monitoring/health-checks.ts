@@ -57,28 +57,28 @@ export async function checkDatabase(): Promise<HealthCheckResult> {
 }
 
 /**
- * Check OpenAI API connectivity
+ * Check Anthropic API connectivity
  */
-export async function checkOpenAI(): Promise<HealthCheckResult> {
+export async function checkAnthropic(): Promise<HealthCheckResult> {
   const startTime = Date.now();
-  
-  if (!process.env.OPENAI_API_KEY) {
+
+  if (!process.env.ANTHROPIC_API_KEY) {
     return {
       checkType: 'external_service',
-      checkName: 'OpenAI API',
+      checkName: 'Anthropic API',
       status: 'down',
       responseTimeMs: 0,
       errorMessage: 'API key not configured'
     };
   }
-  
+
   try {
     // Light check - just verify the key format
-    const keyValid = process.env.OPENAI_API_KEY.startsWith('sk-');
-    
+    const keyValid = process.env.ANTHROPIC_API_KEY.startsWith('sk-ant-');
+
     return {
       checkType: 'external_service',
-      checkName: 'OpenAI API',
+      checkName: 'Anthropic API',
       status: keyValid ? 'healthy' : 'down',
       responseTimeMs: Date.now() - startTime,
       metadata: { keyConfigured: true }
@@ -86,12 +86,38 @@ export async function checkOpenAI(): Promise<HealthCheckResult> {
   } catch (error: unknown) {
     return {
       checkType: 'external_service',
-      checkName: 'OpenAI API',
+      checkName: 'Anthropic API',
       status: 'down',
       responseTimeMs: Date.now() - startTime,
       errorMessage: error instanceof Error ? error.message : String(error)
     };
   }
+}
+
+/**
+ * Check Gemini API connectivity
+ */
+export async function checkGemini(): Promise<HealthCheckResult> {
+  const startTime = Date.now();
+
+  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY;
+  if (!apiKey) {
+    return {
+      checkType: 'external_service',
+      checkName: 'Gemini API',
+      status: 'down',
+      responseTimeMs: 0,
+      errorMessage: 'API key not configured'
+    };
+  }
+
+  return {
+    checkType: 'external_service',
+    checkName: 'Gemini API',
+    status: 'healthy',
+    responseTimeMs: Date.now() - startTime,
+    metadata: { keyConfigured: true }
+  };
 }
 
 /**
@@ -265,12 +291,13 @@ export async function runAllHealthChecks(): Promise<HealthCheckResult[]> {
   const checks = await Promise.all([
     checkDatabase(),
     checkDatabaseTables(),
-    checkOpenAI(),
+    checkAnthropic(),
+    checkGemini(),
     checkDeepgram(),
     checkErrorRate(),
     checkAPIPerformance()
   ]);
-  
+
   return checks;
 }
 

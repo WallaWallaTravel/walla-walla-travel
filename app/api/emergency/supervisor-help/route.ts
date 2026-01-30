@@ -1,9 +1,10 @@
 import { NextRequest } from 'next/server';
-import { successResponse, errorResponse, requireAuth } from '@/app/api/utils';
+import { successResponse, requireAuth } from '@/app/api/utils';
 import { query } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
 import { COMPANY_INFO } from '@/lib/config/company';
+import { withErrorHandling, UnauthorizedError, BadRequestError, ValidationError } from '@/lib/api/middleware/error-handler';
 
 // Request body schema
 const SupervisorHelpSchema = z.object({
@@ -15,65 +16,64 @@ const SupervisorHelpSchema = z.object({
  * POST /api/emergency/supervisor-help
  * Sends emergency notification to supervisor when driver needs vehicle assignment help
  *
- * ✅ REFACTORED: Zod validation + structured logging
+ * Refactored: Zod validation + structured logging + withErrorHandling
  */
-export async function POST(request: NextRequest) {
+export const POST = withErrorHandling(async (request: NextRequest) => {
+  const authResult = await requireAuth();
+  if ('status' in authResult) {
+    throw new UnauthorizedError('Unauthorized');
+  }
+  const session = authResult;
+
+  // Parse and validate request body
+  let rawBody: unknown;
   try {
-    const authResult = await requireAuth();
-    if ('status' in authResult) {
-      return errorResponse('Unauthorized', 401);
-    }
-    const session = authResult;
+    rawBody = await request.json();
+  } catch {
+    throw new BadRequestError('Invalid JSON in request body');
+  }
 
-    // Parse and validate request body
-    let rawBody: unknown;
-    try {
-      rawBody = await request.json();
-    } catch {
-      return errorResponse('Invalid JSON in request body', 400);
-    }
+  const parseResult = SupervisorHelpSchema.safeParse(rawBody);
+  if (!parseResult.success) {
+    throw new ValidationError('Validation failed: ' + parseResult.error.issues.map((e) => e.message).join(', '));
+  }
 
-    const parseResult = SupervisorHelpSchema.safeParse(rawBody);
-    if (!parseResult.success) {
-      return errorResponse('Validation failed: ' + parseResult.error.issues.map((e) => e.message).join(', '), 400);
-    }
+  const { reason, timeCardId } = parseResult.data;
 
-    const { reason, timeCardId } = parseResult.data;
+  const driverId = parseInt(session.userId);
+  const timestamp = new Date().toLocaleString('en-US', {
+    timeZone: 'America/Los_Angeles',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  });
 
-    const driverId = parseInt(session.userId);
-    const timestamp = new Date().toLocaleString('en-US', {
-      timeZone: 'America/Los_Angeles',
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
+  // Get driver info
+  const driverResult = await query(
+    'SELECT name, email FROM users WHERE id = $1',
+    [driverId]
+  );
+  const driver = driverResult.rows[0];
 
-    // Get driver info
-    const driverResult = await query(
-      'SELECT name, email FROM users WHERE id = $1',
-      [driverId]
-    );
-    const driver = driverResult.rows[0];
+  // Supervisor contact info from company config
+  const supervisorPhone = process.env.SUPERVISOR_PHONE || COMPANY_INFO.phone.dialable;
+  const supervisorEmail = process.env.SUPERVISOR_EMAIL || 'evcritchlow@gmail.com';
 
-    // Supervisor contact info from company config
-    const supervisorPhone = process.env.SUPERVISOR_PHONE || COMPANY_INFO.phone.dialable;
-    const supervisorEmail = process.env.SUPERVISOR_EMAIL || 'evcritchlow@gmail.com';
+  // Deep link for assigning vehicle
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://wallawalla.travel';
+  const deepLink = timeCardId
+    ? `${baseUrl}/admin/assign-vehicle?driver=${driverId}&timecard=${timeCardId}`
+    : `${baseUrl}/workflow`;
 
-    // Deep link for assigning vehicle
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://wallawalla.travel';
-    const deepLink = timeCardId
-      ? `${baseUrl}/admin/assign-vehicle?driver=${driverId}&timecard=${timeCardId}`
-      : `${baseUrl}/workflow`;
+  // SMS Message
+  const smsMessage = `🚨 URGENT: ${driver.name} needs vehicle assignment\nTime: ${timestamp}\nReason: ${reason || 'No vehicle assigned for pre-trip inspection'}\nLink: ${deepLink}`;
 
-    // SMS Message
-    const smsMessage = `🚨 URGENT: ${driver.name} needs vehicle assignment\nTime: ${timestamp}\nReason: ${reason || 'No vehicle assigned for pre-trip inspection'}\nLink: ${deepLink}`;
-
-    // Email Message
-    const _emailSubject = `Vehicle Assignment Needed - ${driver.name}`;
-    const _emailBody = `
+  // Email Message
+  const _emailSubject = `Vehicle Assignment Needed - ${driver.name}`;
+  const _emailBody = `
 URGENT: Vehicle Assignment Request
 
 Driver: ${driver.name}
@@ -88,58 +88,50 @@ ${deepLink}
 
 Time Card ID: ${timeCardId || 'N/A'}
 Driver ID: ${driverId}
-    `.trim();
+  `.trim();
 
-    // Log the notification (in production, this would call Twilio/SendGrid)
-    logger.info('Emergency supervisor notification', {
-      driverName: driver.name,
-      driverEmail: driver.email,
-      timestamp,
-      reason: reason || 'No vehicle assigned',
-      supervisorPhone,
-      supervisorEmail,
-      deepLink,
-    });
+  // Log the notification (in production, this would call Twilio/SendGrid)
+  logger.info('Emergency supervisor notification', {
+    driverName: driver.name,
+    driverEmail: driver.email,
+    timestamp,
+    reason: reason || 'No vehicle assigned',
+    supervisorPhone,
+    supervisorEmail,
+    deepLink,
+  });
 
-    // NOTE: In production, integrate with Twilio for SMS and SendGrid/AWS SES for email
-    // For now, notifications are logged and stored in database
+  // NOTE: In production, integrate with Twilio for SMS and SendGrid/AWS SES for email
+  // For now, notifications are logged and stored in database
 
-    // Log to database for tracking
-    try {
-      await query(`
-        INSERT INTO notifications (
-          driver_id,
-          type,
-          message,
-          sent_to,
-          created_at
-        ) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
-      `, [
-        driverId,
-        'emergency_vehicle_help',
-        smsMessage,
-        supervisorEmail
-      ]);
-    } catch (dbError) {
-      // Non-critical error, continue
-      logger.warn('Failed to log notification to database', { error: dbError });
-    }
-
-    return successResponse({
-      success: true,
-      message: 'Help request sent to supervisor!',
-      sentTo: {
-        sms: supervisorPhone,
-        email: supervisorEmail
-      },
-      timestamp
-    }, 'Notification sent successfully');
-
-  } catch (error) {
-    logger.error('Emergency notification error', { error });
-    return errorResponse(
-      'Failed to send help request. Please call supervisor directly.',
-      500
-    );
+  // Log to database for tracking
+  try {
+    await query(`
+      INSERT INTO notifications (
+        driver_id,
+        type,
+        message,
+        sent_to,
+        created_at
+      ) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
+    `, [
+      driverId,
+      'emergency_vehicle_help',
+      smsMessage,
+      supervisorEmail
+    ]);
+  } catch (dbError) {
+    // Non-critical error, continue
+    logger.warn('Failed to log notification to database', { error: dbError });
   }
-}
+
+  return successResponse({
+    success: true,
+    message: 'Help request sent to supervisor!',
+    sentTo: {
+      sms: supervisorPhone,
+      email: supervisorEmail
+    },
+    timestamp
+  }, 'Notification sent successfully');
+});

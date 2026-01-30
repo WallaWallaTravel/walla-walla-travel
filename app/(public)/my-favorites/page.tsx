@@ -10,7 +10,11 @@ import { AddToTripButton } from '@/components/wineries/AddToTripButton';
 
 export default function MyFavoritesPage() {
   const router = useRouter();
-  const { favorites, removeFavorite, clearFavorites, isHydrated } = useFavoritesStore();
+  // Use individual selectors to prevent infinite re-renders
+  const favorites = useFavoritesStore(state => state.favorites);
+  const removeFavorite = useFavoritesStore(state => state.removeFavorite);
+  const clearFavorites = useFavoritesStore(state => state.clearFavorites);
+  const isHydrated = useFavoritesStore(state => state.isHydrated);
   const { createTrip, addStop, requestHandoff } = useTripPlannerStore();
   const [isCreatingConsultation, setIsCreatingConsultation] = useState(false);
 

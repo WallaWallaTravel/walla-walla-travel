@@ -51,7 +51,7 @@ export const BRAND_EMAIL_CONFIGS: Record<number, BrandEmailConfig> = {
     primary_color: '#6B1F3A', // Deep burgundy
     secondary_color: '#3A3633', // Charcoal
     
-    tagline: 'The Art of Collective Refinement',
+    tagline: 'Mastering the art of group wine touring',
     closing: 'Anticipating the challenge with appropriate enthusiasm',
     signature: 'The Herding Cats Team'
   },
@@ -68,7 +68,7 @@ export const BRAND_EMAIL_CONFIGS: Record<number, BrandEmailConfig> = {
     primary_color: '#1e40af', // Professional blue
     secondary_color: '#1e3a8a', // Dark blue
     
-    tagline: 'Excellence in corporate transportation',
+    tagline: 'Premium wine tours & private transportation',
     closing: 'We appreciate your business',
     signature: 'NW Touring & Concierge'
   }

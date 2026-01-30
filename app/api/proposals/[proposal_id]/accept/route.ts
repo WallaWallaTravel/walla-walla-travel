@@ -124,7 +124,7 @@ export const POST = withRateLimit(rateLimiters.api)(
       ]
     );
   } catch (logError) {
-    logger.error('Failed to log proposal acceptance:', logError);
+    logger.error('Failed to log proposal acceptance:', { error: logError instanceof Error ? logError.message : String(logError) });
   }
 
   // Create Stripe payment intent for deposit (using brand-specific Stripe account)
