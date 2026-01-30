@@ -1,14 +1,9 @@
 // AI Model Manager
 // Manages active model configuration and provider instantiation
 
-import { Pool } from 'pg'
+import { pool } from '@/lib/db'
 import { createAIProvider, getProviderAPIKey, ProviderType } from './providers/factory'
 import { AIModelProvider } from './providers/base'
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
-})
 
 export interface AISettingsRow {
   id: number

@@ -17,10 +17,12 @@ import { createMockQueryResult } from '../../__tests__/test-utils';
 import { createMockVehicle, createMockAvailabilityBlock } from '../../__tests__/factories';
 
 // Mock the db module
-jest.mock('../../db', () => ({
-  query: jest.fn(),
+const mockQuery = jest.fn();
+
+jest.mock('@/lib/db', () => ({
+  query: (...args: unknown[]) => mockQuery(...args),
   pool: {
-    query: jest.fn(),
+    query: (...args: unknown[]) => mockQuery(...args),
     connect: jest.fn(),
     end: jest.fn(),
     on: jest.fn(),
@@ -28,7 +30,7 @@ jest.mock('../../db', () => ({
 }));
 
 // Mock logger
-jest.mock('../../logger', () => ({
+jest.mock('@/lib/logger', () => ({
   logger: {
     info: jest.fn(),
     warn: jest.fn(),
@@ -39,13 +41,12 @@ jest.mock('../../logger', () => ({
 
 describe('VehicleAvailabilityService', () => {
   let service: VehicleAvailabilityService;
-  let mockQuery: jest.Mock;
 
   beforeEach(() => {
+    // Use mockReset to clear both call history AND queued return values
+    // This prevents mock leakage between tests, especially with fire-and-forget async calls
+    mockQuery.mockReset();
     service = new VehicleAvailabilityService();
-    mockQuery = require('../../db').query as jest.Mock;
-    mockQuery.mockClear();
-    jest.clearAllMocks();
   });
 
   // ============================================================================
@@ -326,18 +327,21 @@ describe('VehicleAvailabilityService', () => {
     });
 
     it('should report all vehicles booked when conflicts exist', async () => {
+      // Query flow: cleanup (async) → blackouts → vehicles → batch conflicts → all conflicts
+      // Note: cleanup is fire-and-forget but still consumes a mock
       mockQuery
-        .mockResolvedValueOnce(createMockQueryResult([])) // cleanup
+        .mockResolvedValueOnce(createMockQueryResult([], 0)) // cleanup (DELETE returns rowCount)
         .mockResolvedValueOnce(createMockQueryResult([])) // blackouts
         .mockResolvedValueOnce(createMockQueryResult([
           createMockVehicle({ id: 1, capacity: 14 })
         ])) // vehicles
         .mockResolvedValueOnce(createMockQueryResult([
-          createMockAvailabilityBlock({ block_type: 'booking' })
-        ])) // conflicts for vehicle 1
+          // Batch conflicts query - must include vehicle_id to match the vehicle
+          createMockAvailabilityBlock({ vehicle_id: 1, block_type: 'booking' })
+        ])) // conflicts for vehicle 1 (via batch query)
         .mockResolvedValueOnce(createMockQueryResult([
           { vehicle_name: 'Mercedes Sprinter', block_type: 'booking' }
-        ])); // all conflicts
+        ])); // all conflicts query (for error message)
 
       const result = await service.checkAvailability({
         date: testDate,

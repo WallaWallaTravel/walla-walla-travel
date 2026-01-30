@@ -15,6 +15,7 @@
 
 import { logger } from '@/lib/logger';
 import { redis } from '@/lib/redis';
+import { generateSecureString } from '@/lib/utils';
 
 /**
  * Queue operation types
@@ -89,7 +90,7 @@ class QueueService {
       priority?: number;
     }
   ): Promise<string> {
-    const id = `op_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    const id = `op_${Date.now()}_${generateSecureString(7)}`;
     const maxAttempts = options?.maxAttempts ?? QUEUE_CONFIG.maxAttempts;
 
     // Store in Redis for fast access (with database backup)

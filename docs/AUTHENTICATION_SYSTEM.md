@@ -4,6 +4,8 @@
 
 Secure JWT-based authentication system with role-based access control (RBAC) for Walla Walla Travel operations portal.
 
+> **See also**: [AUTH_ARCHITECTURE.md](./AUTH_ARCHITECTURE.md) for architectural decisions and rationale behind design choices.
+
 ---
 
 ## Architecture
@@ -78,7 +80,7 @@ The following routes require a valid session:
 ## Session Management
 
 ### Session Cookie
-- **Name**: `ww_session`
+- **Name**: `session`
 - **Duration**: 7 days
 - **Attributes**:
   - `httpOnly: true` - Not accessible via JavaScript

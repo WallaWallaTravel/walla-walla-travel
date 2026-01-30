@@ -1,7 +1,7 @@
 'use server'
 
 import { query } from '@/lib/db'
-import { getCurrentUser } from '@/lib/session'
+import { getSession } from '@/lib/auth/session'
 import { logger } from '@/lib/logger'
 
 interface InspectionData {
@@ -19,7 +19,7 @@ interface InspectionData {
  */
 export async function getActiveTimeCardId(): Promise<number | null> {
   try {
-    const user = await getCurrentUser()
+    const user = (await getSession())?.user ?? null
     if (!user) return null
 
     const result = await query(`
@@ -40,7 +40,7 @@ export async function getActiveTimeCardId(): Promise<number | null> {
 export async function savePreTripInspection(data: InspectionData) {
   try {
     // Get current user
-    const user = await getCurrentUser()
+    const user = (await getSession())?.user ?? null
     if (!user) {
       return { success: false, error: 'Not authenticated' }
     }
@@ -110,8 +110,8 @@ export async function saveInspectionAction(data: {
 }) {
   try {
     // Get current user
-    const user = await getCurrentUser()
-    if (!user || user.id !== data.driverId) {
+    const user = (await getSession())?.user ?? null
+    if (!user || String(user.id) !== data.driverId) {
       return { success: false, error: 'Not authenticated' }
     }
 
@@ -172,7 +172,7 @@ export async function saveInspectionAction(data: {
 export async function savePostTripInspection(data: InspectionData & { signature?: string }) {
   try {
     // Get current user
-    const user = await getCurrentUser()
+    const user = (await getSession())?.user ?? null
     if (!user) {
       return { success: false, error: 'Not authenticated' }
     }

@@ -8,6 +8,8 @@
 import { BaseService } from '../base.service';
 import { customerService } from '../customer.service';
 import { pricingService } from '../pricing.service';
+import { crmSyncService } from '../crm-sync.service';
+import { crmTaskAutomationService } from '../crm-task-automation.service';
 import {
   Booking,
   Winery,
@@ -129,7 +131,12 @@ export class BookingCreationService extends BaseService {
         data.booking.tour_date
       );
 
-      // 10. Fetch winery details for response
+      // 10. Sync booking to CRM deal (async, don't block transaction)
+      this.syncBookingToCrm(bookingId, customer, bookingNumber, data, pricing).catch(err => {
+        this.log('CRM sync failed (non-blocking)', { error: err, bookingId });
+      });
+
+      // 11. Fetch winery details for response
       const wineryDetails = await this.getWineryDetailsForBooking(bookingId);
 
       this.log(`Full booking created: ${bookingNumber} for ${customer.email}`);
@@ -244,6 +251,58 @@ export class BookingCreationService extends BaseService {
       slug: w.slug,
       visit_order: w.visit_order,
     }));
+  }
+
+  /**
+   * Sync booking to CRM (creates deal and auto-tasks)
+   * Called asynchronously after booking creation
+   */
+  private async syncBookingToCrm(
+    bookingId: number,
+    customer: { id: number; name: string; email: string },
+    bookingNumber: string,
+    data: CreateFullBookingData,
+    pricing: { totalPrice: number }
+  ): Promise<void> {
+    try {
+      // 1. Create/update CRM deal for the booking
+      const deal = await crmSyncService.syncBookingToDeal({
+        bookingId,
+        customerId: customer.id,
+        customerEmail: customer.email,
+        customerName: customer.name,
+        tourDate: data.booking.tour_date,
+        partySize: data.booking.party_size,
+        totalAmount: pricing.totalPrice,
+        status: 'confirmed',
+        brand: 'nw_touring', // Default brand for direct bookings
+      });
+
+      // 2. Log booking created activity
+      if (deal) {
+        await crmSyncService.logActivity({
+          contactId: deal.contact_id,
+          dealId: deal.id,
+          activityType: 'system',
+          subject: `Booking created: ${bookingNumber}`,
+          body: `New booking for ${data.booking.party_size} guests on ${data.booking.tour_date}`,
+        });
+
+        // 3. Create auto-task for pre-tour info (7 days before)
+        await crmTaskAutomationService.onBookingCreated({
+          contactId: deal.contact_id,
+          dealId: deal.id,
+          bookingNumber,
+          customerName: customer.name,
+          tourDate: new Date(data.booking.tour_date),
+        });
+      }
+
+      this.log('CRM sync completed for booking', { bookingId, dealId: deal?.id });
+    } catch (error) {
+      // Log but don't throw - CRM sync failure shouldn't break booking
+      this.log('CRM sync error', { error, bookingId });
+    }
   }
 }
 

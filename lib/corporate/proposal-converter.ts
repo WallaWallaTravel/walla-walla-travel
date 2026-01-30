@@ -5,6 +5,7 @@
 
 import { query } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { generateSecureString } from '@/lib/utils';
 import { ParsedItinerary } from './itinerary-parser';
 
 interface ServiceItem {
@@ -51,7 +52,7 @@ export async function convertCorporateRequestToProposal(
   const aiData: ParsedItinerary = request.ai_extracted_data;
   
   // Generate proposal number
-  const proposalNumber = `PROP-${Date.now()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+  const proposalNumber = `PROP-${Date.now()}-${generateSecureString(4, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789')}`;
   
   // Build service items from AI data
   const serviceItems: ServiceItem[] = [];

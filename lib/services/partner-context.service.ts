@@ -274,6 +274,21 @@ class PartnerContextService extends BaseService {
     return result;
   }
 
+  // Wineries that exist in data but CANNOT be visited - for answering questions only
+  private static readonly NO_PUBLIC_ACCESS_WINERIES = [
+    'leonetti cellar',
+    'cayuse vineyards',
+    'cayuse',
+    'quilceda creek',
+  ];
+
+  /**
+   * Check if a winery has no public access
+   */
+  private isNoPublicAccess(wineryName: string): boolean {
+    return PartnerContextService.NO_PUBLIC_ACCESS_WINERIES.includes(wineryName.toLowerCase());
+  }
+
   /**
    * Format partner context for AI system prompt
    */
@@ -289,11 +304,12 @@ class PartnerContextService extends BaseService {
 
     // Wineries section
     if (context.wineries.length > 0) {
-      sections.push('### Wineries\n');
+      sections.push('### Wineries YOU CAN RECOMMEND\n');
 
-      // Partners first with full details
-      const partners = context.wineries.filter(w => w.is_partner);
-      const nonPartners = context.wineries.filter(w => !w.is_partner);
+      // Partners first with full details - EXCLUDE no-public-access wineries
+      const partners = context.wineries.filter(w => w.is_partner && !this.isNoPublicAccess(w.name));
+      const nonPartners = context.wineries.filter(w => !w.is_partner && !this.isNoPublicAccess(w.name));
+      const noAccessWineries = context.wineries.filter(w => this.isNoPublicAccess(w.name));
 
       for (const winery of partners) {
         sections.push(this.formatWinery(winery, true));
@@ -304,6 +320,16 @@ class PartnerContextService extends BaseService {
         sections.push('\n*Other wineries (basic info only):*');
         for (const winery of nonPartners.slice(0, 5)) { // Limit non-partners
           sections.push(this.formatWinery(winery, false));
+        }
+      }
+
+      // List wineries that CANNOT be recommended - for reference only when asked
+      if (noAccessWineries.length > 0) {
+        sections.push('\n### ⛔ WINERIES WITH NO PUBLIC ACCESS (DO NOT RECOMMEND)');
+        sections.push('These wineries are legendary but NOT open to the public. NEVER recommend them.');
+        sections.push('Only mention them if a user specifically asks, then explain they cannot visit.\n');
+        for (const winery of noAccessWineries) {
+          sections.push(`- **${winery.name}** - NO PUBLIC TASTINGS (allocation/mailing list only)`);
         }
       }
     }

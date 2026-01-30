@@ -9,6 +9,8 @@ import { parseItineraryFile } from '@/lib/corporate/itinerary-parser';
 import { sendCorporateRequestNotification } from '@/lib/email';
 import { logger } from '@/lib/logger';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
+import { generateSecureString } from '@/lib/utils';
+import { crmSyncService } from '@/lib/services/crm-sync.service';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -32,7 +34,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   const preferredDates = formData.get('preferredDates') as string;
 
   // Generate request number
-  const requestNumber = `CR-${Date.now()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+  const requestNumber = `CR-${Date.now()}-${generateSecureString(4, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789')}`;
 
   // Handle file uploads
   interface UploadedFile {
@@ -126,6 +128,22 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     estimated_attendees: partySize,
   }).catch(err => {
     logger.error('Failed to send corporate request admin notification', { error: err });
+  });
+
+  // Sync to CRM (create contact + deal)
+  crmSyncService.syncCorporateRequest({
+    requestId: corporateRequest.id,
+    companyName,
+    contactName,
+    contactEmail,
+    contactPhone,
+    eventType,
+    partySize,
+    preferredDates: parsedDates,
+    budgetRange,
+    brand: 'walla_walla_travel',
+  }).catch(err => {
+    logger.error('Failed to sync corporate request to CRM', { error: err, requestId: corporateRequest.id });
   });
 
   return NextResponse.json({

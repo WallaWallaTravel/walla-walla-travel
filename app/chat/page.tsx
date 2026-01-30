@@ -6,6 +6,7 @@ import { DateChip } from '@/components/chat/DateChip';
 import { GroupSizeChip } from '@/components/chat/GroupSizeChip';
 import { OccasionChip } from '@/components/chat/OccasionChip';
 import { PaceChip } from '@/components/chat/PaceChip';
+import { logger } from '@/lib/logger';
 
 // ============================================================================
 // Types
@@ -242,7 +243,7 @@ export default function ChatPage() {
           setIsReturningVisitor(sessionData.isReturningVisitor && sessionData.session.message_count > 0);
         }
       } catch (error) {
-        console.error('Failed to load session:', error);
+        logger.error('Failed to load chat session', { error });
         // Fall back to localStorage
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
@@ -279,7 +280,7 @@ export default function ChatPage() {
         }),
       });
     } catch (error) {
-      console.error('Failed to update trip state:', error);
+      logger.error('Failed to update trip state in chat', { error, sessionId });
     }
   }, [sessionId]);
 
@@ -298,7 +299,7 @@ export default function ChatPage() {
         }),
       });
     } catch (error) {
-      console.error('Failed to save message:', error);
+      logger.error('Failed to save chat message', { error, sessionId });
     }
   }, [sessionId]);
 

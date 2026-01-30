@@ -1,13 +1,8 @@
 // Analytics Event Tracking
 // Generic event tracking system for all user interactions
 
-import { Pool } from 'pg'
+import { pool } from '@/lib/db'
 import { logger } from '@/lib/logger'
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
-})
 
 export type EventType =
   | 'travel_guide_visit'

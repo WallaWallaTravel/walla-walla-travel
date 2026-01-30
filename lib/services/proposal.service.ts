@@ -1,10 +1,15 @@
 /**
- * Proposal Service
+ * Proposal Service (Template-Based)
  *
  * @module lib/services/proposal.service
- * @description Manages wine tour proposals from creation through conversion to booking.
- * Handles proposal lifecycle including drafting, sending, client responses (accept/decline/counter),
- * and conversion to confirmed bookings.
+ * @description Manages wine tour proposals with template-based creation using proposal-utils.
+ * This is the template-focused proposal service that uses default text from the database.
+ *
+ * @see proposal-service.ts for the comprehensive proposal management service with
+ * Zod validation, status transitions, and statistics.
+ *
+ * @deprecated Consider using proposal-service.ts for new features. This service
+ * is maintained for backwards compatibility with existing template-based workflows.
  *
  * @requires BaseService - Database operations abstraction
  * @requires proposal-utils - Proposal number generation, pricing calculations, validation
@@ -13,7 +18,7 @@
  * ```typescript
  * import { proposalService } from '@/lib/services/proposal.service';
  *
- * // Create a new proposal
+ * // Create a new proposal with templates
  * const proposal = await proposalService.create({
  *   client_name: 'Jane Smith',
  *   client_email: 'jane@example.com',
@@ -21,12 +26,6 @@
  *   party_size: 6,
  *   wineries: [{ winery_id: 1, duration: 90 }]
  * });
- *
- * // Send proposal to client
- * await proposalService.send(proposal.id);
- *
- * // Convert accepted proposal to booking
- * const booking = await proposalService.convertToBooking(proposal.id);
  * ```
  */
 

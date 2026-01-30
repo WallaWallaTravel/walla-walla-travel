@@ -10,6 +10,8 @@ import { sendReservationConfirmation } from '@/lib/email';
 import { validateBody, ConfirmReservationPaymentSchema } from '@/lib/api/middleware/validation';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
+import { crmSyncService } from '@/lib/services/crm-sync.service';
+import { logger } from '@/lib/logger';
 
 export const POST = withCSRF(
   withRateLimit(rateLimiters.payment)(
@@ -69,6 +71,15 @@ export const POST = withCSRF(
       customer.email,
       reservation.brand_id
     );
+
+    // Log payment to CRM (async, don't block)
+    crmSyncService.logPaymentReceived(
+      customer.id,
+      parseFloat(reservation.deposit_amount),
+      'Deposit'
+    ).catch(err => {
+      logger.error('Failed to log payment to CRM', { error: err, customerId: customer.id });
+    });
   }
 
   return NextResponse.json({

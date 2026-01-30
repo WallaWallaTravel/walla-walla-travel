@@ -9,6 +9,8 @@
 
 import { z } from 'zod';
 import { BaseService } from './base.service';
+import { crmSyncService } from './crm-sync.service';
+import { crmTaskAutomationService } from './crm-task-automation.service';
 
 // ============================================================================
 // Types
@@ -152,7 +154,102 @@ export class ExperienceRequestService extends BaseService {
 
     this.log(`Experience request created: ${result.request_number}`);
 
+    // Sync to CRM (async, don't block experience request creation)
+    this.syncExperienceRequestToCrm(result).catch((err) => {
+      this.log('Failed to sync experience request to CRM', { error: err, requestId: result.id });
+    });
+
     return result;
+  }
+
+  /**
+   * Sync experience request to CRM
+   * Creates a CRM contact and a lead task for follow-up
+   */
+  private async syncExperienceRequestToCrm(request: ExperienceRequest): Promise<void> {
+    // Find or create CRM contact
+    let contact = await crmSyncService['queryOne']<{ id: number; email: string }>(
+      `SELECT id, email FROM crm_contacts WHERE LOWER(email) = LOWER($1)`,
+      [request.contact_email]
+    );
+
+    if (!contact) {
+      // Create new contact as a lead
+      contact = await crmSyncService['queryOne']<{ id: number; email: string }>(
+        `INSERT INTO crm_contacts (
+          email, name, phone, contact_type, lifecycle_stage,
+          lead_temperature, source, source_detail,
+          notes, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, 'lead', 'warm', 'experience_request', $5, $6, NOW(), NOW())
+        RETURNING id, email`,
+        [
+          request.contact_email,
+          request.contact_name,
+          request.contact_phone || null,
+          request.experience_type === 'corporate' ? 'corporate' : 'individual',
+          request.source,
+          `Experience Request ${request.request_number}: ${request.party_size} guests for ${request.preferred_date}`,
+        ]
+      );
+
+      this.log('Created CRM contact for experience request', { contactId: contact?.id, requestId: request.id });
+    } else {
+      // Update existing contact's notes
+      await crmSyncService['query'](
+        `UPDATE crm_contacts
+         SET notes = COALESCE(notes || E'\\n\\n---\\n', '') || $1,
+             last_contacted_at = NOW(),
+             updated_at = NOW()
+         WHERE id = $2`,
+        [
+          `[Experience Request ${request.request_number}] ${request.party_size} guests for ${request.preferred_date}`,
+          contact.id,
+        ]
+      );
+
+      this.log('Updated existing CRM contact for experience request', { contactId: contact.id, requestId: request.id });
+    }
+
+    if (!contact) return;
+
+    // Log the request as a CRM activity
+    await crmSyncService.logActivity({
+      contactId: contact.id,
+      activityType: 'note',
+      subject: `Experience Request: ${request.experience_type}`,
+      body: this.formatExperienceRequestDetails(request),
+    });
+
+    // Create follow-up task for the new lead
+    await crmTaskAutomationService.onNewLead({
+      contactId: contact.id,
+      customerName: request.contact_name,
+      source: 'experience_request',
+    });
+  }
+
+  /**
+   * Format experience request details for CRM activity body
+   */
+  private formatExperienceRequestDetails(request: ExperienceRequest): string {
+    const lines = [
+      `Request #: ${request.request_number}`,
+      `Name: ${request.contact_name}`,
+      `Email: ${request.contact_email}`,
+    ];
+
+    if (request.contact_phone) lines.push(`Phone: ${request.contact_phone}`);
+    lines.push(`Party Size: ${request.party_size}`);
+    lines.push(`Date: ${request.preferred_date}`);
+    if (request.alternate_date) lines.push(`Alt Date: ${request.alternate_date}`);
+    if (request.preferred_time) lines.push(`Time: ${request.preferred_time}`);
+    lines.push(`Type: ${request.experience_type}`);
+    if (request.occasion) lines.push(`Occasion: ${request.occasion}`);
+    if (request.special_requests) lines.push(`Special Requests: ${request.special_requests}`);
+    if (request.dietary_restrictions) lines.push(`Dietary: ${request.dietary_restrictions}`);
+    lines.push(`Source: ${request.source}`);
+
+    return lines.join('\n');
   }
 
   /**

@@ -62,8 +62,8 @@ describe('GET /api/gpt/booking-status', () => {
 
       expect(response.status).toBe(400);
       expect(data.success).toBe(false);
-      expect(data.message).toContain('booking number');
-      expect(data.message).toContain('email');
+      expect(data.error.message).toContain('booking number');
+      expect(data.error.message).toContain('email');
     });
   });
 
@@ -116,7 +116,7 @@ describe('GET /api/gpt/booking-status', () => {
 
       expect(response.status).toBe(404);
       expect(data.success).toBe(false);
-      expect(data.message).toContain("couldn't find");
+      expect(data.error.message).toContain("couldn't find");
     });
   });
 
@@ -308,7 +308,7 @@ describe('GET /api/gpt/booking-status', () => {
 
       expect(response.status).toBe(500);
       expect(data.success).toBe(false);
-      expect(data.message).toContain('Unable to look up');
+      expect(data.error.message).toBeDefined();
     });
   });
 

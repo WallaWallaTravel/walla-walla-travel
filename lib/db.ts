@@ -58,14 +58,48 @@ pool.on('error', (err) => {
 // Monitor for pool exhaustion
 pool.on('acquire', () => {
   const { totalCount, idleCount, waitingCount } = pool;
-  if (waitingCount > 0) {
-    logger.warn('Database pool has waiting connections', {
+  const maxConnections = getDatabaseConfig().max || DB_DEFAULTS.MAX_CONNECTIONS;
+  const utilizationPercent = Math.round((totalCount / maxConnections) * 100);
+
+  // Track high utilization
+  if (utilizationPercent >= 80) {
+    logger.warn('Database pool high utilization', {
+      utilization: `${utilizationPercent}%`,
       total: totalCount,
+      max: maxConnections,
       idle: idleCount,
       waiting: waitingCount,
     });
   }
+
+  // Alert on waiting connections (pool exhaustion)
+  if (waitingCount > 0) {
+    logger.error('Database pool exhaustion - connections waiting', {
+      total: totalCount,
+      idle: idleCount,
+      waiting: waitingCount,
+      max: maxConnections,
+    });
+  }
 });
+
+// Periodic pool health logging (every 5 minutes in production)
+if (process.env.NODE_ENV === 'production') {
+  setInterval(() => {
+    const stats = getPoolStats();
+    if (stats.totalQueries > 0) {
+      logger.info('Database pool health report', {
+        queries: stats.totalQueries,
+        slowQueries: stats.slowQueries,
+        errors: stats.errors,
+        avgQueryTimeMs: stats.avgQueryTimeMs,
+        poolTotal: stats.pool.total,
+        poolIdle: stats.pool.idle,
+        poolWaiting: stats.pool.waiting,
+      });
+    }
+  }, 5 * 60 * 1000); // 5 minutes
+}
 
 /**
  * Update pool statistics with new query time

@@ -17,6 +17,27 @@
  *   logger.debug('Cache hit', { key: 'user:123' });
  */
 
+import { generateSecureString } from '@/lib/utils';
+
+// Lazy-load Sentry to avoid circular deps and enable tree-shaking
+let sentryCapture: ((error: Error, context?: Record<string, unknown>) => void) | null = null;
+
+// Initialize Sentry integration (server-side only)
+if (typeof window === 'undefined' && process.env.NEXT_PUBLIC_SENTRY_DSN) {
+  try {
+    // Dynamic import to avoid bundling issues
+    const Sentry = require('@sentry/nextjs');
+    sentryCapture = (error: Error, context?: Record<string, unknown>) => {
+      if (context) {
+        Sentry.setContext('error_context', context);
+      }
+      Sentry.captureException(error);
+    };
+  } catch {
+    // Sentry not available
+  }
+}
+
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 interface LogContext {
@@ -203,7 +224,21 @@ export const logger = {
 
   error(message: string, context?: LogContext): void {
     if (shouldLog('error')) {
-      outputLog(createLogEntry('error', message, context));
+      const entry = createLogEntry('error', message, context);
+      outputLog(entry);
+
+      // Auto-capture to Sentry in production
+      if (sentryCapture && process.env.NODE_ENV === 'production') {
+        const error = context?.error;
+        if (error instanceof Error) {
+          sentryCapture(error, { message, ...entry.context });
+        } else if (error) {
+          sentryCapture(new Error(message), { originalError: String(error), ...entry.context });
+        } else {
+          // Log message-only errors to Sentry as well
+          sentryCapture(new Error(message), entry.context);
+        }
+      }
     }
   },
 
@@ -276,7 +311,7 @@ export function logError(
   error?: unknown,
   context?: LogContext
 ): string {
-  const errorId = `ERR-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+  const errorId = `ERR-${Date.now()}-${generateSecureString(5, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789')}`;
   logger.error(`[${source}] ${message}`, {
     errorId,
     ...context,

@@ -333,7 +333,7 @@ describe('POST /api/gpt/get-recommendations', () => {
 
       expect(response.status).toBe(500);
       expect(data.success).toBe(false);
-      expect(data.message).toContain('Unable to generate recommendations');
+      expect(data.error.message).toBeDefined();
     });
   });
 

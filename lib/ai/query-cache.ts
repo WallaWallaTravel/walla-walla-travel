@@ -1,13 +1,8 @@
 // Query Cache Service
 // Caches AI responses to reduce API costs and improve response time
 
-import { Pool } from 'pg'
+import { pool } from '@/lib/db'
 import crypto from 'crypto'
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
-})
 
 export interface CachedQuery {
   id: number

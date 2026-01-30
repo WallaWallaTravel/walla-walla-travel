@@ -7,6 +7,7 @@ import { ServiceWorkerProvider } from "@/components/ServiceWorkerProvider";
 import { OfflineSyncIndicator } from "@/components/OfflineSyncIndicator";
 import { AnnouncementBannerWrapper } from "@/components/ui/AnnouncementBannerWrapper";
 import { OrganizationJsonLd } from "@/components/seo/OrganizationJsonLd";
+import ErrorBoundary from "@/components/ui/ErrorBoundary";
 
 // GA4 Measurement ID - set in environment variables
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
@@ -106,15 +107,17 @@ export default function RootLayout({
         >
           Skip to main content
         </a>
-        <ServiceWorkerProvider>
-          <AnnouncementBannerWrapper position="top" />
-          <main id="main-content">
-            {children}
-          </main>
-          <OfflineSyncIndicator />
-          <ConditionalNavSpacer />
-          <ConditionalNavigation />
-        </ServiceWorkerProvider>
+        <ErrorBoundary name="RootLayout">
+          <ServiceWorkerProvider>
+            <AnnouncementBannerWrapper position="top" />
+            <main id="main-content">
+              {children}
+            </main>
+            <OfflineSyncIndicator />
+            <ConditionalNavSpacer />
+            <ConditionalNavigation />
+          </ServiceWorkerProvider>
+        </ErrorBoundary>
 
         {/* Google Analytics 4 */}
         {GA_MEASUREMENT_ID && (

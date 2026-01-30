@@ -7,6 +7,8 @@
 
 import { BaseService } from '../base.service';
 import { NotFoundError, ConflictError, ValidationError } from '@/lib/api/middleware/error-handler';
+import { crmSyncService } from '../crm-sync.service';
+import { crmTaskAutomationService } from '../crm-task-automation.service';
 import {
   Booking,
   BookingStatus,
@@ -322,7 +324,40 @@ export class BookingCoreService extends BaseService {
 
     this.log(`Booking status updated: ${id} from ${booking.status} to ${status}`);
 
+    // Sync status change to CRM (async, don't block)
+    this.syncStatusChangeToCrm(id, status, booking).catch(err => {
+      this.log('CRM status sync failed (non-blocking)', { error: err, bookingId: id });
+    });
+
     return updated;
+  }
+
+  /**
+   * Sync booking status change to CRM
+   */
+  private async syncStatusChangeToCrm(
+    bookingId: number,
+    newStatus: BookingStatus,
+    booking: Booking
+  ): Promise<void> {
+    try {
+      // Update CRM deal stage based on booking status
+      await crmSyncService.onBookingStatusChange(bookingId, newStatus);
+
+      // If tour completed, create post-tour follow-up task
+      if (newStatus === 'completed') {
+        const contact = await crmSyncService.getOrCreateContactForCustomer(booking.customer_id);
+        if (contact) {
+          await crmTaskAutomationService.onTourCompleted({
+            contactId: contact.id,
+            bookingNumber: booking.booking_number,
+            customerName: booking.customer_name || contact.name,
+          });
+        }
+      }
+    } catch (error) {
+      this.log('CRM status sync error', { error, bookingId, newStatus });
+    }
   }
 
   /**
@@ -386,6 +421,11 @@ export class BookingCoreService extends BaseService {
         JSON.stringify({ reason, cancelled_at: new Date() }),
       ]
     );
+
+    // Sync cancellation to CRM (async, don't block)
+    crmSyncService.onBookingStatusChange(id, 'cancelled').catch(err => {
+      this.log('CRM cancellation sync failed (non-blocking)', { error: err, bookingId: id });
+    });
 
     this.log(`Booking ${id} cancelled successfully`);
 

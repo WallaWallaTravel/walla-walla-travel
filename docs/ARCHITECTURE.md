@@ -218,7 +218,7 @@ export class MyService extends BaseService {
 - `updateCustomer(id, data)` - Update details
 
 #### 4. ReservationService
-**Location:** `lib/services/reservation-service.ts`
+**Location:** `lib/services/reservation.service.ts`
 
 **Methods:**
 - `createReservation(data)` - Reserve & Refine flow
@@ -226,7 +226,7 @@ export class MyService extends BaseService {
 - `updateStatus(id, status)` - Update
 
 #### 5. PaymentService
-**Location:** `lib/services/payment-service.ts`
+**Location:** `lib/services/payment.service.ts`
 
 **Methods:**
 - `createPayment(data)` - Record payment

@@ -110,23 +110,32 @@ const getApiUrl = () => {
   return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 };
 
-// Generic API request function
+// Default request timeout in milliseconds
+const DEFAULT_TIMEOUT_MS = 30000; // 30 seconds
+
+// Generic API request function with AbortController timeout
 async function apiRequest<T = unknown>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit & { timeout?: number } = {}
 ): Promise<ApiClientResponse<T>> {
+  const { timeout = DEFAULT_TIMEOUT_MS, ...fetchOptions } = options;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+
   try {
     const url = `${getApiUrl()}/api${endpoint}`;
-    
+
     const response = await fetch(url, {
-      ...options,
+      ...fetchOptions,
       headers: {
         'Content-Type': 'application/json',
-        ...options.headers,
+        ...fetchOptions.headers,
       },
       credentials: 'include', // Include cookies
+      signal: controller.signal,
     });
 
+    clearTimeout(timeoutId);
     const data = await response.json();
 
     if (!response.ok || !data.success) {
@@ -141,6 +150,17 @@ async function apiRequest<T = unknown>(
       data: data.data,
     };
   } catch (error) {
+    clearTimeout(timeoutId);
+
+    // Handle timeout-specific error
+    if (error instanceof Error && error.name === 'AbortError') {
+      logger.error(`API request timeout for ${endpoint}`, { timeout });
+      return {
+        success: false,
+        error: `Request timeout after ${timeout}ms`,
+      };
+    }
+
     logger.error(`API request error for ${endpoint}`, { error });
     return {
       success: false,

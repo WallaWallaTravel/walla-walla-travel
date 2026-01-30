@@ -88,7 +88,7 @@ export async function apiGet<T = unknown>(
 /**
  * POST request with automatic JSON parsing
  */
-export async function apiPost<T = unknown, B = Record<string, unknown>>(
+export async function apiPost<T = unknown, B = object>(
   url: string,
   body: B,
   options: FetchOptions = {}
@@ -130,7 +130,7 @@ export async function apiPost<T = unknown, B = Record<string, unknown>>(
 /**
  * PUT request with automatic JSON parsing
  */
-export async function apiPut<T = unknown, B = Record<string, unknown>>(
+export async function apiPut<T = unknown, B = object>(
   url: string,
   body: B,
   options: FetchOptions = {}
@@ -162,6 +162,48 @@ export async function apiPut<T = unknown, B = Record<string, unknown>>(
     };
   } catch (error) {
     logger.error('PUT request failed', { url, error });
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
+ * PATCH request with automatic JSON parsing
+ */
+export async function apiPatch<T = unknown, B = object>(
+  url: string,
+  body: B,
+  options: FetchOptions = {}
+): Promise<ApiResponse<T>> {
+  try {
+    const response = await fetchWithTimeout(url, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      body: JSON.stringify(body),
+      ...options,
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: data.error || `HTTP ${response.status}: ${response.statusText}`,
+      };
+    }
+
+    return {
+      success: true,
+      data: data.data || data,
+      message: data.message,
+    };
+  } catch (error) {
+    logger.error('PATCH request failed', { url, error });
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',

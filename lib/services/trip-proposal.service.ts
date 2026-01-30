@@ -8,6 +8,9 @@
 
 import { BaseService } from './base.service';
 import { NotFoundError, ValidationError } from '@/lib/api/middleware/error-handler';
+import { generateSecureString } from '@/lib/utils';
+import { crmSyncService } from './crm-sync.service';
+import { crmTaskAutomationService } from './crm-task-automation.service';
 import {
   TripProposal,
   TripProposalFull,
@@ -118,6 +121,23 @@ export class TripProposalService extends BaseService {
         proposalId: proposal.id,
         proposalNumber: proposal.proposal_number,
       });
+
+      // Sync to CRM (async, don't block proposal creation)
+      if (validated.customer_email) {
+        crmSyncService.syncTripProposalToDeal({
+          proposalId: proposal.id,
+          proposalNumber: proposal.proposal_number,
+          customerName: validated.customer_name,
+          customerEmail: validated.customer_email,
+          customerPhone: validated.customer_phone,
+          customerCompany: validated.customer_company,
+          partySize: validated.party_size,
+          startDate: validated.start_date,
+          brand: validated.brand_id ? undefined : 'walla_walla_travel', // Use brand if set
+        }).catch((err) => {
+          this.log('Failed to sync trip proposal to CRM', { error: err, proposalId: proposal.id });
+        });
+      }
 
       return proposal;
     });
@@ -625,6 +645,41 @@ export class TripProposalService extends BaseService {
       metadata,
     });
 
+    // Sync status change to CRM (async, don't block)
+    crmSyncService.onTripProposalStatusChange(
+      id,
+      proposal.proposal_number,
+      status,
+      { customerEmail: proposal.customer_email || undefined, amount: proposal.total }
+    ).then(async () => {
+      // Create follow-up task on proposal sent
+      if (status === 'sent' && proposal.customer_email) {
+        const crmData = await crmSyncService.getCrmDataForTripProposal(id);
+        if (crmData.contact) {
+          await crmTaskAutomationService.onProposalSent({
+            contactId: crmData.contact.id,
+            dealId: crmData.deal?.id,
+            proposalNumber: proposal.proposal_number,
+            customerName: proposal.customer_name,
+          });
+        }
+      }
+      // Create follow-up task on proposal viewed
+      if (status === 'viewed' && proposal.customer_email) {
+        const crmData = await crmSyncService.getCrmDataForTripProposal(id);
+        if (crmData.contact) {
+          await crmTaskAutomationService.onProposalViewed({
+            contactId: crmData.contact.id,
+            dealId: crmData.deal?.id,
+            proposalNumber: proposal.proposal_number,
+            customerName: proposal.customer_name,
+          });
+        }
+      }
+    }).catch((err) => {
+      this.log('Failed to sync trip proposal status to CRM', { error: err, proposalId: id, status });
+    });
+
     return updated;
   }
 
@@ -835,6 +890,16 @@ export class TripProposalService extends BaseService {
         proposalId,
         bookingId: bookingResult.id,
         bookingNumber,
+      });
+
+      // Sync to CRM - link deal to booking (async, don't block)
+      crmSyncService.onTripProposalStatusChange(
+        proposalId,
+        proposal.proposal_number,
+        'converted',
+        { bookingId: bookingResult.id, amount: proposal.total }
+      ).catch((err) => {
+        this.log('Failed to sync trip proposal conversion to CRM', { error: err, proposalId, bookingId: bookingResult.id });
       });
 
       return { booking_id: bookingResult.id, booking_number: bookingNumber };
@@ -1053,9 +1118,7 @@ export class TripProposalService extends BaseService {
     const prefix = 'WWT';
     const year = new Date().getFullYear();
     const timestamp = Date.now().toString().slice(-6);
-    const random = Math.floor(Math.random() * 1000)
-      .toString()
-      .padStart(3, '0');
+    const random = generateSecureString(3, '0123456789');
     return `${prefix}-${year}-${timestamp}${random}`;
   }
 

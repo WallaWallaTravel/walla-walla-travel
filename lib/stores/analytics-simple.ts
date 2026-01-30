@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { generateSecureString } from '@/lib/utils';
 
 interface AnalyticsEvent {
   event: string;
@@ -21,9 +22,9 @@ export interface AnalyticsState {
   trackWineryAdded: (wineryId: number, wineryName: string) => void;
 }
 
-// Generate a simple session ID
+// Generate a simple session ID using cryptographically secure random
 const generateSessionId = (): string => {
-  return `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  return `session_${Date.now()}_${generateSecureString(7)}`;
 };
 
 export const useAnalyticsStore = create<AnalyticsState>((set, get) => ({

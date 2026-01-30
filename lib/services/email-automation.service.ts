@@ -7,6 +7,7 @@ import { logger } from '@/lib/logger';
 import { sendEmail, EmailTemplates } from '@/lib/email';
 import { query } from '@/lib/db';
 import { queryOne, queryMany } from '@/lib/db-helpers';
+import { crmSyncService } from './crm-sync.service';
 
 interface BookingData {
   id: number;
@@ -101,6 +102,15 @@ export async function sendBookingConfirmationEmail(bookingId: number): Promise<b
           status
         ) VALUES ($1, $2, $3, $4, NOW(), 'sent')
       `, [bookingId, 'booking_confirmation', booking.customer_email, template.subject]);
+
+      // Log to CRM (async, non-blocking)
+      crmSyncService.logEmailSent({
+        customerEmail: booking.customer_email,
+        subject: template.subject,
+        emailType: 'booking_confirmation',
+      }).catch(err => {
+        logger.warn('[EmailAutomation] CRM logging failed', { error: err });
+      });
     }
 
     logger.info(`[EmailAutomation] Booking confirmation ${result ? 'sent' : 'failed'} for booking #${booking.booking_number}`);
@@ -176,6 +186,15 @@ export async function sendPaymentReceiptEmail(paymentId: number): Promise<boolea
           status
         ) VALUES ($1, $2, $3, $4, NOW(), 'sent')
       `, [payment.booking_id, 'payment_receipt', payment.customer_email, 'Payment Received']);
+
+      // Log to CRM (async, non-blocking)
+      crmSyncService.logEmailSent({
+        customerEmail: payment.customer_email,
+        subject: `Payment Received - ${payment.booking_number}`,
+        emailType: 'payment_receipt',
+      }).catch(err => {
+        logger.warn('[EmailAutomation] CRM logging failed', { error: err });
+      });
     }
 
     logger.info(`[EmailAutomation] Payment receipt ${result ? 'sent' : 'failed'} for booking #${payment.booking_number}`);
@@ -294,11 +313,20 @@ export async function sendTourReminderEmail(bookingId: number): Promise<boolean>
           status
         ) VALUES ($1, $2, $3, $4, NOW(), 'sent')
       `, [bookingId, 'tour_reminder', booking.customer_email, 'Your Tour is Coming Up']);
-      
+
       // Mark reminder as sent
       await query(`
         UPDATE bookings SET reminder_sent = true WHERE id = $1
       `, [bookingId]);
+
+      // Log to CRM (async, non-blocking)
+      crmSyncService.logEmailSent({
+        customerEmail: booking.customer_email,
+        subject: `Your Tour is Coming Up! ${formattedDate}`,
+        emailType: 'tour_reminder',
+      }).catch(err => {
+        logger.warn('[EmailAutomation] CRM logging failed', { error: err });
+      });
     }
 
     logger.info(`[EmailAutomation] Tour reminder ${result ? 'sent' : 'failed'} for booking #${booking.booking_number}`);
@@ -444,6 +472,15 @@ export async function sendDriverAssignmentToCustomer(bookingId: number): Promise
           status
         ) VALUES ($1, $2, $3, $4, NOW(), 'sent')
       `, [bookingId, 'driver_assignment_customer', booking.customer_email, 'Driver Confirmed']);
+
+      // Log to CRM (async, non-blocking)
+      crmSyncService.logEmailSent({
+        customerEmail: booking.customer_email,
+        subject: `Your Driver is Confirmed - ${booking.booking_number}`,
+        emailType: 'driver_assignment',
+      }).catch(err => {
+        logger.warn('[EmailAutomation] CRM logging failed', { error: err });
+      });
     }
 
     logger.info(`[EmailAutomation] Driver assignment to customer ${result ? 'sent' : 'failed'} for booking #${booking.booking_number}`);

@@ -2,8 +2,15 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { logger } from '@/lib/logger'
 
+// Default timeout for auth API calls (30 seconds)
+const AUTH_TIMEOUT_MS = 30000;
+
 // Login function that calls the real API
 export async function login(email: string, password: string) {
+  // AbortController for request timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), AUTH_TIMEOUT_MS);
+
   try {
     // Determine the API URL based on environment
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
@@ -17,37 +24,38 @@ export async function login(email: string, password: string) {
       body: JSON.stringify({ email, password }),
       // Important: include credentials to handle cookies
       credentials: 'include',
+      signal: controller.signal,
     });
 
+    clearTimeout(timeoutId);
     const data = await response.json();
 
     if (!response.ok || !data.success) {
-      return { 
-        success: false, 
-        error: data.error || 'Login failed. Please try again.' 
+      return {
+        success: false,
+        error: data.error || 'Login failed. Please try again.'
       };
     }
 
-    // The API sets the session cookie, but we need to set it on the server side too
-    // since this is a server action
-    if (data.data) {
-      const cookieStore = await cookies();
-      cookieStore.set('session', JSON.stringify({
-        email: data.data.email,
-        userId: data.data.id.toString(),
-        name: data.data.name,
-      }), {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 7, // 7 days
-        path: '/',
-      });
-    }
+    // The API response includes Set-Cookie header with JWT session token
+    // No need to set cookie here - it's handled by the API via setSessionCookie()
+    // Note: When this is a server action, the cookie from the API response
+    // is automatically forwarded to the client via credentials: 'include'
 
-    return { success: true, user: data.data };
+    return { success: true, user: data.data?.user || data.data };
 
   } catch (error) {
+    clearTimeout(timeoutId);
+
+    // Handle timeout-specific error
+    if (error instanceof Error && error.name === 'AbortError') {
+      logger.error('Login request timeout', { timeout: AUTH_TIMEOUT_MS });
+      return {
+        success: false,
+        error: 'Login request timed out. Please try again.'
+      };
+    }
+
     logger.error('Login error', { error });
     return {
       success: false,
@@ -57,16 +65,19 @@ export async function login(email: string, password: string) {
 }
 
 export async function getServerSession() {
-  const cookieStore = await cookies()
-  const sessionCookie = cookieStore.get('session')
-  
-  if (!sessionCookie) return null
-  
-  try {
-    return JSON.parse(sessionCookie.value)
-  } catch {
-    return null
-  }
+  // Use the canonical session system for JWT verification
+  const { getSession } = await import('@/lib/auth/session');
+  const session = await getSession();
+
+  if (!session?.user) return null;
+
+  // Return in legacy format for backward compatibility
+  return {
+    userId: String(session.user.id),
+    email: session.user.email,
+    name: session.user.name,
+    role: session.user.role,
+  };
 }
 
 export async function requireAuth() {
@@ -78,17 +89,22 @@ export async function requireAuth() {
 }
 
 export async function getUser() {
-  const session = await getServerSession()
-  if (!session) return null
-  
+  const session = await getServerSession();
+  if (!session) return null;
+
   return {
     id: session.userId,
     email: session.email,
-    name: session.name || 'Test Driver'
-  }
+    name: session.name,
+    role: session.role,
+  };
 }
 
 export async function logout() {
+  // AbortController for request timeout (shorter timeout for logout)
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
   try {
     // Call the logout API endpoint
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
@@ -96,10 +112,18 @@ export async function logout() {
     await fetch(`${apiUrl}/api/auth/logout`, {
       method: 'POST',
       credentials: 'include',
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
   } catch (error) {
-    // Continue with logout even if API call fails
-    logger.error('Logout API error', { error });
+    clearTimeout(timeoutId);
+    // Continue with logout even if API call fails or times out
+    if (error instanceof Error && error.name === 'AbortError') {
+      logger.error('Logout request timeout');
+    } else {
+      logger.error('Logout API error', { error });
+    }
   }
 
   // Always clear the session cookie locally

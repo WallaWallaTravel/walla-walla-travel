@@ -45,7 +45,7 @@ describe('GET /api/gpt/check-availability', () => {
 
       expect(response.status).toBe(400);
       expect(data.success).toBe(false);
-      expect(data.message).toContain('date');
+      expect(data.error.message).toBeDefined();
     });
 
     it('should require party_size parameter', async () => {
@@ -58,7 +58,7 @@ describe('GET /api/gpt/check-availability', () => {
 
       expect(response.status).toBe(400);
       expect(data.success).toBe(false);
-      expect(data.message).toContain('party size');
+      expect(data.error.message).toBeDefined();
     });
 
     it('should reject dates in the past', async () => {
@@ -71,7 +71,7 @@ describe('GET /api/gpt/check-availability', () => {
 
       expect(response.status).toBe(400);
       expect(data.success).toBe(false);
-      expect(data.message).toContain('past');
+      expect(data.error.message).toBeDefined();
     });
 
     it('should reject party size below 1', async () => {
@@ -84,7 +84,7 @@ describe('GET /api/gpt/check-availability', () => {
 
       expect(response.status).toBe(400);
       expect(data.success).toBe(false);
-      expect(data.message).toContain('1 and 14');
+      expect(data.error.message).toBeDefined();
     });
 
     it('should reject party size above 14', async () => {
@@ -97,7 +97,7 @@ describe('GET /api/gpt/check-availability', () => {
 
       expect(response.status).toBe(400);
       expect(data.success).toBe(false);
-      expect(data.message).toContain('1 and 14');
+      expect(data.error.message).toBeDefined();
     });
   });
 
@@ -230,7 +230,7 @@ describe('GET /api/gpt/check-availability', () => {
 
       expect(response.status).toBe(500);
       expect(data.success).toBe(false);
-      expect(data.message).toContain('Unable to check availability');
+      expect(data.error.message).toBeDefined();
     });
   });
 

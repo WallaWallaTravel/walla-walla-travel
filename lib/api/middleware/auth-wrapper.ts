@@ -13,8 +13,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, UnauthorizedError, ForbiddenError } from './error-handler';
 import { requireAdmin as checkAdminRole } from '@/lib/admin-auth';
 
-// Note: getSessionFromRequest is defined locally at bottom of file to handle
-// multiple session formats (lib/auth/session.ts and lib/session.ts)
+// Note: getSessionFromRequest is defined at bottom of file and uses lib/auth/session.ts
 
 // ============================================================================
 // Session Type
@@ -214,28 +213,14 @@ interface InternalSession {
 
 async function getSessionFromRequest(): Promise<InternalSession | null> {
   try {
-    // First try lib/auth/session.ts format (used by middleware)
     const { getSession: getAuthSession } = await import('@/lib/auth/session');
     const authSession = await getAuthSession();
     if (authSession?.user?.id) {
-      // Transform to expected format
       return {
         userId: String(authSession.user.id),
         email: authSession.user.email,
         role: authSession.user.role as InternalSession['role'],
         isLoggedIn: true,
-      };
-    }
-
-    // Fallback to lib/session.ts format
-    const { getSession } = await import('@/lib/session');
-    const session = await getSession();
-    if (session?.userId) {
-      return {
-        userId: session.userId,
-        email: session.email,
-        role: (session.role as InternalSession['role']) || 'customer',
-        isLoggedIn: session.isLoggedIn,
       };
     }
     return null;

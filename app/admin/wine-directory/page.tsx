@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { logger } from '@/lib/logger'
 
 interface Winery {
   id: number
@@ -41,7 +42,7 @@ export default function WineDirectoryPage() {
         setWineries(data.wineries)
       }
     } catch (error) {
-      console.error('Failed to fetch wineries:', error)
+      logger.error('Failed to fetch wineries', { error })
     } finally {
       setLoading(false)
     }
@@ -67,7 +68,7 @@ export default function WineDirectoryPage() {
         }
       }
     } catch (error) {
-      console.error('Failed to update winery:', error)
+      logger.error('Failed to update winery', { error, wineryId: winery.id })
     } finally {
       setUpdating(null)
     }

@@ -8,6 +8,7 @@ import { query } from '@/lib/db';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { sanitizeHtml } from '@/lib/security';
 
 // ============================================================================
 // Types
@@ -200,7 +201,9 @@ function MarkdownContent({ content }: { content: string }) {
         }
 
         // Regular paragraphs with basic formatting
-        const formatted = paragraph
+        // First sanitize the input, then apply formatting
+        const sanitized = sanitizeHtml(paragraph);
+        const formatted = sanitized
           .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
           .replace(/\*(.*?)\*/g, '<em>$1</em>');
 

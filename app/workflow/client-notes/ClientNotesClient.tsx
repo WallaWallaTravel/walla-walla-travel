@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createBrowserClient } from '@/lib/supabase'
+import type { Database } from '@/lib/supabase/types'
 import { sanitizeText } from '@/lib/security'
 import DOMPurify from 'isomorphic-dompurify'
 import { logger } from '@/lib/logger'
@@ -15,6 +16,9 @@ interface Props {
 }
 
 export default function ClientNotesClient({ driver }: Props) {
+  // Create typed Supabase client
+  const supabase = createBrowserClient()
+
   const [currentScreen, setCurrentScreen] = useState('quick')
   const [itineraryWineries, setItineraryWineries] = useState<string[]>([])
   const [customStops, setCustomStops] = useState('')
@@ -82,38 +86,43 @@ export default function ClientNotesClient({ driver }: Props) {
       }
 
       // Save to database with parameterized query
-      // Note: Using type assertion because client_notes table may not be in the generated types
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase as any)
-        .from('client_notes')
-        .insert({
-          driver_id: driver.id,
-          date: new Date().toDateString(),
-          overall_rating: sanitizedData.overallRating,
-          winery_ratings: sanitizedData.wineryRatings,
-          purchases: sanitizedData.purchases,
-          favorite_stop: sanitizedData.favoriteStop,
-          will_return: sanitizedData.willReturn,
-          custom_stops: sanitizedData.customStops,
-          detailed_notes: sanitizedData.detailedNotes,
-          marketing_interests: sanitizedData.marketingInterests,
-          created_at: new Date().toISOString()
-        })
+      // Note: Using type assertion for tables not yet in generated Supabase types
+      // These tables (client_notes, workflow_progress) are defined but types aren't auto-generated
+      type ClientNotesInsert = Database['public']['Tables']['client_notes']['Insert']
+      type WorkflowProgressInsert = Database['public']['Tables']['workflow_progress']['Insert']
+
+      const clientNotesData: ClientNotesInsert = {
+        driver_id: driver.id,
+        date: new Date().toDateString(),
+        overall_rating: sanitizedData.overallRating ?? null,
+        winery_ratings: sanitizedData.wineryRatings ?? null,
+        purchases: sanitizedData.purchases ?? null,
+        favorite_stop: sanitizedData.favoriteStop || null,
+        will_return: sanitizedData.willReturn || null,
+        custom_stops: sanitizedData.customStops || null,
+        detailed_notes: sanitizedData.detailedNotes || null,
+        marketing_interests: sanitizedData.marketingInterests ?? null,
+        created_at: new Date().toISOString()
+      }
+
+      const { error } = await (supabase.from('client_notes') as unknown as {
+        insert: (data: ClientNotesInsert) => Promise<{ error: Error | null }>
+      }).insert(clientNotesData)
 
       if (error) throw error
 
       // Update workflow progress
-      // Note: Using type assertion because workflow_progress table may not be in the generated types
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any)
-        .from('workflow_progress')
-        .upsert({
-          driver_email: driver.email,
-          completed_steps: ['clock_in', 'pre_trip', 'client_pickup', 'client_dropoff', 'client_notes'],
-          current_step: 5,
-          date: new Date().toDateString(),
-          updated_at: new Date().toISOString()
-        })
+      const workflowData: WorkflowProgressInsert = {
+        driver_email: driver.email,
+        completed_steps: ['clock_in', 'pre_trip', 'client_pickup', 'client_dropoff', 'client_notes'],
+        current_step: 5,
+        date: new Date().toDateString(),
+        updated_at: new Date().toISOString()
+      }
+
+      await (supabase.from('workflow_progress') as unknown as {
+        upsert: (data: WorkflowProgressInsert) => Promise<{ error: Error | null }>
+      }).upsert(workflowData)
 
     } catch (error) {
       logger.error('Error saving notes', { error })

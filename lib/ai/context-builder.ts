@@ -1,14 +1,9 @@
 // Context Builder
 // Builds rich context for AI from database
 
-import { Pool } from 'pg'
+import { pool } from '@/lib/db'
 import { searchBusinesses, formatBusinessForAI } from '@/lib/business-portal/business-knowledge'
 import { logger } from '@/lib/logger'
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
-})
 
 export interface WineryInfo {
   id: number

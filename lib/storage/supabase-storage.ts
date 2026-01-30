@@ -7,6 +7,7 @@
 
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { logger } from '@/lib/logger';
+import { generateSecureString } from '@/lib/utils';
 
 // Storage bucket name - created in Supabase dashboard
 export const MEDIA_BUCKET = 'media';
@@ -49,7 +50,7 @@ function generateStoragePath(
   subcategory?: string
 ): string {
   const timestamp = Date.now();
-  const randomString = Math.random().toString(36).substring(2, 9);
+  const randomString = generateSecureString(7);
   const ext = originalName.split('.').pop()?.toLowerCase() || 'bin';
   const safeName = `${timestamp}-${randomString}.${ext}`;
 

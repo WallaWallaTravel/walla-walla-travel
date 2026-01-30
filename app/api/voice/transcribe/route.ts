@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { logger } from '@/lib/logger'
-import { transcribeAudio } from '@/lib/services/deepgram'
+import { transcribeAudio } from '@/lib/services/deepgram.service'
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit'
 
 export const runtime = 'nodejs'

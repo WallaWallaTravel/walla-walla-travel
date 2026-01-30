@@ -29,6 +29,7 @@
  */
 
 import { BaseService } from './base.service';
+import { crmSyncService } from './crm-sync.service';
 
 export interface Customer {
   id: number;
@@ -96,6 +97,17 @@ export class CustomerService extends BaseService {
     });
 
     this.log(`Customer created: ${customer.id}`);
+
+    // Sync to CRM (async, don't block)
+    crmSyncService.syncCustomerToContact({
+      customerId: customer.id,
+      email: customer.email,
+      name: customer.name,
+      phone: customer.phone,
+      source: 'booking',
+    }).catch(err => {
+      this.log('Failed to sync customer to CRM', { error: err, customerId: customer.id });
+    });
 
     return customer;
   }

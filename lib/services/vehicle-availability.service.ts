@@ -138,6 +138,64 @@ export class VehicleAvailabilityService extends BaseService {
   }
 
   /**
+   * Batch check availability for multiple vehicles in a single query
+   * Eliminates N+1 query pattern when checking many vehicles
+   * Returns a map of vehicleId -> conflicts
+   */
+  async checkMultipleVehiclesAvailability(
+    vehicleIds: number[],
+    date: string,
+    startTime: string,
+    endTime: string
+  ): Promise<Map<number, AvailabilityBlock[]>> {
+    if (vehicleIds.length === 0) {
+      return new Map();
+    }
+
+    this.log('Batch checking vehicle availability', {
+      vehicleCount: vehicleIds.length,
+      date,
+      startTime,
+      endTime
+    });
+
+    // Build parameterized query for batch lookup
+    const placeholders = vehicleIds.map((_, i) => `$${i + 4}`).join(', ');
+
+    // Query for all overlapping blocks for all vehicles in one query
+    const allConflicts = await this.queryMany<AvailabilityBlock>(`
+      SELECT * FROM vehicle_availability_blocks
+      WHERE vehicle_id IN (${placeholders})
+      AND block_date = $1
+      AND (start_time < $3 AND end_time > $2)
+      AND NOT (
+        block_type = 'hold'
+        AND booking_id IS NULL
+        AND created_at < NOW() - INTERVAL '${HOLD_EXPIRATION_MINUTES} minutes'
+      )
+      ORDER BY vehicle_id, start_time
+    `, [date, startTime, endTime, ...vehicleIds]);
+
+    // Group conflicts by vehicle_id
+    const conflictsByVehicle = new Map<number, AvailabilityBlock[]>();
+
+    // Initialize all vehicles with empty arrays
+    for (const id of vehicleIds) {
+      conflictsByVehicle.set(id, []);
+    }
+
+    // Populate conflicts
+    for (const conflict of allConflicts) {
+      const vehicleConflicts = conflictsByVehicle.get(conflict.vehicle_id);
+      if (vehicleConflicts) {
+        vehicleConflicts.push(conflict);
+      }
+    }
+
+    return conflictsByVehicle;
+  }
+
+  /**
    * Clean up expired hold blocks
    * Should be called periodically (e.g., via cron job or on each availability check)
    */
@@ -205,16 +263,25 @@ export class VehicleAvailabilityService extends BaseService {
     }
     const vehicles = await this.queryMany<VehicleRow>(vehicleQuery, vehicleParams);
 
-    // Check availability for each vehicle
+    if (vehicles.length === 0) {
+      return [];
+    }
+
+    // Batch check availability for all vehicles in ONE query (eliminates N+1)
+    const vehicleIds = vehicles.map(v => v.id);
+    const conflictsByVehicle = await this.checkMultipleVehiclesAvailability(
+      vehicleIds,
+      date,
+      startTime,
+      endTime
+    );
+
+    // Filter to only available vehicles
     const availableVehicles: VehicleWithAvailability[] = [];
 
     for (const vehicle of vehicles) {
-      const { available, conflicts } = await this.checkVehicleAvailability(
-        vehicle.id,
-        date,
-        startTime,
-        endTime
-      );
+      const conflicts = conflictsByVehicle.get(vehicle.id) || [];
+      const available = conflicts.length === 0;
 
       if (available) {
         availableVehicles.push({

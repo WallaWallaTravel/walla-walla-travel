@@ -4,6 +4,7 @@ import { getBrandStripeClient } from '@/lib/stripe-brands';
 import { query, queryOne, withTransaction } from '@/lib/db-helpers';
 import { logger } from '@/lib/logger';
 import { sendBookingConfirmationEmail } from '@/lib/services/email-automation.service';
+import { crmSyncService } from '@/lib/services/crm-sync.service';
 
 /**
  * POST /api/proposals/[proposal_id]/confirm-payment
@@ -250,6 +251,30 @@ export const POST = withErrorHandling<unknown, { proposal_id: string }>(async (
   if (result.id) {
     sendBookingConfirmationEmail(result.id).catch(err => {
       logger.error('[Confirm Payment] Failed to send confirmation email', { error: err });
+    });
+  }
+
+  // Log payment to CRM (async, don't block)
+  const customerEmail = proposal.accepted_by_email || proposal.client_email;
+  const depositAmount = (proposal.final_total || proposal.total) * 0.5;
+  if (customerEmail) {
+    // Get customer ID to log payment
+    queryOne(
+      `SELECT id FROM customers WHERE email = $1`,
+      [customerEmail]
+    ).then(customer => {
+      if (customer?.id) {
+        crmSyncService.logPaymentReceived(
+          customer.id,
+          depositAmount,
+          'Deposit',
+          result.id
+        ).catch(err => {
+          logger.error('[Confirm Payment] Failed to log payment to CRM', { error: err });
+        });
+      }
+    }).catch(() => {
+      // Ignore - customer lookup failed
     });
   }
 

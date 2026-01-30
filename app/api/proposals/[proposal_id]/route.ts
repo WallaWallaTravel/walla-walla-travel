@@ -7,6 +7,9 @@ import {
 } from '@/lib/proposals/proposal-utils';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
+import { logger } from '@/lib/logger';
+import { crmSyncService } from '@/lib/services/crm-sync.service';
+import { crmTaskAutomationService } from '@/lib/services/crm-task-automation.service';
 
 /**
  * GET /api/proposals/[proposal_id]
@@ -65,8 +68,58 @@ export const GET = withErrorHandling(async (
     );
   } catch (logError) {
     // Don't fail the request if logging fails
-    console.error('Failed to log proposal view:', logError);
+    logger.warn('Failed to log proposal view', { error: logError });
   }
+
+  // Log to CRM and potentially create follow-up task (async, don't block)
+  (async () => {
+    try {
+      // Get client email from proposal
+      const proposalWithEmail = await query(
+        `SELECT client_email, client_name, proposal_number FROM proposals WHERE id = $1`,
+        [proposal.id]
+      );
+
+      if (proposalWithEmail.rows.length > 0) {
+        const { client_email, client_name, proposal_number } = proposalWithEmail.rows[0];
+
+        // Log proposal viewed to CRM
+        await crmSyncService.logProposalViewed(proposal.id, client_email);
+
+        // Check if this is the first view (to avoid duplicate tasks)
+        const viewCount = await query(
+          `SELECT COUNT(*) as count FROM proposal_activity_log
+           WHERE proposal_id = $1 AND activity_type = 'viewed'`,
+          [proposal.id]
+        );
+
+        // Only create follow-up task on first view
+        if (parseInt(viewCount.rows[0].count) === 1) {
+          const contact = await query(
+            `SELECT id FROM crm_contacts WHERE LOWER(email) = LOWER($1)`,
+            [client_email]
+          );
+
+          if (contact.rows.length > 0) {
+            const contactId = contact.rows[0].id;
+            const deal = await query(
+              `SELECT id FROM crm_deals WHERE contact_id = $1 AND proposal_id = $2`,
+              [contactId, proposal.id]
+            );
+
+            await crmTaskAutomationService.onProposalViewed({
+              contactId,
+              dealId: deal.rows[0]?.id,
+              proposalNumber: proposal_number,
+              customerName: client_name,
+            });
+          }
+        }
+      }
+    } catch (crmError) {
+      logger.warn('CRM: Failed to log proposal view', { error: crmError });
+    }
+  })();
 
   return NextResponse.json({
     success: true,

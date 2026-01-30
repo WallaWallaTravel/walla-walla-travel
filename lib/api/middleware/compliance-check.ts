@@ -296,14 +296,14 @@ export function withComplianceCheck<T = unknown, P = Record<string, string>>(
             vehicleId: entities.vehicleId,
             bookingId: entities.bookingId,
             tourDate: entities.tourDate,
-            triggeredBy: session?.user?.id,
+            triggeredBy: session?.userId ? parseInt(session.userId, 10) : undefined,
             requestIp:
               request.headers.get('x-forwarded-for') ||
               request.headers.get('x-real-ip') ||
               undefined,
             userAgent: request.headers.get('user-agent') || undefined,
             wasOverridden: true,
-            overriddenBy: session?.user?.id,
+            overriddenBy: session?.userId ? parseInt(session.userId, 10) : undefined,
             overrideReason,
           }
         );
@@ -323,7 +323,7 @@ export function withComplianceCheck<T = unknown, P = Record<string, string>>(
           vehicleId: entities.vehicleId,
           bookingId: entities.bookingId,
           tourDate: entities.tourDate,
-          triggeredBy: session?.user?.id,
+          triggeredBy: session?.userId ? parseInt(session.userId, 10) : undefined,
           requestIp:
             request.headers.get('x-forwarded-for') ||
             request.headers.get('x-real-ip') ||
@@ -365,7 +365,7 @@ export function withComplianceCheck<T = unknown, P = Record<string, string>>(
           vehicleId: entities.vehicleId,
           bookingId: entities.bookingId,
           tourDate: entities.tourDate,
-          triggeredBy: session?.user?.id,
+          triggeredBy: session?.userId ? parseInt(session.userId, 10) : undefined,
         }
       );
     }

@@ -5,6 +5,7 @@
  */
 
 import { logger } from '@/lib/logger';
+import { crmSyncService } from '@/lib/services/crm-sync.service';
 
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
 const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
@@ -49,6 +50,9 @@ function formatPhoneNumber(phone: string): string {
   return `+${cleaned}`;
 }
 
+// Default timeout for SMS API calls (30 seconds)
+const SMS_TIMEOUT_MS = 30000;
+
 /**
  * Send an SMS using Twilio API
  */
@@ -58,12 +62,16 @@ export async function sendSMS(options: SMSOptions): Promise<SMSResult> {
     return { success: false, error: 'Twilio not configured' };
   }
 
+  // AbortController for request timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), SMS_TIMEOUT_MS);
+
   try {
     const formattedPhone = formatPhoneNumber(options.to);
-    
+
     // Twilio uses Basic Auth with Account SID and Auth Token
     const credentials = Buffer.from(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`).toString('base64');
-    
+
     const response = await fetch(
       `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`,
       {
@@ -77,9 +85,11 @@ export async function sendSMS(options: SMSOptions): Promise<SMSResult> {
           From: TWILIO_PHONE_NUMBER,
           Body: options.message,
         }).toString(),
+        signal: controller.signal,
       }
     );
 
+    clearTimeout(timeoutId);
     const data = await response.json();
 
     if (!response.ok) {
@@ -91,6 +101,14 @@ export async function sendSMS(options: SMSOptions): Promise<SMSResult> {
     return { success: true, messageId: data.sid };
 
   } catch (error) {
+    clearTimeout(timeoutId);
+
+    // Handle timeout-specific error
+    if (error instanceof Error && error.name === 'AbortError') {
+      logger.error('SMS request timeout', { timeout: SMS_TIMEOUT_MS });
+      return { success: false, error: 'SMS request timeout' };
+    }
+
     logger.error('SMS send error', { error });
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
@@ -233,8 +251,21 @@ export async function sendTourReminder(data: {
     driver_name: data.driver_name,
     driver_phone: data.driver_phone,
   });
-  
-  return sendSMS({ to: data.customer_phone, message });
+
+  const result = await sendSMS({ to: data.customer_phone, message });
+
+  // Log to CRM if successful
+  if (result.success) {
+    crmSyncService.logSmsSent({
+      customerPhone: data.customer_phone,
+      message,
+      messageType: 'tour_reminder',
+    }).catch(err => {
+      logger.warn('SMS: CRM logging failed', { error: err });
+    });
+  }
+
+  return result;
 }
 
 /**
@@ -255,8 +286,13 @@ export async function sendTourAssignmentSMS(data: {
     pickup_time: data.pickup_time,
     party_size: data.party_size,
   });
-  
-  return sendSMS({ to: data.driver_phone, message });
+
+  const result = await sendSMS({ to: data.driver_phone, message });
+
+  // Note: Driver SMS not logged to CRM (driver is internal, not customer)
+  // If needed, could create a separate internal activity log
+
+  return result;
 }
 
 /**
@@ -275,7 +311,46 @@ export async function sendScheduleChangeAlert(data: {
     new_value: data.new_value,
     booking_number: data.booking_number,
   });
-  
-  return sendSMS({ to: data.phone, message });
+
+  const result = await sendSMS({ to: data.phone, message });
+
+  // Log to CRM if successful
+  if (result.success) {
+    crmSyncService.logSmsSent({
+      customerPhone: data.phone,
+      message,
+      messageType: `schedule_change_${data.change_type}`,
+    }).catch(err => {
+      logger.warn('SMS: CRM logging failed', { error: err });
+    });
+  }
+
+  return result;
+}
+
+/**
+ * Send SMS with CRM logging (general-purpose wrapper)
+ * Use this for any SMS that should be logged to CRM
+ */
+export async function sendSMSWithCrmLogging(options: {
+  to: string;
+  message: string;
+  messageType?: string;
+  customerId?: number;
+}): Promise<SMSResult> {
+  const result = await sendSMS({ to: options.to, message: options.message });
+
+  if (result.success) {
+    crmSyncService.logSmsSent({
+      customerPhone: options.to,
+      customerId: options.customerId,
+      message: options.message,
+      messageType: options.messageType || 'general',
+    }).catch(err => {
+      logger.warn('SMS: CRM logging failed', { error: err });
+    });
+  }
+
+  return result;
 }
 
