@@ -199,8 +199,8 @@ export default function CrmImportPage() {
       if (data.success) {
         setMigrationStatus(data.data);
       }
-    } catch (err) {
-      console.error('Failed to check migration status', err);
+    } catch (_err) {
+      // Migration status check is non-critical - silently fail
     }
   };
 

@@ -325,7 +325,7 @@ export default function CrmDashboardPage() {
       </div>
 
       {/* Quick Links */}
-      <div className="mt-8 grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="mt-8 grid grid-cols-2 md:grid-cols-6 gap-4">
         <Link
           href="/admin/crm/contacts"
           className="flex flex-col items-center gap-2 p-6 bg-white border border-slate-200 rounded-xl hover:border-[#8B1538] hover:shadow-md transition-all"
@@ -371,6 +371,14 @@ export default function CrmDashboardPage() {
           <span className="text-3xl">🎯</span>
           <span className="font-medium text-slate-900">Leads</span>
           <span className="text-sm text-slate-500">View all inquiries</span>
+        </Link>
+        <Link
+          href="/admin/crm/reports"
+          className="flex flex-col items-center gap-2 p-6 bg-white border border-slate-200 rounded-xl hover:border-[#8B1538] hover:shadow-md transition-all"
+        >
+          <span className="text-3xl">📊</span>
+          <span className="font-medium text-slate-900">Reports</span>
+          <span className="text-sm text-slate-500">Lead source analytics</span>
         </Link>
       </div>
     </div>
