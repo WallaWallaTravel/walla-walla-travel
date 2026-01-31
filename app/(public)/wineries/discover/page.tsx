@@ -146,7 +146,7 @@ export default function WineryDiscoverPage() {
             Discover Your Perfect Winery
           </h1>
           <p className="text-lg text-white/90 max-w-2xl mx-auto">
-            Tell me what you're looking for, and I'll find the perfect Walla Walla wineries for your visit.
+            Tell me what you&apos;re looking for, and I&apos;ll find the perfect Walla Walla wineries for your visit.
           </p>
         </div>
       </div>
@@ -165,7 +165,7 @@ export default function WineryDiscoverPage() {
                   What kind of wine experience are you looking for?
                 </h2>
                 <p className="text-stone-600 mb-8">
-                  Describe your ideal winery visit and I'll find the best matches.
+                  Describe your ideal winery visit and I&apos;ll find the best matches.
                 </p>
 
                 {/* Suggested Queries */}

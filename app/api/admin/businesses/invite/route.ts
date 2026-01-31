@@ -4,7 +4,6 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { logger } from '@/lib/logger';
 import { createBusiness } from '@/lib/business-portal/business-service';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
 

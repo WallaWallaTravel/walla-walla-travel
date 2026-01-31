@@ -77,8 +77,8 @@ import Stripe from 'stripe';
 import { queryOne, query, withTransaction } from '@/lib/db-helpers';
 import { healthService } from '@/lib/services/health.service';
 
-// Helper to create mock NextRequest
-function createMockRequest(body: object, headers: Record<string, string> = {}): NextRequest {
+// Helper to create mock NextRequest (kept for future E2E tests)
+function _createMockRequest(body: object, headers: Record<string, string> = {}): NextRequest {
   return new NextRequest('http://localhost:3000/api/payments/create-intent', {
     method: 'POST',
     body: JSON.stringify(body),
@@ -90,12 +90,12 @@ function createMockRequest(body: object, headers: Record<string, string> = {}): 
 }
 
 describe('Payment API Integration', () => {
-  // Get mock instances
-  const mockStripe = new Stripe('test_key') as jest.Mocked<Stripe>;
-  const mockQueryOne = queryOne as jest.MockedFunction<typeof queryOne>;
-  const mockQuery = query as jest.MockedFunction<typeof query>;
-  const mockWithTransaction = withTransaction as jest.MockedFunction<typeof withTransaction>;
-  const mockHealthService = healthService as jest.Mocked<typeof healthService>;
+  // Mock instances kept for future E2E tests when skipped tests are implemented
+  const _mockStripe = new Stripe('test_key') as jest.Mocked<Stripe>;
+  const _mockQueryOne = queryOne as jest.MockedFunction<typeof queryOne>;
+  const _mockQuery = query as jest.MockedFunction<typeof query>;
+  const _mockWithTransaction = withTransaction as jest.MockedFunction<typeof withTransaction>;
+  const _mockHealthService = healthService as jest.Mocked<typeof healthService>;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -113,8 +113,8 @@ describe('Payment API Integration', () => {
 
     beforeAll(async () => {
       // Dynamic import to ensure mocks are in place
-      const module = await import('@/app/api/payments/create-intent/route');
-      POST = module.POST;
+      const routeModule = await import('@/app/api/payments/create-intent/route');
+      POST = routeModule.POST;
     });
 
     // Note: The route handler tests require complex mock orchestration with:
@@ -207,9 +207,9 @@ describe('Payment API Integration', () => {
   // The schema validation for this route is tested in payment-validation.test.ts
   describe('POST /api/payments/confirm', () => {
     it('should export a POST handler', async () => {
-      const module = await import('@/app/api/payments/confirm/route');
-      expect(module.POST).toBeDefined();
-      expect(typeof module.POST).toBe('function');
+      const routeModule = await import('@/app/api/payments/confirm/route');
+      expect(routeModule.POST).toBeDefined();
+      expect(typeof routeModule.POST).toBe('function');
     });
 
     it.skip('successful confirmation flow (tested via E2E)', () => {

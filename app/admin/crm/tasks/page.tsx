@@ -20,7 +20,8 @@ const PRIORITY_COLORS: Record<TaskPriority, { bg: string; text: string; badge: s
   urgent: { bg: 'bg-red-50', text: 'text-red-600', badge: 'bg-red-100 text-red-700' },
 };
 
-const STATUS_LABELS: Record<TaskStatus, string> = {
+// Reserved for future status badge display
+const _STATUS_LABELS: Record<TaskStatus, string> = {
   pending: 'Pending',
   in_progress: 'In Progress',
   completed: 'Completed',
@@ -45,8 +46,9 @@ function TasksPageContent() {
     searchParams.get('due_today') === 'true' ? 'today' : 'all'
   );
   const [showNewTaskModal, setShowNewTaskModal] = useState(false);
-  const [newTask, setNewTask] = useState({ title: '', due_date: '', priority: 'normal', contact_id: '' });
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  // Task creation state - reserved for new task modal implementation
+  const [_newTask, _setNewTask] = useState({ title: '', due_date: '', priority: 'normal', contact_id: '' });
+  const [_isSubmitting, _setIsSubmitting] = useState(false);
 
   const fetchTasks = useCallback(async () => {
     try {

@@ -4,7 +4,6 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { logger } from '@/lib/logger';
 import { query } from '@/lib/db';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 
