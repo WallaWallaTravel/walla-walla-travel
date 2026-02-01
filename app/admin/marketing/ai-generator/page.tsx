@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { format, addDays } from 'date-fns'
 import { logger } from '@/lib/logger'
 
 interface Winery {
@@ -22,7 +23,7 @@ interface GeneratedContent {
 }
 
 type Platform = 'instagram' | 'facebook' | 'linkedin'
-type ContentType = 'wine_spotlight' | 'event_promo' | 'seasonal' | 'educational' | 'behind_scenes' | 'customer_story'
+type ContentType = 'wine_spotlight' | 'event_promo' | 'seasonal' | 'educational' | 'behind_scenes' | 'customer_story' | 'general'
 type Tone = 'professional' | 'casual' | 'sophisticated' | 'playful' | 'educational'
 
 const PLATFORMS: { id: Platform; label: string; icon: string; maxLength: number }[] = [
@@ -32,6 +33,7 @@ const PLATFORMS: { id: Platform; label: string; icon: string; maxLength: number 
 ]
 
 const CONTENT_TYPES: { id: ContentType; label: string; description: string }[] = [
+  { id: 'general', label: 'General', description: 'General Walla Walla wine country content' },
   { id: 'wine_spotlight', label: 'Wine Spotlight', description: 'Feature a specific wine or varietal' },
   { id: 'event_promo', label: 'Event Promo', description: 'Promote upcoming tastings or events' },
   { id: 'seasonal', label: 'Seasonal', description: 'Tie content to current season or holiday' },
@@ -48,6 +50,13 @@ const TONES: { id: Tone; label: string }[] = [
   { id: 'educational', label: 'Educational' },
 ]
 
+// Default best times for each platform
+const DEFAULT_TIMES: Record<Platform, string> = {
+  instagram: '19:00',
+  facebook: '13:00',
+  linkedin: '10:00',
+}
+
 export default function AIContentGenerator() {
   const [wineries, setWineries] = useState<Winery[]>([])
   const [loadingWineries, setLoadingWineries] = useState(true)
@@ -55,7 +64,7 @@ export default function AIContentGenerator() {
   // Form state
   const [selectedWinery, setSelectedWinery] = useState<number | null>(null)
   const [selectedPlatform, setSelectedPlatform] = useState<Platform>('instagram')
-  const [selectedContentType, setSelectedContentType] = useState<ContentType>('wine_spotlight')
+  const [selectedContentType, setSelectedContentType] = useState<ContentType>('general')
   const [selectedTone, setSelectedTone] = useState<Tone>('casual')
   const [customPrompt, setCustomPrompt] = useState('')
 
@@ -67,6 +76,13 @@ export default function AIContentGenerator() {
   // History state
   const [history, setHistory] = useState<GeneratedContent[]>([])
   const [copied, setCopied] = useState(false)
+
+  // Scheduling state
+  const [showScheduleModal, setShowScheduleModal] = useState(false)
+  const [scheduleDate, setScheduleDate] = useState(format(addDays(new Date(), 1), 'yyyy-MM-dd'))
+  const [scheduleTime, setScheduleTime] = useState(DEFAULT_TIMES.instagram)
+  const [isScheduling, setIsScheduling] = useState(false)
+  const [scheduleSuccess, setScheduleSuccess] = useState(false)
 
   // Fetch wineries on mount
   useEffect(() => {
@@ -89,8 +105,14 @@ export default function AIContentGenerator() {
     fetchWineries()
   }, [])
 
+  // Update default time when platform changes
+  useEffect(() => {
+    setScheduleTime(DEFAULT_TIMES[selectedPlatform])
+  }, [selectedPlatform])
+
   const handleGenerate = async () => {
-    if (!selectedWinery) {
+    // Winery is only required for non-general content types
+    if (!selectedWinery && selectedContentType !== 'general') {
       setError('Please select a winery')
       return
     }
@@ -104,7 +126,7 @@ export default function AIContentGenerator() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          wineryId: selectedWinery,
+          wineryId: selectedWinery || undefined,
           platform: selectedPlatform,
           contentType: selectedContentType,
           tone: selectedTone,
@@ -136,6 +158,54 @@ export default function AIContentGenerator() {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const handleSchedulePost = async () => {
+    if (!generatedContent) return
+
+    setIsScheduling(true)
+    setError(null)
+
+    try {
+      const scheduledFor = new Date(`${scheduleDate}T${scheduleTime}:00`)
+
+      const response = await fetch('/api/admin/marketing/social-posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: generatedContent.content,
+          media_urls: [],
+          hashtags: generatedContent.hashtags.map(tag => tag.replace(/^#/, '')),
+          platform: generatedContent.platform,
+          scheduled_for: scheduledFor.toISOString(),
+          timezone: 'America/Los_Angeles',
+          content_type: selectedContentType,
+          winery_id: selectedWinery,
+        }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to schedule post')
+      }
+
+      setScheduleSuccess(true)
+      setTimeout(() => {
+        setShowScheduleModal(false)
+        setScheduleSuccess(false)
+      }, 2000)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to schedule post')
+    } finally {
+      setIsScheduling(false)
+    }
+  }
+
+  const openScheduleModal = () => {
+    if (!generatedContent) return
+    setScheduleDate(format(addDays(new Date(), 1), 'yyyy-MM-dd'))
+    setScheduleTime(DEFAULT_TIMES[generatedContent.platform as Platform] || '19:00')
+    setShowScheduleModal(true)
+  }
+
   const selectedWineryData = wineries.find(w => w.id === selectedWinery)
 
   return (
@@ -164,16 +234,28 @@ export default function AIContentGenerator() {
             <div className="bg-white rounded-xl shadow-sm p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <span>🍷</span> Select Winery
+                {selectedContentType === 'general' && (
+                  <span className="text-xs font-normal text-gray-500 ml-2">(Optional for General)</span>
+                )}
               </h2>
               {loadingWineries ? (
                 <div className="animate-pulse h-10 bg-gray-200 rounded-lg"></div>
+              ) : wineries.length === 0 ? (
+                <div className="text-center py-4">
+                  <p className="text-gray-500 text-sm">No wineries found in database.</p>
+                  <p className="text-gray-400 text-xs mt-1">
+                    {selectedContentType === 'general'
+                      ? 'You can still generate General content without a winery.'
+                      : 'Select "General" content type to generate without a winery.'}
+                  </p>
+                </div>
               ) : (
                 <select
                   value={selectedWinery || ''}
-                  onChange={(e) => setSelectedWinery(Number(e.target.value))}
+                  onChange={(e) => setSelectedWinery(e.target.value ? Number(e.target.value) : null)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 >
-                  <option value="">Select a winery...</option>
+                  <option value="">{selectedContentType === 'general' ? '(Optional) Select a winery...' : 'Select a winery...'}</option>
                   {wineries.map((winery) => (
                     <option key={winery.id} value={winery.id}>
                       {winery.name}
@@ -284,7 +366,7 @@ export default function AIContentGenerator() {
             {/* Generate Button */}
             <button
               onClick={handleGenerate}
-              disabled={isGenerating || !selectedWinery}
+              disabled={isGenerating || (!selectedWinery && selectedContentType !== 'general')}
               className="w-full py-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
             >
               {isGenerating ? (
@@ -316,6 +398,12 @@ export default function AIContentGenerator() {
                       className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-1"
                     >
                       {copied ? '✓ Copied!' : '📋 Copy'}
+                    </button>
+                    <button
+                      onClick={openScheduleModal}
+                      className="px-3 py-1.5 text-sm bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors flex items-center gap-1"
+                    >
+                      📅 Schedule
                     </button>
                   </div>
                 )}
@@ -391,6 +479,22 @@ export default function AIContentGenerator() {
                       <p className="text-sm text-amber-700">{generatedContent.imagePrompt}</p>
                     </div>
                   )}
+
+                  {/* Quick Schedule CTA */}
+                  <div className="p-4 bg-pink-50 rounded-lg border border-pink-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-pink-900">Ready to post?</p>
+                        <p className="text-xs text-pink-700">Schedule this content for publishing</p>
+                      </div>
+                      <button
+                        onClick={openScheduleModal}
+                        className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors text-sm font-medium"
+                      >
+                        Schedule Post
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -424,6 +528,111 @@ export default function AIContentGenerator() {
             )}
           </div>
         </div>
-      </div>
+
+      {/* Schedule Modal */}
+      {showScheduleModal && generatedContent && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-md w-full">
+            <div className="p-6 border-b border-gray-100">
+              <h2 className="text-xl font-bold text-gray-900">Schedule Post</h2>
+              <p className="text-sm text-gray-500 mt-1">
+                {PLATFORMS.find(p => p.id === generatedContent.platform)?.icon} {generatedContent.platform}
+              </p>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {scheduleSuccess ? (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span className="text-3xl">✓</span>
+                  </div>
+                  <p className="text-lg font-medium text-gray-900">Post Scheduled!</p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Your post will be published on {format(new Date(`${scheduleDate}T${scheduleTime}`), 'MMM d, yyyy')} at {format(new Date(`${scheduleDate}T${scheduleTime}`), 'h:mm a')}
+                  </p>
+                  <Link
+                    href="/admin/marketing/social"
+                    className="inline-block mt-4 text-sm text-pink-600 hover:text-pink-700"
+                  >
+                    View in Scheduler →
+                  </Link>
+                </div>
+              ) : (
+                <>
+                  {/* Preview */}
+                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <p className="text-sm text-gray-700 line-clamp-3">
+                      {generatedContent.content}
+                    </p>
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {generatedContent.hashtags.slice(0, 3).map((tag, i) => (
+                        <span key={i} className="text-xs text-blue-600">{tag}</span>
+                      ))}
+                      {generatedContent.hashtags.length > 3 && (
+                        <span className="text-xs text-gray-400">+{generatedContent.hashtags.length - 3} more</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Date/Time Selection */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
+                      <input
+                        type="date"
+                        value={scheduleDate}
+                        onChange={(e) => setScheduleDate(e.target.value)}
+                        min={format(new Date(), 'yyyy-MM-dd')}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Time</label>
+                      <input
+                        type="time"
+                        value={scheduleTime}
+                        onChange={(e) => setScheduleTime(e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Best time hint */}
+                  <div className="p-3 bg-green-50 rounded-lg">
+                    <p className="text-xs text-green-800">
+                      <span className="font-medium">💡 Suggested:</span> {generatedContent.bestTimeToPost}
+                    </p>
+                  </div>
+
+                  {error && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                      {error}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {!scheduleSuccess && (
+              <div className="p-6 border-t border-gray-100 flex gap-3">
+                <button
+                  onClick={() => setShowScheduleModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSchedulePost}
+                  disabled={isScheduling}
+                  className="flex-1 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 disabled:opacity-50"
+                >
+                  {isScheduling ? 'Scheduling...' : 'Schedule Post'}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
   )
 }

@@ -356,7 +356,7 @@ export class InspectionService extends BaseService {
     this.log('Getting vehicle inspection history', { vehicleId });
 
     const baseQuery = `
-      SELECT 
+      SELECT
         i.*,
         u.name as driver_name
       FROM inspections i
@@ -371,6 +371,294 @@ export class InspectionService extends BaseService {
       filters?.limit || 50,
       filters?.offset || 0
     );
+  }
+
+  // ==========================================================================
+  // Historical Entry Methods
+  // ==========================================================================
+
+  /**
+   * Create a historical inspection entry from paper form data
+   * Used for digitizing paper inspection records for compliance history
+   */
+  async createHistoricalInspection(data: {
+    driverId: number;
+    vehicleId: number;
+    type: 'pre_trip' | 'post_trip' | 'dvir';
+    originalDocumentDate: string; // ISO date string from paper form
+    startMileage?: number;
+    endMileage?: number;
+    inspectionData: InspectionData;
+    enteredBy: number; // Admin user ID
+    historicalSource: string; // 'paper_form', 'excel_import', etc.
+    entryNotes?: string;
+    documentUrl?: string; // URL to scanned document in storage
+  }): Promise<Inspection> {
+    this.log('Creating historical inspection entry', {
+      driverId: data.driverId,
+      vehicleId: data.vehicleId,
+      originalDate: data.originalDocumentDate,
+    });
+
+    // Verify driver exists
+    const driver = await this.queryOne<{ id: number }>(
+      'SELECT id FROM users WHERE id = $1 AND role = $2',
+      [data.driverId, 'driver']
+    );
+
+    if (!driver) {
+      throw new BadRequestError(`Driver with ID ${data.driverId} not found`);
+    }
+
+    // Verify vehicle exists
+    const vehicle = await this.queryOne<{ id: number }>(
+      'SELECT id FROM vehicles WHERE id = $1',
+      [data.vehicleId]
+    );
+
+    if (!vehicle) {
+      throw new BadRequestError(`Vehicle with ID ${data.vehicleId} not found`);
+    }
+
+    // Check for duplicate entry (same driver, vehicle, type, date)
+    const existing = await this.queryOne(
+      `SELECT id FROM inspections
+       WHERE driver_id = $1
+         AND vehicle_id = $2
+         AND type = $3
+         AND original_document_date = $4
+         AND is_historical_entry = true
+       LIMIT 1`,
+      [data.driverId, data.vehicleId, data.type, data.originalDocumentDate]
+    );
+
+    if (existing) {
+      throw new ConflictError(
+        `Historical inspection already exists for this driver/vehicle/date combination`
+      );
+    }
+
+    // Create the historical inspection
+    const inspection = await this.insert<Inspection>('inspections', {
+      driver_id: data.driverId,
+      vehicle_id: data.vehicleId,
+      time_card_id: null, // Historical entries may not have linked time cards
+      type: data.type,
+      status: 'complete',
+      start_mileage: data.startMileage || null,
+      end_mileage: data.endMileage || null,
+      inspection_data: JSON.stringify(data.inspectionData.items || {}),
+      issues_description: data.inspectionData.notes || null,
+      defects_found: data.inspectionData.defectsFound || false,
+      defect_severity: data.inspectionData.defectSeverity || 'none',
+      defect_description: data.inspectionData.defectDescription || null,
+      // Historical entry fields
+      is_historical_entry: true,
+      historical_source: data.historicalSource,
+      entered_by: data.enteredBy,
+      entry_date: new Date(),
+      entry_notes: data.entryNotes || null,
+      original_document_date: data.originalDocumentDate,
+      created_at: new Date(data.originalDocumentDate), // Use original date for sorting
+    });
+
+    this.log(`Historical inspection created: ${inspection.id}`, {
+      originalDate: data.originalDocumentDate,
+      source: data.historicalSource,
+    });
+
+    return inspection;
+  }
+
+  /**
+   * Get historical inspections for review
+   */
+  async getHistoricalInspections(filters?: {
+    driverId?: number;
+    vehicleId?: number;
+    startDate?: string;
+    endDate?: string;
+    source?: string;
+    limit?: number;
+    offset?: number;
+  }) {
+    this.log('Getting historical inspections', { filters });
+
+    const conditions = ['i.is_historical_entry = true'];
+    const params: unknown[] = [];
+    let paramCount = 0;
+
+    if (filters?.driverId) {
+      paramCount++;
+      conditions.push(`i.driver_id = $${paramCount}`);
+      params.push(filters.driverId);
+    }
+
+    if (filters?.vehicleId) {
+      paramCount++;
+      conditions.push(`i.vehicle_id = $${paramCount}`);
+      params.push(filters.vehicleId);
+    }
+
+    if (filters?.startDate) {
+      paramCount++;
+      conditions.push(`i.original_document_date >= $${paramCount}`);
+      params.push(filters.startDate);
+    }
+
+    if (filters?.endDate) {
+      paramCount++;
+      conditions.push(`i.original_document_date <= $${paramCount}`);
+      params.push(filters.endDate);
+    }
+
+    if (filters?.source) {
+      paramCount++;
+      conditions.push(`i.historical_source = $${paramCount}`);
+      params.push(filters.source);
+    }
+
+    const whereClause = conditions.join(' AND ');
+
+    const baseQuery = `
+      SELECT
+        i.*,
+        d.name as driver_name,
+        v.vehicle_number,
+        v.make,
+        v.model,
+        e.name as entered_by_name
+      FROM inspections i
+      LEFT JOIN users d ON i.driver_id = d.id
+      LEFT JOIN vehicles v ON i.vehicle_id = v.id
+      LEFT JOIN users e ON i.entered_by = e.id
+      WHERE ${whereClause}
+      ORDER BY i.original_document_date DESC, i.created_at DESC
+    `;
+
+    return this.paginate<Inspection>(
+      baseQuery,
+      params,
+      filters?.limit || 50,
+      filters?.offset || 0
+    );
+  }
+
+  /**
+   * Link a historical inspection to a time card
+   */
+  async linkToTimeCard(inspectionId: number, timeCardId: number): Promise<Inspection | null> {
+    this.log('Linking inspection to time card', { inspectionId, timeCardId });
+
+    // Verify the time card exists
+    const timeCard = await this.queryOne<{ id: number; driver_id: number }>(
+      'SELECT id, driver_id FROM time_cards WHERE id = $1',
+      [timeCardId]
+    );
+
+    if (!timeCard) {
+      throw new BadRequestError(`Time card with ID ${timeCardId} not found`);
+    }
+
+    // Verify the inspection exists and matches the driver
+    const inspection = await this.queryOne<{ id: number; driver_id: number }>(
+      'SELECT id, driver_id FROM inspections WHERE id = $1',
+      [inspectionId]
+    );
+
+    if (!inspection) {
+      throw new BadRequestError(`Inspection with ID ${inspectionId} not found`);
+    }
+
+    if (inspection.driver_id !== timeCard.driver_id) {
+      throw new BadRequestError('Inspection and time card must be for the same driver');
+    }
+
+    return this.update<Inspection>('inspections', inspectionId, {
+      time_card_id: timeCardId,
+      updated_at: new Date(),
+    });
+  }
+
+  /**
+   * Get inspection statistics for compliance reporting
+   */
+  async getInspectionStats(filters?: {
+    driverId?: number;
+    vehicleId?: number;
+    startDate?: string;
+    endDate?: string;
+    includeHistorical?: boolean;
+  }): Promise<{
+    totalInspections: number;
+    preTrips: number;
+    postTrips: number;
+    defectsFound: number;
+    criticalDefects: number;
+    historicalEntries: number;
+  }> {
+    const conditions: string[] = [];
+    const params: unknown[] = [];
+    let paramCount = 0;
+
+    if (filters?.driverId) {
+      paramCount++;
+      conditions.push(`driver_id = $${paramCount}`);
+      params.push(filters.driverId);
+    }
+
+    if (filters?.vehicleId) {
+      paramCount++;
+      conditions.push(`vehicle_id = $${paramCount}`);
+      params.push(filters.vehicleId);
+    }
+
+    if (filters?.startDate) {
+      paramCount++;
+      conditions.push(`COALESCE(original_document_date, DATE(created_at)) >= $${paramCount}`);
+      params.push(filters.startDate);
+    }
+
+    if (filters?.endDate) {
+      paramCount++;
+      conditions.push(`COALESCE(original_document_date, DATE(created_at)) <= $${paramCount}`);
+      params.push(filters.endDate);
+    }
+
+    if (filters?.includeHistorical === false) {
+      conditions.push('is_historical_entry = false');
+    }
+
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    const stats = await this.queryOne<{
+      total_inspections: number;
+      pre_trips: number;
+      post_trips: number;
+      defects_found: number;
+      critical_defects: number;
+      historical_entries: number;
+    }>(
+      `SELECT
+        COUNT(*)::int as total_inspections,
+        COUNT(*) FILTER (WHERE type = 'pre_trip')::int as pre_trips,
+        COUNT(*) FILTER (WHERE type = 'post_trip')::int as post_trips,
+        COUNT(*) FILTER (WHERE defects_found = true)::int as defects_found,
+        COUNT(*) FILTER (WHERE defect_severity = 'critical')::int as critical_defects,
+        COUNT(*) FILTER (WHERE is_historical_entry = true)::int as historical_entries
+      FROM inspections
+      ${whereClause}`,
+      params
+    );
+
+    return {
+      totalInspections: stats?.total_inspections || 0,
+      preTrips: stats?.pre_trips || 0,
+      postTrips: stats?.post_trips || 0,
+      defectsFound: stats?.defects_found || 0,
+      criticalDefects: stats?.critical_defects || 0,
+      historicalEntries: stats?.historical_entries || 0,
+    };
   }
 }
 

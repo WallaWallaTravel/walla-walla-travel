@@ -313,6 +313,119 @@ Your local wine country experts
 
 export const EmailTemplates = {
   /**
+   * Partner Invitation Email
+   * Sent to businesses to invite them to become partners
+   */
+  partnerInvitation: (data: {
+    business_name: string;
+    invite_url: string;
+    expires_in_days: number;
+  }) => ({
+    subject: `You're Invited to Partner with Walla Walla Travel`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6;">
+        <div style="max-width: 600px; margin: 0 auto; background: #ffffff;">
+          <!-- Header -->
+          <div style="background: linear-gradient(135deg, #8B1538 0%, #722F37 100%); padding: 40px 24px; text-align: center;">
+            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">🤝 Partner Invitation</h1>
+            <p style="color: #fecaca; margin: 12px 0 0 0; font-size: 16px;">Walla Walla Travel</p>
+          </div>
+
+          <!-- Main Content -->
+          <div style="padding: 40px 24px;">
+            <p style="font-size: 18px; color: #1f2937; margin: 0 0 20px 0;">Hello <strong>${data.business_name}</strong>,</p>
+
+            <p style="font-size: 16px; color: #4b5563; line-height: 1.6; margin: 0 0 24px 0;">
+              We'd like to invite you to become a partner with Walla Walla Travel. As a partner, you'll be featured in our wine tour itineraries and AI-powered recommendations, helping visitors discover your business.
+            </p>
+
+            <!-- Benefits Card -->
+            <div style="background: #f0fdf4; border: 2px solid #22c55e; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+              <h2 style="color: #166534; margin: 0 0 16px 0; font-size: 18px; font-weight: bold;">✨ Partner Benefits</h2>
+              <ul style="color: #1f2937; font-size: 15px; line-height: 1.8; margin: 0; padding-left: 20px;">
+                <li>Featured in our AI-powered winery recommendations</li>
+                <li>Included in curated wine tour itineraries</li>
+                <li>Access to the Partner Portal for managing your profile</li>
+                <li>Share your unique story with visitors</li>
+                <li>Insider tips featured to tour guests</li>
+              </ul>
+            </div>
+
+            <!-- CTA Button -->
+            <div style="text-align: center; margin: 32px 0;">
+              <a href="${data.invite_url}" style="display: inline-block; background: #8B1538; color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 8px; font-size: 18px; font-weight: bold;">
+                Accept Invitation
+              </a>
+            </div>
+
+            <p style="font-size: 14px; color: #6b7280; text-align: center; margin: 0 0 24px 0;">
+              This invitation expires in ${data.expires_in_days} days.
+            </p>
+
+            <!-- What to Expect -->
+            <div style="background: #eff6ff; border: 2px solid #3b82f6; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+              <h2 style="color: #1e40af; margin: 0 0 12px 0; font-size: 16px; font-weight: bold;">📋 What to Expect</h2>
+              <ol style="color: #1f2937; font-size: 14px; line-height: 1.8; margin: 0; padding-left: 20px;">
+                <li>Click the button above to accept the invitation</li>
+                <li>Create your Partner Portal account</li>
+                <li>Complete your business profile</li>
+                <li>Start appearing in our recommendations!</li>
+              </ol>
+            </div>
+
+            <p style="font-size: 14px; color: #9ca3af; text-align: center; margin: 0;">
+              Questions? Reply to this email or call us at (509) 200-8000
+            </p>
+          </div>
+
+          <!-- Footer -->
+          <div style="background: #f9fafb; padding: 24px; text-align: center; border-top: 1px solid #e5e7eb;">
+            <p style="color: #6b7280; font-size: 14px; margin: 0 0 8px 0; font-weight: bold;">Walla Walla Travel</p>
+            <p style="color: #9ca3af; font-size: 12px; margin: 0;">Your local wine country experts</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+    text: `
+Partner Invitation from Walla Walla Travel
+
+Hello ${data.business_name},
+
+We'd like to invite you to become a partner with Walla Walla Travel. As a partner, you'll be featured in our wine tour itineraries and AI-powered recommendations, helping visitors discover your business.
+
+PARTNER BENEFITS:
+- Featured in our AI-powered winery recommendations
+- Included in curated wine tour itineraries
+- Access to the Partner Portal for managing your profile
+- Share your unique story with visitors
+- Insider tips featured to tour guests
+
+Accept your invitation here:
+${data.invite_url}
+
+This invitation expires in ${data.expires_in_days} days.
+
+WHAT TO EXPECT:
+1. Click the link above to accept the invitation
+2. Create your Partner Portal account
+3. Complete your business profile
+4. Start appearing in our recommendations!
+
+Questions? Reply to this email or call us at (509) 200-8000
+
+Walla Walla Travel
+Your local wine country experts
+    `
+  }),
+
+  /**
    * Booking Confirmation Email
    */
   bookingConfirmation: (data: {

@@ -4,6 +4,7 @@ import { query } from '@/lib/db';
 import { requestHandoffSchema } from '@/lib/validation/schemas/trip';
 import { sendConsultationRequestNotification, sendConsultationConfirmationToCustomer } from '@/lib/email';
 import { logger } from '@/lib/logger';
+import { crmSyncService } from '@/lib/services/crm-sync.service';
 
 interface RouteParams {
   shareCode: string;
@@ -101,6 +102,26 @@ export const POST = withErrorHandling<unknown, RouteParams>(
     } catch (emailError) {
       // Log but don't fail the request if emails fail
       logger.error('Failed to send consultation notification emails', { error: emailError, shareCode });
+    }
+
+    // Sync to CRM (create contact + deal)
+    if (trip.owner_email) {
+      crmSyncService.syncConsultationToContact({
+        tripId: trip.id,
+        shareCode: trip.share_code,
+        tripTitle: trip.title,
+        ownerName: trip.owner_name || 'Unknown',
+        ownerEmail: trip.owner_email,
+        ownerPhone: trip.owner_phone,
+        tripType: trip.trip_type || 'wine_tour',
+        partySize: trip.expected_guests || 2,
+        startDate: trip.start_date,
+        endDate: trip.end_date,
+        notes: validated.notes,
+        brand: 'walla_walla_travel',
+      }).catch(err => {
+        logger.error('Failed to sync consultation to CRM', { error: err, tripId: trip.id, shareCode });
+      });
     }
 
     return NextResponse.json({

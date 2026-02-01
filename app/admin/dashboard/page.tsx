@@ -10,6 +10,17 @@ import Link from 'next/link';
 import { query } from '@/lib/db';
 import { logger } from '@/lib/logger';
 
+interface ComplianceItem {
+  type: 'driver' | 'vehicle';
+  entityId: number;
+  entityName: string;
+  field: string;
+  fieldLabel: string;
+  expiryDate: string;
+  daysUntilExpiry: number;
+  severity: 'expired' | 'critical' | 'urgent' | 'warning';
+}
+
 interface DashboardStats {
   totalBookings: number;
   pendingBookings: number;
@@ -26,6 +37,7 @@ interface DashboardStats {
   pendingProposals: number;
   acceptedProposals: number;
   businessPortalSubmissions: number;
+  complianceIssues: ComplianceItem[];
 }
 
 async function getDashboardStats(): Promise<DashboardStats> {
@@ -73,7 +85,116 @@ async function getDashboardStats(): Promise<DashboardStats> {
     const businessCount = await query(
       `SELECT COUNT(*) as count FROM business_portal WHERE status = 'pending'`
     ).catch(() => ({ rows: [{ count: 0 }] }));
-    
+
+    // Fetch compliance issues (40 days warning window)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const warningDate = new Date(today);
+    warningDate.setDate(warningDate.getDate() + 40);
+    const warningDateStr = warningDate.toISOString().split('T')[0];
+
+    const complianceIssues: ComplianceItem[] = [];
+
+    // Check driver compliance
+    const driversCompliance = await query(
+      `SELECT id, name, license_expiry, medical_cert_expiry
+       FROM users
+       WHERE role = 'driver' AND is_active = true
+         AND (license_expiry <= $1 OR medical_cert_expiry <= $1)`,
+      [warningDateStr]
+    ).catch(() => ({ rows: [] }));
+
+    // Severity thresholds: expired (<=0), critical (1-5 days), urgent (6-10 days), warning (11-40 days)
+    const getSeverity = (daysUntil: number): 'expired' | 'critical' | 'urgent' | 'warning' => {
+      if (daysUntil <= 0) return 'expired';
+      if (daysUntil <= 5) return 'critical';
+      if (daysUntil <= 10) return 'urgent';
+      return 'warning';
+    };
+
+    for (const driver of driversCompliance.rows) {
+      if (driver.license_expiry) {
+        const expiry = new Date(driver.license_expiry);
+        const daysUntil = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        if (daysUntil <= 40) {
+          complianceIssues.push({
+            type: 'driver',
+            entityId: driver.id,
+            entityName: driver.name,
+            field: 'license_expiry',
+            fieldLabel: 'Driver License',
+            expiryDate: expiry.toISOString().split('T')[0],
+            daysUntilExpiry: daysUntil,
+            severity: getSeverity(daysUntil),
+          });
+        }
+      }
+      if (driver.medical_cert_expiry) {
+        const expiry = new Date(driver.medical_cert_expiry);
+        const daysUntil = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        if (daysUntil <= 40) {
+          complianceIssues.push({
+            type: 'driver',
+            entityId: driver.id,
+            entityName: driver.name,
+            field: 'medical_cert_expiry',
+            fieldLabel: 'Medical Certificate',
+            expiryDate: expiry.toISOString().split('T')[0],
+            daysUntilExpiry: daysUntil,
+            severity: getSeverity(daysUntil),
+          });
+        }
+      }
+    }
+
+    // Check vehicle compliance
+    const vehiclesCompliance = await query(
+      `SELECT id, name, insurance_expiry, registration_expiry
+       FROM vehicles
+       WHERE is_active = true
+         AND (insurance_expiry <= $1 OR registration_expiry <= $1)`,
+      [warningDateStr]
+    ).catch(() => ({ rows: [] }));
+
+    for (const vehicle of vehiclesCompliance.rows) {
+      if (vehicle.insurance_expiry) {
+        const expiry = new Date(vehicle.insurance_expiry);
+        const daysUntil = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        if (daysUntil <= 40) {
+          complianceIssues.push({
+            type: 'vehicle',
+            entityId: vehicle.id,
+            entityName: vehicle.name,
+            field: 'insurance_expiry',
+            fieldLabel: 'Insurance',
+            expiryDate: expiry.toISOString().split('T')[0],
+            daysUntilExpiry: daysUntil,
+            severity: getSeverity(daysUntil),
+          });
+        }
+      }
+      if (vehicle.registration_expiry) {
+        const expiry = new Date(vehicle.registration_expiry);
+        const daysUntil = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        if (daysUntil <= 40) {
+          complianceIssues.push({
+            type: 'vehicle',
+            entityId: vehicle.id,
+            entityName: vehicle.name,
+            field: 'registration_expiry',
+            fieldLabel: 'Registration',
+            expiryDate: expiry.toISOString().split('T')[0],
+            daysUntilExpiry: daysUntil,
+            severity: getSeverity(daysUntil),
+          });
+        }
+      }
+    }
+
+    // Sort by severity (expired first, then critical, then urgent, then warning)
+    const severityOrder: Record<string, number> = { expired: 0, critical: 1, urgent: 2, warning: 3 };
+    complianceIssues.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
+
     return {
       totalBookings: parseInt(bookingsCount.rows[0]?.count || '0'),
       pendingBookings: parseInt(pendingCount.rows[0]?.count || '0'),
@@ -86,6 +207,7 @@ async function getDashboardStats(): Promise<DashboardStats> {
       pendingProposals: parseInt(proposalsCount.rows[0]?.count || '0'),
       acceptedProposals: parseInt(acceptedProposalsCount.rows[0]?.count || '0'),
       businessPortalSubmissions: parseInt(businessCount.rows[0]?.count || '0'),
+      complianceIssues,
     };
   } catch (error) {
     logger.error('[Dashboard] Error fetching stats', { error });
@@ -98,6 +220,7 @@ async function getDashboardStats(): Promise<DashboardStats> {
       pendingProposals: 0,
       acceptedProposals: 0,
       businessPortalSubmissions: 0,
+      complianceIssues: [],
     };
   }
 }
@@ -125,7 +248,7 @@ export default async function AdminDashboardPage() {
       
       {/* Action Required Alert - Accepted Proposals */}
       {stats.acceptedProposals > 0 && (
-        <Link 
+        <Link
           href="/admin/trip-proposals"
           className="block mb-6 bg-emerald-50 border border-emerald-200 rounded-lg p-4 hover:shadow-soft hover:border-emerald-300 transition-all"
         >
@@ -151,6 +274,107 @@ export default async function AdminDashboardPage() {
             </div>
           </div>
         </Link>
+      )}
+
+      {/* Compliance Alert Widget */}
+      {stats.complianceIssues.length > 0 && (
+        <div className="mb-6 bg-white border border-slate-200 rounded-lg overflow-hidden">
+          <div className={`px-4 py-3 flex items-center justify-between ${
+            stats.complianceIssues.some(i => i.severity === 'expired')
+              ? 'bg-red-50 border-b border-red-200'
+              : stats.complianceIssues.some(i => i.severity === 'critical')
+              ? 'bg-red-50 border-b border-red-200'
+              : stats.complianceIssues.some(i => i.severity === 'urgent')
+              ? 'bg-orange-50 border-b border-orange-200'
+              : 'bg-yellow-50 border-b border-yellow-200'
+          }`}>
+            <div className="flex items-center gap-3">
+              <span className="text-xl">
+                {stats.complianceIssues.some(i => i.severity === 'expired') ? '🔴' :
+                 stats.complianceIssues.some(i => i.severity === 'critical') ? '🔴' :
+                 stats.complianceIssues.some(i => i.severity === 'urgent') ? '🟠' : '🟡'}
+              </span>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                  Compliance Attention Needed
+                </p>
+                <p className="text-sm text-slate-700">
+                  {stats.complianceIssues.filter(i => i.severity === 'expired').length > 0 && (
+                    <span className="text-red-600 font-semibold mr-2">
+                      {stats.complianceIssues.filter(i => i.severity === 'expired').length} expired
+                    </span>
+                  )}
+                  {stats.complianceIssues.filter(i => i.severity === 'critical').length > 0 && (
+                    <span className="text-red-500 font-semibold mr-2">
+                      {stats.complianceIssues.filter(i => i.severity === 'critical').length} critical
+                    </span>
+                  )}
+                  {stats.complianceIssues.filter(i => i.severity === 'urgent').length > 0 && (
+                    <span className="text-orange-600 font-semibold mr-2">
+                      {stats.complianceIssues.filter(i => i.severity === 'urgent').length} urgent
+                    </span>
+                  )}
+                  {stats.complianceIssues.filter(i => i.severity === 'warning').length > 0 && (
+                    <span className="text-yellow-700 font-semibold">
+                      {stats.complianceIssues.filter(i => i.severity === 'warning').length} warning
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/admin/calendar"
+              className="text-sm text-slate-600 hover:text-slate-800 font-medium flex items-center gap-1"
+            >
+              View Calendar
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
+          <div className="p-4">
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+              {stats.complianceIssues.slice(0, 5).map((issue, idx) => (
+                <div
+                  key={`${issue.type}-${issue.entityId}-${issue.field}`}
+                  className="flex items-center justify-between py-2 px-3 rounded-lg bg-slate-50"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className={`px-2 py-0.5 text-xs font-medium rounded ${
+                      issue.severity === 'expired' ? 'bg-red-100 text-red-700' :
+                      issue.severity === 'critical' ? 'bg-red-100 text-red-600' :
+                      issue.severity === 'urgent' ? 'bg-orange-100 text-orange-700' :
+                      'bg-yellow-100 text-yellow-700'
+                    }`}>
+                      {issue.severity === 'expired' ? 'EXPIRED' :
+                       issue.severity === 'critical' ? 'CRITICAL' :
+                       issue.severity === 'urgent' ? 'URGENT' : 'WARNING'}
+                    </span>
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">
+                        {issue.type === 'driver' ? '👤' : '🚐'} {issue.entityName}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {issue.fieldLabel} {issue.severity === 'expired' ? 'expired' : `expires ${issue.expiryDate}`}
+                      </p>
+                    </div>
+                  </div>
+                  <Link
+                    href={issue.type === 'driver' ? `/admin/users/${issue.entityId}` : `/admin/vehicles/${issue.entityId}`}
+                    className="text-xs text-slate-500 hover:text-slate-700"
+                  >
+                    View →
+                  </Link>
+                </div>
+              ))}
+              {stats.complianceIssues.length > 5 && (
+                <p className="text-center text-sm text-slate-500 pt-2">
+                  +{stats.complianceIssues.length - 5} more items
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
       )}
       
       {/* Stats Grid - Clickable Cards */}
