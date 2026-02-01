@@ -280,7 +280,7 @@ export default function AdminDirectoryPage() {
         return;
       }
       setImportPreview(rows);
-    } catch (error) {
+    } catch {
       setImportError('Failed to parse CSV. Please check the format.');
     }
   };
@@ -304,7 +304,7 @@ export default function AdminDirectoryPage() {
       } else {
         setImportError(data.error || 'Import failed');
       }
-    } catch (error) {
+    } catch {
       setImportError('Import failed. Please try again.');
     } finally {
       setImporting(false);

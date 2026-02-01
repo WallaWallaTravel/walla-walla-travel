@@ -91,7 +91,7 @@ export default function SocialMediaScheduler() {
   }, [fetchPosts])
 
   // Create new post
-  const handleCreatePost = async (status: 'draft' | 'scheduled') => {
+  const handleCreatePost = async (_status: 'draft' | 'scheduled') => {
     if (!newPost.content.trim()) {
       setError('Content is required')
       return
