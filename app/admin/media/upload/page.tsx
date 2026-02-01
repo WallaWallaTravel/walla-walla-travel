@@ -4,12 +4,18 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { logger } from '@/lib/logger';
+import ImageEditorModal from '@/components/admin/ImageEditorModal';
 
 export default function MediaUploadPage() {
   const router = useRouter();
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const [fileType, setFileType] = useState<'image' | 'video' | null>(null);
+
+  // Editor state
+  const [showEditor, setShowEditor] = useState(false);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [isEdited, setIsEdited] = useState(false);
 
   const [formData, setFormData] = useState({
     file: null as File | null,
@@ -64,6 +70,46 @@ export default function MediaUploadPage() {
       title: formData.title || file.name.replace(/\.[^/.]+$/, ''), // Remove extension
       alt_text: formData.alt_text || file.name.replace(/\.[^/.]+$/, '')
     });
+
+    // Reset edit state
+    setIsEdited(false);
+    setPendingFile(null);
+  };
+
+  // Open editor for image files
+  const handleOpenEditor = () => {
+    if (formData.file && fileType === 'image') {
+      setPendingFile(formData.file);
+      setShowEditor(true);
+    }
+  };
+
+  // Handle edited image from editor
+  const handleEditorSave = (editedBlob: Blob, fileName: string) => {
+    const editedFile = new File([editedBlob], fileName, { type: 'image/jpeg' });
+
+    // Create preview for edited file
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPreview(reader.result as string);
+    };
+    reader.readAsDataURL(editedFile);
+
+    // Update form data with edited file
+    setFormData({
+      ...formData,
+      file: editedFile,
+    });
+
+    setIsEdited(true);
+    setShowEditor(false);
+    setPendingFile(null);
+  };
+
+  // Cancel editor
+  const handleEditorCancel = () => {
+    setShowEditor(false);
+    setPendingFile(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -166,17 +212,37 @@ export default function MediaUploadPage() {
                     />
                   )}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPreview(null);
-                    setFileType(null);
-                    setFormData({ ...formData, file: null });
-                  }}
-                  className="absolute top-4 right-4 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold shadow-lg transition-colors"
-                >
-                  ✕ Remove
-                </button>
+                {/* Edited badge */}
+                {isEdited && (
+                  <div className="absolute top-4 left-4 px-3 py-1 bg-green-600 text-white text-sm font-bold rounded-full shadow-lg">
+                    Edited
+                  </div>
+                )}
+                <div className="absolute top-4 right-4 flex gap-2">
+                  {/* Edit button for images */}
+                  {fileType === 'image' && (
+                    <button
+                      type="button"
+                      onClick={handleOpenEditor}
+                      className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold shadow-lg transition-colors"
+                    >
+                      Edit Image
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPreview(null);
+                      setFileType(null);
+                      setIsEdited(false);
+                      setPendingFile(null);
+                      setFormData({ ...formData, file: null });
+                    }}
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold shadow-lg transition-colors"
+                  >
+                    Remove
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -327,9 +393,19 @@ export default function MediaUploadPage() {
             <li>• <strong>Descriptive Titles:</strong> Help with organization and SEO</li>
             <li>• <strong>Relevant Tags:</strong> Make media easier to find later</li>
             <li>• <strong>Alt Text:</strong> Improves accessibility and search rankings</li>
+            <li>• <strong>Edit Images:</strong> Use the built-in editor to crop, rotate, or flip before uploading</li>
           </ul>
         </div>
       </div>
+
+      {/* Image Editor Modal */}
+      {showEditor && pendingFile && (
+        <ImageEditorModal
+          imageFile={pendingFile}
+          onSave={handleEditorSave}
+          onCancel={handleEditorCancel}
+        />
+      )}
     </div>
   );
 }
