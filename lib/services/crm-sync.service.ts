@@ -60,6 +60,21 @@ export interface SyncTripProposalData {
   brand?: Brand;
 }
 
+export interface SyncConsultationData {
+  tripId: number;
+  shareCode: string;
+  tripTitle: string;
+  ownerName: string;
+  ownerEmail: string;
+  ownerPhone?: string | null;
+  tripType: string;
+  partySize: number;
+  startDate?: string | null;
+  endDate?: string | null;
+  notes?: string | null;
+  brand?: Brand;
+}
+
 export interface SyncBookingData {
   bookingId: number;
   customerId: number;
@@ -289,6 +304,108 @@ class CrmSyncService extends BaseService {
     });
 
     this.log('Corporate request synced to CRM', {
+      contactId: contact!.id,
+      dealId: deal!.id,
+    });
+
+    return { contact: contact!, deal: deal! };
+  }
+
+  // ==========================================================================
+  // Trip Consultation (Handoff) → CRM Sync
+  // ==========================================================================
+
+  /**
+   * Create CRM contact and deal from a trip consultation (handoff request)
+   */
+  async syncConsultationToContact(data: SyncConsultationData): Promise<{
+    contact: CrmContact;
+    deal: CrmDeal;
+  }> {
+    this.log('Syncing consultation to CRM', { tripId: data.tripId, shareCode: data.shareCode });
+
+    // Find or create contact by email
+    let contact = await this.queryOne<CrmContact>(
+      `SELECT * FROM crm_contacts WHERE LOWER(email) = LOWER($1)`,
+      [data.ownerEmail]
+    );
+
+    if (!contact) {
+      contact = await this.queryOne<CrmContact>(
+        `INSERT INTO crm_contacts (
+          email, name, phone, contact_type, lifecycle_stage,
+          lead_temperature, source, source_detail
+        ) VALUES ($1, $2, $3, 'individual', 'lead', 'warm', 'consultation', $4)
+        RETURNING *`,
+        [data.ownerEmail, data.ownerName, data.ownerPhone, `Trip: ${data.tripTitle}`]
+      );
+    } else {
+      // Update existing contact if they're still a lead
+      await this.query(
+        `UPDATE crm_contacts
+         SET name = COALESCE(NULLIF($1, ''), name),
+             phone = COALESCE($2, phone),
+             lead_temperature = CASE
+               WHEN lead_temperature = 'cold' THEN 'warm'
+               ELSE lead_temperature
+             END,
+             updated_at = NOW()
+         WHERE id = $3`,
+        [data.ownerName, data.ownerPhone, contact.id]
+      );
+    }
+
+    // Check if deal already exists for this consultation
+    let deal = await this.queryOne<CrmDeal>(
+      `SELECT * FROM crm_deals WHERE consultation_id = $1`,
+      [data.tripId]
+    );
+
+    if (deal) {
+      this.log('Deal already exists for consultation', { dealId: deal.id });
+      return { contact: contact!, deal };
+    }
+
+    // Get the appropriate pipeline template and first stage
+    const brand = data.brand || 'walla_walla_travel';
+    const stageId = await this.getDefaultStageId(brand);
+
+    if (!stageId) {
+      throw new Error('No pipeline stage found for consultation');
+    }
+
+    // Create deal
+    const dealTitle = data.tripTitle || `Trip Consultation - ${data.ownerName}`;
+    const tourDate = data.startDate || null;
+
+    deal = await this.queryOne<CrmDeal>(
+      `INSERT INTO crm_deals (
+        contact_id, stage_id, brand, title, description,
+        party_size, expected_tour_date, consultation_id
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING *`,
+      [
+        contact!.id,
+        stageId,
+        brand,
+        dealTitle,
+        data.notes || `${data.tripType} trip consultation`,
+        data.partySize,
+        tourDate,
+        data.tripId,
+      ]
+    );
+
+    // Log activity
+    await this.logActivity({
+      contactId: contact!.id,
+      dealId: deal!.id,
+      activityType: 'system',
+      subject: 'Consultation request received',
+      body: `Trip consultation "${data.tripTitle}" for ${data.partySize} guests${data.startDate ? ` on ${data.startDate}` : ''}`,
+    });
+
+    this.log('Consultation synced to CRM', {
       contactId: contact!.id,
       dealId: deal!.id,
     });

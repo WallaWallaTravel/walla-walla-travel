@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { format } from 'date-fns'
 
@@ -23,131 +23,54 @@ interface Lead {
   last_contact_at: string | null
   notes: string | null
   created_at: string
+  source_detail?: string | null
+  deal_title?: string | null
 }
 
 export default function LeadManagement() {
   const [leads, setLeads] = useState<Lead[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [filter, setFilter] = useState<'all' | 'new' | 'qualified' | 'hot'>('all')
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
   const [showAddModal, setShowAddModal] = useState(false)
 
-  useEffect(() => {
-    // Simulated data
-    setTimeout(() => {
-      setLeads([
-        {
-          id: 1,
-          first_name: 'Sarah',
-          last_name: 'Johnson',
-          email: 'sarah@techcorp.com',
-          phone: '(206) 555-0123',
-          company: 'TechCorp Inc.',
-          source: 'website',
-          status: 'new',
-          temperature: 'hot',
-          score: 85,
-          interested_services: ['Corporate Wine Tour', 'Team Building'],
-          party_size_estimate: 20,
-          estimated_date: '2025-02-15',
-          budget_range: '$3,000 - $5,000',
-          next_followup_at: '2025-11-30T10:00:00',
-          last_contact_at: null,
-          notes: 'Looking for a corporate team building event. Very interested in premium wineries.',
-          created_at: '2025-11-28T14:30:00',
-        },
-        {
-          id: 2,
-          first_name: 'Michael',
-          last_name: 'Chen',
-          email: 'mchen@gmail.com',
-          phone: '(503) 555-0456',
-          company: null,
-          source: 'referral',
-          status: 'qualified',
-          temperature: 'warm',
-          score: 72,
-          interested_services: ['Private Wine Tour'],
-          party_size_estimate: 6,
-          estimated_date: '2025-01-20',
-          budget_range: '$1,000 - $2,000',
-          next_followup_at: '2025-12-02T14:00:00',
-          last_contact_at: '2025-11-25T11:00:00',
-          notes: 'Anniversary celebration. Referred by Johnson wedding party.',
-          created_at: '2025-11-22T09:15:00',
-        },
-        {
-          id: 3,
-          first_name: 'Emily',
-          last_name: 'Rodriguez',
-          email: 'emily.r@weddingplans.com',
-          phone: '(509) 555-0789',
-          company: 'Wedding Plans Co.',
-          source: 'social_media',
-          status: 'proposal_sent',
-          temperature: 'hot',
-          score: 92,
-          interested_services: ['Wedding Wine Tour', 'Rehearsal Dinner Transport'],
-          party_size_estimate: 35,
-          estimated_date: '2025-06-14',
-          budget_range: '$5,000+',
-          next_followup_at: '2025-12-01T09:00:00',
-          last_contact_at: '2025-11-27T16:30:00',
-          notes: 'Wedding in June. Very excited about the proposal. Following up on questions about vehicle options.',
-          created_at: '2025-11-15T10:45:00',
-        },
-        {
-          id: 4,
-          first_name: 'David',
-          last_name: 'Thompson',
-          email: 'dthompson@startup.io',
-          phone: null,
-          company: 'Startup.io',
-          source: 'email_campaign',
-          status: 'contacted',
-          temperature: 'cold',
-          score: 45,
-          interested_services: ['Wine Tour'],
-          party_size_estimate: 12,
-          estimated_date: null,
-          budget_range: null,
-          next_followup_at: '2025-12-05T11:00:00',
-          last_contact_at: '2025-11-20T13:00:00',
-          notes: 'Responded to email but hasn\'t scheduled call yet.',
-          created_at: '2025-11-18T08:30:00',
-        },
-        {
-          id: 5,
-          first_name: 'Lisa',
-          last_name: 'Park',
-          email: 'lisa.park@lawfirm.com',
-          phone: '(206) 555-0321',
-          company: 'Park & Associates Law',
-          source: 'partner',
-          status: 'negotiating',
-          temperature: 'hot',
-          score: 88,
-          interested_services: ['Corporate Event', 'VIP Wine Experience'],
-          party_size_estimate: 50,
-          estimated_date: '2025-03-22',
-          budget_range: '$8,000 - $10,000',
-          next_followup_at: '2025-11-29T15:00:00',
-          last_contact_at: '2025-11-28T10:00:00',
-          notes: 'Annual partner retreat. Negotiating on price for larger group.',
-          created_at: '2025-11-10T11:20:00',
-        },
-      ])
-      setLoading(false)
-    }, 500)
-  }, [])
+  const fetchLeads = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
 
-  const filteredLeads = leads.filter(lead => {
-    if (filter === 'all') return true
-    if (filter === 'new') return lead.status === 'new'
-    if (filter === 'qualified') return ['qualified', 'proposal_sent', 'negotiating'].includes(lead.status)
-    if (filter === 'hot') return lead.temperature === 'hot'
-    return true
-  })
+      // Build query params based on filter
+      const params = new URLSearchParams()
+      if (filter === 'new') {
+        params.set('status', 'new')
+      } else if (filter === 'qualified') {
+        params.set('status', 'qualified')
+      } else if (filter === 'hot') {
+        params.set('temperature', 'hot')
+      }
+
+      const response = await fetch(`/api/admin/marketing/leads?${params.toString()}`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch leads')
+      }
+
+      const data = await response.json()
+      setLeads(data.leads || [])
+    } catch (err) {
+      console.error('Error fetching leads:', err)
+      setError(err instanceof Error ? err.message : 'Failed to load leads')
+    } finally {
+      setLoading(false)
+    }
+  }, [filter])
+
+  useEffect(() => {
+    fetchLeads()
+  }, [fetchLeads])
+
+  // Leads are now filtered server-side, so we use them directly
+  const filteredLeads = leads
 
   const getStatusColor = (status: Lead['status']) => {
     const colors: Record<string, string> = {
@@ -250,11 +173,32 @@ export default function LeadManagement() {
                   <div className="h-4 bg-gray-200 rounded w-1/2"></div>
                 </div>
               ))
+            ) : error ? (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-12 text-center">
+                <div className="text-4xl mb-4">⚠️</div>
+                <h3 className="text-lg font-medium text-red-900 mb-2">Error loading leads</h3>
+                <p className="text-red-700 mb-4">{error}</p>
+                <button
+                  onClick={() => fetchLeads()}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                >
+                  Try Again
+                </button>
+              </div>
             ) : filteredLeads.length === 0 ? (
               <div className="bg-white rounded-xl p-12 text-center">
                 <div className="text-4xl mb-4">🎯</div>
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No leads found</h3>
-                <p className="text-gray-500">Try adjusting your filters</p>
+                <p className="text-gray-500 mb-4">
+                  {filter !== 'all' ? 'Try adjusting your filters or ' : ''}
+                  Start by adding a new lead or check your CRM contacts.
+                </p>
+                <button
+                  onClick={() => setShowAddModal(true)}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                >
+                  + Add Lead
+                </button>
               </div>
             ) : (
               filteredLeads.map((lead) => (
@@ -414,57 +358,175 @@ export default function LeadManagement() {
 
       {/* Add Lead Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-md w-full p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Add New Lead</h2>
-            <form className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-                  <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-                  <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input type="email" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                <input type="tel" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Source</label>
-                <select className="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                  <option value="website">Website</option>
-                  <option value="referral">Referral</option>
-                  <option value="social_media">Social Media</option>
-                  <option value="email_campaign">Email Campaign</option>
-                  <option value="cold_outreach">Cold Outreach</option>
-                </select>
-              </div>
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                >
-                  Add Lead
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <AddLeadModal
+          onClose={() => setShowAddModal(false)}
+          onSuccess={() => {
+            setShowAddModal(false)
+            fetchLeads()
+          }}
+        />
       )}
+    </div>
+  )
+}
+
+// Add Lead Modal Component
+function AddLeadModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
+  const [submitting, setSubmitting] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
+  const [formData, setFormData] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+    company: '',
+    source: 'website',
+    notes: '',
+  })
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setFormError(null)
+
+    if (!formData.first_name.trim() || !formData.email.trim()) {
+      setFormError('First name and email are required')
+      return
+    }
+
+    try {
+      setSubmitting(true)
+      const response = await fetch('/api/admin/marketing/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to create lead')
+      }
+
+      onSuccess()
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : 'Failed to create lead')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl max-w-md w-full p-6">
+        <h2 className="text-xl font-bold text-gray-900 mb-4">Add New Lead</h2>
+
+        {formError && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+            {formError}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+              <input
+                type="text"
+                required
+                value={formData.first_name}
+                onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+              <input
+                type="text"
+                value={formData.last_name}
+                onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+            <input
+              type="email"
+              required
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+            <input
+              type="tel"
+              value={formData.phone}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
+            <input
+              type="text"
+              value={formData.company}
+              onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Source</label>
+            <select
+              value={formData.source}
+              onChange={(e) => setFormData({ ...formData, source: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+            >
+              <option value="website">Website</option>
+              <option value="referral">Referral</option>
+              <option value="social_media">Social Media</option>
+              <option value="email_campaign">Email Campaign</option>
+              <option value="cold_outreach">Cold Outreach</option>
+              <option value="partner">Partner</option>
+              <option value="event">Event</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+            <textarea
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              placeholder="Any additional notes about this lead..."
+            />
+          </div>
+          <div className="flex gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={submitting}
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {submitting ? (
+                <>
+                  <span className="animate-spin">⏳</span>
+                  Adding...
+                </>
+              ) : (
+                'Add Lead'
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   )
 }

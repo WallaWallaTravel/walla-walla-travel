@@ -13,7 +13,7 @@ function getAnthropicClient() {
 }
 
 interface GenerateRequest {
-  wineryId: number
+  wineryId?: number
   platform: 'instagram' | 'facebook' | 'linkedin'
   contentType: string
   tone: string
@@ -39,6 +39,7 @@ const PLATFORM_GUIDELINES: Record<string, { maxLength: number; style: string; be
 }
 
 const CONTENT_TYPE_PROMPTS: Record<string, string> = {
+  general: 'Create general content about visiting Walla Walla wine country. Highlight the region, the experience, or why people should visit.',
   wine_spotlight: 'Feature a specific wine from their collection. Highlight tasting notes, food pairings, and what makes it special.',
   event_promo: 'Promote visiting the tasting room. Emphasize the experience, ambiance, and what visitors can expect.',
   seasonal: 'Create seasonal content tied to the current time of year (winter/New Year). Connect wine to seasonal moments.',
@@ -60,41 +61,43 @@ export const POST = withRateLimit(rateLimiters.aiGeneration)(async (request: Nex
     const body: GenerateRequest = await request.json()
     const { wineryId, platform, contentType, tone, customPrompt } = body
 
-    // Fetch winery data
-    const winery = await prisma.wineries.findUnique({
-      where: { id: wineryId },
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        short_description: true,
-        specialties: true,
-        winemaker: true,
-        owner: true,
-        founded_year: true,
-        production_volume: true,
-        price_range: true,
-      },
-    })
+    let winery = null
+    let wineryContent: Array<{content_type: string, content: string}> = []
+    let wineryContext = ''
 
-    if (!winery) {
-      return NextResponse.json({ error: 'Winery not found' }, { status: 404 })
-    }
+    // For general content, winery is optional
+    if (wineryId) {
+      // Fetch winery data
+      winery = await prisma.wineries.findUnique({
+        where: { id: wineryId },
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          short_description: true,
+          specialties: true,
+          winemaker: true,
+          owner: true,
+          founded_year: true,
+          production_volume: true,
+          price_range: true,
+        },
+      })
 
-    // Fetch winery content for context
-    const wineryContent = await prisma.$queryRaw<Array<{content_type: string, content: string}>>`
-      SELECT content_type, content
-      FROM winery_content
-      WHERE winery_id = ${wineryId}
-      LIMIT 5
-    `
+      if (!winery) {
+        return NextResponse.json({ error: 'Winery not found' }, { status: 404 })
+      }
 
-    const platformGuideline = PLATFORM_GUIDELINES[platform]
-    const contentTypePrompt = CONTENT_TYPE_PROMPTS[contentType] || ''
-    const toneDescription = TONE_DESCRIPTIONS[tone] || ''
+      // Fetch winery content for context
+      wineryContent = await prisma.$queryRaw<Array<{content_type: string, content: string}>>`
+        SELECT content_type, content
+        FROM winery_content
+        WHERE winery_id = ${wineryId}
+        LIMIT 5
+      `
 
-    // Build context from winery data
-    const wineryContext = `
+      // Build context from winery data
+      wineryContext = `
 Winery: ${winery.name}
 ${winery.description ? `About: ${winery.description}` : ''}
 ${winery.short_description ? `Summary: ${winery.short_description}` : ''}
@@ -107,6 +110,16 @@ ${winery.price_range ? `Price Range: ${winery.price_range}` : ''}
 Additional Context:
 ${wineryContent.map(c => `- ${c.content_type}: ${c.content.substring(0, 200)}`).join('\n')}
 `.trim()
+    } else if (contentType !== 'general') {
+      // Winery required for non-general content
+      return NextResponse.json({ error: 'Winery is required for this content type' }, { status: 400 })
+    }
+
+    const platformGuideline = PLATFORM_GUIDELINES[platform]
+    const contentTypePrompt = CONTENT_TYPE_PROMPTS[contentType] || ''
+    const toneDescription = TONE_DESCRIPTIONS[tone] || ''
+
+    const isGeneralContent = contentType === 'general' && !winery
 
     const systemPrompt = `You are a social media content expert specializing in wine industry marketing for the Walla Walla Valley wine region.
 You create engaging, authentic content that drives visits and builds brand awareness.
@@ -125,14 +138,35 @@ Tone: ${tone}
 Tone Description: ${toneDescription}
 
 IMPORTANT RULES:
-1. Never use generic winery content - everything must feel specific to THIS winery
-2. Don't invent facts - work with the provided information
+${isGeneralContent ? `1. Create content about the Walla Walla Valley wine region as a whole
+2. Highlight what makes Walla Walla special - over 130 wineries, beautiful scenery, friendly atmosphere
+3. Encourage visitors to plan a trip to wine country` : `1. Never use generic winery content - everything must feel specific to THIS winery
+2. Don't invent facts - work with the provided information`}
 3. Include relevant emojis naturally (don't overdo it)
 4. For Instagram, use line breaks to improve readability
 5. End with a clear call-to-action appropriate to the platform
 6. Keep hashtag suggestions relevant to Walla Walla wine country`
 
-    const userPrompt = `Create a ${platform} post for ${winery.name} winery.
+    const userPrompt = isGeneralContent
+      ? `Create a ${platform} post about visiting Walla Walla wine country.
+
+The Walla Walla Valley is a premier wine destination in Washington State, known for:
+- Over 130 wineries in the region
+- World-class Cabernet Sauvignon, Syrah, and other varietals
+- Beautiful rolling hills and Blue Mountains backdrop
+- Charming downtown with tasting rooms, restaurants, and shops
+- Friendly, accessible wine tasting experiences
+- Award-winning wines at every price point
+
+${customPrompt ? `Additional instructions: ${customPrompt}` : ''}
+
+Respond in this exact JSON format:
+{
+  "content": "The main post text here",
+  "hashtags": ["#hashtag1", "#hashtag2", "#hashtag3", "#hashtag4", "#hashtag5"],
+  "imagePrompt": "A brief description of what kind of photo would pair well with this post"
+}`
+      : `Create a ${platform} post for ${winery?.name} winery.
 
 ${wineryContext}
 
