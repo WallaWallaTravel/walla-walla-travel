@@ -52,7 +52,7 @@ interface EditableSettingsValue {
 export default function SystemSettingsPage() {
   const [settings, setSettings] = useState<SystemSetting[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'payment' | 'pricing' | 'booking'>('payment');
+  const [activeTab, setActiveTab] = useState<'payment' | 'pricing' | 'booking' | 'calendar'>('payment');
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<EditableSettingsValue | null>(null);
   const [saving, setSaving] = useState(false);
@@ -167,7 +167,8 @@ export default function SystemSettingsPage() {
             {[
               { id: 'payment', label: 'Payment & Fees', icon: '💳' },
               { id: 'pricing', label: 'Pricing Display', icon: '💰' },
-              { id: 'booking', label: 'Booking Flows', icon: '📅' }
+              { id: 'booking', label: 'Booking Flows', icon: '📅' },
+              { id: 'calendar', label: 'Calendar Feeds', icon: '📆' }
             ].map(tab => (
               <button
                 key={tab.id}
@@ -812,6 +813,153 @@ export default function SystemSettingsPage() {
                     </button>
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Calendar Tab */}
+        {activeTab === 'calendar' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-4">📆 Calendar Feed URLs</h2>
+              <p className="text-gray-600 mb-6">
+                Subscribe to calendar feeds in your personal calendar app (Google Calendar, Apple Calendar, Outlook).
+              </p>
+
+              <div className="space-y-6">
+                {/* All Bookings Feed - Admin */}
+                <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                  <h3 className="font-semibold text-gray-900 mb-2">📋 All Bookings (Admin)</h3>
+                  <p className="text-sm text-gray-600 mb-3">
+                    All confirmed and pending bookings. Admin access required.
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={`${typeof window !== 'undefined' ? window.location.origin : ''}/api/calendar/feed/bookings?token=YOUR_TOKEN`}
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm text-gray-700 font-mono"
+                    />
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(`${window.location.origin}/api/calendar/feed/bookings?token=YOUR_TOKEN`);
+                        setMessage({ type: 'success', text: 'URL copied!' });
+                        setTimeout(() => setMessage(null), 2000);
+                      }}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                </div>
+
+                {/* Complete Calendar Feed - Admin */}
+                <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
+                  <h3 className="font-semibold text-gray-900 mb-2">📅 Complete Calendar (Admin)</h3>
+                  <p className="text-sm text-gray-600 mb-3">
+                    All events including proposals and tentative bookings. Admin access required.
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={`${typeof window !== 'undefined' ? window.location.origin : ''}/api/calendar/feed/all?token=YOUR_TOKEN`}
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm text-gray-700 font-mono"
+                    />
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(`${window.location.origin}/api/calendar/feed/all?token=YOUR_TOKEN`);
+                        setMessage({ type: 'success', text: 'URL copied!' });
+                        setTimeout(() => setMessage(null), 2000);
+                      }}
+                      className="px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                </div>
+
+                {/* Driver Feed */}
+                <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                  <h3 className="font-semibold text-gray-900 mb-2">🚐 Driver Schedule</h3>
+                  <p className="text-sm text-gray-600 mb-3">
+                    Individual driver&apos;s assigned tours. Each driver has their own feed URL.
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={`${typeof window !== 'undefined' ? window.location.origin : ''}/api/calendar/feed/driver/[DRIVER_ID]?token=DRIVER_TOKEN`}
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm text-gray-700 font-mono"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Drivers can find their personal feed URL in their driver portal.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* How to Subscribe */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-4">📱 How to Subscribe</h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="border border-gray-200 rounded-lg p-4">
+                  <h3 className="font-semibold text-gray-900 mb-2">Google Calendar</h3>
+                  <ol className="text-sm text-gray-600 space-y-2 list-decimal ml-4">
+                    <li>Open Google Calendar</li>
+                    <li>Click the + next to &quot;Other calendars&quot;</li>
+                    <li>Select &quot;From URL&quot;</li>
+                    <li>Paste your feed URL</li>
+                    <li>Click &quot;Add calendar&quot;</li>
+                  </ol>
+                </div>
+
+                <div className="border border-gray-200 rounded-lg p-4">
+                  <h3 className="font-semibold text-gray-900 mb-2">Apple Calendar</h3>
+                  <ol className="text-sm text-gray-600 space-y-2 list-decimal ml-4">
+                    <li>Open Calendar app</li>
+                    <li>File → New Calendar Subscription</li>
+                    <li>Paste your feed URL</li>
+                    <li>Click Subscribe</li>
+                    <li>Configure refresh settings</li>
+                  </ol>
+                </div>
+
+                <div className="border border-gray-200 rounded-lg p-4">
+                  <h3 className="font-semibold text-gray-900 mb-2">Outlook</h3>
+                  <ol className="text-sm text-gray-600 space-y-2 list-decimal ml-4">
+                    <li>Open Outlook Calendar</li>
+                    <li>Right-click &quot;My Calendars&quot;</li>
+                    <li>Add calendar → From internet</li>
+                    <li>Paste your feed URL</li>
+                    <li>Click OK</li>
+                  </ol>
+                </div>
+              </div>
+
+              <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="text-sm text-amber-800">
+                  <strong>Note:</strong> Calendar apps typically refresh subscribed calendars every few hours.
+                  Changes may not appear immediately.
+                </p>
+              </div>
+            </div>
+
+            {/* Feed Token Generation */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-4">🔐 About Feed Tokens</h2>
+              <p className="text-gray-600 mb-4">
+                Each user has a unique feed token for authentication. The token is generated from your email
+                and a system secret. Contact an administrator to get your personal feed token.
+              </p>
+              <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                <p className="text-sm text-gray-600">
+                  <strong>Security:</strong> Never share your feed URL publicly. Anyone with your token
+                  can view your calendar data.
+                </p>
               </div>
             </div>
           </div>
