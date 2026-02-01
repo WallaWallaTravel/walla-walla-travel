@@ -43,6 +43,9 @@ export default function EditMediaPage() {
 
   const categories = [
     { value: 'winery', label: 'Winery', icon: '🍷' },
+    { value: 'restaurant', label: 'Restaurant', icon: '🍽️' },
+    { value: 'lodging', label: 'Lodging', icon: '🏨' },
+    { value: 'shop', label: 'Shop', icon: '🛍️' },
     { value: 'service', label: 'Service', icon: '🚐' },
     { value: 'vehicle', label: 'Vehicle', icon: '🚙' },
     { value: 'location', label: 'Location', icon: '📍' },
