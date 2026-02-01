@@ -112,6 +112,11 @@ export default function CalendarView() {
   const [showAvailability, setShowAvailability] = useState(false);
   const [selectedDateForAvailability, setSelectedDateForAvailability] = useState<string>('');
 
+  // Selected booking for action modal
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
   useEffect(() => {
     loadCalendarData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -305,6 +310,33 @@ export default function CalendarView() {
 
   const goToToday = () => {
     setCurrentDate(new Date());
+  };
+
+  const handleDeleteBooking = async () => {
+    if (!selectedBooking) return;
+
+    setDeleting(true);
+    try {
+      const response = await fetch(`/api/admin/bookings/${selectedBooking.id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        // Remove from local state
+        setAllBookings(prev => prev.filter(b => b.id !== selectedBooking.id));
+        setBookings(prev => prev.filter(b => b.id !== selectedBooking.id));
+        setSelectedBooking(null);
+        setShowDeleteConfirm(false);
+      } else {
+        const data = await response.json();
+        alert(`Failed to delete booking: ${data.error?.message || 'Unknown error'}`);
+      }
+    } catch (error) {
+      logger.error('Error deleting booking', { error });
+      alert('Failed to delete booking. Please try again.');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const { daysInMonth, startingDayOfWeek, year, month } = getDaysInMonth(currentDate);
@@ -762,7 +794,7 @@ export default function CalendarView() {
                     {dayBookings.slice(0, 2).map(booking => (
                       <div
                         key={booking.id}
-                        onClick={() => router.push(`/itinerary-builder/${booking.id}`)}
+                        onClick={() => setSelectedBooking(booking)}
                         className={`p-1.5 rounded border cursor-pointer hover:shadow-md transition-shadow relative ${getStatusColor(booking.status)}`}
                       >
                         {booking.complianceIssues && booking.complianceIssues.length > 0 && (
@@ -796,6 +828,98 @@ export default function CalendarView() {
           </div>
         </div>
       </div>
+
+      {/* Booking Action Modal */}
+      {selectedBooking && !showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setSelectedBooking(null)}>
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4" onClick={e => e.stopPropagation()}>
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Booking Actions</h3>
+
+            <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+              <div className="font-bold text-gray-900">{selectedBooking.booking_number}</div>
+              <div className="text-gray-700">{selectedBooking.customer_name}</div>
+              <div className="text-sm text-gray-600">
+                {selectedBooking.tour_date} at {formatTime(selectedBooking.start_time || selectedBooking.pickup_time || '')}
+              </div>
+              <div className="text-sm text-gray-600">{selectedBooking.party_size} guests</div>
+              <div className={`inline-block mt-2 px-2 py-1 rounded text-xs font-semibold ${getStatusColor(selectedBooking.status)}`}>
+                {selectedBooking.status}
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <button
+                onClick={() => {
+                  router.push(`/itinerary-builder/${selectedBooking.id}`);
+                  setSelectedBooking(null);
+                }}
+                className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-lg transition-colors"
+              >
+                View / Edit Booking
+              </button>
+
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="w-full px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold text-lg transition-colors"
+              >
+                Delete Booking
+              </button>
+
+              <button
+                onClick={() => setSelectedBooking(null)}
+                className="w-full px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg font-bold text-lg transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {selectedBooking && showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+            <h3 className="text-xl font-bold text-red-600 mb-4">Confirm Delete</h3>
+
+            <p className="text-gray-700 mb-4">
+              Are you sure you want to permanently delete this booking?
+            </p>
+
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="font-bold text-gray-900">{selectedBooking.booking_number}</div>
+              <div className="text-gray-700">{selectedBooking.customer_name}</div>
+              <div className="text-sm text-gray-600">
+                {selectedBooking.tour_date} - {selectedBooking.party_size} guests
+              </div>
+            </div>
+
+            <p className="text-sm text-red-600 font-semibold mb-4">
+              This action cannot be undone.
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setSelectedBooking(null);
+                }}
+                disabled={deleting}
+                className="flex-1 px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg font-bold text-lg transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteBooking}
+                disabled={deleting}
+                className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold text-lg transition-colors disabled:opacity-50"
+              >
+                {deleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
