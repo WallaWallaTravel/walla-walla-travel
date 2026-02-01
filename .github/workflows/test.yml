@@ -113,7 +113,12 @@ jobs:
       
       - name: Install dependencies
         run: npm ci
-      
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+        env:
+          DATABASE_URL: postgresql://mock:mock@localhost:5432/mock
+
       - name: Build project
         run: npm run build
         env:
@@ -125,7 +130,11 @@ jobs:
           OPENAI_API_KEY: sk-mock
           SESSION_SECRET: mock-session-secret-for-ci-build-only
           ANTHROPIC_API_KEY: sk-ant-mock
-      
+          NEXT_PUBLIC_SUPABASE_URL: https://mock.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: mock-anon-key
+          SUPABASE_URL: https://mock.supabase.co
+          SUPABASE_ANON_KEY: mock-anon-key
+
       - name: Check bundle size
         run: |
           du -sh .next/ || echo "Build output size check"
