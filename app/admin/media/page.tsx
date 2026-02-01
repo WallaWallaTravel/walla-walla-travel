@@ -41,6 +41,9 @@ export default function MediaLibraryPage() {
   const categories = [
     { value: 'all', label: 'All Media', icon: '🎨' },
     { value: 'winery', label: 'Wineries', icon: '🍷' },
+    { value: 'restaurant', label: 'Restaurants', icon: '🍽️' },
+    { value: 'lodging', label: 'Lodging', icon: '🏨' },
+    { value: 'shop', label: 'Shops', icon: '🛍️' },
     { value: 'service', label: 'Services', icon: '🚐' },
     { value: 'vehicle', label: 'Vehicles', icon: '🚙' },
     { value: 'location', label: 'Locations', icon: '📍' },
