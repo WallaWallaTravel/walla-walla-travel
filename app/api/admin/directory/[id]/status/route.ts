@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, UnauthorizedError, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { getSessionFromRequest } from '@/lib/auth/session';
-import { businessDirectoryService, BusinessStatus } from '@/lib/services/business-directory.service';
+import { businessDirectoryService } from '@/lib/services/business-directory.service';
 import { z } from 'zod';
 
 export const runtime = 'nodejs';

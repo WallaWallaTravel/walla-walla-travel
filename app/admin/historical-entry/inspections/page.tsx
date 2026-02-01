@@ -58,7 +58,7 @@ const INSPECTION_ITEMS = {
 type DefectSeverity = 'none' | 'minor' | 'critical';
 
 export default function HistoricalInspectionEntryPage() {
-  const router = useRouter();
+  const _router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);

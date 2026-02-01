@@ -226,7 +226,7 @@ class SocialIntelligenceService {
   getSeasonalContext(): SeasonalContext {
     const now = new Date()
     const month = now.getMonth() + 1 // 1-12
-    const day = now.getDate()
+    const _day = now.getDate()
 
     // Determine season
     let season: string

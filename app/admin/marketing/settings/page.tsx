@@ -165,7 +165,7 @@ function MarketingSettingsContent() {
             <ul className="text-sm text-gray-600 space-y-1">
               <li>1. Connect your Buffer account (requires Buffer Essentials plan or higher)</li>
               <li>2. Link your social media profiles in Buffer</li>
-              <li>3. Schedule posts here - they'll be sent to Buffer's queue automatically</li>
+              <li>3. Schedule posts here - they&apos;ll be sent to Buffer&apos;s queue automatically</li>
               <li>4. Buffer handles the actual posting at the scheduled time</li>
             </ul>
           </div>
