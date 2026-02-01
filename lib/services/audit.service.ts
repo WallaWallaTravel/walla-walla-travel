@@ -62,6 +62,8 @@ export type AuditAction =
   | 'inspection_completed'
   | 'time_clock_in'
   | 'time_clock_out'
+  // Integrations
+  | 'calendar_sync_triggered'
   // Generic
   | 'resource_created'
   | 'resource_updated'

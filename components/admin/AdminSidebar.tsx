@@ -67,6 +67,7 @@ const NAV_ITEMS: NavItem[] = [
   // System (admin only) - expanded to include moved config items
   { label: 'Users', icon: '👥', href: '/admin/users', section: 'System', requiredAccess: 'admin' },
   { label: 'Settings', icon: '⚙️', href: '/admin/settings', section: 'System', requiredAccess: 'admin' },
+  { label: 'Integrations', icon: '🔗', href: '/admin/settings/integrations', section: 'System', requiredAccess: 'admin' },
 ];
 
 // Helper to check if user can access an item
@@ -191,6 +192,16 @@ export function AdminSidebar() {
             <span className="text-base">🌐</span>
             <span>Main Website</span>
           </button>
+          <a
+            href="http://localhost:5173"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+          >
+            <span className="text-base">📋</span>
+            <span>Auditor&apos;s Dream</span>
+            <span className="text-xs text-slate-400">↗</span>
+          </a>
         </div>
       </div>
 
