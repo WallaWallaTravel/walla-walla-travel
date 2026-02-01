@@ -73,6 +73,14 @@ export default function MarketingDashboard() {
       stats: '12 scheduled',
     },
     {
+      title: 'Content Suggestions',
+      description: 'AI-generated daily content ideas backed by real data',
+      icon: '💡',
+      href: '/admin/marketing/suggestions',
+      color: 'from-amber-500 to-orange-600',
+      stats: 'NEW',
+    },
+    {
       title: 'Competitor Monitor',
       description: 'Track competitor pricing and promotions',
       icon: '👁️',
@@ -95,6 +103,14 @@ export default function MarketingDashboard() {
       href: '/admin/marketing/calendar',
       color: 'from-teal-500 to-green-600',
       stats: '8 planned',
+    },
+    {
+      title: 'Settings',
+      description: 'Connect Buffer and manage social media accounts',
+      icon: '⚙️',
+      href: '/admin/marketing/settings',
+      color: 'from-gray-500 to-slate-600',
+      stats: 'Buffer',
     },
   ]
 
@@ -213,6 +229,12 @@ export default function MarketingDashboard() {
               className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
             >
               📧 New Campaign
+            </Link>
+            <Link
+              href="/admin/marketing/suggestions"
+              className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700"
+            >
+              💡 Review Suggestions
             </Link>
           </div>
         </div>
