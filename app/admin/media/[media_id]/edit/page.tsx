@@ -29,7 +29,13 @@ export default function EditMediaPage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [replacing, setReplacing] = useState(false);
   const [media, setMedia] = useState<Media | null>(null);
+
+  // State for file replacement
+  const [newFile, setNewFile] = useState<File | null>(null);
+  const [newFilePreview, setNewFilePreview] = useState<string | null>(null);
+  const [newFileType, setNewFileType] = useState<'image' | 'video' | null>(null);
 
   const [formData, setFormData] = useState({
     category: '',
@@ -61,7 +67,7 @@ export default function EditMediaPage() {
     try {
       const response = await fetch(`/api/media/${media_id}`);
       const result = await response.json();
-      
+
       if (result.success && result.data) {
         const mediaData = result.data;
         setMedia(mediaData);
@@ -85,6 +91,73 @@ export default function EditMediaPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+    const allowedVideoTypes = ['video/mp4', 'video/webm'];
+
+    if (![...allowedImageTypes, ...allowedVideoTypes].includes(file.type)) {
+      alert('Invalid file type. Please upload JPG, PNG, WebP, GIF, MP4, or WebM');
+      return;
+    }
+
+    // Set file type
+    const type = allowedImageTypes.includes(file.type) ? 'image' : 'video';
+    setNewFileType(type);
+    setNewFile(file);
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setNewFilePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleReplaceFile = async () => {
+    if (!newFile) return;
+
+    setReplacing(true);
+
+    try {
+      const data = new FormData();
+      data.append('file', newFile);
+
+      const response = await fetch(`/api/media/${media_id}/replace`, {
+        method: 'POST',
+        body: data
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        alert('File replaced successfully!');
+        // Update local state with new file info
+        setMedia(result.data);
+        // Clear replacement state
+        setNewFile(null);
+        setNewFilePreview(null);
+        setNewFileType(null);
+      } else {
+        alert(`Replace failed: ${result.error}`);
+      }
+    } catch (error) {
+      logger.error('Replace error', { error });
+      alert('Failed to replace file');
+    } finally {
+      setReplacing(false);
+    }
+  };
+
+  const cancelReplacement = () => {
+    setNewFile(null);
+    setNewFilePreview(null);
+    setNewFileType(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -122,11 +195,15 @@ export default function EditMediaPage() {
     }
   };
 
-  const formatFileSize = (bytes: number): string => {
+  const formatFileSize = (bytes: number | null): string => {
+    if (bytes === null || bytes === undefined) return 'Unknown';
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
+
+  // Check if the current image appears broken
+  const isImageBroken = media && (!media.file_path || media.file_size === null || media.file_size === 0);
 
   if (loading) {
     return (
@@ -162,13 +239,36 @@ export default function EditMediaPage() {
           {/* Preview */}
           <div className="bg-white rounded-xl shadow-md p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Preview</h2>
+
+            {/* Current or New Preview */}
             <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden mb-4">
-              {media.file_type === 'image' ? (
+              {newFilePreview ? (
+                // Show new file preview
+                newFileType === 'image' ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={newFilePreview}
+                    alt="New file preview"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <video
+                    src={newFilePreview}
+                    controls
+                    className="w-full h-full object-cover"
+                  />
+                )
+              ) : media.file_type === 'image' ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img
                   src={media.file_path}
                   alt={media.alt_text || 'Media preview'}
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    // Show broken image placeholder
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                  }}
                 />
               ) : (
                 <video
@@ -177,37 +277,107 @@ export default function EditMediaPage() {
                   className="w-full h-full object-cover"
                 />
               )}
+              {/* Broken image placeholder */}
+              <div className="hidden absolute inset-0 flex flex-col items-center justify-center bg-gray-100 text-gray-500">
+                <div className="text-6xl mb-2">🖼️</div>
+                <p className="text-sm font-medium">Image not available</p>
+              </div>
+
+              {/* New file badge */}
+              {newFilePreview && (
+                <div className="absolute top-2 left-2 px-3 py-1 bg-green-600 text-white text-xs font-bold rounded-full">
+                  New File
+                </div>
+              )}
             </div>
-            <div className="space-y-2 text-sm text-gray-600">
-              <p><strong className="text-gray-900">Filename:</strong> {media.file_name}</p>
-              <p><strong className="text-gray-900">Size:</strong> {formatFileSize(media.file_size)}</p>
-              <p><strong className="text-gray-900">Type:</strong> {media.file_type}</p>
+
+            {/* File Info */}
+            <div className="space-y-2 text-sm text-gray-600 mb-4">
+              <p><strong className="text-gray-900">Filename:</strong> {newFile ? newFile.name : media.file_name}</p>
+              <p><strong className="text-gray-900">Size:</strong> {newFile ? formatFileSize(newFile.size) : formatFileSize(media.file_size)}</p>
+              <p><strong className="text-gray-900">Type:</strong> {newFileType || media.file_type}</p>
               <p><strong className="text-gray-900">Views:</strong> {media.view_count}</p>
               <p><strong className="text-gray-900">Uploaded:</strong> {new Date(media.created_at).toLocaleDateString()}</p>
+            </div>
+
+            {/* Replace File Section */}
+            <div className="border-t pt-4">
+              <h3 className="text-sm font-bold text-gray-900 mb-3">
+                {isImageBroken ? '⚠️ Replace Missing File' : '🔄 Replace File'}
+              </h3>
+
+              {isImageBroken && !newFile && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-3">
+                  <p className="text-sm text-amber-800">
+                    This file appears to be missing or corrupted. Upload a new file to fix it.
+                  </p>
+                </div>
+              )}
+
+              {!newFile ? (
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-purple-400 transition-colors cursor-pointer">
+                  <input
+                    type="file"
+                    accept="image/*,video/*"
+                    onChange={handleFileChange}
+                    className="hidden"
+                    id="replace-file"
+                  />
+                  <label htmlFor="replace-file" className="cursor-pointer">
+                    <div className="text-3xl mb-2">📤</div>
+                    <p className="text-sm font-bold text-gray-900">Click to upload replacement</p>
+                    <p className="text-xs text-gray-600">JPG, PNG, WebP, GIF, MP4, or WebM</p>
+                  </label>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={handleReplaceFile}
+                      disabled={replacing}
+                      className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded-lg font-bold text-sm transition-colors"
+                    >
+                      {replacing ? '⏳ Uploading...' : '✓ Confirm Replace'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={cancelReplacement}
+                      disabled={replacing}
+                      className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-900 rounded-lg font-bold text-sm transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-600">
+                    This will replace the file but keep all metadata (title, tags, etc.)
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Edit Form */}
           <div className="bg-white rounded-xl shadow-md p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Details</h2>
-            
+
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Category */}
               <div>
                 <label className="block text-sm font-bold text-gray-900 mb-2">Category *</label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-4 gap-2">
                   {categories.map(cat => (
                     <button
                       key={cat.value}
                       type="button"
                       onClick={() => setFormData({ ...formData, category: cat.value })}
-                      className={`p-3 rounded-lg border-2 transition-all ${
+                      className={`p-2 rounded-lg border-2 transition-all ${
                         formData.category === cat.value
                           ? 'border-purple-600 bg-purple-50'
                           : 'border-gray-300 hover:border-purple-300'
                       }`}
                     >
-                      <div className="text-2xl mb-1">{cat.icon}</div>
+                      <div className="text-xl mb-1">{cat.icon}</div>
                       <div className="text-xs font-bold text-gray-900">{cat.label}</div>
                     </button>
                   ))}
@@ -319,4 +489,3 @@ export default function EditMediaPage() {
     </div>
   );
 }
-
