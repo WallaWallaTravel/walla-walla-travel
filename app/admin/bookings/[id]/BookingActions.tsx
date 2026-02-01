@@ -116,6 +116,38 @@ export function BookingActions({ bookingId, bookingNumber, status, customerEmail
     window.print();
   };
 
+  const handleDelete = async () => {
+    if (!confirm(`Are you sure you want to PERMANENTLY DELETE this booking?\n\n${bookingNumber}\n\nThis action cannot be undone.`)) return;
+
+    // Double confirm for safety
+    if (!confirm('This will permanently remove the booking and all related data. Are you absolutely sure?')) return;
+
+    setLoading('delete');
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const response = await fetch(`/api/admin/bookings/${bookingId}`, {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error?.message || 'Failed to delete booking');
+      }
+
+      setSuccess('Booking deleted successfully. Redirecting...');
+      setTimeout(() => {
+        router.push('/admin/bookings');
+      }, 1500);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete booking');
+    } finally {
+      setLoading(null);
+    }
+  };
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-6">
       <h2 className="text-xl font-bold text-gray-900 mb-4">Actions</h2>
@@ -195,6 +227,22 @@ export function BookingActions({ bookingId, bookingNumber, status, customerEmail
             )}
           </button>
         )}
+
+        {/* Delete button - always visible for admin */}
+        <button
+          onClick={handleDelete}
+          disabled={loading !== null}
+          className="w-full bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white px-4 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+        >
+          {loading === 'delete' ? (
+            <>
+              <span className="animate-spin">⏳</span>
+              Deleting...
+            </>
+          ) : (
+            <>🗑️ Delete Booking</>
+          )}
+        </button>
       </div>
     </div>
   );
