@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { logger } from '@/lib/logger';
+import ImageEditorModal from '@/components/admin/ImageEditorModal';
 
 interface Media {
   id: number;
@@ -36,6 +37,11 @@ export default function EditMediaPage() {
   const [newFile, setNewFile] = useState<File | null>(null);
   const [newFilePreview, setNewFilePreview] = useState<string | null>(null);
   const [newFileType, setNewFileType] = useState<'image' | 'video' | null>(null);
+
+  // Editor state
+  const [showEditor, setShowEditor] = useState(false);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [isEdited, setIsEdited] = useState(false);
 
   const [formData, setFormData] = useState({
     category: '',
@@ -109,14 +115,64 @@ export default function EditMediaPage() {
     // Set file type
     const type = allowedImageTypes.includes(file.type) ? 'image' : 'video';
     setNewFileType(type);
-    setNewFile(file);
 
-    // Create preview
+    // For images, open editor automatically
+    if (type === 'image') {
+      setPendingFile(file);
+      setShowEditor(true);
+    } else {
+      // For videos, just set the file directly
+      setNewFile(file);
+      setIsEdited(false);
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setNewFilePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle edited image from editor
+  const handleEditorSave = (editedBlob: Blob, fileName: string) => {
+    const editedFile = new File([editedBlob], fileName, { type: 'image/jpeg' });
+
+    // Create preview for edited file
     const reader = new FileReader();
     reader.onloadend = () => {
       setNewFilePreview(reader.result as string);
     };
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(editedFile);
+
+    setNewFile(editedFile);
+    setIsEdited(true);
+    setShowEditor(false);
+    setPendingFile(null);
+  };
+
+  // Cancel editor - use original file without edits
+  const handleEditorCancel = () => {
+    if (pendingFile) {
+      // User cancelled, use original file
+      setNewFile(pendingFile);
+      setIsEdited(false);
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setNewFilePreview(reader.result as string);
+      };
+      reader.readAsDataURL(pendingFile);
+    }
+    setShowEditor(false);
+    setPendingFile(null);
+  };
+
+  // Re-open editor for current file
+  const handleOpenEditor = () => {
+    if (newFile && newFileType === 'image') {
+      setPendingFile(newFile);
+      setShowEditor(true);
+    }
   };
 
   const handleReplaceFile = async () => {
@@ -158,6 +214,8 @@ export default function EditMediaPage() {
     setNewFile(null);
     setNewFilePreview(null);
     setNewFileType(null);
+    setIsEdited(false);
+    setPendingFile(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -285,8 +343,15 @@ export default function EditMediaPage() {
 
               {/* New file badge */}
               {newFilePreview && (
-                <div className="absolute top-2 left-2 px-3 py-1 bg-green-600 text-white text-xs font-bold rounded-full">
-                  New File
+                <div className="absolute top-2 left-2 flex gap-2">
+                  <span className="px-3 py-1 bg-green-600 text-white text-xs font-bold rounded-full">
+                    New File
+                  </span>
+                  {isEdited && (
+                    <span className="px-3 py-1 bg-purple-600 text-white text-xs font-bold rounded-full">
+                      Edited
+                    </span>
+                  )}
                 </div>
               )}
             </div>
@@ -340,6 +405,16 @@ export default function EditMediaPage() {
                     >
                       {replacing ? '⏳ Uploading...' : '✓ Confirm Replace'}
                     </button>
+                    {newFileType === 'image' && (
+                      <button
+                        type="button"
+                        onClick={handleOpenEditor}
+                        disabled={replacing}
+                        className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white rounded-lg font-bold text-sm transition-colors"
+                      >
+                        Edit
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={cancelReplacement}
@@ -486,6 +561,15 @@ export default function EditMediaPage() {
           </div>
         </div>
       </div>
+
+      {/* Image Editor Modal */}
+      {showEditor && pendingFile && (
+        <ImageEditorModal
+          imageFile={pendingFile}
+          onSave={handleEditorSave}
+          onCancel={handleEditorCancel}
+        />
+      )}
     </div>
   );
 }
