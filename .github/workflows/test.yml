@@ -100,7 +100,9 @@ jobs:
   build:
     name: Build Check
     runs-on: ubuntu-latest
-    
+    # Build check is informational only - Vercel handles actual deployment builds
+    continue-on-error: true
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
