@@ -2,7 +2,7 @@
 
 /**
  * Unified Leads Page
- * Consolidates Consultations + Corporate Requests into a single inbox
+ * Consolidates Consultations + Corporate Requests + Experience Requests into a single inbox
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -59,20 +59,46 @@ interface CorporateRequest {
   ai_confidence_score: number;
 }
 
-type Lead = (Consultation & { type: 'consultation' }) | (CorporateRequest & { type: 'corporate' });
-type TabType = 'all' | 'consultations' | 'corporate';
+// Types for experience requests (public inquiry form)
+interface ExperienceRequest {
+  id: number;
+  type: 'experience';
+  request_number: string;
+  contact_name: string;
+  contact_email: string;
+  contact_phone: string | null;
+  party_size: number;
+  preferred_date: string;
+  alternate_date: string | null;
+  preferred_time: string | null;
+  experience_type: string;
+  special_requests: string | null;
+  occasion: string | null;
+  brand: string;
+  source: string;
+  status: string;
+  assigned_to: number | null;
+  internal_notes: string | null;
+  created_at: string;
+}
+
+type Lead = (Consultation & { type: 'consultation' }) | (CorporateRequest & { type: 'corporate' }) | (ExperienceRequest & { type: 'experience' });
+type TabType = 'all' | 'inquiries' | 'consultations' | 'corporate';
 
 interface Counts {
   consultations: { pending: number; in_progress: number; completed: number; total: number };
   corporate: { pending: number; responded: number; converted: number; total: number };
+  experience: { new: number; contacted: number; confirmed: number; total: number };
 }
 
 export default function UnifiedLeadsPage() {
   const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [corporateRequests, setCorporateRequests] = useState<CorporateRequest[]>([]);
+  const [experienceRequests, setExperienceRequests] = useState<ExperienceRequest[]>([]);
   const [counts, setCounts] = useState<Counts>({
     consultations: { pending: 0, in_progress: 0, completed: 0, total: 0 },
     corporate: { pending: 0, responded: 0, converted: 0, total: 0 },
+    experience: { new: 0, contacted: 0, confirmed: 0, total: 0 },
   });
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>('all');
@@ -81,10 +107,11 @@ export default function UnifiedLeadsPage() {
   const fetchAllLeads = useCallback(async () => {
     setIsLoading(true);
     try {
-      // Fetch both in parallel
-      const [consultationsRes, corporateRes] = await Promise.all([
+      // Fetch all three in parallel
+      const [consultationsRes, corporateRes, experienceRes] = await Promise.all([
         fetch('/api/admin/consultations?status=all'),
         fetch('/api/corporate-request'),
+        fetch('/api/admin/experience-requests'),
       ]);
 
       if (consultationsRes.ok) {
@@ -110,6 +137,20 @@ export default function UnifiedLeadsPage() {
           corporate: { pending, responded, converted, total: items.length },
         }));
       }
+
+      if (experienceRes.ok) {
+        const data = await experienceRes.json();
+        const items = (data.data || []).map((r: ExperienceRequest) => ({ ...r, type: 'experience' as const }));
+        setExperienceRequests(items);
+        // Count experience requests by status
+        const newCount = items.filter((r: ExperienceRequest) => r.status === 'new').length;
+        const contacted = items.filter((r: ExperienceRequest) => r.status === 'contacted' || r.status === 'in_progress').length;
+        const confirmed = items.filter((r: ExperienceRequest) => r.status === 'confirmed' || r.status === 'completed').length;
+        setCounts(prev => ({
+          ...prev,
+          experience: { new: newCount, contacted, confirmed, total: items.length },
+        }));
+      }
     } catch (error) {
       logger.error('Failed to fetch leads', { error });
     } finally {
@@ -128,6 +169,7 @@ export default function UnifiedLeadsPage() {
     const all: Lead[] = [
       ...consultations.map(c => ({ ...c, type: 'consultation' as const })),
       ...corporateRequests.map(r => ({ ...r, type: 'corporate' as const })),
+      ...experienceRequests.map(r => ({ ...r, type: 'experience' as const })),
     ];
     return all.sort((a, b) => {
       const dateA = a.type === 'consultation' ? a.handoff_requested_at : a.created_at;
@@ -138,6 +180,8 @@ export default function UnifiedLeadsPage() {
 
   const getDisplayLeads = (): Lead[] => {
     switch (activeTab) {
+      case 'inquiries':
+        return experienceRequests.map(r => ({ ...r, type: 'experience' as const }));
       case 'consultations':
         return consultations.map(c => ({ ...c, type: 'consultation' as const }));
       case 'corporate':
@@ -174,6 +218,9 @@ export default function UnifiedLeadsPage() {
     if (lead.type === 'consultation') {
       return lead.owner_name || 'Anonymous';
     }
+    if (lead.type === 'experience') {
+      return lead.contact_name;
+    }
     return lead.company_name || lead.contact_name;
   };
 
@@ -205,6 +252,19 @@ export default function UnifiedLeadsPage() {
     return lead.party_size;
   };
 
+  const getLeadTourDate = (lead: Lead): string | null => {
+    if (lead.type === 'consultation') {
+      return lead.start_date;
+    }
+    if (lead.type === 'experience') {
+      return lead.preferred_date;
+    }
+    if (lead.type === 'corporate' && lead.preferred_dates && lead.preferred_dates.length > 0) {
+      return typeof lead.preferred_dates === 'string' ? lead.preferred_dates : lead.preferred_dates[0];
+    }
+    return null;
+  };
+
   const getStatusBadge = (lead: Lead) => {
     if (lead.type === 'consultation') {
       if (lead.converted_to_booking_id) {
@@ -217,6 +277,21 @@ export default function UnifiedLeadsPage() {
         return <span className="px-2 py-1 bg-amber-100 text-amber-800 text-xs font-medium rounded-full">New</span>;
       }
       return <span className="px-2 py-1 bg-slate-100 text-slate-800 text-xs font-medium rounded-full">{lead.status}</span>;
+    } else if (lead.type === 'experience') {
+      const colors: Record<string, string> = {
+        new: 'bg-amber-100 text-amber-800',
+        contacted: 'bg-blue-100 text-blue-800',
+        in_progress: 'bg-cyan-100 text-cyan-800',
+        confirmed: 'bg-green-100 text-green-800',
+        declined: 'bg-slate-100 text-slate-800',
+        completed: 'bg-emerald-100 text-emerald-800',
+        cancelled: 'bg-red-100 text-red-800',
+      };
+      return (
+        <span className={`px-2 py-1 text-xs font-medium rounded-full ${colors[lead.status] || 'bg-slate-100 text-slate-800'}`}>
+          {lead.status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+        </span>
+      );
     } else {
       const colors: Record<string, string> = {
         pending: 'bg-amber-100 text-amber-800',
@@ -236,14 +311,18 @@ export default function UnifiedLeadsPage() {
     if (lead.type === 'consultation') {
       return <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full">Trip Request</span>;
     }
+    if (lead.type === 'experience') {
+      return <span className="px-2 py-1 bg-rose-100 text-rose-800 text-xs font-medium rounded-full">Inquiry</span>;
+    }
     return <span className="px-2 py-1 bg-indigo-100 text-indigo-800 text-xs font-medium rounded-full">Corporate</span>;
   };
 
-  const totalPending = counts.consultations.pending + counts.corporate.pending;
-  const totalLeads = counts.consultations.total + counts.corporate.total;
+  const totalPending = counts.consultations.pending + counts.corporate.pending + counts.experience.new;
+  const totalLeads = counts.consultations.total + counts.corporate.total + counts.experience.total;
 
   const tabs: { key: TabType; label: string; count: number }[] = [
     { key: 'all', label: 'All Leads', count: totalLeads },
+    { key: 'inquiries', label: 'Inquiries', count: counts.experience.total },
     { key: 'consultations', label: 'Trip Requests', count: counts.consultations.total },
     { key: 'corporate', label: 'Corporate', count: counts.corporate.total },
   ];
@@ -259,10 +338,14 @@ export default function UnifiedLeadsPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
           <div className="text-2xl font-bold text-amber-900">{totalPending}</div>
           <div className="text-sm text-amber-700">New Leads</div>
+        </div>
+        <div className="bg-rose-50 border border-rose-200 rounded-xl p-4">
+          <div className="text-2xl font-bold text-rose-900">{counts.experience.total}</div>
+          <div className="text-sm text-rose-700">Inquiries</div>
         </div>
         <div className="bg-purple-50 border border-purple-200 rounded-xl p-4">
           <div className="text-2xl font-bold text-purple-900">{counts.consultations.total}</div>
@@ -274,7 +357,7 @@ export default function UnifiedLeadsPage() {
         </div>
         <div className="bg-green-50 border border-green-200 rounded-xl p-4">
           <div className="text-2xl font-bold text-green-900">
-            {counts.consultations.completed + counts.corporate.converted}
+            {counts.consultations.completed + counts.corporate.converted + counts.experience.confirmed}
           </div>
           <div className="text-sm text-green-600">Converted</div>
         </div>
@@ -387,6 +470,23 @@ export default function UnifiedLeadsPage() {
                         </Link>
                       </>
                     )}
+                    {lead.type === 'experience' && (
+                      <>
+                        <button
+                          onClick={() => setSelectedLead(lead)}
+                          className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-lg transition-colors"
+                        >
+                          Details
+                        </button>
+                        <a
+                          href={`mailto:${lead.contact_email}`}
+                          className="px-3 py-2 bg-[#1E3A5F] hover:bg-[#152a45] text-white text-sm font-medium rounded-lg transition-colors"
+                          onClick={e => e.stopPropagation()}
+                        >
+                          Contact
+                        </a>
+                      </>
+                    )}
                     {lead.type === 'corporate' && (
                       <>
                         <button
@@ -433,6 +533,31 @@ export default function UnifiedLeadsPage() {
                   </div>
                 )}
 
+                {lead.type === 'experience' && (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 pt-4 border-t border-slate-100">
+                    <div>
+                      <div className="text-xs text-slate-500">Tour Date</div>
+                      <div className="text-sm font-medium text-slate-900">
+                        {formatDate(lead.preferred_date)}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-slate-500">Type</div>
+                      <div className="text-sm font-medium text-slate-900 capitalize">
+                        {lead.experience_type.replace(/_/g, ' ')}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-slate-500">Request #</div>
+                      <div className="text-sm font-medium text-slate-900">{lead.request_number}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-slate-500">Source</div>
+                      <div className="text-sm font-medium text-slate-900 capitalize">{lead.source}</div>
+                    </div>
+                  </div>
+                )}
+
                 {lead.type === 'corporate' && (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 pt-4 border-t border-slate-100">
                     <div>
@@ -468,6 +593,14 @@ export default function UnifiedLeadsPage() {
                   </div>
                 )}
 
+                {/* Special requests preview for experience */}
+                {lead.type === 'experience' && lead.special_requests && (
+                  <div className="mt-4 pt-4 border-t border-slate-100">
+                    <div className="text-xs text-slate-500 mb-1">Special Requests</div>
+                    <p className="text-sm text-slate-700 line-clamp-2">{lead.special_requests}</p>
+                  </div>
+                )}
+
                 {/* Description preview for corporate */}
                 {lead.type === 'corporate' && lead.description && (
                   <div className="mt-4 pt-4 border-t border-slate-100">
@@ -478,6 +611,154 @@ export default function UnifiedLeadsPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Experience Request Detail Modal */}
+      {selectedLead && selectedLead.type === 'experience' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setSelectedLead(null)}
+          />
+          <div className="relative bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-slate-900">Inquiry Details</h2>
+              <button
+                onClick={() => setSelectedLead(null)}
+                className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Contact Info */}
+              <div className="bg-slate-50 rounded-lg p-4">
+                <h4 className="font-semibold text-slate-900 mb-3">Contact Information</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-sm text-slate-500">Name</div>
+                    <div className="font-medium">{selectedLead.contact_name}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-slate-500">Request #</div>
+                    <div className="font-medium">{selectedLead.request_number}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-slate-500">Email</div>
+                    <a href={`mailto:${selectedLead.contact_email}`} className="font-medium text-[#1E3A5F] hover:underline">
+                      {selectedLead.contact_email}
+                    </a>
+                  </div>
+                  <div>
+                    <div className="text-sm text-slate-500">Phone</div>
+                    {selectedLead.contact_phone ? (
+                      <a href={`tel:${selectedLead.contact_phone}`} className="font-medium text-[#1E3A5F] hover:underline">
+                        {selectedLead.contact_phone}
+                      </a>
+                    ) : (
+                      <span className="text-slate-400">—</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Tour Details */}
+              <div>
+                <h4 className="font-semibold text-slate-900 mb-3">Tour Details</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-sm text-slate-500">Tour Type</div>
+                    <div className="font-medium capitalize">{selectedLead.experience_type.replace(/_/g, ' ')}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-slate-500">Party Size</div>
+                    <div className="font-medium">{selectedLead.party_size} guests</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-slate-500">Preferred Date</div>
+                    <div className="font-medium">{formatDate(selectedLead.preferred_date)}</div>
+                  </div>
+                  {selectedLead.alternate_date && (
+                    <div>
+                      <div className="text-sm text-slate-500">Alternate Date</div>
+                      <div className="font-medium">{formatDate(selectedLead.alternate_date)}</div>
+                    </div>
+                  )}
+                  {selectedLead.preferred_time && (
+                    <div>
+                      <div className="text-sm text-slate-500">Preferred Time</div>
+                      <div className="font-medium capitalize">{selectedLead.preferred_time}</div>
+                    </div>
+                  )}
+                  <div>
+                    <div className="text-sm text-slate-500">Source</div>
+                    <div className="font-medium capitalize">{selectedLead.source}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Occasion */}
+              {selectedLead.occasion && (
+                <div>
+                  <h4 className="font-semibold text-slate-900 mb-2">Occasion</h4>
+                  <div className="text-slate-700 capitalize">{selectedLead.occasion.replace(/_/g, ' ')}</div>
+                </div>
+              )}
+
+              {/* Special Requests */}
+              {selectedLead.special_requests && (
+                <div>
+                  <h4 className="font-semibold text-slate-900 mb-2">Special Requests</h4>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <p className="text-slate-700 whitespace-pre-wrap">{selectedLead.special_requests}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Internal Notes */}
+              {selectedLead.internal_notes && (
+                <div>
+                  <h4 className="font-semibold text-slate-900 mb-2">Internal Notes</h4>
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <p className="text-slate-700 whitespace-pre-wrap">{selectedLead.internal_notes}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Status */}
+              <div>
+                <h4 className="font-semibold text-slate-900 mb-2">Status</h4>
+                <div className="flex items-center gap-2">
+                  {getStatusBadge(selectedLead)}
+                  <span className="text-sm text-slate-500">
+                    Submitted {formatTimeAgo(selectedLead.created_at)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-4 border-t border-slate-200">
+                <a
+                  href={`mailto:${selectedLead.contact_email}`}
+                  className="flex-1 px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-center font-medium rounded-lg transition-colors"
+                >
+                  Email Customer
+                </a>
+                {selectedLead.contact_phone && (
+                  <a
+                    href={`tel:${selectedLead.contact_phone}`}
+                    className="flex-1 px-4 py-3 bg-[#1E3A5F] hover:bg-[#152a45] text-white text-center font-medium rounded-lg transition-colors"
+                  >
+                    Call Customer
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

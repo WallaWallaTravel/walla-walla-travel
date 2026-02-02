@@ -144,7 +144,7 @@ export default function ItinerariesIndexPage() {
               </div>
               <div className="flex-shrink-0">
                 <Link
-                  href="/book"
+                  href="/plan-your-visit"
                   className="inline-flex items-center gap-2 bg-white text-[#8B1538] px-6 py-3 rounded-xl font-semibold hover:bg-gray-100 transition-colors"
                 >
                   Plan Custom Trip

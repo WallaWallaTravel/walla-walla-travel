@@ -31,10 +31,10 @@ export function PublicHeader() {
             Itineraries
           </Link>
           <Link
-            href="/book"
+            href="/plan-your-visit"
             className="bg-[#8B1538] text-white px-4 py-2 rounded-lg font-semibold hover:bg-[#722F37] transition-colors"
           >
-            Plan Your Trip
+            Plan Your Visit
           </Link>
         </div>
 
@@ -88,11 +88,11 @@ export function PublicHeader() {
             Itineraries
           </Link>
           <Link
-            href="/book"
+            href="/plan-your-visit"
             className="block w-full text-center bg-[#8B1538] text-white px-4 py-3 rounded-lg font-semibold hover:bg-[#722F37] transition-colors mt-4"
             onClick={() => setMobileMenuOpen(false)}
           >
-            Plan Your Trip
+            Plan Your Visit
           </Link>
         </div>
       )}

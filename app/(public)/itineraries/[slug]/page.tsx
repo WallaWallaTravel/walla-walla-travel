@@ -238,7 +238,7 @@ export default async function ItineraryPage({ params }: PageProps) {
                 </Link>
 
                 <Link
-                  href={`/book?itinerary=${encodeURIComponent(itinerary.shortTitle)}`}
+                  href="/inquiry"
                   className="block w-full bg-gray-100 text-gray-700 text-center py-3 rounded-xl font-medium hover:bg-gray-200 transition-colors mb-3"
                 >
                   Book This Trip
