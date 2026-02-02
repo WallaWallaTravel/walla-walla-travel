@@ -114,32 +114,38 @@ export async function DELETE(
     const booking = bookingResult.rows[0];
 
     // Delete related records first (in order of dependencies)
+    // Use a helper to safely run queries even if tables don't exist
+    const safeQuery = async (sql: string, params: unknown[]) => {
+      try {
+        await query(sql, params);
+      } catch (err) {
+        // Ignore "relation does not exist" errors - table may not exist
+        if (err instanceof Error && err.message.includes('does not exist')) {
+          logger.info(`Table not found, skipping: ${sql.substring(0, 50)}...`);
+          return;
+        }
+        throw err;
+      }
+    };
+
     // Tables with foreign keys to bookings - delete or nullify references
+    await safeQuery('DELETE FROM booking_stops WHERE booking_id = $1', [bookingId]);
+    await safeQuery('DELETE FROM booking_line_items WHERE booking_id = $1', [bookingId]);
+    await safeQuery('DELETE FROM vehicle_availability_blocks WHERE booking_id = $1', [bookingId]);
+    await safeQuery('DELETE FROM activity_log WHERE booking_id = $1', [bookingId]);
 
-    // 1. Delete booking stops
-    await query('DELETE FROM booking_stops WHERE booking_id = $1', [bookingId]);
+    // Nullify references in other tables
+    await safeQuery('UPDATE trip_distances SET booking_id = NULL WHERE booking_id = $1', [bookingId]);
+    await safeQuery('UPDATE commission_ledger SET booking_id = NULL WHERE booking_id = $1', [bookingId]);
+    await safeQuery('UPDATE vehicle_incidents SET booking_id = NULL WHERE booking_id = $1', [bookingId]);
+    await safeQuery('UPDATE crm_deals SET booking_id = NULL WHERE booking_id = $1', [bookingId]);
+    await safeQuery('UPDATE trips SET converted_to_booking_id = NULL WHERE converted_to_booking_id = $1', [bookingId]);
+    await safeQuery('UPDATE trip_proposals SET converted_to_booking_id = NULL WHERE converted_to_booking_id = $1', [bookingId]);
+    await safeQuery('UPDATE experience_requests SET converted_booking_id = NULL WHERE converted_booking_id = $1', [bookingId]);
+    await safeQuery('UPDATE abandoned_checkouts SET converted_to_booking_id = NULL WHERE converted_to_booking_id = $1', [bookingId]);
+    await safeQuery('UPDATE shared_tours_tickets SET booking_id = NULL WHERE booking_id = $1', [bookingId]);
 
-    // 2. Delete booking line items
-    await query('DELETE FROM booking_line_items WHERE booking_id = $1', [bookingId]);
-
-    // 3. Delete vehicle availability blocks for this booking
-    await query('DELETE FROM vehicle_availability_blocks WHERE booking_id = $1', [bookingId]);
-
-    // 4. Delete activity log entries
-    await query('DELETE FROM activity_log WHERE booking_id = $1', [bookingId]);
-
-    // 5. Nullify references in other tables (these have ON DELETE SET NULL but let's be explicit)
-    await query('UPDATE trip_distances SET booking_id = NULL WHERE booking_id = $1', [bookingId]);
-    await query('UPDATE commission_ledger SET booking_id = NULL WHERE booking_id = $1', [bookingId]);
-    await query('UPDATE vehicle_incidents SET booking_id = NULL WHERE booking_id = $1', [bookingId]);
-    await query('UPDATE crm_deals SET booking_id = NULL WHERE booking_id = $1', [bookingId]);
-    await query('UPDATE trips SET converted_to_booking_id = NULL WHERE converted_to_booking_id = $1', [bookingId]);
-    await query('UPDATE trip_proposals SET converted_to_booking_id = NULL WHERE converted_to_booking_id = $1', [bookingId]);
-    await query('UPDATE experience_requests SET converted_booking_id = NULL WHERE converted_booking_id = $1', [bookingId]);
-    await query('UPDATE abandoned_checkouts SET converted_to_booking_id = NULL WHERE converted_to_booking_id = $1', [bookingId]);
-    await query('UPDATE shared_tours_tickets SET booking_id = NULL WHERE booking_id = $1', [bookingId]);
-
-    // 6. Delete the booking itself
+    // Delete the booking itself (this one must succeed)
     await query('DELETE FROM bookings WHERE id = $1', [bookingId]);
 
     logger.info('Booking permanently deleted', {
