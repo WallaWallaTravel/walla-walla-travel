@@ -40,7 +40,8 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Invoices', icon: '💰', href: '/admin/invoices', section: 'Financial', requiredAccess: 'admin' },
   { label: 'Pricing', icon: '🧮', href: '/admin/pricing', section: 'Financial', requiredAccess: 'admin' },
 
-  // Content (admin only) - unchanged
+  // Content (admin only)
+  { label: 'Page Content', icon: '📝', href: '/admin/content', section: 'Content', requiredAccess: 'admin' },
   { label: 'Business Portal', icon: '🏪', href: '/admin/business-portal', section: 'Content', requiredAccess: 'admin' },
   { label: 'Media Library', icon: '📸', href: '/admin/media', section: 'Content', requiredAccess: 'admin' },
   { label: 'Wine Directory', icon: '🍷', href: '/admin/wine-directory', section: 'Content', requiredAccess: 'admin' },
