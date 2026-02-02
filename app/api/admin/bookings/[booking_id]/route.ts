@@ -78,7 +78,7 @@ export async function DELETE(
 ): Promise<NextResponse> {
   try {
     const session = await getServerSession();
-    if (!session?.role || session.role !== 'admin') {
+    if (!session?.role || !['admin', 'staff'].includes(session.role)) {
       return NextResponse.json(
         { success: false, error: { message: 'Admin access required', statusCode: 401 } },
         { status: 401 }
@@ -114,20 +114,32 @@ export async function DELETE(
     const booking = bookingResult.rows[0];
 
     // Delete related records first (in order of dependencies)
+    // Tables with foreign keys to bookings - delete or nullify references
+
     // 1. Delete booking stops
     await query('DELETE FROM booking_stops WHERE booking_id = $1', [bookingId]);
 
-    // 2. Delete vehicle availability blocks for this booking
-    await query(
-      `DELETE FROM vehicle_availability_blocks
-       WHERE booking_id = $1`,
-      [bookingId]
-    );
+    // 2. Delete booking line items
+    await query('DELETE FROM booking_line_items WHERE booking_id = $1', [bookingId]);
 
-    // 3. Delete activity log entries
+    // 3. Delete vehicle availability blocks for this booking
+    await query('DELETE FROM vehicle_availability_blocks WHERE booking_id = $1', [bookingId]);
+
+    // 4. Delete activity log entries
     await query('DELETE FROM activity_log WHERE booking_id = $1', [bookingId]);
 
-    // 4. Delete the booking itself
+    // 5. Nullify references in other tables (these have ON DELETE SET NULL but let's be explicit)
+    await query('UPDATE trip_distances SET booking_id = NULL WHERE booking_id = $1', [bookingId]);
+    await query('UPDATE commission_ledger SET booking_id = NULL WHERE booking_id = $1', [bookingId]);
+    await query('UPDATE vehicle_incidents SET booking_id = NULL WHERE booking_id = $1', [bookingId]);
+    await query('UPDATE crm_deals SET booking_id = NULL WHERE booking_id = $1', [bookingId]);
+    await query('UPDATE trips SET converted_to_booking_id = NULL WHERE converted_to_booking_id = $1', [bookingId]);
+    await query('UPDATE trip_proposals SET converted_to_booking_id = NULL WHERE converted_to_booking_id = $1', [bookingId]);
+    await query('UPDATE experience_requests SET converted_booking_id = NULL WHERE converted_booking_id = $1', [bookingId]);
+    await query('UPDATE abandoned_checkouts SET converted_to_booking_id = NULL WHERE converted_to_booking_id = $1', [bookingId]);
+    await query('UPDATE shared_tours_tickets SET booking_id = NULL WHERE booking_id = $1', [bookingId]);
+
+    // 6. Delete the booking itself
     await query('DELETE FROM bookings WHERE id = $1', [bookingId]);
 
     logger.info('Booking permanently deleted', {
@@ -146,9 +158,10 @@ export async function DELETE(
       },
     });
   } catch (error) {
-    logger.error('Error deleting booking', { error });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    logger.error('Error deleting booking', { error: errorMessage, stack: error instanceof Error ? error.stack : undefined });
     return NextResponse.json(
-      { success: false, error: { message: 'Failed to delete booking', statusCode: 500 } },
+      { success: false, error: { message: `Failed to delete booking: ${errorMessage}`, statusCode: 500 } },
       { status: 500 }
     );
   }
