@@ -10,7 +10,7 @@
     },
     {
       "path": "/api/cron/publish-social-posts",
-      "schedule": "*/15 * * * *"
+      "schedule": "0 9 * * *"
     },
     {
       "path": "/api/cron/generate-suggestions",
