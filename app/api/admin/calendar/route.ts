@@ -112,11 +112,11 @@ export const GET = withErrorHandling(async (request: NextRequest): Promise<NextR
        ORDER BY name`
     );
 
-    // Fetch drivers
+    // Fetch drivers (stored in users table with role = 'driver')
     const driversResult = await query(
-      `SELECT id, name, is_active
-       FROM drivers
-       WHERE is_active = true
+      `SELECT id, name, role as is_active
+       FROM users
+       WHERE role = 'driver'
        ORDER BY name`
     );
 
