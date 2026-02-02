@@ -715,7 +715,7 @@ export default function CalendarView() {
                           🔧{dayBlocks.length}
                         </span>
                       )}
-                      {availability.available === 0 && (
+                      {availability.available === 0 && vehicles.length > 0 && (
                         <span className="text-xs font-bold bg-red-600 text-white px-1.5 py-0.5 rounded-full">
                           FULL
                         </span>
