@@ -75,11 +75,11 @@ async function getDashboardStats(): Promise<DashboardStats> {
     );
     
     const proposalsCount = await query(
-      `SELECT COUNT(*) as count FROM proposals WHERE status = 'pending'`
+      `SELECT COUNT(*) as count FROM trip_proposals WHERE status IN ('draft', 'sent')`
     ).catch(() => ({ rows: [{ count: 0 }] }));
-    
+
     const acceptedProposalsCount = await query(
-      `SELECT COUNT(*) as count FROM proposals WHERE status = 'accepted' AND converted_to_booking_id IS NULL`
+      `SELECT COUNT(*) as count FROM trip_proposals WHERE status = 'accepted'`
     ).catch(() => ({ rows: [{ count: 0 }] }));
     
     const businessCount = await query(
@@ -249,7 +249,7 @@ export default async function AdminDashboardPage() {
       {/* Action Required Alert - Accepted Proposals */}
       {stats.acceptedProposals > 0 && (
         <Link
-          href="/admin/trip-proposals"
+          href="/admin/trip-proposals?status=accepted"
           className="block mb-6 bg-emerald-50 border border-emerald-200 rounded-lg p-4 hover:shadow-soft hover:border-emerald-300 transition-all"
         >
           <div className="flex items-center justify-between">
