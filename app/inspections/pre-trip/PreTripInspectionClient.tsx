@@ -332,9 +332,17 @@ export function PreTripInspectionClient({ driver }: Props) {
               {error && (
                 <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
                   <p className="text-red-800 font-medium">{error}</p>
-                  <p className="text-red-600 text-sm mt-1">
-                    Emergency Contact: info@nwtouring.com
-                  </p>
+                  <div className="mt-3 space-y-2">
+                    <a
+                      href="tel:+15095403600"
+                      className="flex items-center justify-center gap-2 w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg text-lg"
+                    >
+                      📞 Call Supervisor: (509) 540-3600
+                    </a>
+                    <p className="text-red-600 text-sm text-center">
+                      Or email: info@nwtouring.com
+                    </p>
+                  </div>
                 </div>
               )}
             </>
