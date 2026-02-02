@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { Metadata } from 'next';
 import { HeroMedia } from '@/components/HeroMedia';
 import { getFeaturedWineries } from '@/lib/data/wineries';
@@ -57,10 +58,10 @@ export default async function HomePage() {
                 Itineraries
               </Link>
               <Link
-                href="/book"
+                href="/plan-your-visit"
                 className="bg-white text-[#8B1538] px-5 py-2 rounded-lg font-semibold hover:bg-white/90 transition-colors"
               >
-                Plan Your Trip
+                Plan Your Visit
               </Link>
             </div>
 
@@ -84,10 +85,10 @@ export default async function HomePage() {
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link
-                  href="/book"
+                  href="/plan-your-visit"
                   className="inline-flex items-center justify-center gap-2 bg-white text-[#8B1538] px-8 py-4 rounded-xl font-semibold text-lg hover:bg-white/90 transition-colors shadow-lg"
                 >
-                  Plan Your Trip
+                  Plan Your Visit
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                   </svg>
@@ -151,35 +152,53 @@ export default async function HomePage() {
             </div>
 
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {featuredWineries.map((winery) => (
-                <Link
-                  key={winery.id}
-                  href={`/wineries/${winery.slug}`}
-                  className="group bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg hover:border-[#8B1538]/30 transition-all"
-                >
-                  <div className="aspect-[4/3] bg-gradient-to-br from-purple-100 to-purple-50 flex items-center justify-center">
-                    <span className="text-5xl">🍷</span>
-                  </div>
-                  <div className="p-4">
-                    <h3 className="font-semibold text-gray-900 group-hover:text-[#8B1538] transition-colors line-clamp-1">
-                      {winery.name}
-                    </h3>
-                    <p className="text-sm text-gray-500 mt-1">{winery.region || 'Walla Walla Valley'}</p>
-                    {winery.experience_tags && winery.experience_tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {winery.experience_tags.slice(0, 2).map((tag) => (
-                          <span
-                            key={tag}
-                            className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </Link>
-              ))}
+              {featuredWineries.map((winery) => {
+                // Use hero_image_url from media library, fallback to image_url, then placeholder
+                const imageUrl = winery.hero_image_url || winery.image_url;
+                const hasImage = imageUrl && !imageUrl.startsWith('data:');
+
+                return (
+                  <Link
+                    key={winery.id}
+                    href={`/wineries/${winery.slug}`}
+                    className="group bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg hover:border-[#8B1538]/30 transition-all"
+                  >
+                    <div className="aspect-[4/3] bg-gradient-to-br from-purple-100 to-purple-50 relative overflow-hidden">
+                      {hasImage ? (
+                        <Image
+                          src={imageUrl}
+                          alt={winery.name}
+                          fill
+                          className="object-cover group-hover:scale-105 transition-transform duration-300"
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="text-5xl">🍷</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-4">
+                      <h3 className="font-semibold text-gray-900 group-hover:text-[#8B1538] transition-colors line-clamp-1">
+                        {winery.name}
+                      </h3>
+                      <p className="text-sm text-gray-500 mt-1">{winery.region || 'Walla Walla Valley'}</p>
+                      {winery.experience_tags && winery.experience_tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {winery.experience_tags.slice(0, 2).map((tag) => (
+                            <span
+                              key={tag}
+                              className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
 
             <div className="mt-6 text-center md:hidden">
@@ -346,10 +365,10 @@ export default async function HomePage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/book"
+              href="/plan-your-visit"
               className="inline-flex items-center justify-center gap-2 bg-[#8B1538] text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-[#722F37] transition-colors shadow-lg"
             >
-              Get Recommendations
+              Get Started
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
               </svg>
@@ -415,7 +434,7 @@ export default async function HomePage() {
               <ul className="space-y-2 text-gray-400">
                 <li><Link href="/guides" className="hover:text-white transition-colors">Travel Guides</Link></li>
                 <li><Link href="/itineraries" className="hover:text-white transition-colors">Sample Itineraries</Link></li>
-                <li><Link href="/book" className="hover:text-white transition-colors">Get Recommendations</Link></li>
+                <li><Link href="/plan-your-visit" className="hover:text-white transition-colors">Plan Your Visit</Link></li>
                 <li><Link href="/corporate" className="hover:text-white transition-colors">Corporate Events</Link></li>
               </ul>
             </div>
