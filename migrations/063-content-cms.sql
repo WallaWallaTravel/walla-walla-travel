@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS page_content (
   metadata JSONB DEFAULT '{}',             -- Additional metadata (e.g., character limits, notes)
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_by INTEGER REFERENCES profiles(id) ON DELETE SET NULL,
+  updated_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
   UNIQUE(page_slug, section_key)
 );
 
@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS content_collections (
   metadata JSONB DEFAULT '{}',            -- Additional flexible data
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_by INTEGER REFERENCES profiles(id) ON DELETE SET NULL,
+  updated_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
   UNIQUE(collection_type, slug)
 );
 
@@ -114,7 +114,7 @@ CREATE TABLE IF NOT EXISTS content_history (
   old_value TEXT,                         -- Previous value
   new_value TEXT,                         -- New value
   changed_at TIMESTAMPTZ DEFAULT NOW(),
-  changed_by INTEGER REFERENCES profiles(id) ON DELETE SET NULL
+  changed_by INTEGER REFERENCES users(id) ON DELETE SET NULL
 );
 
 -- Index for looking up history by record
@@ -181,11 +181,17 @@ ON CONFLICT (collection_type, slug) DO NOTHING;
 
 
 -- ============================================================================
--- MIGRATION TRACKING
+-- MIGRATION TRACKING (skip if _migrations doesn't support ON CONFLICT)
 -- ============================================================================
 
-INSERT INTO _migrations (name, checksum, applied_at)
-VALUES ('063-content-cms', md5('063-content-cms.sql'), NOW())
-ON CONFLICT (name) DO NOTHING;
+-- Record migration if table exists and has space
+DO $$
+BEGIN
+  INSERT INTO _migrations (id, migration_name, checksum, applied_at)
+  VALUES (63, '063-content-cms', md5('063-content-cms.sql'), NOW());
+EXCEPTION WHEN OTHERS THEN
+  -- Ignore if already exists or any other issue
+  NULL;
+END $$;
 
 COMMIT;
