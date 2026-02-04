@@ -4,6 +4,9 @@ import { Metadata } from 'next';
 import { HeroMedia } from '@/components/HeroMedia';
 import { getFeaturedWineries } from '@/lib/data/wineries';
 
+// Force dynamic rendering to avoid database connection at build time
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Walla Walla Wine Tours & Travel Planning | wallawalla.travel',
   description: 'Plan your perfect Walla Walla wine country trip. 120+ wineries, curated recommendations, and personalized tour planning from local experts who know the valley.',

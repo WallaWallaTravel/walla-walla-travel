@@ -1,8 +1,10 @@
-import { logger } from '@/lib/logger';
 /**
  * Session Management
- * 
+ *
  * JWT-based session management with secure cookies
+ *
+ * NOTE: This module is used in Edge middleware, so we cannot import
+ * the logger (which uses Node.js APIs). Use console for any logging.
  */
 
 import { SignJWT, jwtVerify } from 'jose';
@@ -24,7 +26,8 @@ function getSessionSecret(): Uint8Array {
       );
     }
     // Development only - use a consistent dev secret
-    logger.warn('[Session] WARNING: Using development session secret. Set SESSION_SECRET in production.');
+    // eslint-disable-next-line no-console
+    console.warn('[Session] WARNING: Using development session secret. Set SESSION_SECRET in production.');
     return new TextEncoder().encode('dev-only-secret-do-not-use-in-production-32chars');
   }
   if (secret.length < 32) {
