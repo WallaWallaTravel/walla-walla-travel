@@ -322,6 +322,8 @@ model bookings {
   provider_entity_id                                             String?                       @db.Uuid
   booking_source_id                                              String?                       @db.Uuid
   referrer_entity_id                                             String?                       @db.Uuid
+  google_calendar_event_id                                       String?                       @db.VarChar(255)
+  google_calendar_synced_at                                      DateTime?                     @db.Timestamp(6)
   ai_queries                                                     ai_queries[]
   booking_line_items                                             booking_line_items[]
   booking_timeline                                               booking_timeline[]

@@ -15,22 +15,38 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 import { logger } from '@/lib/logger';
 
-// Validate we have the service key
+// Validate we have the required env vars
 if (!process.env.SUPABASE_SERVICE_KEY) {
   logger.warn('Supabase Admin: SUPABASE_SERVICE_KEY not set - admin client will not work');
 }
 
-// Create admin client (service role - bypasses RLS)
-export const supabaseAdmin = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY || '',
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+  logger.warn('Supabase Admin: NEXT_PUBLIC_SUPABASE_URL not set - admin client will not work');
+}
+
+// Create admin client lazily to avoid build-time errors
+let _supabaseAdmin: ReturnType<typeof createClient<Database>> | null = null;
+
+export const supabaseAdmin = new Proxy({} as ReturnType<typeof createClient<Database>>, {
+  get(_target, prop) {
+    if (!_supabaseAdmin) {
+      const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const key = process.env.SUPABASE_SERVICE_KEY;
+
+      if (!url || !key) {
+        throw new Error('Supabase Admin: Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_KEY');
+      }
+
+      _supabaseAdmin = createClient<Database>(url, key, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      });
+    }
+    return (_supabaseAdmin as unknown as Record<string, unknown>)[prop as string];
   }
-);
+});
 
 /**
  * Get the admin client
