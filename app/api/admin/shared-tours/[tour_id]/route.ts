@@ -80,17 +80,8 @@ export const PATCH = withAdminAuth(async (request: NextRequest, _session: AuthSe
   const { tour_id } = await (context as RouteParams).params;
   const body = await request.json();
 
-  // If changing date, validate day of week
-  if (body.tour_date) {
-    const date = new Date(body.tour_date);
-    const dayOfWeek = date.getDay();
-    if (dayOfWeek > 3) {
-      return NextResponse.json(
-        { success: false, error: 'Shared tours can only be scheduled on Sunday through Wednesday' },
-        { status: 400 }
-      );
-    }
-  }
+  // Note: Day-of-week validation removed - any day is now allowed
+  // Sun-Wed is still recommended (peak days), but Thu-Sat tours are permitted
 
   // Special case: reassign_vehicle flag triggers auto-reassignment
   if (body.reassign_vehicle === true) {

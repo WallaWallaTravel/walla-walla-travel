@@ -54,15 +54,8 @@ export const POST = withCSRF(
     );
   }
 
-  // Validate day of week (Sun-Wed only)
-  const date = new Date(body.tour_date);
-  const dayOfWeek = date.getDay(); // 0=Sun, 1=Mon, 2=Tue, 3=Wed
-  if (dayOfWeek > 3) {
-    return NextResponse.json(
-      { success: false, error: 'Shared tours can only be scheduled on Sunday through Wednesday' },
-      { status: 400 }
-    );
-  }
+  // Note: Day-of-week validation removed - any day is now allowed
+  // Sun-Wed is still recommended (peak days), but Thu-Sat tours are permitted
 
   try {
     const result = await sharedTourService.createTour({
