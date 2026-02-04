@@ -95,7 +95,7 @@ export const itineraries: Itinerary[] = [
             name: 'Dinner at Whitehouse-Crawford',
             type: 'restaurant',
             description: 'Iconic Walla Walla dining in a converted mill. Regional cuisine with excellent wine list.',
-            tip: 'Reserve at least a week ahead, especially weekends.',
+            tip: 'Make reservations as early as possible - weekends book up fast.',
           },
         ],
       },
@@ -146,17 +146,16 @@ export const itineraries: Itinerary[] = [
       },
     ],
     tips: [
-      'Book restaurant reservations 1-2 weeks ahead for weekends',
+      'Book restaurant reservations as early as possible - popular spots fill up weeks in advance, especially for weekends',
       'Bring a cooler for wine purchases - summer heat can damage wine in a hot car',
-      'Pace yourself - 3-4 wineries per day is ideal for quality experiences',
+      'If driving yourself: limit to 1-2 tasting stops with a full lunch in between. For more wineries, book a tour so everyone can fully enjoy',
       'Consider shipping wine home if purchasing significant quantities',
-      'Download offline maps - cell service can be spotty in wine country',
     ],
     faqs: [
       {
         question: 'How many wineries can we visit in a Walla Walla weekend?',
         answer:
-          'We recommend 6-8 wineries total over two days (3-4 per day). This allows time for quality tastings, meals, and relaxation without feeling rushed.',
+          'If you have a designated driver or book a tour, 3-4 wineries per day works well. If everyone is tasting and driving, limit to 1-2 stops per day with a full meal in between - safety comes first, and a professional tour lets everyone fully enjoy the experience.',
       },
       {
         question: 'Do we need a car for this itinerary?',
@@ -420,9 +419,9 @@ export const itineraries: Itinerary[] = [
       },
     ],
     tips: [
-      'Book accommodations and dinner reservations at least 2-3 weeks ahead',
+      'Book accommodations and dinner reservations as soon as you know your dates - popular spots fill up fast',
       'Request special touches when booking - wineries and restaurants often accommodate romantic celebrations',
-      'Consider hiring a driver for the day so you can both fully enjoy tastings',
+      'Book a tour so you can both fully enjoy tastings without worrying about driving',
       'Golden hour (1-2 hours before sunset) is the most romantic time at scenic wineries',
       'Ask your hotel about in-room wine service or couples spa treatments',
     ],
