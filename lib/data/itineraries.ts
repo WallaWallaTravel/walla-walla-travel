@@ -205,7 +205,7 @@ export const itineraries: Itinerary[] = [
             time: '12:30 PM',
             name: 'Casual Lunch',
             type: 'restaurant',
-            description: 'Grab lunch at Graze or T. Maccarone\'s for relaxed, wine-country-appropriate fare.',
+            description: 'Grab lunch at Graze or TMACs for relaxed, wine-country-appropriate fare.',
           },
           {
             time: '2:00 PM',
