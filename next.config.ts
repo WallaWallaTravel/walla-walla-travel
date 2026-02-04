@@ -26,6 +26,12 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'images.unsplash.com',
       },
+      {
+        // Supabase Storage for winery photos
+        protocol: 'https',
+        hostname: 'eabqmcvmpkbpyhhpbcij.supabase.co',
+        pathname: '/storage/v1/object/public/**',
+      },
     ],
   },
   

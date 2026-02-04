@@ -63,11 +63,20 @@ export const getAllWinerySlugs = cache(async (): Promise<string[]> => {
 });
 
 /**
- * Get featured wineries (top rated)
+ * Get featured wineries with hero images from media library
+ * This is the main function to use for displaying featured wineries
+ * as it pulls actual uploaded photos instead of relying on cover_photo_url
  */
-export const getFeaturedWineries = cache(async (limit: number = 6): Promise<WinerySummary[]> => {
-  return wineryService.getFeatured(limit);
+export const getFeaturedWineries = cache(async (limit: number = 6): Promise<FeaturedWinerySummary[]> => {
+  return wineryService.getFeaturedWithHeroImages(limit);
 });
+
+/**
+ * Extended winery summary with hero image URL from media library
+ */
+export interface FeaturedWinerySummary extends WinerySummary {
+  hero_image_url?: string;
+}
 
 /**
  * Get total winery count

@@ -28,8 +28,13 @@ import * as dotenv from 'dotenv';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as readline from 'readline';
+import { fileURLToPath } from 'url';
 import { Pool } from 'pg';
 import { google, calendar_v3 } from 'googleapis';
+
+// ES Module compatibility
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 import {
   CalendarEvent,
   ParsedBooking,
@@ -277,6 +282,14 @@ async function bookingExists(event: CalendarEvent): Promise<boolean> {
 async function insertBooking(booking: ParsedBooking, calendarEventId: string): Promise<number> {
   const bookingNumber = await generateBookingNumber();
 
+  // Ensure required fields have values
+  const customerEmail = booking.customerEmail || `calendar-import-${Date.now()}@historical.local`;
+  // Cap party size to 14 (database check constraint), store original in notes if larger
+  const partySizeForDb = Math.min(booking.partySize, 14);
+  const partySizeNote = booking.partySize > 14
+    ? `Original party size: ${booking.partySize}. `
+    : '';
+
   const result = await pool.query(
     `INSERT INTO bookings (
       booking_number,
@@ -306,15 +319,15 @@ async function insertBooking(booking: ParsedBooking, calendarEventId: string): P
     [
       bookingNumber,
       booking.customerName,
-      booking.customerEmail || null,
+      customerEmail,
       booking.customerPhone || null,
-      booking.partySize,
+      partySizeForDb,
       booking.tourDate,
       booking.startTime,
       booking.endTime,
       booking.durationHours,
       booking.pickupLocation || null,
-      booking.specialRequests || null,
+      partySizeNote + (booking.specialRequests || ''),
       0, // base_price - historical data, no price
       0, // deposit_amount
       0, // final_payment_amount
@@ -322,11 +335,16 @@ async function insertBooking(booking: ParsedBooking, calendarEventId: string): P
   );
 
   // Store the calendar event ID in a metadata field or notes
+  // Note: booking_timeline.id doesn't have autoincrement, so we generate it manually
+  const nextIdResult = await pool.query(`SELECT COALESCE(MAX(id), 0) + 1 as next_id FROM booking_timeline`);
+  const nextId = nextIdResult.rows[0].next_id;
+
   await pool.query(
     `INSERT INTO booking_timeline (
-      booking_id, event_type, event_description, event_data, created_at
-    ) VALUES ($1, 'calendar_import', 'Imported from Google Calendar', $2, NOW())`,
+      id, booking_id, event_type, event_description, event_data, created_at
+    ) VALUES ($1, $2, 'calendar_import', 'Imported from Google Calendar', $3, NOW())`,
     [
+      nextId,
       result.rows[0].id,
       JSON.stringify({
         calendar_event_id: calendarEventId,

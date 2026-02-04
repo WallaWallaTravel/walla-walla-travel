@@ -1442,11 +1442,12 @@ model media_library {
   video_thumbnail_path String?              @db.VarChar(500)
   created_at           DateTime?            @default(now()) @db.Timestamp(6)
   updated_at           DateTime?            @default(now()) @db.Timestamp(6)
-  media_usage_log      media_usage_log[]
-  proposal_media       proposal_media[]
-  service_type_media   service_type_media[]
-  vehicle_media        vehicle_media[]
-  winery_media         winery_media[]
+  media_usage_log                       media_usage_log[]
+  proposal_media                        proposal_media[]
+  service_type_media                    service_type_media[]
+  vehicle_media                         vehicle_media[]
+  winery_media                          winery_media[]
+  wineries_featured_photo_override      wineries[]           @relation("winery_featured_photo_override")
 
   @@index([is_active], map: "idx_media_active")
   @@index([category], map: "idx_media_category")
@@ -2947,6 +2948,8 @@ model wineries {
   walk_ins_welcome                 Boolean?                 @default(true)
   annual_production_cases          Int?
   vineyard_acres                   Decimal?                 @db.Decimal(10, 2)
+  featured_photo_override_id       Int?
+  featured_photo_override          media_library?           @relation("winery_featured_photo_override", fields: [featured_photo_override_id], references: [id], onDelete: SetNull)
   booking_wineries                 booking_wineries[]
   customer_tasting_notes           customer_tasting_notes[]
   events                           events[]

@@ -406,6 +406,7 @@ export type media_libraryWhereInput = {
   service_type_media?: Prisma.Service_type_mediaListRelationFilter
   vehicle_media?: Prisma.Vehicle_mediaListRelationFilter
   winery_media?: Prisma.Winery_mediaListRelationFilter
+  wineries_featured_photo_override?: Prisma.WineriesListRelationFilter
 }
 
 export type media_libraryOrderByWithRelationInput = {
@@ -441,6 +442,7 @@ export type media_libraryOrderByWithRelationInput = {
   service_type_media?: Prisma.service_type_mediaOrderByRelationAggregateInput
   vehicle_media?: Prisma.vehicle_mediaOrderByRelationAggregateInput
   winery_media?: Prisma.winery_mediaOrderByRelationAggregateInput
+  wineries_featured_photo_override?: Prisma.wineriesOrderByRelationAggregateInput
 }
 
 export type media_libraryWhereUniqueInput = Prisma.AtLeast<{
@@ -479,6 +481,7 @@ export type media_libraryWhereUniqueInput = Prisma.AtLeast<{
   service_type_media?: Prisma.Service_type_mediaListRelationFilter
   vehicle_media?: Prisma.Vehicle_mediaListRelationFilter
   winery_media?: Prisma.Winery_mediaListRelationFilter
+  wineries_featured_photo_override?: Prisma.WineriesListRelationFilter
 }, "id" | "file_path">
 
 export type media_libraryOrderByWithAggregationInput = {
@@ -581,6 +584,7 @@ export type media_libraryCreateInput = {
   service_type_media?: Prisma.service_type_mediaCreateNestedManyWithoutMedia_libraryInput
   vehicle_media?: Prisma.vehicle_mediaCreateNestedManyWithoutMedia_libraryInput
   winery_media?: Prisma.winery_mediaCreateNestedManyWithoutMedia_libraryInput
+  wineries_featured_photo_override?: Prisma.wineriesCreateNestedManyWithoutFeatured_photo_overrideInput
 }
 
 export type media_libraryUncheckedCreateInput = {
@@ -616,6 +620,7 @@ export type media_libraryUncheckedCreateInput = {
   service_type_media?: Prisma.service_type_mediaUncheckedCreateNestedManyWithoutMedia_libraryInput
   vehicle_media?: Prisma.vehicle_mediaUncheckedCreateNestedManyWithoutMedia_libraryInput
   winery_media?: Prisma.winery_mediaUncheckedCreateNestedManyWithoutMedia_libraryInput
+  wineries_featured_photo_override?: Prisma.wineriesUncheckedCreateNestedManyWithoutFeatured_photo_overrideInput
 }
 
 export type media_libraryUpdateInput = {
@@ -650,6 +655,7 @@ export type media_libraryUpdateInput = {
   service_type_media?: Prisma.service_type_mediaUpdateManyWithoutMedia_libraryNestedInput
   vehicle_media?: Prisma.vehicle_mediaUpdateManyWithoutMedia_libraryNestedInput
   winery_media?: Prisma.winery_mediaUpdateManyWithoutMedia_libraryNestedInput
+  wineries_featured_photo_override?: Prisma.wineriesUpdateManyWithoutFeatured_photo_overrideNestedInput
 }
 
 export type media_libraryUncheckedUpdateInput = {
@@ -685,6 +691,7 @@ export type media_libraryUncheckedUpdateInput = {
   service_type_media?: Prisma.service_type_mediaUncheckedUpdateManyWithoutMedia_libraryNestedInput
   vehicle_media?: Prisma.vehicle_mediaUncheckedUpdateManyWithoutMedia_libraryNestedInput
   winery_media?: Prisma.winery_mediaUncheckedUpdateManyWithoutMedia_libraryNestedInput
+  wineries_featured_photo_override?: Prisma.wineriesUncheckedUpdateManyWithoutFeatured_photo_overrideNestedInput
 }
 
 export type media_libraryCreateManyInput = {
@@ -964,6 +971,22 @@ export type media_libraryUpdateOneRequiredWithoutVehicle_mediaNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.media_libraryUpdateToOneWithWhereWithoutVehicle_mediaInput, Prisma.media_libraryUpdateWithoutVehicle_mediaInput>, Prisma.media_libraryUncheckedUpdateWithoutVehicle_mediaInput>
 }
 
+export type media_libraryCreateNestedOneWithoutWineries_featured_photo_overrideInput = {
+  create?: Prisma.XOR<Prisma.media_libraryCreateWithoutWineries_featured_photo_overrideInput, Prisma.media_libraryUncheckedCreateWithoutWineries_featured_photo_overrideInput>
+  connectOrCreate?: Prisma.media_libraryCreateOrConnectWithoutWineries_featured_photo_overrideInput
+  connect?: Prisma.media_libraryWhereUniqueInput
+}
+
+export type media_libraryUpdateOneWithoutWineries_featured_photo_overrideNestedInput = {
+  create?: Prisma.XOR<Prisma.media_libraryCreateWithoutWineries_featured_photo_overrideInput, Prisma.media_libraryUncheckedCreateWithoutWineries_featured_photo_overrideInput>
+  connectOrCreate?: Prisma.media_libraryCreateOrConnectWithoutWineries_featured_photo_overrideInput
+  upsert?: Prisma.media_libraryUpsertWithoutWineries_featured_photo_overrideInput
+  disconnect?: Prisma.media_libraryWhereInput | boolean
+  delete?: Prisma.media_libraryWhereInput | boolean
+  connect?: Prisma.media_libraryWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.media_libraryUpdateToOneWithWhereWithoutWineries_featured_photo_overrideInput, Prisma.media_libraryUpdateWithoutWineries_featured_photo_overrideInput>, Prisma.media_libraryUncheckedUpdateWithoutWineries_featured_photo_overrideInput>
+}
+
 export type media_libraryCreateNestedOneWithoutWinery_mediaInput = {
   create?: Prisma.XOR<Prisma.media_libraryCreateWithoutWinery_mediaInput, Prisma.media_libraryUncheckedCreateWithoutWinery_mediaInput>
   connectOrCreate?: Prisma.media_libraryCreateOrConnectWithoutWinery_mediaInput
@@ -1009,6 +1032,7 @@ export type media_libraryCreateWithoutMedia_usage_logInput = {
   service_type_media?: Prisma.service_type_mediaCreateNestedManyWithoutMedia_libraryInput
   vehicle_media?: Prisma.vehicle_mediaCreateNestedManyWithoutMedia_libraryInput
   winery_media?: Prisma.winery_mediaCreateNestedManyWithoutMedia_libraryInput
+  wineries_featured_photo_override?: Prisma.wineriesCreateNestedManyWithoutFeatured_photo_overrideInput
 }
 
 export type media_libraryUncheckedCreateWithoutMedia_usage_logInput = {
@@ -1043,6 +1067,7 @@ export type media_libraryUncheckedCreateWithoutMedia_usage_logInput = {
   service_type_media?: Prisma.service_type_mediaUncheckedCreateNestedManyWithoutMedia_libraryInput
   vehicle_media?: Prisma.vehicle_mediaUncheckedCreateNestedManyWithoutMedia_libraryInput
   winery_media?: Prisma.winery_mediaUncheckedCreateNestedManyWithoutMedia_libraryInput
+  wineries_featured_photo_override?: Prisma.wineriesUncheckedCreateNestedManyWithoutFeatured_photo_overrideInput
 }
 
 export type media_libraryCreateOrConnectWithoutMedia_usage_logInput = {
@@ -1092,6 +1117,7 @@ export type media_libraryUpdateWithoutMedia_usage_logInput = {
   service_type_media?: Prisma.service_type_mediaUpdateManyWithoutMedia_libraryNestedInput
   vehicle_media?: Prisma.vehicle_mediaUpdateManyWithoutMedia_libraryNestedInput
   winery_media?: Prisma.winery_mediaUpdateManyWithoutMedia_libraryNestedInput
+  wineries_featured_photo_override?: Prisma.wineriesUpdateManyWithoutFeatured_photo_overrideNestedInput
 }
 
 export type media_libraryUncheckedUpdateWithoutMedia_usage_logInput = {
@@ -1126,6 +1152,7 @@ export type media_libraryUncheckedUpdateWithoutMedia_usage_logInput = {
   service_type_media?: Prisma.service_type_mediaUncheckedUpdateManyWithoutMedia_libraryNestedInput
   vehicle_media?: Prisma.vehicle_mediaUncheckedUpdateManyWithoutMedia_libraryNestedInput
   winery_media?: Prisma.winery_mediaUncheckedUpdateManyWithoutMedia_libraryNestedInput
+  wineries_featured_photo_override?: Prisma.wineriesUncheckedUpdateManyWithoutFeatured_photo_overrideNestedInput
 }
 
 export type media_libraryCreateWithoutProposal_mediaInput = {
@@ -1159,6 +1186,7 @@ export type media_libraryCreateWithoutProposal_mediaInput = {
   service_type_media?: Prisma.service_type_mediaCreateNestedManyWithoutMedia_libraryInput
   vehicle_media?: Prisma.vehicle_mediaCreateNestedManyWithoutMedia_libraryInput
   winery_media?: Prisma.winery_mediaCreateNestedManyWithoutMedia_libraryInput
+  wineries_featured_photo_override?: Prisma.wineriesCreateNestedManyWithoutFeatured_photo_overrideInput
 }
 
 export type media_libraryUncheckedCreateWithoutProposal_mediaInput = {
@@ -1193,6 +1221,7 @@ export type media_libraryUncheckedCreateWithoutProposal_mediaInput = {
   service_type_media?: Prisma.service_type_mediaUncheckedCreateNestedManyWithoutMedia_libraryInput
   vehicle_media?: Prisma.vehicle_mediaUncheckedCreateNestedManyWithoutMedia_libraryInput
   winery_media?: Prisma.winery_mediaUncheckedCreateNestedManyWithoutMedia_libraryInput
+  wineries_featured_photo_override?: Prisma.wineriesUncheckedCreateNestedManyWithoutFeatured_photo_overrideInput
 }
 
 export type media_libraryCreateOrConnectWithoutProposal_mediaInput = {
@@ -1242,6 +1271,7 @@ export type media_libraryUpdateWithoutProposal_mediaInput = {
   service_type_media?: Prisma.service_type_mediaUpdateManyWithoutMedia_libraryNestedInput
   vehicle_media?: Prisma.vehicle_mediaUpdateManyWithoutMedia_libraryNestedInput
   winery_media?: Prisma.winery_mediaUpdateManyWithoutMedia_libraryNestedInput
+  wineries_featured_photo_override?: Prisma.wineriesUpdateManyWithoutFeatured_photo_overrideNestedInput
 }
 
 export type media_libraryUncheckedUpdateWithoutProposal_mediaInput = {
@@ -1276,6 +1306,7 @@ export type media_libraryUncheckedUpdateWithoutProposal_mediaInput = {
   service_type_media?: Prisma.service_type_mediaUncheckedUpdateManyWithoutMedia_libraryNestedInput
   vehicle_media?: Prisma.vehicle_mediaUncheckedUpdateManyWithoutMedia_libraryNestedInput
   winery_media?: Prisma.winery_mediaUncheckedUpdateManyWithoutMedia_libraryNestedInput
+  wineries_featured_photo_override?: Prisma.wineriesUncheckedUpdateManyWithoutFeatured_photo_overrideNestedInput
 }
 
 export type media_libraryCreateWithoutService_type_mediaInput = {
@@ -1309,6 +1340,7 @@ export type media_libraryCreateWithoutService_type_mediaInput = {
   proposal_media?: Prisma.proposal_mediaCreateNestedManyWithoutMedia_libraryInput
   vehicle_media?: Prisma.vehicle_mediaCreateNestedManyWithoutMedia_libraryInput
   winery_media?: Prisma.winery_mediaCreateNestedManyWithoutMedia_libraryInput
+  wineries_featured_photo_override?: Prisma.wineriesCreateNestedManyWithoutFeatured_photo_overrideInput
 }
 
 export type media_libraryUncheckedCreateWithoutService_type_mediaInput = {
@@ -1343,6 +1375,7 @@ export type media_libraryUncheckedCreateWithoutService_type_mediaInput = {
   proposal_media?: Prisma.proposal_mediaUncheckedCreateNestedManyWithoutMedia_libraryInput
   vehicle_media?: Prisma.vehicle_mediaUncheckedCreateNestedManyWithoutMedia_libraryInput
   winery_media?: Prisma.winery_mediaUncheckedCreateNestedManyWithoutMedia_libraryInput
+  wineries_featured_photo_override?: Prisma.wineriesUncheckedCreateNestedManyWithoutFeatured_photo_overrideInput
 }
 
 export type media_libraryCreateOrConnectWithoutService_type_mediaInput = {
@@ -1392,6 +1425,7 @@ export type media_libraryUpdateWithoutService_type_mediaInput = {
   proposal_media?: Prisma.proposal_mediaUpdateManyWithoutMedia_libraryNestedInput
   vehicle_media?: Prisma.vehicle_mediaUpdateManyWithoutMedia_libraryNestedInput
   winery_media?: Prisma.winery_mediaUpdateManyWithoutMedia_libraryNestedInput
+  wineries_featured_photo_override?: Prisma.wineriesUpdateManyWithoutFeatured_photo_overrideNestedInput
 }
 
 export type media_libraryUncheckedUpdateWithoutService_type_mediaInput = {
@@ -1426,6 +1460,7 @@ export type media_libraryUncheckedUpdateWithoutService_type_mediaInput = {
   proposal_media?: Prisma.proposal_mediaUncheckedUpdateManyWithoutMedia_libraryNestedInput
   vehicle_media?: Prisma.vehicle_mediaUncheckedUpdateManyWithoutMedia_libraryNestedInput
   winery_media?: Prisma.winery_mediaUncheckedUpdateManyWithoutMedia_libraryNestedInput
+  wineries_featured_photo_override?: Prisma.wineriesUncheckedUpdateManyWithoutFeatured_photo_overrideNestedInput
 }
 
 export type media_libraryCreateWithoutVehicle_mediaInput = {
@@ -1459,6 +1494,7 @@ export type media_libraryCreateWithoutVehicle_mediaInput = {
   proposal_media?: Prisma.proposal_mediaCreateNestedManyWithoutMedia_libraryInput
   service_type_media?: Prisma.service_type_mediaCreateNestedManyWithoutMedia_libraryInput
   winery_media?: Prisma.winery_mediaCreateNestedManyWithoutMedia_libraryInput
+  wineries_featured_photo_override?: Prisma.wineriesCreateNestedManyWithoutFeatured_photo_overrideInput
 }
 
 export type media_libraryUncheckedCreateWithoutVehicle_mediaInput = {
@@ -1493,6 +1529,7 @@ export type media_libraryUncheckedCreateWithoutVehicle_mediaInput = {
   proposal_media?: Prisma.proposal_mediaUncheckedCreateNestedManyWithoutMedia_libraryInput
   service_type_media?: Prisma.service_type_mediaUncheckedCreateNestedManyWithoutMedia_libraryInput
   winery_media?: Prisma.winery_mediaUncheckedCreateNestedManyWithoutMedia_libraryInput
+  wineries_featured_photo_override?: Prisma.wineriesUncheckedCreateNestedManyWithoutFeatured_photo_overrideInput
 }
 
 export type media_libraryCreateOrConnectWithoutVehicle_mediaInput = {
@@ -1542,6 +1579,7 @@ export type media_libraryUpdateWithoutVehicle_mediaInput = {
   proposal_media?: Prisma.proposal_mediaUpdateManyWithoutMedia_libraryNestedInput
   service_type_media?: Prisma.service_type_mediaUpdateManyWithoutMedia_libraryNestedInput
   winery_media?: Prisma.winery_mediaUpdateManyWithoutMedia_libraryNestedInput
+  wineries_featured_photo_override?: Prisma.wineriesUpdateManyWithoutFeatured_photo_overrideNestedInput
 }
 
 export type media_libraryUncheckedUpdateWithoutVehicle_mediaInput = {
@@ -1576,6 +1614,161 @@ export type media_libraryUncheckedUpdateWithoutVehicle_mediaInput = {
   proposal_media?: Prisma.proposal_mediaUncheckedUpdateManyWithoutMedia_libraryNestedInput
   service_type_media?: Prisma.service_type_mediaUncheckedUpdateManyWithoutMedia_libraryNestedInput
   winery_media?: Prisma.winery_mediaUncheckedUpdateManyWithoutMedia_libraryNestedInput
+  wineries_featured_photo_override?: Prisma.wineriesUncheckedUpdateManyWithoutFeatured_photo_overrideNestedInput
+}
+
+export type media_libraryCreateWithoutWineries_featured_photo_overrideInput = {
+  file_name: string
+  file_path: string
+  file_type: string
+  file_size?: number | null
+  mime_type?: string | null
+  category: string
+  subcategory?: string | null
+  title?: string | null
+  description?: string | null
+  alt_text?: string | null
+  photographer?: string | null
+  copyright_info?: string | null
+  tags?: Prisma.media_libraryCreatetagsInput | string[]
+  is_hero?: boolean | null
+  display_order?: number | null
+  is_active?: boolean | null
+  view_count?: number | null
+  seo_keywords?: Prisma.media_libraryCreateseo_keywordsInput | string[]
+  thumbnail_path?: string | null
+  medium_path?: string | null
+  large_path?: string | null
+  webp_path?: string | null
+  video_duration?: number | null
+  video_thumbnail_path?: string | null
+  created_at?: Date | string | null
+  updated_at?: Date | string | null
+  media_usage_log?: Prisma.media_usage_logCreateNestedManyWithoutMedia_libraryInput
+  proposal_media?: Prisma.proposal_mediaCreateNestedManyWithoutMedia_libraryInput
+  service_type_media?: Prisma.service_type_mediaCreateNestedManyWithoutMedia_libraryInput
+  vehicle_media?: Prisma.vehicle_mediaCreateNestedManyWithoutMedia_libraryInput
+  winery_media?: Prisma.winery_mediaCreateNestedManyWithoutMedia_libraryInput
+}
+
+export type media_libraryUncheckedCreateWithoutWineries_featured_photo_overrideInput = {
+  id?: number
+  file_name: string
+  file_path: string
+  file_type: string
+  file_size?: number | null
+  mime_type?: string | null
+  category: string
+  subcategory?: string | null
+  title?: string | null
+  description?: string | null
+  alt_text?: string | null
+  photographer?: string | null
+  copyright_info?: string | null
+  tags?: Prisma.media_libraryCreatetagsInput | string[]
+  is_hero?: boolean | null
+  display_order?: number | null
+  is_active?: boolean | null
+  view_count?: number | null
+  seo_keywords?: Prisma.media_libraryCreateseo_keywordsInput | string[]
+  thumbnail_path?: string | null
+  medium_path?: string | null
+  large_path?: string | null
+  webp_path?: string | null
+  video_duration?: number | null
+  video_thumbnail_path?: string | null
+  created_at?: Date | string | null
+  updated_at?: Date | string | null
+  media_usage_log?: Prisma.media_usage_logUncheckedCreateNestedManyWithoutMedia_libraryInput
+  proposal_media?: Prisma.proposal_mediaUncheckedCreateNestedManyWithoutMedia_libraryInput
+  service_type_media?: Prisma.service_type_mediaUncheckedCreateNestedManyWithoutMedia_libraryInput
+  vehicle_media?: Prisma.vehicle_mediaUncheckedCreateNestedManyWithoutMedia_libraryInput
+  winery_media?: Prisma.winery_mediaUncheckedCreateNestedManyWithoutMedia_libraryInput
+}
+
+export type media_libraryCreateOrConnectWithoutWineries_featured_photo_overrideInput = {
+  where: Prisma.media_libraryWhereUniqueInput
+  create: Prisma.XOR<Prisma.media_libraryCreateWithoutWineries_featured_photo_overrideInput, Prisma.media_libraryUncheckedCreateWithoutWineries_featured_photo_overrideInput>
+}
+
+export type media_libraryUpsertWithoutWineries_featured_photo_overrideInput = {
+  update: Prisma.XOR<Prisma.media_libraryUpdateWithoutWineries_featured_photo_overrideInput, Prisma.media_libraryUncheckedUpdateWithoutWineries_featured_photo_overrideInput>
+  create: Prisma.XOR<Prisma.media_libraryCreateWithoutWineries_featured_photo_overrideInput, Prisma.media_libraryUncheckedCreateWithoutWineries_featured_photo_overrideInput>
+  where?: Prisma.media_libraryWhereInput
+}
+
+export type media_libraryUpdateToOneWithWhereWithoutWineries_featured_photo_overrideInput = {
+  where?: Prisma.media_libraryWhereInput
+  data: Prisma.XOR<Prisma.media_libraryUpdateWithoutWineries_featured_photo_overrideInput, Prisma.media_libraryUncheckedUpdateWithoutWineries_featured_photo_overrideInput>
+}
+
+export type media_libraryUpdateWithoutWineries_featured_photo_overrideInput = {
+  file_name?: Prisma.StringFieldUpdateOperationsInput | string
+  file_path?: Prisma.StringFieldUpdateOperationsInput | string
+  file_type?: Prisma.StringFieldUpdateOperationsInput | string
+  file_size?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  mime_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  category?: Prisma.StringFieldUpdateOperationsInput | string
+  subcategory?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  alt_text?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photographer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  copyright_info?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tags?: Prisma.media_libraryUpdatetagsInput | string[]
+  is_hero?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  display_order?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  is_active?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  view_count?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  seo_keywords?: Prisma.media_libraryUpdateseo_keywordsInput | string[]
+  thumbnail_path?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  medium_path?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  large_path?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  webp_path?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  video_duration?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  video_thumbnail_path?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  media_usage_log?: Prisma.media_usage_logUpdateManyWithoutMedia_libraryNestedInput
+  proposal_media?: Prisma.proposal_mediaUpdateManyWithoutMedia_libraryNestedInput
+  service_type_media?: Prisma.service_type_mediaUpdateManyWithoutMedia_libraryNestedInput
+  vehicle_media?: Prisma.vehicle_mediaUpdateManyWithoutMedia_libraryNestedInput
+  winery_media?: Prisma.winery_mediaUpdateManyWithoutMedia_libraryNestedInput
+}
+
+export type media_libraryUncheckedUpdateWithoutWineries_featured_photo_overrideInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  file_name?: Prisma.StringFieldUpdateOperationsInput | string
+  file_path?: Prisma.StringFieldUpdateOperationsInput | string
+  file_type?: Prisma.StringFieldUpdateOperationsInput | string
+  file_size?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  mime_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  category?: Prisma.StringFieldUpdateOperationsInput | string
+  subcategory?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  alt_text?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photographer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  copyright_info?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tags?: Prisma.media_libraryUpdatetagsInput | string[]
+  is_hero?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  display_order?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  is_active?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  view_count?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  seo_keywords?: Prisma.media_libraryUpdateseo_keywordsInput | string[]
+  thumbnail_path?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  medium_path?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  large_path?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  webp_path?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  video_duration?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  video_thumbnail_path?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  media_usage_log?: Prisma.media_usage_logUncheckedUpdateManyWithoutMedia_libraryNestedInput
+  proposal_media?: Prisma.proposal_mediaUncheckedUpdateManyWithoutMedia_libraryNestedInput
+  service_type_media?: Prisma.service_type_mediaUncheckedUpdateManyWithoutMedia_libraryNestedInput
+  vehicle_media?: Prisma.vehicle_mediaUncheckedUpdateManyWithoutMedia_libraryNestedInput
+  winery_media?: Prisma.winery_mediaUncheckedUpdateManyWithoutMedia_libraryNestedInput
 }
 
 export type media_libraryCreateWithoutWinery_mediaInput = {
@@ -1609,6 +1802,7 @@ export type media_libraryCreateWithoutWinery_mediaInput = {
   proposal_media?: Prisma.proposal_mediaCreateNestedManyWithoutMedia_libraryInput
   service_type_media?: Prisma.service_type_mediaCreateNestedManyWithoutMedia_libraryInput
   vehicle_media?: Prisma.vehicle_mediaCreateNestedManyWithoutMedia_libraryInput
+  wineries_featured_photo_override?: Prisma.wineriesCreateNestedManyWithoutFeatured_photo_overrideInput
 }
 
 export type media_libraryUncheckedCreateWithoutWinery_mediaInput = {
@@ -1643,6 +1837,7 @@ export type media_libraryUncheckedCreateWithoutWinery_mediaInput = {
   proposal_media?: Prisma.proposal_mediaUncheckedCreateNestedManyWithoutMedia_libraryInput
   service_type_media?: Prisma.service_type_mediaUncheckedCreateNestedManyWithoutMedia_libraryInput
   vehicle_media?: Prisma.vehicle_mediaUncheckedCreateNestedManyWithoutMedia_libraryInput
+  wineries_featured_photo_override?: Prisma.wineriesUncheckedCreateNestedManyWithoutFeatured_photo_overrideInput
 }
 
 export type media_libraryCreateOrConnectWithoutWinery_mediaInput = {
@@ -1692,6 +1887,7 @@ export type media_libraryUpdateWithoutWinery_mediaInput = {
   proposal_media?: Prisma.proposal_mediaUpdateManyWithoutMedia_libraryNestedInput
   service_type_media?: Prisma.service_type_mediaUpdateManyWithoutMedia_libraryNestedInput
   vehicle_media?: Prisma.vehicle_mediaUpdateManyWithoutMedia_libraryNestedInput
+  wineries_featured_photo_override?: Prisma.wineriesUpdateManyWithoutFeatured_photo_overrideNestedInput
 }
 
 export type media_libraryUncheckedUpdateWithoutWinery_mediaInput = {
@@ -1726,6 +1922,7 @@ export type media_libraryUncheckedUpdateWithoutWinery_mediaInput = {
   proposal_media?: Prisma.proposal_mediaUncheckedUpdateManyWithoutMedia_libraryNestedInput
   service_type_media?: Prisma.service_type_mediaUncheckedUpdateManyWithoutMedia_libraryNestedInput
   vehicle_media?: Prisma.vehicle_mediaUncheckedUpdateManyWithoutMedia_libraryNestedInput
+  wineries_featured_photo_override?: Prisma.wineriesUncheckedUpdateManyWithoutFeatured_photo_overrideNestedInput
 }
 
 
@@ -1739,6 +1936,7 @@ export type Media_libraryCountOutputType = {
   service_type_media: number
   vehicle_media: number
   winery_media: number
+  wineries_featured_photo_override: number
 }
 
 export type Media_libraryCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1747,6 +1945,7 @@ export type Media_libraryCountOutputTypeSelect<ExtArgs extends runtime.Types.Ext
   service_type_media?: boolean | Media_libraryCountOutputTypeCountService_type_mediaArgs
   vehicle_media?: boolean | Media_libraryCountOutputTypeCountVehicle_mediaArgs
   winery_media?: boolean | Media_libraryCountOutputTypeCountWinery_mediaArgs
+  wineries_featured_photo_override?: boolean | Media_libraryCountOutputTypeCountWineries_featured_photo_overrideArgs
 }
 
 /**
@@ -1794,6 +1993,13 @@ export type Media_libraryCountOutputTypeCountWinery_mediaArgs<ExtArgs extends ru
   where?: Prisma.winery_mediaWhereInput
 }
 
+/**
+ * Media_libraryCountOutputType without action
+ */
+export type Media_libraryCountOutputTypeCountWineries_featured_photo_overrideArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.wineriesWhereInput
+}
+
 
 export type media_librarySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1828,6 +2034,7 @@ export type media_librarySelect<ExtArgs extends runtime.Types.Extensions.Interna
   service_type_media?: boolean | Prisma.media_library$service_type_mediaArgs<ExtArgs>
   vehicle_media?: boolean | Prisma.media_library$vehicle_mediaArgs<ExtArgs>
   winery_media?: boolean | Prisma.media_library$winery_mediaArgs<ExtArgs>
+  wineries_featured_photo_override?: boolean | Prisma.media_library$wineries_featured_photo_overrideArgs<ExtArgs>
   _count?: boolean | Prisma.Media_libraryCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["media_library"]>
 
@@ -1928,6 +2135,7 @@ export type media_libraryInclude<ExtArgs extends runtime.Types.Extensions.Intern
   service_type_media?: boolean | Prisma.media_library$service_type_mediaArgs<ExtArgs>
   vehicle_media?: boolean | Prisma.media_library$vehicle_mediaArgs<ExtArgs>
   winery_media?: boolean | Prisma.media_library$winery_mediaArgs<ExtArgs>
+  wineries_featured_photo_override?: boolean | Prisma.media_library$wineries_featured_photo_overrideArgs<ExtArgs>
   _count?: boolean | Prisma.Media_libraryCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type media_libraryIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -1941,6 +2149,7 @@ export type $media_libraryPayload<ExtArgs extends runtime.Types.Extensions.Inter
     service_type_media: Prisma.$service_type_mediaPayload<ExtArgs>[]
     vehicle_media: Prisma.$vehicle_mediaPayload<ExtArgs>[]
     winery_media: Prisma.$winery_mediaPayload<ExtArgs>[]
+    wineries_featured_photo_override: Prisma.$wineriesPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: number
@@ -2369,6 +2578,7 @@ export interface Prisma__media_libraryClient<T, Null = never, ExtArgs extends ru
   service_type_media<T extends Prisma.media_library$service_type_mediaArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.media_library$service_type_mediaArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$service_type_mediaPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   vehicle_media<T extends Prisma.media_library$vehicle_mediaArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.media_library$vehicle_mediaArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$vehicle_mediaPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   winery_media<T extends Prisma.media_library$winery_mediaArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.media_library$winery_mediaArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$winery_mediaPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  wineries_featured_photo_override<T extends Prisma.media_library$wineries_featured_photo_overrideArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.media_library$wineries_featured_photo_overrideArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$wineriesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2930,6 +3140,30 @@ export type media_library$winery_mediaArgs<ExtArgs extends runtime.Types.Extensi
   take?: number
   skip?: number
   distinct?: Prisma.Winery_mediaScalarFieldEnum | Prisma.Winery_mediaScalarFieldEnum[]
+}
+
+/**
+ * media_library.wineries_featured_photo_override
+ */
+export type media_library$wineries_featured_photo_overrideArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the wineries
+   */
+  select?: Prisma.wineriesSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the wineries
+   */
+  omit?: Prisma.wineriesOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.wineriesInclude<ExtArgs> | null
+  where?: Prisma.wineriesWhereInput
+  orderBy?: Prisma.wineriesOrderByWithRelationInput | Prisma.wineriesOrderByWithRelationInput[]
+  cursor?: Prisma.wineriesWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.WineriesScalarFieldEnum | Prisma.WineriesScalarFieldEnum[]
 }
 
 /**

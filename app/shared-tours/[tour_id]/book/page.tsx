@@ -2,6 +2,8 @@
 
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { logger } from '@/lib/logger';
 
 /**
@@ -10,8 +12,12 @@ import { logger } from '@/lib/logger';
  * Multi-step ticket purchase flow:
  * 1. Select ticket count and lunch option
  * 2. Enter customer details
- * 3. Review and confirm (payment integration placeholder)
+ * 3. Review booking
+ * 4. Complete payment
  */
+
+// Load Stripe outside component
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 interface Tour {
   id: string;
@@ -27,6 +33,14 @@ interface Tour {
   lunch_price_per_person: number;
   spots_available: number;
   accepting_bookings: boolean;
+  lunch_menu_options?: LunchMenuOption[];
+}
+
+interface LunchMenuOption {
+  id: string;
+  name: string;
+  description?: string;
+  dietary?: string[];
 }
 
 interface Pricing {
@@ -39,6 +53,8 @@ interface Pricing {
 interface BookingFormData {
   ticketCount: number;
   includesLunch: boolean;
+  lunchSelection: string;
+  guestLunchSelections: Array<{ guestName: string; selection: string }>;
   customerName: string;
   customerEmail: string;
   customerPhone: string;
@@ -46,6 +62,62 @@ interface BookingFormData {
   dietaryRestrictions: string;
   specialRequests: string;
   referralSource: string;
+}
+
+interface PaymentFormProps {
+  clientSecret: string;
+  totalAmount: number;
+  onSuccess: () => void;
+  onError: (error: string) => void;
+}
+
+function PaymentForm({ clientSecret, totalAmount, onSuccess, onError }: PaymentFormProps) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [processing, setProcessing] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!stripe || !elements) {
+      return;
+    }
+
+    setProcessing(true);
+
+    const { error } = await stripe.confirmPayment({
+      elements,
+      confirmParams: {
+        return_url: `${window.location.origin}${window.location.pathname}/success`,
+      },
+    });
+
+    if (error) {
+      onError(error.message || 'Payment failed');
+      setProcessing(false);
+    }
+    // Success will redirect
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <PaymentElement />
+      <button
+        type="submit"
+        disabled={!stripe || processing}
+        className="w-full mt-6 py-3 bg-[#E07A5F] text-white rounded-lg font-semibold hover:bg-[#d06a4f] transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+      >
+        {processing ? (
+          <>
+            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            Processing Payment...
+          </>
+        ) : (
+          `Pay $${totalAmount.toFixed(2)}`
+        )}
+      </button>
+    </form>
+  );
 }
 
 export default function BookSharedTourPage({ params }: { params: Promise<{ tour_id: string }> }) {
@@ -63,6 +135,8 @@ export default function BookSharedTourPage({ params }: { params: Promise<{ tour_
   const [formData, setFormData] = useState<BookingFormData>({
     ticketCount: 1,
     includesLunch: true,
+    lunchSelection: '',
+    guestLunchSelections: [],
     customerName: '',
     customerEmail: '',
     customerPhone: '',
@@ -71,6 +145,10 @@ export default function BookSharedTourPage({ params }: { params: Promise<{ tour_
     specialRequests: '',
     referralSource: '',
   });
+
+  // Payment state
+  const [ticketId, setTicketId] = useState<string | null>(null);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchTour = async () => {
@@ -135,15 +213,27 @@ export default function BookSharedTourPage({ params }: { params: Promise<{ tour_
       ...prev,
       ticketCount: count,
       guestNames: Array(count - 1).fill(''),
+      guestLunchSelections: Array(count - 1).fill({ guestName: '', selection: '' }),
     }));
   };
 
-  const handleSubmit = async () => {
+  const handleLunchSelectionChange = (index: number, selection: string) => {
+    const newSelections = [...formData.guestLunchSelections];
+    newSelections[index] = {
+      guestName: formData.guestNames[index] || `Guest ${index + 2}`,
+      selection,
+    };
+    setFormData(prev => ({ ...prev, guestLunchSelections: newSelections }));
+  };
+
+  // Create ticket and proceed to payment
+  const handleProceedToPayment = async () => {
     setSubmitting(true);
     setError(null);
 
     try {
-      const response = await fetch('/api/shared-tours/tickets', {
+      // Step 1: Create the ticket
+      const ticketResponse = await fetch('/api/shared-tours/tickets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -154,23 +244,42 @@ export default function BookSharedTourPage({ params }: { params: Promise<{ tour_
           customer_phone: formData.customerPhone || undefined,
           guest_names: formData.guestNames.filter(n => n.trim()) || undefined,
           includes_lunch: formData.includesLunch,
+          lunch_selection: formData.lunchSelection || undefined,
+          guest_lunch_selections: formData.guestLunchSelections.filter(s => s.selection) || undefined,
           dietary_restrictions: formData.dietaryRestrictions || undefined,
           special_requests: formData.specialRequests || undefined,
           referral_source: formData.referralSource || undefined,
         }),
       });
 
-      const data = await response.json();
+      const ticketData = await ticketResponse.json();
 
-      if (data.success) {
-        setTicketNumber(data.data.ticket_number);
-        setBookingConfirmed(true);
-      } else {
-        const errorMessage = typeof data.error === 'object' && data.error?.message
-          ? data.error.message
-          : (data.error || 'Failed to create booking');
-        setError(errorMessage);
+      if (!ticketData.success) {
+        setError(ticketData.error || 'Failed to create ticket');
+        setSubmitting(false);
+        return;
       }
+
+      const createdTicketId = ticketData.data.id;
+      setTicketId(createdTicketId);
+      setTicketNumber(ticketData.data.ticket_number);
+
+      // Step 2: Create payment intent
+      const paymentResponse = await fetch(`/api/shared-tours/tickets/${createdTicketId}/payment-intent`, {
+        method: 'POST',
+      });
+
+      const paymentData = await paymentResponse.json();
+
+      if (!paymentData.success) {
+        setError(paymentData.error || 'Failed to initialize payment');
+        setSubmitting(false);
+        return;
+      }
+
+      setClientSecret(paymentData.data.clientSecret);
+      setStep(4); // Move to payment step
+
     } catch (_err) {
       setError('Failed to create booking. Please try again.');
     } finally {
@@ -317,7 +426,7 @@ export default function BookSharedTourPage({ params }: { params: Promise<{ tour_
             </svg>
             <span>Back to Tours</span>
           </Link>
-          <div className="text-sm text-slate-500">Step {step} of 3</div>
+          <div className="text-sm text-slate-500">Step {step} of 4</div>
         </div>
       </header>
 
@@ -325,13 +434,14 @@ export default function BookSharedTourPage({ params }: { params: Promise<{ tour_
       <div className="bg-white border-b border-slate-200">
         <div className="max-w-3xl mx-auto px-4">
           <div className="flex">
-            {[1, 2, 3].map(s => (
+            {[1, 2, 3, 4].map(s => (
               <div key={s} className="flex-1 py-3">
                 <div className={`h-1 rounded-full ${s <= step ? 'bg-[#E07A5F]' : 'bg-slate-200'}`} />
                 <div className={`text-xs mt-1 ${s <= step ? 'text-[#E07A5F]' : 'text-slate-400'}`}>
                   {s === 1 && 'Tickets'}
-                  {s === 2 && 'Your Info'}
+                  {s === 2 && 'Details'}
                   {s === 3 && 'Review'}
+                  {s === 4 && 'Payment'}
                 </div>
               </div>
             ))}
@@ -714,19 +824,72 @@ export default function BookSharedTourPage({ params }: { params: Promise<{ tour_
             </p>
 
             <button
-              onClick={handleSubmit}
+              onClick={handleProceedToPayment}
               disabled={submitting}
               className="w-full py-3 bg-[#E07A5F] text-white rounded-lg font-semibold hover:bg-[#d06a4f] transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {submitting ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Processing...
+                  Creating Booking...
                 </>
               ) : (
-                'Confirm Booking'
+                'Continue to Payment'
               )}
             </button>
+          </div>
+        )}
+
+        {/* Step 4: Payment */}
+        {step === 4 && clientSecret && pricing && (
+          <div className="bg-white rounded-xl border border-slate-200 p-6">
+            <div className="text-center mb-6">
+              <div className="bg-slate-50 rounded-lg p-4 inline-block">
+                <p className="text-sm text-slate-500 mb-1">Ticket Number</p>
+                <p className="text-xl font-bold text-[#E07A5F] font-mono">{ticketNumber}</p>
+              </div>
+            </div>
+
+            <h2 className="text-xl font-semibold text-slate-900 mb-2">Complete Payment</h2>
+            <p className="text-slate-600 mb-6">
+              Your spot is reserved. Complete payment to confirm your booking.
+            </p>
+
+            {/* Price Summary */}
+            <div className="bg-slate-50 rounded-lg p-4 mb-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="font-medium text-slate-900">{formData.ticketCount} ticket{formData.ticketCount > 1 ? 's' : ''}</p>
+                  <p className="text-sm text-slate-500">{formData.includesLunch ? 'With lunch' : 'Tour only'}</p>
+                </div>
+                <p className="text-2xl font-bold text-slate-900">${pricing.total_amount.toFixed(2)}</p>
+              </div>
+            </div>
+
+            <Elements
+              stripe={stripePromise}
+              options={{
+                clientSecret,
+                appearance: {
+                  theme: 'stripe',
+                  variables: {
+                    colorPrimary: '#E07A5F',
+                    borderRadius: '8px',
+                  },
+                },
+              }}
+            >
+              <PaymentForm
+                clientSecret={clientSecret}
+                totalAmount={pricing.total_amount}
+                onSuccess={() => setBookingConfirmed(true)}
+                onError={(err) => setError(err)}
+              />
+            </Elements>
+
+            <p className="text-xs text-slate-500 text-center mt-4">
+              Secure payment powered by Stripe
+            </p>
           </div>
         )}
       </main>

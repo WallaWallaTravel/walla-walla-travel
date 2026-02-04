@@ -22,6 +22,17 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   const verified = searchParams.get('verified')
   const active_only = searchParams.get('active_only') !== 'false'
 
+  // Check if the featured_photo_override_id column exists
+  const columnCheck = await query(
+    `SELECT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_name = 'wineries' AND column_name = 'featured_photo_override_id'
+    ) as exists`
+  )
+  const hasOverrideColumn = columnCheck.rows[0]?.exists ?? false
+
+  const overrideColumnSelect = hasOverrideColumn ? 'featured_photo_override_id,' : 'NULL::integer as featured_photo_override_id,'
+
   let queryText = `
     SELECT
       id, name, slug, city, state, ava,
@@ -29,6 +40,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
       tasting_room_fee, reservation_required, walk_ins_welcome,
       amenities, logo_url, hero_image_url,
       phone, email, website,
+      ${overrideColumnSelect}
       created_at, updated_at
     FROM wineries
     WHERE 1=1

@@ -36,6 +36,8 @@ const CreateBlockSchema = z.object({
   block_type: z.enum(['maintenance', 'hold', 'blackout']),
   notes: z.string().max(500).optional(),
   brand_id: z.number().int().positive().optional(),
+  /** When true, allows this block to overlap with other blocks on the same vehicle. Used for private offset tours. */
+  allow_overlap: z.boolean().optional().default(false),
 });
 
 // ============================================================================
@@ -116,6 +118,7 @@ export const POST = withCSRF(
       startTime: validated.start_time,
       endTime: validated.end_time,
       reason: validated.notes || 'Scheduled maintenance',
+      allowOverlap: validated.allow_overlap,
     });
   } else {
     // For hold and blackout types
@@ -126,6 +129,7 @@ export const POST = withCSRF(
       endTime: validated.end_time,
       brandId: validated.brand_id,
       notes: validated.notes,
+      allowOverlap: validated.allow_overlap,
     });
 
     // Update block type if not hold

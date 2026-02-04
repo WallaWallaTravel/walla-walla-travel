@@ -36,6 +36,13 @@ interface SharedTour {
   notes: string | null;
 }
 
+interface VehicleInfo {
+  id: number;
+  name: string;
+  capacity: number;
+  available: boolean;
+}
+
 interface CreateTourForm {
   tour_date: string;
   start_time: string;
@@ -48,6 +55,7 @@ interface CreateTourForm {
   description: string;
   is_published: boolean;
   notes: string;
+  vehicle_id: number | null;
 }
 
 export default function AdminSharedToursPage() {
@@ -57,6 +65,9 @@ export default function AdminSharedToursPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [_selectedTour, _setSelectedTour] = useState<SharedTour | null>(null);
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'past'>('upcoming');
+  const [availableVehicles, setAvailableVehicles] = useState<VehicleInfo[]>([]);
+  const [vehiclesLoading, setVehiclesLoading] = useState(false);
+  const [vehicleMap, setVehicleMap] = useState<Record<number, string>>({});
 
   const [createForm, setCreateForm] = useState<CreateTourForm>({
     tour_date: '',
@@ -70,11 +81,72 @@ export default function AdminSharedToursPage() {
     description: '',
     is_published: true,
     notes: '',
+    vehicle_id: null,
   });
 
   useEffect(() => {
     fetchTours();
+    fetchVehicleMap();
   }, []);
+
+  // Fetch available vehicles when date/time/duration changes
+  useEffect(() => {
+    if (createForm.tour_date && createForm.start_time) {
+      fetchAvailableVehicles();
+    }
+  }, [createForm.tour_date, createForm.start_time, createForm.duration_hours]);
+
+  const fetchVehicleMap = async () => {
+    try {
+      // Fetch all vehicles once to build a lookup map
+      const response = await fetch('/api/admin/shared-tours/available-vehicles?date=' + new Date().toISOString().split('T')[0]);
+      const data = await response.json();
+      if (data.success) {
+        const map: Record<number, string> = {};
+        data.data.forEach((v: VehicleInfo) => {
+          map[v.id] = v.name;
+        });
+        setVehicleMap(map);
+      }
+    } catch {
+      // Ignore - vehicle names will just show IDs
+    }
+  };
+
+  const fetchAvailableVehicles = async () => {
+    if (!createForm.tour_date) return;
+
+    setVehiclesLoading(true);
+    try {
+      const params = new URLSearchParams({
+        date: createForm.tour_date,
+        start_time: createForm.start_time + ':00',
+        duration_hours: String(createForm.duration_hours),
+      });
+      const response = await fetch(`/api/admin/shared-tours/available-vehicles?${params}`);
+      const data = await response.json();
+      if (data.success) {
+        setAvailableVehicles(data.data);
+        // Auto-select the largest available vehicle if none selected
+        if (!createForm.vehicle_id) {
+          const available = data.data.filter((v: VehicleInfo) => v.available);
+          if (available.length > 0) {
+            // Sort by capacity descending, pick largest
+            const best = available.sort((a: VehicleInfo, b: VehicleInfo) => b.capacity - a.capacity)[0];
+            setCreateForm(prev => ({
+              ...prev,
+              vehicle_id: best.id,
+              max_guests: best.capacity,
+            }));
+          }
+        }
+      }
+    } catch {
+      setAvailableVehicles([]);
+    } finally {
+      setVehiclesLoading(false);
+    }
+  };
 
   const fetchTours = async () => {
     try {
@@ -100,7 +172,10 @@ export default function AdminSharedToursPage() {
       const response = await fetch('/api/admin/shared-tours', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(createForm),
+        body: JSON.stringify({
+          ...createForm,
+          vehicle_id: createForm.vehicle_id || undefined,
+        }),
       });
       const data = await response.json();
 
@@ -119,7 +194,9 @@ export default function AdminSharedToursPage() {
           description: '',
           is_published: true,
           notes: '',
+          vehicle_id: null,
         });
+        setAvailableVehicles([]);
       } else {
         const errorMessage = typeof data.error === 'object' && data.error?.message
           ? data.error.message
@@ -317,6 +394,7 @@ export default function AdminSharedToursPage() {
               <tr>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Date</th>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Time</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Vehicle</th>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Status</th>
                 <th className="px-4 py-3 text-center text-sm font-semibold text-slate-700">Tickets</th>
                 <th className="px-4 py-3 text-right text-sm font-semibold text-slate-700">Revenue</th>
@@ -327,7 +405,7 @@ export default function AdminSharedToursPage() {
             <tbody className="divide-y divide-slate-100">
               {filteredTours.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center text-slate-500">
+                  <td colSpan={8} className="px-4 py-12 text-center text-slate-500">
                     No tours found
                   </td>
                 </tr>
@@ -340,6 +418,15 @@ export default function AdminSharedToursPage() {
                     </td>
                     <td className="px-4 py-3 text-slate-600">
                       {formatTime(tour.start_time)}
+                    </td>
+                    <td className="px-4 py-3">
+                      {tour.vehicle_id ? (
+                        <span className="text-sm text-slate-700">
+                          {vehicleMap[parseInt(tour.vehicle_id)] || `Vehicle ${tour.vehicle_id}`}
+                        </span>
+                      ) : (
+                        <span className="text-sm text-amber-600 font-medium">Unassigned</span>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(tour.status)}`}>
@@ -455,6 +542,56 @@ export default function AdminSharedToursPage() {
                 </div>
               </div>
 
+              {/* Vehicle Selection */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Vehicle *
+                </label>
+                {vehiclesLoading ? (
+                  <div className="w-full px-4 py-2 border border-slate-200 rounded-lg bg-slate-50 text-slate-500">
+                    Loading vehicles...
+                  </div>
+                ) : !createForm.tour_date ? (
+                  <div className="w-full px-4 py-2 border border-slate-200 rounded-lg bg-slate-50 text-slate-500">
+                    Select a date first to see available vehicles
+                  </div>
+                ) : availableVehicles.filter(v => v.available).length === 0 ? (
+                  <div className="w-full px-4 py-3 border border-red-200 rounded-lg bg-red-50 text-red-700">
+                    <p className="font-medium">No vehicles available</p>
+                    <p className="text-sm mt-1">All vehicles are already assigned to other tours on this date/time. Please select a different date or time.</p>
+                  </div>
+                ) : (
+                  <select
+                    value={createForm.vehicle_id || ''}
+                    onChange={e => {
+                      const vehicleId = e.target.value ? parseInt(e.target.value) : null;
+                      const vehicle = availableVehicles.find(v => v.id === vehicleId);
+                      setCreateForm(prev => ({
+                        ...prev,
+                        vehicle_id: vehicleId,
+                        // Auto-update max_guests to vehicle capacity
+                        max_guests: vehicle ? vehicle.capacity : prev.max_guests,
+                      }));
+                    }}
+                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E07A5F]"
+                  >
+                    <option value="">Auto-assign best vehicle</option>
+                    {availableVehicles.map(v => (
+                      <option
+                        key={v.id}
+                        value={v.id}
+                        disabled={!v.available}
+                      >
+                        {v.name} ({v.capacity} guests){!v.available ? ' - Unavailable' : ''}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                <p className="text-xs text-slate-500 mt-1">
+                  Max guests will be set to vehicle capacity
+                </p>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -463,11 +600,22 @@ export default function AdminSharedToursPage() {
                   <input
                     type="number"
                     value={createForm.max_guests}
-                    onChange={e => setCreateForm(prev => ({ ...prev, max_guests: parseInt(e.target.value) }))}
+                    onChange={e => {
+                      const newMax = parseInt(e.target.value);
+                      const selectedVehicle = availableVehicles.find(v => v.id === createForm.vehicle_id);
+                      // Cap to vehicle capacity if vehicle selected
+                      const cappedMax = selectedVehicle ? Math.min(newMax, selectedVehicle.capacity) : newMax;
+                      setCreateForm(prev => ({ ...prev, max_guests: cappedMax }));
+                    }}
                     min={2}
-                    max={14}
+                    max={createForm.vehicle_id ? availableVehicles.find(v => v.id === createForm.vehicle_id)?.capacity || 14 : 14}
                     className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E07A5F]"
                   />
+                  {createForm.vehicle_id && (
+                    <p className="text-xs text-slate-500 mt-1">
+                      Limited to vehicle capacity ({availableVehicles.find(v => v.id === createForm.vehicle_id)?.capacity || '?'})
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -572,8 +720,8 @@ export default function AdminSharedToursPage() {
               </button>
               <button
                 onClick={handleCreateTour}
-                disabled={!createForm.tour_date}
-                className="px-6 py-2 bg-[#E07A5F] text-white rounded-lg font-semibold hover:bg-[#d06a4f] transition-colors disabled:bg-slate-300"
+                disabled={!createForm.tour_date || (availableVehicles.length > 0 && availableVehicles.filter(v => v.available).length === 0)}
+                className="px-6 py-2 bg-[#E07A5F] text-white rounded-lg font-semibold hover:bg-[#d06a4f] transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed"
               >
                 Create Tour
               </button>
