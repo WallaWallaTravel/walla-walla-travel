@@ -315,48 +315,60 @@ export const sharedTourService = {
       throw new Error('Vehicle assignment is required. Please select a vehicle or enable auto-assignment.');
     }
 
-    // Step 2: Create the tour record
+    // Step 2: Generate unique tour code
+    const tourCode = `ST-${data.tour_date.replace(/-/g, '')}-${Date.now().toString(36).toUpperCase()}`;
+
+    // Step 3: Create the tour record (insert into actual table, not view)
+    // Note: The shared_tour_schedule view remaps column names, so we use actual table columns
     const result = await query<SharedTourSchedule>(`
-      INSERT INTO shared_tour_schedule (
+      INSERT INTO shared_tours (
+        tour_code,
         tour_date,
         start_time,
         duration_hours,
         max_guests,
         min_guests,
-        base_price_per_person,
-        lunch_price_per_person,
-        lunch_included_default,
+        price_per_person,
+        lunch_included,
         title,
         description,
-        meeting_location,
-        wineries_preview,
-        booking_cutoff_hours,
-        is_published,
+        pickup_location,
+        planned_wineries,
+        published,
         notes,
         vehicle_id,
-        driver_id
+        driver_id,
+        status
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17
       )
-      RETURNING *
+      RETURNING *,
+        price_per_person AS base_price_per_person,
+        (price_per_person + 20.00) AS lunch_price_per_person,
+        lunch_included AS lunch_included_default,
+        pickup_location AS meeting_location,
+        planned_wineries AS wineries_preview,
+        published AS is_published,
+        48 AS booking_cutoff_hours,
+        24 AS cancellation_cutoff_hours
     `, [
+      tourCode,
       data.tour_date,
       startTime,
       durationHours,
       maxGuests, // Use possibly-capped max_guests
       data.min_guests || 2,
       data.base_price_per_person || SHARED_TOUR_RATES.base.perPersonRate,
-      data.lunch_price_per_person || SHARED_TOUR_RATES.withLunch.perPersonRate,
       data.lunch_included_default ?? true,
       data.title || 'Walla Walla Wine Tour Experience',
       data.description || null,
       data.meeting_location || 'Downtown Walla Walla - exact location provided upon booking',
       data.wineries_preview || null,
-      data.booking_cutoff_hours || 48,
       data.is_published ?? true,
       data.notes || null,
       assignedVehicle?.id || null,
       data.driver_id || null,
+      'scheduled', // Default status
     ]);
 
     const tour = result.rows[0];
@@ -371,7 +383,7 @@ export const sharedTourService = {
           tourId: tour.id,
           error: blockError,
         });
-        await query('DELETE FROM shared_tour_schedule WHERE id = $1', [tour.id]);
+        await query('DELETE FROM shared_tours WHERE id = $1', [tour.id]);
         throw new Error('Failed to reserve vehicle for tour. The vehicle may have just been booked by another tour.');
       }
     }
