@@ -186,7 +186,7 @@ export const sharedTourService = {
    */
   async getUpcomingTours(): Promise<SharedTourWithAvailability[]> {
     const result = await query<SharedTourWithAvailability>(`
-      SELECT * FROM shared_tours_availability
+      SELECT * FROM shared_tours_availability_view
       ORDER BY tour_date, start_time
     `);
     return result.rows;
@@ -219,7 +219,7 @@ export const sharedTourService = {
    */
   async getToursInRange(startDate: string, endDate: string): Promise<SharedTourWithAvailability[]> {
     const result = await query<SharedTourWithAvailability>(`
-      SELECT * FROM shared_tours_availability
+      SELECT * FROM shared_tours_availability_view
       WHERE tour_date >= $1 AND tour_date <= $2
       ORDER BY tour_date, start_time
     `, [startDate, endDate]);
