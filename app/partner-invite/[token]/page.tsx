@@ -50,7 +50,10 @@ export default function PartnerInvitePage({ params }: { params: Promise<{ token:
         if (data.valid && data.business) {
           setBusiness(data.business);
         } else {
-          setError(data.error || 'Invalid invitation link');
+          const errorMessage = typeof data.error === 'object' && data.error?.message
+            ? data.error.message
+            : (data.error || 'Invalid invitation link');
+          setError(errorMessage);
         }
       } catch (_err) {
         setError('Failed to validate invitation. Please try again.');

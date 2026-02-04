@@ -144,7 +144,10 @@ export default function CrmImportPage() {
       if (data.success) {
         setPreview(data.data);
       } else {
-        setError(data.error || 'Failed to preview file');
+        const errorMessage = typeof data.error === 'object' && data.error?.message
+          ? data.error.message
+          : (data.error || 'Failed to preview file');
+        setError(errorMessage);
       }
     } catch (_err) {
       setError('Failed to process file');
@@ -179,7 +182,10 @@ export default function CrmImportPage() {
         setImportResult(data.data);
         setPreview(null);
       } else {
-        setError(data.error || 'Import failed');
+        const errorMessage = typeof data.error === 'object' && data.error?.message
+          ? data.error.message
+          : (data.error || 'Import failed');
+        setError(errorMessage);
       }
     } catch (_err) {
       setError('Import failed');
@@ -221,7 +227,10 @@ export default function CrmImportPage() {
         setMigrationResult(data.data);
         checkMigrationStatus(); // Refresh status
       } else {
-        setError(data.error || 'Migration failed');
+        const errorMessage = typeof data.error === 'object' && data.error?.message
+          ? data.error.message
+          : (data.error || 'Migration failed');
+        setError(errorMessage);
       }
     } catch (_err) {
       setError('Migration failed');

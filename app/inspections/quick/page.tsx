@@ -101,7 +101,10 @@ export default function QuickInspectionPage() {
           router.push('/driver-portal/dashboard')
         }, 2000)
       } else {
-        setError(data.error || 'Failed to save inspection')
+        const errorMessage = typeof data.error === 'object' && data.error?.message
+          ? data.error.message
+          : (data.error || 'Failed to save inspection')
+        setError(errorMessage)
       }
     } catch (err) {
       logger.error('Submit error', { error: err })
