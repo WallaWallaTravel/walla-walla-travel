@@ -165,7 +165,7 @@ export const itineraries: Itinerary[] = [
       {
         question: 'What is the best weekend to visit Walla Walla?',
         answer:
-          'Any weekend May-October offers excellent experiences. Avoid major event weekends (Spring/Fall Release) unless you plan to attend. September-October harvest season is particularly magical.',
+          'Any weekend May-October offers excellent experiences. Avoid major event weekends (Spring/Fall Release) unless you plan to attend. September-October harvest season is particularly magical, but also a very busy time for both guests and wineries.',
       },
     ],
   },
