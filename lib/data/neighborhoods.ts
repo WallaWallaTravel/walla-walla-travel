@@ -30,22 +30,22 @@ export const neighborhoods: Neighborhood[] = [
     slug: 'airport-district',
     name: 'Airport District',
     shortName: 'Airport',
-    description: 'A cluster of wineries near the Walla Walla Regional Airport, offering convenient access and often spacious tasting rooms with vineyard views.',
-    longDescription: `The Airport District sits just minutes from the Walla Walla Regional Airport, making it a convenient option for visitors arriving by air or approaching from the west.
+    description: 'A cluster of wineries near the Walla Walla Regional Airport, offering convenient access and spacious tasting rooms in a relaxed industrial setting.',
+    longDescription: `The Airport District sits just minutes from the Walla Walla Regional Airport, making it a convenient option for visitors arriving by air or approaching from the west on Highway 12.
 
-This area features a mix of established producers and newer wineries, many with spacious properties and room to spread out. The rolling terrain and cobblestone-studded soils contribute to the area's distinctive wines.
+This area features a cluster of wineries in a relaxed, industrial setting with warehouse-style tasting rooms. The atmosphere is casual and approachable, with easy parking and the ability to walk between several wineries.
 
-Like all of Walla Walla's districts, you'll find a diverse range of winery styles here—from intimate family operations to larger venues. The proximity of wineries to each other makes it easy to visit several in one trip.`,
+Food options include Quirk (food truck) and Runway Market next door. The proximity of wineries to each other makes it easy to visit several in one trip without much driving.`,
     whatYoullFind: [
       'Convenient access from Highway 12',
-      'Mix of large and small producers',
-      'Vineyard-surrounded tasting rooms',
-      'Spacious outdoor areas',
+      'Relaxed, warehouse-style tasting rooms',
+      'Easy parking and walkability between wineries',
+      'Food options at Quirk and Runway Market',
     ],
     highlights: [
       'Close to the regional airport',
-      'Wineries often clustered together',
-      'Scenic vineyard landscapes',
+      'Wineries clustered together for easy hopping',
+      'Industrial-chic atmosphere',
       'Range of tasting experiences',
     ],
     practicalInfo: 'Many wineries here have generous parking and outdoor spaces. Proximity to each other makes multi-winery visits easy.',
