@@ -138,9 +138,9 @@ export const itineraries: Itinerary[] = [
           },
           {
             time: '5:30 PM',
-            name: 'Depart Walla Walla',
+            name: 'Dinner & Overnight',
             type: 'activity',
-            description: 'Head home with your wine haul and memories of a perfect weekend.',
+            description: 'After a day of tasting, enjoy dinner downtown and stay another night. Depart refreshed in the morning.',
           },
         ],
       },
@@ -262,9 +262,9 @@ export const itineraries: Itinerary[] = [
           },
           {
             time: '4:00 PM',
-            name: 'Recap & Departure',
+            name: 'Recap Your Discoveries',
             type: 'activity',
-            description: 'Review your notes over a drink. You\'re now an informed wine enthusiast!',
+            description: 'Review your notes over coffee or a snack. You\'re now an informed wine enthusiast! If you tasted today, stay for dinner and depart tomorrow morning.',
           },
         ],
       },
