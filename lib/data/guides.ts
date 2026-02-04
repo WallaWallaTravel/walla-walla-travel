@@ -173,7 +173,7 @@ export const guides: Guide[] = [
         title: 'Tasting Room Basics',
         content: `New to wine tasting? Here's what to expect:
 
-**Tasting Fees**: Most wineries charge $15-30 for a flight of 4-6 wines. Fees are typically waived with purchase.
+**Tasting Fees**: Most wineries charge $20-40 for a flight of 4-6 wines. Fees are typically waived with purchase.
 
 **Reservations**: Most wineries require reservations, especially on weekends. Check ahead.
 
@@ -240,7 +240,7 @@ export const guides: Guide[] = [
       {
         question: 'How much should I budget for wine tasting in Walla Walla?',
         answer:
-          'Plan for $15-30 per person per winery for tasting fees. Many fees are waived with purchase. If you book a tour, you can comfortably visit 3-4 wineries and let someone else handle the driving.',
+          'Plan for $20-40 per person per winery for tasting fees. Many fees are waived with purchase. If you book a tour, you can comfortably visit 3-4 wineries and let someone else handle the driving.',
       },
       {
         question: 'Do I need to know about wine to enjoy Walla Walla?',
