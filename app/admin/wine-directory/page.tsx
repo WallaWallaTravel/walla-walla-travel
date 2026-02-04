@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { logger } from '@/lib/logger'
@@ -20,6 +20,15 @@ interface Winery {
   amenities: string[]
   logo_url: string | null
   hero_image_url: string | null
+  featured_photo_override_id: number | null
+}
+
+interface MediaItem {
+  id: number
+  file_name: string
+  file_path: string
+  title: string | null
+  thumbnail_path: string | null
 }
 
 export default function WineDirectoryPage() {
@@ -30,9 +39,39 @@ export default function WineDirectoryPage() {
   const [selectedWinery, setSelectedWinery] = useState<Winery | null>(null)
   const [updating, setUpdating] = useState<number | null>(null)
 
+  // Photo picker state
+  const [showPhotoPicker, setShowPhotoPicker] = useState(false)
+  const [internalMedia, setInternalMedia] = useState<MediaItem[]>([])
+  const [loadingMedia, setLoadingMedia] = useState(false)
+  const [updatingPhoto, setUpdatingPhoto] = useState(false)
+
   useEffect(() => {
     fetchWineries()
   }, [])
+
+  // Fetch internal winery media when photo picker is opened
+  const fetchInternalMedia = useCallback(async () => {
+    if (internalMedia.length > 0) return // Already loaded
+
+    setLoadingMedia(true)
+    try {
+      const res = await fetch('/api/media?category=winery&limit=100')
+      const data = await res.json()
+      if (data.success && data.data) {
+        setInternalMedia(data.data)
+      }
+    } catch (error) {
+      logger.error('Failed to fetch internal media', { error })
+    } finally {
+      setLoadingMedia(false)
+    }
+  }, [internalMedia.length])
+
+  useEffect(() => {
+    if (showPhotoPicker) {
+      fetchInternalMedia()
+    }
+  }, [showPhotoPicker, fetchInternalMedia])
 
   async function fetchWineries() {
     try {
@@ -71,6 +110,32 @@ export default function WineDirectoryPage() {
       logger.error('Failed to update winery', { error, wineryId: winery.id })
     } finally {
       setUpdating(null)
+    }
+  }
+
+  async function setPhotoOverride(winery: Winery, mediaId: number | null) {
+    setUpdatingPhoto(true)
+    try {
+      const res = await fetch(`/api/admin/wine-directory/${winery.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ featured_photo_override_id: mediaId })
+      })
+
+      if (res.ok) {
+        // Update local state
+        setWineries(prev => prev.map(w =>
+          w.id === winery.id ? { ...w, featured_photo_override_id: mediaId } : w
+        ))
+        if (selectedWinery?.id === winery.id) {
+          setSelectedWinery({ ...selectedWinery, featured_photo_override_id: mediaId })
+        }
+        setShowPhotoPicker(false)
+      }
+    } catch (error) {
+      logger.error('Failed to update photo override', { error, wineryId: winery.id })
+    } finally {
+      setUpdatingPhoto(false)
     }
   }
 
@@ -217,6 +282,13 @@ export default function WineDirectoryPage() {
                           </span>
                         )}
                       </div>
+                      {winery.featured_photo_override_id && (
+                        <div className="absolute bottom-2 left-2">
+                          <span className="px-2 py-0.5 bg-purple-600 text-white rounded text-xs font-medium">
+                            Custom Photo
+                          </span>
+                        </div>
+                      )}
                     </div>
                     <div className="p-4">
                       <h3 className="font-semibold text-gray-900">{winery.name}</h3>
@@ -295,6 +367,104 @@ export default function WineDirectoryPage() {
                       </button>
                     </div>
                   </div>
+
+                  {/* Featured Photo Override Section */}
+                  {selectedWinery.is_featured && (
+                    <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                      <div className="mb-2">
+                        <p className="font-medium text-purple-900">Featured Photo Override</p>
+                        <p className="text-xs text-purple-700">
+                          {selectedWinery.featured_photo_override_id
+                            ? 'Using custom photo from WWT media library'
+                            : 'Using partner\'s default hero photo'}
+                        </p>
+                      </div>
+
+                      {selectedWinery.featured_photo_override_id && (
+                        <div className="flex items-center gap-2 mb-2 p-2 bg-white rounded border border-purple-100">
+                          <span className="text-purple-600 text-sm">Override active</span>
+                          <span className="text-xs text-gray-500">ID: {selectedWinery.featured_photo_override_id}</span>
+                        </div>
+                      )}
+
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setShowPhotoPicker(!showPhotoPicker)}
+                          className="flex-1 px-3 py-1.5 bg-purple-600 text-white text-sm rounded hover:bg-purple-700"
+                        >
+                          {showPhotoPicker ? 'Hide Photos' : 'Choose Photo'}
+                        </button>
+                        {selectedWinery.featured_photo_override_id && (
+                          <button
+                            onClick={() => setPhotoOverride(selectedWinery, null)}
+                            disabled={updatingPhoto}
+                            className="px-3 py-1.5 bg-gray-200 text-gray-700 text-sm rounded hover:bg-gray-300 disabled:opacity-50"
+                          >
+                            Use Default
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Photo Picker Grid */}
+                      {showPhotoPicker && (
+                        <div className="mt-3 pt-3 border-t border-purple-100">
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="text-xs font-medium text-purple-800">WWT Internal Media (winery category)</p>
+                            <Link
+                              href="/admin/media/upload"
+                              className="text-xs text-purple-600 hover:text-purple-800 underline"
+                            >
+                              Upload New
+                            </Link>
+                          </div>
+
+                          {loadingMedia ? (
+                            <div className="grid grid-cols-3 gap-2">
+                              {[1,2,3,4,5,6].map(i => (
+                                <div key={i} className="aspect-square bg-gray-200 rounded animate-pulse" />
+                              ))}
+                            </div>
+                          ) : internalMedia.length === 0 ? (
+                            <div className="text-center py-4 text-gray-500 text-sm">
+                              <p>No winery photos in media library.</p>
+                              <Link href="/admin/media/upload" className="text-purple-600 underline">
+                                Upload photos
+                              </Link>
+                            </div>
+                          ) : (
+                            <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto">
+                              {internalMedia.map((media) => (
+                                <button
+                                  key={media.id}
+                                  onClick={() => setPhotoOverride(selectedWinery, media.id)}
+                                  disabled={updatingPhoto}
+                                  className={`aspect-square relative rounded overflow-hidden border-2 transition-all hover:opacity-90 ${
+                                    selectedWinery.featured_photo_override_id === media.id
+                                      ? 'border-purple-600 ring-2 ring-purple-300'
+                                      : 'border-transparent hover:border-purple-300'
+                                  } ${updatingPhoto ? 'opacity-50' : ''}`}
+                                  title={media.title || media.file_name}
+                                >
+                                  <Image
+                                    src={media.thumbnail_path || media.file_path}
+                                    alt={media.title || media.file_name}
+                                    fill
+                                    className="object-cover"
+                                    unoptimized
+                                  />
+                                  {selectedWinery.featured_photo_override_id === media.id && (
+                                    <div className="absolute inset-0 bg-purple-600/20 flex items-center justify-center">
+                                      <span className="text-white text-lg">✓</span>
+                                    </div>
+                                  )}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   <div className="space-y-4">
                     {selectedWinery.ava && (

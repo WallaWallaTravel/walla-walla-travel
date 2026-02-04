@@ -64,3 +64,6 @@ temp/
 *.tmp
 .env.local.backup
 node_modules/
+scripts/import/credentials.json
+scripts/import/token.json
+scripts/import/gmail-token.json

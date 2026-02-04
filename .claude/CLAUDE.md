@@ -177,7 +177,9 @@ walla_walla_booking_id INTEGER  -- Links to lsh.bookings.id
 - WWT migrated from Heroku to Supabase
 - Auditor's Dream connected to real Supabase data
 - Infrastructure consolidated (4 Supabase projects total)
-- Test login: madsry@gmail.com / wwtRynMdsn03
+- Test credentials:
+  - **Admin** (WWT, Auditor's Dream): info@wallawalla.travel / wwtRynMdsn03
+  - **Driver** (Driver Portal testing): madsry@gmail.com / wwtRynMdsn03
 
 ### Running the Apps
 ```bash
@@ -187,7 +189,7 @@ npm run dev  # http://localhost:3000
 
 # Auditor's Dream
 cd /Users/temp/walla-walla-final/auditors-dream/apps/operator
-npm run dev  # http://localhost:3001
+npm run dev  # http://localhost:5173
 ```
 
 ### Next Steps

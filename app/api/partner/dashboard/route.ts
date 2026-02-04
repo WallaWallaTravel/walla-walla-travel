@@ -1,26 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, UnauthorizedError } from '@/lib/api/middleware/error-handler';
-import { getSessionFromRequest } from '@/lib/auth/session';
-import { partnerService } from '@/lib/services/partner.service';
+import { hotelPartnerService } from '@/lib/services/hotel-partner.service';
 
 /**
  * GET /api/partner/dashboard
- * Get partner dashboard data
+ * Get hotel partner dashboard data
  */
 export const GET = withErrorHandling(async (request: NextRequest) => {
-  const session = await getSessionFromRequest(request);
-  
-  // Note: 'partner' role check may fail if role is not in the type union - use string comparison
-  if (!session || (session.user.role as string !== 'partner' && session.user.role !== 'admin')) {
-    throw new UnauthorizedError('Partner access required');
+  // Get hotel ID from auth header/session
+  const hotelId = request.headers.get('x-hotel-id');
+
+  if (!hotelId) {
+    throw new UnauthorizedError('Hotel authentication required');
   }
 
-  const data = await partnerService.getDashboardData(session.user.id);
+  const dashboard = await hotelPartnerService.getHotelDashboard(hotelId);
 
   return NextResponse.json({
     success: true,
-    ...data,
-    timestamp: new Date().toISOString(),
+    data: dashboard,
   });
 });
-

@@ -66,7 +66,8 @@ export const PATCH = withErrorHandling(async (
     'hours', 'seasonal_hours_notes', 'amenities',
     'is_verified', 'is_featured', 'is_active',
     'logo_url', 'hero_image_url', 'gallery_urls',
-    'founded_year', 'annual_production_cases', 'vineyard_acres'
+    'founded_year', 'annual_production_cases', 'vineyard_acres',
+    'featured_photo_override_id'
   ]
 
   const updates: string[] = []

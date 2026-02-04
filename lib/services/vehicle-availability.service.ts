@@ -32,6 +32,7 @@ export interface AvailabilityBlock {
   created_by: number | null;
   notes: string | null;
   created_at: string;
+  allow_overlap: boolean;
 }
 
 export interface CreateBlockInput {
@@ -44,6 +45,8 @@ export interface CreateBlockInput {
   brand_id?: number;
   created_by?: number;
   notes?: string;
+  /** When true, this block can overlap with other blocks. Used for private offset tours. */
+  allow_overlap?: boolean;
 }
 
 // Hold expiration time in minutes
@@ -426,6 +429,11 @@ export class VehicleAvailabilityService extends BaseService {
    * Create a HOLD block for a booking in progress
    * This is the first step in the transactional booking flow
    * The exclusion constraint will throw if there's a conflict
+   *
+   * @param params.allowOverlap - When true, this block bypasses the exclusion constraint.
+   *   Used for private offset tours where one vehicle serves two staggered groups.
+   *   BOTH blocks must have allowOverlap=true for the overlap to be permitted.
+   *   Only admin should set this flag.
    */
   async createHoldBlock(params: {
     vehicleId: number;
@@ -435,6 +443,7 @@ export class VehicleAvailabilityService extends BaseService {
     brandId?: number;
     createdBy?: number;
     notes?: string;
+    allowOverlap?: boolean;
   }): Promise<AvailabilityBlock> {
     this.log('Creating hold block', params);
 
@@ -448,6 +457,7 @@ export class VehicleAvailabilityService extends BaseService {
         brand_id: params.brandId || null,
         created_by: params.createdBy || null,
         notes: params.notes || 'Temporary hold for booking in progress',
+        allow_overlap: params.allowOverlap || false,
         created_at: new Date()
       });
 
@@ -500,6 +510,11 @@ export class VehicleAvailabilityService extends BaseService {
 
   /**
    * Create a maintenance/blackout block
+   *
+   * @param params.allowOverlap - When true, this block bypasses the exclusion constraint.
+   *   Used for private offset tours where one vehicle serves two staggered groups.
+   *   BOTH blocks must have allowOverlap=true for the overlap to be permitted.
+   *   Only admin should set this flag.
    */
   async createMaintenanceBlock(params: {
     vehicleId: number;
@@ -508,6 +523,7 @@ export class VehicleAvailabilityService extends BaseService {
     endTime: string;
     reason: string;
     createdBy?: number;
+    allowOverlap?: boolean;
   }): Promise<AvailabilityBlock> {
     this.log('Creating maintenance block', params);
 
@@ -520,6 +536,7 @@ export class VehicleAvailabilityService extends BaseService {
         block_type: 'maintenance',
         created_by: params.createdBy || null,
         notes: params.reason,
+        allow_overlap: params.allowOverlap || false,
         created_at: new Date()
       });
     } catch (error) {

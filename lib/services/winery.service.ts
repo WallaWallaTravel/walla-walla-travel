@@ -376,6 +376,81 @@ class WineryService extends BaseService {
   }
 
   /**
+   * Get featured wineries with hero images from media library
+   * This pulls the actual uploaded hero photos instead of using cover_photo_url
+   *
+   * Priority for featured photo (after migration 061 is applied):
+   * 1. Admin override from WWT internal media (featured_photo_override_id)
+   * 2. Partner's hero photo from Smart Directory (winery_media.section = 'hero')
+   * 3. Legacy cover_photo_url fallback
+   */
+  async getFeaturedWithHeroImages(limit: number = 6): Promise<(WinerySummary & { hero_image_url?: string; featured_photo_override_id?: number | null })[]> {
+    // Check if the featured_photo_override_id column exists
+    const columnCheck = await this.query<{ exists: boolean }>(
+      `SELECT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'wineries' AND column_name = 'featured_photo_override_id'
+      ) as exists`
+    );
+    const hasOverrideColumn = columnCheck.rows[0]?.exists ?? false;
+
+    // Build query based on whether the override column exists
+    const overrideSelect = hasOverrideColumn ? 'w.featured_photo_override_id,' : 'NULL::integer as featured_photo_override_id,';
+    const overrideCoalesce = hasOverrideColumn
+      ? `-- Priority 1: Admin override from WWT internal media
+          (SELECT ml.file_path FROM media_library ml
+           WHERE ml.id = w.featured_photo_override_id AND ml.is_active = true),`
+      : '';
+
+    const result = await this.query<WinerySummary & { hero_image_url?: string; featured_photo_override_id?: number | null }>(
+      `SELECT
+        w.id,
+        w.name,
+        w.slug,
+        COALESCE(w.city, 'Walla Walla Valley') as region,
+        COALESCE(w.description, w.short_description, '') as description,
+        COALESCE(w.specialties, ARRAY[]::text[]) as wine_styles,
+        COALESCE(w.tasting_fee, 0)::numeric as tasting_fee,
+        COALESCE(w.reservation_required, false) as reservation_required,
+        w.average_rating as rating,
+        ${overrideSelect}
+        COALESCE(
+          ${overrideCoalesce}
+          -- Priority 2: Partner's hero photo from Smart Directory
+          (SELECT ml.file_path
+           FROM winery_media wm
+           JOIN media_library ml ON wm.media_id = ml.id
+           WHERE wm.winery_id = w.id
+             AND wm.section = 'hero'
+             AND ml.is_active = true
+           ORDER BY wm.is_primary DESC, wm.display_order ASC
+           LIMIT 1),
+          -- Priority 3: Legacy cover_photo_url
+          w.cover_photo_url
+        ) as image_url,
+        (SELECT ml.file_path
+         FROM winery_media wm
+         JOIN media_library ml ON wm.media_id = ml.id
+         WHERE wm.winery_id = w.id
+           AND wm.section = 'hero'
+           AND ml.is_active = true
+         ORDER BY wm.is_primary DESC, wm.display_order ASC
+         LIMIT 1) as hero_image_url,
+        COALESCE(w.experience_tags, ARRAY[]::text[]) as experience_tags,
+        COALESCE(w.amenities, ARRAY[]::text[]) as features,
+        w.max_group_size,
+        COALESCE(w.verified, false) as verified
+      FROM wineries w
+      WHERE COALESCE(w.is_active, true) = true
+        AND COALESCE(w.is_featured, false) = true
+      ORDER BY w.average_rating DESC NULLS LAST
+      LIMIT $1`,
+      [limit]
+    );
+    return result.rows;
+  }
+
+  /**
    * Get count of wineries
    */
   async getCount(options?: { reservationRequired?: boolean }): Promise<number> {

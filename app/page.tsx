@@ -237,8 +237,8 @@ export default async function HomePage() {
             >
               <div className="aspect-[4/3] relative overflow-hidden">
                 <Image
-                  src="https://images.unsplash.com/photo-1474722883778-792e7990302f?w=600&q=80"
-                  alt="Wine tasting at Walla Walla winery"
+                  src="https://eabqmcvmpkbpyhhpbcij.supabase.co/storage/v1/object/public/media/explore/winter-vineyard.jpg"
+                  alt="Winter vineyard rows in Walla Walla wine country"
                   fill
                   className="object-cover group-hover:scale-105 transition-transform duration-300"
                   sizes="(max-width: 768px) 100vw, 33vw"
@@ -263,8 +263,8 @@ export default async function HomePage() {
             >
               <div className="aspect-[4/3] relative overflow-hidden">
                 <Image
-                  src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&q=80"
-                  alt="Vineyard landscape in wine country"
+                  src="https://eabqmcvmpkbpyhhpbcij.supabase.co/storage/v1/object/public/media/explore/wine-districts-hills.jpg"
+                  alt="Rolling hills and Blue Mountains of Walla Walla Valley"
                   fill
                   className="object-cover group-hover:scale-105 transition-transform duration-300"
                   sizes="(max-width: 768px) 100vw, 33vw"
@@ -289,8 +289,8 @@ export default async function HomePage() {
             >
               <div className="aspect-[4/3] relative overflow-hidden">
                 <Image
-                  src="https://images.unsplash.com/photo-1546877625-cb8c71916608?w=600&q=80"
-                  alt="Elegant wine tasting experience"
+                  src="https://eabqmcvmpkbpyhhpbcij.supabase.co/storage/v1/object/public/media/explore/downtown-building.jpg"
+                  alt="Historic downtown Walla Walla building"
                   fill
                   className="object-cover group-hover:scale-105 transition-transform duration-300"
                   sizes="(max-width: 768px) 100vw, 33vw"

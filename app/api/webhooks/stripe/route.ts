@@ -5,6 +5,8 @@ import { getStripe } from '@/lib/stripe';
 import { query, queryOne, withTransaction } from '@/lib/db-helpers';
 import { logger } from '@/lib/logger';
 import { sendBookingConfirmationEmail } from '@/lib/services/email-automation.service';
+import { sharedTourService } from '@/lib/services/shared-tour.service';
+import { sendSharedTourConfirmationEmail } from '@/lib/email/templates/shared-tour-confirmation';
 
 /**
  * POST /api/webhooks/stripe
@@ -64,9 +66,16 @@ export async function POST(request: NextRequest) {
         await handlePaymentIntentSucceeded(event.data.object as Stripe.PaymentIntent);
         break;
 
-      case 'payment_intent.payment_failed':
-        await handlePaymentIntentFailed(event.data.object as Stripe.PaymentIntent);
+      case 'payment_intent.payment_failed': {
+        const failedPayment = event.data.object as Stripe.PaymentIntent;
+        // Handle shared tour ticket failures separately
+        if (failedPayment.metadata.type === 'shared_tour_ticket') {
+          await handleSharedTourPaymentFailed(failedPayment);
+        } else {
+          await handlePaymentIntentFailed(failedPayment);
+        }
         break;
+      }
 
       case 'charge.refunded':
         await handleChargeRefunded(event.data.object as Stripe.Charge);
@@ -112,6 +121,12 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
   // Check if this is a booking payment
   if (metadata.booking_id) {
     await handleBookingPaymentSuccess(paymentIntent);
+    return;
+  }
+
+  // Check if this is a shared tour ticket payment
+  if (metadata.type === 'shared_tour_ticket' && metadata.ticket_id) {
+    await handleSharedTourPaymentSuccess(paymentIntent);
     return;
   }
 
@@ -371,4 +386,68 @@ async function handleDisputeCreated(dispute: Stripe.Dispute) {
     // TODO: Send admin notification email
     // TODO: Update payment status to 'disputed'
   }
+}
+
+/**
+ * Handle shared tour ticket payment success
+ */
+async function handleSharedTourPaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
+  const { id, metadata, amount } = paymentIntent;
+  const ticketId = metadata.ticket_id;
+
+  logger.info('[Stripe Webhook] Processing shared tour ticket payment', {
+    paymentIntentId: id,
+    ticketId,
+    ticketNumber: metadata.ticket_number,
+    amount: amount / 100,
+  });
+
+  // Confirm the payment in the service
+  const ticket = await sharedTourService.confirmPayment(id);
+
+  if (!ticket) {
+    logger.error('[Stripe Webhook] Failed to confirm shared tour ticket payment', {
+      paymentIntentId: id,
+      ticketId,
+    });
+    return;
+  }
+
+  logger.info('[Stripe Webhook] Shared tour ticket payment confirmed', {
+    ticketId: ticket.id,
+    ticketNumber: ticket.ticket_number,
+    customerEmail: ticket.customer_email,
+  });
+
+  // Send confirmation email
+  try {
+    await sendSharedTourConfirmationEmail(ticket.id);
+    logger.info('[Stripe Webhook] Sent shared tour confirmation email', {
+      ticketId: ticket.id,
+      customerEmail: ticket.customer_email,
+    });
+  } catch (error) {
+    logger.error('[Stripe Webhook] Failed to send shared tour confirmation email', {
+      ticketId: ticket.id,
+      error,
+    });
+  }
+}
+
+/**
+ * Handle shared tour ticket payment failure
+ */
+async function handleSharedTourPaymentFailed(paymentIntent: Stripe.PaymentIntent) {
+  const { id, metadata, last_payment_error } = paymentIntent;
+  const ticketId = metadata.ticket_id;
+
+  logger.warn('[Stripe Webhook] Shared tour ticket payment failed', {
+    paymentIntentId: id,
+    ticketId,
+    ticketNumber: metadata.ticket_number,
+    error: last_payment_error?.message,
+  });
+
+  // Log the failure in the service
+  await sharedTourService.handlePaymentFailed(id, last_payment_error?.message);
 }

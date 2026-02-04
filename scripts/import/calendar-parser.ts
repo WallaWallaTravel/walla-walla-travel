@@ -150,11 +150,48 @@ export function extractPartySize(text: string): number | null {
  * Extract customer name from event title
  */
 export function extractCustomerName(title: string): string | null {
-  // Remove common prefixes
-  const cleanTitle = title
+  // Remove common prefixes including "NW Touring" variations
+  let cleanTitle = title
+    .replace(/^(?:NW\s*Touring(?:\s*&\s*Concierge)?(?:\s*Co\.?)?)\s*[\(\[\-:,]?\s*/i, '')
     .replace(/^(?:Wine Tour|Tour|WT|Trip)[\s:-]*/i, '')
     .replace(/\s*-\s*\d+\s*(?:guests?|pax|people)?\s*$/i, '')
     .trim();
+
+  // Handle patterns like "Chad, Cindy, Sarah -- Ryan Madsen NW Touring Co. (20 Guests)"
+  // Extract names before " -- " or " - Ryan" (driver separator)
+  const driverSeparator = cleanTitle.match(/^(.+?)\s*(?:--|->|\s-\s*Ryan\s)/i);
+  if (driverSeparator && driverSeparator[1]) {
+    const names = driverSeparator[1].trim();
+    // Get first name from comma-separated list
+    const firstName = names.split(/[,&]/)[0].trim();
+    if (firstName && /^[A-Z][a-z]+/.test(firstName)) {
+      return firstName;
+    }
+  }
+
+  // Handle "Party of X" or "Bachelorette Party" - use event type as descriptor
+  const partyMatch = cleanTitle.match(/^((?:Bachelorette|Bachelor|Birthday|Anniversary|Corporate|Wedding)\s*Party)/i);
+  if (partyMatch) {
+    // Look for a name elsewhere in the title
+    const afterParty = cleanTitle.substring(partyMatch[0].length).trim();
+    const nameAfter = afterParty.match(/(?:for|with|:|-)\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/i);
+    if (nameAfter && nameAfter[1]) {
+      return nameAfter[1];
+    }
+    // Return the party type as a fallback descriptor
+    return partyMatch[1];
+  }
+
+  // Handle "Party of 14" without a customer name - mark as group booking
+  if (/^Party\s+of\s+\d+/i.test(cleanTitle)) {
+    return 'Group Booking';
+  }
+
+  // Handle "Name x Name" pattern (two people meeting)
+  const meetingMatch = cleanTitle.match(/^([A-Z][a-z]+)\s*x\s*([A-Z][a-z]+)/i);
+  if (meetingMatch) {
+    return meetingMatch[1]; // Return first person's name
+  }
 
   for (const pattern of NAME_PATTERNS) {
     const match = cleanTitle.match(pattern);

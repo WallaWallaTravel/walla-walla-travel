@@ -42,6 +42,7 @@ export type WineriesAvgAggregateOutputType = {
   display_order: number | null
   annual_production_cases: number | null
   vineyard_acres: runtime.Decimal | null
+  featured_photo_override_id: number | null
 }
 
 export type WineriesSumAggregateOutputType = {
@@ -60,6 +61,7 @@ export type WineriesSumAggregateOutputType = {
   display_order: number | null
   annual_production_cases: number | null
   vineyard_acres: runtime.Decimal | null
+  featured_photo_override_id: number | null
 }
 
 export type WineriesMinAggregateOutputType = {
@@ -113,6 +115,7 @@ export type WineriesMinAggregateOutputType = {
   walk_ins_welcome: boolean | null
   annual_production_cases: number | null
   vineyard_acres: runtime.Decimal | null
+  featured_photo_override_id: number | null
 }
 
 export type WineriesMaxAggregateOutputType = {
@@ -166,6 +169,7 @@ export type WineriesMaxAggregateOutputType = {
   walk_ins_welcome: boolean | null
   annual_production_cases: number | null
   vineyard_acres: runtime.Decimal | null
+  featured_photo_override_id: number | null
 }
 
 export type WineriesCountAggregateOutputType = {
@@ -227,6 +231,7 @@ export type WineriesCountAggregateOutputType = {
   walk_ins_welcome: number
   annual_production_cases: number
   vineyard_acres: number
+  featured_photo_override_id: number
   _all: number
 }
 
@@ -247,6 +252,7 @@ export type WineriesAvgAggregateInputType = {
   display_order?: true
   annual_production_cases?: true
   vineyard_acres?: true
+  featured_photo_override_id?: true
 }
 
 export type WineriesSumAggregateInputType = {
@@ -265,6 +271,7 @@ export type WineriesSumAggregateInputType = {
   display_order?: true
   annual_production_cases?: true
   vineyard_acres?: true
+  featured_photo_override_id?: true
 }
 
 export type WineriesMinAggregateInputType = {
@@ -318,6 +325,7 @@ export type WineriesMinAggregateInputType = {
   walk_ins_welcome?: true
   annual_production_cases?: true
   vineyard_acres?: true
+  featured_photo_override_id?: true
 }
 
 export type WineriesMaxAggregateInputType = {
@@ -371,6 +379,7 @@ export type WineriesMaxAggregateInputType = {
   walk_ins_welcome?: true
   annual_production_cases?: true
   vineyard_acres?: true
+  featured_photo_override_id?: true
 }
 
 export type WineriesCountAggregateInputType = {
@@ -432,6 +441,7 @@ export type WineriesCountAggregateInputType = {
   walk_ins_welcome?: true
   annual_production_cases?: true
   vineyard_acres?: true
+  featured_photo_override_id?: true
   _all?: true
 }
 
@@ -580,6 +590,7 @@ export type WineriesGroupByOutputType = {
   walk_ins_welcome: boolean | null
   annual_production_cases: number | null
   vineyard_acres: runtime.Decimal | null
+  featured_photo_override_id: number | null
   _count: WineriesCountAggregateOutputType | null
   _avg: WineriesAvgAggregateOutputType | null
   _sum: WineriesSumAggregateOutputType | null
@@ -664,6 +675,8 @@ export type wineriesWhereInput = {
   walk_ins_welcome?: Prisma.BoolNullableFilter<"wineries"> | boolean | null
   annual_production_cases?: Prisma.IntNullableFilter<"wineries"> | number | null
   vineyard_acres?: Prisma.DecimalNullableFilter<"wineries"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override_id?: Prisma.IntNullableFilter<"wineries"> | number | null
+  featured_photo_override?: Prisma.XOR<Prisma.Media_libraryNullableScalarRelationFilter, Prisma.media_libraryWhereInput> | null
   booking_wineries?: Prisma.Booking_wineriesListRelationFilter
   customer_tasting_notes?: Prisma.Customer_tasting_notesListRelationFilter
   events?: Prisma.EventsListRelationFilter
@@ -737,6 +750,8 @@ export type wineriesOrderByWithRelationInput = {
   walk_ins_welcome?: Prisma.SortOrderInput | Prisma.SortOrder
   annual_production_cases?: Prisma.SortOrderInput | Prisma.SortOrder
   vineyard_acres?: Prisma.SortOrderInput | Prisma.SortOrder
+  featured_photo_override_id?: Prisma.SortOrderInput | Prisma.SortOrder
+  featured_photo_override?: Prisma.media_libraryOrderByWithRelationInput
   booking_wineries?: Prisma.booking_wineriesOrderByRelationAggregateInput
   customer_tasting_notes?: Prisma.customer_tasting_notesOrderByRelationAggregateInput
   events?: Prisma.eventsOrderByRelationAggregateInput
@@ -813,6 +828,8 @@ export type wineriesWhereUniqueInput = Prisma.AtLeast<{
   walk_ins_welcome?: Prisma.BoolNullableFilter<"wineries"> | boolean | null
   annual_production_cases?: Prisma.IntNullableFilter<"wineries"> | number | null
   vineyard_acres?: Prisma.DecimalNullableFilter<"wineries"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override_id?: Prisma.IntNullableFilter<"wineries"> | number | null
+  featured_photo_override?: Prisma.XOR<Prisma.Media_libraryNullableScalarRelationFilter, Prisma.media_libraryWhereInput> | null
   booking_wineries?: Prisma.Booking_wineriesListRelationFilter
   customer_tasting_notes?: Prisma.Customer_tasting_notesListRelationFilter
   events?: Prisma.EventsListRelationFilter
@@ -886,6 +903,7 @@ export type wineriesOrderByWithAggregationInput = {
   walk_ins_welcome?: Prisma.SortOrderInput | Prisma.SortOrder
   annual_production_cases?: Prisma.SortOrderInput | Prisma.SortOrder
   vineyard_acres?: Prisma.SortOrderInput | Prisma.SortOrder
+  featured_photo_override_id?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.wineriesCountOrderByAggregateInput
   _avg?: Prisma.wineriesAvgOrderByAggregateInput
   _max?: Prisma.wineriesMaxOrderByAggregateInput
@@ -955,6 +973,7 @@ export type wineriesScalarWhereWithAggregatesInput = {
   walk_ins_welcome?: Prisma.BoolNullableWithAggregatesFilter<"wineries"> | boolean | null
   annual_production_cases?: Prisma.IntNullableWithAggregatesFilter<"wineries"> | number | null
   vineyard_acres?: Prisma.DecimalNullableWithAggregatesFilter<"wineries"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override_id?: Prisma.IntNullableWithAggregatesFilter<"wineries"> | number | null
 }
 
 export type wineriesCreateInput = {
@@ -1015,6 +1034,7 @@ export type wineriesCreateInput = {
   walk_ins_welcome?: boolean | null
   annual_production_cases?: number | null
   vineyard_acres?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override?: Prisma.media_libraryCreateNestedOneWithoutWineries_featured_photo_overrideInput
   booking_wineries?: Prisma.booking_wineriesCreateNestedManyWithoutWineriesInput
   customer_tasting_notes?: Prisma.customer_tasting_notesCreateNestedManyWithoutWineriesInput
   events?: Prisma.eventsCreateNestedManyWithoutWineriesInput
@@ -1088,6 +1108,7 @@ export type wineriesUncheckedCreateInput = {
   walk_ins_welcome?: boolean | null
   annual_production_cases?: number | null
   vineyard_acres?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override_id?: number | null
   booking_wineries?: Prisma.booking_wineriesUncheckedCreateNestedManyWithoutWineriesInput
   customer_tasting_notes?: Prisma.customer_tasting_notesUncheckedCreateNestedManyWithoutWineriesInput
   events?: Prisma.eventsUncheckedCreateNestedManyWithoutWineriesInput
@@ -1160,6 +1181,7 @@ export type wineriesUpdateInput = {
   walk_ins_welcome?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   annual_production_cases?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   vineyard_acres?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override?: Prisma.media_libraryUpdateOneWithoutWineries_featured_photo_overrideNestedInput
   booking_wineries?: Prisma.booking_wineriesUpdateManyWithoutWineriesNestedInput
   customer_tasting_notes?: Prisma.customer_tasting_notesUpdateManyWithoutWineriesNestedInput
   events?: Prisma.eventsUpdateManyWithoutWineriesNestedInput
@@ -1233,6 +1255,7 @@ export type wineriesUncheckedUpdateInput = {
   walk_ins_welcome?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   annual_production_cases?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   vineyard_acres?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   booking_wineries?: Prisma.booking_wineriesUncheckedUpdateManyWithoutWineriesNestedInput
   customer_tasting_notes?: Prisma.customer_tasting_notesUncheckedUpdateManyWithoutWineriesNestedInput
   events?: Prisma.eventsUncheckedUpdateManyWithoutWineriesNestedInput
@@ -1306,6 +1329,7 @@ export type wineriesCreateManyInput = {
   walk_ins_welcome?: boolean | null
   annual_production_cases?: number | null
   vineyard_acres?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override_id?: number | null
 }
 
 export type wineriesUpdateManyMutationInput = {
@@ -1427,6 +1451,7 @@ export type wineriesUncheckedUpdateManyInput = {
   walk_ins_welcome?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   annual_production_cases?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   vineyard_acres?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
 }
 
 export type WineriesScalarRelationFilter = {
@@ -1437,6 +1462,16 @@ export type WineriesScalarRelationFilter = {
 export type WineriesNullableScalarRelationFilter = {
   is?: Prisma.wineriesWhereInput | null
   isNot?: Prisma.wineriesWhereInput | null
+}
+
+export type WineriesListRelationFilter = {
+  every?: Prisma.wineriesWhereInput
+  some?: Prisma.wineriesWhereInput
+  none?: Prisma.wineriesWhereInput
+}
+
+export type wineriesOrderByRelationAggregateInput = {
+  _count?: Prisma.SortOrder
 }
 
 export type wineriesCountOrderByAggregateInput = {
@@ -1498,6 +1533,7 @@ export type wineriesCountOrderByAggregateInput = {
   walk_ins_welcome?: Prisma.SortOrder
   annual_production_cases?: Prisma.SortOrder
   vineyard_acres?: Prisma.SortOrder
+  featured_photo_override_id?: Prisma.SortOrder
 }
 
 export type wineriesAvgOrderByAggregateInput = {
@@ -1516,6 +1552,7 @@ export type wineriesAvgOrderByAggregateInput = {
   display_order?: Prisma.SortOrder
   annual_production_cases?: Prisma.SortOrder
   vineyard_acres?: Prisma.SortOrder
+  featured_photo_override_id?: Prisma.SortOrder
 }
 
 export type wineriesMaxOrderByAggregateInput = {
@@ -1569,6 +1606,7 @@ export type wineriesMaxOrderByAggregateInput = {
   walk_ins_welcome?: Prisma.SortOrder
   annual_production_cases?: Prisma.SortOrder
   vineyard_acres?: Prisma.SortOrder
+  featured_photo_override_id?: Prisma.SortOrder
 }
 
 export type wineriesMinOrderByAggregateInput = {
@@ -1622,6 +1660,7 @@ export type wineriesMinOrderByAggregateInput = {
   walk_ins_welcome?: Prisma.SortOrder
   annual_production_cases?: Prisma.SortOrder
   vineyard_acres?: Prisma.SortOrder
+  featured_photo_override_id?: Prisma.SortOrder
 }
 
 export type wineriesSumOrderByAggregateInput = {
@@ -1640,6 +1679,7 @@ export type wineriesSumOrderByAggregateInput = {
   display_order?: Prisma.SortOrder
   annual_production_cases?: Prisma.SortOrder
   vineyard_acres?: Prisma.SortOrder
+  featured_photo_override_id?: Prisma.SortOrder
 }
 
 export type wineriesCreateNestedOneWithoutBooking_wineriesInput = {
@@ -1700,6 +1740,48 @@ export type wineriesUpdateOneWithoutItinerary_stopsNestedInput = {
   delete?: Prisma.wineriesWhereInput | boolean
   connect?: Prisma.wineriesWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.wineriesUpdateToOneWithWhereWithoutItinerary_stopsInput, Prisma.wineriesUpdateWithoutItinerary_stopsInput>, Prisma.wineriesUncheckedUpdateWithoutItinerary_stopsInput>
+}
+
+export type wineriesCreateNestedManyWithoutFeatured_photo_overrideInput = {
+  create?: Prisma.XOR<Prisma.wineriesCreateWithoutFeatured_photo_overrideInput, Prisma.wineriesUncheckedCreateWithoutFeatured_photo_overrideInput> | Prisma.wineriesCreateWithoutFeatured_photo_overrideInput[] | Prisma.wineriesUncheckedCreateWithoutFeatured_photo_overrideInput[]
+  connectOrCreate?: Prisma.wineriesCreateOrConnectWithoutFeatured_photo_overrideInput | Prisma.wineriesCreateOrConnectWithoutFeatured_photo_overrideInput[]
+  createMany?: Prisma.wineriesCreateManyFeatured_photo_overrideInputEnvelope
+  connect?: Prisma.wineriesWhereUniqueInput | Prisma.wineriesWhereUniqueInput[]
+}
+
+export type wineriesUncheckedCreateNestedManyWithoutFeatured_photo_overrideInput = {
+  create?: Prisma.XOR<Prisma.wineriesCreateWithoutFeatured_photo_overrideInput, Prisma.wineriesUncheckedCreateWithoutFeatured_photo_overrideInput> | Prisma.wineriesCreateWithoutFeatured_photo_overrideInput[] | Prisma.wineriesUncheckedCreateWithoutFeatured_photo_overrideInput[]
+  connectOrCreate?: Prisma.wineriesCreateOrConnectWithoutFeatured_photo_overrideInput | Prisma.wineriesCreateOrConnectWithoutFeatured_photo_overrideInput[]
+  createMany?: Prisma.wineriesCreateManyFeatured_photo_overrideInputEnvelope
+  connect?: Prisma.wineriesWhereUniqueInput | Prisma.wineriesWhereUniqueInput[]
+}
+
+export type wineriesUpdateManyWithoutFeatured_photo_overrideNestedInput = {
+  create?: Prisma.XOR<Prisma.wineriesCreateWithoutFeatured_photo_overrideInput, Prisma.wineriesUncheckedCreateWithoutFeatured_photo_overrideInput> | Prisma.wineriesCreateWithoutFeatured_photo_overrideInput[] | Prisma.wineriesUncheckedCreateWithoutFeatured_photo_overrideInput[]
+  connectOrCreate?: Prisma.wineriesCreateOrConnectWithoutFeatured_photo_overrideInput | Prisma.wineriesCreateOrConnectWithoutFeatured_photo_overrideInput[]
+  upsert?: Prisma.wineriesUpsertWithWhereUniqueWithoutFeatured_photo_overrideInput | Prisma.wineriesUpsertWithWhereUniqueWithoutFeatured_photo_overrideInput[]
+  createMany?: Prisma.wineriesCreateManyFeatured_photo_overrideInputEnvelope
+  set?: Prisma.wineriesWhereUniqueInput | Prisma.wineriesWhereUniqueInput[]
+  disconnect?: Prisma.wineriesWhereUniqueInput | Prisma.wineriesWhereUniqueInput[]
+  delete?: Prisma.wineriesWhereUniqueInput | Prisma.wineriesWhereUniqueInput[]
+  connect?: Prisma.wineriesWhereUniqueInput | Prisma.wineriesWhereUniqueInput[]
+  update?: Prisma.wineriesUpdateWithWhereUniqueWithoutFeatured_photo_overrideInput | Prisma.wineriesUpdateWithWhereUniqueWithoutFeatured_photo_overrideInput[]
+  updateMany?: Prisma.wineriesUpdateManyWithWhereWithoutFeatured_photo_overrideInput | Prisma.wineriesUpdateManyWithWhereWithoutFeatured_photo_overrideInput[]
+  deleteMany?: Prisma.wineriesScalarWhereInput | Prisma.wineriesScalarWhereInput[]
+}
+
+export type wineriesUncheckedUpdateManyWithoutFeatured_photo_overrideNestedInput = {
+  create?: Prisma.XOR<Prisma.wineriesCreateWithoutFeatured_photo_overrideInput, Prisma.wineriesUncheckedCreateWithoutFeatured_photo_overrideInput> | Prisma.wineriesCreateWithoutFeatured_photo_overrideInput[] | Prisma.wineriesUncheckedCreateWithoutFeatured_photo_overrideInput[]
+  connectOrCreate?: Prisma.wineriesCreateOrConnectWithoutFeatured_photo_overrideInput | Prisma.wineriesCreateOrConnectWithoutFeatured_photo_overrideInput[]
+  upsert?: Prisma.wineriesUpsertWithWhereUniqueWithoutFeatured_photo_overrideInput | Prisma.wineriesUpsertWithWhereUniqueWithoutFeatured_photo_overrideInput[]
+  createMany?: Prisma.wineriesCreateManyFeatured_photo_overrideInputEnvelope
+  set?: Prisma.wineriesWhereUniqueInput | Prisma.wineriesWhereUniqueInput[]
+  disconnect?: Prisma.wineriesWhereUniqueInput | Prisma.wineriesWhereUniqueInput[]
+  delete?: Prisma.wineriesWhereUniqueInput | Prisma.wineriesWhereUniqueInput[]
+  connect?: Prisma.wineriesWhereUniqueInput | Prisma.wineriesWhereUniqueInput[]
+  update?: Prisma.wineriesUpdateWithWhereUniqueWithoutFeatured_photo_overrideInput | Prisma.wineriesUpdateWithWhereUniqueWithoutFeatured_photo_overrideInput[]
+  updateMany?: Prisma.wineriesUpdateManyWithWhereWithoutFeatured_photo_overrideInput | Prisma.wineriesUpdateManyWithWhereWithoutFeatured_photo_overrideInput[]
+  deleteMany?: Prisma.wineriesScalarWhereInput | Prisma.wineriesScalarWhereInput[]
 }
 
 export type wineriesCreateNestedOneWithoutPartner_profilesInput = {
@@ -1918,6 +2000,7 @@ export type wineriesCreateWithoutBooking_wineriesInput = {
   walk_ins_welcome?: boolean | null
   annual_production_cases?: number | null
   vineyard_acres?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override?: Prisma.media_libraryCreateNestedOneWithoutWineries_featured_photo_overrideInput
   customer_tasting_notes?: Prisma.customer_tasting_notesCreateNestedManyWithoutWineriesInput
   events?: Prisma.eventsCreateNestedManyWithoutWineriesInput
   itinerary_stops?: Prisma.itinerary_stopsCreateNestedManyWithoutWineriesInput
@@ -1990,6 +2073,7 @@ export type wineriesUncheckedCreateWithoutBooking_wineriesInput = {
   walk_ins_welcome?: boolean | null
   annual_production_cases?: number | null
   vineyard_acres?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override_id?: number | null
   customer_tasting_notes?: Prisma.customer_tasting_notesUncheckedCreateNestedManyWithoutWineriesInput
   events?: Prisma.eventsUncheckedCreateNestedManyWithoutWineriesInput
   itinerary_stops?: Prisma.itinerary_stopsUncheckedCreateNestedManyWithoutWineriesInput
@@ -2077,6 +2161,7 @@ export type wineriesUpdateWithoutBooking_wineriesInput = {
   walk_ins_welcome?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   annual_production_cases?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   vineyard_acres?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override?: Prisma.media_libraryUpdateOneWithoutWineries_featured_photo_overrideNestedInput
   customer_tasting_notes?: Prisma.customer_tasting_notesUpdateManyWithoutWineriesNestedInput
   events?: Prisma.eventsUpdateManyWithoutWineriesNestedInput
   itinerary_stops?: Prisma.itinerary_stopsUpdateManyWithoutWineriesNestedInput
@@ -2149,6 +2234,7 @@ export type wineriesUncheckedUpdateWithoutBooking_wineriesInput = {
   walk_ins_welcome?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   annual_production_cases?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   vineyard_acres?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   customer_tasting_notes?: Prisma.customer_tasting_notesUncheckedUpdateManyWithoutWineriesNestedInput
   events?: Prisma.eventsUncheckedUpdateManyWithoutWineriesNestedInput
   itinerary_stops?: Prisma.itinerary_stopsUncheckedUpdateManyWithoutWineriesNestedInput
@@ -2220,6 +2306,7 @@ export type wineriesCreateWithoutCustomer_tasting_notesInput = {
   walk_ins_welcome?: boolean | null
   annual_production_cases?: number | null
   vineyard_acres?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override?: Prisma.media_libraryCreateNestedOneWithoutWineries_featured_photo_overrideInput
   booking_wineries?: Prisma.booking_wineriesCreateNestedManyWithoutWineriesInput
   events?: Prisma.eventsCreateNestedManyWithoutWineriesInput
   itinerary_stops?: Prisma.itinerary_stopsCreateNestedManyWithoutWineriesInput
@@ -2292,6 +2379,7 @@ export type wineriesUncheckedCreateWithoutCustomer_tasting_notesInput = {
   walk_ins_welcome?: boolean | null
   annual_production_cases?: number | null
   vineyard_acres?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override_id?: number | null
   booking_wineries?: Prisma.booking_wineriesUncheckedCreateNestedManyWithoutWineriesInput
   events?: Prisma.eventsUncheckedCreateNestedManyWithoutWineriesInput
   itinerary_stops?: Prisma.itinerary_stopsUncheckedCreateNestedManyWithoutWineriesInput
@@ -2379,6 +2467,7 @@ export type wineriesUpdateWithoutCustomer_tasting_notesInput = {
   walk_ins_welcome?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   annual_production_cases?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   vineyard_acres?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override?: Prisma.media_libraryUpdateOneWithoutWineries_featured_photo_overrideNestedInput
   booking_wineries?: Prisma.booking_wineriesUpdateManyWithoutWineriesNestedInput
   events?: Prisma.eventsUpdateManyWithoutWineriesNestedInput
   itinerary_stops?: Prisma.itinerary_stopsUpdateManyWithoutWineriesNestedInput
@@ -2451,6 +2540,7 @@ export type wineriesUncheckedUpdateWithoutCustomer_tasting_notesInput = {
   walk_ins_welcome?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   annual_production_cases?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   vineyard_acres?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   booking_wineries?: Prisma.booking_wineriesUncheckedUpdateManyWithoutWineriesNestedInput
   events?: Prisma.eventsUncheckedUpdateManyWithoutWineriesNestedInput
   itinerary_stops?: Prisma.itinerary_stopsUncheckedUpdateManyWithoutWineriesNestedInput
@@ -2522,6 +2612,7 @@ export type wineriesCreateWithoutEventsInput = {
   walk_ins_welcome?: boolean | null
   annual_production_cases?: number | null
   vineyard_acres?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override?: Prisma.media_libraryCreateNestedOneWithoutWineries_featured_photo_overrideInput
   booking_wineries?: Prisma.booking_wineriesCreateNestedManyWithoutWineriesInput
   customer_tasting_notes?: Prisma.customer_tasting_notesCreateNestedManyWithoutWineriesInput
   itinerary_stops?: Prisma.itinerary_stopsCreateNestedManyWithoutWineriesInput
@@ -2594,6 +2685,7 @@ export type wineriesUncheckedCreateWithoutEventsInput = {
   walk_ins_welcome?: boolean | null
   annual_production_cases?: number | null
   vineyard_acres?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override_id?: number | null
   booking_wineries?: Prisma.booking_wineriesUncheckedCreateNestedManyWithoutWineriesInput
   customer_tasting_notes?: Prisma.customer_tasting_notesUncheckedCreateNestedManyWithoutWineriesInput
   itinerary_stops?: Prisma.itinerary_stopsUncheckedCreateNestedManyWithoutWineriesInput
@@ -2681,6 +2773,7 @@ export type wineriesUpdateWithoutEventsInput = {
   walk_ins_welcome?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   annual_production_cases?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   vineyard_acres?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override?: Prisma.media_libraryUpdateOneWithoutWineries_featured_photo_overrideNestedInput
   booking_wineries?: Prisma.booking_wineriesUpdateManyWithoutWineriesNestedInput
   customer_tasting_notes?: Prisma.customer_tasting_notesUpdateManyWithoutWineriesNestedInput
   itinerary_stops?: Prisma.itinerary_stopsUpdateManyWithoutWineriesNestedInput
@@ -2753,6 +2846,7 @@ export type wineriesUncheckedUpdateWithoutEventsInput = {
   walk_ins_welcome?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   annual_production_cases?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   vineyard_acres?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   booking_wineries?: Prisma.booking_wineriesUncheckedUpdateManyWithoutWineriesNestedInput
   customer_tasting_notes?: Prisma.customer_tasting_notesUncheckedUpdateManyWithoutWineriesNestedInput
   itinerary_stops?: Prisma.itinerary_stopsUncheckedUpdateManyWithoutWineriesNestedInput
@@ -2824,6 +2918,7 @@ export type wineriesCreateWithoutItinerary_stopsInput = {
   walk_ins_welcome?: boolean | null
   annual_production_cases?: number | null
   vineyard_acres?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override?: Prisma.media_libraryCreateNestedOneWithoutWineries_featured_photo_overrideInput
   booking_wineries?: Prisma.booking_wineriesCreateNestedManyWithoutWineriesInput
   customer_tasting_notes?: Prisma.customer_tasting_notesCreateNestedManyWithoutWineriesInput
   events?: Prisma.eventsCreateNestedManyWithoutWineriesInput
@@ -2896,6 +2991,7 @@ export type wineriesUncheckedCreateWithoutItinerary_stopsInput = {
   walk_ins_welcome?: boolean | null
   annual_production_cases?: number | null
   vineyard_acres?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override_id?: number | null
   booking_wineries?: Prisma.booking_wineriesUncheckedCreateNestedManyWithoutWineriesInput
   customer_tasting_notes?: Prisma.customer_tasting_notesUncheckedCreateNestedManyWithoutWineriesInput
   events?: Prisma.eventsUncheckedCreateNestedManyWithoutWineriesInput
@@ -2983,6 +3079,7 @@ export type wineriesUpdateWithoutItinerary_stopsInput = {
   walk_ins_welcome?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   annual_production_cases?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   vineyard_acres?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override?: Prisma.media_libraryUpdateOneWithoutWineries_featured_photo_overrideNestedInput
   booking_wineries?: Prisma.booking_wineriesUpdateManyWithoutWineriesNestedInput
   customer_tasting_notes?: Prisma.customer_tasting_notesUpdateManyWithoutWineriesNestedInput
   events?: Prisma.eventsUpdateManyWithoutWineriesNestedInput
@@ -3055,6 +3152,7 @@ export type wineriesUncheckedUpdateWithoutItinerary_stopsInput = {
   walk_ins_welcome?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   annual_production_cases?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   vineyard_acres?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   booking_wineries?: Prisma.booking_wineriesUncheckedUpdateManyWithoutWineriesNestedInput
   customer_tasting_notes?: Prisma.customer_tasting_notesUncheckedUpdateManyWithoutWineriesNestedInput
   events?: Prisma.eventsUncheckedUpdateManyWithoutWineriesNestedInput
@@ -3066,6 +3164,242 @@ export type wineriesUncheckedUpdateWithoutItinerary_stopsInput = {
   winery_people?: Prisma.winery_peopleUncheckedUpdateManyWithoutWineriesNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutWineriesNestedInput
   wines?: Prisma.winesUncheckedUpdateManyWithoutWineriesNestedInput
+}
+
+export type wineriesCreateWithoutFeatured_photo_overrideInput = {
+  name: string
+  slug: string
+  description?: string | null
+  short_description?: string | null
+  founded_year?: number | null
+  winemaker?: string | null
+  owner?: string | null
+  address?: string | null
+  city?: string | null
+  state?: string | null
+  zip_code?: string | null
+  latitude?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  longitude?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  phone?: string | null
+  email?: string | null
+  website?: string | null
+  tasting_fee?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tasting_fee_waived_with_purchase?: boolean | null
+  minimum_purchase_for_waiver?: number | null
+  reservation_required?: boolean | null
+  accepts_walkins?: boolean | null
+  average_visit_duration?: number | null
+  specialties?: Prisma.wineriesCreatespecialtiesInput | string[]
+  production_volume?: string | null
+  price_range?: string | null
+  hours_of_operation?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  seasonal_hours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  amenities?: Prisma.wineriesCreateamenitiesInput | string[]
+  accessibility_features?: Prisma.wineriesCreateaccessibility_featuresInput | string[]
+  logo_url?: string | null
+  cover_photo_url?: string | null
+  photos?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  virtual_tour_url?: string | null
+  video_url?: string | null
+  average_rating?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  review_count?: number | null
+  curator_notes?: string | null
+  wine_enthusiast_rating?: number | null
+  wine_spectator_rating?: number | null
+  meta_title?: string | null
+  meta_description?: string | null
+  keywords?: Prisma.wineriesCreatekeywordsInput | string[]
+  is_partner?: boolean | null
+  partner_since?: Date | string | null
+  commission_rate?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  special_offers?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  contact_name?: string | null
+  contact_email?: string | null
+  is_active?: boolean | null
+  is_featured?: boolean | null
+  display_order?: number | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  ava?: string | null
+  walk_ins_welcome?: boolean | null
+  annual_production_cases?: number | null
+  vineyard_acres?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  booking_wineries?: Prisma.booking_wineriesCreateNestedManyWithoutWineriesInput
+  customer_tasting_notes?: Prisma.customer_tasting_notesCreateNestedManyWithoutWineriesInput
+  events?: Prisma.eventsCreateNestedManyWithoutWineriesInput
+  itinerary_stops?: Prisma.itinerary_stopsCreateNestedManyWithoutWineriesInput
+  partner_profiles?: Prisma.partner_profilesCreateNestedManyWithoutWineriesInput
+  wine_purchases?: Prisma.wine_purchasesCreateNestedManyWithoutWineriesInput
+  winery_content?: Prisma.winery_contentCreateNestedManyWithoutWineriesInput
+  winery_faqs?: Prisma.winery_faqsCreateNestedManyWithoutWineriesInput
+  winery_media?: Prisma.winery_mediaCreateNestedManyWithoutWineriesInput
+  winery_people?: Prisma.winery_peopleCreateNestedManyWithoutWineriesInput
+  winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutWineriesInput
+  wines?: Prisma.winesCreateNestedManyWithoutWineriesInput
+}
+
+export type wineriesUncheckedCreateWithoutFeatured_photo_overrideInput = {
+  id?: number
+  name: string
+  slug: string
+  description?: string | null
+  short_description?: string | null
+  founded_year?: number | null
+  winemaker?: string | null
+  owner?: string | null
+  address?: string | null
+  city?: string | null
+  state?: string | null
+  zip_code?: string | null
+  latitude?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  longitude?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  phone?: string | null
+  email?: string | null
+  website?: string | null
+  tasting_fee?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tasting_fee_waived_with_purchase?: boolean | null
+  minimum_purchase_for_waiver?: number | null
+  reservation_required?: boolean | null
+  accepts_walkins?: boolean | null
+  average_visit_duration?: number | null
+  specialties?: Prisma.wineriesCreatespecialtiesInput | string[]
+  production_volume?: string | null
+  price_range?: string | null
+  hours_of_operation?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  seasonal_hours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  amenities?: Prisma.wineriesCreateamenitiesInput | string[]
+  accessibility_features?: Prisma.wineriesCreateaccessibility_featuresInput | string[]
+  logo_url?: string | null
+  cover_photo_url?: string | null
+  photos?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  virtual_tour_url?: string | null
+  video_url?: string | null
+  average_rating?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  review_count?: number | null
+  curator_notes?: string | null
+  wine_enthusiast_rating?: number | null
+  wine_spectator_rating?: number | null
+  meta_title?: string | null
+  meta_description?: string | null
+  keywords?: Prisma.wineriesCreatekeywordsInput | string[]
+  is_partner?: boolean | null
+  partner_since?: Date | string | null
+  commission_rate?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  special_offers?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  contact_name?: string | null
+  contact_email?: string | null
+  is_active?: boolean | null
+  is_featured?: boolean | null
+  display_order?: number | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  ava?: string | null
+  walk_ins_welcome?: boolean | null
+  annual_production_cases?: number | null
+  vineyard_acres?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  booking_wineries?: Prisma.booking_wineriesUncheckedCreateNestedManyWithoutWineriesInput
+  customer_tasting_notes?: Prisma.customer_tasting_notesUncheckedCreateNestedManyWithoutWineriesInput
+  events?: Prisma.eventsUncheckedCreateNestedManyWithoutWineriesInput
+  itinerary_stops?: Prisma.itinerary_stopsUncheckedCreateNestedManyWithoutWineriesInput
+  partner_profiles?: Prisma.partner_profilesUncheckedCreateNestedManyWithoutWineriesInput
+  wine_purchases?: Prisma.wine_purchasesUncheckedCreateNestedManyWithoutWineriesInput
+  winery_content?: Prisma.winery_contentUncheckedCreateNestedManyWithoutWineriesInput
+  winery_faqs?: Prisma.winery_faqsUncheckedCreateNestedManyWithoutWineriesInput
+  winery_media?: Prisma.winery_mediaUncheckedCreateNestedManyWithoutWineriesInput
+  winery_people?: Prisma.winery_peopleUncheckedCreateNestedManyWithoutWineriesInput
+  winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutWineriesInput
+  wines?: Prisma.winesUncheckedCreateNestedManyWithoutWineriesInput
+}
+
+export type wineriesCreateOrConnectWithoutFeatured_photo_overrideInput = {
+  where: Prisma.wineriesWhereUniqueInput
+  create: Prisma.XOR<Prisma.wineriesCreateWithoutFeatured_photo_overrideInput, Prisma.wineriesUncheckedCreateWithoutFeatured_photo_overrideInput>
+}
+
+export type wineriesCreateManyFeatured_photo_overrideInputEnvelope = {
+  data: Prisma.wineriesCreateManyFeatured_photo_overrideInput | Prisma.wineriesCreateManyFeatured_photo_overrideInput[]
+  skipDuplicates?: boolean
+}
+
+export type wineriesUpsertWithWhereUniqueWithoutFeatured_photo_overrideInput = {
+  where: Prisma.wineriesWhereUniqueInput
+  update: Prisma.XOR<Prisma.wineriesUpdateWithoutFeatured_photo_overrideInput, Prisma.wineriesUncheckedUpdateWithoutFeatured_photo_overrideInput>
+  create: Prisma.XOR<Prisma.wineriesCreateWithoutFeatured_photo_overrideInput, Prisma.wineriesUncheckedCreateWithoutFeatured_photo_overrideInput>
+}
+
+export type wineriesUpdateWithWhereUniqueWithoutFeatured_photo_overrideInput = {
+  where: Prisma.wineriesWhereUniqueInput
+  data: Prisma.XOR<Prisma.wineriesUpdateWithoutFeatured_photo_overrideInput, Prisma.wineriesUncheckedUpdateWithoutFeatured_photo_overrideInput>
+}
+
+export type wineriesUpdateManyWithWhereWithoutFeatured_photo_overrideInput = {
+  where: Prisma.wineriesScalarWhereInput
+  data: Prisma.XOR<Prisma.wineriesUpdateManyMutationInput, Prisma.wineriesUncheckedUpdateManyWithoutFeatured_photo_overrideInput>
+}
+
+export type wineriesScalarWhereInput = {
+  AND?: Prisma.wineriesScalarWhereInput | Prisma.wineriesScalarWhereInput[]
+  OR?: Prisma.wineriesScalarWhereInput[]
+  NOT?: Prisma.wineriesScalarWhereInput | Prisma.wineriesScalarWhereInput[]
+  id?: Prisma.IntFilter<"wineries"> | number
+  name?: Prisma.StringFilter<"wineries"> | string
+  slug?: Prisma.StringFilter<"wineries"> | string
+  description?: Prisma.StringNullableFilter<"wineries"> | string | null
+  short_description?: Prisma.StringNullableFilter<"wineries"> | string | null
+  founded_year?: Prisma.IntNullableFilter<"wineries"> | number | null
+  winemaker?: Prisma.StringNullableFilter<"wineries"> | string | null
+  owner?: Prisma.StringNullableFilter<"wineries"> | string | null
+  address?: Prisma.StringNullableFilter<"wineries"> | string | null
+  city?: Prisma.StringNullableFilter<"wineries"> | string | null
+  state?: Prisma.StringNullableFilter<"wineries"> | string | null
+  zip_code?: Prisma.StringNullableFilter<"wineries"> | string | null
+  latitude?: Prisma.DecimalNullableFilter<"wineries"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  longitude?: Prisma.DecimalNullableFilter<"wineries"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  phone?: Prisma.StringNullableFilter<"wineries"> | string | null
+  email?: Prisma.StringNullableFilter<"wineries"> | string | null
+  website?: Prisma.StringNullableFilter<"wineries"> | string | null
+  tasting_fee?: Prisma.DecimalNullableFilter<"wineries"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tasting_fee_waived_with_purchase?: Prisma.BoolNullableFilter<"wineries"> | boolean | null
+  minimum_purchase_for_waiver?: Prisma.IntNullableFilter<"wineries"> | number | null
+  reservation_required?: Prisma.BoolNullableFilter<"wineries"> | boolean | null
+  accepts_walkins?: Prisma.BoolNullableFilter<"wineries"> | boolean | null
+  average_visit_duration?: Prisma.IntNullableFilter<"wineries"> | number | null
+  specialties?: Prisma.StringNullableListFilter<"wineries">
+  production_volume?: Prisma.StringNullableFilter<"wineries"> | string | null
+  price_range?: Prisma.StringNullableFilter<"wineries"> | string | null
+  hours_of_operation?: Prisma.JsonNullableFilter<"wineries">
+  seasonal_hours?: Prisma.JsonNullableFilter<"wineries">
+  amenities?: Prisma.StringNullableListFilter<"wineries">
+  accessibility_features?: Prisma.StringNullableListFilter<"wineries">
+  logo_url?: Prisma.StringNullableFilter<"wineries"> | string | null
+  cover_photo_url?: Prisma.StringNullableFilter<"wineries"> | string | null
+  photos?: Prisma.JsonNullableFilter<"wineries">
+  virtual_tour_url?: Prisma.StringNullableFilter<"wineries"> | string | null
+  video_url?: Prisma.StringNullableFilter<"wineries"> | string | null
+  average_rating?: Prisma.DecimalNullableFilter<"wineries"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  review_count?: Prisma.IntNullableFilter<"wineries"> | number | null
+  curator_notes?: Prisma.StringNullableFilter<"wineries"> | string | null
+  wine_enthusiast_rating?: Prisma.IntNullableFilter<"wineries"> | number | null
+  wine_spectator_rating?: Prisma.IntNullableFilter<"wineries"> | number | null
+  meta_title?: Prisma.StringNullableFilter<"wineries"> | string | null
+  meta_description?: Prisma.StringNullableFilter<"wineries"> | string | null
+  keywords?: Prisma.StringNullableListFilter<"wineries">
+  is_partner?: Prisma.BoolNullableFilter<"wineries"> | boolean | null
+  partner_since?: Prisma.DateTimeNullableFilter<"wineries"> | Date | string | null
+  commission_rate?: Prisma.DecimalNullableFilter<"wineries"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  special_offers?: Prisma.JsonNullableFilter<"wineries">
+  contact_name?: Prisma.StringNullableFilter<"wineries"> | string | null
+  contact_email?: Prisma.StringNullableFilter<"wineries"> | string | null
+  is_active?: Prisma.BoolNullableFilter<"wineries"> | boolean | null
+  is_featured?: Prisma.BoolNullableFilter<"wineries"> | boolean | null
+  display_order?: Prisma.IntNullableFilter<"wineries"> | number | null
+  created_at?: Prisma.DateTimeFilter<"wineries"> | Date | string
+  updated_at?: Prisma.DateTimeFilter<"wineries"> | Date | string
+  ava?: Prisma.StringNullableFilter<"wineries"> | string | null
+  walk_ins_welcome?: Prisma.BoolNullableFilter<"wineries"> | boolean | null
+  annual_production_cases?: Prisma.IntNullableFilter<"wineries"> | number | null
+  vineyard_acres?: Prisma.DecimalNullableFilter<"wineries"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override_id?: Prisma.IntNullableFilter<"wineries"> | number | null
 }
 
 export type wineriesCreateWithoutPartner_profilesInput = {
@@ -3126,6 +3460,7 @@ export type wineriesCreateWithoutPartner_profilesInput = {
   walk_ins_welcome?: boolean | null
   annual_production_cases?: number | null
   vineyard_acres?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override?: Prisma.media_libraryCreateNestedOneWithoutWineries_featured_photo_overrideInput
   booking_wineries?: Prisma.booking_wineriesCreateNestedManyWithoutWineriesInput
   customer_tasting_notes?: Prisma.customer_tasting_notesCreateNestedManyWithoutWineriesInput
   events?: Prisma.eventsCreateNestedManyWithoutWineriesInput
@@ -3198,6 +3533,7 @@ export type wineriesUncheckedCreateWithoutPartner_profilesInput = {
   walk_ins_welcome?: boolean | null
   annual_production_cases?: number | null
   vineyard_acres?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override_id?: number | null
   booking_wineries?: Prisma.booking_wineriesUncheckedCreateNestedManyWithoutWineriesInput
   customer_tasting_notes?: Prisma.customer_tasting_notesUncheckedCreateNestedManyWithoutWineriesInput
   events?: Prisma.eventsUncheckedCreateNestedManyWithoutWineriesInput
@@ -3285,6 +3621,7 @@ export type wineriesUpdateWithoutPartner_profilesInput = {
   walk_ins_welcome?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   annual_production_cases?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   vineyard_acres?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override?: Prisma.media_libraryUpdateOneWithoutWineries_featured_photo_overrideNestedInput
   booking_wineries?: Prisma.booking_wineriesUpdateManyWithoutWineriesNestedInput
   customer_tasting_notes?: Prisma.customer_tasting_notesUpdateManyWithoutWineriesNestedInput
   events?: Prisma.eventsUpdateManyWithoutWineriesNestedInput
@@ -3357,6 +3694,7 @@ export type wineriesUncheckedUpdateWithoutPartner_profilesInput = {
   walk_ins_welcome?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   annual_production_cases?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   vineyard_acres?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   booking_wineries?: Prisma.booking_wineriesUncheckedUpdateManyWithoutWineriesNestedInput
   customer_tasting_notes?: Prisma.customer_tasting_notesUncheckedUpdateManyWithoutWineriesNestedInput
   events?: Prisma.eventsUncheckedUpdateManyWithoutWineriesNestedInput
@@ -3428,6 +3766,7 @@ export type wineriesCreateWithoutWine_purchasesInput = {
   walk_ins_welcome?: boolean | null
   annual_production_cases?: number | null
   vineyard_acres?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override?: Prisma.media_libraryCreateNestedOneWithoutWineries_featured_photo_overrideInput
   booking_wineries?: Prisma.booking_wineriesCreateNestedManyWithoutWineriesInput
   customer_tasting_notes?: Prisma.customer_tasting_notesCreateNestedManyWithoutWineriesInput
   events?: Prisma.eventsCreateNestedManyWithoutWineriesInput
@@ -3500,6 +3839,7 @@ export type wineriesUncheckedCreateWithoutWine_purchasesInput = {
   walk_ins_welcome?: boolean | null
   annual_production_cases?: number | null
   vineyard_acres?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override_id?: number | null
   booking_wineries?: Prisma.booking_wineriesUncheckedCreateNestedManyWithoutWineriesInput
   customer_tasting_notes?: Prisma.customer_tasting_notesUncheckedCreateNestedManyWithoutWineriesInput
   events?: Prisma.eventsUncheckedCreateNestedManyWithoutWineriesInput
@@ -3587,6 +3927,7 @@ export type wineriesUpdateWithoutWine_purchasesInput = {
   walk_ins_welcome?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   annual_production_cases?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   vineyard_acres?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override?: Prisma.media_libraryUpdateOneWithoutWineries_featured_photo_overrideNestedInput
   booking_wineries?: Prisma.booking_wineriesUpdateManyWithoutWineriesNestedInput
   customer_tasting_notes?: Prisma.customer_tasting_notesUpdateManyWithoutWineriesNestedInput
   events?: Prisma.eventsUpdateManyWithoutWineriesNestedInput
@@ -3659,6 +4000,7 @@ export type wineriesUncheckedUpdateWithoutWine_purchasesInput = {
   walk_ins_welcome?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   annual_production_cases?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   vineyard_acres?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   booking_wineries?: Prisma.booking_wineriesUncheckedUpdateManyWithoutWineriesNestedInput
   customer_tasting_notes?: Prisma.customer_tasting_notesUncheckedUpdateManyWithoutWineriesNestedInput
   events?: Prisma.eventsUncheckedUpdateManyWithoutWineriesNestedInput
@@ -3730,6 +4072,7 @@ export type wineriesCreateWithoutWinery_contentInput = {
   walk_ins_welcome?: boolean | null
   annual_production_cases?: number | null
   vineyard_acres?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override?: Prisma.media_libraryCreateNestedOneWithoutWineries_featured_photo_overrideInput
   booking_wineries?: Prisma.booking_wineriesCreateNestedManyWithoutWineriesInput
   customer_tasting_notes?: Prisma.customer_tasting_notesCreateNestedManyWithoutWineriesInput
   events?: Prisma.eventsCreateNestedManyWithoutWineriesInput
@@ -3802,6 +4145,7 @@ export type wineriesUncheckedCreateWithoutWinery_contentInput = {
   walk_ins_welcome?: boolean | null
   annual_production_cases?: number | null
   vineyard_acres?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override_id?: number | null
   booking_wineries?: Prisma.booking_wineriesUncheckedCreateNestedManyWithoutWineriesInput
   customer_tasting_notes?: Prisma.customer_tasting_notesUncheckedCreateNestedManyWithoutWineriesInput
   events?: Prisma.eventsUncheckedCreateNestedManyWithoutWineriesInput
@@ -3889,6 +4233,7 @@ export type wineriesUpdateWithoutWinery_contentInput = {
   walk_ins_welcome?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   annual_production_cases?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   vineyard_acres?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override?: Prisma.media_libraryUpdateOneWithoutWineries_featured_photo_overrideNestedInput
   booking_wineries?: Prisma.booking_wineriesUpdateManyWithoutWineriesNestedInput
   customer_tasting_notes?: Prisma.customer_tasting_notesUpdateManyWithoutWineriesNestedInput
   events?: Prisma.eventsUpdateManyWithoutWineriesNestedInput
@@ -3961,6 +4306,7 @@ export type wineriesUncheckedUpdateWithoutWinery_contentInput = {
   walk_ins_welcome?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   annual_production_cases?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   vineyard_acres?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   booking_wineries?: Prisma.booking_wineriesUncheckedUpdateManyWithoutWineriesNestedInput
   customer_tasting_notes?: Prisma.customer_tasting_notesUncheckedUpdateManyWithoutWineriesNestedInput
   events?: Prisma.eventsUncheckedUpdateManyWithoutWineriesNestedInput
@@ -4032,6 +4378,7 @@ export type wineriesCreateWithoutWinery_faqsInput = {
   walk_ins_welcome?: boolean | null
   annual_production_cases?: number | null
   vineyard_acres?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override?: Prisma.media_libraryCreateNestedOneWithoutWineries_featured_photo_overrideInput
   booking_wineries?: Prisma.booking_wineriesCreateNestedManyWithoutWineriesInput
   customer_tasting_notes?: Prisma.customer_tasting_notesCreateNestedManyWithoutWineriesInput
   events?: Prisma.eventsCreateNestedManyWithoutWineriesInput
@@ -4104,6 +4451,7 @@ export type wineriesUncheckedCreateWithoutWinery_faqsInput = {
   walk_ins_welcome?: boolean | null
   annual_production_cases?: number | null
   vineyard_acres?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override_id?: number | null
   booking_wineries?: Prisma.booking_wineriesUncheckedCreateNestedManyWithoutWineriesInput
   customer_tasting_notes?: Prisma.customer_tasting_notesUncheckedCreateNestedManyWithoutWineriesInput
   events?: Prisma.eventsUncheckedCreateNestedManyWithoutWineriesInput
@@ -4191,6 +4539,7 @@ export type wineriesUpdateWithoutWinery_faqsInput = {
   walk_ins_welcome?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   annual_production_cases?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   vineyard_acres?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override?: Prisma.media_libraryUpdateOneWithoutWineries_featured_photo_overrideNestedInput
   booking_wineries?: Prisma.booking_wineriesUpdateManyWithoutWineriesNestedInput
   customer_tasting_notes?: Prisma.customer_tasting_notesUpdateManyWithoutWineriesNestedInput
   events?: Prisma.eventsUpdateManyWithoutWineriesNestedInput
@@ -4263,6 +4612,7 @@ export type wineriesUncheckedUpdateWithoutWinery_faqsInput = {
   walk_ins_welcome?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   annual_production_cases?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   vineyard_acres?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   booking_wineries?: Prisma.booking_wineriesUncheckedUpdateManyWithoutWineriesNestedInput
   customer_tasting_notes?: Prisma.customer_tasting_notesUncheckedUpdateManyWithoutWineriesNestedInput
   events?: Prisma.eventsUncheckedUpdateManyWithoutWineriesNestedInput
@@ -4334,6 +4684,7 @@ export type wineriesCreateWithoutWinery_mediaInput = {
   walk_ins_welcome?: boolean | null
   annual_production_cases?: number | null
   vineyard_acres?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override?: Prisma.media_libraryCreateNestedOneWithoutWineries_featured_photo_overrideInput
   booking_wineries?: Prisma.booking_wineriesCreateNestedManyWithoutWineriesInput
   customer_tasting_notes?: Prisma.customer_tasting_notesCreateNestedManyWithoutWineriesInput
   events?: Prisma.eventsCreateNestedManyWithoutWineriesInput
@@ -4406,6 +4757,7 @@ export type wineriesUncheckedCreateWithoutWinery_mediaInput = {
   walk_ins_welcome?: boolean | null
   annual_production_cases?: number | null
   vineyard_acres?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override_id?: number | null
   booking_wineries?: Prisma.booking_wineriesUncheckedCreateNestedManyWithoutWineriesInput
   customer_tasting_notes?: Prisma.customer_tasting_notesUncheckedCreateNestedManyWithoutWineriesInput
   events?: Prisma.eventsUncheckedCreateNestedManyWithoutWineriesInput
@@ -4493,6 +4845,7 @@ export type wineriesUpdateWithoutWinery_mediaInput = {
   walk_ins_welcome?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   annual_production_cases?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   vineyard_acres?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override?: Prisma.media_libraryUpdateOneWithoutWineries_featured_photo_overrideNestedInput
   booking_wineries?: Prisma.booking_wineriesUpdateManyWithoutWineriesNestedInput
   customer_tasting_notes?: Prisma.customer_tasting_notesUpdateManyWithoutWineriesNestedInput
   events?: Prisma.eventsUpdateManyWithoutWineriesNestedInput
@@ -4565,6 +4918,7 @@ export type wineriesUncheckedUpdateWithoutWinery_mediaInput = {
   walk_ins_welcome?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   annual_production_cases?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   vineyard_acres?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   booking_wineries?: Prisma.booking_wineriesUncheckedUpdateManyWithoutWineriesNestedInput
   customer_tasting_notes?: Prisma.customer_tasting_notesUncheckedUpdateManyWithoutWineriesNestedInput
   events?: Prisma.eventsUncheckedUpdateManyWithoutWineriesNestedInput
@@ -4636,6 +4990,7 @@ export type wineriesCreateWithoutWinery_peopleInput = {
   walk_ins_welcome?: boolean | null
   annual_production_cases?: number | null
   vineyard_acres?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override?: Prisma.media_libraryCreateNestedOneWithoutWineries_featured_photo_overrideInput
   booking_wineries?: Prisma.booking_wineriesCreateNestedManyWithoutWineriesInput
   customer_tasting_notes?: Prisma.customer_tasting_notesCreateNestedManyWithoutWineriesInput
   events?: Prisma.eventsCreateNestedManyWithoutWineriesInput
@@ -4708,6 +5063,7 @@ export type wineriesUncheckedCreateWithoutWinery_peopleInput = {
   walk_ins_welcome?: boolean | null
   annual_production_cases?: number | null
   vineyard_acres?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override_id?: number | null
   booking_wineries?: Prisma.booking_wineriesUncheckedCreateNestedManyWithoutWineriesInput
   customer_tasting_notes?: Prisma.customer_tasting_notesUncheckedCreateNestedManyWithoutWineriesInput
   events?: Prisma.eventsUncheckedCreateNestedManyWithoutWineriesInput
@@ -4795,6 +5151,7 @@ export type wineriesUpdateWithoutWinery_peopleInput = {
   walk_ins_welcome?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   annual_production_cases?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   vineyard_acres?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override?: Prisma.media_libraryUpdateOneWithoutWineries_featured_photo_overrideNestedInput
   booking_wineries?: Prisma.booking_wineriesUpdateManyWithoutWineriesNestedInput
   customer_tasting_notes?: Prisma.customer_tasting_notesUpdateManyWithoutWineriesNestedInput
   events?: Prisma.eventsUpdateManyWithoutWineriesNestedInput
@@ -4867,6 +5224,7 @@ export type wineriesUncheckedUpdateWithoutWinery_peopleInput = {
   walk_ins_welcome?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   annual_production_cases?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   vineyard_acres?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   booking_wineries?: Prisma.booking_wineriesUncheckedUpdateManyWithoutWineriesNestedInput
   customer_tasting_notes?: Prisma.customer_tasting_notesUncheckedUpdateManyWithoutWineriesNestedInput
   events?: Prisma.eventsUncheckedUpdateManyWithoutWineriesNestedInput
@@ -4938,6 +5296,7 @@ export type wineriesCreateWithoutWinery_reviewsInput = {
   walk_ins_welcome?: boolean | null
   annual_production_cases?: number | null
   vineyard_acres?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override?: Prisma.media_libraryCreateNestedOneWithoutWineries_featured_photo_overrideInput
   booking_wineries?: Prisma.booking_wineriesCreateNestedManyWithoutWineriesInput
   customer_tasting_notes?: Prisma.customer_tasting_notesCreateNestedManyWithoutWineriesInput
   events?: Prisma.eventsCreateNestedManyWithoutWineriesInput
@@ -5010,6 +5369,7 @@ export type wineriesUncheckedCreateWithoutWinery_reviewsInput = {
   walk_ins_welcome?: boolean | null
   annual_production_cases?: number | null
   vineyard_acres?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override_id?: number | null
   booking_wineries?: Prisma.booking_wineriesUncheckedCreateNestedManyWithoutWineriesInput
   customer_tasting_notes?: Prisma.customer_tasting_notesUncheckedCreateNestedManyWithoutWineriesInput
   events?: Prisma.eventsUncheckedCreateNestedManyWithoutWineriesInput
@@ -5097,6 +5457,7 @@ export type wineriesUpdateWithoutWinery_reviewsInput = {
   walk_ins_welcome?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   annual_production_cases?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   vineyard_acres?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override?: Prisma.media_libraryUpdateOneWithoutWineries_featured_photo_overrideNestedInput
   booking_wineries?: Prisma.booking_wineriesUpdateManyWithoutWineriesNestedInput
   customer_tasting_notes?: Prisma.customer_tasting_notesUpdateManyWithoutWineriesNestedInput
   events?: Prisma.eventsUpdateManyWithoutWineriesNestedInput
@@ -5169,6 +5530,7 @@ export type wineriesUncheckedUpdateWithoutWinery_reviewsInput = {
   walk_ins_welcome?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   annual_production_cases?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   vineyard_acres?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   booking_wineries?: Prisma.booking_wineriesUncheckedUpdateManyWithoutWineriesNestedInput
   customer_tasting_notes?: Prisma.customer_tasting_notesUncheckedUpdateManyWithoutWineriesNestedInput
   events?: Prisma.eventsUncheckedUpdateManyWithoutWineriesNestedInput
@@ -5240,6 +5602,7 @@ export type wineriesCreateWithoutWinesInput = {
   walk_ins_welcome?: boolean | null
   annual_production_cases?: number | null
   vineyard_acres?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override?: Prisma.media_libraryCreateNestedOneWithoutWineries_featured_photo_overrideInput
   booking_wineries?: Prisma.booking_wineriesCreateNestedManyWithoutWineriesInput
   customer_tasting_notes?: Prisma.customer_tasting_notesCreateNestedManyWithoutWineriesInput
   events?: Prisma.eventsCreateNestedManyWithoutWineriesInput
@@ -5312,6 +5675,7 @@ export type wineriesUncheckedCreateWithoutWinesInput = {
   walk_ins_welcome?: boolean | null
   annual_production_cases?: number | null
   vineyard_acres?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override_id?: number | null
   booking_wineries?: Prisma.booking_wineriesUncheckedCreateNestedManyWithoutWineriesInput
   customer_tasting_notes?: Prisma.customer_tasting_notesUncheckedCreateNestedManyWithoutWineriesInput
   events?: Prisma.eventsUncheckedCreateNestedManyWithoutWineriesInput
@@ -5399,6 +5763,7 @@ export type wineriesUpdateWithoutWinesInput = {
   walk_ins_welcome?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   annual_production_cases?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   vineyard_acres?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override?: Prisma.media_libraryUpdateOneWithoutWineries_featured_photo_overrideNestedInput
   booking_wineries?: Prisma.booking_wineriesUpdateManyWithoutWineriesNestedInput
   customer_tasting_notes?: Prisma.customer_tasting_notesUpdateManyWithoutWineriesNestedInput
   events?: Prisma.eventsUpdateManyWithoutWineriesNestedInput
@@ -5471,6 +5836,7 @@ export type wineriesUncheckedUpdateWithoutWinesInput = {
   walk_ins_welcome?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   annual_production_cases?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   vineyard_acres?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  featured_photo_override_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   booking_wineries?: Prisma.booking_wineriesUncheckedUpdateManyWithoutWineriesNestedInput
   customer_tasting_notes?: Prisma.customer_tasting_notesUncheckedUpdateManyWithoutWineriesNestedInput
   events?: Prisma.eventsUncheckedUpdateManyWithoutWineriesNestedInput
@@ -5482,6 +5848,273 @@ export type wineriesUncheckedUpdateWithoutWinesInput = {
   winery_media?: Prisma.winery_mediaUncheckedUpdateManyWithoutWineriesNestedInput
   winery_people?: Prisma.winery_peopleUncheckedUpdateManyWithoutWineriesNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutWineriesNestedInput
+}
+
+export type wineriesCreateManyFeatured_photo_overrideInput = {
+  id?: number
+  name: string
+  slug: string
+  description?: string | null
+  short_description?: string | null
+  founded_year?: number | null
+  winemaker?: string | null
+  owner?: string | null
+  address?: string | null
+  city?: string | null
+  state?: string | null
+  zip_code?: string | null
+  latitude?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  longitude?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  phone?: string | null
+  email?: string | null
+  website?: string | null
+  tasting_fee?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tasting_fee_waived_with_purchase?: boolean | null
+  minimum_purchase_for_waiver?: number | null
+  reservation_required?: boolean | null
+  accepts_walkins?: boolean | null
+  average_visit_duration?: number | null
+  specialties?: Prisma.wineriesCreatespecialtiesInput | string[]
+  production_volume?: string | null
+  price_range?: string | null
+  hours_of_operation?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  seasonal_hours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  amenities?: Prisma.wineriesCreateamenitiesInput | string[]
+  accessibility_features?: Prisma.wineriesCreateaccessibility_featuresInput | string[]
+  logo_url?: string | null
+  cover_photo_url?: string | null
+  photos?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  virtual_tour_url?: string | null
+  video_url?: string | null
+  average_rating?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  review_count?: number | null
+  curator_notes?: string | null
+  wine_enthusiast_rating?: number | null
+  wine_spectator_rating?: number | null
+  meta_title?: string | null
+  meta_description?: string | null
+  keywords?: Prisma.wineriesCreatekeywordsInput | string[]
+  is_partner?: boolean | null
+  partner_since?: Date | string | null
+  commission_rate?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  special_offers?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  contact_name?: string | null
+  contact_email?: string | null
+  is_active?: boolean | null
+  is_featured?: boolean | null
+  display_order?: number | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  ava?: string | null
+  walk_ins_welcome?: boolean | null
+  annual_production_cases?: number | null
+  vineyard_acres?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+}
+
+export type wineriesUpdateWithoutFeatured_photo_overrideInput = {
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  short_description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  founded_year?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  winemaker?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  owner?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  state?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  zip_code?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  latitude?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  longitude?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tasting_fee?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tasting_fee_waived_with_purchase?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  minimum_purchase_for_waiver?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  reservation_required?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  accepts_walkins?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  average_visit_duration?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  specialties?: Prisma.wineriesUpdatespecialtiesInput | string[]
+  production_volume?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  price_range?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hours_of_operation?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  seasonal_hours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  amenities?: Prisma.wineriesUpdateamenitiesInput | string[]
+  accessibility_features?: Prisma.wineriesUpdateaccessibility_featuresInput | string[]
+  logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_photo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photos?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  virtual_tour_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  video_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  average_rating?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  review_count?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  curator_notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  wine_enthusiast_rating?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  wine_spectator_rating?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  meta_title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  meta_description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  keywords?: Prisma.wineriesUpdatekeywordsInput | string[]
+  is_partner?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  partner_since?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  commission_rate?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  special_offers?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  contact_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contact_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  is_active?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  is_featured?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  display_order?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  ava?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  walk_ins_welcome?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  annual_production_cases?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  vineyard_acres?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  booking_wineries?: Prisma.booking_wineriesUpdateManyWithoutWineriesNestedInput
+  customer_tasting_notes?: Prisma.customer_tasting_notesUpdateManyWithoutWineriesNestedInput
+  events?: Prisma.eventsUpdateManyWithoutWineriesNestedInput
+  itinerary_stops?: Prisma.itinerary_stopsUpdateManyWithoutWineriesNestedInput
+  partner_profiles?: Prisma.partner_profilesUpdateManyWithoutWineriesNestedInput
+  wine_purchases?: Prisma.wine_purchasesUpdateManyWithoutWineriesNestedInput
+  winery_content?: Prisma.winery_contentUpdateManyWithoutWineriesNestedInput
+  winery_faqs?: Prisma.winery_faqsUpdateManyWithoutWineriesNestedInput
+  winery_media?: Prisma.winery_mediaUpdateManyWithoutWineriesNestedInput
+  winery_people?: Prisma.winery_peopleUpdateManyWithoutWineriesNestedInput
+  winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutWineriesNestedInput
+  wines?: Prisma.winesUpdateManyWithoutWineriesNestedInput
+}
+
+export type wineriesUncheckedUpdateWithoutFeatured_photo_overrideInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  short_description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  founded_year?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  winemaker?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  owner?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  state?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  zip_code?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  latitude?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  longitude?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tasting_fee?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tasting_fee_waived_with_purchase?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  minimum_purchase_for_waiver?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  reservation_required?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  accepts_walkins?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  average_visit_duration?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  specialties?: Prisma.wineriesUpdatespecialtiesInput | string[]
+  production_volume?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  price_range?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hours_of_operation?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  seasonal_hours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  amenities?: Prisma.wineriesUpdateamenitiesInput | string[]
+  accessibility_features?: Prisma.wineriesUpdateaccessibility_featuresInput | string[]
+  logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_photo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photos?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  virtual_tour_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  video_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  average_rating?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  review_count?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  curator_notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  wine_enthusiast_rating?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  wine_spectator_rating?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  meta_title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  meta_description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  keywords?: Prisma.wineriesUpdatekeywordsInput | string[]
+  is_partner?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  partner_since?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  commission_rate?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  special_offers?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  contact_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contact_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  is_active?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  is_featured?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  display_order?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  ava?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  walk_ins_welcome?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  annual_production_cases?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  vineyard_acres?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  booking_wineries?: Prisma.booking_wineriesUncheckedUpdateManyWithoutWineriesNestedInput
+  customer_tasting_notes?: Prisma.customer_tasting_notesUncheckedUpdateManyWithoutWineriesNestedInput
+  events?: Prisma.eventsUncheckedUpdateManyWithoutWineriesNestedInput
+  itinerary_stops?: Prisma.itinerary_stopsUncheckedUpdateManyWithoutWineriesNestedInput
+  partner_profiles?: Prisma.partner_profilesUncheckedUpdateManyWithoutWineriesNestedInput
+  wine_purchases?: Prisma.wine_purchasesUncheckedUpdateManyWithoutWineriesNestedInput
+  winery_content?: Prisma.winery_contentUncheckedUpdateManyWithoutWineriesNestedInput
+  winery_faqs?: Prisma.winery_faqsUncheckedUpdateManyWithoutWineriesNestedInput
+  winery_media?: Prisma.winery_mediaUncheckedUpdateManyWithoutWineriesNestedInput
+  winery_people?: Prisma.winery_peopleUncheckedUpdateManyWithoutWineriesNestedInput
+  winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutWineriesNestedInput
+  wines?: Prisma.winesUncheckedUpdateManyWithoutWineriesNestedInput
+}
+
+export type wineriesUncheckedUpdateManyWithoutFeatured_photo_overrideInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  short_description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  founded_year?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  winemaker?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  owner?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  state?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  zip_code?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  latitude?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  longitude?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tasting_fee?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tasting_fee_waived_with_purchase?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  minimum_purchase_for_waiver?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  reservation_required?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  accepts_walkins?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  average_visit_duration?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  specialties?: Prisma.wineriesUpdatespecialtiesInput | string[]
+  production_volume?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  price_range?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hours_of_operation?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  seasonal_hours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  amenities?: Prisma.wineriesUpdateamenitiesInput | string[]
+  accessibility_features?: Prisma.wineriesUpdateaccessibility_featuresInput | string[]
+  logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_photo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  photos?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  virtual_tour_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  video_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  average_rating?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  review_count?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  curator_notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  wine_enthusiast_rating?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  wine_spectator_rating?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  meta_title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  meta_description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  keywords?: Prisma.wineriesUpdatekeywordsInput | string[]
+  is_partner?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  partner_since?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  commission_rate?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  special_offers?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  contact_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contact_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  is_active?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  is_featured?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  display_order?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  ava?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  walk_ins_welcome?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  annual_production_cases?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  vineyard_acres?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
 }
 
 
@@ -5673,6 +6306,8 @@ export type wineriesSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   walk_ins_welcome?: boolean
   annual_production_cases?: boolean
   vineyard_acres?: boolean
+  featured_photo_override_id?: boolean
+  featured_photo_override?: boolean | Prisma.wineries$featured_photo_overrideArgs<ExtArgs>
   booking_wineries?: boolean | Prisma.wineries$booking_wineriesArgs<ExtArgs>
   customer_tasting_notes?: boolean | Prisma.wineries$customer_tasting_notesArgs<ExtArgs>
   events?: boolean | Prisma.wineries$eventsArgs<ExtArgs>
@@ -5747,6 +6382,8 @@ export type wineriesSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   walk_ins_welcome?: boolean
   annual_production_cases?: boolean
   vineyard_acres?: boolean
+  featured_photo_override_id?: boolean
+  featured_photo_override?: boolean | Prisma.wineries$featured_photo_overrideArgs<ExtArgs>
 }, ExtArgs["result"]["wineries"]>
 
 export type wineriesSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -5808,6 +6445,8 @@ export type wineriesSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   walk_ins_welcome?: boolean
   annual_production_cases?: boolean
   vineyard_acres?: boolean
+  featured_photo_override_id?: boolean
+  featured_photo_override?: boolean | Prisma.wineries$featured_photo_overrideArgs<ExtArgs>
 }, ExtArgs["result"]["wineries"]>
 
 export type wineriesSelectScalar = {
@@ -5869,10 +6508,12 @@ export type wineriesSelectScalar = {
   walk_ins_welcome?: boolean
   annual_production_cases?: boolean
   vineyard_acres?: boolean
+  featured_photo_override_id?: boolean
 }
 
-export type wineriesOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "slug" | "description" | "short_description" | "founded_year" | "winemaker" | "owner" | "address" | "city" | "state" | "zip_code" | "latitude" | "longitude" | "phone" | "email" | "website" | "tasting_fee" | "tasting_fee_waived_with_purchase" | "minimum_purchase_for_waiver" | "reservation_required" | "accepts_walkins" | "average_visit_duration" | "specialties" | "production_volume" | "price_range" | "hours_of_operation" | "seasonal_hours" | "amenities" | "accessibility_features" | "logo_url" | "cover_photo_url" | "photos" | "virtual_tour_url" | "video_url" | "average_rating" | "review_count" | "curator_notes" | "wine_enthusiast_rating" | "wine_spectator_rating" | "meta_title" | "meta_description" | "keywords" | "is_partner" | "partner_since" | "commission_rate" | "special_offers" | "contact_name" | "contact_email" | "is_active" | "is_featured" | "display_order" | "created_at" | "updated_at" | "ava" | "walk_ins_welcome" | "annual_production_cases" | "vineyard_acres", ExtArgs["result"]["wineries"]>
+export type wineriesOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "slug" | "description" | "short_description" | "founded_year" | "winemaker" | "owner" | "address" | "city" | "state" | "zip_code" | "latitude" | "longitude" | "phone" | "email" | "website" | "tasting_fee" | "tasting_fee_waived_with_purchase" | "minimum_purchase_for_waiver" | "reservation_required" | "accepts_walkins" | "average_visit_duration" | "specialties" | "production_volume" | "price_range" | "hours_of_operation" | "seasonal_hours" | "amenities" | "accessibility_features" | "logo_url" | "cover_photo_url" | "photos" | "virtual_tour_url" | "video_url" | "average_rating" | "review_count" | "curator_notes" | "wine_enthusiast_rating" | "wine_spectator_rating" | "meta_title" | "meta_description" | "keywords" | "is_partner" | "partner_since" | "commission_rate" | "special_offers" | "contact_name" | "contact_email" | "is_active" | "is_featured" | "display_order" | "created_at" | "updated_at" | "ava" | "walk_ins_welcome" | "annual_production_cases" | "vineyard_acres" | "featured_photo_override_id", ExtArgs["result"]["wineries"]>
 export type wineriesInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  featured_photo_override?: boolean | Prisma.wineries$featured_photo_overrideArgs<ExtArgs>
   booking_wineries?: boolean | Prisma.wineries$booking_wineriesArgs<ExtArgs>
   customer_tasting_notes?: boolean | Prisma.wineries$customer_tasting_notesArgs<ExtArgs>
   events?: boolean | Prisma.wineries$eventsArgs<ExtArgs>
@@ -5887,12 +6528,17 @@ export type wineriesInclude<ExtArgs extends runtime.Types.Extensions.InternalArg
   wines?: boolean | Prisma.wineries$winesArgs<ExtArgs>
   _count?: boolean | Prisma.WineriesCountOutputTypeDefaultArgs<ExtArgs>
 }
-export type wineriesIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
-export type wineriesIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
+export type wineriesIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  featured_photo_override?: boolean | Prisma.wineries$featured_photo_overrideArgs<ExtArgs>
+}
+export type wineriesIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  featured_photo_override?: boolean | Prisma.wineries$featured_photo_overrideArgs<ExtArgs>
+}
 
 export type $wineriesPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "wineries"
   objects: {
+    featured_photo_override: Prisma.$media_libraryPayload<ExtArgs> | null
     booking_wineries: Prisma.$booking_wineriesPayload<ExtArgs>[]
     customer_tasting_notes: Prisma.$customer_tasting_notesPayload<ExtArgs>[]
     events: Prisma.$eventsPayload<ExtArgs>[]
@@ -5965,6 +6611,7 @@ export type $wineriesPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     walk_ins_welcome: boolean | null
     annual_production_cases: number | null
     vineyard_acres: runtime.Decimal | null
+    featured_photo_override_id: number | null
   }, ExtArgs["result"]["wineries"]>
   composites: {}
 }
@@ -6359,6 +7006,7 @@ readonly fields: wineriesFieldRefs;
  */
 export interface Prisma__wineriesClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  featured_photo_override<T extends Prisma.wineries$featured_photo_overrideArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.wineries$featured_photo_overrideArgs<ExtArgs>>): Prisma.Prisma__media_libraryClient<runtime.Types.Result.GetResult<Prisma.$media_libraryPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   booking_wineries<T extends Prisma.wineries$booking_wineriesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.wineries$booking_wineriesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$booking_wineriesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   customer_tasting_notes<T extends Prisma.wineries$customer_tasting_notesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.wineries$customer_tasting_notesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$customer_tasting_notesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   events<T extends Prisma.wineries$eventsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.wineries$eventsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$eventsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -6458,6 +7106,7 @@ export interface wineriesFieldRefs {
   readonly walk_ins_welcome: Prisma.FieldRef<"wineries", 'Boolean'>
   readonly annual_production_cases: Prisma.FieldRef<"wineries", 'Int'>
   readonly vineyard_acres: Prisma.FieldRef<"wineries", 'Decimal'>
+  readonly featured_photo_override_id: Prisma.FieldRef<"wineries", 'Int'>
 }
     
 
@@ -6707,6 +7356,10 @@ export type wineriesCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Extens
    */
   data: Prisma.wineriesCreateManyInput | Prisma.wineriesCreateManyInput[]
   skipDuplicates?: boolean
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.wineriesIncludeCreateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -6777,6 +7430,10 @@ export type wineriesUpdateManyAndReturnArgs<ExtArgs extends runtime.Types.Extens
    * Limit how many wineries to update.
    */
   limit?: number
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.wineriesIncludeUpdateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -6843,6 +7500,25 @@ export type wineriesDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Inte
    * Limit how many wineries to delete.
    */
   limit?: number
+}
+
+/**
+ * wineries.featured_photo_override
+ */
+export type wineries$featured_photo_overrideArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the media_library
+   */
+  select?: Prisma.media_librarySelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the media_library
+   */
+  omit?: Prisma.media_libraryOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.media_libraryInclude<ExtArgs> | null
+  where?: Prisma.media_libraryWhereInput
 }
 
 /**

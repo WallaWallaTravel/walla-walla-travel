@@ -11109,7 +11109,8 @@ export const WineriesScalarFieldEnum = {
   ava: 'ava',
   walk_ins_welcome: 'walk_ins_welcome',
   annual_production_cases: 'annual_production_cases',
-  vineyard_acres: 'vineyard_acres'
+  vineyard_acres: 'vineyard_acres',
+  featured_photo_override_id: 'featured_photo_override_id'
 } as const
 
 export type WineriesScalarFieldEnum = (typeof WineriesScalarFieldEnum)[keyof typeof WineriesScalarFieldEnum]
