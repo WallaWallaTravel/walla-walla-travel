@@ -4,6 +4,9 @@ import Link from 'next/link';
 import { getWineries } from '@/lib/data/wineries';
 import { WineryDirectoryClient } from '@/components/wineries/WineryDirectoryClient';
 
+// Force dynamic rendering to avoid database connection at build time
+export const dynamic = 'force-dynamic';
+
 // ============================================================================
 // SEO Metadata
 // ============================================================================
