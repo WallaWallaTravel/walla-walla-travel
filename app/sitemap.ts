@@ -2,6 +2,9 @@ import { MetadataRoute } from 'next';
 import { getAllWinerySlugs } from '@/lib/data/wineries';
 import { logger } from '@/lib/logger';
 
+// Force dynamic rendering - sitemap needs fresh data
+export const dynamic = 'force-dynamic';
+
 /**
  * Dynamic Sitemap Generation
  *
