@@ -83,7 +83,10 @@ export default function AdminSharedToursPage() {
       if (data.success) {
         setTours(data.data);
       } else {
-        setError(data.error);
+        const errorMessage = typeof data.error === 'object' && data.error?.message
+          ? data.error.message
+          : (data.error || 'Failed to load tours');
+        setError(errorMessage);
       }
     } catch (_err) {
       setError('Failed to load tours');
@@ -118,7 +121,10 @@ export default function AdminSharedToursPage() {
           notes: '',
         });
       } else {
-        setError(data.error);
+        const errorMessage = typeof data.error === 'object' && data.error?.message
+          ? data.error.message
+          : (data.error || 'Failed to create tour');
+        setError(errorMessage);
       }
     } catch (_err) {
       setError('Failed to create tour');
@@ -139,7 +145,10 @@ export default function AdminSharedToursPage() {
       if (data.success) {
         fetchTours();
       } else {
-        setError(data.error);
+        const errorMessage = typeof data.error === 'object' && data.error?.message
+          ? data.error.message
+          : (data.error || 'Failed to cancel tour');
+        setError(errorMessage);
       }
     } catch (_err) {
       setError('Failed to cancel tour');
@@ -158,7 +167,10 @@ export default function AdminSharedToursPage() {
       if (data.success) {
         fetchTours();
       } else {
-        setError(data.error);
+        const errorMessage = typeof data.error === 'object' && data.error?.message
+          ? data.error.message
+          : (data.error || 'Failed to update tour');
+        setError(errorMessage);
       }
     } catch (_err) {
       setError('Failed to update tour');

@@ -80,7 +80,10 @@ export default function BookSharedTourPage({ params }: { params: Promise<{ tour_
         if (data.success) {
           setTour(data.data);
         } else {
-          setError(data.error);
+          const errorMessage = typeof data.error === 'object' && data.error?.message
+            ? data.error.message
+            : (data.error || 'Failed to load tour');
+          setError(errorMessage);
         }
       } catch (_err) {
         setError('Failed to load tour details');
@@ -163,7 +166,10 @@ export default function BookSharedTourPage({ params }: { params: Promise<{ tour_
         setTicketNumber(data.data.ticket_number);
         setBookingConfirmed(true);
       } else {
-        setError(data.error);
+        const errorMessage = typeof data.error === 'object' && data.error?.message
+          ? data.error.message
+          : (data.error || 'Failed to create booking');
+        setError(errorMessage);
       }
     } catch (_err) {
       setError('Failed to create booking. Please try again.');
