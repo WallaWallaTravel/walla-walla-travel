@@ -130,25 +130,25 @@ The Westside offers a more relaxed pace than downtown, with room to spread out a
     slug: 'eastside-mill-creek',
     name: 'Eastside / Mill Creek',
     shortName: 'Eastside',
-    description: 'East of town along Mill Creek Road, this scenic corridor features established wineries with beautiful grounds and Blue Mountain views.',
-    longDescription: `The Eastside along Mill Creek Road offers one of Walla Walla's most scenic wine touring routes. This corridor follows the base of the Blue Mountains, with wineries set against dramatic foothill backdrops.
+    description: 'Walla Walla\'s most scenic wine corridor, climbing into the Blue Mountain foothills with sweeping panoramic views and acclaimed estate wineries.',
+    longDescription: `Mill Creek Road climbs into the Blue Mountain foothills, offering Walla Walla's highest-elevation vineyards and some of its most spectacular views. This is where world-class architecture meets stunning terrain.
 
-Many of the valley's well-known producers have established themselves here, drawn by the combination of excellent growing conditions and beautiful settings. The Mill Creek drainage provides natural irrigation and creates a distinct microclimate.
+Highlights include Echolands' glass-walled tasting room cantilevered over 341 acres with panoramic mountain views, FIGGINS' Washington-first hillside-hewn basalt caves (from the Leonetti Cellar family), and Aluvé where veteran-owners Kelly and JJ personally pour their estate wines on a covered patio overlooking their vines.
 
-The drive along Mill Creek Road is part of the experience—winding through vineyards and farmland with the mountains rising to the east. Wineries here often feature expansive grounds with picnic areas and outdoor seating.`,
+The drive itself is part of the experience—winding through vineyards with the Blue Mountains rising dramatically ahead. Elevation here reaches 1,500-1,800 feet, creating unique growing conditions and unforgettable sunset views.`,
     whatYoullFind: [
-      'Scenic Blue Mountain views',
-      'Established, respected producers',
-      'Beautiful winery grounds',
-      'Creek-side vineyards',
+      'Sweeping panoramic Blue Mountain views',
+      'Highest-elevation vineyards in Walla Walla',
+      'World-class winery architecture',
+      'Personal tastings with owners and winemakers',
     ],
     highlights: [
-      'Some of the valley\'s most acclaimed wineries',
-      'Dramatic mountain backdrop',
-      'Well-developed visitor facilities',
-      'Excellent for photography',
+      'Echolands\' stunning glass-walled tasting room',
+      'FIGGINS\' basalt caves from the Leonetti family',
+      'Aluvé\'s intimate owner-poured tastings',
+      'Unforgettable sunset experiences',
     ],
-    practicalInfo: 'Mill Creek Road winds east from town. Wineries are spread along the route, so plan for driving time. Many offer outdoor seating with views.',
+    practicalInfo: 'Mill Creek Road winds east into the foothills. Most wineries require reservations. Plan extra time—the views invite lingering.',
     approximateWineries: 8,
   },
   {
