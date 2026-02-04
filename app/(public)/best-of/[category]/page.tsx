@@ -17,6 +17,10 @@ export async function generateStaticParams() {
   return slugs.map((category) => ({ category }));
 }
 
+// Render dynamically at request time (not statically at build time)
+// This avoids build errors when database is unavailable in CI
+export const dynamic = 'force-dynamic';
+
 interface PageProps {
   params: Promise<{ category: string }>;
 }

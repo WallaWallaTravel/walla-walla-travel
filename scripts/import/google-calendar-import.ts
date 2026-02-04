@@ -16,6 +16,7 @@
  *   npx tsx scripts/import/google-calendar-import.ts [options]
  *
  * Options:
+ *   --list-calendars List all available calendars and their IDs
  *   --dry-run        Preview imports without committing to database
  *   --verbose        Show detailed output for each event
  *   --calendar-id    Specify calendar ID (default: primary)
@@ -71,6 +72,7 @@ const SCOPES = ['https://www.googleapis.com/auth/calendar.readonly'];
 const args = process.argv.slice(2);
 const DRY_RUN = args.includes('--dry-run');
 const VERBOSE = args.includes('--verbose');
+const LIST_CALENDARS = args.includes('--list-calendars');
 
 function getArgValue(flag: string): string | undefined {
   const index = args.indexOf(flag);
@@ -156,6 +158,48 @@ Then run this script again.
   }
 
   return google.calendar({ version: 'v3', auth: oAuth2Client });
+}
+
+// ============================================================================
+// Calendar Listing
+// ============================================================================
+
+async function listCalendars(calendar: calendar_v3.Calendar): Promise<void> {
+  console.log('\n' + '='.repeat(70));
+  console.log('  Available Google Calendars');
+  console.log('='.repeat(70) + '\n');
+
+  try {
+    const response = await calendar.calendarList.list();
+    const calendars = response.data.items || [];
+
+    if (calendars.length === 0) {
+      console.log('  No calendars found.\n');
+      return;
+    }
+
+    console.log(`  Found ${calendars.length} calendars:\n`);
+    console.log('  ' + '-'.repeat(66));
+
+    for (const cal of calendars) {
+      const isPrimary = cal.primary ? ' (PRIMARY)' : '';
+      const accessRole = cal.accessRole || 'unknown';
+
+      console.log(`  📅 ${cal.summary}${isPrimary}`);
+      console.log(`     ID: ${cal.id}`);
+      console.log(`     Access: ${accessRole}`);
+      if (cal.description) {
+        console.log(`     Description: ${cal.description.substring(0, 50)}...`);
+      }
+      console.log('  ' + '-'.repeat(66));
+    }
+
+    console.log('\n  To import from a specific calendar, use:');
+    console.log('  npx tsx scripts/import/google-calendar-import.ts --calendar-id "<calendar-id>"\n');
+
+  } catch (error) {
+    console.error('  Error listing calendars:', error);
+  }
 }
 
 // ============================================================================
@@ -382,24 +426,31 @@ async function runImport() {
   console.log('  Google Calendar Historical Tour Import');
   console.log('='.repeat(70));
 
-  if (DRY_RUN) {
-    console.log('\n  DRY RUN MODE - No changes will be made to the database\n');
-  }
-
-  const stats: ImportStats = {
-    totalEvents: 0,
-    tourEvents: 0,
-    alreadyImported: 0,
-    successfulImports: 0,
-    failedParses: 0,
-    needsReview: 0,
-    errors: [],
-    reviewQueue: [],
-  };
-
   try {
     // Authenticate and get calendar client
     const calendar = await authorize();
+
+    // If --list-calendars flag, list calendars and exit
+    if (LIST_CALENDARS) {
+      await listCalendars(calendar);
+      await pool.end();
+      return;
+    }
+
+    if (DRY_RUN) {
+      console.log('\n  DRY RUN MODE - No changes will be made to the database\n');
+    }
+
+    const stats: ImportStats = {
+      totalEvents: 0,
+      tourEvents: 0,
+      alreadyImported: 0,
+      successfulImports: 0,
+      failedParses: 0,
+      needsReview: 0,
+      errors: [],
+      reviewQueue: [],
+    };
 
     // Fetch events
     const allEvents = await fetchCalendarEvents(calendar);

@@ -10,6 +10,7 @@ import { customerService } from '../customer.service';
 import { pricingService } from '../pricing.service';
 import { crmSyncService } from '../crm-sync.service';
 import { crmTaskAutomationService } from '../crm-task-automation.service';
+import { googleCalendarSyncService } from '../google-calendar-sync.service';
 import {
   Booking,
   Winery,
@@ -136,7 +137,12 @@ export class BookingCreationService extends BaseService {
         this.log('CRM sync failed (non-blocking)', { error: err, bookingId });
       });
 
-      // 11. Fetch winery details for response
+      // 11. Sync booking to Google Calendar (async, don't block transaction)
+      googleCalendarSyncService.syncBooking(bookingId).catch(err => {
+        this.log('Google Calendar sync failed (non-blocking)', { error: err, bookingId });
+      });
+
+      // 12. Fetch winery details for response
       const wineryDetails = await this.getWineryDetailsForBooking(bookingId);
 
       this.log(`Full booking created: ${bookingNumber} for ${customer.email}`);

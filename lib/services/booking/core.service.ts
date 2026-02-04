@@ -9,6 +9,7 @@ import { BaseService } from '../base.service';
 import { NotFoundError, ConflictError, ValidationError } from '@/lib/api/middleware/error-handler';
 import { crmSyncService } from '../crm-sync.service';
 import { crmTaskAutomationService } from '../crm-task-automation.service';
+import { googleCalendarSyncService } from '../google-calendar-sync.service';
 import {
   Booking,
   BookingStatus,
@@ -295,6 +296,11 @@ export class BookingCoreService extends BaseService {
       throw new Error('Failed to update booking');
     }
 
+    // Sync update to Google Calendar (async, don't block)
+    googleCalendarSyncService.syncBooking(id).catch(err => {
+      this.log('Google Calendar update sync failed (non-blocking)', { error: err, bookingId: id });
+    });
+
     return updated;
   }
 
@@ -327,6 +333,11 @@ export class BookingCoreService extends BaseService {
     // Sync status change to CRM (async, don't block)
     this.syncStatusChangeToCrm(id, status, booking).catch(err => {
       this.log('CRM status sync failed (non-blocking)', { error: err, bookingId: id });
+    });
+
+    // Sync status change to Google Calendar (async, don't block)
+    googleCalendarSyncService.syncBooking(id).catch(err => {
+      this.log('Google Calendar sync failed (non-blocking)', { error: err, bookingId: id });
     });
 
     return updated;
@@ -425,6 +436,11 @@ export class BookingCoreService extends BaseService {
     // Sync cancellation to CRM (async, don't block)
     crmSyncService.onBookingStatusChange(id, 'cancelled').catch(err => {
       this.log('CRM cancellation sync failed (non-blocking)', { error: err, bookingId: id });
+    });
+
+    // Sync cancellation to Google Calendar (async, don't block)
+    googleCalendarSyncService.syncBooking(id).catch(err => {
+      this.log('Google Calendar cancellation sync failed (non-blocking)', { error: err, bookingId: id });
     });
 
     this.log(`Booking ${id} cancelled successfully`);
