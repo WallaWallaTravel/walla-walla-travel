@@ -124,7 +124,10 @@ export default function ClockInPage() {
         // Success! Redirect to dashboard
         router.push('/time-clock/dashboard');
       } else {
-        setError(data.error || 'Failed to clock in');
+        const errorMessage = typeof data.error === 'object' && data.error?.message
+          ? data.error.message
+          : (data.error || 'Failed to clock in');
+        setError(errorMessage);
       }
     } catch (err) {
       logger.error('Clock in error', { error: err });

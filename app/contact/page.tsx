@@ -48,7 +48,10 @@ function ContactForm() {
       if (data.success) {
         setSubmitted(true);
       } else {
-        setError(data.error || 'Something went wrong. Please try again.');
+        const errorMessage = typeof data.error === 'object' && data.error?.message
+          ? data.error.message
+          : (data.error || 'Something went wrong. Please try again.');
+        setError(errorMessage);
       }
     } catch {
       setError('Unable to submit. Please try again or call us directly.');
