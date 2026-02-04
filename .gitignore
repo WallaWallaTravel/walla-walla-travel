@@ -32,6 +32,10 @@ yarn-error.log*
 
 # Vercel (not used, but keep in gitignore)
 .vercel
+.env.vercel
+
+# Supabase temp files
+supabase/.temp/
 
 # TypeScript
 *.tsbuildinfo
