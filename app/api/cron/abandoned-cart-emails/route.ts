@@ -19,7 +19,7 @@ import { Resend } from 'resend';
 import { logger } from '@/lib/logger';
 import { withErrorHandling, UnauthorizedError } from '@/lib/api/middleware/error-handler';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 export const GET = withErrorHandling<unknown>(async (request: NextRequest) => {
   // Verify cron secret
@@ -28,6 +28,15 @@ export const GET = withErrorHandling<unknown>(async (request: NextRequest) => {
 
   if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
     throw new UnauthorizedError('Unauthorized');
+  }
+
+  // Check if Resend is configured
+  if (!resend) {
+    return NextResponse.json({
+      success: false,
+      message: 'Email service not configured - RESEND_API_KEY missing',
+      processed: 0
+    }, { status: 503 });
   }
 
   // Get abandoned bookings ready for follow-up

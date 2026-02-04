@@ -60,6 +60,7 @@ export interface WinerySummary {
   reservation_required: boolean;
   rating?: number;
   image_url?: string;
+  hero_image_url?: string;
   experience_tags: string[];
   features: string[];
   max_group_size?: number;
