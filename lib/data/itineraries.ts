@@ -92,10 +92,10 @@ export const itineraries: Itinerary[] = [
           },
           {
             time: '6:30 PM',
-            name: 'Dinner at Whitehouse-Crawford',
+            name: 'Dinner Downtown',
             type: 'restaurant',
-            description: 'Iconic Walla Walla dining in a converted mill. Regional cuisine with excellent wine list.',
-            tip: 'Make reservations as early as possible - weekends book up fast.',
+            description: 'Choose from excellent downtown options like Saffron Mediterranean or Brasserie Four. Regional cuisine with excellent wine lists.',
+            tip: 'Make reservations as early as possible - popular spots book up fast.',
           },
         ],
       },
@@ -121,7 +121,7 @@ export const itineraries: Itinerary[] = [
             time: '12:30 PM',
             name: 'Winery Picnic Lunch',
             type: 'restaurant',
-            description: 'Many wineries allow picnics on their grounds. Grab prepared items from Andrae\'s Kitchen or a local market.',
+            description: 'Many wineries allow picnics on their grounds. Pick up sandwiches from Graze or provisions from a local market.',
           },
           {
             time: '2:00 PM',
@@ -191,8 +191,8 @@ export const itineraries: Itinerary[] = [
             time: '10:30 AM',
             name: 'Orientation in Downtown',
             type: 'activity',
-            description: 'Start at the Walla Walla Valley Wine Alliance visitor center for maps, tips, and recommendations.',
-            tip: 'Staff can suggest wineries based on your taste preferences.',
+            description: 'Start your day downtown. Stop by Visit Walla Walla near First and Main (staffed during main daytime hours) for maps and recommendations, or grab wine maps at most hotels and tasting rooms.',
+            tip: 'Ask any tasting room staff for recommendations based on your taste preferences.',
           },
           {
             time: '11:00 AM',
@@ -218,7 +218,7 @@ export const itineraries: Itinerary[] = [
             time: '4:00 PM',
             name: 'Wine & Cheese at Hotel',
             type: 'activity',
-            description: 'Many hotels offer afternoon wine service. Decompress and discuss your favorites.',
+            description: 'Return to your hotel to rest and refresh. Decompress and discuss your favorites.',
           },
           {
             time: '6:00 PM',
@@ -251,7 +251,7 @@ export const itineraries: Itinerary[] = [
             time: '1:00 PM',
             name: 'Light Lunch',
             type: 'restaurant',
-            description: 'Grab prepared foods from Andrae\'s Kitchen or a local deli for a quick, quality lunch between tastings.',
+            description: 'Grab a sandwich from Graze or a quick bite from a local cafe for lunch between tastings.',
           },
           {
             time: '2:30 PM',
@@ -274,7 +274,7 @@ export const itineraries: Itinerary[] = [
       'Don\'t be afraid to use the spit bucket, especially early in the day',
       'Water between tastings helps cleanse your palate and keep you hydrated',
       'Ask "what would you recommend for someone who likes X?" - staff love helping',
-      'Tasting fees ($15-25) are usually waived with purchase',
+      'Tasting fees ($20-40) are usually waived with purchase',
     ],
     faqs: [
       {
@@ -290,7 +290,7 @@ export const itineraries: Itinerary[] = [
       {
         question: 'Is wine tasting expensive?',
         answer:
-          'Tasting fees run $15-25 per winery, often waived with purchase. Book a tour and you can comfortably visit several wineries while someone else drives. Set a budget before you go if cost is a concern.',
+          'Tasting fees run $20-40 per winery, often waived with purchase. Book a tour and you can comfortably visit several wineries while someone else drives. Set a budget before you go if cost is a concern.',
       },
     ],
   },
@@ -423,7 +423,7 @@ export const itineraries: Itinerary[] = [
       'Request special touches when booking - wineries and restaurants often accommodate romantic celebrations',
       'Book a tour so you can both fully enjoy tastings without worrying about driving',
       'Golden hour (1-2 hours before sunset) is the most romantic time at scenic wineries',
-      'Ask your hotel about in-room wine service or couples spa treatments',
+      'Ask your hotel about romantic touches they can arrange for your stay',
     ],
     faqs: [
       {
