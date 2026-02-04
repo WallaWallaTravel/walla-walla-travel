@@ -240,8 +240,8 @@ export default async function HomePage() {
             >
               <div className="aspect-[4/3] relative overflow-hidden">
                 <Image
-                  src="https://eabqmcvmpkbpyhhpbcij.supabase.co/storage/v1/object/public/media/explore/winter-vineyard.jpg"
-                  alt="Winter vineyard rows in Walla Walla wine country"
+                  src="https://eabqmcvmpkbpyhhpbcij.supabase.co/storage/v1/object/public/media/explore/browse-wineries-vineyard.jpg"
+                  alt="Wine tour group enjoying Walla Walla vineyard"
                   fill
                   className="object-cover group-hover:scale-105 transition-transform duration-300"
                   sizes="(max-width: 768px) 100vw, 33vw"
@@ -266,8 +266,8 @@ export default async function HomePage() {
             >
               <div className="aspect-[4/3] relative overflow-hidden">
                 <Image
-                  src="https://eabqmcvmpkbpyhhpbcij.supabase.co/storage/v1/object/public/media/explore/wine-districts-hills.jpg"
-                  alt="Rolling hills and Blue Mountains of Walla Walla Valley"
+                  src="https://eabqmcvmpkbpyhhpbcij.supabase.co/storage/v1/object/public/media/explore/wine-districts-rotie.jpg"
+                  alt="Rotie Cellars wine bottles in tasting room"
                   fill
                   className="object-cover group-hover:scale-105 transition-transform duration-300"
                   sizes="(max-width: 768px) 100vw, 33vw"
@@ -292,8 +292,8 @@ export default async function HomePage() {
             >
               <div className="aspect-[4/3] relative overflow-hidden">
                 <Image
-                  src="https://eabqmcvmpkbpyhhpbcij.supabase.co/storage/v1/object/public/media/explore/downtown-building.jpg"
-                  alt="Historic downtown Walla Walla building"
+                  src="https://eabqmcvmpkbpyhhpbcij.supabase.co/storage/v1/object/public/media/explore/best-of-barrels.jpg"
+                  alt="Wine barrel cellar in Walla Walla"
                   fill
                   className="object-cover group-hover:scale-105 transition-transform duration-300"
                   sizes="(max-width: 768px) 100vw, 33vw"
