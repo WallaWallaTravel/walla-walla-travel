@@ -217,7 +217,7 @@ export default function BookSharedTourPage({ params }: { params: Promise<{ tour_
             </svg>
           </div>
           <h2 className="text-xl font-semibold text-slate-900 mb-2">Tour Not Found</h2>
-          <p className="text-slate-600 mb-6">{error}</p>
+          <p className="text-slate-600 mb-6">{typeof error === 'object' ? (error as { message?: string })?.message || 'An error occurred' : error}</p>
           <Link
             href="/shared-tours"
             className="inline-flex items-center gap-2 px-6 py-3 bg-[#E07A5F] text-white rounded-lg font-semibold"
@@ -365,7 +365,7 @@ export default function BookSharedTourPage({ params }: { params: Promise<{ tour_
       <main className="max-w-3xl mx-auto px-4 py-8">
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-red-700">
-            {error}
+            {typeof error === 'object' ? (error as { message?: string })?.message || 'An error occurred' : error}
           </div>
         )}
 

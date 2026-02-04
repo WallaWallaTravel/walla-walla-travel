@@ -208,7 +208,7 @@ export default function SharedToursPage() {
       <main className="max-w-4xl mx-auto px-4 py-8">
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-red-700">
-            {error}
+            {typeof error === 'object' ? (error as { message?: string })?.message || 'An error occurred' : error}
           </div>
         )}
 
