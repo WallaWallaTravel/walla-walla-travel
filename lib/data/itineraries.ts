@@ -290,7 +290,7 @@ export const itineraries: Itinerary[] = [
       {
         question: 'Is wine tasting expensive?',
         answer:
-          'A day of tasting costs roughly $60-100 per person in tasting fees (3-4 wineries). Many fees are waived with purchase. Set a budget before you go if cost is a concern.',
+          'Tasting fees run $15-25 per winery, often waived with purchase. Book a tour and you can comfortably visit several wineries while someone else drives. Set a budget before you go if cost is a concern.',
       },
     ],
   },

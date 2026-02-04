@@ -240,7 +240,7 @@ export const guides: Guide[] = [
       {
         question: 'How much should I budget for wine tasting in Walla Walla?',
         answer:
-          'Plan for $15-30 per person per winery for tasting fees. A day of 3-4 wineries costs roughly $60-120 per person before any wine purchases. Many fees are waived with purchase.',
+          'Plan for $15-30 per person per winery for tasting fees. Many fees are waived with purchase. If you book a tour, you can comfortably visit 3-4 wineries and let someone else handle the driving.',
       },
       {
         question: 'Do I need to know about wine to enjoy Walla Walla?',

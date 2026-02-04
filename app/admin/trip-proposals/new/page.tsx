@@ -86,6 +86,7 @@ interface FormData {
   customer_name: string;
   customer_email: string;
   customer_phone: string;
+  customer_company: string;
   trip_type: string;
   party_size: number;
   start_date: string;
@@ -105,6 +106,7 @@ interface FormData {
 
 const TRIP_TYPES = [
   { value: 'wine_tour', label: 'Wine Tour', icon: '🍷' },
+  { value: 'wine_group', label: 'Wine Group', icon: '🍇' },
   { value: 'bachelorette', label: 'Bachelorette', icon: '💒' },
   { value: 'corporate', label: 'Corporate', icon: '🏢' },
   { value: 'family', label: 'Family', icon: '👨‍👩‍👧‍👦' },
@@ -148,6 +150,7 @@ export default function NewTripProposalPage() {
     customer_name: '',
     customer_email: '',
     customer_phone: '',
+    customer_company: '',
     trip_type: 'wine_tour',
     party_size: 4,
     start_date: today,
@@ -436,6 +439,7 @@ export default function NewTripProposalPage() {
           customer_name: formData.customer_name,
           customer_email: formData.customer_email || null,
           customer_phone: formData.customer_phone || null,
+          customer_company: formData.customer_company || null,
           trip_type: formData.trip_type,
           party_size: formData.party_size,
           start_date: formData.start_date,
@@ -686,11 +690,27 @@ export default function NewTripProposalPage() {
                             min="1"
                             max="100"
                             value={formData.party_size}
+                            onFocus={(e) => e.target.select()}
                             onChange={(e) =>
                               setFormData({ ...formData, party_size: parseInt(e.target.value) || 1 })
                             }
                             className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#8B1538] focus:ring-4 focus:ring-[#FDF2F4]"
                             required
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-bold text-gray-900 mb-2">
+                            Company / Organization
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.customer_company}
+                            onChange={(e) =>
+                              setFormData({ ...formData, customer_company: e.target.value })
+                            }
+                            placeholder="For corporate or group bookings"
+                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#8B1538] focus:ring-4 focus:ring-[#FDF2F4]"
                           />
                         </div>
                       </div>
