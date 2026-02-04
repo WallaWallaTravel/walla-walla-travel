@@ -121,7 +121,7 @@ export const itineraries: Itinerary[] = [
             time: '12:30 PM',
             name: 'Winery Picnic Lunch',
             type: 'restaurant',
-            description: 'Many wineries allow picnics on their grounds. Pack from Olive or grab prepared items from Andrae\'s Kitchen.',
+            description: 'Many wineries allow picnics on their grounds. Grab prepared items from Andrae\'s Kitchen or a local market.',
           },
           {
             time: '2:00 PM',
@@ -251,7 +251,7 @@ export const itineraries: Itinerary[] = [
             time: '1:00 PM',
             name: 'Light Lunch',
             type: 'restaurant',
-            description: 'Olive has excellent prepared foods for a quick, quality lunch between tastings.',
+            description: 'Grab prepared foods from Andrae\'s Kitchen or a local deli for a quick, quality lunch between tastings.',
           },
           {
             time: '2:30 PM',
@@ -363,7 +363,7 @@ export const itineraries: Itinerary[] = [
             time: '1:30 PM',
             name: 'Picnic in the Vineyards',
             type: 'restaurant',
-            description: 'Some wineries offer picnic settings among the vines. Pack gourmet provisions from Olive.',
+            description: 'Some wineries offer picnic settings among the vines. Pack gourmet provisions from a local market or deli.',
           },
           {
             time: '3:30 PM',
