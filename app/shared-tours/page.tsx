@@ -48,7 +48,11 @@ export default function SharedToursPage() {
       if (data.success) {
         setTours(data.data);
       } else {
-        setError(data.error);
+        // Handle error object with message property or plain string
+        const errorMessage = typeof data.error === 'object' && data.error?.message
+          ? data.error.message
+          : (data.error || 'Failed to load tours');
+        setError(errorMessage);
       }
     } catch (_err) {
       setError('Failed to load tours');
