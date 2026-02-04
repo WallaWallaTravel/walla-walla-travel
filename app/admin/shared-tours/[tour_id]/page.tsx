@@ -198,7 +198,7 @@ export default function AdminTourDetailPage({ params }: { params: Promise<{ tour
     return (
       <div className="min-h-screen bg-slate-100 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-red-600 mb-4">{error}</p>
+          <p className="text-red-600 mb-4">{typeof error === 'object' ? (error as { message?: string })?.message || 'An error occurred' : error}</p>
           <Link
             href="/admin/shared-tours"
             className="text-[#E07A5F] hover:underline"
@@ -243,7 +243,7 @@ export default function AdminTourDetailPage({ params }: { params: Promise<{ tour
       <main className="max-w-7xl mx-auto px-4 py-6">
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-red-700">
-            {error}
+            {typeof error === 'object' ? (error as { message?: string })?.message || 'An error occurred' : error}
           </div>
         )}
 
