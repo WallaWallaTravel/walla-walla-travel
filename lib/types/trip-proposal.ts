@@ -26,6 +26,7 @@ export type TripProposalStatus = (typeof TRIP_PROPOSAL_STATUS)[number];
 
 export const TRIP_TYPES = [
   'wine_tour',
+  'wine_group',
   'bachelorette',
   'corporate',
   'wedding',
