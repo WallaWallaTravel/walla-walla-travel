@@ -74,6 +74,26 @@ interface VehicleInfo {
   available?: boolean;
 }
 
+interface DiscountPreview {
+  original_base_price: number;
+  new_base_price: number;
+  original_lunch_price: number;
+  new_lunch_price: number;
+  tickets_affected: Array<{
+    ticket_id: string;
+    ticket_number: string;
+    customer_name: string;
+    customer_email: string;
+    ticket_count: number;
+    original_paid: number;
+    new_price: number;
+    refund_amount: number;
+  }>;
+  total_refund: number;
+  can_apply: boolean;
+  warnings: string[];
+}
+
 export default function AdminTourDetailPage({ params }: { params: Promise<{ tour_id: string }> }) {
   const { tour_id } = use(params);
 
@@ -88,6 +108,15 @@ export default function AdminTourDetailPage({ params }: { params: Promise<{ tour
   const [reassigning, setReassigning] = useState(false);
   const [showReassignModal, setShowReassignModal] = useState(false);
   const [selectedNewVehicle, setSelectedNewVehicle] = useState<number | null>(null);
+
+  // Discount modal state
+  const [showDiscountModal, setShowDiscountModal] = useState(false);
+  const [discountType, setDiscountType] = useState<'flat' | 'percentage'>('flat');
+  const [discountAmount, setDiscountAmount] = useState<string>('');
+  const [discountReason, setDiscountReason] = useState('');
+  const [discountPreview, setDiscountPreview] = useState<DiscountPreview | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [applyingDiscount, setApplyingDiscount] = useState(false);
 
   const fetchTourDetails = useCallback(async () => {
     try {
@@ -160,6 +189,85 @@ export default function AdminTourDetailPage({ params }: { params: Promise<{ tour
     } finally {
       setReassigning(false);
     }
+  };
+
+  const handlePreviewDiscount = async () => {
+    const amount = parseFloat(discountAmount);
+    if (isNaN(amount) || amount <= 0) {
+      setError('Please enter a valid discount amount');
+      return;
+    }
+
+    setPreviewLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/admin/shared-tours/${tour_id}/discount`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          discount_type: discountType,
+          discount_amount: amount,
+          reason: discountReason,
+        }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setDiscountPreview(data.preview);
+      } else {
+        setError(data.error || 'Failed to preview discount');
+      }
+    } catch (_err) {
+      setError('Failed to preview discount');
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  const handleApplyDiscount = async () => {
+    const amount = parseFloat(discountAmount);
+    if (isNaN(amount) || amount <= 0) {
+      setError('Please enter a valid discount amount');
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to apply this discount? This will issue $${discountPreview?.total_refund.toFixed(2)} in refunds.`)) {
+      return;
+    }
+
+    setApplyingDiscount(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/admin/shared-tours/${tour_id}/discount`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          discount_type: discountType,
+          discount_amount: amount,
+          reason: discountReason,
+          confirmed: true,
+        }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        fetchTourDetails();
+        setShowDiscountModal(false);
+        resetDiscountModal();
+        alert(data.message);
+      } else {
+        setError(data.error || 'Failed to apply discount');
+      }
+    } catch (_err) {
+      setError('Failed to apply discount');
+    } finally {
+      setApplyingDiscount(false);
+    }
+  };
+
+  const resetDiscountModal = () => {
+    setDiscountType('flat');
+    setDiscountAmount('');
+    setDiscountReason('');
+    setDiscountPreview(null);
   };
 
   const formatDate = (dateStr: string) => {
@@ -685,6 +793,30 @@ export default function AdminTourDetailPage({ params }: { params: Promise<{ tour
                     </div>
                   </dl>
 
+                  {/* Group Discount Section */}
+                  {tour.status !== 'cancelled' && tour.status !== 'completed' && (
+                    <div className="mt-6 pt-6 border-t border-slate-200">
+                      <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                        <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Group Discount
+                      </h3>
+                      <button
+                        onClick={() => setShowDiscountModal(true)}
+                        className="px-4 py-2 bg-[#E07A5F] text-white rounded-lg font-medium hover:bg-[#d06a4f] transition-colors flex items-center gap-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                        </svg>
+                        Apply Discount
+                      </button>
+                      <p className="text-xs text-slate-500 mt-2">
+                        Apply a group discount and automatically refund guests who already paid
+                      </p>
+                    </div>
+                  )}
+
                   {tour.wineries_preview && tour.wineries_preview.length > 0 && (
                     <div className="mt-6">
                       <h3 className="font-semibold text-slate-900 mb-2">Wineries</h3>
@@ -799,6 +931,221 @@ export default function AdminTourDetailPage({ params }: { params: Promise<{ tour
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 )}
                 {vehicleInfo ? 'Change Vehicle' : 'Assign Vehicle'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Discount Modal */}
+      {showDiscountModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-slate-200 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-slate-900">Apply Group Discount</h2>
+              <button
+                onClick={() => {
+                  setShowDiscountModal(false);
+                  resetDiscountModal();
+                }}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Discount Type */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Discount Type
+                </label>
+                <div className="flex gap-3">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="discountType"
+                      value="flat"
+                      checked={discountType === 'flat'}
+                      onChange={() => {
+                        setDiscountType('flat');
+                        setDiscountPreview(null);
+                      }}
+                      className="text-[#E07A5F] focus:ring-[#E07A5F]"
+                    />
+                    <span className="text-slate-700">Flat Amount ($/person)</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="discountType"
+                      value="percentage"
+                      checked={discountType === 'percentage'}
+                      onChange={() => {
+                        setDiscountType('percentage');
+                        setDiscountPreview(null);
+                      }}
+                      className="text-[#E07A5F] focus:ring-[#E07A5F]"
+                    />
+                    <span className="text-slate-700">Percentage (%)</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Discount Amount */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Amount
+                </label>
+                <div className="relative">
+                  {discountType === 'flat' && (
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
+                  )}
+                  <input
+                    type="number"
+                    value={discountAmount}
+                    onChange={e => {
+                      setDiscountAmount(e.target.value);
+                      setDiscountPreview(null);
+                    }}
+                    placeholder={discountType === 'flat' ? '10.00' : '10'}
+                    min="0"
+                    max={discountType === 'percentage' ? '100' : undefined}
+                    step={discountType === 'flat' ? '0.01' : '1'}
+                    className={`w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E07A5F] ${
+                      discountType === 'flat' ? 'pl-7' : ''
+                    }`}
+                  />
+                  {discountType === 'percentage' && (
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500">%</span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  {discountType === 'flat'
+                    ? 'Amount to deduct from each ticket per person'
+                    : 'Percentage off the original price'
+                  }
+                </p>
+              </div>
+
+              {/* Discount Reason */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Reason (optional)
+                </label>
+                <input
+                  type="text"
+                  value={discountReason}
+                  onChange={e => setDiscountReason(e.target.value)}
+                  placeholder="e.g., Group of 8+ guests"
+                  className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E07A5F]"
+                />
+              </div>
+
+              {/* Preview Button */}
+              <button
+                onClick={handlePreviewDiscount}
+                disabled={!discountAmount || previewLoading}
+                className="w-full px-4 py-2 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {previewLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-slate-500 border-t-transparent rounded-full animate-spin"></div>
+                    Calculating...
+                  </>
+                ) : (
+                  'Preview Discount'
+                )}
+              </button>
+
+              {/* Preview Results */}
+              {discountPreview && (
+                <div className="border border-slate-200 rounded-lg overflow-hidden">
+                  <div className="bg-slate-50 px-4 py-3 border-b border-slate-200">
+                    <h3 className="font-semibold text-slate-900">Preview</h3>
+                  </div>
+                  <div className="p-4 space-y-4">
+                    {/* Price Changes */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-xs text-slate-500 mb-1">Base Price</p>
+                        <p className="text-slate-700">
+                          <span className="line-through text-slate-400">${discountPreview.original_base_price}</span>
+                          <span className="ml-2 font-semibold text-green-600">${discountPreview.new_base_price}</span>
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-500 mb-1">With Lunch</p>
+                        <p className="text-slate-700">
+                          <span className="line-through text-slate-400">${discountPreview.original_lunch_price}</span>
+                          <span className="ml-2 font-semibold text-green-600">${discountPreview.new_lunch_price}</span>
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Refunds */}
+                    {discountPreview.tickets_affected.length > 0 && (
+                      <div>
+                        <p className="text-sm font-medium text-slate-700 mb-2">Refunds to be issued:</p>
+                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-2 max-h-40 overflow-y-auto">
+                          {discountPreview.tickets_affected.map(ticket => (
+                            <div key={ticket.ticket_id} className="flex justify-between items-center text-sm">
+                              <span className="text-slate-700">
+                                {ticket.customer_name} ({ticket.ticket_count} guest{ticket.ticket_count > 1 ? 's' : ''})
+                              </span>
+                              <span className="font-medium text-amber-700">${ticket.refund_amount.toFixed(2)}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="mt-3 pt-3 border-t border-slate-200 flex justify-between items-center">
+                          <span className="font-semibold text-slate-900">Total Refunds:</span>
+                          <span className="font-bold text-lg text-amber-600">${discountPreview.total_refund.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {discountPreview.tickets_affected.length === 0 && (
+                      <p className="text-sm text-slate-500 italic">No paid tickets to refund</p>
+                    )}
+
+                    {/* Warnings */}
+                    {discountPreview.warnings.length > 0 && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <p className="text-sm font-medium text-blue-800 mb-1">Notes:</p>
+                        <ul className="text-sm text-blue-700 list-disc list-inside">
+                          {discountPreview.warnings.map((warning, idx) => (
+                            <li key={idx}>{warning}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 border-t border-slate-200 flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowDiscountModal(false);
+                  resetDiscountModal();
+                }}
+                className="px-4 py-2 text-slate-700 hover:text-slate-900"
+                disabled={applyingDiscount}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleApplyDiscount}
+                disabled={!discountPreview || applyingDiscount}
+                className="px-6 py-2 bg-[#E07A5F] text-white rounded-lg font-semibold hover:bg-[#d06a4f] transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {applyingDiscount && (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                )}
+                Apply Discount
               </button>
             </div>
           </div>

@@ -88,6 +88,9 @@ const DAYS_OF_WEEK = [
   { value: 1, label: 'Mon' },
   { value: 2, label: 'Tue' },
   { value: 3, label: 'Wed' },
+  { value: 4, label: 'Thu' },
+  { value: 5, label: 'Fri' },
+  { value: 6, label: 'Sat' },
 ];
 
 export default function AdminSharedToursPage() {
@@ -370,11 +373,7 @@ export default function AdminSharedToursPage() {
 
   const handleAddIndividualDate = (date: string) => {
     if (!date) return;
-    const dayOfWeek = new Date(date + 'T00:00:00').getDay();
-    if (dayOfWeek > 3) {
-      setError('Shared tours can only be scheduled on Sunday through Wednesday');
-      return;
-    }
+    // Note: Any day is now allowed (Sun-Wed still recommended)
     if (!selectedDates.includes(date)) {
       setSelectedDates(prev => [...prev, date].sort());
     }
@@ -896,7 +895,7 @@ export default function AdminSharedToursPage() {
                         min={new Date().toISOString().split('T')[0]}
                         className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E07A5F]"
                       />
-                      <p className="text-xs text-slate-500 mt-1">Sun-Wed only</p>
+                      <p className="text-xs text-slate-500 mt-1">Sun-Wed recommended, any day allowed</p>
                     </div>
                   )}
 
@@ -996,7 +995,7 @@ export default function AdminSharedToursPage() {
                               onChange={e => handleAddIndividualDate(e.target.value)}
                             />
                           </div>
-                          <p className="text-xs text-slate-500 mt-1">Sun-Wed only</p>
+                          <p className="text-xs text-slate-500 mt-1">Sun-Wed recommended, any day allowed</p>
                         </div>
                       )}
 
@@ -1056,10 +1055,10 @@ export default function AdminSharedToursPage() {
                       </label>
                       <select
                         value={createForm.duration_hours}
-                        onChange={e => setCreateForm(prev => ({ ...prev, duration_hours: parseInt(e.target.value) }))}
+                        onChange={e => setCreateForm(prev => ({ ...prev, duration_hours: parseFloat(e.target.value) }))}
                         className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E07A5F]"
                       >
-                        {[4, 5, 6, 7, 8].map(h => (
+                        {[3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7].map(h => (
                           <option key={h} value={h}>{h} hours</option>
                         ))}
                       </select>
