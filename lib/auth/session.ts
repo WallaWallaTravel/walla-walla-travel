@@ -84,7 +84,8 @@ export async function verifySession(token: string): Promise<SessionPayload | nul
     const { payload } = await jwtVerify(token, SESSION_SECRET);
     return payload as unknown as SessionPayload;
   } catch (error) {
-    logger.error('[Session] Verification failed', { error });
+    // eslint-disable-next-line no-console
+    console.error('[Session] Verification failed', error);
     return null;
   }
 }
