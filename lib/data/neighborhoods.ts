@@ -98,7 +98,7 @@ Some of Walla Walla's founding wineries established themselves on the Southside,
       'Opportunity to see where grapes are grown',
       'Mix of acclaimed names and hidden gems',
     ],
-    practicalInfo: 'Driving required between wineries. Some offer vineyard tours. Reservations often required, especially for smaller operations.',
+    practicalInfo: 'Driving required between wineries. Some offer vineyard tours. Reservations often required, especially for appointment-only wineries.',
     approximateWineries: 23,
   },
   {

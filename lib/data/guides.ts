@@ -336,7 +336,7 @@ export const guides: Guide[] = [
 
 **Geography**: Group wineries by area to minimize driving. Downtown → Southside → Airport District is a common flow.
 
-**Variety**: Mix established names with smaller discoveries. Different tasting experiences keep things interesting.`,
+**Variety**: Mix established names with hidden gems. Different tasting experiences keep things interesting.`,
       },
       {
         title: 'Managing Different Preferences',
