@@ -211,7 +211,7 @@ export const itineraries: Itinerary[] = [
             time: '2:00 PM',
             name: 'Second Tasting - Different Style',
             type: 'winery',
-            description: 'Try a different type of winery - perhaps smaller and more intimate. Compare the experience.',
+            description: 'Try a different style - maybe a focus on single varietals, or a different neighborhood vibe. Compare the experience.',
             tip: 'Notice how the same grape variety tastes different from different producers.',
           },
           {
@@ -370,7 +370,7 @@ export const itineraries: Itinerary[] = [
             name: 'Intimate Boutique Winery',
             type: 'winery',
             description: 'Small-production winery with personal attention. Often the winemaker pours.',
-            tip: 'Small wineries love hearing your story - share why you\'re visiting.',
+            tip: 'Winemakers love hearing your story - share why you\'re visiting.',
           },
           {
             time: '5:30 PM',
