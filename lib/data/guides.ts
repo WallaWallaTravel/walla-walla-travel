@@ -344,7 +344,7 @@ export const guides: Guide[] = [
 
 **Wine Knowledge Gap**: Choose wineries with patient staff who welcome beginners. Avoid intimidating, ultra-premium spots.
 
-**Taste Preferences**: Select wineries with diverse portfolios (reds, whites, rosé) so everyone finds something.
+**Taste Preferences**: Tell tasting room staff what your group enjoys - they'll recommend wineries that fit.
 
 **Budget Differences**: Discuss spending expectations upfront. Some prefer to split costs; others pay their own way.
 

@@ -244,7 +244,7 @@ export const itineraries: Itinerary[] = [
             time: '11:00 AM',
             name: 'Tasting Room with Variety',
             type: 'winery',
-            description: 'Visit a winery with a diverse portfolio - reds, whites, rosé. Perfect for finding what you like.',
+            description: 'Ask your hotel or yesterday\'s tasting room staff for a recommendation. Tell them what you enjoyed so far.',
             tip: 'Take notes on what you enjoy. Look for patterns in your preferences.',
           },
           {
@@ -257,7 +257,7 @@ export const itineraries: Itinerary[] = [
             time: '2:30 PM',
             name: 'Final Tasting - Your Choice',
             type: 'winery',
-            description: 'Based on what you\'ve learned, pick a winery that matches your emerging preferences.',
+            description: 'Ask staff at your earlier stop for a recommendation based on what you enjoyed. They know the valley.',
             tip: 'Don\'t feel pressured to buy. But if you find something you love, get it!',
           },
           {
