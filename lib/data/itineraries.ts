@@ -198,7 +198,7 @@ export const itineraries: Itinerary[] = [
             time: '11:00 AM',
             name: 'First Tasting Experience',
             type: 'winery',
-            description: 'Choose a larger, well-established winery known for welcoming beginners. Ask lots of questions!',
+            description: 'Start with a winery known for patient, welcoming staff who enjoy helping newcomers discover wine. Ask lots of questions!',
             tip: 'Tell your server "This is our first time wine tasting" - they\'ll tailor the experience.',
           },
           {
