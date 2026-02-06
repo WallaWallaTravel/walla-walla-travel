@@ -107,7 +107,7 @@ function BookingsPageContent() {
           <p className="text-slate-500 mt-1">Manage all tour bookings and reservations</p>
         </div>
         <Link
-          href="/admin/bookings/new"
+          href="/admin/bookings/console"
           className="bg-[#1E3A5F] hover:bg-[#1A3354] text-white px-5 py-2.5 rounded-lg font-medium transition-colors"
         >
           + New Booking

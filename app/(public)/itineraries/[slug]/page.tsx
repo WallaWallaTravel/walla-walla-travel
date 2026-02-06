@@ -244,6 +244,15 @@ export default async function ItineraryPage({ params }: PageProps) {
                   Book This Trip
                 </Link>
 
+                {itinerary.customizeUrl && (
+                  <Link
+                    href={itinerary.customizeUrl}
+                    className="block w-full text-[#8B1538] text-center py-2 text-sm font-medium hover:underline transition-colors"
+                  >
+                    Customize this itinerary
+                  </Link>
+                )}
+
                 <Link
                   href="/wineries"
                   className="block w-full text-gray-500 text-center py-2 text-sm hover:text-[#8B1538] transition-colors"

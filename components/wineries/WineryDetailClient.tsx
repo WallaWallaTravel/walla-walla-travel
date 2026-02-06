@@ -30,7 +30,12 @@ const TIP_TYPE_CONFIG: Record<string, { icon: string; label: string }> = {
 export function WineryDetailClient({ winery, narrativeContent, faqs = [] }: WineryDetailClientProps) {
   const setWineryContext = usePageContextStore((state) => state.setWineryContext);
   const clearContext = usePageContextStore((state) => state.clearContext);
-  const analytics = useAnalyticsStore();
+  // Select only the specific functions to avoid infinite re-renders when events array changes
+  const trackEvent = useAnalyticsStore((state) => state.trackEvent);
+  const trackPhoneClick = useAnalyticsStore((state) => state.trackPhoneClick);
+  const trackExternalLinkClick = useAnalyticsStore((state) => state.trackExternalLinkClick);
+  const trackReservationClick = useAnalyticsStore((state) => state.trackReservationClick);
+  const trackWineryAdded = useAnalyticsStore((state) => state.trackWineryAdded);
 
   // Extract narrative content with defaults
   const originStory = narrativeContent?.originStory;
@@ -48,7 +53,7 @@ export function WineryDetailClient({ winery, narrativeContent, faqs = [] }: Wine
     });
 
     // Track winery view
-    analytics.trackEvent('page_view', {
+    trackEvent('page_view', {
       page_type: 'winery_detail',
       winery_id: winery.id,
       winery_name: winery.name,
@@ -57,7 +62,7 @@ export function WineryDetailClient({ winery, narrativeContent, faqs = [] }: Wine
     return () => {
       clearContext();
     };
-  }, [winery, setWineryContext, clearContext, analytics]);
+  }, [winery, setWineryContext, clearContext, trackEvent]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#faf7f5] to-white">
@@ -316,7 +321,7 @@ export function WineryDetailClient({ winery, narrativeContent, faqs = [] }: Wine
                 {winery.phone && (
                   <a
                     href={`tel:${winery.phone}`}
-                    onClick={() => analytics.trackPhoneClick(winery.id, winery.name)}
+                    onClick={() => trackPhoneClick(winery.id, winery.name)}
                     className="flex items-center gap-3 text-gray-700 hover:text-[#8B1538]"
                   >
                     <span>📞</span>
@@ -328,7 +333,7 @@ export function WineryDetailClient({ winery, narrativeContent, faqs = [] }: Wine
                     href={winery.website}
                     target="_blank"
                     rel="noopener noreferrer"
-                    onClick={() => analytics.trackExternalLinkClick(winery.id, winery.name, 'website')}
+                    onClick={() => trackExternalLinkClick(winery.id, winery.name, 'website')}
                     className="flex items-center gap-3 text-gray-700 hover:text-[#8B1538]"
                   >
                     <span>🌐</span>
@@ -344,7 +349,7 @@ export function WineryDetailClient({ winery, narrativeContent, faqs = [] }: Wine
                     href={winery.website || '#'}
                     target="_blank"
                     rel="noopener noreferrer"
-                    onClick={() => analytics.trackReservationClick(winery.id, winery.name)}
+                    onClick={() => trackReservationClick(winery.id, winery.name)}
                     className="block w-full bg-[#8B1538] text-white text-center py-3 rounded-xl font-semibold hover:bg-[#722F37] transition-colors"
                   >
                     Make Reservation
@@ -357,7 +362,7 @@ export function WineryDetailClient({ winery, narrativeContent, faqs = [] }: Wine
 
                 <button
                   onClick={() => {
-                    analytics.trackWineryAdded(winery.id, winery.name);
+                    trackWineryAdded(winery.id, winery.name);
                     alert(`${winery.name} added to your trip! Open the chat to continue planning.`);
                   }}
                   className="block w-full bg-amber-500 text-white text-center py-3 rounded-xl font-semibold hover:bg-amber-600 transition-colors"
@@ -405,7 +410,7 @@ export function WineryDetailClient({ winery, narrativeContent, faqs = [] }: Wine
                   </ul>
                   <Link
                     href={`/book?winery=${encodeURIComponent(winery.name)}`}
-                    onClick={() => analytics.trackEvent('tour_cta_click', {
+                    onClick={() => trackEvent('tour_cta_click', {
                       winery_id: winery.id,
                       winery_name: winery.name,
                       source: 'winery_detail_sidebar',

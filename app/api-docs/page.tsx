@@ -154,8 +154,8 @@ export default function APIDocsPage() {
   "data": [
     {
       "id": 1,
-      "name": "Saffron Mediterranean Kitchen",
-      "cuisine": "Mediterranean",
+      "name": "Passatempo Taverna",
+      "cuisine": "Italian",
       "price_range": "$$",
       "wine_friendly": true
     }

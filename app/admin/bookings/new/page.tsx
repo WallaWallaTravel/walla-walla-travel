@@ -368,9 +368,17 @@ function BookingFormContent() {
                   onChange={handleChange}
                   required
                   min="1"
-                  max="14"
+                  max="100"
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-gray-900 font-semibold focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 />
+                {parseInt(String(formData.party_size)) > 14 && (
+                  <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-2">
+                    <span className="font-semibold">📋 Multiple vehicles needed.</span> Groups over 14 require 2+ vehicles.
+                    {parseInt(String(formData.party_size)) > 39 && (
+                      <span className="block mt-1 text-red-700 font-semibold">⚠️ Fleet max is 39 guests (all 3 vans). Partner coordination may be needed for groups this large.</span>
+                    )}
+                  </p>
+                )}
               </div>
 
               {/* Conditional: Wine Tour Preferences */}

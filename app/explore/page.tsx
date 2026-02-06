@@ -53,9 +53,9 @@ const CATEGORIES: Category[] = [
     description: "Farm-to-table dining and local favorites",
     items: [
       {
-        name: "Saffron Mediterranean Kitchen",
-        description: "Mediterranean-inspired dishes with local ingredients.",
-        tags: ["Fine Dining", "Mediterranean", "Wine List"],
+        name: "Passatempo Taverna",
+        description: "Italian cuisine with house-made pastas and wood-fired pizzas.",
+        tags: ["Italian", "Casual", "Wine List"],
       },
       {
         name: "Brasserie Four",

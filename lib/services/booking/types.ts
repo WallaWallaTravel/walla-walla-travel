@@ -48,7 +48,7 @@ export interface Booking {
   cancelled_at?: Date | string;
 }
 
-export type BookingStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled';
+export type BookingStatus = 'draft' | 'pending' | 'confirmed' | 'completed' | 'cancelled';
 
 export interface Winery {
   winery_id: number;
@@ -347,6 +347,7 @@ export const CreateBookingSchema = z.object({
 // ============================================================================
 
 export const VALID_STATUS_TRANSITIONS: Record<BookingStatus, BookingStatus[]> = {
+  draft: ['pending', 'confirmed', 'cancelled'],
   pending: ['confirmed', 'cancelled'],
   confirmed: ['completed', 'cancelled'],
   completed: [],
