@@ -583,6 +583,21 @@ export type winery_reviews = Prisma.winery_reviewsModel
  */
 export type wines = Prisma.winesModel
 /**
+ * Model driver_tips
+ * Stores tip payments from guests collected via QR code/payment link at tour end
+ */
+export type driver_tips = Prisma.driver_tipsModel
+/**
+ * Model tour_expenses
+ * Driver-entered expenses like lunch costs with receipt photo uploads
+ */
+export type tour_expenses = Prisma.tour_expensesModel
+/**
+ * Model tour_completions
+ * Tracks tour completion and stores tip collection payment link info
+ */
+export type tour_completions = Prisma.tour_completionsModel
+/**
  * Model workflows
  * 
  */

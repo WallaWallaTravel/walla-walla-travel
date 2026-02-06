@@ -545,6 +545,9 @@ export type usersWhereInput = {
   weekly_hos?: Prisma.Weekly_hosListRelationFilter
   winery_reviews?: Prisma.Winery_reviewsListRelationFilter
   workflows?: Prisma.WorkflowsListRelationFilter
+  driver_tips?: Prisma.Driver_tipsListRelationFilter
+  tour_expenses?: Prisma.Tour_expensesListRelationFilter
+  tour_completions?: Prisma.Tour_completionsListRelationFilter
 }
 
 export type usersOrderByWithRelationInput = {
@@ -646,6 +649,9 @@ export type usersOrderByWithRelationInput = {
   weekly_hos?: Prisma.weekly_hosOrderByRelationAggregateInput
   winery_reviews?: Prisma.winery_reviewsOrderByRelationAggregateInput
   workflows?: Prisma.workflowsOrderByRelationAggregateInput
+  driver_tips?: Prisma.driver_tipsOrderByRelationAggregateInput
+  tour_expenses?: Prisma.tour_expensesOrderByRelationAggregateInput
+  tour_completions?: Prisma.tour_completionsOrderByRelationAggregateInput
 }
 
 export type usersWhereUniqueInput = Prisma.AtLeast<{
@@ -750,6 +756,9 @@ export type usersWhereUniqueInput = Prisma.AtLeast<{
   weekly_hos?: Prisma.Weekly_hosListRelationFilter
   winery_reviews?: Prisma.Winery_reviewsListRelationFilter
   workflows?: Prisma.WorkflowsListRelationFilter
+  driver_tips?: Prisma.Driver_tipsListRelationFilter
+  tour_expenses?: Prisma.Tour_expensesListRelationFilter
+  tour_completions?: Prisma.Tour_completionsListRelationFilter
 }, "id" | "email">
 
 export type usersOrderByWithAggregationInput = {
@@ -938,6 +947,9 @@ export type usersCreateInput = {
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateInput = {
@@ -1037,6 +1049,9 @@ export type usersUncheckedCreateInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersUpdateInput = {
@@ -1135,6 +1150,9 @@ export type usersUpdateInput = {
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateInput = {
@@ -1234,6 +1252,9 @@ export type usersUncheckedUpdateInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersCreateManyInput = {
@@ -2497,6 +2518,48 @@ export type usersUpdateOneWithoutWinery_reviewsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.usersUpdateToOneWithWhereWithoutWinery_reviewsInput, Prisma.usersUpdateWithoutWinery_reviewsInput>, Prisma.usersUncheckedUpdateWithoutWinery_reviewsInput>
 }
 
+export type usersCreateNestedOneWithoutDriver_tipsInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutDriver_tipsInput, Prisma.usersUncheckedCreateWithoutDriver_tipsInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutDriver_tipsInput
+  connect?: Prisma.usersWhereUniqueInput
+}
+
+export type usersUpdateOneRequiredWithoutDriver_tipsNestedInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutDriver_tipsInput, Prisma.usersUncheckedCreateWithoutDriver_tipsInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutDriver_tipsInput
+  upsert?: Prisma.usersUpsertWithoutDriver_tipsInput
+  connect?: Prisma.usersWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.usersUpdateToOneWithWhereWithoutDriver_tipsInput, Prisma.usersUpdateWithoutDriver_tipsInput>, Prisma.usersUncheckedUpdateWithoutDriver_tipsInput>
+}
+
+export type usersCreateNestedOneWithoutTour_expensesInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutTour_expensesInput, Prisma.usersUncheckedCreateWithoutTour_expensesInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutTour_expensesInput
+  connect?: Prisma.usersWhereUniqueInput
+}
+
+export type usersUpdateOneRequiredWithoutTour_expensesNestedInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutTour_expensesInput, Prisma.usersUncheckedCreateWithoutTour_expensesInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutTour_expensesInput
+  upsert?: Prisma.usersUpsertWithoutTour_expensesInput
+  connect?: Prisma.usersWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.usersUpdateToOneWithWhereWithoutTour_expensesInput, Prisma.usersUpdateWithoutTour_expensesInput>, Prisma.usersUncheckedUpdateWithoutTour_expensesInput>
+}
+
+export type usersCreateNestedOneWithoutTour_completionsInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutTour_completionsInput, Prisma.usersUncheckedCreateWithoutTour_completionsInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutTour_completionsInput
+  connect?: Prisma.usersWhereUniqueInput
+}
+
+export type usersUpdateOneRequiredWithoutTour_completionsNestedInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutTour_completionsInput, Prisma.usersUncheckedCreateWithoutTour_completionsInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutTour_completionsInput
+  upsert?: Prisma.usersUpsertWithoutTour_completionsInput
+  connect?: Prisma.usersWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.usersUpdateToOneWithWhereWithoutTour_completionsInput, Prisma.usersUpdateWithoutTour_completionsInput>, Prisma.usersUncheckedUpdateWithoutTour_completionsInput>
+}
+
 export type usersCreateNestedOneWithoutWorkflowsInput = {
   create?: Prisma.XOR<Prisma.usersCreateWithoutWorkflowsInput, Prisma.usersUncheckedCreateWithoutWorkflowsInput>
   connectOrCreate?: Prisma.usersCreateOrConnectWithoutWorkflowsInput
@@ -2606,6 +2669,9 @@ export type usersCreateWithoutAi_fine_tuning_jobsInput = {
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutAi_fine_tuning_jobsInput = {
@@ -2704,6 +2770,9 @@ export type usersUncheckedCreateWithoutAi_fine_tuning_jobsInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutAi_fine_tuning_jobsInput = {
@@ -2817,6 +2886,9 @@ export type usersUpdateWithoutAi_fine_tuning_jobsInput = {
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutAi_fine_tuning_jobsInput = {
@@ -2915,6 +2987,9 @@ export type usersUncheckedUpdateWithoutAi_fine_tuning_jobsInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersCreateWithoutAvailability_rulesInput = {
@@ -3012,6 +3087,9 @@ export type usersCreateWithoutAvailability_rulesInput = {
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutAvailability_rulesInput = {
@@ -3110,6 +3188,9 @@ export type usersUncheckedCreateWithoutAvailability_rulesInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutAvailability_rulesInput = {
@@ -3223,6 +3304,9 @@ export type usersUpdateWithoutAvailability_rulesInput = {
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutAvailability_rulesInput = {
@@ -3321,6 +3405,9 @@ export type usersUncheckedUpdateWithoutAvailability_rulesInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersCreateWithoutBooking_timelineInput = {
@@ -3418,6 +3505,9 @@ export type usersCreateWithoutBooking_timelineInput = {
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutBooking_timelineInput = {
@@ -3516,6 +3606,9 @@ export type usersUncheckedCreateWithoutBooking_timelineInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutBooking_timelineInput = {
@@ -3629,6 +3722,9 @@ export type usersUpdateWithoutBooking_timelineInput = {
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutBooking_timelineInput = {
@@ -3727,6 +3823,9 @@ export type usersUncheckedUpdateWithoutBooking_timelineInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersCreateWithoutBookings_bookings_booked_byTousersInput = {
@@ -3824,6 +3923,9 @@ export type usersCreateWithoutBookings_bookings_booked_byTousersInput = {
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutBookings_bookings_booked_byTousersInput = {
@@ -3922,6 +4024,9 @@ export type usersUncheckedCreateWithoutBookings_bookings_booked_byTousersInput =
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutBookings_bookings_booked_byTousersInput = {
@@ -4024,6 +4129,9 @@ export type usersCreateWithoutBookings_bookings_cancelled_byTousersInput = {
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutBookings_bookings_cancelled_byTousersInput = {
@@ -4122,6 +4230,9 @@ export type usersUncheckedCreateWithoutBookings_bookings_cancelled_byTousersInpu
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutBookings_bookings_cancelled_byTousersInput = {
@@ -4224,6 +4335,9 @@ export type usersCreateWithoutBookings_bookings_driver_idTousersInput = {
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutBookings_bookings_driver_idTousersInput = {
@@ -4322,6 +4436,9 @@ export type usersUncheckedCreateWithoutBookings_bookings_driver_idTousersInput =
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutBookings_bookings_driver_idTousersInput = {
@@ -4424,6 +4541,9 @@ export type usersCreateWithoutBookings_bookings_final_invoice_approved_byTousers
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutBookings_bookings_final_invoice_approved_byTousersInput = {
@@ -4522,6 +4642,9 @@ export type usersUncheckedCreateWithoutBookings_bookings_final_invoice_approved_
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutBookings_bookings_final_invoice_approved_byTousersInput = {
@@ -4635,6 +4758,9 @@ export type usersUpdateWithoutBookings_bookings_booked_byTousersInput = {
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutBookings_bookings_booked_byTousersInput = {
@@ -4733,6 +4859,9 @@ export type usersUncheckedUpdateWithoutBookings_bookings_booked_byTousersInput =
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUpsertWithoutBookings_bookings_cancelled_byTousersInput = {
@@ -4841,6 +4970,9 @@ export type usersUpdateWithoutBookings_bookings_cancelled_byTousersInput = {
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutBookings_bookings_cancelled_byTousersInput = {
@@ -4939,6 +5071,9 @@ export type usersUncheckedUpdateWithoutBookings_bookings_cancelled_byTousersInpu
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUpsertWithoutBookings_bookings_driver_idTousersInput = {
@@ -5047,6 +5182,9 @@ export type usersUpdateWithoutBookings_bookings_driver_idTousersInput = {
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutBookings_bookings_driver_idTousersInput = {
@@ -5145,6 +5283,9 @@ export type usersUncheckedUpdateWithoutBookings_bookings_driver_idTousersInput =
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUpsertWithoutBookings_bookings_final_invoice_approved_byTousersInput = {
@@ -5253,6 +5394,9 @@ export type usersUpdateWithoutBookings_bookings_final_invoice_approved_byTousers
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutBookings_bookings_final_invoice_approved_byTousersInput = {
@@ -5351,6 +5495,9 @@ export type usersUncheckedUpdateWithoutBookings_bookings_final_invoice_approved_
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersCreateWithoutBusiness_attributesInput = {
@@ -5448,6 +5595,9 @@ export type usersCreateWithoutBusiness_attributesInput = {
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutBusiness_attributesInput = {
@@ -5546,6 +5696,9 @@ export type usersUncheckedCreateWithoutBusiness_attributesInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutBusiness_attributesInput = {
@@ -5659,6 +5812,9 @@ export type usersUpdateWithoutBusiness_attributesInput = {
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutBusiness_attributesInput = {
@@ -5757,6 +5913,9 @@ export type usersUncheckedUpdateWithoutBusiness_attributesInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersCreateWithoutBusiness_discrepanciesInput = {
@@ -5854,6 +6013,9 @@ export type usersCreateWithoutBusiness_discrepanciesInput = {
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutBusiness_discrepanciesInput = {
@@ -5952,6 +6114,9 @@ export type usersUncheckedCreateWithoutBusiness_discrepanciesInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutBusiness_discrepanciesInput = {
@@ -6065,6 +6230,9 @@ export type usersUpdateWithoutBusiness_discrepanciesInput = {
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutBusiness_discrepanciesInput = {
@@ -6163,6 +6331,9 @@ export type usersUncheckedUpdateWithoutBusiness_discrepanciesInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersCreateWithoutBusiness_filesInput = {
@@ -6260,6 +6431,9 @@ export type usersCreateWithoutBusiness_filesInput = {
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutBusiness_filesInput = {
@@ -6358,6 +6532,9 @@ export type usersUncheckedCreateWithoutBusiness_filesInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutBusiness_filesInput = {
@@ -6471,6 +6648,9 @@ export type usersUpdateWithoutBusiness_filesInput = {
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutBusiness_filesInput = {
@@ -6569,6 +6749,9 @@ export type usersUncheckedUpdateWithoutBusiness_filesInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersCreateWithoutBusiness_portal_business_portal_invited_byTousersInput = {
@@ -6666,6 +6849,9 @@ export type usersCreateWithoutBusiness_portal_business_portal_invited_byTousersI
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutBusiness_portal_business_portal_invited_byTousersInput = {
@@ -6764,6 +6950,9 @@ export type usersUncheckedCreateWithoutBusiness_portal_business_portal_invited_b
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutBusiness_portal_business_portal_invited_byTousersInput = {
@@ -6866,6 +7055,9 @@ export type usersCreateWithoutBusiness_portal_business_portal_user_idTousersInpu
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutBusiness_portal_business_portal_user_idTousersInput = {
@@ -6964,6 +7156,9 @@ export type usersUncheckedCreateWithoutBusiness_portal_business_portal_user_idTo
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutBusiness_portal_business_portal_user_idTousersInput = {
@@ -7077,6 +7272,9 @@ export type usersUpdateWithoutBusiness_portal_business_portal_invited_byTousersI
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutBusiness_portal_business_portal_invited_byTousersInput = {
@@ -7175,6 +7373,9 @@ export type usersUncheckedUpdateWithoutBusiness_portal_business_portal_invited_b
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUpsertWithoutBusiness_portal_business_portal_user_idTousersInput = {
@@ -7283,6 +7484,9 @@ export type usersUpdateWithoutBusiness_portal_business_portal_user_idTousersInpu
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutBusiness_portal_business_portal_user_idTousersInput = {
@@ -7381,6 +7585,9 @@ export type usersUncheckedUpdateWithoutBusiness_portal_business_portal_user_idTo
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersCreateWithoutBusiness_text_entriesInput = {
@@ -7478,6 +7685,9 @@ export type usersCreateWithoutBusiness_text_entriesInput = {
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutBusiness_text_entriesInput = {
@@ -7576,6 +7786,9 @@ export type usersUncheckedCreateWithoutBusiness_text_entriesInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutBusiness_text_entriesInput = {
@@ -7689,6 +7902,9 @@ export type usersUpdateWithoutBusiness_text_entriesInput = {
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutBusiness_text_entriesInput = {
@@ -7787,6 +8003,9 @@ export type usersUncheckedUpdateWithoutBusiness_text_entriesInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersCreateWithoutBusiness_voice_entriesInput = {
@@ -7884,6 +8103,9 @@ export type usersCreateWithoutBusiness_voice_entriesInput = {
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutBusiness_voice_entriesInput = {
@@ -7982,6 +8204,9 @@ export type usersUncheckedCreateWithoutBusiness_voice_entriesInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutBusiness_voice_entriesInput = {
@@ -8095,6 +8320,9 @@ export type usersUpdateWithoutBusiness_voice_entriesInput = {
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutBusiness_voice_entriesInput = {
@@ -8193,6 +8421,9 @@ export type usersUncheckedUpdateWithoutBusiness_voice_entriesInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersCreateWithoutBusinesses_businesses_approved_byTousersInput = {
@@ -8290,6 +8521,9 @@ export type usersCreateWithoutBusinesses_businesses_approved_byTousersInput = {
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutBusinesses_businesses_approved_byTousersInput = {
@@ -8388,6 +8622,9 @@ export type usersUncheckedCreateWithoutBusinesses_businesses_approved_byTousersI
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutBusinesses_businesses_approved_byTousersInput = {
@@ -8490,6 +8727,9 @@ export type usersCreateWithoutBusinesses_businesses_invited_byTousersInput = {
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutBusinesses_businesses_invited_byTousersInput = {
@@ -8588,6 +8828,9 @@ export type usersUncheckedCreateWithoutBusinesses_businesses_invited_byTousersIn
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutBusinesses_businesses_invited_byTousersInput = {
@@ -8701,6 +8944,9 @@ export type usersUpdateWithoutBusinesses_businesses_approved_byTousersInput = {
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutBusinesses_businesses_approved_byTousersInput = {
@@ -8799,6 +9045,9 @@ export type usersUncheckedUpdateWithoutBusinesses_businesses_approved_byTousersI
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUpsertWithoutBusinesses_businesses_invited_byTousersInput = {
@@ -8907,6 +9156,9 @@ export type usersUpdateWithoutBusinesses_businesses_invited_byTousersInput = {
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutBusinesses_businesses_invited_byTousersInput = {
@@ -9005,6 +9257,9 @@ export type usersUncheckedUpdateWithoutBusinesses_businesses_invited_byTousersIn
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersCreateWithoutClient_notesInput = {
@@ -9102,6 +9357,9 @@ export type usersCreateWithoutClient_notesInput = {
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutClient_notesInput = {
@@ -9200,6 +9458,9 @@ export type usersUncheckedCreateWithoutClient_notesInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutClient_notesInput = {
@@ -9313,6 +9574,9 @@ export type usersUpdateWithoutClient_notesInput = {
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutClient_notesInput = {
@@ -9411,6 +9675,9 @@ export type usersUncheckedUpdateWithoutClient_notesInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersCreateWithoutClient_servicesInput = {
@@ -9508,6 +9775,9 @@ export type usersCreateWithoutClient_servicesInput = {
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutClient_servicesInput = {
@@ -9606,6 +9876,9 @@ export type usersUncheckedCreateWithoutClient_servicesInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutClient_servicesInput = {
@@ -9719,6 +9992,9 @@ export type usersUpdateWithoutClient_servicesInput = {
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutClient_servicesInput = {
@@ -9817,6 +10093,9 @@ export type usersUncheckedUpdateWithoutClient_servicesInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersCreateWithoutCompliance_violations_compliance_violations_detected_byTousersInput = {
@@ -9914,6 +10193,9 @@ export type usersCreateWithoutCompliance_violations_compliance_violations_detect
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutCompliance_violations_compliance_violations_detected_byTousersInput = {
@@ -10012,6 +10294,9 @@ export type usersUncheckedCreateWithoutCompliance_violations_compliance_violatio
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutCompliance_violations_compliance_violations_detected_byTousersInput = {
@@ -10114,6 +10399,9 @@ export type usersCreateWithoutCompliance_violations_compliance_violations_resolv
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutCompliance_violations_compliance_violations_resolved_byTousersInput = {
@@ -10212,6 +10500,9 @@ export type usersUncheckedCreateWithoutCompliance_violations_compliance_violatio
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutCompliance_violations_compliance_violations_resolved_byTousersInput = {
@@ -10325,6 +10616,9 @@ export type usersUpdateWithoutCompliance_violations_compliance_violations_detect
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutCompliance_violations_compliance_violations_detected_byTousersInput = {
@@ -10423,6 +10717,9 @@ export type usersUncheckedUpdateWithoutCompliance_violations_compliance_violatio
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUpsertWithoutCompliance_violations_compliance_violations_resolved_byTousersInput = {
@@ -10531,6 +10828,9 @@ export type usersUpdateWithoutCompliance_violations_compliance_violations_resolv
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutCompliance_violations_compliance_violations_resolved_byTousersInput = {
@@ -10629,6 +10929,9 @@ export type usersUncheckedUpdateWithoutCompliance_violations_compliance_violatio
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersCreateWithoutCorporate_requestsInput = {
@@ -10726,6 +11029,9 @@ export type usersCreateWithoutCorporate_requestsInput = {
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutCorporate_requestsInput = {
@@ -10824,6 +11130,9 @@ export type usersUncheckedCreateWithoutCorporate_requestsInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutCorporate_requestsInput = {
@@ -10937,6 +11246,9 @@ export type usersUpdateWithoutCorporate_requestsInput = {
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutCorporate_requestsInput = {
@@ -11035,6 +11347,9 @@ export type usersUncheckedUpdateWithoutCorporate_requestsInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersCreateWithoutDaily_tripsInput = {
@@ -11132,6 +11447,9 @@ export type usersCreateWithoutDaily_tripsInput = {
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutDaily_tripsInput = {
@@ -11230,6 +11548,9 @@ export type usersUncheckedCreateWithoutDaily_tripsInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutDaily_tripsInput = {
@@ -11343,6 +11664,9 @@ export type usersUpdateWithoutDaily_tripsInput = {
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutDaily_tripsInput = {
@@ -11441,6 +11765,9 @@ export type usersUncheckedUpdateWithoutDaily_tripsInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersCreateWithoutDriver_documents_driver_documents_driver_idTousersInput = {
@@ -11538,6 +11865,9 @@ export type usersCreateWithoutDriver_documents_driver_documents_driver_idTousers
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutDriver_documents_driver_documents_driver_idTousersInput = {
@@ -11636,6 +11966,9 @@ export type usersUncheckedCreateWithoutDriver_documents_driver_documents_driver_
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutDriver_documents_driver_documents_driver_idTousersInput = {
@@ -11738,6 +12071,9 @@ export type usersCreateWithoutDriver_documents_driver_documents_verified_byTouse
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutDriver_documents_driver_documents_verified_byTousersInput = {
@@ -11836,6 +12172,9 @@ export type usersUncheckedCreateWithoutDriver_documents_driver_documents_verifie
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutDriver_documents_driver_documents_verified_byTousersInput = {
@@ -11949,6 +12288,9 @@ export type usersUpdateWithoutDriver_documents_driver_documents_driver_idTousers
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutDriver_documents_driver_documents_driver_idTousersInput = {
@@ -12047,6 +12389,9 @@ export type usersUncheckedUpdateWithoutDriver_documents_driver_documents_driver_
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUpsertWithoutDriver_documents_driver_documents_verified_byTousersInput = {
@@ -12155,6 +12500,9 @@ export type usersUpdateWithoutDriver_documents_driver_documents_verified_byTouse
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutDriver_documents_driver_documents_verified_byTousersInput = {
@@ -12253,6 +12601,9 @@ export type usersUncheckedUpdateWithoutDriver_documents_driver_documents_verifie
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersCreateWithoutError_logs_error_logs_resolved_byTousersInput = {
@@ -12350,6 +12701,9 @@ export type usersCreateWithoutError_logs_error_logs_resolved_byTousersInput = {
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutError_logs_error_logs_resolved_byTousersInput = {
@@ -12448,6 +12802,9 @@ export type usersUncheckedCreateWithoutError_logs_error_logs_resolved_byTousersI
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutError_logs_error_logs_resolved_byTousersInput = {
@@ -12550,6 +12907,9 @@ export type usersCreateWithoutError_logs_error_logs_user_idTousersInput = {
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutError_logs_error_logs_user_idTousersInput = {
@@ -12648,6 +13008,9 @@ export type usersUncheckedCreateWithoutError_logs_error_logs_user_idTousersInput
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutError_logs_error_logs_user_idTousersInput = {
@@ -12761,6 +13124,9 @@ export type usersUpdateWithoutError_logs_error_logs_resolved_byTousersInput = {
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutError_logs_error_logs_resolved_byTousersInput = {
@@ -12859,6 +13225,9 @@ export type usersUncheckedUpdateWithoutError_logs_error_logs_resolved_byTousersI
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUpsertWithoutError_logs_error_logs_user_idTousersInput = {
@@ -12967,6 +13336,9 @@ export type usersUpdateWithoutError_logs_error_logs_user_idTousersInput = {
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutError_logs_error_logs_user_idTousersInput = {
@@ -13065,6 +13437,9 @@ export type usersUncheckedUpdateWithoutError_logs_error_logs_user_idTousersInput
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersCreateWithoutFinancial_audit_logInput = {
@@ -13162,6 +13537,9 @@ export type usersCreateWithoutFinancial_audit_logInput = {
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutFinancial_audit_logInput = {
@@ -13260,6 +13638,9 @@ export type usersUncheckedCreateWithoutFinancial_audit_logInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutFinancial_audit_logInput = {
@@ -13373,6 +13754,9 @@ export type usersUpdateWithoutFinancial_audit_logInput = {
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutFinancial_audit_logInput = {
@@ -13471,6 +13855,9 @@ export type usersUncheckedUpdateWithoutFinancial_audit_logInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersCreateWithoutInspections_inspections_driver_idTousersInput = {
@@ -13568,6 +13955,9 @@ export type usersCreateWithoutInspections_inspections_driver_idTousersInput = {
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutInspections_inspections_driver_idTousersInput = {
@@ -13666,6 +14056,9 @@ export type usersUncheckedCreateWithoutInspections_inspections_driver_idTousersI
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutInspections_inspections_driver_idTousersInput = {
@@ -13768,6 +14161,9 @@ export type usersCreateWithoutInspections_inspections_entered_byTousersInput = {
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutInspections_inspections_entered_byTousersInput = {
@@ -13866,6 +14262,9 @@ export type usersUncheckedCreateWithoutInspections_inspections_entered_byTousers
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutInspections_inspections_entered_byTousersInput = {
@@ -13979,6 +14378,9 @@ export type usersUpdateWithoutInspections_inspections_driver_idTousersInput = {
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutInspections_inspections_driver_idTousersInput = {
@@ -14077,6 +14479,9 @@ export type usersUncheckedUpdateWithoutInspections_inspections_driver_idTousersI
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUpsertWithoutInspections_inspections_entered_byTousersInput = {
@@ -14185,6 +14590,9 @@ export type usersUpdateWithoutInspections_inspections_entered_byTousersInput = {
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutInspections_inspections_entered_byTousersInput = {
@@ -14283,6 +14691,9 @@ export type usersUncheckedUpdateWithoutInspections_inspections_entered_byTousers
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersCreateWithoutLunch_ordersInput = {
@@ -14380,6 +14791,9 @@ export type usersCreateWithoutLunch_ordersInput = {
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutLunch_ordersInput = {
@@ -14478,6 +14892,9 @@ export type usersUncheckedCreateWithoutLunch_ordersInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutLunch_ordersInput = {
@@ -14591,6 +15008,9 @@ export type usersUpdateWithoutLunch_ordersInput = {
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutLunch_ordersInput = {
@@ -14689,6 +15109,9 @@ export type usersUncheckedUpdateWithoutLunch_ordersInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersCreateWithoutMonthly_exemption_statusInput = {
@@ -14786,6 +15209,9 @@ export type usersCreateWithoutMonthly_exemption_statusInput = {
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutMonthly_exemption_statusInput = {
@@ -14884,6 +15310,9 @@ export type usersUncheckedCreateWithoutMonthly_exemption_statusInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutMonthly_exemption_statusInput = {
@@ -14997,6 +15426,9 @@ export type usersUpdateWithoutMonthly_exemption_statusInput = {
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutMonthly_exemption_statusInput = {
@@ -15095,6 +15527,9 @@ export type usersUncheckedUpdateWithoutMonthly_exemption_statusInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersCreateWithoutPartner_profiles_partner_profiles_invited_byTousersInput = {
@@ -15192,6 +15627,9 @@ export type usersCreateWithoutPartner_profiles_partner_profiles_invited_byTouser
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutPartner_profiles_partner_profiles_invited_byTousersInput = {
@@ -15290,6 +15728,9 @@ export type usersUncheckedCreateWithoutPartner_profiles_partner_profiles_invited
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutPartner_profiles_partner_profiles_invited_byTousersInput = {
@@ -15392,6 +15833,9 @@ export type usersCreateWithoutPartner_profiles_partner_profiles_user_idTousersIn
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutPartner_profiles_partner_profiles_user_idTousersInput = {
@@ -15490,6 +15934,9 @@ export type usersUncheckedCreateWithoutPartner_profiles_partner_profiles_user_id
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutPartner_profiles_partner_profiles_user_idTousersInput = {
@@ -15603,6 +16050,9 @@ export type usersUpdateWithoutPartner_profiles_partner_profiles_invited_byTouser
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutPartner_profiles_partner_profiles_invited_byTousersInput = {
@@ -15701,6 +16151,9 @@ export type usersUncheckedUpdateWithoutPartner_profiles_partner_profiles_invited
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUpsertWithoutPartner_profiles_partner_profiles_user_idTousersInput = {
@@ -15809,6 +16262,9 @@ export type usersUpdateWithoutPartner_profiles_partner_profiles_user_idTousersIn
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutPartner_profiles_partner_profiles_user_idTousersInput = {
@@ -15907,6 +16363,9 @@ export type usersUncheckedUpdateWithoutPartner_profiles_partner_profiles_user_id
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersCreateWithoutPerformance_metricsInput = {
@@ -16004,6 +16463,9 @@ export type usersCreateWithoutPerformance_metricsInput = {
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutPerformance_metricsInput = {
@@ -16102,6 +16564,9 @@ export type usersUncheckedCreateWithoutPerformance_metricsInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutPerformance_metricsInput = {
@@ -16215,6 +16680,9 @@ export type usersUpdateWithoutPerformance_metricsInput = {
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutPerformance_metricsInput = {
@@ -16313,6 +16781,9 @@ export type usersUncheckedUpdateWithoutPerformance_metricsInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersCreateWithoutProposalsInput = {
@@ -16410,6 +16881,9 @@ export type usersCreateWithoutProposalsInput = {
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutProposalsInput = {
@@ -16508,6 +16982,9 @@ export type usersUncheckedCreateWithoutProposalsInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutProposalsInput = {
@@ -16621,6 +17098,9 @@ export type usersUpdateWithoutProposalsInput = {
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutProposalsInput = {
@@ -16719,6 +17199,9 @@ export type usersUncheckedUpdateWithoutProposalsInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersCreateWithoutShared_tours_shared_tours_created_byTousersInput = {
@@ -16816,6 +17299,9 @@ export type usersCreateWithoutShared_tours_shared_tours_created_byTousersInput =
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutShared_tours_shared_tours_created_byTousersInput = {
@@ -16914,6 +17400,9 @@ export type usersUncheckedCreateWithoutShared_tours_shared_tours_created_byTouse
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutShared_tours_shared_tours_created_byTousersInput = {
@@ -17016,6 +17505,9 @@ export type usersCreateWithoutShared_tours_shared_tours_driver_idTousersInput = 
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutShared_tours_shared_tours_driver_idTousersInput = {
@@ -17114,6 +17606,9 @@ export type usersUncheckedCreateWithoutShared_tours_shared_tours_driver_idTouser
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutShared_tours_shared_tours_driver_idTousersInput = {
@@ -17227,6 +17722,9 @@ export type usersUpdateWithoutShared_tours_shared_tours_created_byTousersInput =
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutShared_tours_shared_tours_created_byTousersInput = {
@@ -17325,6 +17823,9 @@ export type usersUncheckedUpdateWithoutShared_tours_shared_tours_created_byTouse
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUpsertWithoutShared_tours_shared_tours_driver_idTousersInput = {
@@ -17433,6 +17934,9 @@ export type usersUpdateWithoutShared_tours_shared_tours_driver_idTousersInput = 
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutShared_tours_shared_tours_driver_idTousersInput = {
@@ -17531,6 +18035,9 @@ export type usersUncheckedUpdateWithoutShared_tours_shared_tours_driver_idTouser
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersCreateWithoutSystem_settingsInput = {
@@ -17628,6 +18135,9 @@ export type usersCreateWithoutSystem_settingsInput = {
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutSystem_settingsInput = {
@@ -17726,6 +18236,9 @@ export type usersUncheckedCreateWithoutSystem_settingsInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutSystem_settingsInput = {
@@ -17839,6 +18352,9 @@ export type usersUpdateWithoutSystem_settingsInput = {
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutSystem_settingsInput = {
@@ -17937,6 +18453,9 @@ export type usersUncheckedUpdateWithoutSystem_settingsInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersCreateWithoutTenantsInput = {
@@ -18034,6 +18553,9 @@ export type usersCreateWithoutTenantsInput = {
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutTenantsInput = {
@@ -18132,6 +18654,9 @@ export type usersUncheckedCreateWithoutTenantsInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutTenantsInput = {
@@ -18299,6 +18824,9 @@ export type usersCreateWithoutTime_cards_time_cards_driver_idTousersInput = {
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutTime_cards_time_cards_driver_idTousersInput = {
@@ -18397,6 +18925,9 @@ export type usersUncheckedCreateWithoutTime_cards_time_cards_driver_idTousersInp
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutTime_cards_time_cards_driver_idTousersInput = {
@@ -18499,6 +19030,9 @@ export type usersCreateWithoutTime_cards_time_cards_entered_byTousersInput = {
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutTime_cards_time_cards_entered_byTousersInput = {
@@ -18597,6 +19131,9 @@ export type usersUncheckedCreateWithoutTime_cards_time_cards_entered_byTousersIn
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutTime_cards_time_cards_entered_byTousersInput = {
@@ -18710,6 +19247,9 @@ export type usersUpdateWithoutTime_cards_time_cards_driver_idTousersInput = {
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutTime_cards_time_cards_driver_idTousersInput = {
@@ -18808,6 +19348,9 @@ export type usersUncheckedUpdateWithoutTime_cards_time_cards_driver_idTousersInp
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUpsertWithoutTime_cards_time_cards_entered_byTousersInput = {
@@ -18916,6 +19459,9 @@ export type usersUpdateWithoutTime_cards_time_cards_entered_byTousersInput = {
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutTime_cards_time_cards_entered_byTousersInput = {
@@ -19014,6 +19560,9 @@ export type usersUncheckedUpdateWithoutTime_cards_time_cards_entered_byTousersIn
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersCreateWithoutTour_offers_tour_offers_driver_idTousersInput = {
@@ -19111,6 +19660,9 @@ export type usersCreateWithoutTour_offers_tour_offers_driver_idTousersInput = {
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutTour_offers_tour_offers_driver_idTousersInput = {
@@ -19209,6 +19761,9 @@ export type usersUncheckedCreateWithoutTour_offers_tour_offers_driver_idTousersI
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutTour_offers_tour_offers_driver_idTousersInput = {
@@ -19311,6 +19866,9 @@ export type usersCreateWithoutTour_offers_tour_offers_offered_byTousersInput = {
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutTour_offers_tour_offers_offered_byTousersInput = {
@@ -19409,6 +19967,9 @@ export type usersUncheckedCreateWithoutTour_offers_tour_offers_offered_byTousers
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutTour_offers_tour_offers_offered_byTousersInput = {
@@ -19522,6 +20083,9 @@ export type usersUpdateWithoutTour_offers_tour_offers_driver_idTousersInput = {
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutTour_offers_tour_offers_driver_idTousersInput = {
@@ -19620,6 +20184,9 @@ export type usersUncheckedUpdateWithoutTour_offers_tour_offers_driver_idTousersI
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUpsertWithoutTour_offers_tour_offers_offered_byTousersInput = {
@@ -19728,6 +20295,9 @@ export type usersUpdateWithoutTour_offers_tour_offers_offered_byTousersInput = {
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutTour_offers_tour_offers_offered_byTousersInput = {
@@ -19826,6 +20396,9 @@ export type usersUncheckedUpdateWithoutTour_offers_tour_offers_offered_byTousers
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersCreateWithoutTour_operator_insightsInput = {
@@ -19923,6 +20496,9 @@ export type usersCreateWithoutTour_operator_insightsInput = {
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutTour_operator_insightsInput = {
@@ -20021,6 +20597,9 @@ export type usersUncheckedCreateWithoutTour_operator_insightsInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutTour_operator_insightsInput = {
@@ -20134,6 +20713,9 @@ export type usersUpdateWithoutTour_operator_insightsInput = {
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutTour_operator_insightsInput = {
@@ -20232,6 +20814,9 @@ export type usersUncheckedUpdateWithoutTour_operator_insightsInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersCreateWithoutTrip_distancesInput = {
@@ -20329,6 +20914,9 @@ export type usersCreateWithoutTrip_distancesInput = {
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutTrip_distancesInput = {
@@ -20427,6 +21015,9 @@ export type usersUncheckedCreateWithoutTrip_distancesInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutTrip_distancesInput = {
@@ -20540,6 +21131,9 @@ export type usersUpdateWithoutTrip_distancesInput = {
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutTrip_distancesInput = {
@@ -20638,6 +21232,9 @@ export type usersUncheckedUpdateWithoutTrip_distancesInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersCreateWithoutUser_activity_logsInput = {
@@ -20735,6 +21332,9 @@ export type usersCreateWithoutUser_activity_logsInput = {
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutUser_activity_logsInput = {
@@ -20833,6 +21433,9 @@ export type usersUncheckedCreateWithoutUser_activity_logsInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutUser_activity_logsInput = {
@@ -20946,6 +21549,9 @@ export type usersUpdateWithoutUser_activity_logsInput = {
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutUser_activity_logsInput = {
@@ -21044,6 +21650,9 @@ export type usersUncheckedUpdateWithoutUser_activity_logsInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersCreateWithoutOther_usersInput = {
@@ -21141,6 +21750,9 @@ export type usersCreateWithoutOther_usersInput = {
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutOther_usersInput = {
@@ -21239,6 +21851,9 @@ export type usersUncheckedCreateWithoutOther_usersInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutOther_usersInput = {
@@ -21341,6 +21956,9 @@ export type usersCreateWithoutUsersInput = {
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutUsersInput = {
@@ -21439,6 +22057,9 @@ export type usersUncheckedCreateWithoutUsersInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutUsersInput = {
@@ -21557,6 +22178,9 @@ export type usersUpdateWithoutOther_usersInput = {
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutOther_usersInput = {
@@ -21655,6 +22279,9 @@ export type usersUncheckedUpdateWithoutOther_usersInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUpsertWithWhereUniqueWithoutUsersInput = {
@@ -21768,6 +22395,9 @@ export type usersCreateWithoutVehicle_assignments_vehicle_assignments_assigned_b
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutVehicle_assignments_vehicle_assignments_assigned_byTousersInput = {
@@ -21866,6 +22496,9 @@ export type usersUncheckedCreateWithoutVehicle_assignments_vehicle_assignments_a
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutVehicle_assignments_vehicle_assignments_assigned_byTousersInput = {
@@ -21968,6 +22601,9 @@ export type usersCreateWithoutVehicle_assignments_vehicle_assignments_driver_idT
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutVehicle_assignments_vehicle_assignments_driver_idTousersInput = {
@@ -22066,6 +22702,9 @@ export type usersUncheckedCreateWithoutVehicle_assignments_vehicle_assignments_d
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutVehicle_assignments_vehicle_assignments_driver_idTousersInput = {
@@ -22179,6 +22818,9 @@ export type usersUpdateWithoutVehicle_assignments_vehicle_assignments_assigned_b
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutVehicle_assignments_vehicle_assignments_assigned_byTousersInput = {
@@ -22277,6 +22919,9 @@ export type usersUncheckedUpdateWithoutVehicle_assignments_vehicle_assignments_a
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUpsertWithoutVehicle_assignments_vehicle_assignments_driver_idTousersInput = {
@@ -22385,6 +23030,9 @@ export type usersUpdateWithoutVehicle_assignments_vehicle_assignments_driver_idT
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutVehicle_assignments_vehicle_assignments_driver_idTousersInput = {
@@ -22483,6 +23131,9 @@ export type usersUncheckedUpdateWithoutVehicle_assignments_vehicle_assignments_d
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersCreateWithoutVehicle_availability_blocksInput = {
@@ -22580,6 +23231,9 @@ export type usersCreateWithoutVehicle_availability_blocksInput = {
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutVehicle_availability_blocksInput = {
@@ -22678,6 +23332,9 @@ export type usersUncheckedCreateWithoutVehicle_availability_blocksInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutVehicle_availability_blocksInput = {
@@ -22791,6 +23448,9 @@ export type usersUpdateWithoutVehicle_availability_blocksInput = {
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutVehicle_availability_blocksInput = {
@@ -22889,6 +23549,9 @@ export type usersUncheckedUpdateWithoutVehicle_availability_blocksInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersCreateWithoutVehicle_documentsInput = {
@@ -22986,6 +23649,9 @@ export type usersCreateWithoutVehicle_documentsInput = {
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutVehicle_documentsInput = {
@@ -23084,6 +23750,9 @@ export type usersUncheckedCreateWithoutVehicle_documentsInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutVehicle_documentsInput = {
@@ -23197,6 +23866,9 @@ export type usersUpdateWithoutVehicle_documentsInput = {
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutVehicle_documentsInput = {
@@ -23295,6 +23967,9 @@ export type usersUncheckedUpdateWithoutVehicle_documentsInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersCreateWithoutVehicle_incidents_vehicle_incidents_driver_idTousersInput = {
@@ -23392,6 +24067,9 @@ export type usersCreateWithoutVehicle_incidents_vehicle_incidents_driver_idTouse
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutVehicle_incidents_vehicle_incidents_driver_idTousersInput = {
@@ -23490,6 +24168,9 @@ export type usersUncheckedCreateWithoutVehicle_incidents_vehicle_incidents_drive
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutVehicle_incidents_vehicle_incidents_driver_idTousersInput = {
@@ -23592,6 +24273,9 @@ export type usersCreateWithoutVehicle_incidents_vehicle_incidents_reported_byTou
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutVehicle_incidents_vehicle_incidents_reported_byTousersInput = {
@@ -23690,6 +24374,9 @@ export type usersUncheckedCreateWithoutVehicle_incidents_vehicle_incidents_repor
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutVehicle_incidents_vehicle_incidents_reported_byTousersInput = {
@@ -23792,6 +24479,9 @@ export type usersCreateWithoutVehicle_incidents_vehicle_incidents_resolved_byTou
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutVehicle_incidents_vehicle_incidents_resolved_byTousersInput = {
@@ -23890,6 +24580,9 @@ export type usersUncheckedCreateWithoutVehicle_incidents_vehicle_incidents_resol
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutVehicle_incidents_vehicle_incidents_resolved_byTousersInput = {
@@ -24003,6 +24696,9 @@ export type usersUpdateWithoutVehicle_incidents_vehicle_incidents_driver_idTouse
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutVehicle_incidents_vehicle_incidents_driver_idTousersInput = {
@@ -24101,6 +24797,9 @@ export type usersUncheckedUpdateWithoutVehicle_incidents_vehicle_incidents_drive
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUpsertWithoutVehicle_incidents_vehicle_incidents_reported_byTousersInput = {
@@ -24209,6 +24908,9 @@ export type usersUpdateWithoutVehicle_incidents_vehicle_incidents_reported_byTou
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutVehicle_incidents_vehicle_incidents_reported_byTousersInput = {
@@ -24307,6 +25009,9 @@ export type usersUncheckedUpdateWithoutVehicle_incidents_vehicle_incidents_repor
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUpsertWithoutVehicle_incidents_vehicle_incidents_resolved_byTousersInput = {
@@ -24415,6 +25120,9 @@ export type usersUpdateWithoutVehicle_incidents_vehicle_incidents_resolved_byTou
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutVehicle_incidents_vehicle_incidents_resolved_byTousersInput = {
@@ -24513,6 +25221,9 @@ export type usersUncheckedUpdateWithoutVehicle_incidents_vehicle_incidents_resol
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersCreateWithoutVehicles_vehicles_assigned_driver_idTousersInput = {
@@ -24610,6 +25321,9 @@ export type usersCreateWithoutVehicles_vehicles_assigned_driver_idTousersInput =
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutVehicles_vehicles_assigned_driver_idTousersInput = {
@@ -24708,6 +25422,9 @@ export type usersUncheckedCreateWithoutVehicles_vehicles_assigned_driver_idTouse
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutVehicles_vehicles_assigned_driver_idTousersInput = {
@@ -24810,6 +25527,9 @@ export type usersCreateWithoutVehicles_vehicles_defect_reported_byTousersInput =
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutVehicles_vehicles_defect_reported_byTousersInput = {
@@ -24908,6 +25628,9 @@ export type usersUncheckedCreateWithoutVehicles_vehicles_defect_reported_byTouse
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutVehicles_vehicles_defect_reported_byTousersInput = {
@@ -25021,6 +25744,9 @@ export type usersUpdateWithoutVehicles_vehicles_assigned_driver_idTousersInput =
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutVehicles_vehicles_assigned_driver_idTousersInput = {
@@ -25119,6 +25845,9 @@ export type usersUncheckedUpdateWithoutVehicles_vehicles_assigned_driver_idTouse
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUpsertWithoutVehicles_vehicles_defect_reported_byTousersInput = {
@@ -25227,6 +25956,9 @@ export type usersUpdateWithoutVehicles_vehicles_defect_reported_byTousersInput =
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutVehicles_vehicles_defect_reported_byTousersInput = {
@@ -25325,6 +26057,9 @@ export type usersUncheckedUpdateWithoutVehicles_vehicles_defect_reported_byTouse
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersCreateWithoutWeekly_hosInput = {
@@ -25422,6 +26157,9 @@ export type usersCreateWithoutWeekly_hosInput = {
   vehicles_vehicles_defect_reported_byTousers?: Prisma.vehiclesCreateNestedManyWithoutUsers_vehicles_defect_reported_byTousersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutWeekly_hosInput = {
@@ -25520,6 +26258,9 @@ export type usersUncheckedCreateWithoutWeekly_hosInput = {
   vehicles_vehicles_defect_reported_byTousers?: Prisma.vehiclesUncheckedCreateNestedManyWithoutUsers_vehicles_defect_reported_byTousersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutWeekly_hosInput = {
@@ -25633,6 +26374,9 @@ export type usersUpdateWithoutWeekly_hosInput = {
   vehicles_vehicles_defect_reported_byTousers?: Prisma.vehiclesUpdateManyWithoutUsers_vehicles_defect_reported_byTousersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutWeekly_hosInput = {
@@ -25731,6 +26475,9 @@ export type usersUncheckedUpdateWithoutWeekly_hosInput = {
   vehicles_vehicles_defect_reported_byTousers?: Prisma.vehiclesUncheckedUpdateManyWithoutUsers_vehicles_defect_reported_byTousersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersCreateWithoutWinery_reviewsInput = {
@@ -25828,6 +26575,9 @@ export type usersCreateWithoutWinery_reviewsInput = {
   vehicles_vehicles_defect_reported_byTousers?: Prisma.vehiclesCreateNestedManyWithoutUsers_vehicles_defect_reported_byTousersInput
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutWinery_reviewsInput = {
@@ -25926,6 +26676,9 @@ export type usersUncheckedCreateWithoutWinery_reviewsInput = {
   vehicles_vehicles_defect_reported_byTousers?: Prisma.vehiclesUncheckedCreateNestedManyWithoutUsers_vehicles_defect_reported_byTousersInput
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutWinery_reviewsInput = {
@@ -26039,6 +26792,9 @@ export type usersUpdateWithoutWinery_reviewsInput = {
   vehicles_vehicles_defect_reported_byTousers?: Prisma.vehiclesUpdateManyWithoutUsers_vehicles_defect_reported_byTousersNestedInput
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutWinery_reviewsInput = {
@@ -26137,6 +26893,1263 @@ export type usersUncheckedUpdateWithoutWinery_reviewsInput = {
   vehicles_vehicles_defect_reported_byTousers?: Prisma.vehiclesUncheckedUpdateManyWithoutUsers_vehicles_defect_reported_byTousersNestedInput
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
+}
+
+export type usersCreateWithoutDriver_tipsInput = {
+  email: string
+  password_hash: string
+  name: string
+  role?: string
+  is_active?: boolean | null
+  last_login?: Date | string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  phone?: string | null
+  emergency_contact_name?: string | null
+  emergency_contact_phone?: string | null
+  emergency_contact_relationship?: string | null
+  accessible_tenant_ids?: Prisma.usersCreateaccessible_tenant_idsInput | number[]
+  medical_cert_number?: string | null
+  medical_cert_expiry?: Date | string | null
+  medical_cert_url?: string | null
+  medical_cert_type?: string | null
+  license_number?: string | null
+  license_state?: string | null
+  license_expiry?: Date | string | null
+  license_class?: string | null
+  cdl_endorsements?: Prisma.usersCreatecdl_endorsementsInput | string[]
+  hired_date?: Date | string | null
+  termination_date?: Date | string | null
+  employment_status?: string | null
+  mvr_check_date?: Date | string | null
+  mvr_check_url?: string | null
+  background_check_date?: Date | string | null
+  background_check_url?: string | null
+  road_test_date?: Date | string | null
+  road_test_url?: string | null
+  annual_review_date?: Date | string | null
+  dq_file_complete?: boolean | null
+  dq_file_notes?: string | null
+  dq_file_last_reviewed?: Date | string | null
+  ai_fine_tuning_jobs?: Prisma.ai_fine_tuning_jobsCreateNestedManyWithoutUsersInput
+  availability_rules?: Prisma.availability_rulesCreateNestedManyWithoutUsersInput
+  booking_timeline?: Prisma.booking_timelineCreateNestedManyWithoutUsersInput
+  bookings_bookings_booked_byTousers?: Prisma.bookingsCreateNestedManyWithoutUsers_bookings_booked_byTousersInput
+  bookings_bookings_cancelled_byTousers?: Prisma.bookingsCreateNestedManyWithoutUsers_bookings_cancelled_byTousersInput
+  bookings_bookings_driver_idTousers?: Prisma.bookingsCreateNestedManyWithoutUsers_bookings_driver_idTousersInput
+  bookings_bookings_final_invoice_approved_byTousers?: Prisma.bookingsCreateNestedManyWithoutUsers_bookings_final_invoice_approved_byTousersInput
+  business_attributes?: Prisma.business_attributesCreateNestedManyWithoutUsersInput
+  business_discrepancies?: Prisma.business_discrepanciesCreateNestedManyWithoutUsersInput
+  business_files?: Prisma.business_filesCreateNestedManyWithoutUsersInput
+  business_portal_business_portal_invited_byTousers?: Prisma.business_portalCreateNestedManyWithoutUsers_business_portal_invited_byTousersInput
+  business_portal_business_portal_user_idTousers?: Prisma.business_portalCreateNestedManyWithoutUsers_business_portal_user_idTousersInput
+  business_text_entries?: Prisma.business_text_entriesCreateNestedManyWithoutUsersInput
+  business_voice_entries?: Prisma.business_voice_entriesCreateNestedManyWithoutUsersInput
+  businesses_businesses_approved_byTousers?: Prisma.businessesCreateNestedManyWithoutUsers_businesses_approved_byTousersInput
+  businesses_businesses_invited_byTousers?: Prisma.businessesCreateNestedManyWithoutUsers_businesses_invited_byTousersInput
+  client_notes?: Prisma.client_notesCreateNestedManyWithoutUsersInput
+  client_services?: Prisma.client_servicesCreateNestedManyWithoutUsersInput
+  compliance_violations_compliance_violations_detected_byTousers?: Prisma.compliance_violationsCreateNestedManyWithoutUsers_compliance_violations_detected_byTousersInput
+  compliance_violations_compliance_violations_resolved_byTousers?: Prisma.compliance_violationsCreateNestedManyWithoutUsers_compliance_violations_resolved_byTousersInput
+  corporate_requests?: Prisma.corporate_requestsCreateNestedManyWithoutUsersInput
+  daily_trips?: Prisma.daily_tripsCreateNestedManyWithoutUsersInput
+  driver_documents_driver_documents_driver_idTousers?: Prisma.driver_documentsCreateNestedManyWithoutUsers_driver_documents_driver_idTousersInput
+  driver_documents_driver_documents_verified_byTousers?: Prisma.driver_documentsCreateNestedManyWithoutUsers_driver_documents_verified_byTousersInput
+  error_logs_error_logs_resolved_byTousers?: Prisma.error_logsCreateNestedManyWithoutUsers_error_logs_resolved_byTousersInput
+  error_logs_error_logs_user_idTousers?: Prisma.error_logsCreateNestedManyWithoutUsers_error_logs_user_idTousersInput
+  financial_audit_log?: Prisma.financial_audit_logCreateNestedManyWithoutUsersInput
+  inspections_inspections_driver_idTousers?: Prisma.inspectionsCreateNestedManyWithoutUsers_inspections_driver_idTousersInput
+  inspections_inspections_entered_byTousers?: Prisma.inspectionsCreateNestedManyWithoutUsers_inspections_entered_byTousersInput
+  lunch_orders?: Prisma.lunch_ordersCreateNestedManyWithoutUsersInput
+  monthly_exemption_status?: Prisma.monthly_exemption_statusCreateNestedManyWithoutUsersInput
+  partner_profiles_partner_profiles_invited_byTousers?: Prisma.partner_profilesCreateNestedManyWithoutUsers_partner_profiles_invited_byTousersInput
+  partner_profiles_partner_profiles_user_idTousers?: Prisma.partner_profilesCreateNestedOneWithoutUsers_partner_profiles_user_idTousersInput
+  performance_metrics?: Prisma.performance_metricsCreateNestedManyWithoutUsersInput
+  proposals?: Prisma.proposalsCreateNestedManyWithoutUsersInput
+  shared_tours_shared_tours_created_byTousers?: Prisma.shared_toursCreateNestedManyWithoutUsers_shared_tours_created_byTousersInput
+  shared_tours_shared_tours_driver_idTousers?: Prisma.shared_toursCreateNestedManyWithoutUsers_shared_tours_driver_idTousersInput
+  system_settings?: Prisma.system_settingsCreateNestedManyWithoutUsersInput
+  time_cards_time_cards_driver_idTousers?: Prisma.time_cardsCreateNestedManyWithoutUsers_time_cards_driver_idTousersInput
+  time_cards_time_cards_entered_byTousers?: Prisma.time_cardsCreateNestedManyWithoutUsers_time_cards_entered_byTousersInput
+  tour_offers_tour_offers_driver_idTousers?: Prisma.tour_offersCreateNestedManyWithoutUsers_tour_offers_driver_idTousersInput
+  tour_offers_tour_offers_offered_byTousers?: Prisma.tour_offersCreateNestedManyWithoutUsers_tour_offers_offered_byTousersInput
+  tour_operator_insights?: Prisma.tour_operator_insightsCreateNestedManyWithoutUsersInput
+  trip_distances?: Prisma.trip_distancesCreateNestedManyWithoutUsersInput
+  user_activity_logs?: Prisma.user_activity_logsCreateNestedManyWithoutUsersInput
+  users?: Prisma.usersCreateNestedOneWithoutOther_usersInput
+  other_users?: Prisma.usersCreateNestedManyWithoutUsersInput
+  tenants?: Prisma.tenantsCreateNestedOneWithoutUsersInput
+  vehicle_assignments_vehicle_assignments_assigned_byTousers?: Prisma.vehicle_assignmentsCreateNestedManyWithoutUsers_vehicle_assignments_assigned_byTousersInput
+  vehicle_assignments_vehicle_assignments_driver_idTousers?: Prisma.vehicle_assignmentsCreateNestedManyWithoutUsers_vehicle_assignments_driver_idTousersInput
+  vehicle_availability_blocks?: Prisma.vehicle_availability_blocksCreateNestedManyWithoutUsersInput
+  vehicle_documents?: Prisma.vehicle_documentsCreateNestedManyWithoutUsersInput
+  vehicle_incidents_vehicle_incidents_driver_idTousers?: Prisma.vehicle_incidentsCreateNestedManyWithoutUsers_vehicle_incidents_driver_idTousersInput
+  vehicle_incidents_vehicle_incidents_reported_byTousers?: Prisma.vehicle_incidentsCreateNestedManyWithoutUsers_vehicle_incidents_reported_byTousersInput
+  vehicle_incidents_vehicle_incidents_resolved_byTousers?: Prisma.vehicle_incidentsCreateNestedManyWithoutUsers_vehicle_incidents_resolved_byTousersInput
+  vehicles_vehicles_assigned_driver_idTousers?: Prisma.vehiclesCreateNestedManyWithoutUsers_vehicles_assigned_driver_idTousersInput
+  vehicles_vehicles_defect_reported_byTousers?: Prisma.vehiclesCreateNestedManyWithoutUsers_vehicles_defect_reported_byTousersInput
+  weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
+  winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
+  workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
+}
+
+export type usersUncheckedCreateWithoutDriver_tipsInput = {
+  id?: number
+  email: string
+  password_hash: string
+  name: string
+  role?: string
+  is_active?: boolean | null
+  last_login?: Date | string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  phone?: string | null
+  emergency_contact_name?: string | null
+  emergency_contact_phone?: string | null
+  emergency_contact_relationship?: string | null
+  tenant_id?: number | null
+  accessible_tenant_ids?: Prisma.usersCreateaccessible_tenant_idsInput | number[]
+  medical_cert_number?: string | null
+  medical_cert_expiry?: Date | string | null
+  medical_cert_url?: string | null
+  medical_cert_type?: string | null
+  license_number?: string | null
+  license_state?: string | null
+  license_expiry?: Date | string | null
+  license_class?: string | null
+  cdl_endorsements?: Prisma.usersCreatecdl_endorsementsInput | string[]
+  hired_date?: Date | string | null
+  termination_date?: Date | string | null
+  employment_status?: string | null
+  mvr_check_date?: Date | string | null
+  mvr_check_url?: string | null
+  background_check_date?: Date | string | null
+  background_check_url?: string | null
+  road_test_date?: Date | string | null
+  road_test_url?: string | null
+  annual_review_date?: Date | string | null
+  dq_file_complete?: boolean | null
+  dq_file_notes?: string | null
+  dq_file_last_reviewed?: Date | string | null
+  dq_file_reviewed_by?: number | null
+  ai_fine_tuning_jobs?: Prisma.ai_fine_tuning_jobsUncheckedCreateNestedManyWithoutUsersInput
+  availability_rules?: Prisma.availability_rulesUncheckedCreateNestedManyWithoutUsersInput
+  booking_timeline?: Prisma.booking_timelineUncheckedCreateNestedManyWithoutUsersInput
+  bookings_bookings_booked_byTousers?: Prisma.bookingsUncheckedCreateNestedManyWithoutUsers_bookings_booked_byTousersInput
+  bookings_bookings_cancelled_byTousers?: Prisma.bookingsUncheckedCreateNestedManyWithoutUsers_bookings_cancelled_byTousersInput
+  bookings_bookings_driver_idTousers?: Prisma.bookingsUncheckedCreateNestedManyWithoutUsers_bookings_driver_idTousersInput
+  bookings_bookings_final_invoice_approved_byTousers?: Prisma.bookingsUncheckedCreateNestedManyWithoutUsers_bookings_final_invoice_approved_byTousersInput
+  business_attributes?: Prisma.business_attributesUncheckedCreateNestedManyWithoutUsersInput
+  business_discrepancies?: Prisma.business_discrepanciesUncheckedCreateNestedManyWithoutUsersInput
+  business_files?: Prisma.business_filesUncheckedCreateNestedManyWithoutUsersInput
+  business_portal_business_portal_invited_byTousers?: Prisma.business_portalUncheckedCreateNestedManyWithoutUsers_business_portal_invited_byTousersInput
+  business_portal_business_portal_user_idTousers?: Prisma.business_portalUncheckedCreateNestedManyWithoutUsers_business_portal_user_idTousersInput
+  business_text_entries?: Prisma.business_text_entriesUncheckedCreateNestedManyWithoutUsersInput
+  business_voice_entries?: Prisma.business_voice_entriesUncheckedCreateNestedManyWithoutUsersInput
+  businesses_businesses_approved_byTousers?: Prisma.businessesUncheckedCreateNestedManyWithoutUsers_businesses_approved_byTousersInput
+  businesses_businesses_invited_byTousers?: Prisma.businessesUncheckedCreateNestedManyWithoutUsers_businesses_invited_byTousersInput
+  client_notes?: Prisma.client_notesUncheckedCreateNestedManyWithoutUsersInput
+  client_services?: Prisma.client_servicesUncheckedCreateNestedManyWithoutUsersInput
+  compliance_violations_compliance_violations_detected_byTousers?: Prisma.compliance_violationsUncheckedCreateNestedManyWithoutUsers_compliance_violations_detected_byTousersInput
+  compliance_violations_compliance_violations_resolved_byTousers?: Prisma.compliance_violationsUncheckedCreateNestedManyWithoutUsers_compliance_violations_resolved_byTousersInput
+  corporate_requests?: Prisma.corporate_requestsUncheckedCreateNestedManyWithoutUsersInput
+  daily_trips?: Prisma.daily_tripsUncheckedCreateNestedManyWithoutUsersInput
+  driver_documents_driver_documents_driver_idTousers?: Prisma.driver_documentsUncheckedCreateNestedManyWithoutUsers_driver_documents_driver_idTousersInput
+  driver_documents_driver_documents_verified_byTousers?: Prisma.driver_documentsUncheckedCreateNestedManyWithoutUsers_driver_documents_verified_byTousersInput
+  error_logs_error_logs_resolved_byTousers?: Prisma.error_logsUncheckedCreateNestedManyWithoutUsers_error_logs_resolved_byTousersInput
+  error_logs_error_logs_user_idTousers?: Prisma.error_logsUncheckedCreateNestedManyWithoutUsers_error_logs_user_idTousersInput
+  financial_audit_log?: Prisma.financial_audit_logUncheckedCreateNestedManyWithoutUsersInput
+  inspections_inspections_driver_idTousers?: Prisma.inspectionsUncheckedCreateNestedManyWithoutUsers_inspections_driver_idTousersInput
+  inspections_inspections_entered_byTousers?: Prisma.inspectionsUncheckedCreateNestedManyWithoutUsers_inspections_entered_byTousersInput
+  lunch_orders?: Prisma.lunch_ordersUncheckedCreateNestedManyWithoutUsersInput
+  monthly_exemption_status?: Prisma.monthly_exemption_statusUncheckedCreateNestedManyWithoutUsersInput
+  partner_profiles_partner_profiles_invited_byTousers?: Prisma.partner_profilesUncheckedCreateNestedManyWithoutUsers_partner_profiles_invited_byTousersInput
+  partner_profiles_partner_profiles_user_idTousers?: Prisma.partner_profilesUncheckedCreateNestedOneWithoutUsers_partner_profiles_user_idTousersInput
+  performance_metrics?: Prisma.performance_metricsUncheckedCreateNestedManyWithoutUsersInput
+  proposals?: Prisma.proposalsUncheckedCreateNestedManyWithoutUsersInput
+  shared_tours_shared_tours_created_byTousers?: Prisma.shared_toursUncheckedCreateNestedManyWithoutUsers_shared_tours_created_byTousersInput
+  shared_tours_shared_tours_driver_idTousers?: Prisma.shared_toursUncheckedCreateNestedManyWithoutUsers_shared_tours_driver_idTousersInput
+  system_settings?: Prisma.system_settingsUncheckedCreateNestedManyWithoutUsersInput
+  time_cards_time_cards_driver_idTousers?: Prisma.time_cardsUncheckedCreateNestedManyWithoutUsers_time_cards_driver_idTousersInput
+  time_cards_time_cards_entered_byTousers?: Prisma.time_cardsUncheckedCreateNestedManyWithoutUsers_time_cards_entered_byTousersInput
+  tour_offers_tour_offers_driver_idTousers?: Prisma.tour_offersUncheckedCreateNestedManyWithoutUsers_tour_offers_driver_idTousersInput
+  tour_offers_tour_offers_offered_byTousers?: Prisma.tour_offersUncheckedCreateNestedManyWithoutUsers_tour_offers_offered_byTousersInput
+  tour_operator_insights?: Prisma.tour_operator_insightsUncheckedCreateNestedManyWithoutUsersInput
+  trip_distances?: Prisma.trip_distancesUncheckedCreateNestedManyWithoutUsersInput
+  user_activity_logs?: Prisma.user_activity_logsUncheckedCreateNestedManyWithoutUsersInput
+  other_users?: Prisma.usersUncheckedCreateNestedManyWithoutUsersInput
+  vehicle_assignments_vehicle_assignments_assigned_byTousers?: Prisma.vehicle_assignmentsUncheckedCreateNestedManyWithoutUsers_vehicle_assignments_assigned_byTousersInput
+  vehicle_assignments_vehicle_assignments_driver_idTousers?: Prisma.vehicle_assignmentsUncheckedCreateNestedManyWithoutUsers_vehicle_assignments_driver_idTousersInput
+  vehicle_availability_blocks?: Prisma.vehicle_availability_blocksUncheckedCreateNestedManyWithoutUsersInput
+  vehicle_documents?: Prisma.vehicle_documentsUncheckedCreateNestedManyWithoutUsersInput
+  vehicle_incidents_vehicle_incidents_driver_idTousers?: Prisma.vehicle_incidentsUncheckedCreateNestedManyWithoutUsers_vehicle_incidents_driver_idTousersInput
+  vehicle_incidents_vehicle_incidents_reported_byTousers?: Prisma.vehicle_incidentsUncheckedCreateNestedManyWithoutUsers_vehicle_incidents_reported_byTousersInput
+  vehicle_incidents_vehicle_incidents_resolved_byTousers?: Prisma.vehicle_incidentsUncheckedCreateNestedManyWithoutUsers_vehicle_incidents_resolved_byTousersInput
+  vehicles_vehicles_assigned_driver_idTousers?: Prisma.vehiclesUncheckedCreateNestedManyWithoutUsers_vehicles_assigned_driver_idTousersInput
+  vehicles_vehicles_defect_reported_byTousers?: Prisma.vehiclesUncheckedCreateNestedManyWithoutUsers_vehicles_defect_reported_byTousersInput
+  weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
+  winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
+  workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
+}
+
+export type usersCreateOrConnectWithoutDriver_tipsInput = {
+  where: Prisma.usersWhereUniqueInput
+  create: Prisma.XOR<Prisma.usersCreateWithoutDriver_tipsInput, Prisma.usersUncheckedCreateWithoutDriver_tipsInput>
+}
+
+export type usersUpsertWithoutDriver_tipsInput = {
+  update: Prisma.XOR<Prisma.usersUpdateWithoutDriver_tipsInput, Prisma.usersUncheckedUpdateWithoutDriver_tipsInput>
+  create: Prisma.XOR<Prisma.usersCreateWithoutDriver_tipsInput, Prisma.usersUncheckedCreateWithoutDriver_tipsInput>
+  where?: Prisma.usersWhereInput
+}
+
+export type usersUpdateToOneWithWhereWithoutDriver_tipsInput = {
+  where?: Prisma.usersWhereInput
+  data: Prisma.XOR<Prisma.usersUpdateWithoutDriver_tipsInput, Prisma.usersUncheckedUpdateWithoutDriver_tipsInput>
+}
+
+export type usersUpdateWithoutDriver_tipsInput = {
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  is_active?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  last_login?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  emergency_contact_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  emergency_contact_phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  emergency_contact_relationship?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accessible_tenant_ids?: Prisma.usersUpdateaccessible_tenant_idsInput | number[]
+  medical_cert_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  medical_cert_expiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  medical_cert_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  medical_cert_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  license_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  license_state?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  license_expiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  license_class?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cdl_endorsements?: Prisma.usersUpdatecdl_endorsementsInput | string[]
+  hired_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  termination_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  employment_status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mvr_check_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  mvr_check_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  background_check_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  background_check_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  road_test_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  road_test_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  annual_review_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dq_file_complete?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  dq_file_notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dq_file_last_reviewed?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ai_fine_tuning_jobs?: Prisma.ai_fine_tuning_jobsUpdateManyWithoutUsersNestedInput
+  availability_rules?: Prisma.availability_rulesUpdateManyWithoutUsersNestedInput
+  booking_timeline?: Prisma.booking_timelineUpdateManyWithoutUsersNestedInput
+  bookings_bookings_booked_byTousers?: Prisma.bookingsUpdateManyWithoutUsers_bookings_booked_byTousersNestedInput
+  bookings_bookings_cancelled_byTousers?: Prisma.bookingsUpdateManyWithoutUsers_bookings_cancelled_byTousersNestedInput
+  bookings_bookings_driver_idTousers?: Prisma.bookingsUpdateManyWithoutUsers_bookings_driver_idTousersNestedInput
+  bookings_bookings_final_invoice_approved_byTousers?: Prisma.bookingsUpdateManyWithoutUsers_bookings_final_invoice_approved_byTousersNestedInput
+  business_attributes?: Prisma.business_attributesUpdateManyWithoutUsersNestedInput
+  business_discrepancies?: Prisma.business_discrepanciesUpdateManyWithoutUsersNestedInput
+  business_files?: Prisma.business_filesUpdateManyWithoutUsersNestedInput
+  business_portal_business_portal_invited_byTousers?: Prisma.business_portalUpdateManyWithoutUsers_business_portal_invited_byTousersNestedInput
+  business_portal_business_portal_user_idTousers?: Prisma.business_portalUpdateManyWithoutUsers_business_portal_user_idTousersNestedInput
+  business_text_entries?: Prisma.business_text_entriesUpdateManyWithoutUsersNestedInput
+  business_voice_entries?: Prisma.business_voice_entriesUpdateManyWithoutUsersNestedInput
+  businesses_businesses_approved_byTousers?: Prisma.businessesUpdateManyWithoutUsers_businesses_approved_byTousersNestedInput
+  businesses_businesses_invited_byTousers?: Prisma.businessesUpdateManyWithoutUsers_businesses_invited_byTousersNestedInput
+  client_notes?: Prisma.client_notesUpdateManyWithoutUsersNestedInput
+  client_services?: Prisma.client_servicesUpdateManyWithoutUsersNestedInput
+  compliance_violations_compliance_violations_detected_byTousers?: Prisma.compliance_violationsUpdateManyWithoutUsers_compliance_violations_detected_byTousersNestedInput
+  compliance_violations_compliance_violations_resolved_byTousers?: Prisma.compliance_violationsUpdateManyWithoutUsers_compliance_violations_resolved_byTousersNestedInput
+  corporate_requests?: Prisma.corporate_requestsUpdateManyWithoutUsersNestedInput
+  daily_trips?: Prisma.daily_tripsUpdateManyWithoutUsersNestedInput
+  driver_documents_driver_documents_driver_idTousers?: Prisma.driver_documentsUpdateManyWithoutUsers_driver_documents_driver_idTousersNestedInput
+  driver_documents_driver_documents_verified_byTousers?: Prisma.driver_documentsUpdateManyWithoutUsers_driver_documents_verified_byTousersNestedInput
+  error_logs_error_logs_resolved_byTousers?: Prisma.error_logsUpdateManyWithoutUsers_error_logs_resolved_byTousersNestedInput
+  error_logs_error_logs_user_idTousers?: Prisma.error_logsUpdateManyWithoutUsers_error_logs_user_idTousersNestedInput
+  financial_audit_log?: Prisma.financial_audit_logUpdateManyWithoutUsersNestedInput
+  inspections_inspections_driver_idTousers?: Prisma.inspectionsUpdateManyWithoutUsers_inspections_driver_idTousersNestedInput
+  inspections_inspections_entered_byTousers?: Prisma.inspectionsUpdateManyWithoutUsers_inspections_entered_byTousersNestedInput
+  lunch_orders?: Prisma.lunch_ordersUpdateManyWithoutUsersNestedInput
+  monthly_exemption_status?: Prisma.monthly_exemption_statusUpdateManyWithoutUsersNestedInput
+  partner_profiles_partner_profiles_invited_byTousers?: Prisma.partner_profilesUpdateManyWithoutUsers_partner_profiles_invited_byTousersNestedInput
+  partner_profiles_partner_profiles_user_idTousers?: Prisma.partner_profilesUpdateOneWithoutUsers_partner_profiles_user_idTousersNestedInput
+  performance_metrics?: Prisma.performance_metricsUpdateManyWithoutUsersNestedInput
+  proposals?: Prisma.proposalsUpdateManyWithoutUsersNestedInput
+  shared_tours_shared_tours_created_byTousers?: Prisma.shared_toursUpdateManyWithoutUsers_shared_tours_created_byTousersNestedInput
+  shared_tours_shared_tours_driver_idTousers?: Prisma.shared_toursUpdateManyWithoutUsers_shared_tours_driver_idTousersNestedInput
+  system_settings?: Prisma.system_settingsUpdateManyWithoutUsersNestedInput
+  time_cards_time_cards_driver_idTousers?: Prisma.time_cardsUpdateManyWithoutUsers_time_cards_driver_idTousersNestedInput
+  time_cards_time_cards_entered_byTousers?: Prisma.time_cardsUpdateManyWithoutUsers_time_cards_entered_byTousersNestedInput
+  tour_offers_tour_offers_driver_idTousers?: Prisma.tour_offersUpdateManyWithoutUsers_tour_offers_driver_idTousersNestedInput
+  tour_offers_tour_offers_offered_byTousers?: Prisma.tour_offersUpdateManyWithoutUsers_tour_offers_offered_byTousersNestedInput
+  tour_operator_insights?: Prisma.tour_operator_insightsUpdateManyWithoutUsersNestedInput
+  trip_distances?: Prisma.trip_distancesUpdateManyWithoutUsersNestedInput
+  user_activity_logs?: Prisma.user_activity_logsUpdateManyWithoutUsersNestedInput
+  users?: Prisma.usersUpdateOneWithoutOther_usersNestedInput
+  other_users?: Prisma.usersUpdateManyWithoutUsersNestedInput
+  tenants?: Prisma.tenantsUpdateOneWithoutUsersNestedInput
+  vehicle_assignments_vehicle_assignments_assigned_byTousers?: Prisma.vehicle_assignmentsUpdateManyWithoutUsers_vehicle_assignments_assigned_byTousersNestedInput
+  vehicle_assignments_vehicle_assignments_driver_idTousers?: Prisma.vehicle_assignmentsUpdateManyWithoutUsers_vehicle_assignments_driver_idTousersNestedInput
+  vehicle_availability_blocks?: Prisma.vehicle_availability_blocksUpdateManyWithoutUsersNestedInput
+  vehicle_documents?: Prisma.vehicle_documentsUpdateManyWithoutUsersNestedInput
+  vehicle_incidents_vehicle_incidents_driver_idTousers?: Prisma.vehicle_incidentsUpdateManyWithoutUsers_vehicle_incidents_driver_idTousersNestedInput
+  vehicle_incidents_vehicle_incidents_reported_byTousers?: Prisma.vehicle_incidentsUpdateManyWithoutUsers_vehicle_incidents_reported_byTousersNestedInput
+  vehicle_incidents_vehicle_incidents_resolved_byTousers?: Prisma.vehicle_incidentsUpdateManyWithoutUsers_vehicle_incidents_resolved_byTousersNestedInput
+  vehicles_vehicles_assigned_driver_idTousers?: Prisma.vehiclesUpdateManyWithoutUsers_vehicles_assigned_driver_idTousersNestedInput
+  vehicles_vehicles_defect_reported_byTousers?: Prisma.vehiclesUpdateManyWithoutUsers_vehicles_defect_reported_byTousersNestedInput
+  weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
+  winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
+  workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
+}
+
+export type usersUncheckedUpdateWithoutDriver_tipsInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  is_active?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  last_login?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  emergency_contact_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  emergency_contact_phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  emergency_contact_relationship?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tenant_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  accessible_tenant_ids?: Prisma.usersUpdateaccessible_tenant_idsInput | number[]
+  medical_cert_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  medical_cert_expiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  medical_cert_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  medical_cert_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  license_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  license_state?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  license_expiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  license_class?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cdl_endorsements?: Prisma.usersUpdatecdl_endorsementsInput | string[]
+  hired_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  termination_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  employment_status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mvr_check_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  mvr_check_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  background_check_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  background_check_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  road_test_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  road_test_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  annual_review_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dq_file_complete?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  dq_file_notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dq_file_last_reviewed?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dq_file_reviewed_by?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  ai_fine_tuning_jobs?: Prisma.ai_fine_tuning_jobsUncheckedUpdateManyWithoutUsersNestedInput
+  availability_rules?: Prisma.availability_rulesUncheckedUpdateManyWithoutUsersNestedInput
+  booking_timeline?: Prisma.booking_timelineUncheckedUpdateManyWithoutUsersNestedInput
+  bookings_bookings_booked_byTousers?: Prisma.bookingsUncheckedUpdateManyWithoutUsers_bookings_booked_byTousersNestedInput
+  bookings_bookings_cancelled_byTousers?: Prisma.bookingsUncheckedUpdateManyWithoutUsers_bookings_cancelled_byTousersNestedInput
+  bookings_bookings_driver_idTousers?: Prisma.bookingsUncheckedUpdateManyWithoutUsers_bookings_driver_idTousersNestedInput
+  bookings_bookings_final_invoice_approved_byTousers?: Prisma.bookingsUncheckedUpdateManyWithoutUsers_bookings_final_invoice_approved_byTousersNestedInput
+  business_attributes?: Prisma.business_attributesUncheckedUpdateManyWithoutUsersNestedInput
+  business_discrepancies?: Prisma.business_discrepanciesUncheckedUpdateManyWithoutUsersNestedInput
+  business_files?: Prisma.business_filesUncheckedUpdateManyWithoutUsersNestedInput
+  business_portal_business_portal_invited_byTousers?: Prisma.business_portalUncheckedUpdateManyWithoutUsers_business_portal_invited_byTousersNestedInput
+  business_portal_business_portal_user_idTousers?: Prisma.business_portalUncheckedUpdateManyWithoutUsers_business_portal_user_idTousersNestedInput
+  business_text_entries?: Prisma.business_text_entriesUncheckedUpdateManyWithoutUsersNestedInput
+  business_voice_entries?: Prisma.business_voice_entriesUncheckedUpdateManyWithoutUsersNestedInput
+  businesses_businesses_approved_byTousers?: Prisma.businessesUncheckedUpdateManyWithoutUsers_businesses_approved_byTousersNestedInput
+  businesses_businesses_invited_byTousers?: Prisma.businessesUncheckedUpdateManyWithoutUsers_businesses_invited_byTousersNestedInput
+  client_notes?: Prisma.client_notesUncheckedUpdateManyWithoutUsersNestedInput
+  client_services?: Prisma.client_servicesUncheckedUpdateManyWithoutUsersNestedInput
+  compliance_violations_compliance_violations_detected_byTousers?: Prisma.compliance_violationsUncheckedUpdateManyWithoutUsers_compliance_violations_detected_byTousersNestedInput
+  compliance_violations_compliance_violations_resolved_byTousers?: Prisma.compliance_violationsUncheckedUpdateManyWithoutUsers_compliance_violations_resolved_byTousersNestedInput
+  corporate_requests?: Prisma.corporate_requestsUncheckedUpdateManyWithoutUsersNestedInput
+  daily_trips?: Prisma.daily_tripsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_documents_driver_documents_driver_idTousers?: Prisma.driver_documentsUncheckedUpdateManyWithoutUsers_driver_documents_driver_idTousersNestedInput
+  driver_documents_driver_documents_verified_byTousers?: Prisma.driver_documentsUncheckedUpdateManyWithoutUsers_driver_documents_verified_byTousersNestedInput
+  error_logs_error_logs_resolved_byTousers?: Prisma.error_logsUncheckedUpdateManyWithoutUsers_error_logs_resolved_byTousersNestedInput
+  error_logs_error_logs_user_idTousers?: Prisma.error_logsUncheckedUpdateManyWithoutUsers_error_logs_user_idTousersNestedInput
+  financial_audit_log?: Prisma.financial_audit_logUncheckedUpdateManyWithoutUsersNestedInput
+  inspections_inspections_driver_idTousers?: Prisma.inspectionsUncheckedUpdateManyWithoutUsers_inspections_driver_idTousersNestedInput
+  inspections_inspections_entered_byTousers?: Prisma.inspectionsUncheckedUpdateManyWithoutUsers_inspections_entered_byTousersNestedInput
+  lunch_orders?: Prisma.lunch_ordersUncheckedUpdateManyWithoutUsersNestedInput
+  monthly_exemption_status?: Prisma.monthly_exemption_statusUncheckedUpdateManyWithoutUsersNestedInput
+  partner_profiles_partner_profiles_invited_byTousers?: Prisma.partner_profilesUncheckedUpdateManyWithoutUsers_partner_profiles_invited_byTousersNestedInput
+  partner_profiles_partner_profiles_user_idTousers?: Prisma.partner_profilesUncheckedUpdateOneWithoutUsers_partner_profiles_user_idTousersNestedInput
+  performance_metrics?: Prisma.performance_metricsUncheckedUpdateManyWithoutUsersNestedInput
+  proposals?: Prisma.proposalsUncheckedUpdateManyWithoutUsersNestedInput
+  shared_tours_shared_tours_created_byTousers?: Prisma.shared_toursUncheckedUpdateManyWithoutUsers_shared_tours_created_byTousersNestedInput
+  shared_tours_shared_tours_driver_idTousers?: Prisma.shared_toursUncheckedUpdateManyWithoutUsers_shared_tours_driver_idTousersNestedInput
+  system_settings?: Prisma.system_settingsUncheckedUpdateManyWithoutUsersNestedInput
+  time_cards_time_cards_driver_idTousers?: Prisma.time_cardsUncheckedUpdateManyWithoutUsers_time_cards_driver_idTousersNestedInput
+  time_cards_time_cards_entered_byTousers?: Prisma.time_cardsUncheckedUpdateManyWithoutUsers_time_cards_entered_byTousersNestedInput
+  tour_offers_tour_offers_driver_idTousers?: Prisma.tour_offersUncheckedUpdateManyWithoutUsers_tour_offers_driver_idTousersNestedInput
+  tour_offers_tour_offers_offered_byTousers?: Prisma.tour_offersUncheckedUpdateManyWithoutUsers_tour_offers_offered_byTousersNestedInput
+  tour_operator_insights?: Prisma.tour_operator_insightsUncheckedUpdateManyWithoutUsersNestedInput
+  trip_distances?: Prisma.trip_distancesUncheckedUpdateManyWithoutUsersNestedInput
+  user_activity_logs?: Prisma.user_activity_logsUncheckedUpdateManyWithoutUsersNestedInput
+  other_users?: Prisma.usersUncheckedUpdateManyWithoutUsersNestedInput
+  vehicle_assignments_vehicle_assignments_assigned_byTousers?: Prisma.vehicle_assignmentsUncheckedUpdateManyWithoutUsers_vehicle_assignments_assigned_byTousersNestedInput
+  vehicle_assignments_vehicle_assignments_driver_idTousers?: Prisma.vehicle_assignmentsUncheckedUpdateManyWithoutUsers_vehicle_assignments_driver_idTousersNestedInput
+  vehicle_availability_blocks?: Prisma.vehicle_availability_blocksUncheckedUpdateManyWithoutUsersNestedInput
+  vehicle_documents?: Prisma.vehicle_documentsUncheckedUpdateManyWithoutUsersNestedInput
+  vehicle_incidents_vehicle_incidents_driver_idTousers?: Prisma.vehicle_incidentsUncheckedUpdateManyWithoutUsers_vehicle_incidents_driver_idTousersNestedInput
+  vehicle_incidents_vehicle_incidents_reported_byTousers?: Prisma.vehicle_incidentsUncheckedUpdateManyWithoutUsers_vehicle_incidents_reported_byTousersNestedInput
+  vehicle_incidents_vehicle_incidents_resolved_byTousers?: Prisma.vehicle_incidentsUncheckedUpdateManyWithoutUsers_vehicle_incidents_resolved_byTousersNestedInput
+  vehicles_vehicles_assigned_driver_idTousers?: Prisma.vehiclesUncheckedUpdateManyWithoutUsers_vehicles_assigned_driver_idTousersNestedInput
+  vehicles_vehicles_defect_reported_byTousers?: Prisma.vehiclesUncheckedUpdateManyWithoutUsers_vehicles_defect_reported_byTousersNestedInput
+  weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
+  winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
+  workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
+}
+
+export type usersCreateWithoutTour_expensesInput = {
+  email: string
+  password_hash: string
+  name: string
+  role?: string
+  is_active?: boolean | null
+  last_login?: Date | string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  phone?: string | null
+  emergency_contact_name?: string | null
+  emergency_contact_phone?: string | null
+  emergency_contact_relationship?: string | null
+  accessible_tenant_ids?: Prisma.usersCreateaccessible_tenant_idsInput | number[]
+  medical_cert_number?: string | null
+  medical_cert_expiry?: Date | string | null
+  medical_cert_url?: string | null
+  medical_cert_type?: string | null
+  license_number?: string | null
+  license_state?: string | null
+  license_expiry?: Date | string | null
+  license_class?: string | null
+  cdl_endorsements?: Prisma.usersCreatecdl_endorsementsInput | string[]
+  hired_date?: Date | string | null
+  termination_date?: Date | string | null
+  employment_status?: string | null
+  mvr_check_date?: Date | string | null
+  mvr_check_url?: string | null
+  background_check_date?: Date | string | null
+  background_check_url?: string | null
+  road_test_date?: Date | string | null
+  road_test_url?: string | null
+  annual_review_date?: Date | string | null
+  dq_file_complete?: boolean | null
+  dq_file_notes?: string | null
+  dq_file_last_reviewed?: Date | string | null
+  ai_fine_tuning_jobs?: Prisma.ai_fine_tuning_jobsCreateNestedManyWithoutUsersInput
+  availability_rules?: Prisma.availability_rulesCreateNestedManyWithoutUsersInput
+  booking_timeline?: Prisma.booking_timelineCreateNestedManyWithoutUsersInput
+  bookings_bookings_booked_byTousers?: Prisma.bookingsCreateNestedManyWithoutUsers_bookings_booked_byTousersInput
+  bookings_bookings_cancelled_byTousers?: Prisma.bookingsCreateNestedManyWithoutUsers_bookings_cancelled_byTousersInput
+  bookings_bookings_driver_idTousers?: Prisma.bookingsCreateNestedManyWithoutUsers_bookings_driver_idTousersInput
+  bookings_bookings_final_invoice_approved_byTousers?: Prisma.bookingsCreateNestedManyWithoutUsers_bookings_final_invoice_approved_byTousersInput
+  business_attributes?: Prisma.business_attributesCreateNestedManyWithoutUsersInput
+  business_discrepancies?: Prisma.business_discrepanciesCreateNestedManyWithoutUsersInput
+  business_files?: Prisma.business_filesCreateNestedManyWithoutUsersInput
+  business_portal_business_portal_invited_byTousers?: Prisma.business_portalCreateNestedManyWithoutUsers_business_portal_invited_byTousersInput
+  business_portal_business_portal_user_idTousers?: Prisma.business_portalCreateNestedManyWithoutUsers_business_portal_user_idTousersInput
+  business_text_entries?: Prisma.business_text_entriesCreateNestedManyWithoutUsersInput
+  business_voice_entries?: Prisma.business_voice_entriesCreateNestedManyWithoutUsersInput
+  businesses_businesses_approved_byTousers?: Prisma.businessesCreateNestedManyWithoutUsers_businesses_approved_byTousersInput
+  businesses_businesses_invited_byTousers?: Prisma.businessesCreateNestedManyWithoutUsers_businesses_invited_byTousersInput
+  client_notes?: Prisma.client_notesCreateNestedManyWithoutUsersInput
+  client_services?: Prisma.client_servicesCreateNestedManyWithoutUsersInput
+  compliance_violations_compliance_violations_detected_byTousers?: Prisma.compliance_violationsCreateNestedManyWithoutUsers_compliance_violations_detected_byTousersInput
+  compliance_violations_compliance_violations_resolved_byTousers?: Prisma.compliance_violationsCreateNestedManyWithoutUsers_compliance_violations_resolved_byTousersInput
+  corporate_requests?: Prisma.corporate_requestsCreateNestedManyWithoutUsersInput
+  daily_trips?: Prisma.daily_tripsCreateNestedManyWithoutUsersInput
+  driver_documents_driver_documents_driver_idTousers?: Prisma.driver_documentsCreateNestedManyWithoutUsers_driver_documents_driver_idTousersInput
+  driver_documents_driver_documents_verified_byTousers?: Prisma.driver_documentsCreateNestedManyWithoutUsers_driver_documents_verified_byTousersInput
+  error_logs_error_logs_resolved_byTousers?: Prisma.error_logsCreateNestedManyWithoutUsers_error_logs_resolved_byTousersInput
+  error_logs_error_logs_user_idTousers?: Prisma.error_logsCreateNestedManyWithoutUsers_error_logs_user_idTousersInput
+  financial_audit_log?: Prisma.financial_audit_logCreateNestedManyWithoutUsersInput
+  inspections_inspections_driver_idTousers?: Prisma.inspectionsCreateNestedManyWithoutUsers_inspections_driver_idTousersInput
+  inspections_inspections_entered_byTousers?: Prisma.inspectionsCreateNestedManyWithoutUsers_inspections_entered_byTousersInput
+  lunch_orders?: Prisma.lunch_ordersCreateNestedManyWithoutUsersInput
+  monthly_exemption_status?: Prisma.monthly_exemption_statusCreateNestedManyWithoutUsersInput
+  partner_profiles_partner_profiles_invited_byTousers?: Prisma.partner_profilesCreateNestedManyWithoutUsers_partner_profiles_invited_byTousersInput
+  partner_profiles_partner_profiles_user_idTousers?: Prisma.partner_profilesCreateNestedOneWithoutUsers_partner_profiles_user_idTousersInput
+  performance_metrics?: Prisma.performance_metricsCreateNestedManyWithoutUsersInput
+  proposals?: Prisma.proposalsCreateNestedManyWithoutUsersInput
+  shared_tours_shared_tours_created_byTousers?: Prisma.shared_toursCreateNestedManyWithoutUsers_shared_tours_created_byTousersInput
+  shared_tours_shared_tours_driver_idTousers?: Prisma.shared_toursCreateNestedManyWithoutUsers_shared_tours_driver_idTousersInput
+  system_settings?: Prisma.system_settingsCreateNestedManyWithoutUsersInput
+  time_cards_time_cards_driver_idTousers?: Prisma.time_cardsCreateNestedManyWithoutUsers_time_cards_driver_idTousersInput
+  time_cards_time_cards_entered_byTousers?: Prisma.time_cardsCreateNestedManyWithoutUsers_time_cards_entered_byTousersInput
+  tour_offers_tour_offers_driver_idTousers?: Prisma.tour_offersCreateNestedManyWithoutUsers_tour_offers_driver_idTousersInput
+  tour_offers_tour_offers_offered_byTousers?: Prisma.tour_offersCreateNestedManyWithoutUsers_tour_offers_offered_byTousersInput
+  tour_operator_insights?: Prisma.tour_operator_insightsCreateNestedManyWithoutUsersInput
+  trip_distances?: Prisma.trip_distancesCreateNestedManyWithoutUsersInput
+  user_activity_logs?: Prisma.user_activity_logsCreateNestedManyWithoutUsersInput
+  users?: Prisma.usersCreateNestedOneWithoutOther_usersInput
+  other_users?: Prisma.usersCreateNestedManyWithoutUsersInput
+  tenants?: Prisma.tenantsCreateNestedOneWithoutUsersInput
+  vehicle_assignments_vehicle_assignments_assigned_byTousers?: Prisma.vehicle_assignmentsCreateNestedManyWithoutUsers_vehicle_assignments_assigned_byTousersInput
+  vehicle_assignments_vehicle_assignments_driver_idTousers?: Prisma.vehicle_assignmentsCreateNestedManyWithoutUsers_vehicle_assignments_driver_idTousersInput
+  vehicle_availability_blocks?: Prisma.vehicle_availability_blocksCreateNestedManyWithoutUsersInput
+  vehicle_documents?: Prisma.vehicle_documentsCreateNestedManyWithoutUsersInput
+  vehicle_incidents_vehicle_incidents_driver_idTousers?: Prisma.vehicle_incidentsCreateNestedManyWithoutUsers_vehicle_incidents_driver_idTousersInput
+  vehicle_incidents_vehicle_incidents_reported_byTousers?: Prisma.vehicle_incidentsCreateNestedManyWithoutUsers_vehicle_incidents_reported_byTousersInput
+  vehicle_incidents_vehicle_incidents_resolved_byTousers?: Prisma.vehicle_incidentsCreateNestedManyWithoutUsers_vehicle_incidents_resolved_byTousersInput
+  vehicles_vehicles_assigned_driver_idTousers?: Prisma.vehiclesCreateNestedManyWithoutUsers_vehicles_assigned_driver_idTousersInput
+  vehicles_vehicles_defect_reported_byTousers?: Prisma.vehiclesCreateNestedManyWithoutUsers_vehicles_defect_reported_byTousersInput
+  weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
+  winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
+  workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
+}
+
+export type usersUncheckedCreateWithoutTour_expensesInput = {
+  id?: number
+  email: string
+  password_hash: string
+  name: string
+  role?: string
+  is_active?: boolean | null
+  last_login?: Date | string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  phone?: string | null
+  emergency_contact_name?: string | null
+  emergency_contact_phone?: string | null
+  emergency_contact_relationship?: string | null
+  tenant_id?: number | null
+  accessible_tenant_ids?: Prisma.usersCreateaccessible_tenant_idsInput | number[]
+  medical_cert_number?: string | null
+  medical_cert_expiry?: Date | string | null
+  medical_cert_url?: string | null
+  medical_cert_type?: string | null
+  license_number?: string | null
+  license_state?: string | null
+  license_expiry?: Date | string | null
+  license_class?: string | null
+  cdl_endorsements?: Prisma.usersCreatecdl_endorsementsInput | string[]
+  hired_date?: Date | string | null
+  termination_date?: Date | string | null
+  employment_status?: string | null
+  mvr_check_date?: Date | string | null
+  mvr_check_url?: string | null
+  background_check_date?: Date | string | null
+  background_check_url?: string | null
+  road_test_date?: Date | string | null
+  road_test_url?: string | null
+  annual_review_date?: Date | string | null
+  dq_file_complete?: boolean | null
+  dq_file_notes?: string | null
+  dq_file_last_reviewed?: Date | string | null
+  dq_file_reviewed_by?: number | null
+  ai_fine_tuning_jobs?: Prisma.ai_fine_tuning_jobsUncheckedCreateNestedManyWithoutUsersInput
+  availability_rules?: Prisma.availability_rulesUncheckedCreateNestedManyWithoutUsersInput
+  booking_timeline?: Prisma.booking_timelineUncheckedCreateNestedManyWithoutUsersInput
+  bookings_bookings_booked_byTousers?: Prisma.bookingsUncheckedCreateNestedManyWithoutUsers_bookings_booked_byTousersInput
+  bookings_bookings_cancelled_byTousers?: Prisma.bookingsUncheckedCreateNestedManyWithoutUsers_bookings_cancelled_byTousersInput
+  bookings_bookings_driver_idTousers?: Prisma.bookingsUncheckedCreateNestedManyWithoutUsers_bookings_driver_idTousersInput
+  bookings_bookings_final_invoice_approved_byTousers?: Prisma.bookingsUncheckedCreateNestedManyWithoutUsers_bookings_final_invoice_approved_byTousersInput
+  business_attributes?: Prisma.business_attributesUncheckedCreateNestedManyWithoutUsersInput
+  business_discrepancies?: Prisma.business_discrepanciesUncheckedCreateNestedManyWithoutUsersInput
+  business_files?: Prisma.business_filesUncheckedCreateNestedManyWithoutUsersInput
+  business_portal_business_portal_invited_byTousers?: Prisma.business_portalUncheckedCreateNestedManyWithoutUsers_business_portal_invited_byTousersInput
+  business_portal_business_portal_user_idTousers?: Prisma.business_portalUncheckedCreateNestedManyWithoutUsers_business_portal_user_idTousersInput
+  business_text_entries?: Prisma.business_text_entriesUncheckedCreateNestedManyWithoutUsersInput
+  business_voice_entries?: Prisma.business_voice_entriesUncheckedCreateNestedManyWithoutUsersInput
+  businesses_businesses_approved_byTousers?: Prisma.businessesUncheckedCreateNestedManyWithoutUsers_businesses_approved_byTousersInput
+  businesses_businesses_invited_byTousers?: Prisma.businessesUncheckedCreateNestedManyWithoutUsers_businesses_invited_byTousersInput
+  client_notes?: Prisma.client_notesUncheckedCreateNestedManyWithoutUsersInput
+  client_services?: Prisma.client_servicesUncheckedCreateNestedManyWithoutUsersInput
+  compliance_violations_compliance_violations_detected_byTousers?: Prisma.compliance_violationsUncheckedCreateNestedManyWithoutUsers_compliance_violations_detected_byTousersInput
+  compliance_violations_compliance_violations_resolved_byTousers?: Prisma.compliance_violationsUncheckedCreateNestedManyWithoutUsers_compliance_violations_resolved_byTousersInput
+  corporate_requests?: Prisma.corporate_requestsUncheckedCreateNestedManyWithoutUsersInput
+  daily_trips?: Prisma.daily_tripsUncheckedCreateNestedManyWithoutUsersInput
+  driver_documents_driver_documents_driver_idTousers?: Prisma.driver_documentsUncheckedCreateNestedManyWithoutUsers_driver_documents_driver_idTousersInput
+  driver_documents_driver_documents_verified_byTousers?: Prisma.driver_documentsUncheckedCreateNestedManyWithoutUsers_driver_documents_verified_byTousersInput
+  error_logs_error_logs_resolved_byTousers?: Prisma.error_logsUncheckedCreateNestedManyWithoutUsers_error_logs_resolved_byTousersInput
+  error_logs_error_logs_user_idTousers?: Prisma.error_logsUncheckedCreateNestedManyWithoutUsers_error_logs_user_idTousersInput
+  financial_audit_log?: Prisma.financial_audit_logUncheckedCreateNestedManyWithoutUsersInput
+  inspections_inspections_driver_idTousers?: Prisma.inspectionsUncheckedCreateNestedManyWithoutUsers_inspections_driver_idTousersInput
+  inspections_inspections_entered_byTousers?: Prisma.inspectionsUncheckedCreateNestedManyWithoutUsers_inspections_entered_byTousersInput
+  lunch_orders?: Prisma.lunch_ordersUncheckedCreateNestedManyWithoutUsersInput
+  monthly_exemption_status?: Prisma.monthly_exemption_statusUncheckedCreateNestedManyWithoutUsersInput
+  partner_profiles_partner_profiles_invited_byTousers?: Prisma.partner_profilesUncheckedCreateNestedManyWithoutUsers_partner_profiles_invited_byTousersInput
+  partner_profiles_partner_profiles_user_idTousers?: Prisma.partner_profilesUncheckedCreateNestedOneWithoutUsers_partner_profiles_user_idTousersInput
+  performance_metrics?: Prisma.performance_metricsUncheckedCreateNestedManyWithoutUsersInput
+  proposals?: Prisma.proposalsUncheckedCreateNestedManyWithoutUsersInput
+  shared_tours_shared_tours_created_byTousers?: Prisma.shared_toursUncheckedCreateNestedManyWithoutUsers_shared_tours_created_byTousersInput
+  shared_tours_shared_tours_driver_idTousers?: Prisma.shared_toursUncheckedCreateNestedManyWithoutUsers_shared_tours_driver_idTousersInput
+  system_settings?: Prisma.system_settingsUncheckedCreateNestedManyWithoutUsersInput
+  time_cards_time_cards_driver_idTousers?: Prisma.time_cardsUncheckedCreateNestedManyWithoutUsers_time_cards_driver_idTousersInput
+  time_cards_time_cards_entered_byTousers?: Prisma.time_cardsUncheckedCreateNestedManyWithoutUsers_time_cards_entered_byTousersInput
+  tour_offers_tour_offers_driver_idTousers?: Prisma.tour_offersUncheckedCreateNestedManyWithoutUsers_tour_offers_driver_idTousersInput
+  tour_offers_tour_offers_offered_byTousers?: Prisma.tour_offersUncheckedCreateNestedManyWithoutUsers_tour_offers_offered_byTousersInput
+  tour_operator_insights?: Prisma.tour_operator_insightsUncheckedCreateNestedManyWithoutUsersInput
+  trip_distances?: Prisma.trip_distancesUncheckedCreateNestedManyWithoutUsersInput
+  user_activity_logs?: Prisma.user_activity_logsUncheckedCreateNestedManyWithoutUsersInput
+  other_users?: Prisma.usersUncheckedCreateNestedManyWithoutUsersInput
+  vehicle_assignments_vehicle_assignments_assigned_byTousers?: Prisma.vehicle_assignmentsUncheckedCreateNestedManyWithoutUsers_vehicle_assignments_assigned_byTousersInput
+  vehicle_assignments_vehicle_assignments_driver_idTousers?: Prisma.vehicle_assignmentsUncheckedCreateNestedManyWithoutUsers_vehicle_assignments_driver_idTousersInput
+  vehicle_availability_blocks?: Prisma.vehicle_availability_blocksUncheckedCreateNestedManyWithoutUsersInput
+  vehicle_documents?: Prisma.vehicle_documentsUncheckedCreateNestedManyWithoutUsersInput
+  vehicle_incidents_vehicle_incidents_driver_idTousers?: Prisma.vehicle_incidentsUncheckedCreateNestedManyWithoutUsers_vehicle_incidents_driver_idTousersInput
+  vehicle_incidents_vehicle_incidents_reported_byTousers?: Prisma.vehicle_incidentsUncheckedCreateNestedManyWithoutUsers_vehicle_incidents_reported_byTousersInput
+  vehicle_incidents_vehicle_incidents_resolved_byTousers?: Prisma.vehicle_incidentsUncheckedCreateNestedManyWithoutUsers_vehicle_incidents_resolved_byTousersInput
+  vehicles_vehicles_assigned_driver_idTousers?: Prisma.vehiclesUncheckedCreateNestedManyWithoutUsers_vehicles_assigned_driver_idTousersInput
+  vehicles_vehicles_defect_reported_byTousers?: Prisma.vehiclesUncheckedCreateNestedManyWithoutUsers_vehicles_defect_reported_byTousersInput
+  weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
+  winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
+  workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
+}
+
+export type usersCreateOrConnectWithoutTour_expensesInput = {
+  where: Prisma.usersWhereUniqueInput
+  create: Prisma.XOR<Prisma.usersCreateWithoutTour_expensesInput, Prisma.usersUncheckedCreateWithoutTour_expensesInput>
+}
+
+export type usersUpsertWithoutTour_expensesInput = {
+  update: Prisma.XOR<Prisma.usersUpdateWithoutTour_expensesInput, Prisma.usersUncheckedUpdateWithoutTour_expensesInput>
+  create: Prisma.XOR<Prisma.usersCreateWithoutTour_expensesInput, Prisma.usersUncheckedCreateWithoutTour_expensesInput>
+  where?: Prisma.usersWhereInput
+}
+
+export type usersUpdateToOneWithWhereWithoutTour_expensesInput = {
+  where?: Prisma.usersWhereInput
+  data: Prisma.XOR<Prisma.usersUpdateWithoutTour_expensesInput, Prisma.usersUncheckedUpdateWithoutTour_expensesInput>
+}
+
+export type usersUpdateWithoutTour_expensesInput = {
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  is_active?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  last_login?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  emergency_contact_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  emergency_contact_phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  emergency_contact_relationship?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accessible_tenant_ids?: Prisma.usersUpdateaccessible_tenant_idsInput | number[]
+  medical_cert_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  medical_cert_expiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  medical_cert_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  medical_cert_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  license_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  license_state?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  license_expiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  license_class?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cdl_endorsements?: Prisma.usersUpdatecdl_endorsementsInput | string[]
+  hired_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  termination_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  employment_status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mvr_check_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  mvr_check_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  background_check_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  background_check_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  road_test_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  road_test_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  annual_review_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dq_file_complete?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  dq_file_notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dq_file_last_reviewed?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ai_fine_tuning_jobs?: Prisma.ai_fine_tuning_jobsUpdateManyWithoutUsersNestedInput
+  availability_rules?: Prisma.availability_rulesUpdateManyWithoutUsersNestedInput
+  booking_timeline?: Prisma.booking_timelineUpdateManyWithoutUsersNestedInput
+  bookings_bookings_booked_byTousers?: Prisma.bookingsUpdateManyWithoutUsers_bookings_booked_byTousersNestedInput
+  bookings_bookings_cancelled_byTousers?: Prisma.bookingsUpdateManyWithoutUsers_bookings_cancelled_byTousersNestedInput
+  bookings_bookings_driver_idTousers?: Prisma.bookingsUpdateManyWithoutUsers_bookings_driver_idTousersNestedInput
+  bookings_bookings_final_invoice_approved_byTousers?: Prisma.bookingsUpdateManyWithoutUsers_bookings_final_invoice_approved_byTousersNestedInput
+  business_attributes?: Prisma.business_attributesUpdateManyWithoutUsersNestedInput
+  business_discrepancies?: Prisma.business_discrepanciesUpdateManyWithoutUsersNestedInput
+  business_files?: Prisma.business_filesUpdateManyWithoutUsersNestedInput
+  business_portal_business_portal_invited_byTousers?: Prisma.business_portalUpdateManyWithoutUsers_business_portal_invited_byTousersNestedInput
+  business_portal_business_portal_user_idTousers?: Prisma.business_portalUpdateManyWithoutUsers_business_portal_user_idTousersNestedInput
+  business_text_entries?: Prisma.business_text_entriesUpdateManyWithoutUsersNestedInput
+  business_voice_entries?: Prisma.business_voice_entriesUpdateManyWithoutUsersNestedInput
+  businesses_businesses_approved_byTousers?: Prisma.businessesUpdateManyWithoutUsers_businesses_approved_byTousersNestedInput
+  businesses_businesses_invited_byTousers?: Prisma.businessesUpdateManyWithoutUsers_businesses_invited_byTousersNestedInput
+  client_notes?: Prisma.client_notesUpdateManyWithoutUsersNestedInput
+  client_services?: Prisma.client_servicesUpdateManyWithoutUsersNestedInput
+  compliance_violations_compliance_violations_detected_byTousers?: Prisma.compliance_violationsUpdateManyWithoutUsers_compliance_violations_detected_byTousersNestedInput
+  compliance_violations_compliance_violations_resolved_byTousers?: Prisma.compliance_violationsUpdateManyWithoutUsers_compliance_violations_resolved_byTousersNestedInput
+  corporate_requests?: Prisma.corporate_requestsUpdateManyWithoutUsersNestedInput
+  daily_trips?: Prisma.daily_tripsUpdateManyWithoutUsersNestedInput
+  driver_documents_driver_documents_driver_idTousers?: Prisma.driver_documentsUpdateManyWithoutUsers_driver_documents_driver_idTousersNestedInput
+  driver_documents_driver_documents_verified_byTousers?: Prisma.driver_documentsUpdateManyWithoutUsers_driver_documents_verified_byTousersNestedInput
+  error_logs_error_logs_resolved_byTousers?: Prisma.error_logsUpdateManyWithoutUsers_error_logs_resolved_byTousersNestedInput
+  error_logs_error_logs_user_idTousers?: Prisma.error_logsUpdateManyWithoutUsers_error_logs_user_idTousersNestedInput
+  financial_audit_log?: Prisma.financial_audit_logUpdateManyWithoutUsersNestedInput
+  inspections_inspections_driver_idTousers?: Prisma.inspectionsUpdateManyWithoutUsers_inspections_driver_idTousersNestedInput
+  inspections_inspections_entered_byTousers?: Prisma.inspectionsUpdateManyWithoutUsers_inspections_entered_byTousersNestedInput
+  lunch_orders?: Prisma.lunch_ordersUpdateManyWithoutUsersNestedInput
+  monthly_exemption_status?: Prisma.monthly_exemption_statusUpdateManyWithoutUsersNestedInput
+  partner_profiles_partner_profiles_invited_byTousers?: Prisma.partner_profilesUpdateManyWithoutUsers_partner_profiles_invited_byTousersNestedInput
+  partner_profiles_partner_profiles_user_idTousers?: Prisma.partner_profilesUpdateOneWithoutUsers_partner_profiles_user_idTousersNestedInput
+  performance_metrics?: Prisma.performance_metricsUpdateManyWithoutUsersNestedInput
+  proposals?: Prisma.proposalsUpdateManyWithoutUsersNestedInput
+  shared_tours_shared_tours_created_byTousers?: Prisma.shared_toursUpdateManyWithoutUsers_shared_tours_created_byTousersNestedInput
+  shared_tours_shared_tours_driver_idTousers?: Prisma.shared_toursUpdateManyWithoutUsers_shared_tours_driver_idTousersNestedInput
+  system_settings?: Prisma.system_settingsUpdateManyWithoutUsersNestedInput
+  time_cards_time_cards_driver_idTousers?: Prisma.time_cardsUpdateManyWithoutUsers_time_cards_driver_idTousersNestedInput
+  time_cards_time_cards_entered_byTousers?: Prisma.time_cardsUpdateManyWithoutUsers_time_cards_entered_byTousersNestedInput
+  tour_offers_tour_offers_driver_idTousers?: Prisma.tour_offersUpdateManyWithoutUsers_tour_offers_driver_idTousersNestedInput
+  tour_offers_tour_offers_offered_byTousers?: Prisma.tour_offersUpdateManyWithoutUsers_tour_offers_offered_byTousersNestedInput
+  tour_operator_insights?: Prisma.tour_operator_insightsUpdateManyWithoutUsersNestedInput
+  trip_distances?: Prisma.trip_distancesUpdateManyWithoutUsersNestedInput
+  user_activity_logs?: Prisma.user_activity_logsUpdateManyWithoutUsersNestedInput
+  users?: Prisma.usersUpdateOneWithoutOther_usersNestedInput
+  other_users?: Prisma.usersUpdateManyWithoutUsersNestedInput
+  tenants?: Prisma.tenantsUpdateOneWithoutUsersNestedInput
+  vehicle_assignments_vehicle_assignments_assigned_byTousers?: Prisma.vehicle_assignmentsUpdateManyWithoutUsers_vehicle_assignments_assigned_byTousersNestedInput
+  vehicle_assignments_vehicle_assignments_driver_idTousers?: Prisma.vehicle_assignmentsUpdateManyWithoutUsers_vehicle_assignments_driver_idTousersNestedInput
+  vehicle_availability_blocks?: Prisma.vehicle_availability_blocksUpdateManyWithoutUsersNestedInput
+  vehicle_documents?: Prisma.vehicle_documentsUpdateManyWithoutUsersNestedInput
+  vehicle_incidents_vehicle_incidents_driver_idTousers?: Prisma.vehicle_incidentsUpdateManyWithoutUsers_vehicle_incidents_driver_idTousersNestedInput
+  vehicle_incidents_vehicle_incidents_reported_byTousers?: Prisma.vehicle_incidentsUpdateManyWithoutUsers_vehicle_incidents_reported_byTousersNestedInput
+  vehicle_incidents_vehicle_incidents_resolved_byTousers?: Prisma.vehicle_incidentsUpdateManyWithoutUsers_vehicle_incidents_resolved_byTousersNestedInput
+  vehicles_vehicles_assigned_driver_idTousers?: Prisma.vehiclesUpdateManyWithoutUsers_vehicles_assigned_driver_idTousersNestedInput
+  vehicles_vehicles_defect_reported_byTousers?: Prisma.vehiclesUpdateManyWithoutUsers_vehicles_defect_reported_byTousersNestedInput
+  weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
+  winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
+  workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
+}
+
+export type usersUncheckedUpdateWithoutTour_expensesInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  is_active?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  last_login?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  emergency_contact_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  emergency_contact_phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  emergency_contact_relationship?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tenant_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  accessible_tenant_ids?: Prisma.usersUpdateaccessible_tenant_idsInput | number[]
+  medical_cert_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  medical_cert_expiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  medical_cert_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  medical_cert_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  license_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  license_state?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  license_expiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  license_class?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cdl_endorsements?: Prisma.usersUpdatecdl_endorsementsInput | string[]
+  hired_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  termination_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  employment_status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mvr_check_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  mvr_check_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  background_check_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  background_check_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  road_test_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  road_test_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  annual_review_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dq_file_complete?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  dq_file_notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dq_file_last_reviewed?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dq_file_reviewed_by?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  ai_fine_tuning_jobs?: Prisma.ai_fine_tuning_jobsUncheckedUpdateManyWithoutUsersNestedInput
+  availability_rules?: Prisma.availability_rulesUncheckedUpdateManyWithoutUsersNestedInput
+  booking_timeline?: Prisma.booking_timelineUncheckedUpdateManyWithoutUsersNestedInput
+  bookings_bookings_booked_byTousers?: Prisma.bookingsUncheckedUpdateManyWithoutUsers_bookings_booked_byTousersNestedInput
+  bookings_bookings_cancelled_byTousers?: Prisma.bookingsUncheckedUpdateManyWithoutUsers_bookings_cancelled_byTousersNestedInput
+  bookings_bookings_driver_idTousers?: Prisma.bookingsUncheckedUpdateManyWithoutUsers_bookings_driver_idTousersNestedInput
+  bookings_bookings_final_invoice_approved_byTousers?: Prisma.bookingsUncheckedUpdateManyWithoutUsers_bookings_final_invoice_approved_byTousersNestedInput
+  business_attributes?: Prisma.business_attributesUncheckedUpdateManyWithoutUsersNestedInput
+  business_discrepancies?: Prisma.business_discrepanciesUncheckedUpdateManyWithoutUsersNestedInput
+  business_files?: Prisma.business_filesUncheckedUpdateManyWithoutUsersNestedInput
+  business_portal_business_portal_invited_byTousers?: Prisma.business_portalUncheckedUpdateManyWithoutUsers_business_portal_invited_byTousersNestedInput
+  business_portal_business_portal_user_idTousers?: Prisma.business_portalUncheckedUpdateManyWithoutUsers_business_portal_user_idTousersNestedInput
+  business_text_entries?: Prisma.business_text_entriesUncheckedUpdateManyWithoutUsersNestedInput
+  business_voice_entries?: Prisma.business_voice_entriesUncheckedUpdateManyWithoutUsersNestedInput
+  businesses_businesses_approved_byTousers?: Prisma.businessesUncheckedUpdateManyWithoutUsers_businesses_approved_byTousersNestedInput
+  businesses_businesses_invited_byTousers?: Prisma.businessesUncheckedUpdateManyWithoutUsers_businesses_invited_byTousersNestedInput
+  client_notes?: Prisma.client_notesUncheckedUpdateManyWithoutUsersNestedInput
+  client_services?: Prisma.client_servicesUncheckedUpdateManyWithoutUsersNestedInput
+  compliance_violations_compliance_violations_detected_byTousers?: Prisma.compliance_violationsUncheckedUpdateManyWithoutUsers_compliance_violations_detected_byTousersNestedInput
+  compliance_violations_compliance_violations_resolved_byTousers?: Prisma.compliance_violationsUncheckedUpdateManyWithoutUsers_compliance_violations_resolved_byTousersNestedInput
+  corporate_requests?: Prisma.corporate_requestsUncheckedUpdateManyWithoutUsersNestedInput
+  daily_trips?: Prisma.daily_tripsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_documents_driver_documents_driver_idTousers?: Prisma.driver_documentsUncheckedUpdateManyWithoutUsers_driver_documents_driver_idTousersNestedInput
+  driver_documents_driver_documents_verified_byTousers?: Prisma.driver_documentsUncheckedUpdateManyWithoutUsers_driver_documents_verified_byTousersNestedInput
+  error_logs_error_logs_resolved_byTousers?: Prisma.error_logsUncheckedUpdateManyWithoutUsers_error_logs_resolved_byTousersNestedInput
+  error_logs_error_logs_user_idTousers?: Prisma.error_logsUncheckedUpdateManyWithoutUsers_error_logs_user_idTousersNestedInput
+  financial_audit_log?: Prisma.financial_audit_logUncheckedUpdateManyWithoutUsersNestedInput
+  inspections_inspections_driver_idTousers?: Prisma.inspectionsUncheckedUpdateManyWithoutUsers_inspections_driver_idTousersNestedInput
+  inspections_inspections_entered_byTousers?: Prisma.inspectionsUncheckedUpdateManyWithoutUsers_inspections_entered_byTousersNestedInput
+  lunch_orders?: Prisma.lunch_ordersUncheckedUpdateManyWithoutUsersNestedInput
+  monthly_exemption_status?: Prisma.monthly_exemption_statusUncheckedUpdateManyWithoutUsersNestedInput
+  partner_profiles_partner_profiles_invited_byTousers?: Prisma.partner_profilesUncheckedUpdateManyWithoutUsers_partner_profiles_invited_byTousersNestedInput
+  partner_profiles_partner_profiles_user_idTousers?: Prisma.partner_profilesUncheckedUpdateOneWithoutUsers_partner_profiles_user_idTousersNestedInput
+  performance_metrics?: Prisma.performance_metricsUncheckedUpdateManyWithoutUsersNestedInput
+  proposals?: Prisma.proposalsUncheckedUpdateManyWithoutUsersNestedInput
+  shared_tours_shared_tours_created_byTousers?: Prisma.shared_toursUncheckedUpdateManyWithoutUsers_shared_tours_created_byTousersNestedInput
+  shared_tours_shared_tours_driver_idTousers?: Prisma.shared_toursUncheckedUpdateManyWithoutUsers_shared_tours_driver_idTousersNestedInput
+  system_settings?: Prisma.system_settingsUncheckedUpdateManyWithoutUsersNestedInput
+  time_cards_time_cards_driver_idTousers?: Prisma.time_cardsUncheckedUpdateManyWithoutUsers_time_cards_driver_idTousersNestedInput
+  time_cards_time_cards_entered_byTousers?: Prisma.time_cardsUncheckedUpdateManyWithoutUsers_time_cards_entered_byTousersNestedInput
+  tour_offers_tour_offers_driver_idTousers?: Prisma.tour_offersUncheckedUpdateManyWithoutUsers_tour_offers_driver_idTousersNestedInput
+  tour_offers_tour_offers_offered_byTousers?: Prisma.tour_offersUncheckedUpdateManyWithoutUsers_tour_offers_offered_byTousersNestedInput
+  tour_operator_insights?: Prisma.tour_operator_insightsUncheckedUpdateManyWithoutUsersNestedInput
+  trip_distances?: Prisma.trip_distancesUncheckedUpdateManyWithoutUsersNestedInput
+  user_activity_logs?: Prisma.user_activity_logsUncheckedUpdateManyWithoutUsersNestedInput
+  other_users?: Prisma.usersUncheckedUpdateManyWithoutUsersNestedInput
+  vehicle_assignments_vehicle_assignments_assigned_byTousers?: Prisma.vehicle_assignmentsUncheckedUpdateManyWithoutUsers_vehicle_assignments_assigned_byTousersNestedInput
+  vehicle_assignments_vehicle_assignments_driver_idTousers?: Prisma.vehicle_assignmentsUncheckedUpdateManyWithoutUsers_vehicle_assignments_driver_idTousersNestedInput
+  vehicle_availability_blocks?: Prisma.vehicle_availability_blocksUncheckedUpdateManyWithoutUsersNestedInput
+  vehicle_documents?: Prisma.vehicle_documentsUncheckedUpdateManyWithoutUsersNestedInput
+  vehicle_incidents_vehicle_incidents_driver_idTousers?: Prisma.vehicle_incidentsUncheckedUpdateManyWithoutUsers_vehicle_incidents_driver_idTousersNestedInput
+  vehicle_incidents_vehicle_incidents_reported_byTousers?: Prisma.vehicle_incidentsUncheckedUpdateManyWithoutUsers_vehicle_incidents_reported_byTousersNestedInput
+  vehicle_incidents_vehicle_incidents_resolved_byTousers?: Prisma.vehicle_incidentsUncheckedUpdateManyWithoutUsers_vehicle_incidents_resolved_byTousersNestedInput
+  vehicles_vehicles_assigned_driver_idTousers?: Prisma.vehiclesUncheckedUpdateManyWithoutUsers_vehicles_assigned_driver_idTousersNestedInput
+  vehicles_vehicles_defect_reported_byTousers?: Prisma.vehiclesUncheckedUpdateManyWithoutUsers_vehicles_defect_reported_byTousersNestedInput
+  weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
+  winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
+  workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
+}
+
+export type usersCreateWithoutTour_completionsInput = {
+  email: string
+  password_hash: string
+  name: string
+  role?: string
+  is_active?: boolean | null
+  last_login?: Date | string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  phone?: string | null
+  emergency_contact_name?: string | null
+  emergency_contact_phone?: string | null
+  emergency_contact_relationship?: string | null
+  accessible_tenant_ids?: Prisma.usersCreateaccessible_tenant_idsInput | number[]
+  medical_cert_number?: string | null
+  medical_cert_expiry?: Date | string | null
+  medical_cert_url?: string | null
+  medical_cert_type?: string | null
+  license_number?: string | null
+  license_state?: string | null
+  license_expiry?: Date | string | null
+  license_class?: string | null
+  cdl_endorsements?: Prisma.usersCreatecdl_endorsementsInput | string[]
+  hired_date?: Date | string | null
+  termination_date?: Date | string | null
+  employment_status?: string | null
+  mvr_check_date?: Date | string | null
+  mvr_check_url?: string | null
+  background_check_date?: Date | string | null
+  background_check_url?: string | null
+  road_test_date?: Date | string | null
+  road_test_url?: string | null
+  annual_review_date?: Date | string | null
+  dq_file_complete?: boolean | null
+  dq_file_notes?: string | null
+  dq_file_last_reviewed?: Date | string | null
+  ai_fine_tuning_jobs?: Prisma.ai_fine_tuning_jobsCreateNestedManyWithoutUsersInput
+  availability_rules?: Prisma.availability_rulesCreateNestedManyWithoutUsersInput
+  booking_timeline?: Prisma.booking_timelineCreateNestedManyWithoutUsersInput
+  bookings_bookings_booked_byTousers?: Prisma.bookingsCreateNestedManyWithoutUsers_bookings_booked_byTousersInput
+  bookings_bookings_cancelled_byTousers?: Prisma.bookingsCreateNestedManyWithoutUsers_bookings_cancelled_byTousersInput
+  bookings_bookings_driver_idTousers?: Prisma.bookingsCreateNestedManyWithoutUsers_bookings_driver_idTousersInput
+  bookings_bookings_final_invoice_approved_byTousers?: Prisma.bookingsCreateNestedManyWithoutUsers_bookings_final_invoice_approved_byTousersInput
+  business_attributes?: Prisma.business_attributesCreateNestedManyWithoutUsersInput
+  business_discrepancies?: Prisma.business_discrepanciesCreateNestedManyWithoutUsersInput
+  business_files?: Prisma.business_filesCreateNestedManyWithoutUsersInput
+  business_portal_business_portal_invited_byTousers?: Prisma.business_portalCreateNestedManyWithoutUsers_business_portal_invited_byTousersInput
+  business_portal_business_portal_user_idTousers?: Prisma.business_portalCreateNestedManyWithoutUsers_business_portal_user_idTousersInput
+  business_text_entries?: Prisma.business_text_entriesCreateNestedManyWithoutUsersInput
+  business_voice_entries?: Prisma.business_voice_entriesCreateNestedManyWithoutUsersInput
+  businesses_businesses_approved_byTousers?: Prisma.businessesCreateNestedManyWithoutUsers_businesses_approved_byTousersInput
+  businesses_businesses_invited_byTousers?: Prisma.businessesCreateNestedManyWithoutUsers_businesses_invited_byTousersInput
+  client_notes?: Prisma.client_notesCreateNestedManyWithoutUsersInput
+  client_services?: Prisma.client_servicesCreateNestedManyWithoutUsersInput
+  compliance_violations_compliance_violations_detected_byTousers?: Prisma.compliance_violationsCreateNestedManyWithoutUsers_compliance_violations_detected_byTousersInput
+  compliance_violations_compliance_violations_resolved_byTousers?: Prisma.compliance_violationsCreateNestedManyWithoutUsers_compliance_violations_resolved_byTousersInput
+  corporate_requests?: Prisma.corporate_requestsCreateNestedManyWithoutUsersInput
+  daily_trips?: Prisma.daily_tripsCreateNestedManyWithoutUsersInput
+  driver_documents_driver_documents_driver_idTousers?: Prisma.driver_documentsCreateNestedManyWithoutUsers_driver_documents_driver_idTousersInput
+  driver_documents_driver_documents_verified_byTousers?: Prisma.driver_documentsCreateNestedManyWithoutUsers_driver_documents_verified_byTousersInput
+  error_logs_error_logs_resolved_byTousers?: Prisma.error_logsCreateNestedManyWithoutUsers_error_logs_resolved_byTousersInput
+  error_logs_error_logs_user_idTousers?: Prisma.error_logsCreateNestedManyWithoutUsers_error_logs_user_idTousersInput
+  financial_audit_log?: Prisma.financial_audit_logCreateNestedManyWithoutUsersInput
+  inspections_inspections_driver_idTousers?: Prisma.inspectionsCreateNestedManyWithoutUsers_inspections_driver_idTousersInput
+  inspections_inspections_entered_byTousers?: Prisma.inspectionsCreateNestedManyWithoutUsers_inspections_entered_byTousersInput
+  lunch_orders?: Prisma.lunch_ordersCreateNestedManyWithoutUsersInput
+  monthly_exemption_status?: Prisma.monthly_exemption_statusCreateNestedManyWithoutUsersInput
+  partner_profiles_partner_profiles_invited_byTousers?: Prisma.partner_profilesCreateNestedManyWithoutUsers_partner_profiles_invited_byTousersInput
+  partner_profiles_partner_profiles_user_idTousers?: Prisma.partner_profilesCreateNestedOneWithoutUsers_partner_profiles_user_idTousersInput
+  performance_metrics?: Prisma.performance_metricsCreateNestedManyWithoutUsersInput
+  proposals?: Prisma.proposalsCreateNestedManyWithoutUsersInput
+  shared_tours_shared_tours_created_byTousers?: Prisma.shared_toursCreateNestedManyWithoutUsers_shared_tours_created_byTousersInput
+  shared_tours_shared_tours_driver_idTousers?: Prisma.shared_toursCreateNestedManyWithoutUsers_shared_tours_driver_idTousersInput
+  system_settings?: Prisma.system_settingsCreateNestedManyWithoutUsersInput
+  time_cards_time_cards_driver_idTousers?: Prisma.time_cardsCreateNestedManyWithoutUsers_time_cards_driver_idTousersInput
+  time_cards_time_cards_entered_byTousers?: Prisma.time_cardsCreateNestedManyWithoutUsers_time_cards_entered_byTousersInput
+  tour_offers_tour_offers_driver_idTousers?: Prisma.tour_offersCreateNestedManyWithoutUsers_tour_offers_driver_idTousersInput
+  tour_offers_tour_offers_offered_byTousers?: Prisma.tour_offersCreateNestedManyWithoutUsers_tour_offers_offered_byTousersInput
+  tour_operator_insights?: Prisma.tour_operator_insightsCreateNestedManyWithoutUsersInput
+  trip_distances?: Prisma.trip_distancesCreateNestedManyWithoutUsersInput
+  user_activity_logs?: Prisma.user_activity_logsCreateNestedManyWithoutUsersInput
+  users?: Prisma.usersCreateNestedOneWithoutOther_usersInput
+  other_users?: Prisma.usersCreateNestedManyWithoutUsersInput
+  tenants?: Prisma.tenantsCreateNestedOneWithoutUsersInput
+  vehicle_assignments_vehicle_assignments_assigned_byTousers?: Prisma.vehicle_assignmentsCreateNestedManyWithoutUsers_vehicle_assignments_assigned_byTousersInput
+  vehicle_assignments_vehicle_assignments_driver_idTousers?: Prisma.vehicle_assignmentsCreateNestedManyWithoutUsers_vehicle_assignments_driver_idTousersInput
+  vehicle_availability_blocks?: Prisma.vehicle_availability_blocksCreateNestedManyWithoutUsersInput
+  vehicle_documents?: Prisma.vehicle_documentsCreateNestedManyWithoutUsersInput
+  vehicle_incidents_vehicle_incidents_driver_idTousers?: Prisma.vehicle_incidentsCreateNestedManyWithoutUsers_vehicle_incidents_driver_idTousersInput
+  vehicle_incidents_vehicle_incidents_reported_byTousers?: Prisma.vehicle_incidentsCreateNestedManyWithoutUsers_vehicle_incidents_reported_byTousersInput
+  vehicle_incidents_vehicle_incidents_resolved_byTousers?: Prisma.vehicle_incidentsCreateNestedManyWithoutUsers_vehicle_incidents_resolved_byTousersInput
+  vehicles_vehicles_assigned_driver_idTousers?: Prisma.vehiclesCreateNestedManyWithoutUsers_vehicles_assigned_driver_idTousersInput
+  vehicles_vehicles_defect_reported_byTousers?: Prisma.vehiclesCreateNestedManyWithoutUsers_vehicles_defect_reported_byTousersInput
+  weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
+  winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
+  workflows?: Prisma.workflowsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+}
+
+export type usersUncheckedCreateWithoutTour_completionsInput = {
+  id?: number
+  email: string
+  password_hash: string
+  name: string
+  role?: string
+  is_active?: boolean | null
+  last_login?: Date | string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  phone?: string | null
+  emergency_contact_name?: string | null
+  emergency_contact_phone?: string | null
+  emergency_contact_relationship?: string | null
+  tenant_id?: number | null
+  accessible_tenant_ids?: Prisma.usersCreateaccessible_tenant_idsInput | number[]
+  medical_cert_number?: string | null
+  medical_cert_expiry?: Date | string | null
+  medical_cert_url?: string | null
+  medical_cert_type?: string | null
+  license_number?: string | null
+  license_state?: string | null
+  license_expiry?: Date | string | null
+  license_class?: string | null
+  cdl_endorsements?: Prisma.usersCreatecdl_endorsementsInput | string[]
+  hired_date?: Date | string | null
+  termination_date?: Date | string | null
+  employment_status?: string | null
+  mvr_check_date?: Date | string | null
+  mvr_check_url?: string | null
+  background_check_date?: Date | string | null
+  background_check_url?: string | null
+  road_test_date?: Date | string | null
+  road_test_url?: string | null
+  annual_review_date?: Date | string | null
+  dq_file_complete?: boolean | null
+  dq_file_notes?: string | null
+  dq_file_last_reviewed?: Date | string | null
+  dq_file_reviewed_by?: number | null
+  ai_fine_tuning_jobs?: Prisma.ai_fine_tuning_jobsUncheckedCreateNestedManyWithoutUsersInput
+  availability_rules?: Prisma.availability_rulesUncheckedCreateNestedManyWithoutUsersInput
+  booking_timeline?: Prisma.booking_timelineUncheckedCreateNestedManyWithoutUsersInput
+  bookings_bookings_booked_byTousers?: Prisma.bookingsUncheckedCreateNestedManyWithoutUsers_bookings_booked_byTousersInput
+  bookings_bookings_cancelled_byTousers?: Prisma.bookingsUncheckedCreateNestedManyWithoutUsers_bookings_cancelled_byTousersInput
+  bookings_bookings_driver_idTousers?: Prisma.bookingsUncheckedCreateNestedManyWithoutUsers_bookings_driver_idTousersInput
+  bookings_bookings_final_invoice_approved_byTousers?: Prisma.bookingsUncheckedCreateNestedManyWithoutUsers_bookings_final_invoice_approved_byTousersInput
+  business_attributes?: Prisma.business_attributesUncheckedCreateNestedManyWithoutUsersInput
+  business_discrepancies?: Prisma.business_discrepanciesUncheckedCreateNestedManyWithoutUsersInput
+  business_files?: Prisma.business_filesUncheckedCreateNestedManyWithoutUsersInput
+  business_portal_business_portal_invited_byTousers?: Prisma.business_portalUncheckedCreateNestedManyWithoutUsers_business_portal_invited_byTousersInput
+  business_portal_business_portal_user_idTousers?: Prisma.business_portalUncheckedCreateNestedManyWithoutUsers_business_portal_user_idTousersInput
+  business_text_entries?: Prisma.business_text_entriesUncheckedCreateNestedManyWithoutUsersInput
+  business_voice_entries?: Prisma.business_voice_entriesUncheckedCreateNestedManyWithoutUsersInput
+  businesses_businesses_approved_byTousers?: Prisma.businessesUncheckedCreateNestedManyWithoutUsers_businesses_approved_byTousersInput
+  businesses_businesses_invited_byTousers?: Prisma.businessesUncheckedCreateNestedManyWithoutUsers_businesses_invited_byTousersInput
+  client_notes?: Prisma.client_notesUncheckedCreateNestedManyWithoutUsersInput
+  client_services?: Prisma.client_servicesUncheckedCreateNestedManyWithoutUsersInput
+  compliance_violations_compliance_violations_detected_byTousers?: Prisma.compliance_violationsUncheckedCreateNestedManyWithoutUsers_compliance_violations_detected_byTousersInput
+  compliance_violations_compliance_violations_resolved_byTousers?: Prisma.compliance_violationsUncheckedCreateNestedManyWithoutUsers_compliance_violations_resolved_byTousersInput
+  corporate_requests?: Prisma.corporate_requestsUncheckedCreateNestedManyWithoutUsersInput
+  daily_trips?: Prisma.daily_tripsUncheckedCreateNestedManyWithoutUsersInput
+  driver_documents_driver_documents_driver_idTousers?: Prisma.driver_documentsUncheckedCreateNestedManyWithoutUsers_driver_documents_driver_idTousersInput
+  driver_documents_driver_documents_verified_byTousers?: Prisma.driver_documentsUncheckedCreateNestedManyWithoutUsers_driver_documents_verified_byTousersInput
+  error_logs_error_logs_resolved_byTousers?: Prisma.error_logsUncheckedCreateNestedManyWithoutUsers_error_logs_resolved_byTousersInput
+  error_logs_error_logs_user_idTousers?: Prisma.error_logsUncheckedCreateNestedManyWithoutUsers_error_logs_user_idTousersInput
+  financial_audit_log?: Prisma.financial_audit_logUncheckedCreateNestedManyWithoutUsersInput
+  inspections_inspections_driver_idTousers?: Prisma.inspectionsUncheckedCreateNestedManyWithoutUsers_inspections_driver_idTousersInput
+  inspections_inspections_entered_byTousers?: Prisma.inspectionsUncheckedCreateNestedManyWithoutUsers_inspections_entered_byTousersInput
+  lunch_orders?: Prisma.lunch_ordersUncheckedCreateNestedManyWithoutUsersInput
+  monthly_exemption_status?: Prisma.monthly_exemption_statusUncheckedCreateNestedManyWithoutUsersInput
+  partner_profiles_partner_profiles_invited_byTousers?: Prisma.partner_profilesUncheckedCreateNestedManyWithoutUsers_partner_profiles_invited_byTousersInput
+  partner_profiles_partner_profiles_user_idTousers?: Prisma.partner_profilesUncheckedCreateNestedOneWithoutUsers_partner_profiles_user_idTousersInput
+  performance_metrics?: Prisma.performance_metricsUncheckedCreateNestedManyWithoutUsersInput
+  proposals?: Prisma.proposalsUncheckedCreateNestedManyWithoutUsersInput
+  shared_tours_shared_tours_created_byTousers?: Prisma.shared_toursUncheckedCreateNestedManyWithoutUsers_shared_tours_created_byTousersInput
+  shared_tours_shared_tours_driver_idTousers?: Prisma.shared_toursUncheckedCreateNestedManyWithoutUsers_shared_tours_driver_idTousersInput
+  system_settings?: Prisma.system_settingsUncheckedCreateNestedManyWithoutUsersInput
+  time_cards_time_cards_driver_idTousers?: Prisma.time_cardsUncheckedCreateNestedManyWithoutUsers_time_cards_driver_idTousersInput
+  time_cards_time_cards_entered_byTousers?: Prisma.time_cardsUncheckedCreateNestedManyWithoutUsers_time_cards_entered_byTousersInput
+  tour_offers_tour_offers_driver_idTousers?: Prisma.tour_offersUncheckedCreateNestedManyWithoutUsers_tour_offers_driver_idTousersInput
+  tour_offers_tour_offers_offered_byTousers?: Prisma.tour_offersUncheckedCreateNestedManyWithoutUsers_tour_offers_offered_byTousersInput
+  tour_operator_insights?: Prisma.tour_operator_insightsUncheckedCreateNestedManyWithoutUsersInput
+  trip_distances?: Prisma.trip_distancesUncheckedCreateNestedManyWithoutUsersInput
+  user_activity_logs?: Prisma.user_activity_logsUncheckedCreateNestedManyWithoutUsersInput
+  other_users?: Prisma.usersUncheckedCreateNestedManyWithoutUsersInput
+  vehicle_assignments_vehicle_assignments_assigned_byTousers?: Prisma.vehicle_assignmentsUncheckedCreateNestedManyWithoutUsers_vehicle_assignments_assigned_byTousersInput
+  vehicle_assignments_vehicle_assignments_driver_idTousers?: Prisma.vehicle_assignmentsUncheckedCreateNestedManyWithoutUsers_vehicle_assignments_driver_idTousersInput
+  vehicle_availability_blocks?: Prisma.vehicle_availability_blocksUncheckedCreateNestedManyWithoutUsersInput
+  vehicle_documents?: Prisma.vehicle_documentsUncheckedCreateNestedManyWithoutUsersInput
+  vehicle_incidents_vehicle_incidents_driver_idTousers?: Prisma.vehicle_incidentsUncheckedCreateNestedManyWithoutUsers_vehicle_incidents_driver_idTousersInput
+  vehicle_incidents_vehicle_incidents_reported_byTousers?: Prisma.vehicle_incidentsUncheckedCreateNestedManyWithoutUsers_vehicle_incidents_reported_byTousersInput
+  vehicle_incidents_vehicle_incidents_resolved_byTousers?: Prisma.vehicle_incidentsUncheckedCreateNestedManyWithoutUsers_vehicle_incidents_resolved_byTousersInput
+  vehicles_vehicles_assigned_driver_idTousers?: Prisma.vehiclesUncheckedCreateNestedManyWithoutUsers_vehicles_assigned_driver_idTousersInput
+  vehicles_vehicles_defect_reported_byTousers?: Prisma.vehiclesUncheckedCreateNestedManyWithoutUsers_vehicles_defect_reported_byTousersInput
+  weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
+  winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
+  workflows?: Prisma.workflowsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+}
+
+export type usersCreateOrConnectWithoutTour_completionsInput = {
+  where: Prisma.usersWhereUniqueInput
+  create: Prisma.XOR<Prisma.usersCreateWithoutTour_completionsInput, Prisma.usersUncheckedCreateWithoutTour_completionsInput>
+}
+
+export type usersUpsertWithoutTour_completionsInput = {
+  update: Prisma.XOR<Prisma.usersUpdateWithoutTour_completionsInput, Prisma.usersUncheckedUpdateWithoutTour_completionsInput>
+  create: Prisma.XOR<Prisma.usersCreateWithoutTour_completionsInput, Prisma.usersUncheckedCreateWithoutTour_completionsInput>
+  where?: Prisma.usersWhereInput
+}
+
+export type usersUpdateToOneWithWhereWithoutTour_completionsInput = {
+  where?: Prisma.usersWhereInput
+  data: Prisma.XOR<Prisma.usersUpdateWithoutTour_completionsInput, Prisma.usersUncheckedUpdateWithoutTour_completionsInput>
+}
+
+export type usersUpdateWithoutTour_completionsInput = {
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  is_active?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  last_login?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  emergency_contact_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  emergency_contact_phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  emergency_contact_relationship?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accessible_tenant_ids?: Prisma.usersUpdateaccessible_tenant_idsInput | number[]
+  medical_cert_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  medical_cert_expiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  medical_cert_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  medical_cert_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  license_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  license_state?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  license_expiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  license_class?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cdl_endorsements?: Prisma.usersUpdatecdl_endorsementsInput | string[]
+  hired_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  termination_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  employment_status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mvr_check_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  mvr_check_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  background_check_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  background_check_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  road_test_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  road_test_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  annual_review_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dq_file_complete?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  dq_file_notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dq_file_last_reviewed?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ai_fine_tuning_jobs?: Prisma.ai_fine_tuning_jobsUpdateManyWithoutUsersNestedInput
+  availability_rules?: Prisma.availability_rulesUpdateManyWithoutUsersNestedInput
+  booking_timeline?: Prisma.booking_timelineUpdateManyWithoutUsersNestedInput
+  bookings_bookings_booked_byTousers?: Prisma.bookingsUpdateManyWithoutUsers_bookings_booked_byTousersNestedInput
+  bookings_bookings_cancelled_byTousers?: Prisma.bookingsUpdateManyWithoutUsers_bookings_cancelled_byTousersNestedInput
+  bookings_bookings_driver_idTousers?: Prisma.bookingsUpdateManyWithoutUsers_bookings_driver_idTousersNestedInput
+  bookings_bookings_final_invoice_approved_byTousers?: Prisma.bookingsUpdateManyWithoutUsers_bookings_final_invoice_approved_byTousersNestedInput
+  business_attributes?: Prisma.business_attributesUpdateManyWithoutUsersNestedInput
+  business_discrepancies?: Prisma.business_discrepanciesUpdateManyWithoutUsersNestedInput
+  business_files?: Prisma.business_filesUpdateManyWithoutUsersNestedInput
+  business_portal_business_portal_invited_byTousers?: Prisma.business_portalUpdateManyWithoutUsers_business_portal_invited_byTousersNestedInput
+  business_portal_business_portal_user_idTousers?: Prisma.business_portalUpdateManyWithoutUsers_business_portal_user_idTousersNestedInput
+  business_text_entries?: Prisma.business_text_entriesUpdateManyWithoutUsersNestedInput
+  business_voice_entries?: Prisma.business_voice_entriesUpdateManyWithoutUsersNestedInput
+  businesses_businesses_approved_byTousers?: Prisma.businessesUpdateManyWithoutUsers_businesses_approved_byTousersNestedInput
+  businesses_businesses_invited_byTousers?: Prisma.businessesUpdateManyWithoutUsers_businesses_invited_byTousersNestedInput
+  client_notes?: Prisma.client_notesUpdateManyWithoutUsersNestedInput
+  client_services?: Prisma.client_servicesUpdateManyWithoutUsersNestedInput
+  compliance_violations_compliance_violations_detected_byTousers?: Prisma.compliance_violationsUpdateManyWithoutUsers_compliance_violations_detected_byTousersNestedInput
+  compliance_violations_compliance_violations_resolved_byTousers?: Prisma.compliance_violationsUpdateManyWithoutUsers_compliance_violations_resolved_byTousersNestedInput
+  corporate_requests?: Prisma.corporate_requestsUpdateManyWithoutUsersNestedInput
+  daily_trips?: Prisma.daily_tripsUpdateManyWithoutUsersNestedInput
+  driver_documents_driver_documents_driver_idTousers?: Prisma.driver_documentsUpdateManyWithoutUsers_driver_documents_driver_idTousersNestedInput
+  driver_documents_driver_documents_verified_byTousers?: Prisma.driver_documentsUpdateManyWithoutUsers_driver_documents_verified_byTousersNestedInput
+  error_logs_error_logs_resolved_byTousers?: Prisma.error_logsUpdateManyWithoutUsers_error_logs_resolved_byTousersNestedInput
+  error_logs_error_logs_user_idTousers?: Prisma.error_logsUpdateManyWithoutUsers_error_logs_user_idTousersNestedInput
+  financial_audit_log?: Prisma.financial_audit_logUpdateManyWithoutUsersNestedInput
+  inspections_inspections_driver_idTousers?: Prisma.inspectionsUpdateManyWithoutUsers_inspections_driver_idTousersNestedInput
+  inspections_inspections_entered_byTousers?: Prisma.inspectionsUpdateManyWithoutUsers_inspections_entered_byTousersNestedInput
+  lunch_orders?: Prisma.lunch_ordersUpdateManyWithoutUsersNestedInput
+  monthly_exemption_status?: Prisma.monthly_exemption_statusUpdateManyWithoutUsersNestedInput
+  partner_profiles_partner_profiles_invited_byTousers?: Prisma.partner_profilesUpdateManyWithoutUsers_partner_profiles_invited_byTousersNestedInput
+  partner_profiles_partner_profiles_user_idTousers?: Prisma.partner_profilesUpdateOneWithoutUsers_partner_profiles_user_idTousersNestedInput
+  performance_metrics?: Prisma.performance_metricsUpdateManyWithoutUsersNestedInput
+  proposals?: Prisma.proposalsUpdateManyWithoutUsersNestedInput
+  shared_tours_shared_tours_created_byTousers?: Prisma.shared_toursUpdateManyWithoutUsers_shared_tours_created_byTousersNestedInput
+  shared_tours_shared_tours_driver_idTousers?: Prisma.shared_toursUpdateManyWithoutUsers_shared_tours_driver_idTousersNestedInput
+  system_settings?: Prisma.system_settingsUpdateManyWithoutUsersNestedInput
+  time_cards_time_cards_driver_idTousers?: Prisma.time_cardsUpdateManyWithoutUsers_time_cards_driver_idTousersNestedInput
+  time_cards_time_cards_entered_byTousers?: Prisma.time_cardsUpdateManyWithoutUsers_time_cards_entered_byTousersNestedInput
+  tour_offers_tour_offers_driver_idTousers?: Prisma.tour_offersUpdateManyWithoutUsers_tour_offers_driver_idTousersNestedInput
+  tour_offers_tour_offers_offered_byTousers?: Prisma.tour_offersUpdateManyWithoutUsers_tour_offers_offered_byTousersNestedInput
+  tour_operator_insights?: Prisma.tour_operator_insightsUpdateManyWithoutUsersNestedInput
+  trip_distances?: Prisma.trip_distancesUpdateManyWithoutUsersNestedInput
+  user_activity_logs?: Prisma.user_activity_logsUpdateManyWithoutUsersNestedInput
+  users?: Prisma.usersUpdateOneWithoutOther_usersNestedInput
+  other_users?: Prisma.usersUpdateManyWithoutUsersNestedInput
+  tenants?: Prisma.tenantsUpdateOneWithoutUsersNestedInput
+  vehicle_assignments_vehicle_assignments_assigned_byTousers?: Prisma.vehicle_assignmentsUpdateManyWithoutUsers_vehicle_assignments_assigned_byTousersNestedInput
+  vehicle_assignments_vehicle_assignments_driver_idTousers?: Prisma.vehicle_assignmentsUpdateManyWithoutUsers_vehicle_assignments_driver_idTousersNestedInput
+  vehicle_availability_blocks?: Prisma.vehicle_availability_blocksUpdateManyWithoutUsersNestedInput
+  vehicle_documents?: Prisma.vehicle_documentsUpdateManyWithoutUsersNestedInput
+  vehicle_incidents_vehicle_incidents_driver_idTousers?: Prisma.vehicle_incidentsUpdateManyWithoutUsers_vehicle_incidents_driver_idTousersNestedInput
+  vehicle_incidents_vehicle_incidents_reported_byTousers?: Prisma.vehicle_incidentsUpdateManyWithoutUsers_vehicle_incidents_reported_byTousersNestedInput
+  vehicle_incidents_vehicle_incidents_resolved_byTousers?: Prisma.vehicle_incidentsUpdateManyWithoutUsers_vehicle_incidents_resolved_byTousersNestedInput
+  vehicles_vehicles_assigned_driver_idTousers?: Prisma.vehiclesUpdateManyWithoutUsers_vehicles_assigned_driver_idTousersNestedInput
+  vehicles_vehicles_defect_reported_byTousers?: Prisma.vehiclesUpdateManyWithoutUsers_vehicles_defect_reported_byTousersNestedInput
+  weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
+  winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
+  workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+}
+
+export type usersUncheckedUpdateWithoutTour_completionsInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  is_active?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  last_login?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  emergency_contact_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  emergency_contact_phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  emergency_contact_relationship?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tenant_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  accessible_tenant_ids?: Prisma.usersUpdateaccessible_tenant_idsInput | number[]
+  medical_cert_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  medical_cert_expiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  medical_cert_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  medical_cert_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  license_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  license_state?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  license_expiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  license_class?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cdl_endorsements?: Prisma.usersUpdatecdl_endorsementsInput | string[]
+  hired_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  termination_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  employment_status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mvr_check_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  mvr_check_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  background_check_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  background_check_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  road_test_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  road_test_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  annual_review_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dq_file_complete?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  dq_file_notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dq_file_last_reviewed?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dq_file_reviewed_by?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  ai_fine_tuning_jobs?: Prisma.ai_fine_tuning_jobsUncheckedUpdateManyWithoutUsersNestedInput
+  availability_rules?: Prisma.availability_rulesUncheckedUpdateManyWithoutUsersNestedInput
+  booking_timeline?: Prisma.booking_timelineUncheckedUpdateManyWithoutUsersNestedInput
+  bookings_bookings_booked_byTousers?: Prisma.bookingsUncheckedUpdateManyWithoutUsers_bookings_booked_byTousersNestedInput
+  bookings_bookings_cancelled_byTousers?: Prisma.bookingsUncheckedUpdateManyWithoutUsers_bookings_cancelled_byTousersNestedInput
+  bookings_bookings_driver_idTousers?: Prisma.bookingsUncheckedUpdateManyWithoutUsers_bookings_driver_idTousersNestedInput
+  bookings_bookings_final_invoice_approved_byTousers?: Prisma.bookingsUncheckedUpdateManyWithoutUsers_bookings_final_invoice_approved_byTousersNestedInput
+  business_attributes?: Prisma.business_attributesUncheckedUpdateManyWithoutUsersNestedInput
+  business_discrepancies?: Prisma.business_discrepanciesUncheckedUpdateManyWithoutUsersNestedInput
+  business_files?: Prisma.business_filesUncheckedUpdateManyWithoutUsersNestedInput
+  business_portal_business_portal_invited_byTousers?: Prisma.business_portalUncheckedUpdateManyWithoutUsers_business_portal_invited_byTousersNestedInput
+  business_portal_business_portal_user_idTousers?: Prisma.business_portalUncheckedUpdateManyWithoutUsers_business_portal_user_idTousersNestedInput
+  business_text_entries?: Prisma.business_text_entriesUncheckedUpdateManyWithoutUsersNestedInput
+  business_voice_entries?: Prisma.business_voice_entriesUncheckedUpdateManyWithoutUsersNestedInput
+  businesses_businesses_approved_byTousers?: Prisma.businessesUncheckedUpdateManyWithoutUsers_businesses_approved_byTousersNestedInput
+  businesses_businesses_invited_byTousers?: Prisma.businessesUncheckedUpdateManyWithoutUsers_businesses_invited_byTousersNestedInput
+  client_notes?: Prisma.client_notesUncheckedUpdateManyWithoutUsersNestedInput
+  client_services?: Prisma.client_servicesUncheckedUpdateManyWithoutUsersNestedInput
+  compliance_violations_compliance_violations_detected_byTousers?: Prisma.compliance_violationsUncheckedUpdateManyWithoutUsers_compliance_violations_detected_byTousersNestedInput
+  compliance_violations_compliance_violations_resolved_byTousers?: Prisma.compliance_violationsUncheckedUpdateManyWithoutUsers_compliance_violations_resolved_byTousersNestedInput
+  corporate_requests?: Prisma.corporate_requestsUncheckedUpdateManyWithoutUsersNestedInput
+  daily_trips?: Prisma.daily_tripsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_documents_driver_documents_driver_idTousers?: Prisma.driver_documentsUncheckedUpdateManyWithoutUsers_driver_documents_driver_idTousersNestedInput
+  driver_documents_driver_documents_verified_byTousers?: Prisma.driver_documentsUncheckedUpdateManyWithoutUsers_driver_documents_verified_byTousersNestedInput
+  error_logs_error_logs_resolved_byTousers?: Prisma.error_logsUncheckedUpdateManyWithoutUsers_error_logs_resolved_byTousersNestedInput
+  error_logs_error_logs_user_idTousers?: Prisma.error_logsUncheckedUpdateManyWithoutUsers_error_logs_user_idTousersNestedInput
+  financial_audit_log?: Prisma.financial_audit_logUncheckedUpdateManyWithoutUsersNestedInput
+  inspections_inspections_driver_idTousers?: Prisma.inspectionsUncheckedUpdateManyWithoutUsers_inspections_driver_idTousersNestedInput
+  inspections_inspections_entered_byTousers?: Prisma.inspectionsUncheckedUpdateManyWithoutUsers_inspections_entered_byTousersNestedInput
+  lunch_orders?: Prisma.lunch_ordersUncheckedUpdateManyWithoutUsersNestedInput
+  monthly_exemption_status?: Prisma.monthly_exemption_statusUncheckedUpdateManyWithoutUsersNestedInput
+  partner_profiles_partner_profiles_invited_byTousers?: Prisma.partner_profilesUncheckedUpdateManyWithoutUsers_partner_profiles_invited_byTousersNestedInput
+  partner_profiles_partner_profiles_user_idTousers?: Prisma.partner_profilesUncheckedUpdateOneWithoutUsers_partner_profiles_user_idTousersNestedInput
+  performance_metrics?: Prisma.performance_metricsUncheckedUpdateManyWithoutUsersNestedInput
+  proposals?: Prisma.proposalsUncheckedUpdateManyWithoutUsersNestedInput
+  shared_tours_shared_tours_created_byTousers?: Prisma.shared_toursUncheckedUpdateManyWithoutUsers_shared_tours_created_byTousersNestedInput
+  shared_tours_shared_tours_driver_idTousers?: Prisma.shared_toursUncheckedUpdateManyWithoutUsers_shared_tours_driver_idTousersNestedInput
+  system_settings?: Prisma.system_settingsUncheckedUpdateManyWithoutUsersNestedInput
+  time_cards_time_cards_driver_idTousers?: Prisma.time_cardsUncheckedUpdateManyWithoutUsers_time_cards_driver_idTousersNestedInput
+  time_cards_time_cards_entered_byTousers?: Prisma.time_cardsUncheckedUpdateManyWithoutUsers_time_cards_entered_byTousersNestedInput
+  tour_offers_tour_offers_driver_idTousers?: Prisma.tour_offersUncheckedUpdateManyWithoutUsers_tour_offers_driver_idTousersNestedInput
+  tour_offers_tour_offers_offered_byTousers?: Prisma.tour_offersUncheckedUpdateManyWithoutUsers_tour_offers_offered_byTousersNestedInput
+  tour_operator_insights?: Prisma.tour_operator_insightsUncheckedUpdateManyWithoutUsersNestedInput
+  trip_distances?: Prisma.trip_distancesUncheckedUpdateManyWithoutUsersNestedInput
+  user_activity_logs?: Prisma.user_activity_logsUncheckedUpdateManyWithoutUsersNestedInput
+  other_users?: Prisma.usersUncheckedUpdateManyWithoutUsersNestedInput
+  vehicle_assignments_vehicle_assignments_assigned_byTousers?: Prisma.vehicle_assignmentsUncheckedUpdateManyWithoutUsers_vehicle_assignments_assigned_byTousersNestedInput
+  vehicle_assignments_vehicle_assignments_driver_idTousers?: Prisma.vehicle_assignmentsUncheckedUpdateManyWithoutUsers_vehicle_assignments_driver_idTousersNestedInput
+  vehicle_availability_blocks?: Prisma.vehicle_availability_blocksUncheckedUpdateManyWithoutUsersNestedInput
+  vehicle_documents?: Prisma.vehicle_documentsUncheckedUpdateManyWithoutUsersNestedInput
+  vehicle_incidents_vehicle_incidents_driver_idTousers?: Prisma.vehicle_incidentsUncheckedUpdateManyWithoutUsers_vehicle_incidents_driver_idTousersNestedInput
+  vehicle_incidents_vehicle_incidents_reported_byTousers?: Prisma.vehicle_incidentsUncheckedUpdateManyWithoutUsers_vehicle_incidents_reported_byTousersNestedInput
+  vehicle_incidents_vehicle_incidents_resolved_byTousers?: Prisma.vehicle_incidentsUncheckedUpdateManyWithoutUsers_vehicle_incidents_resolved_byTousersNestedInput
+  vehicles_vehicles_assigned_driver_idTousers?: Prisma.vehiclesUncheckedUpdateManyWithoutUsers_vehicles_assigned_driver_idTousersNestedInput
+  vehicles_vehicles_defect_reported_byTousers?: Prisma.vehiclesUncheckedUpdateManyWithoutUsers_vehicles_defect_reported_byTousersNestedInput
+  weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
+  winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
+  workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersCreateWithoutWorkflowsInput = {
@@ -26234,6 +28247,9 @@ export type usersCreateWithoutWorkflowsInput = {
   vehicles_vehicles_defect_reported_byTousers?: Prisma.vehiclesCreateNestedManyWithoutUsers_vehicles_defect_reported_byTousersInput
   weekly_hos?: Prisma.weekly_hosCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsCreateNestedManyWithoutUsersInput
 }
 
 export type usersUncheckedCreateWithoutWorkflowsInput = {
@@ -26332,6 +28348,9 @@ export type usersUncheckedCreateWithoutWorkflowsInput = {
   vehicles_vehicles_defect_reported_byTousers?: Prisma.vehiclesUncheckedCreateNestedManyWithoutUsers_vehicles_defect_reported_byTousersInput
   weekly_hos?: Prisma.weekly_hosUncheckedCreateNestedManyWithoutUsersInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutUsersInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutUsersInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutUsersInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedManyWithoutUsersInput
 }
 
 export type usersCreateOrConnectWithoutWorkflowsInput = {
@@ -26445,6 +28464,9 @@ export type usersUpdateWithoutWorkflowsInput = {
   vehicles_vehicles_defect_reported_byTousers?: Prisma.vehiclesUpdateManyWithoutUsers_vehicles_defect_reported_byTousersNestedInput
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutWorkflowsInput = {
@@ -26543,6 +28565,9 @@ export type usersUncheckedUpdateWithoutWorkflowsInput = {
   vehicles_vehicles_defect_reported_byTousers?: Prisma.vehiclesUncheckedUpdateManyWithoutUsers_vehicles_defect_reported_byTousersNestedInput
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersCreateManyTenantsInput = {
@@ -26680,6 +28705,9 @@ export type usersUpdateWithoutTenantsInput = {
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutTenantsInput = {
@@ -26778,6 +28806,9 @@ export type usersUncheckedUpdateWithoutTenantsInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateManyWithoutTenantsInput = {
@@ -26955,6 +28986,9 @@ export type usersUpdateWithoutUsersInput = {
   weekly_hos?: Prisma.weekly_hosUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateWithoutUsersInput = {
@@ -27053,6 +29087,9 @@ export type usersUncheckedUpdateWithoutUsersInput = {
   weekly_hos?: Prisma.weekly_hosUncheckedUpdateManyWithoutUsersNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutUsersNestedInput
   workflows?: Prisma.workflowsUncheckedUpdateManyWithoutUsersNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutUsersNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutUsersNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateManyWithoutUsersNestedInput
 }
 
 export type usersUncheckedUpdateManyWithoutUsersInput = {
@@ -27158,6 +29195,9 @@ export type UsersCountOutputType = {
   weekly_hos: number
   winery_reviews: number
   workflows: number
+  driver_tips: number
+  tour_expenses: number
+  tour_completions: number
 }
 
 export type UsersCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -27218,6 +29258,9 @@ export type UsersCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.
   weekly_hos?: boolean | UsersCountOutputTypeCountWeekly_hosArgs
   winery_reviews?: boolean | UsersCountOutputTypeCountWinery_reviewsArgs
   workflows?: boolean | UsersCountOutputTypeCountWorkflowsArgs
+  driver_tips?: boolean | UsersCountOutputTypeCountDriver_tipsArgs
+  tour_expenses?: boolean | UsersCountOutputTypeCountTour_expensesArgs
+  tour_completions?: boolean | UsersCountOutputTypeCountTour_completionsArgs
 }
 
 /**
@@ -27629,6 +29672,27 @@ export type UsersCountOutputTypeCountWorkflowsArgs<ExtArgs extends runtime.Types
   where?: Prisma.workflowsWhereInput
 }
 
+/**
+ * UsersCountOutputType without action
+ */
+export type UsersCountOutputTypeCountDriver_tipsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.driver_tipsWhereInput
+}
+
+/**
+ * UsersCountOutputType without action
+ */
+export type UsersCountOutputTypeCountTour_expensesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.tour_expensesWhereInput
+}
+
+/**
+ * UsersCountOutputType without action
+ */
+export type UsersCountOutputTypeCountTour_completionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.tour_completionsWhereInput
+}
+
 
 export type usersSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -27729,6 +29793,9 @@ export type usersSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   weekly_hos?: boolean | Prisma.users$weekly_hosArgs<ExtArgs>
   winery_reviews?: boolean | Prisma.users$winery_reviewsArgs<ExtArgs>
   workflows?: boolean | Prisma.users$workflowsArgs<ExtArgs>
+  driver_tips?: boolean | Prisma.users$driver_tipsArgs<ExtArgs>
+  tour_expenses?: boolean | Prisma.users$tour_expensesArgs<ExtArgs>
+  tour_completions?: boolean | Prisma.users$tour_completionsArgs<ExtArgs>
   _count?: boolean | Prisma.UsersCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["users"]>
 
@@ -27921,6 +29988,9 @@ export type usersInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   weekly_hos?: boolean | Prisma.users$weekly_hosArgs<ExtArgs>
   winery_reviews?: boolean | Prisma.users$winery_reviewsArgs<ExtArgs>
   workflows?: boolean | Prisma.users$workflowsArgs<ExtArgs>
+  driver_tips?: boolean | Prisma.users$driver_tipsArgs<ExtArgs>
+  tour_expenses?: boolean | Prisma.users$tour_expensesArgs<ExtArgs>
+  tour_completions?: boolean | Prisma.users$tour_completionsArgs<ExtArgs>
   _count?: boolean | Prisma.UsersCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type usersIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -27995,6 +30065,9 @@ export type $usersPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     weekly_hos: Prisma.$weekly_hosPayload<ExtArgs>[]
     winery_reviews: Prisma.$winery_reviewsPayload<ExtArgs>[]
     workflows: Prisma.$workflowsPayload<ExtArgs>[]
+    driver_tips: Prisma.$driver_tipsPayload<ExtArgs>[]
+    tour_expenses: Prisma.$tour_expensesPayload<ExtArgs>[]
+    tour_completions: Prisma.$tour_completionsPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: number
@@ -28489,6 +30562,9 @@ export interface Prisma__usersClient<T, Null = never, ExtArgs extends runtime.Ty
   weekly_hos<T extends Prisma.users$weekly_hosArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$weekly_hosArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$weekly_hosPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   winery_reviews<T extends Prisma.users$winery_reviewsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$winery_reviewsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$winery_reviewsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   workflows<T extends Prisma.users$workflowsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$workflowsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$workflowsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  driver_tips<T extends Prisma.users$driver_tipsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$driver_tipsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$driver_tipsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  tour_expenses<T extends Prisma.users$tour_expensesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$tour_expensesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$tour_expensesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  tour_completions<T extends Prisma.users$tour_completionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$tour_completionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$tour_completionsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -30374,6 +32450,78 @@ export type users$workflowsArgs<ExtArgs extends runtime.Types.Extensions.Interna
   take?: number
   skip?: number
   distinct?: Prisma.WorkflowsScalarFieldEnum | Prisma.WorkflowsScalarFieldEnum[]
+}
+
+/**
+ * users.driver_tips
+ */
+export type users$driver_tipsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the driver_tips
+   */
+  select?: Prisma.driver_tipsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the driver_tips
+   */
+  omit?: Prisma.driver_tipsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.driver_tipsInclude<ExtArgs> | null
+  where?: Prisma.driver_tipsWhereInput
+  orderBy?: Prisma.driver_tipsOrderByWithRelationInput | Prisma.driver_tipsOrderByWithRelationInput[]
+  cursor?: Prisma.driver_tipsWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Driver_tipsScalarFieldEnum | Prisma.Driver_tipsScalarFieldEnum[]
+}
+
+/**
+ * users.tour_expenses
+ */
+export type users$tour_expensesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the tour_expenses
+   */
+  select?: Prisma.tour_expensesSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the tour_expenses
+   */
+  omit?: Prisma.tour_expensesOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.tour_expensesInclude<ExtArgs> | null
+  where?: Prisma.tour_expensesWhereInput
+  orderBy?: Prisma.tour_expensesOrderByWithRelationInput | Prisma.tour_expensesOrderByWithRelationInput[]
+  cursor?: Prisma.tour_expensesWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Tour_expensesScalarFieldEnum | Prisma.Tour_expensesScalarFieldEnum[]
+}
+
+/**
+ * users.tour_completions
+ */
+export type users$tour_completionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the tour_completions
+   */
+  select?: Prisma.tour_completionsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the tour_completions
+   */
+  omit?: Prisma.tour_completionsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.tour_completionsInclude<ExtArgs> | null
+  where?: Prisma.tour_completionsWhereInput
+  orderBy?: Prisma.tour_completionsOrderByWithRelationInput | Prisma.tour_completionsOrderByWithRelationInput[]
+  cursor?: Prisma.tour_completionsWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Tour_completionsScalarFieldEnum | Prisma.Tour_completionsScalarFieldEnum[]
 }
 
 /**

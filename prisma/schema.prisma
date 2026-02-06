@@ -358,6 +358,9 @@ model bookings {
   visitors                                                       visitors[]
   wine_purchases                                                 wine_purchases[]
   winery_reviews                                                 winery_reviews[]
+  driver_tips                                                    driver_tips[]
+  tour_expenses                                                  tour_expenses[]
+  tour_completions                                               tour_completions?
 
   @@index([booking_number], map: "idx_bookings_booking_number")
   @@index([brand_id], map: "idx_bookings_brand")
@@ -2579,6 +2582,9 @@ model users {
   weekly_hos                                                     weekly_hos[]
   winery_reviews                                                 winery_reviews[]
   workflows                                                      workflows[]
+  driver_tips                                                    driver_tips[]
+  tour_expenses                                                  tour_expenses[]
+  tour_completions                                               tour_completions[]
 
   @@index([email], map: "idx_users_email")
   @@index([role], map: "idx_users_role")
@@ -3121,6 +3127,78 @@ model wines {
   @@index([status], map: "idx_wines_status")
   @@index([vintage], map: "idx_wines_vintage")
   @@index([winery_id], map: "idx_wines_winery")
+}
+
+/// Stores tip payments from guests collected via QR code/payment link at tour end
+model driver_tips {
+  id                       Int       @id @default(autoincrement())
+  booking_id               Int
+  driver_id                Int
+  guest_name               String?   @db.VarChar(255)
+  amount                   Decimal   @db.Decimal(10, 2)
+  stripe_payment_intent_id String?   @unique @db.VarChar(255)
+  stripe_charge_id         String?   @db.VarChar(100)
+  card_brand               String?   @db.VarChar(20)
+  card_last4               String?   @db.VarChar(4)
+  payment_status           String    @default("pending") @db.VarChar(50)
+  tip_source               String    @default("qr_code") @db.VarChar(50)
+  payroll_exported         Boolean   @default(false)
+  payroll_exported_at      DateTime? @db.Timestamptz(6)
+  created_at               DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at               DateTime  @default(now()) @db.Timestamptz(6)
+  bookings                 bookings  @relation(fields: [booking_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users                    users     @relation(fields: [driver_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([booking_id], map: "idx_driver_tips_booking")
+  @@index([driver_id], map: "idx_driver_tips_driver")
+  @@index([payment_status], map: "idx_driver_tips_status")
+  @@index([created_at(sort: Desc)], map: "idx_driver_tips_created")
+}
+
+/// Driver-entered expenses like lunch costs with receipt photo uploads
+model tour_expenses {
+  id                   Int       @id @default(autoincrement())
+  booking_id           Int
+  driver_id            Int
+  expense_type         String    @db.VarChar(50)
+  amount               Decimal   @db.Decimal(10, 2)
+  description          String?
+  receipt_url          String?   @db.VarChar(500)
+  receipt_storage_path String?   @db.VarChar(500)
+  reimbursement_status String    @default("pending") @db.VarChar(50)
+  reimbursed_at        DateTime? @db.Timestamptz(6)
+  created_at           DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime  @default(now()) @db.Timestamptz(6)
+  bookings             bookings  @relation(fields: [booking_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users                users     @relation(fields: [driver_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([booking_id], map: "idx_tour_expenses_booking")
+  @@index([driver_id], map: "idx_tour_expenses_driver")
+  @@index([expense_type], map: "idx_tour_expenses_type")
+  @@index([reimbursement_status], map: "idx_tour_expenses_status")
+  @@index([created_at(sort: Desc)], map: "idx_tour_expenses_created")
+}
+
+/// Tracks tour completion and stores tip collection payment link info
+model tour_completions {
+  id               Int       @id @default(autoincrement())
+  booking_id       Int       @unique
+  driver_id        Int
+  completed_at     DateTime  @default(now()) @db.Timestamptz(6)
+  lunch_cost_total Decimal?  @db.Decimal(10, 2)
+  tip_code         String?   @unique @db.VarChar(20)
+  tip_payment_link String?   @db.VarChar(500)
+  tip_qr_code_url  String?   @db.VarChar(500)
+  driver_notes     String?
+  tips_enabled     Boolean   @default(true)
+  created_at       DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime  @default(now()) @db.Timestamptz(6)
+  bookings         bookings  @relation(fields: [booking_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users            users     @relation(fields: [driver_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([driver_id], map: "idx_tour_completions_driver")
+  @@index([tip_code], map: "idx_tour_completions_tip_code")
+  @@index([completed_at(sort: Desc)], map: "idx_tour_completions_completed")
 }
 
 model workflows {

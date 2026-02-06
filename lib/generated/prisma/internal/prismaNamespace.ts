@@ -499,6 +499,9 @@ export const ModelName = {
   winery_people: 'winery_people',
   winery_reviews: 'winery_reviews',
   wines: 'wines',
+  driver_tips: 'driver_tips',
+  tour_expenses: 'tour_expenses',
+  tour_completions: 'tour_completions',
   workflows: 'workflows'
 } as const
 
@@ -515,7 +518,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "migrations" | "activity_partners" | "additional_services" | "ai_fine_tuning_jobs" | "ai_queries" | "ai_query_cache" | "ai_settings" | "availability_rules" | "booking_line_items" | "booking_sources" | "booking_timeline" | "booking_wineries" | "bookings" | "brand_email_templates" | "brand_metrics" | "brands" | "business_activity_log" | "business_attributes" | "business_content" | "business_discrepancies" | "business_files" | "business_portal" | "business_text_entries" | "business_voice_entries" | "businesses" | "client_notes" | "client_services" | "commission_ledger" | "commission_rates" | "company_info" | "compliance_violations" | "corporate_requests" | "customer_preferences" | "customer_tasting_notes" | "customers" | "daily_trips" | "driver_documents" | "email_capture_attempts" | "error_logs" | "events" | "financial_audit_log" | "hotels" | "incident_fee_schedule" | "inspections" | "interview_questions" | "invoices" | "itineraries" | "itinerary_stops" | "lodging_partners" | "lunch_orders" | "media_library" | "media_usage_log" | "monthly_exemption_status" | "partner_activity_log" | "partner_profiles" | "payment_intents" | "payments" | "performance_metrics" | "pricing_cache" | "pricing_history" | "pricing_modifiers" | "pricing_rules" | "pricing_tiers" | "processing_jobs" | "proposal_activity_log" | "proposal_media" | "proposal_text_templates" | "proposal_versions" | "proposals" | "rate_change_log" | "rate_config" | "referral_clicks" | "refunds" | "reservations" | "restaurants" | "service_entities" | "service_type_media" | "service_types" | "shared_tours" | "shared_tours_availability" | "shared_tours_tickets" | "system_health_checks" | "system_settings" | "tenants" | "time_cards" | "tour_offers" | "tour_operator_insights" | "tour_providers" | "trip_distances" | "user_activity_logs" | "users" | "vehicle_assignments" | "vehicle_availability_blocks" | "vehicle_documents" | "vehicle_incidents" | "vehicle_media" | "vehicles" | "visitor_sessions" | "visitors" | "voice_transcriptions" | "weekly_hos" | "wine_purchases" | "wineries" | "winery_content" | "winery_faqs" | "winery_media" | "winery_people" | "winery_reviews" | "wines" | "workflows"
+    modelProps: "migrations" | "activity_partners" | "additional_services" | "ai_fine_tuning_jobs" | "ai_queries" | "ai_query_cache" | "ai_settings" | "availability_rules" | "booking_line_items" | "booking_sources" | "booking_timeline" | "booking_wineries" | "bookings" | "brand_email_templates" | "brand_metrics" | "brands" | "business_activity_log" | "business_attributes" | "business_content" | "business_discrepancies" | "business_files" | "business_portal" | "business_text_entries" | "business_voice_entries" | "businesses" | "client_notes" | "client_services" | "commission_ledger" | "commission_rates" | "company_info" | "compliance_violations" | "corporate_requests" | "customer_preferences" | "customer_tasting_notes" | "customers" | "daily_trips" | "driver_documents" | "email_capture_attempts" | "error_logs" | "events" | "financial_audit_log" | "hotels" | "incident_fee_schedule" | "inspections" | "interview_questions" | "invoices" | "itineraries" | "itinerary_stops" | "lodging_partners" | "lunch_orders" | "media_library" | "media_usage_log" | "monthly_exemption_status" | "partner_activity_log" | "partner_profiles" | "payment_intents" | "payments" | "performance_metrics" | "pricing_cache" | "pricing_history" | "pricing_modifiers" | "pricing_rules" | "pricing_tiers" | "processing_jobs" | "proposal_activity_log" | "proposal_media" | "proposal_text_templates" | "proposal_versions" | "proposals" | "rate_change_log" | "rate_config" | "referral_clicks" | "refunds" | "reservations" | "restaurants" | "service_entities" | "service_type_media" | "service_types" | "shared_tours" | "shared_tours_availability" | "shared_tours_tickets" | "system_health_checks" | "system_settings" | "tenants" | "time_cards" | "tour_offers" | "tour_operator_insights" | "tour_providers" | "trip_distances" | "user_activity_logs" | "users" | "vehicle_assignments" | "vehicle_availability_blocks" | "vehicle_documents" | "vehicle_incidents" | "vehicle_media" | "vehicles" | "visitor_sessions" | "visitors" | "voice_transcriptions" | "weekly_hos" | "wine_purchases" | "wineries" | "winery_content" | "winery_faqs" | "winery_media" | "winery_people" | "winery_reviews" | "wines" | "driver_tips" | "tour_expenses" | "tour_completions" | "workflows"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -8585,6 +8588,228 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    driver_tips: {
+      payload: Prisma.$driver_tipsPayload<ExtArgs>
+      fields: Prisma.driver_tipsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.driver_tipsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$driver_tipsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.driver_tipsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$driver_tipsPayload>
+        }
+        findFirst: {
+          args: Prisma.driver_tipsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$driver_tipsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.driver_tipsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$driver_tipsPayload>
+        }
+        findMany: {
+          args: Prisma.driver_tipsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$driver_tipsPayload>[]
+        }
+        create: {
+          args: Prisma.driver_tipsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$driver_tipsPayload>
+        }
+        createMany: {
+          args: Prisma.driver_tipsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.driver_tipsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$driver_tipsPayload>[]
+        }
+        delete: {
+          args: Prisma.driver_tipsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$driver_tipsPayload>
+        }
+        update: {
+          args: Prisma.driver_tipsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$driver_tipsPayload>
+        }
+        deleteMany: {
+          args: Prisma.driver_tipsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.driver_tipsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.driver_tipsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$driver_tipsPayload>[]
+        }
+        upsert: {
+          args: Prisma.driver_tipsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$driver_tipsPayload>
+        }
+        aggregate: {
+          args: Prisma.Driver_tipsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateDriver_tips>
+        }
+        groupBy: {
+          args: Prisma.driver_tipsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Driver_tipsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.driver_tipsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Driver_tipsCountAggregateOutputType> | number
+        }
+      }
+    }
+    tour_expenses: {
+      payload: Prisma.$tour_expensesPayload<ExtArgs>
+      fields: Prisma.tour_expensesFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.tour_expensesFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tour_expensesPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.tour_expensesFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tour_expensesPayload>
+        }
+        findFirst: {
+          args: Prisma.tour_expensesFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tour_expensesPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.tour_expensesFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tour_expensesPayload>
+        }
+        findMany: {
+          args: Prisma.tour_expensesFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tour_expensesPayload>[]
+        }
+        create: {
+          args: Prisma.tour_expensesCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tour_expensesPayload>
+        }
+        createMany: {
+          args: Prisma.tour_expensesCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.tour_expensesCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tour_expensesPayload>[]
+        }
+        delete: {
+          args: Prisma.tour_expensesDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tour_expensesPayload>
+        }
+        update: {
+          args: Prisma.tour_expensesUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tour_expensesPayload>
+        }
+        deleteMany: {
+          args: Prisma.tour_expensesDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.tour_expensesUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.tour_expensesUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tour_expensesPayload>[]
+        }
+        upsert: {
+          args: Prisma.tour_expensesUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tour_expensesPayload>
+        }
+        aggregate: {
+          args: Prisma.Tour_expensesAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateTour_expenses>
+        }
+        groupBy: {
+          args: Prisma.tour_expensesGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Tour_expensesGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.tour_expensesCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Tour_expensesCountAggregateOutputType> | number
+        }
+      }
+    }
+    tour_completions: {
+      payload: Prisma.$tour_completionsPayload<ExtArgs>
+      fields: Prisma.tour_completionsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.tour_completionsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tour_completionsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.tour_completionsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tour_completionsPayload>
+        }
+        findFirst: {
+          args: Prisma.tour_completionsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tour_completionsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.tour_completionsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tour_completionsPayload>
+        }
+        findMany: {
+          args: Prisma.tour_completionsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tour_completionsPayload>[]
+        }
+        create: {
+          args: Prisma.tour_completionsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tour_completionsPayload>
+        }
+        createMany: {
+          args: Prisma.tour_completionsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.tour_completionsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tour_completionsPayload>[]
+        }
+        delete: {
+          args: Prisma.tour_completionsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tour_completionsPayload>
+        }
+        update: {
+          args: Prisma.tour_completionsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tour_completionsPayload>
+        }
+        deleteMany: {
+          args: Prisma.tour_completionsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.tour_completionsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.tour_completionsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tour_completionsPayload>[]
+        }
+        upsert: {
+          args: Prisma.tour_completionsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$tour_completionsPayload>
+        }
+        aggregate: {
+          args: Prisma.Tour_completionsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateTour_completions>
+        }
+        groupBy: {
+          args: Prisma.tour_completionsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Tour_completionsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.tour_completionsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Tour_completionsCountAggregateOutputType> | number
+        }
+      }
+    }
     workflows: {
       payload: Prisma.$workflowsPayload<ExtArgs>
       fields: Prisma.workflowsFieldRefs
@@ -8990,7 +9215,9 @@ export const BookingsScalarFieldEnum = {
   reminder_sent: 'reminder_sent',
   provider_entity_id: 'provider_entity_id',
   booking_source_id: 'booking_source_id',
-  referrer_entity_id: 'referrer_entity_id'
+  referrer_entity_id: 'referrer_entity_id',
+  google_calendar_event_id: 'google_calendar_event_id',
+  google_calendar_synced_at: 'google_calendar_synced_at'
 } as const
 
 export type BookingsScalarFieldEnum = (typeof BookingsScalarFieldEnum)[keyof typeof BookingsScalarFieldEnum]
@@ -11249,6 +11476,63 @@ export const WinesScalarFieldEnum = {
 export type WinesScalarFieldEnum = (typeof WinesScalarFieldEnum)[keyof typeof WinesScalarFieldEnum]
 
 
+export const Driver_tipsScalarFieldEnum = {
+  id: 'id',
+  booking_id: 'booking_id',
+  driver_id: 'driver_id',
+  guest_name: 'guest_name',
+  amount: 'amount',
+  stripe_payment_intent_id: 'stripe_payment_intent_id',
+  stripe_charge_id: 'stripe_charge_id',
+  card_brand: 'card_brand',
+  card_last4: 'card_last4',
+  payment_status: 'payment_status',
+  tip_source: 'tip_source',
+  payroll_exported: 'payroll_exported',
+  payroll_exported_at: 'payroll_exported_at',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Driver_tipsScalarFieldEnum = (typeof Driver_tipsScalarFieldEnum)[keyof typeof Driver_tipsScalarFieldEnum]
+
+
+export const Tour_expensesScalarFieldEnum = {
+  id: 'id',
+  booking_id: 'booking_id',
+  driver_id: 'driver_id',
+  expense_type: 'expense_type',
+  amount: 'amount',
+  description: 'description',
+  receipt_url: 'receipt_url',
+  receipt_storage_path: 'receipt_storage_path',
+  reimbursement_status: 'reimbursement_status',
+  reimbursed_at: 'reimbursed_at',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Tour_expensesScalarFieldEnum = (typeof Tour_expensesScalarFieldEnum)[keyof typeof Tour_expensesScalarFieldEnum]
+
+
+export const Tour_completionsScalarFieldEnum = {
+  id: 'id',
+  booking_id: 'booking_id',
+  driver_id: 'driver_id',
+  completed_at: 'completed_at',
+  lunch_cost_total: 'lunch_cost_total',
+  tip_code: 'tip_code',
+  tip_payment_link: 'tip_payment_link',
+  tip_qr_code_url: 'tip_qr_code_url',
+  driver_notes: 'driver_notes',
+  tips_enabled: 'tips_enabled',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Tour_completionsScalarFieldEnum = (typeof Tour_completionsScalarFieldEnum)[keyof typeof Tour_completionsScalarFieldEnum]
+
+
 export const WorkflowsScalarFieldEnum = {
   id: 'id',
   driver_id: 'driver_id',
@@ -11614,6 +11898,9 @@ export type GlobalOmitConfig = {
   winery_people?: Prisma.winery_peopleOmit
   winery_reviews?: Prisma.winery_reviewsOmit
   wines?: Prisma.winesOmit
+  driver_tips?: Prisma.driver_tipsOmit
+  tour_expenses?: Prisma.tour_expensesOmit
+  tour_completions?: Prisma.tour_completionsOmit
   workflows?: Prisma.workflowsOmit
 }
 
