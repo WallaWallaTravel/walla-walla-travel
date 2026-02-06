@@ -45,6 +45,10 @@ export default function CustomerPanel({
     // Handle numeric fields
     if (name === 'party_size' || name === 'duration_hours') {
       onTourChange({ [fieldName]: parseInt(value, 10) || 0 });
+    } else if (name === 'custom_price') {
+      // Custom price: null if empty, otherwise parse as float
+      const numValue = value === '' ? null : parseFloat(value) || 0;
+      onTourChange({ [fieldName]: numValue });
     } else {
       onTourChange({ [fieldName]: value });
     }
@@ -206,19 +210,39 @@ export default function CustomerPanel({
 
           <div>
             <label htmlFor="duration_hours" className="block text-sm font-bold text-gray-900 mb-2">
-              Duration <span className="text-red-600">*</span>
+              Duration (hours)
             </label>
-            <select
-              id="duration_hours"
-              name="duration_hours"
-              value={tour.duration_hours}
-              onChange={handleTourInput}
-              className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-            >
-              <option value={4}>4 hours</option>
-              <option value={6}>6 hours</option>
-              <option value={8}>8 hours</option>
-            </select>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                id="duration_hours"
+                name="duration_hours"
+                value={tour.duration_hours}
+                onChange={handleTourInput}
+                min={0}
+                max={24}
+                step={0.5}
+                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                placeholder="6"
+              />
+              <div className="flex gap-1">
+                {[4, 6, 8].map(hrs => (
+                  <button
+                    key={hrs}
+                    type="button"
+                    onClick={() => onTourChange({ duration_hours: hrs })}
+                    className={`px-3 py-2 text-sm font-medium rounded-lg border-2 transition-colors ${
+                      tour.duration_hours === hrs
+                        ? 'bg-purple-600 text-white border-purple-600'
+                        : 'bg-white text-gray-600 border-gray-300 hover:border-purple-400'
+                    }`}
+                  >
+                    {hrs}h
+                  </button>
+                ))}
+              </div>
+            </div>
+            <p className="mt-1 text-xs text-gray-500">Enter 0 for flat-rate services</p>
           </div>
 
           <div>
@@ -263,29 +287,47 @@ export default function CustomerPanel({
         </div>
       </section>
 
-      {/* Pickup Location */}
+      {/* Locations */}
       <section>
         <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-          <span className="text-xl">📍</span> Pickup Location
+          <span className="text-xl">📍</span> Locations
         </h3>
-        <div>
-          <label htmlFor="pickup_location" className="block text-sm font-bold text-gray-900 mb-2">
-            Hotel/Address <span className="text-red-600">*</span>
-          </label>
-          <input
-            type="text"
-            id="pickup_location"
-            name="pickup_location"
-            value={tour.pickup_location}
-            onChange={handleTourInput}
-            className={`w-full px-4 py-2 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-              errors.pickup_location ? 'border-red-500' : 'border-gray-300'
-            }`}
-            placeholder="Marcus Whitman Hotel, 6 W Rose St, Walla Walla"
-          />
-          {errors.pickup_location && (
-            <p className="mt-1 text-sm text-red-600">{errors.pickup_location}</p>
-          )}
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="pickup_location" className="block text-sm font-bold text-gray-900 mb-2">
+              Pickup Location <span className="text-red-600">*</span>
+            </label>
+            <input
+              type="text"
+              id="pickup_location"
+              name="pickup_location"
+              value={tour.pickup_location}
+              onChange={handleTourInput}
+              className={`w-full px-4 py-2 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                errors.pickup_location ? 'border-red-500' : 'border-gray-300'
+              }`}
+              placeholder="Marcus Whitman Hotel, 6 W Rose St, Walla Walla"
+            />
+            {errors.pickup_location && (
+              <p className="mt-1 text-sm text-red-600">{errors.pickup_location}</p>
+            )}
+          </div>
+
+          <div>
+            <label htmlFor="dropoff_location" className="block text-sm font-bold text-gray-900 mb-2">
+              Dropoff Location
+              <span className="text-gray-500 font-normal ml-2">(if different from pickup)</span>
+            </label>
+            <input
+              type="text"
+              id="dropoff_location"
+              name="dropoff_location"
+              value={tour.dropoff_location}
+              onChange={handleTourInput}
+              className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              placeholder="Tri-Cities Airport, PSC"
+            />
+          </div>
         </div>
       </section>
 
@@ -346,6 +388,36 @@ export default function CustomerPanel({
               </option>
             ))}
           </select>
+        </div>
+      </section>
+
+      {/* Custom/Negotiated Price */}
+      <section>
+        <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+          <span className="text-xl">💵</span> Negotiated Price
+          <span className="text-sm font-normal text-gray-500">(optional)</span>
+        </h3>
+        <div>
+          <label htmlFor="custom_price" className="block text-sm font-bold text-gray-900 mb-2">
+            Override Total Price
+          </label>
+          <div className="relative">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">$</span>
+            <input
+              type="number"
+              id="custom_price"
+              name="custom_price"
+              value={tour.custom_price ?? ''}
+              onChange={handleTourInput}
+              min={0}
+              step={0.01}
+              className="w-full pl-8 pr-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              placeholder="Leave blank to use calculated price"
+            />
+          </div>
+          <p className="mt-1 text-xs text-gray-500">
+            Enter a custom price to override the calculated total. Leave blank to use standard pricing.
+          </p>
         </div>
       </section>
     </div>
