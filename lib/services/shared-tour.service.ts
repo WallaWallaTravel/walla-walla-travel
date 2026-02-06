@@ -21,10 +21,12 @@
  */
 
 import { query } from '@/lib/db';
+import { withTransaction, queryOne } from '@/lib/db-helpers';
 import { SHARED_TOUR_RATES } from '@/lib/types/pricing-models';
 import Stripe from 'stripe';
 import { logger } from '@/lib/logger';
 import { vehicleAvailabilityService } from './vehicle-availability.service';
+import type { PoolClient } from 'pg';
 
 // Lazy-load Stripe client
 let stripeClient: Stripe | null = null;
@@ -235,6 +237,8 @@ export const sharedTourService = {
    * 3. If require_vehicle=true (default), fail if no vehicle available
    * 4. Lock max_guests to vehicle capacity (cannot exceed it)
    *
+   * CRITICAL: Uses atomic transaction to prevent orphaned tours if vehicle block creation fails.
+   *
    * @throws Error if require_vehicle=true and no vehicles available
    */
   async createTour(data: CreateTourRequest): Promise<CreateTourResult> {
@@ -247,7 +251,7 @@ export const sharedTourService = {
     let maxGuests = data.max_guests || 14;
     let maxGuestsLockedToCapacity = false;
 
-    // Step 1: Determine vehicle assignment
+    // Step 1: Determine vehicle assignment (pre-transaction checks)
     if (data.vehicle_id) {
       // Explicit vehicle provided - verify it's available
       const vehicleAvailability = await this.getAvailableVehicles(
@@ -318,82 +322,95 @@ export const sharedTourService = {
     // Step 2: Generate unique tour code
     const tourCode = `ST-${data.tour_date.replace(/-/g, '')}-${Date.now().toString(36).toUpperCase()}`;
 
-    // Step 3: Create the tour record (insert into actual table, not view)
-    // Note: The shared_tour_schedule view remaps column names, so we use actual table columns
-    const result = await query<SharedTourSchedule>(`
-      INSERT INTO shared_tours (
-        tour_code,
-        tour_date,
-        start_time,
-        duration_hours,
-        max_guests,
-        min_guests,
-        price_per_person,
-        lunch_included,
-        title,
-        description,
-        pickup_location,
-        planned_wineries,
-        published,
-        notes,
-        vehicle_id,
-        driver_id,
-        status
-      ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17
-      )
-      RETURNING *,
-        price_per_person AS base_price_per_person,
-        (price_per_person + 20.00) AS lunch_price_per_person,
-        lunch_included AS lunch_included_default,
-        pickup_location AS meeting_location,
-        planned_wineries AS wineries_preview,
-        published AS is_published,
-        48 AS booking_cutoff_hours,
-        24 AS cancellation_cutoff_hours
-    `, [
-      tourCode,
-      data.tour_date,
-      startTime,
-      durationHours,
-      maxGuests, // Use possibly-capped max_guests
-      data.min_guests || 2,
-      data.base_price_per_person || SHARED_TOUR_RATES.base.perPersonRate,
-      data.lunch_included_default ?? true,
-      data.title || 'Walla Walla Wine Tour Experience',
-      data.description || null,
-      data.meeting_location || 'Downtown Walla Walla - exact location provided upon booking',
-      data.wineries_preview || null,
-      data.is_published ?? true,
-      data.notes || null,
-      assignedVehicle?.id || null,
-      data.driver_id || null,
-      'scheduled', // Default status
-    ]);
+    // Step 3: Create tour and vehicle block atomically in a transaction
+    // This prevents orphaned tours if vehicle block creation fails
+    return withTransaction(async (client: PoolClient) => {
+      // Create the tour record (insert into actual table, not view)
+      // Note: The shared_tour_schedule view remaps column names, so we use actual table columns
+      const result = await client.query<SharedTourSchedule>(`
+        INSERT INTO shared_tours (
+          tour_code,
+          tour_date,
+          start_time,
+          duration_hours,
+          max_guests,
+          min_guests,
+          price_per_person,
+          lunch_included,
+          title,
+          description,
+          pickup_location,
+          planned_wineries,
+          published,
+          notes,
+          vehicle_id,
+          driver_id,
+          status
+        ) VALUES (
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17
+        )
+        RETURNING *,
+          price_per_person AS base_price_per_person,
+          (price_per_person + 20.00) AS lunch_price_per_person,
+          lunch_included AS lunch_included_default,
+          pickup_location AS meeting_location,
+          planned_wineries AS wineries_preview,
+          published AS is_published,
+          48 AS booking_cutoff_hours,
+          24 AS cancellation_cutoff_hours
+      `, [
+        tourCode,
+        data.tour_date,
+        startTime,
+        durationHours,
+        maxGuests, // Use possibly-capped max_guests
+        data.min_guests || 2,
+        data.base_price_per_person || SHARED_TOUR_RATES.base.perPersonRate,
+        data.lunch_included_default ?? true,
+        data.title || 'Walla Walla Wine Tour Experience',
+        data.description || null,
+        data.meeting_location || 'Downtown Walla Walla - exact location provided upon booking',
+        data.wineries_preview || null,
+        data.is_published ?? true,
+        data.notes || null,
+        assignedVehicle?.id || null,
+        data.driver_id || null,
+        'scheduled', // Default status
+      ]);
 
-    const tour = result.rows[0];
+      const tour = result.rows[0];
 
-    // Step 3: Create vehicle availability block if vehicle assigned
-    if (assignedVehicle) {
-      try {
-        await this.createVehicleBlock(tour);
-      } catch (blockError) {
-        // If block creation fails, clean up the tour and rethrow
-        logger.error('Failed to create vehicle block, rolling back tour creation', {
-          tourId: tour.id,
-          error: blockError,
-        });
-        await query('DELETE FROM shared_tours WHERE id = $1', [tour.id]);
-        throw new Error('Failed to reserve vehicle for tour. The vehicle may have just been booked by another tour.');
+      // Create vehicle availability block if vehicle assigned (still in transaction)
+      if (assignedVehicle) {
+        try {
+          // Create vehicle block - uses its own query but we're in a transaction
+          // so if this fails, the tour INSERT is rolled back
+          await this.createVehicleBlockWithClient(tour, client);
+        } catch (blockError) {
+          // Log and rethrow - transaction will be rolled back automatically
+          logger.error('Failed to create vehicle block, transaction will rollback', {
+            tourId: tour.id,
+            vehicleId: assignedVehicle.id,
+            error: blockError,
+          });
+          throw new Error('Failed to reserve vehicle for tour. The vehicle may have just been booked by another tour.');
+        }
       }
-    }
 
-    return {
-      tour,
-      vehicle_assigned: !!assignedVehicle,
-      vehicle_info: assignedVehicle,
-      max_guests_locked_to_capacity: maxGuestsLockedToCapacity,
-    };
+      logger.info('Tour and vehicle block created atomically', {
+        tourId: tour.id,
+        tourCode,
+        vehicleId: assignedVehicle?.id,
+        date: data.tour_date,
+      });
+
+      return {
+        tour,
+        vehicle_assigned: !!assignedVehicle,
+        vehicle_info: assignedVehicle,
+        max_guests_locked_to_capacity: maxGuestsLockedToCapacity,
+      };
+    });
   },
 
   /**
@@ -434,6 +451,41 @@ export const sharedTourService = {
       });
       throw error;
     }
+  },
+
+  /**
+   * Create a vehicle availability block within an existing transaction
+   * This version accepts a PoolClient for transaction safety
+   */
+  async createVehicleBlockWithClient(tour: SharedTourSchedule, client: PoolClient): Promise<void> {
+    if (!tour.vehicle_id) return;
+
+    const endTime = this.addHoursToTime(tour.start_time, tour.duration_hours);
+
+    // Insert directly into vehicle_availability_blocks within the transaction
+    await client.query(`
+      INSERT INTO vehicle_availability_blocks (
+        vehicle_id,
+        block_date,
+        start_time,
+        end_time,
+        block_type,
+        notes
+      ) VALUES ($1, $2, $3, $4, $5, $6)
+    `, [
+      parseInt(tour.vehicle_id),
+      tour.tour_date,
+      tour.start_time,
+      endTime,
+      'maintenance', // Using 'maintenance' type for shared tour blocks
+      `Shared Tour: ${tour.title}`,
+    ]);
+
+    logger.info('Created vehicle availability block (in transaction) for shared tour', {
+      tourId: tour.id,
+      vehicleId: tour.vehicle_id,
+      date: tour.tour_date,
+    });
   },
 
   /**
@@ -750,6 +802,9 @@ export const sharedTourService = {
    * Reassign vehicle to a tour (e.g., if original vehicle becomes unavailable)
    * Will attempt to find a suitable replacement automatically if newVehicleId not provided
    *
+   * CRITICAL: Uses atomic transaction to prevent partial failures.
+   * All operations (remove old block, update tour, create new block) succeed or fail together.
+   *
    * @param tourId - The tour to reassign
    * @param newVehicleId - Optional specific vehicle to assign, or auto-select if not provided
    * @returns Updated tour and vehicle info, or throws if no suitable vehicle available
@@ -799,38 +854,80 @@ export const sharedTourService = {
       maxGuestsUpdated = true;
     }
 
-    // Remove old vehicle block
-    if (previousVehicleId) {
-      await this.removeVehicleBlock(currentTour as SharedTourSchedule);
+    // Validate: new vehicle capacity must accommodate existing tickets
+    if (selectedVehicle.capacity < ticketsSold) {
+      throw new Error(
+        `Cannot reassign to vehicle with capacity ${selectedVehicle.capacity}. ` +
+        `Tour already has ${ticketsSold} tickets sold.`
+      );
     }
 
-    // Update tour with new vehicle and possibly updated max_guests
-    const updatedTour = await this.updateTour(tourId, {
-      vehicle_id: selectedVehicle.id,
-      max_guests: newMaxGuests,
+    // Use transaction to ensure all operations succeed or fail together
+    return withTransaction(async (client: PoolClient) => {
+      // Step 1: Remove old vehicle block (if exists)
+      if (previousVehicleId) {
+        const endTime = this.addHoursToTime(currentTour.start_time, currentTour.duration_hours);
+        await client.query(`
+          DELETE FROM vehicle_availability_blocks
+          WHERE vehicle_id = $1
+            AND block_date = $2
+            AND start_time = $3
+            AND end_time = $4
+            AND block_type = 'maintenance'
+            AND notes LIKE 'Shared Tour:%'
+        `, [
+          parseInt(previousVehicleId),
+          currentTour.tour_date,
+          currentTour.start_time,
+          endTime,
+        ]);
+
+        logger.info('Removed old vehicle block in transaction', {
+          tourId,
+          previousVehicleId,
+        });
+      }
+
+      // Step 2: Update tour with new vehicle and max_guests
+      const updateResult = await client.query<SharedTourSchedule>(`
+        UPDATE shared_tours
+        SET vehicle_id = $2, max_guests = $3, updated_at = NOW()
+        WHERE id = $1
+        RETURNING *,
+          price_per_person AS base_price_per_person,
+          (price_per_person + 20.00) AS lunch_price_per_person,
+          lunch_included AS lunch_included_default,
+          pickup_location AS meeting_location,
+          planned_wineries AS wineries_preview,
+          published AS is_published,
+          48 AS booking_cutoff_hours,
+          24 AS cancellation_cutoff_hours
+      `, [tourId, selectedVehicle.id, newMaxGuests]);
+
+      const updatedTour = updateResult.rows[0];
+      if (!updatedTour) {
+        throw new Error('Failed to update tour with new vehicle');
+      }
+
+      // Step 3: Create new vehicle block
+      await this.createVehicleBlockWithClient(updatedTour, client);
+
+      logger.info('Reassigned vehicle for shared tour (atomic transaction)', {
+        tourId,
+        previousVehicleId,
+        newVehicleId: selectedVehicle.id,
+        newVehicleName: selectedVehicle.name,
+        maxGuestsUpdated,
+        newMaxGuests,
+      });
+
+      return {
+        tour: updatedTour,
+        vehicle_info: selectedVehicle,
+        max_guests_updated: maxGuestsUpdated,
+        previous_vehicle_id: previousVehicleId,
+      };
     });
-
-    if (!updatedTour) {
-      throw new Error('Failed to update tour with new vehicle');
-    }
-
-    // Create new vehicle block
-    await this.createVehicleBlock(updatedTour);
-
-    logger.info('Reassigned vehicle for shared tour', {
-      tourId,
-      previousVehicleId,
-      newVehicleId: selectedVehicle.id,
-      newVehicleName: selectedVehicle.name,
-      maxGuestsUpdated,
-    });
-
-    return {
-      tour: updatedTour,
-      vehicle_info: selectedVehicle,
-      max_guests_updated: maxGuestsUpdated,
-      previous_vehicle_id: previousVehicleId,
-    };
   },
 
   // ============================================================================
@@ -873,57 +970,145 @@ export const sharedTourService = {
 
   /**
    * Create a ticket purchase
+   *
+   * CRITICAL: Uses atomic transaction with row-level locking to prevent race conditions.
+   * The SELECT ... FOR UPDATE ensures only one concurrent request can book the last spots.
    */
   async createTicket(data: CreateTicketRequest): Promise<SharedTourTicket> {
-    // First check availability
-    const availability = await this.checkAvailability(data.tour_id, data.ticket_count);
-    if (!availability.available) {
-      throw new Error(availability.reason);
-    }
-
-    // Calculate price
     const includesLunch = data.includes_lunch ?? true;
-    const pricing = await this.calculatePrice(data.tour_id, data.ticket_count, includesLunch);
 
-    const result = await query<SharedTourTicket>(`
-      INSERT INTO shared_tour_tickets (
-        tour_id,
-        ticket_count,
-        customer_name,
-        customer_email,
-        customer_phone,
-        guest_names,
-        includes_lunch,
-        price_per_person,
-        subtotal,
-        tax_amount,
-        total_amount,
-        dietary_restrictions,
-        special_requests,
-        referral_source,
-        promo_code
-      ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15
-      )
-      RETURNING *
-    `, [
-      data.tour_id,
-      data.ticket_count,
-      data.customer_name,
-      data.customer_email,
-      data.customer_phone || null,
-      data.guest_names || null,
-      includesLunch,
-      pricing.price_per_person,
-      pricing.subtotal,
-      pricing.tax_amount,
-      pricing.total_amount,
-      data.dietary_restrictions || null,
-      data.special_requests || null,
-      data.referral_source || null,
-      data.promo_code || null,
-    ]);
-    return result.rows[0];
+    // Use atomic transaction to prevent race conditions (overbooking)
+    return withTransaction(async (client: PoolClient) => {
+      // Step 1: Lock the tour row and get current availability atomically
+      // This prevents concurrent requests from both passing availability check
+      const tourLock = await client.query<{
+        id: string;
+        max_guests: number;
+        status: string;
+        tour_date: string;
+        start_time: string;
+        booking_cutoff_hours: number;
+      }>(`
+        SELECT id, max_guests, status, tour_date, start_time,
+               COALESCE(booking_cutoff_hours, 48) as booking_cutoff_hours
+        FROM shared_tours
+        WHERE id = $1
+        FOR UPDATE
+      `, [data.tour_id]);
+
+      const tour = tourLock.rows[0];
+      if (!tour) {
+        throw new Error('Tour not found');
+      }
+
+      if (tour.status === 'cancelled') {
+        throw new Error('Tour has been cancelled');
+      }
+
+      if (tour.status === 'full') {
+        throw new Error('Tour is already full');
+      }
+
+      // Step 2: Check booking cutoff (still within transaction)
+      const tourDateTime = new Date(`${tour.tour_date}T${tour.start_time}`);
+      const cutoffTime = new Date(tourDateTime.getTime() - (tour.booking_cutoff_hours * 60 * 60 * 1000));
+      if (new Date() > cutoffTime) {
+        throw new Error('Booking cutoff time has passed for this tour');
+      }
+
+      // Step 3: Count current tickets (locked reads prevent phantom reads)
+      const ticketCount = await client.query<{ total: number }>(`
+        SELECT COALESCE(SUM(ticket_count), 0)::INTEGER as total
+        FROM shared_tour_tickets
+        WHERE tour_id = $1 AND status != 'cancelled'
+      `, [data.tour_id]);
+
+      const currentTickets = ticketCount.rows[0]?.total || 0;
+      const spotsRemaining = tour.max_guests - currentTickets;
+
+      if (data.ticket_count > spotsRemaining) {
+        if (spotsRemaining === 0) {
+          throw new Error('Tour is sold out');
+        }
+        throw new Error(`Only ${spotsRemaining} spots remaining on this tour`);
+      }
+
+      // Step 4: Calculate price (read-only, safe in transaction)
+      const pricingResult = await client.query<{
+        price_per_person: number;
+        subtotal: number;
+        tax_amount: number;
+        total_amount: number;
+      }>(`
+        SELECT * FROM calculate_ticket_price($1, $2, $3)
+      `, [data.tour_id, data.ticket_count, includesLunch]);
+
+      const pricing = pricingResult.rows[0];
+
+      // Step 5: Insert ticket (still within transaction, atomically)
+      const result = await client.query<SharedTourTicket>(`
+        INSERT INTO shared_tour_tickets (
+          tour_id,
+          ticket_count,
+          customer_name,
+          customer_email,
+          customer_phone,
+          guest_names,
+          includes_lunch,
+          price_per_person,
+          subtotal,
+          tax_amount,
+          total_amount,
+          dietary_restrictions,
+          special_requests,
+          referral_source,
+          promo_code,
+          hotel_partner_id,
+          booked_by_hotel
+        ) VALUES (
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17
+        )
+        RETURNING *
+      `, [
+        data.tour_id,
+        data.ticket_count,
+        data.customer_name,
+        data.customer_email,
+        data.customer_phone || null,
+        data.guest_names || null,
+        includesLunch,
+        pricing.price_per_person,
+        pricing.subtotal,
+        pricing.tax_amount,
+        pricing.total_amount,
+        data.dietary_restrictions || null,
+        data.special_requests || null,
+        data.referral_source || null,
+        data.promo_code || null,
+        data.hotel_partner_id || null,
+        data.booked_by_hotel || false,
+      ]);
+
+      const ticket = result.rows[0];
+
+      // Step 6: Update tour status if now full (still in transaction)
+      const newTotal = currentTickets + data.ticket_count;
+      if (newTotal >= tour.max_guests) {
+        await client.query(`
+          UPDATE shared_tours SET status = 'full', updated_at = NOW()
+          WHERE id = $1
+        `, [data.tour_id]);
+      }
+
+      logger.info('Ticket created atomically', {
+        ticketId: ticket.id,
+        tourId: data.tour_id,
+        ticketCount: data.ticket_count,
+        spotsRemainingAfter: spotsRemaining - data.ticket_count,
+      });
+
+      return ticket;
+    });
   },
 
   /**
@@ -1080,6 +1265,9 @@ export const sharedTourService = {
 
   /**
    * Create a Stripe payment intent for a ticket
+   *
+   * IDEMPOTENT: Uses Stripe's idempotency_key to prevent duplicate charges on client retry.
+   * The key is based on ticket_id + amount, so retries get the same payment intent.
    */
   async createPaymentIntent(ticketId: string): Promise<PaymentIntentResult> {
     // Get ticket details
@@ -1101,6 +1289,10 @@ export const sharedTourService = {
     const stripe = getStripe();
     const amountInCents = Math.round(ticket.total_amount * 100);
 
+    // Generate idempotency key based on ticket ID and amount
+    // This ensures retries get the same payment intent, preventing double-charges
+    const idempotencyKey = `shared_tour_ticket_${ticketId}_${amountInCents}`;
+
     try {
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amountInCents,
@@ -1119,6 +1311,8 @@ export const sharedTourService = {
         },
         description: `Shared Tour Ticket: ${tour.title} on ${tour.tour_date} - ${ticket.ticket_count} guest(s)`,
         receipt_email: ticket.customer_email,
+      }, {
+        idempotencyKey, // Prevents duplicate payment intents on retry
       });
 
       // Update ticket with payment intent ID
@@ -1132,6 +1326,7 @@ export const sharedTourService = {
         ticketId,
         paymentIntentId: paymentIntent.id,
         amount: ticket.total_amount,
+        idempotencyKey,
       });
 
       return {
@@ -1180,6 +1375,9 @@ export const sharedTourService = {
 
   /**
    * Confirm a payment was successful (called by webhook)
+   *
+   * IDEMPOTENT: If already paid, returns the existing ticket without re-processing.
+   * This prevents duplicate confirmation emails when Stripe retries webhooks.
    */
   async confirmPayment(paymentIntentId: string): Promise<SharedTourTicket | null> {
     // Find ticket by payment intent ID
@@ -1192,6 +1390,17 @@ export const sharedTourService = {
     if (!ticket) {
       logger.warn('No ticket found for payment intent', { paymentIntentId });
       return null;
+    }
+
+    // IDEMPOTENCY CHECK: If already paid, return existing ticket
+    // This prevents duplicate emails on webhook retries
+    if (ticket.payment_status === 'paid') {
+      logger.info('Payment already confirmed (idempotent), skipping re-confirmation', {
+        ticketId: ticket.id,
+        paymentIntentId,
+        paidAt: ticket.paid_at,
+      });
+      return ticket;
     }
 
     // Mark as paid

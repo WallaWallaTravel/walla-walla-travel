@@ -131,6 +131,50 @@ const SUMMARY_COLUMNS = `
   COALESCE(verified, false) as verified
 `;
 
+// Basic columns that definitely exist in the wineries table
+// Used as fallback if extended columns cause errors
+const BASIC_DETAIL_COLUMNS = `
+  id,
+  name,
+  slug,
+  COALESCE(city, 'Walla Walla Valley') as region,
+  COALESCE(description, '') as description,
+  short_description as long_description,
+  COALESCE(specialties, ARRAY[]::text[]) as wine_styles,
+  COALESCE(tasting_fee, 0)::numeric as tasting_fee,
+  CASE WHEN tasting_fee_waived_with_purchase THEN 'Waived with purchase' ELSE NULL END as tasting_fee_waived,
+  COALESCE(reservation_required, false) as reservation_required,
+  hours_of_operation::text as hours,
+  address,
+  phone,
+  website,
+  email,
+  average_rating as rating,
+  review_count,
+  COALESCE(amenities, ARRAY[]::text[]) as features,
+  cover_photo_url as image_url,
+  latitude::float,
+  longitude::float,
+  COALESCE(is_active, true) as is_active,
+  created_at,
+  updated_at,
+  -- Provide defaults for optional columns that may not exist
+  ARRAY[]::text[] as experience_tags,
+  NULL::integer as min_group_size,
+  NULL::integer as max_group_size,
+  NULL::integer as booking_advance_days_min,
+  NULL::integer as booking_advance_days_max,
+  NULL::text as cancellation_policy,
+  NULL::text as pet_policy,
+  NULL::text as data_source,
+  NULL::text as source_url,
+  false as verified,
+  NULL::integer as verified_by,
+  NULL::timestamp as verified_at,
+  NULL::timestamp as last_data_refresh
+`;
+
+// Extended columns - only used if all columns exist in the database
 const DETAIL_COLUMNS = `
   id,
   name,
@@ -232,24 +276,57 @@ class WineryService extends BaseService {
 
   /**
    * Get winery by slug
+   * Uses a fallback approach: tries extended columns first, then basic columns if that fails
    */
   async getBySlug(slug: string): Promise<Winery | null> {
-    const result = await this.query<Winery>(
-      `SELECT ${DETAIL_COLUMNS} FROM wineries WHERE slug = $1 AND COALESCE(is_active, true) = true`,
-      [slug]
-    );
-    return result.rows[0] || null;
+    try {
+      // Try the full query with all extended columns
+      const result = await this.query<Winery>(
+        `SELECT ${DETAIL_COLUMNS} FROM wineries WHERE slug = $1 AND COALESCE(is_active, true) = true`,
+        [slug]
+      );
+      return result.rows[0] || null;
+    } catch (error) {
+      // If the query fails (likely due to missing columns), try with basic columns
+      console.warn('Winery detail query failed, falling back to basic columns:', error);
+      try {
+        const result = await this.query<Winery>(
+          `SELECT ${BASIC_DETAIL_COLUMNS} FROM wineries WHERE slug = $1 AND COALESCE(is_active, true) = true`,
+          [slug]
+        );
+        return result.rows[0] || null;
+      } catch (fallbackError) {
+        console.error('Winery basic query also failed:', fallbackError);
+        throw fallbackError;
+      }
+    }
   }
 
   /**
    * Get winery by ID
+   * Uses a fallback approach: tries extended columns first, then basic columns if that fails
    */
   async getById(id: number): Promise<Winery | null> {
-    const result = await this.query<Winery>(
-      `SELECT ${DETAIL_COLUMNS} FROM wineries WHERE id = $1`,
-      [id]
-    );
-    return result.rows[0] || null;
+    try {
+      const result = await this.query<Winery>(
+        `SELECT ${DETAIL_COLUMNS} FROM wineries WHERE id = $1`,
+        [id]
+      );
+      return result.rows[0] || null;
+    } catch (error) {
+      // If the query fails (likely due to missing columns), try with basic columns
+      console.warn('Winery getById query failed, falling back to basic columns:', error);
+      try {
+        const result = await this.query<Winery>(
+          `SELECT ${BASIC_DETAIL_COLUMNS} FROM wineries WHERE id = $1`,
+          [id]
+        );
+        return result.rows[0] || null;
+      } catch (fallbackError) {
+        console.error('Winery basic getById query also failed:', fallbackError);
+        throw fallbackError;
+      }
+    }
   }
 
   /**

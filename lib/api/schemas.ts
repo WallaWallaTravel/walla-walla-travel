@@ -208,6 +208,77 @@ export const DateRangeSchema = z.object({
 });
 
 // ============================================================================
+// SHARED TOUR SCHEMAS
+// ============================================================================
+
+/**
+ * Schema for creating a shared tour ticket
+ * Used for public booking endpoint
+ */
+export const CreateSharedTourTicketSchema = z.object({
+  tour_id: z.string().uuid('Invalid tour ID format'),
+  ticket_count: z.number().int().min(1, 'At least 1 ticket required').max(14, 'Maximum 14 tickets per booking'),
+  customer_name: z.string().min(2, 'Name must be at least 2 characters').max(100, 'Name too long'),
+  customer_email: z.string().email('Invalid email address').max(255, 'Email too long'),
+  customer_phone: z.string().regex(/^[\d\s()+-]+$/, 'Invalid phone number format').max(20, 'Phone number too long').optional(),
+  guest_names: z.array(z.string().min(1).max(100)).max(14).optional(),
+  includes_lunch: z.boolean().default(true),
+  lunch_selection: z.string().max(100).optional(),
+  guest_lunch_selections: z.array(z.object({
+    guest_name: z.string().min(1).max(100),
+    selection: z.string().min(1).max(100),
+  })).max(14).optional(),
+  dietary_restrictions: z.string().max(500, 'Dietary restrictions text too long').optional(),
+  special_requests: z.string().max(1000, 'Special requests text too long').optional(),
+  referral_source: z.string().max(100).optional(),
+  promo_code: z.string().max(50).optional(),
+  hotel_partner_id: z.string().uuid().optional(),
+  booked_by_hotel: z.boolean().default(false),
+});
+
+/**
+ * Schema for creating a shared tour
+ * Used for admin tour creation endpoint
+ */
+export const CreateSharedTourSchema = z.object({
+  tour_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
+  start_time: z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/, 'Invalid time format').optional(),
+  duration_hours: z.number().min(1).max(12).optional(),
+  max_guests: z.number().int().min(1).max(50).optional(),
+  min_guests: z.number().int().min(1).max(50).optional(),
+  base_price_per_person: z.number().min(0).optional(),
+  lunch_price_per_person: z.number().min(0).optional(),
+  lunch_included_default: z.boolean().optional(),
+  title: z.string().min(1).max(200).optional(),
+  description: z.string().max(2000).optional(),
+  meeting_location: z.string().max(500).optional(),
+  wineries_preview: z.array(z.string()).optional(),
+  booking_cutoff_hours: z.number().int().min(0).max(168).optional(),
+  is_published: z.boolean().optional(),
+  notes: z.string().max(2000).optional(),
+  vehicle_id: z.number().int().optional(),
+  driver_id: z.number().int().optional(),
+  auto_assign_vehicle: z.boolean().optional(),
+  require_vehicle: z.boolean().optional(),
+});
+
+export const UpdateSharedTourSchema = CreateSharedTourSchema.partial();
+
+/**
+ * Schema for tour ID path parameter validation
+ */
+export const TourIdParamSchema = z.object({
+  tour_id: z.string().uuid('Invalid tour ID format'),
+});
+
+/**
+ * Schema for ticket ID path parameter validation
+ */
+export const TicketIdParamSchema = z.object({
+  ticket_id: z.string().uuid('Invalid ticket ID format'),
+});
+
+// ============================================================================
 // TYPE EXPORTS (inferred from schemas)
 // ============================================================================
 
@@ -229,6 +300,10 @@ export type LoginInput = z.infer<typeof LoginSchema>;
 export type RegisterUserInput = z.infer<typeof RegisterUserSchema>;
 
 export type CreatePaymentIntentInput = z.infer<typeof CreatePaymentIntentSchema>;
+
+export type CreateSharedTourTicketInput = z.infer<typeof CreateSharedTourTicketSchema>;
+export type CreateSharedTourInput = z.infer<typeof CreateSharedTourSchema>;
+export type UpdateSharedTourInput = z.infer<typeof UpdateSharedTourSchema>;
 
 
 

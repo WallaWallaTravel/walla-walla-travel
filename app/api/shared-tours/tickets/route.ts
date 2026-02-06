@@ -1,48 +1,50 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, BadRequestError, NotFoundError, ConflictError } from '@/lib/api/middleware/error-handler';
+import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 import { sharedTourService } from '@/lib/services/shared-tour.service';
+import { CreateSharedTourTicketSchema } from '@/lib/api/schemas';
+import { z } from 'zod';
 
 /**
  * POST /api/shared-tours/tickets
  * Create a new ticket purchase
  * Public endpoint for customer bookings
+ *
+ * Uses Zod schema validation for robust input validation
+ * Rate limited to prevent reservation spam (10 per 15 minutes per IP)
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withRateLimit(rateLimiters.sharedTourTicket)(withErrorHandling(async (request: NextRequest) => {
   const body = await request.json();
 
-  // Validate required fields
-  const required = ['tour_id', 'ticket_count', 'customer_name', 'customer_email'];
-  for (const field of required) {
-    if (!body[field]) {
-      throw new BadRequestError(`Missing required field: ${field}`);
+  // Validate with Zod schema
+  let validatedData;
+  try {
+    validatedData = CreateSharedTourTicketSchema.parse(body);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      // Format Zod errors into readable messages
+      const messages = error.issues.map((issue: z.ZodIssue) => `${issue.path.join('.')}: ${issue.message}`).join('; ');
+      throw new BadRequestError(`Validation failed: ${messages}`);
     }
-  }
-
-  // Validate ticket count
-  if (body.ticket_count < 1 || body.ticket_count > 14) {
-    throw new BadRequestError('Ticket count must be between 1 and 14');
-  }
-
-  // Validate email format
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(body.customer_email)) {
-    throw new BadRequestError('Invalid email format');
+    throw error;
   }
 
   // Create the ticket - service may throw availability errors
   try {
     const ticket = await sharedTourService.createTicket({
-      tour_id: body.tour_id,
-      ticket_count: body.ticket_count,
-      customer_name: body.customer_name,
-      customer_email: body.customer_email,
-      customer_phone: body.customer_phone,
-      guest_names: body.guest_names,
-      includes_lunch: body.includes_lunch ?? true,
-      dietary_restrictions: body.dietary_restrictions,
-      special_requests: body.special_requests,
-      referral_source: body.referral_source,
-      promo_code: body.promo_code,
+      tour_id: validatedData.tour_id,
+      ticket_count: validatedData.ticket_count,
+      customer_name: validatedData.customer_name,
+      customer_email: validatedData.customer_email,
+      customer_phone: validatedData.customer_phone,
+      guest_names: validatedData.guest_names,
+      includes_lunch: validatedData.includes_lunch,
+      dietary_restrictions: validatedData.dietary_restrictions,
+      special_requests: validatedData.special_requests,
+      referral_source: validatedData.referral_source,
+      promo_code: validatedData.promo_code,
+      hotel_partner_id: validatedData.hotel_partner_id,
+      booked_by_hotel: validatedData.booked_by_hotel,
     });
 
     return NextResponse.json({
@@ -53,12 +55,12 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     // Handle availability errors with 409 Conflict
-    if (message.includes('spots') || message.includes('available') || message.includes('sold out')) {
+    if (message.includes('spots') || message.includes('available') || message.includes('sold out') || message.includes('full') || message.includes('cutoff')) {
       throw new ConflictError(message);
     }
     throw error;
   }
-});
+}));
 
 /**
  * GET /api/shared-tours/tickets

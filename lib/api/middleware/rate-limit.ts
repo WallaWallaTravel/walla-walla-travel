@@ -267,6 +267,14 @@ export const rateLimiters = {
     message: 'Too many map requests. Please wait before trying again.',
     identifier: 'maps',
   }),
+
+  // Shared tour ticket booking (10 per 15 minutes) - prevent reservation spam
+  sharedTourTicket: new RateLimiter({
+    maxAttempts: 10,
+    windowMs: 15 * 60 * 1000,
+    message: 'Too many ticket booking attempts. Please wait before trying again.',
+    identifier: 'shared-tour-ticket',
+  }),
 };
 
 /**
