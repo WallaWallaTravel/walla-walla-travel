@@ -377,6 +377,17 @@ export default function DriverTourDetailPage() {
           <span>⏰</span>
           <span>Clock In for This Tour</span>
         </Link>
+
+        {/* Complete Tour Button - shows after tour date or on tour date */}
+        {tour.status !== 'completed' && tour.status !== 'cancelled' && (
+          <Link
+            href={`/driver-portal/tour/${tour.booking_id}/complete`}
+            className="flex items-center justify-center gap-2 p-4 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold transition-colors mt-3"
+          >
+            <span>✅</span>
+            <span>Complete Tour & Collect Tips</span>
+          </Link>
+        )}
       </div>
 
       {/* Bottom Navigation */}

@@ -7,6 +7,7 @@ import { logger } from '@/lib/logger';
 import { sendBookingConfirmationEmail } from '@/lib/services/email-automation.service';
 import { sharedTourService } from '@/lib/services/shared-tour.service';
 import { sendSharedTourConfirmationEmail } from '@/lib/email/templates/shared-tour-confirmation';
+import { tipService } from '@/lib/services/tip.service';
 
 /**
  * POST /api/webhooks/stripe
@@ -71,6 +72,8 @@ export async function POST(request: NextRequest) {
         // Handle shared tour ticket failures separately
         if (failedPayment.metadata.type === 'shared_tour_ticket') {
           await handleSharedTourPaymentFailed(failedPayment);
+        } else if (failedPayment.metadata.type === 'driver_tip') {
+          await handleDriverTipPaymentFailed(failedPayment);
         } else {
           await handlePaymentIntentFailed(failedPayment);
         }
@@ -127,6 +130,12 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
   // Check if this is a shared tour ticket payment
   if (metadata.type === 'shared_tour_ticket' && metadata.ticket_id) {
     await handleSharedTourPaymentSuccess(paymentIntent);
+    return;
+  }
+
+  // Check if this is a driver tip payment
+  if (metadata.type === 'driver_tip' && metadata.tip_code) {
+    await handleDriverTipPaymentSuccess(paymentIntent);
     return;
   }
 
@@ -390,6 +399,9 @@ async function handleDisputeCreated(dispute: Stripe.Dispute) {
 
 /**
  * Handle shared tour ticket payment success
+ *
+ * IDEMPOTENT: Checks if payment was already processed before sending confirmation email.
+ * This prevents duplicate emails when Stripe retries webhooks.
  */
 async function handleSharedTourPaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
   const { id, metadata, amount } = paymentIntent;
@@ -402,7 +414,11 @@ async function handleSharedTourPaymentSuccess(paymentIntent: Stripe.PaymentInten
     amount: amount / 100,
   });
 
-  // Confirm the payment in the service
+  // Get current ticket state to check if already processed
+  const existingTicket = await sharedTourService.getTicketById(ticketId);
+  const wasAlreadyPaid = existingTicket?.payment_status === 'paid';
+
+  // Confirm the payment in the service (idempotent - returns existing if already paid)
   const ticket = await sharedTourService.confirmPayment(id);
 
   if (!ticket) {
@@ -417,9 +433,20 @@ async function handleSharedTourPaymentSuccess(paymentIntent: Stripe.PaymentInten
     ticketId: ticket.id,
     ticketNumber: ticket.ticket_number,
     customerEmail: ticket.customer_email,
+    wasAlreadyPaid,
   });
 
-  // Send confirmation email
+  // IDEMPOTENCY: Only send email if this is first-time confirmation
+  // Prevents duplicate emails on webhook retries
+  if (wasAlreadyPaid) {
+    logger.info('[Stripe Webhook] Skipping confirmation email (already sent on previous webhook)', {
+      ticketId: ticket.id,
+      paymentIntentId: id,
+    });
+    return;
+  }
+
+  // Send confirmation email (only on first confirmation)
   try {
     await sendSharedTourConfirmationEmail(ticket.id);
     logger.info('[Stripe Webhook] Sent shared tour confirmation email', {
@@ -450,4 +477,54 @@ async function handleSharedTourPaymentFailed(paymentIntent: Stripe.PaymentIntent
 
   // Log the failure in the service
   await sharedTourService.handlePaymentFailed(id, last_payment_error?.message);
+}
+
+/**
+ * Handle driver tip payment success
+ */
+async function handleDriverTipPaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
+  const { id, metadata, amount } = paymentIntent;
+
+  logger.info('[Stripe Webhook] Processing driver tip payment', {
+    paymentIntentId: id,
+    tipCode: metadata.tip_code,
+    bookingId: metadata.booking_id,
+    driverName: metadata.driver_name,
+    amount: amount / 100,
+  });
+
+  try {
+    await tipService.processTipPaymentSuccess(paymentIntent);
+    logger.info('[Stripe Webhook] Driver tip payment confirmed', {
+      paymentIntentId: id,
+      amount: amount / 100,
+    });
+  } catch (error) {
+    logger.error('[Stripe Webhook] Failed to process driver tip payment', {
+      paymentIntentId: id,
+      error,
+    });
+  }
+}
+
+/**
+ * Handle driver tip payment failure
+ */
+async function handleDriverTipPaymentFailed(paymentIntent: Stripe.PaymentIntent) {
+  const { id, metadata, last_payment_error } = paymentIntent;
+
+  logger.warn('[Stripe Webhook] Driver tip payment failed', {
+    paymentIntentId: id,
+    tipCode: metadata.tip_code,
+    error: last_payment_error?.message,
+  });
+
+  try {
+    await tipService.processTipPaymentFailed(id);
+  } catch (error) {
+    logger.error('[Stripe Webhook] Failed to update tip payment failure status', {
+      paymentIntentId: id,
+      error,
+    });
+  }
 }

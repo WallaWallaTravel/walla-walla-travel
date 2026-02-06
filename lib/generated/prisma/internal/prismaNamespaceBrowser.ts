@@ -158,6 +158,9 @@ export const ModelName = {
   winery_people: 'winery_people',
   winery_reviews: 'winery_reviews',
   wines: 'wines',
+  driver_tips: 'driver_tips',
+  tour_expenses: 'tour_expenses',
+  tour_completions: 'tour_completions',
   workflows: 'workflows'
 } as const
 
@@ -469,7 +472,9 @@ export const BookingsScalarFieldEnum = {
   reminder_sent: 'reminder_sent',
   provider_entity_id: 'provider_entity_id',
   booking_source_id: 'booking_source_id',
-  referrer_entity_id: 'referrer_entity_id'
+  referrer_entity_id: 'referrer_entity_id',
+  google_calendar_event_id: 'google_calendar_event_id',
+  google_calendar_synced_at: 'google_calendar_synced_at'
 } as const
 
 export type BookingsScalarFieldEnum = (typeof BookingsScalarFieldEnum)[keyof typeof BookingsScalarFieldEnum]
@@ -2726,6 +2731,63 @@ export const WinesScalarFieldEnum = {
 } as const
 
 export type WinesScalarFieldEnum = (typeof WinesScalarFieldEnum)[keyof typeof WinesScalarFieldEnum]
+
+
+export const Driver_tipsScalarFieldEnum = {
+  id: 'id',
+  booking_id: 'booking_id',
+  driver_id: 'driver_id',
+  guest_name: 'guest_name',
+  amount: 'amount',
+  stripe_payment_intent_id: 'stripe_payment_intent_id',
+  stripe_charge_id: 'stripe_charge_id',
+  card_brand: 'card_brand',
+  card_last4: 'card_last4',
+  payment_status: 'payment_status',
+  tip_source: 'tip_source',
+  payroll_exported: 'payroll_exported',
+  payroll_exported_at: 'payroll_exported_at',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Driver_tipsScalarFieldEnum = (typeof Driver_tipsScalarFieldEnum)[keyof typeof Driver_tipsScalarFieldEnum]
+
+
+export const Tour_expensesScalarFieldEnum = {
+  id: 'id',
+  booking_id: 'booking_id',
+  driver_id: 'driver_id',
+  expense_type: 'expense_type',
+  amount: 'amount',
+  description: 'description',
+  receipt_url: 'receipt_url',
+  receipt_storage_path: 'receipt_storage_path',
+  reimbursement_status: 'reimbursement_status',
+  reimbursed_at: 'reimbursed_at',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Tour_expensesScalarFieldEnum = (typeof Tour_expensesScalarFieldEnum)[keyof typeof Tour_expensesScalarFieldEnum]
+
+
+export const Tour_completionsScalarFieldEnum = {
+  id: 'id',
+  booking_id: 'booking_id',
+  driver_id: 'driver_id',
+  completed_at: 'completed_at',
+  lunch_cost_total: 'lunch_cost_total',
+  tip_code: 'tip_code',
+  tip_payment_link: 'tip_payment_link',
+  tip_qr_code_url: 'tip_qr_code_url',
+  driver_notes: 'driver_notes',
+  tips_enabled: 'tips_enabled',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Tour_completionsScalarFieldEnum = (typeof Tour_completionsScalarFieldEnum)[keyof typeof Tour_completionsScalarFieldEnum]
 
 
 export const WorkflowsScalarFieldEnum = {

@@ -140,6 +140,8 @@ export type BookingsMinAggregateOutputType = {
   provider_entity_id: string | null
   booking_source_id: string | null
   referrer_entity_id: string | null
+  google_calendar_event_id: string | null
+  google_calendar_synced_at: Date | null
 }
 
 export type BookingsMaxAggregateOutputType = {
@@ -205,6 +207,8 @@ export type BookingsMaxAggregateOutputType = {
   provider_entity_id: string | null
   booking_source_id: string | null
   referrer_entity_id: string | null
+  google_calendar_event_id: string | null
+  google_calendar_synced_at: Date | null
 }
 
 export type BookingsCountAggregateOutputType = {
@@ -270,6 +274,8 @@ export type BookingsCountAggregateOutputType = {
   provider_entity_id: number
   booking_source_id: number
   referrer_entity_id: number
+  google_calendar_event_id: number
+  google_calendar_synced_at: number
   _all: number
 }
 
@@ -387,6 +393,8 @@ export type BookingsMinAggregateInputType = {
   provider_entity_id?: true
   booking_source_id?: true
   referrer_entity_id?: true
+  google_calendar_event_id?: true
+  google_calendar_synced_at?: true
 }
 
 export type BookingsMaxAggregateInputType = {
@@ -452,6 +460,8 @@ export type BookingsMaxAggregateInputType = {
   provider_entity_id?: true
   booking_source_id?: true
   referrer_entity_id?: true
+  google_calendar_event_id?: true
+  google_calendar_synced_at?: true
 }
 
 export type BookingsCountAggregateInputType = {
@@ -517,6 +527,8 @@ export type BookingsCountAggregateInputType = {
   provider_entity_id?: true
   booking_source_id?: true
   referrer_entity_id?: true
+  google_calendar_event_id?: true
+  google_calendar_synced_at?: true
   _all?: true
 }
 
@@ -669,6 +681,8 @@ export type BookingsGroupByOutputType = {
   provider_entity_id: string | null
   booking_source_id: string | null
   referrer_entity_id: string | null
+  google_calendar_event_id: string | null
+  google_calendar_synced_at: Date | null
   _count: BookingsCountAggregateOutputType | null
   _avg: BookingsAvgAggregateOutputType | null
   _sum: BookingsSumAggregateOutputType | null
@@ -757,6 +771,8 @@ export type bookingsWhereInput = {
   provider_entity_id?: Prisma.UuidNullableFilter<"bookings"> | string | null
   booking_source_id?: Prisma.UuidNullableFilter<"bookings"> | string | null
   referrer_entity_id?: Prisma.UuidNullableFilter<"bookings"> | string | null
+  google_calendar_event_id?: Prisma.StringNullableFilter<"bookings"> | string | null
+  google_calendar_synced_at?: Prisma.DateTimeNullableFilter<"bookings"> | Date | string | null
   ai_queries?: Prisma.Ai_queriesListRelationFilter
   booking_line_items?: Prisma.Booking_line_itemsListRelationFilter
   booking_timeline?: Prisma.Booking_timelineListRelationFilter
@@ -791,6 +807,9 @@ export type bookingsWhereInput = {
   visitors?: Prisma.VisitorsListRelationFilter
   wine_purchases?: Prisma.Wine_purchasesListRelationFilter
   winery_reviews?: Prisma.Winery_reviewsListRelationFilter
+  driver_tips?: Prisma.Driver_tipsListRelationFilter
+  tour_expenses?: Prisma.Tour_expensesListRelationFilter
+  tour_completions?: Prisma.XOR<Prisma.Tour_completionsNullableScalarRelationFilter, Prisma.tour_completionsWhereInput> | null
 }
 
 export type bookingsOrderByWithRelationInput = {
@@ -856,6 +875,8 @@ export type bookingsOrderByWithRelationInput = {
   provider_entity_id?: Prisma.SortOrderInput | Prisma.SortOrder
   booking_source_id?: Prisma.SortOrderInput | Prisma.SortOrder
   referrer_entity_id?: Prisma.SortOrderInput | Prisma.SortOrder
+  google_calendar_event_id?: Prisma.SortOrderInput | Prisma.SortOrder
+  google_calendar_synced_at?: Prisma.SortOrderInput | Prisma.SortOrder
   ai_queries?: Prisma.ai_queriesOrderByRelationAggregateInput
   booking_line_items?: Prisma.booking_line_itemsOrderByRelationAggregateInput
   booking_timeline?: Prisma.booking_timelineOrderByRelationAggregateInput
@@ -890,6 +911,9 @@ export type bookingsOrderByWithRelationInput = {
   visitors?: Prisma.visitorsOrderByRelationAggregateInput
   wine_purchases?: Prisma.wine_purchasesOrderByRelationAggregateInput
   winery_reviews?: Prisma.winery_reviewsOrderByRelationAggregateInput
+  driver_tips?: Prisma.driver_tipsOrderByRelationAggregateInput
+  tour_expenses?: Prisma.tour_expensesOrderByRelationAggregateInput
+  tour_completions?: Prisma.tour_completionsOrderByWithRelationInput
 }
 
 export type bookingsWhereUniqueInput = Prisma.AtLeast<{
@@ -958,6 +982,8 @@ export type bookingsWhereUniqueInput = Prisma.AtLeast<{
   provider_entity_id?: Prisma.UuidNullableFilter<"bookings"> | string | null
   booking_source_id?: Prisma.UuidNullableFilter<"bookings"> | string | null
   referrer_entity_id?: Prisma.UuidNullableFilter<"bookings"> | string | null
+  google_calendar_event_id?: Prisma.StringNullableFilter<"bookings"> | string | null
+  google_calendar_synced_at?: Prisma.DateTimeNullableFilter<"bookings"> | Date | string | null
   ai_queries?: Prisma.Ai_queriesListRelationFilter
   booking_line_items?: Prisma.Booking_line_itemsListRelationFilter
   booking_timeline?: Prisma.Booking_timelineListRelationFilter
@@ -992,6 +1018,9 @@ export type bookingsWhereUniqueInput = Prisma.AtLeast<{
   visitors?: Prisma.VisitorsListRelationFilter
   wine_purchases?: Prisma.Wine_purchasesListRelationFilter
   winery_reviews?: Prisma.Winery_reviewsListRelationFilter
+  driver_tips?: Prisma.Driver_tipsListRelationFilter
+  tour_expenses?: Prisma.Tour_expensesListRelationFilter
+  tour_completions?: Prisma.XOR<Prisma.Tour_completionsNullableScalarRelationFilter, Prisma.tour_completionsWhereInput> | null
 }, "id" | "booking_number">
 
 export type bookingsOrderByWithAggregationInput = {
@@ -1057,6 +1086,8 @@ export type bookingsOrderByWithAggregationInput = {
   provider_entity_id?: Prisma.SortOrderInput | Prisma.SortOrder
   booking_source_id?: Prisma.SortOrderInput | Prisma.SortOrder
   referrer_entity_id?: Prisma.SortOrderInput | Prisma.SortOrder
+  google_calendar_event_id?: Prisma.SortOrderInput | Prisma.SortOrder
+  google_calendar_synced_at?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.bookingsCountOrderByAggregateInput
   _avg?: Prisma.bookingsAvgOrderByAggregateInput
   _max?: Prisma.bookingsMaxOrderByAggregateInput
@@ -1130,6 +1161,8 @@ export type bookingsScalarWhereWithAggregatesInput = {
   provider_entity_id?: Prisma.UuidNullableWithAggregatesFilter<"bookings"> | string | null
   booking_source_id?: Prisma.UuidNullableWithAggregatesFilter<"bookings"> | string | null
   referrer_entity_id?: Prisma.UuidNullableWithAggregatesFilter<"bookings"> | string | null
+  google_calendar_event_id?: Prisma.StringNullableWithAggregatesFilter<"bookings"> | string | null
+  google_calendar_synced_at?: Prisma.DateTimeNullableWithAggregatesFilter<"bookings"> | Date | string | null
 }
 
 export type bookingsCreateInput = {
@@ -1181,6 +1214,8 @@ export type bookingsCreateInput = {
   tour_start_date?: Date | string | null
   tour_end_date?: Date | string | null
   reminder_sent?: boolean | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineCreateNestedManyWithoutBookingsInput
@@ -1215,6 +1250,9 @@ export type bookingsCreateInput = {
   visitors?: Prisma.visitorsCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsUncheckedCreateInput = {
@@ -1280,6 +1318,8 @@ export type bookingsUncheckedCreateInput = {
   provider_entity_id?: string | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineUncheckedCreateNestedManyWithoutBookingsInput
@@ -1301,6 +1341,9 @@ export type bookingsUncheckedCreateInput = {
   visitors?: Prisma.visitorsUncheckedCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesUncheckedCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsUpdateInput = {
@@ -1352,6 +1395,8 @@ export type bookingsUpdateInput = {
   tour_start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   tour_end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUpdateManyWithoutBookingsNestedInput
@@ -1386,6 +1431,9 @@ export type bookingsUpdateInput = {
   visitors?: Prisma.visitorsUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateInput = {
@@ -1451,6 +1499,8 @@ export type bookingsUncheckedUpdateInput = {
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUncheckedUpdateManyWithoutBookingsNestedInput
@@ -1472,6 +1522,9 @@ export type bookingsUncheckedUpdateInput = {
   visitors?: Prisma.visitorsUncheckedUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUncheckedUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsCreateManyInput = {
@@ -1537,6 +1590,8 @@ export type bookingsCreateManyInput = {
   provider_entity_id?: string | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
 }
 
 export type bookingsUpdateManyMutationInput = {
@@ -1588,6 +1643,8 @@ export type bookingsUpdateManyMutationInput = {
   tour_start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   tour_end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type bookingsUncheckedUpdateManyInput = {
@@ -1653,6 +1710,8 @@ export type bookingsUncheckedUpdateManyInput = {
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type BookingsNullableScalarRelationFilter = {
@@ -1738,6 +1797,8 @@ export type bookingsCountOrderByAggregateInput = {
   provider_entity_id?: Prisma.SortOrder
   booking_source_id?: Prisma.SortOrder
   referrer_entity_id?: Prisma.SortOrder
+  google_calendar_event_id?: Prisma.SortOrder
+  google_calendar_synced_at?: Prisma.SortOrder
 }
 
 export type bookingsAvgOrderByAggregateInput = {
@@ -1828,6 +1889,8 @@ export type bookingsMaxOrderByAggregateInput = {
   provider_entity_id?: Prisma.SortOrder
   booking_source_id?: Prisma.SortOrder
   referrer_entity_id?: Prisma.SortOrder
+  google_calendar_event_id?: Prisma.SortOrder
+  google_calendar_synced_at?: Prisma.SortOrder
 }
 
 export type bookingsMinOrderByAggregateInput = {
@@ -1893,6 +1956,8 @@ export type bookingsMinOrderByAggregateInput = {
   provider_entity_id?: Prisma.SortOrder
   booking_source_id?: Prisma.SortOrder
   referrer_entity_id?: Prisma.SortOrder
+  google_calendar_event_id?: Prisma.SortOrder
+  google_calendar_synced_at?: Prisma.SortOrder
 }
 
 export type bookingsSumOrderByAggregateInput = {
@@ -2788,6 +2853,48 @@ export type bookingsUpdateOneWithoutWinery_reviewsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.bookingsUpdateToOneWithWhereWithoutWinery_reviewsInput, Prisma.bookingsUpdateWithoutWinery_reviewsInput>, Prisma.bookingsUncheckedUpdateWithoutWinery_reviewsInput>
 }
 
+export type bookingsCreateNestedOneWithoutDriver_tipsInput = {
+  create?: Prisma.XOR<Prisma.bookingsCreateWithoutDriver_tipsInput, Prisma.bookingsUncheckedCreateWithoutDriver_tipsInput>
+  connectOrCreate?: Prisma.bookingsCreateOrConnectWithoutDriver_tipsInput
+  connect?: Prisma.bookingsWhereUniqueInput
+}
+
+export type bookingsUpdateOneRequiredWithoutDriver_tipsNestedInput = {
+  create?: Prisma.XOR<Prisma.bookingsCreateWithoutDriver_tipsInput, Prisma.bookingsUncheckedCreateWithoutDriver_tipsInput>
+  connectOrCreate?: Prisma.bookingsCreateOrConnectWithoutDriver_tipsInput
+  upsert?: Prisma.bookingsUpsertWithoutDriver_tipsInput
+  connect?: Prisma.bookingsWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.bookingsUpdateToOneWithWhereWithoutDriver_tipsInput, Prisma.bookingsUpdateWithoutDriver_tipsInput>, Prisma.bookingsUncheckedUpdateWithoutDriver_tipsInput>
+}
+
+export type bookingsCreateNestedOneWithoutTour_expensesInput = {
+  create?: Prisma.XOR<Prisma.bookingsCreateWithoutTour_expensesInput, Prisma.bookingsUncheckedCreateWithoutTour_expensesInput>
+  connectOrCreate?: Prisma.bookingsCreateOrConnectWithoutTour_expensesInput
+  connect?: Prisma.bookingsWhereUniqueInput
+}
+
+export type bookingsUpdateOneRequiredWithoutTour_expensesNestedInput = {
+  create?: Prisma.XOR<Prisma.bookingsCreateWithoutTour_expensesInput, Prisma.bookingsUncheckedCreateWithoutTour_expensesInput>
+  connectOrCreate?: Prisma.bookingsCreateOrConnectWithoutTour_expensesInput
+  upsert?: Prisma.bookingsUpsertWithoutTour_expensesInput
+  connect?: Prisma.bookingsWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.bookingsUpdateToOneWithWhereWithoutTour_expensesInput, Prisma.bookingsUpdateWithoutTour_expensesInput>, Prisma.bookingsUncheckedUpdateWithoutTour_expensesInput>
+}
+
+export type bookingsCreateNestedOneWithoutTour_completionsInput = {
+  create?: Prisma.XOR<Prisma.bookingsCreateWithoutTour_completionsInput, Prisma.bookingsUncheckedCreateWithoutTour_completionsInput>
+  connectOrCreate?: Prisma.bookingsCreateOrConnectWithoutTour_completionsInput
+  connect?: Prisma.bookingsWhereUniqueInput
+}
+
+export type bookingsUpdateOneRequiredWithoutTour_completionsNestedInput = {
+  create?: Prisma.XOR<Prisma.bookingsCreateWithoutTour_completionsInput, Prisma.bookingsUncheckedCreateWithoutTour_completionsInput>
+  connectOrCreate?: Prisma.bookingsCreateOrConnectWithoutTour_completionsInput
+  upsert?: Prisma.bookingsUpsertWithoutTour_completionsInput
+  connect?: Prisma.bookingsWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.bookingsUpdateToOneWithWhereWithoutTour_completionsInput, Prisma.bookingsUpdateWithoutTour_completionsInput>, Prisma.bookingsUncheckedUpdateWithoutTour_completionsInput>
+}
+
 export type bookingsCreateWithoutAi_queriesInput = {
   booking_number: string
   customer_name: string
@@ -2837,6 +2944,8 @@ export type bookingsCreateWithoutAi_queriesInput = {
   tour_start_date?: Date | string | null
   tour_end_date?: Date | string | null
   reminder_sent?: boolean | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   booking_line_items?: Prisma.booking_line_itemsCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineCreateNestedManyWithoutBookingsInput
   booking_wineries?: Prisma.booking_wineriesCreateNestedManyWithoutBookingsInput
@@ -2870,6 +2979,9 @@ export type bookingsCreateWithoutAi_queriesInput = {
   visitors?: Prisma.visitorsCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsUncheckedCreateWithoutAi_queriesInput = {
@@ -2935,6 +3047,8 @@ export type bookingsUncheckedCreateWithoutAi_queriesInput = {
   provider_entity_id?: string | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   booking_line_items?: Prisma.booking_line_itemsUncheckedCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineUncheckedCreateNestedManyWithoutBookingsInput
   booking_wineries?: Prisma.booking_wineriesUncheckedCreateNestedManyWithoutBookingsInput
@@ -2955,6 +3069,9 @@ export type bookingsUncheckedCreateWithoutAi_queriesInput = {
   visitors?: Prisma.visitorsUncheckedCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesUncheckedCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsCreateOrConnectWithoutAi_queriesInput = {
@@ -3022,6 +3139,8 @@ export type bookingsUpdateWithoutAi_queriesInput = {
   tour_start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   tour_end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   booking_line_items?: Prisma.booking_line_itemsUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUpdateManyWithoutBookingsNestedInput
   booking_wineries?: Prisma.booking_wineriesUpdateManyWithoutBookingsNestedInput
@@ -3055,6 +3174,9 @@ export type bookingsUpdateWithoutAi_queriesInput = {
   visitors?: Prisma.visitorsUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateWithoutAi_queriesInput = {
@@ -3120,6 +3242,8 @@ export type bookingsUncheckedUpdateWithoutAi_queriesInput = {
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   booking_line_items?: Prisma.booking_line_itemsUncheckedUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUncheckedUpdateManyWithoutBookingsNestedInput
   booking_wineries?: Prisma.booking_wineriesUncheckedUpdateManyWithoutBookingsNestedInput
@@ -3140,6 +3264,9 @@ export type bookingsUncheckedUpdateWithoutAi_queriesInput = {
   visitors?: Prisma.visitorsUncheckedUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUncheckedUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsCreateWithoutBooking_line_itemsInput = {
@@ -3191,6 +3318,8 @@ export type bookingsCreateWithoutBooking_line_itemsInput = {
   tour_start_date?: Date | string | null
   tour_end_date?: Date | string | null
   reminder_sent?: boolean | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineCreateNestedManyWithoutBookingsInput
   booking_wineries?: Prisma.booking_wineriesCreateNestedManyWithoutBookingsInput
@@ -3224,6 +3353,9 @@ export type bookingsCreateWithoutBooking_line_itemsInput = {
   visitors?: Prisma.visitorsCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsUncheckedCreateWithoutBooking_line_itemsInput = {
@@ -3289,6 +3421,8 @@ export type bookingsUncheckedCreateWithoutBooking_line_itemsInput = {
   provider_entity_id?: string | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineUncheckedCreateNestedManyWithoutBookingsInput
   booking_wineries?: Prisma.booking_wineriesUncheckedCreateNestedManyWithoutBookingsInput
@@ -3309,6 +3443,9 @@ export type bookingsUncheckedCreateWithoutBooking_line_itemsInput = {
   visitors?: Prisma.visitorsUncheckedCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesUncheckedCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsCreateOrConnectWithoutBooking_line_itemsInput = {
@@ -3376,6 +3513,8 @@ export type bookingsUpdateWithoutBooking_line_itemsInput = {
   tour_start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   tour_end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUpdateManyWithoutBookingsNestedInput
   booking_wineries?: Prisma.booking_wineriesUpdateManyWithoutBookingsNestedInput
@@ -3409,6 +3548,9 @@ export type bookingsUpdateWithoutBooking_line_itemsInput = {
   visitors?: Prisma.visitorsUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateWithoutBooking_line_itemsInput = {
@@ -3474,6 +3616,8 @@ export type bookingsUncheckedUpdateWithoutBooking_line_itemsInput = {
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUncheckedUpdateManyWithoutBookingsNestedInput
   booking_wineries?: Prisma.booking_wineriesUncheckedUpdateManyWithoutBookingsNestedInput
@@ -3494,6 +3638,9 @@ export type bookingsUncheckedUpdateWithoutBooking_line_itemsInput = {
   visitors?: Prisma.visitorsUncheckedUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUncheckedUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsCreateWithoutBooking_sourcesInput = {
@@ -3545,6 +3692,8 @@ export type bookingsCreateWithoutBooking_sourcesInput = {
   tour_start_date?: Date | string | null
   tour_end_date?: Date | string | null
   reminder_sent?: boolean | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineCreateNestedManyWithoutBookingsInput
@@ -3578,6 +3727,9 @@ export type bookingsCreateWithoutBooking_sourcesInput = {
   visitors?: Prisma.visitorsCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsUncheckedCreateWithoutBooking_sourcesInput = {
@@ -3642,6 +3794,8 @@ export type bookingsUncheckedCreateWithoutBooking_sourcesInput = {
   reminder_sent?: boolean | null
   provider_entity_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineUncheckedCreateNestedManyWithoutBookingsInput
@@ -3663,6 +3817,9 @@ export type bookingsUncheckedCreateWithoutBooking_sourcesInput = {
   visitors?: Prisma.visitorsUncheckedCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesUncheckedCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsCreateOrConnectWithoutBooking_sourcesInput = {
@@ -3757,6 +3914,8 @@ export type bookingsScalarWhereInput = {
   provider_entity_id?: Prisma.UuidNullableFilter<"bookings"> | string | null
   booking_source_id?: Prisma.UuidNullableFilter<"bookings"> | string | null
   referrer_entity_id?: Prisma.UuidNullableFilter<"bookings"> | string | null
+  google_calendar_event_id?: Prisma.StringNullableFilter<"bookings"> | string | null
+  google_calendar_synced_at?: Prisma.DateTimeNullableFilter<"bookings"> | Date | string | null
 }
 
 export type bookingsCreateWithoutBooking_timelineInput = {
@@ -3808,6 +3967,8 @@ export type bookingsCreateWithoutBooking_timelineInput = {
   tour_start_date?: Date | string | null
   tour_end_date?: Date | string | null
   reminder_sent?: boolean | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsCreateNestedManyWithoutBookingsInput
   booking_wineries?: Prisma.booking_wineriesCreateNestedManyWithoutBookingsInput
@@ -3841,6 +4002,9 @@ export type bookingsCreateWithoutBooking_timelineInput = {
   visitors?: Prisma.visitorsCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsUncheckedCreateWithoutBooking_timelineInput = {
@@ -3906,6 +4070,8 @@ export type bookingsUncheckedCreateWithoutBooking_timelineInput = {
   provider_entity_id?: string | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedCreateNestedManyWithoutBookingsInput
   booking_wineries?: Prisma.booking_wineriesUncheckedCreateNestedManyWithoutBookingsInput
@@ -3926,6 +4092,9 @@ export type bookingsUncheckedCreateWithoutBooking_timelineInput = {
   visitors?: Prisma.visitorsUncheckedCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesUncheckedCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsCreateOrConnectWithoutBooking_timelineInput = {
@@ -3993,6 +4162,8 @@ export type bookingsUpdateWithoutBooking_timelineInput = {
   tour_start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   tour_end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUpdateManyWithoutBookingsNestedInput
   booking_wineries?: Prisma.booking_wineriesUpdateManyWithoutBookingsNestedInput
@@ -4026,6 +4197,9 @@ export type bookingsUpdateWithoutBooking_timelineInput = {
   visitors?: Prisma.visitorsUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateWithoutBooking_timelineInput = {
@@ -4091,6 +4265,8 @@ export type bookingsUncheckedUpdateWithoutBooking_timelineInput = {
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedUpdateManyWithoutBookingsNestedInput
   booking_wineries?: Prisma.booking_wineriesUncheckedUpdateManyWithoutBookingsNestedInput
@@ -4111,6 +4287,9 @@ export type bookingsUncheckedUpdateWithoutBooking_timelineInput = {
   visitors?: Prisma.visitorsUncheckedUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUncheckedUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsCreateWithoutBooking_wineriesInput = {
@@ -4162,6 +4341,8 @@ export type bookingsCreateWithoutBooking_wineriesInput = {
   tour_start_date?: Date | string | null
   tour_end_date?: Date | string | null
   reminder_sent?: boolean | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineCreateNestedManyWithoutBookingsInput
@@ -4195,6 +4376,9 @@ export type bookingsCreateWithoutBooking_wineriesInput = {
   visitors?: Prisma.visitorsCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsUncheckedCreateWithoutBooking_wineriesInput = {
@@ -4260,6 +4444,8 @@ export type bookingsUncheckedCreateWithoutBooking_wineriesInput = {
   provider_entity_id?: string | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineUncheckedCreateNestedManyWithoutBookingsInput
@@ -4280,6 +4466,9 @@ export type bookingsUncheckedCreateWithoutBooking_wineriesInput = {
   visitors?: Prisma.visitorsUncheckedCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesUncheckedCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsCreateOrConnectWithoutBooking_wineriesInput = {
@@ -4347,6 +4536,8 @@ export type bookingsUpdateWithoutBooking_wineriesInput = {
   tour_start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   tour_end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUpdateManyWithoutBookingsNestedInput
@@ -4380,6 +4571,9 @@ export type bookingsUpdateWithoutBooking_wineriesInput = {
   visitors?: Prisma.visitorsUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateWithoutBooking_wineriesInput = {
@@ -4445,6 +4639,8 @@ export type bookingsUncheckedUpdateWithoutBooking_wineriesInput = {
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUncheckedUpdateManyWithoutBookingsNestedInput
@@ -4465,6 +4661,9 @@ export type bookingsUncheckedUpdateWithoutBooking_wineriesInput = {
   visitors?: Prisma.visitorsUncheckedUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUncheckedUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsCreateWithoutBrandsInput = {
@@ -4516,6 +4715,8 @@ export type bookingsCreateWithoutBrandsInput = {
   tour_start_date?: Date | string | null
   tour_end_date?: Date | string | null
   reminder_sent?: boolean | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineCreateNestedManyWithoutBookingsInput
@@ -4549,6 +4750,9 @@ export type bookingsCreateWithoutBrandsInput = {
   visitors?: Prisma.visitorsCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsUncheckedCreateWithoutBrandsInput = {
@@ -4613,6 +4817,8 @@ export type bookingsUncheckedCreateWithoutBrandsInput = {
   provider_entity_id?: string | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineUncheckedCreateNestedManyWithoutBookingsInput
@@ -4634,6 +4840,9 @@ export type bookingsUncheckedCreateWithoutBrandsInput = {
   visitors?: Prisma.visitorsUncheckedCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesUncheckedCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsCreateOrConnectWithoutBrandsInput = {
@@ -4711,6 +4920,8 @@ export type bookingsCreateWithoutCommission_ledgerInput = {
   tour_start_date?: Date | string | null
   tour_end_date?: Date | string | null
   reminder_sent?: boolean | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineCreateNestedManyWithoutBookingsInput
@@ -4744,6 +4955,9 @@ export type bookingsCreateWithoutCommission_ledgerInput = {
   visitors?: Prisma.visitorsCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsUncheckedCreateWithoutCommission_ledgerInput = {
@@ -4809,6 +5023,8 @@ export type bookingsUncheckedCreateWithoutCommission_ledgerInput = {
   provider_entity_id?: string | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineUncheckedCreateNestedManyWithoutBookingsInput
@@ -4829,6 +5045,9 @@ export type bookingsUncheckedCreateWithoutCommission_ledgerInput = {
   visitors?: Prisma.visitorsUncheckedCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesUncheckedCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsCreateOrConnectWithoutCommission_ledgerInput = {
@@ -4896,6 +5115,8 @@ export type bookingsUpdateWithoutCommission_ledgerInput = {
   tour_start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   tour_end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUpdateManyWithoutBookingsNestedInput
@@ -4929,6 +5150,9 @@ export type bookingsUpdateWithoutCommission_ledgerInput = {
   visitors?: Prisma.visitorsUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateWithoutCommission_ledgerInput = {
@@ -4994,6 +5218,8 @@ export type bookingsUncheckedUpdateWithoutCommission_ledgerInput = {
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUncheckedUpdateManyWithoutBookingsNestedInput
@@ -5014,6 +5240,9 @@ export type bookingsUncheckedUpdateWithoutCommission_ledgerInput = {
   visitors?: Prisma.visitorsUncheckedUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUncheckedUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsCreateWithoutCustomer_tasting_notesInput = {
@@ -5065,6 +5294,8 @@ export type bookingsCreateWithoutCustomer_tasting_notesInput = {
   tour_start_date?: Date | string | null
   tour_end_date?: Date | string | null
   reminder_sent?: boolean | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineCreateNestedManyWithoutBookingsInput
@@ -5098,6 +5329,9 @@ export type bookingsCreateWithoutCustomer_tasting_notesInput = {
   visitors?: Prisma.visitorsCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsUncheckedCreateWithoutCustomer_tasting_notesInput = {
@@ -5163,6 +5397,8 @@ export type bookingsUncheckedCreateWithoutCustomer_tasting_notesInput = {
   provider_entity_id?: string | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineUncheckedCreateNestedManyWithoutBookingsInput
@@ -5183,6 +5419,9 @@ export type bookingsUncheckedCreateWithoutCustomer_tasting_notesInput = {
   visitors?: Prisma.visitorsUncheckedCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesUncheckedCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsCreateOrConnectWithoutCustomer_tasting_notesInput = {
@@ -5250,6 +5489,8 @@ export type bookingsUpdateWithoutCustomer_tasting_notesInput = {
   tour_start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   tour_end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUpdateManyWithoutBookingsNestedInput
@@ -5283,6 +5524,9 @@ export type bookingsUpdateWithoutCustomer_tasting_notesInput = {
   visitors?: Prisma.visitorsUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateWithoutCustomer_tasting_notesInput = {
@@ -5348,6 +5592,8 @@ export type bookingsUncheckedUpdateWithoutCustomer_tasting_notesInput = {
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUncheckedUpdateManyWithoutBookingsNestedInput
@@ -5368,6 +5614,9 @@ export type bookingsUncheckedUpdateWithoutCustomer_tasting_notesInput = {
   visitors?: Prisma.visitorsUncheckedUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUncheckedUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsCreateWithoutCustomersInput = {
@@ -5419,6 +5668,8 @@ export type bookingsCreateWithoutCustomersInput = {
   tour_start_date?: Date | string | null
   tour_end_date?: Date | string | null
   reminder_sent?: boolean | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineCreateNestedManyWithoutBookingsInput
@@ -5452,6 +5703,9 @@ export type bookingsCreateWithoutCustomersInput = {
   visitors?: Prisma.visitorsCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsUncheckedCreateWithoutCustomersInput = {
@@ -5516,6 +5770,8 @@ export type bookingsUncheckedCreateWithoutCustomersInput = {
   provider_entity_id?: string | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineUncheckedCreateNestedManyWithoutBookingsInput
@@ -5537,6 +5793,9 @@ export type bookingsUncheckedCreateWithoutCustomersInput = {
   visitors?: Prisma.visitorsUncheckedCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesUncheckedCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsCreateOrConnectWithoutCustomersInput = {
@@ -5614,6 +5873,8 @@ export type bookingsCreateWithoutInvoicesInput = {
   tour_start_date?: Date | string | null
   tour_end_date?: Date | string | null
   reminder_sent?: boolean | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineCreateNestedManyWithoutBookingsInput
@@ -5647,6 +5908,9 @@ export type bookingsCreateWithoutInvoicesInput = {
   visitors?: Prisma.visitorsCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsUncheckedCreateWithoutInvoicesInput = {
@@ -5712,6 +5976,8 @@ export type bookingsUncheckedCreateWithoutInvoicesInput = {
   provider_entity_id?: string | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineUncheckedCreateNestedManyWithoutBookingsInput
@@ -5732,6 +5998,9 @@ export type bookingsUncheckedCreateWithoutInvoicesInput = {
   visitors?: Prisma.visitorsUncheckedCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesUncheckedCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsCreateOrConnectWithoutInvoicesInput = {
@@ -5799,6 +6068,8 @@ export type bookingsUpdateWithoutInvoicesInput = {
   tour_start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   tour_end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUpdateManyWithoutBookingsNestedInput
@@ -5832,6 +6103,9 @@ export type bookingsUpdateWithoutInvoicesInput = {
   visitors?: Prisma.visitorsUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateWithoutInvoicesInput = {
@@ -5897,6 +6171,8 @@ export type bookingsUncheckedUpdateWithoutInvoicesInput = {
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUncheckedUpdateManyWithoutBookingsNestedInput
@@ -5917,6 +6193,9 @@ export type bookingsUncheckedUpdateWithoutInvoicesInput = {
   visitors?: Prisma.visitorsUncheckedUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUncheckedUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsCreateWithoutItinerariesInput = {
@@ -5968,6 +6247,8 @@ export type bookingsCreateWithoutItinerariesInput = {
   tour_start_date?: Date | string | null
   tour_end_date?: Date | string | null
   reminder_sent?: boolean | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineCreateNestedManyWithoutBookingsInput
@@ -6001,6 +6282,9 @@ export type bookingsCreateWithoutItinerariesInput = {
   visitors?: Prisma.visitorsCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsUncheckedCreateWithoutItinerariesInput = {
@@ -6066,6 +6350,8 @@ export type bookingsUncheckedCreateWithoutItinerariesInput = {
   provider_entity_id?: string | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineUncheckedCreateNestedManyWithoutBookingsInput
@@ -6086,6 +6372,9 @@ export type bookingsUncheckedCreateWithoutItinerariesInput = {
   visitors?: Prisma.visitorsUncheckedCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesUncheckedCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsCreateOrConnectWithoutItinerariesInput = {
@@ -6153,6 +6442,8 @@ export type bookingsUpdateWithoutItinerariesInput = {
   tour_start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   tour_end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUpdateManyWithoutBookingsNestedInput
@@ -6186,6 +6477,9 @@ export type bookingsUpdateWithoutItinerariesInput = {
   visitors?: Prisma.visitorsUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateWithoutItinerariesInput = {
@@ -6251,6 +6545,8 @@ export type bookingsUncheckedUpdateWithoutItinerariesInput = {
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUncheckedUpdateManyWithoutBookingsNestedInput
@@ -6271,6 +6567,9 @@ export type bookingsUncheckedUpdateWithoutItinerariesInput = {
   visitors?: Prisma.visitorsUncheckedUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUncheckedUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsCreateWithoutLunch_ordersInput = {
@@ -6322,6 +6621,8 @@ export type bookingsCreateWithoutLunch_ordersInput = {
   tour_start_date?: Date | string | null
   tour_end_date?: Date | string | null
   reminder_sent?: boolean | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineCreateNestedManyWithoutBookingsInput
@@ -6355,6 +6656,9 @@ export type bookingsCreateWithoutLunch_ordersInput = {
   visitors?: Prisma.visitorsCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsUncheckedCreateWithoutLunch_ordersInput = {
@@ -6420,6 +6724,8 @@ export type bookingsUncheckedCreateWithoutLunch_ordersInput = {
   provider_entity_id?: string | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineUncheckedCreateNestedManyWithoutBookingsInput
@@ -6440,6 +6746,9 @@ export type bookingsUncheckedCreateWithoutLunch_ordersInput = {
   visitors?: Prisma.visitorsUncheckedCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesUncheckedCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsCreateOrConnectWithoutLunch_ordersInput = {
@@ -6507,6 +6816,8 @@ export type bookingsUpdateWithoutLunch_ordersInput = {
   tour_start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   tour_end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUpdateManyWithoutBookingsNestedInput
@@ -6540,6 +6851,9 @@ export type bookingsUpdateWithoutLunch_ordersInput = {
   visitors?: Prisma.visitorsUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateWithoutLunch_ordersInput = {
@@ -6605,6 +6919,8 @@ export type bookingsUncheckedUpdateWithoutLunch_ordersInput = {
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUncheckedUpdateManyWithoutBookingsNestedInput
@@ -6625,6 +6941,9 @@ export type bookingsUncheckedUpdateWithoutLunch_ordersInput = {
   visitors?: Prisma.visitorsUncheckedUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUncheckedUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsCreateWithoutPayment_intentsInput = {
@@ -6676,6 +6995,8 @@ export type bookingsCreateWithoutPayment_intentsInput = {
   tour_start_date?: Date | string | null
   tour_end_date?: Date | string | null
   reminder_sent?: boolean | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineCreateNestedManyWithoutBookingsInput
@@ -6709,6 +7030,9 @@ export type bookingsCreateWithoutPayment_intentsInput = {
   visitors?: Prisma.visitorsCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsUncheckedCreateWithoutPayment_intentsInput = {
@@ -6774,6 +7098,8 @@ export type bookingsUncheckedCreateWithoutPayment_intentsInput = {
   provider_entity_id?: string | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineUncheckedCreateNestedManyWithoutBookingsInput
@@ -6794,6 +7120,9 @@ export type bookingsUncheckedCreateWithoutPayment_intentsInput = {
   visitors?: Prisma.visitorsUncheckedCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesUncheckedCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsCreateOrConnectWithoutPayment_intentsInput = {
@@ -6861,6 +7190,8 @@ export type bookingsUpdateWithoutPayment_intentsInput = {
   tour_start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   tour_end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUpdateManyWithoutBookingsNestedInput
@@ -6894,6 +7225,9 @@ export type bookingsUpdateWithoutPayment_intentsInput = {
   visitors?: Prisma.visitorsUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateWithoutPayment_intentsInput = {
@@ -6959,6 +7293,8 @@ export type bookingsUncheckedUpdateWithoutPayment_intentsInput = {
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUncheckedUpdateManyWithoutBookingsNestedInput
@@ -6979,6 +7315,9 @@ export type bookingsUncheckedUpdateWithoutPayment_intentsInput = {
   visitors?: Prisma.visitorsUncheckedUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUncheckedUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsCreateWithoutPaymentsInput = {
@@ -7030,6 +7369,8 @@ export type bookingsCreateWithoutPaymentsInput = {
   tour_start_date?: Date | string | null
   tour_end_date?: Date | string | null
   reminder_sent?: boolean | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineCreateNestedManyWithoutBookingsInput
@@ -7063,6 +7404,9 @@ export type bookingsCreateWithoutPaymentsInput = {
   visitors?: Prisma.visitorsCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsUncheckedCreateWithoutPaymentsInput = {
@@ -7128,6 +7472,8 @@ export type bookingsUncheckedCreateWithoutPaymentsInput = {
   provider_entity_id?: string | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineUncheckedCreateNestedManyWithoutBookingsInput
@@ -7148,6 +7494,9 @@ export type bookingsUncheckedCreateWithoutPaymentsInput = {
   visitors?: Prisma.visitorsUncheckedCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesUncheckedCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsCreateOrConnectWithoutPaymentsInput = {
@@ -7215,6 +7564,8 @@ export type bookingsUpdateWithoutPaymentsInput = {
   tour_start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   tour_end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUpdateManyWithoutBookingsNestedInput
@@ -7248,6 +7599,9 @@ export type bookingsUpdateWithoutPaymentsInput = {
   visitors?: Prisma.visitorsUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateWithoutPaymentsInput = {
@@ -7313,6 +7667,8 @@ export type bookingsUncheckedUpdateWithoutPaymentsInput = {
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUncheckedUpdateManyWithoutBookingsNestedInput
@@ -7333,6 +7689,9 @@ export type bookingsUncheckedUpdateWithoutPaymentsInput = {
   visitors?: Prisma.visitorsUncheckedUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUncheckedUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsCreateWithoutRefundsInput = {
@@ -7384,6 +7743,8 @@ export type bookingsCreateWithoutRefundsInput = {
   tour_start_date?: Date | string | null
   tour_end_date?: Date | string | null
   reminder_sent?: boolean | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineCreateNestedManyWithoutBookingsInput
@@ -7417,6 +7778,9 @@ export type bookingsCreateWithoutRefundsInput = {
   visitors?: Prisma.visitorsCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsUncheckedCreateWithoutRefundsInput = {
@@ -7482,6 +7846,8 @@ export type bookingsUncheckedCreateWithoutRefundsInput = {
   provider_entity_id?: string | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineUncheckedCreateNestedManyWithoutBookingsInput
@@ -7502,6 +7868,9 @@ export type bookingsUncheckedCreateWithoutRefundsInput = {
   visitors?: Prisma.visitorsUncheckedCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesUncheckedCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsCreateOrConnectWithoutRefundsInput = {
@@ -7569,6 +7938,8 @@ export type bookingsUpdateWithoutRefundsInput = {
   tour_start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   tour_end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUpdateManyWithoutBookingsNestedInput
@@ -7602,6 +7973,9 @@ export type bookingsUpdateWithoutRefundsInput = {
   visitors?: Prisma.visitorsUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateWithoutRefundsInput = {
@@ -7667,6 +8041,8 @@ export type bookingsUncheckedUpdateWithoutRefundsInput = {
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUncheckedUpdateManyWithoutBookingsNestedInput
@@ -7687,6 +8063,9 @@ export type bookingsUncheckedUpdateWithoutRefundsInput = {
   visitors?: Prisma.visitorsUncheckedUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUncheckedUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsCreateWithoutReservationsInput = {
@@ -7738,6 +8117,8 @@ export type bookingsCreateWithoutReservationsInput = {
   tour_start_date?: Date | string | null
   tour_end_date?: Date | string | null
   reminder_sent?: boolean | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineCreateNestedManyWithoutBookingsInput
@@ -7771,6 +8152,9 @@ export type bookingsCreateWithoutReservationsInput = {
   visitors?: Prisma.visitorsCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsUncheckedCreateWithoutReservationsInput = {
@@ -7836,6 +8220,8 @@ export type bookingsUncheckedCreateWithoutReservationsInput = {
   provider_entity_id?: string | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineUncheckedCreateNestedManyWithoutBookingsInput
@@ -7856,6 +8242,9 @@ export type bookingsUncheckedCreateWithoutReservationsInput = {
   visitors?: Prisma.visitorsUncheckedCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesUncheckedCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsCreateOrConnectWithoutReservationsInput = {
@@ -7923,6 +8312,8 @@ export type bookingsUpdateWithoutReservationsInput = {
   tour_start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   tour_end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUpdateManyWithoutBookingsNestedInput
@@ -7956,6 +8347,9 @@ export type bookingsUpdateWithoutReservationsInput = {
   visitors?: Prisma.visitorsUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateWithoutReservationsInput = {
@@ -8021,6 +8415,8 @@ export type bookingsUncheckedUpdateWithoutReservationsInput = {
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUncheckedUpdateManyWithoutBookingsNestedInput
@@ -8041,6 +8437,9 @@ export type bookingsUncheckedUpdateWithoutReservationsInput = {
   visitors?: Prisma.visitorsUncheckedUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUncheckedUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsCreateWithoutService_entities_bookings_provider_entity_idToservice_entitiesInput = {
@@ -8092,6 +8491,8 @@ export type bookingsCreateWithoutService_entities_bookings_provider_entity_idTos
   tour_start_date?: Date | string | null
   tour_end_date?: Date | string | null
   reminder_sent?: boolean | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineCreateNestedManyWithoutBookingsInput
@@ -8125,6 +8526,9 @@ export type bookingsCreateWithoutService_entities_bookings_provider_entity_idTos
   visitors?: Prisma.visitorsCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsUncheckedCreateWithoutService_entities_bookings_provider_entity_idToservice_entitiesInput = {
@@ -8189,6 +8593,8 @@ export type bookingsUncheckedCreateWithoutService_entities_bookings_provider_ent
   reminder_sent?: boolean | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineUncheckedCreateNestedManyWithoutBookingsInput
@@ -8210,6 +8616,9 @@ export type bookingsUncheckedCreateWithoutService_entities_bookings_provider_ent
   visitors?: Prisma.visitorsUncheckedCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesUncheckedCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsCreateOrConnectWithoutService_entities_bookings_provider_entity_idToservice_entitiesInput = {
@@ -8271,6 +8680,8 @@ export type bookingsCreateWithoutService_entities_bookings_referrer_entity_idTos
   tour_start_date?: Date | string | null
   tour_end_date?: Date | string | null
   reminder_sent?: boolean | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineCreateNestedManyWithoutBookingsInput
@@ -8304,6 +8715,9 @@ export type bookingsCreateWithoutService_entities_bookings_referrer_entity_idTos
   visitors?: Prisma.visitorsCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsUncheckedCreateWithoutService_entities_bookings_referrer_entity_idToservice_entitiesInput = {
@@ -8368,6 +8782,8 @@ export type bookingsUncheckedCreateWithoutService_entities_bookings_referrer_ent
   reminder_sent?: boolean | null
   provider_entity_id?: string | null
   booking_source_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineUncheckedCreateNestedManyWithoutBookingsInput
@@ -8389,6 +8805,9 @@ export type bookingsUncheckedCreateWithoutService_entities_bookings_referrer_ent
   visitors?: Prisma.visitorsUncheckedCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesUncheckedCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsCreateOrConnectWithoutService_entities_bookings_referrer_entity_idToservice_entitiesInput = {
@@ -8482,6 +8901,8 @@ export type bookingsCreateWithoutShared_tours_ticketsInput = {
   tour_start_date?: Date | string | null
   tour_end_date?: Date | string | null
   reminder_sent?: boolean | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineCreateNestedManyWithoutBookingsInput
@@ -8515,6 +8936,9 @@ export type bookingsCreateWithoutShared_tours_ticketsInput = {
   visitors?: Prisma.visitorsCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsUncheckedCreateWithoutShared_tours_ticketsInput = {
@@ -8580,6 +9004,8 @@ export type bookingsUncheckedCreateWithoutShared_tours_ticketsInput = {
   provider_entity_id?: string | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineUncheckedCreateNestedManyWithoutBookingsInput
@@ -8600,6 +9026,9 @@ export type bookingsUncheckedCreateWithoutShared_tours_ticketsInput = {
   visitors?: Prisma.visitorsUncheckedCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesUncheckedCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsCreateOrConnectWithoutShared_tours_ticketsInput = {
@@ -8667,6 +9096,8 @@ export type bookingsUpdateWithoutShared_tours_ticketsInput = {
   tour_start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   tour_end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUpdateManyWithoutBookingsNestedInput
@@ -8700,6 +9131,9 @@ export type bookingsUpdateWithoutShared_tours_ticketsInput = {
   visitors?: Prisma.visitorsUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateWithoutShared_tours_ticketsInput = {
@@ -8765,6 +9199,8 @@ export type bookingsUncheckedUpdateWithoutShared_tours_ticketsInput = {
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUncheckedUpdateManyWithoutBookingsNestedInput
@@ -8785,6 +9221,9 @@ export type bookingsUncheckedUpdateWithoutShared_tours_ticketsInput = {
   visitors?: Prisma.visitorsUncheckedUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUncheckedUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsCreateWithoutTenantsInput = {
@@ -8836,6 +9275,8 @@ export type bookingsCreateWithoutTenantsInput = {
   tour_start_date?: Date | string | null
   tour_end_date?: Date | string | null
   reminder_sent?: boolean | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineCreateNestedManyWithoutBookingsInput
@@ -8869,6 +9310,9 @@ export type bookingsCreateWithoutTenantsInput = {
   visitors?: Prisma.visitorsCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsUncheckedCreateWithoutTenantsInput = {
@@ -8933,6 +9377,8 @@ export type bookingsUncheckedCreateWithoutTenantsInput = {
   provider_entity_id?: string | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineUncheckedCreateNestedManyWithoutBookingsInput
@@ -8954,6 +9400,9 @@ export type bookingsUncheckedCreateWithoutTenantsInput = {
   visitors?: Prisma.visitorsUncheckedCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesUncheckedCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsCreateOrConnectWithoutTenantsInput = {
@@ -9031,6 +9480,8 @@ export type bookingsCreateWithoutTime_cardsInput = {
   tour_start_date?: Date | string | null
   tour_end_date?: Date | string | null
   reminder_sent?: boolean | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineCreateNestedManyWithoutBookingsInput
@@ -9064,6 +9515,9 @@ export type bookingsCreateWithoutTime_cardsInput = {
   visitors?: Prisma.visitorsCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsUncheckedCreateWithoutTime_cardsInput = {
@@ -9128,6 +9582,8 @@ export type bookingsUncheckedCreateWithoutTime_cardsInput = {
   provider_entity_id?: string | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineUncheckedCreateNestedManyWithoutBookingsInput
@@ -9149,6 +9605,9 @@ export type bookingsUncheckedCreateWithoutTime_cardsInput = {
   visitors?: Prisma.visitorsUncheckedCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesUncheckedCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsCreateOrConnectWithoutTime_cardsInput = {
@@ -9226,6 +9685,8 @@ export type bookingsCreateWithoutTour_offersInput = {
   tour_start_date?: Date | string | null
   tour_end_date?: Date | string | null
   reminder_sent?: boolean | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineCreateNestedManyWithoutBookingsInput
@@ -9259,6 +9720,9 @@ export type bookingsCreateWithoutTour_offersInput = {
   visitors?: Prisma.visitorsCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsUncheckedCreateWithoutTour_offersInput = {
@@ -9324,6 +9788,8 @@ export type bookingsUncheckedCreateWithoutTour_offersInput = {
   provider_entity_id?: string | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineUncheckedCreateNestedManyWithoutBookingsInput
@@ -9344,6 +9810,9 @@ export type bookingsUncheckedCreateWithoutTour_offersInput = {
   visitors?: Prisma.visitorsUncheckedCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesUncheckedCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsCreateOrConnectWithoutTour_offersInput = {
@@ -9411,6 +9880,8 @@ export type bookingsUpdateWithoutTour_offersInput = {
   tour_start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   tour_end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUpdateManyWithoutBookingsNestedInput
@@ -9444,6 +9915,9 @@ export type bookingsUpdateWithoutTour_offersInput = {
   visitors?: Prisma.visitorsUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateWithoutTour_offersInput = {
@@ -9509,6 +9983,8 @@ export type bookingsUncheckedUpdateWithoutTour_offersInput = {
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUncheckedUpdateManyWithoutBookingsNestedInput
@@ -9529,6 +10005,9 @@ export type bookingsUncheckedUpdateWithoutTour_offersInput = {
   visitors?: Prisma.visitorsUncheckedUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUncheckedUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsCreateWithoutTour_providersInput = {
@@ -9580,6 +10059,8 @@ export type bookingsCreateWithoutTour_providersInput = {
   tour_start_date?: Date | string | null
   tour_end_date?: Date | string | null
   reminder_sent?: boolean | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineCreateNestedManyWithoutBookingsInput
@@ -9613,6 +10094,9 @@ export type bookingsCreateWithoutTour_providersInput = {
   visitors?: Prisma.visitorsCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsUncheckedCreateWithoutTour_providersInput = {
@@ -9677,6 +10161,8 @@ export type bookingsUncheckedCreateWithoutTour_providersInput = {
   provider_entity_id?: string | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineUncheckedCreateNestedManyWithoutBookingsInput
@@ -9698,6 +10184,9 @@ export type bookingsUncheckedCreateWithoutTour_providersInput = {
   visitors?: Prisma.visitorsUncheckedCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesUncheckedCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsCreateOrConnectWithoutTour_providersInput = {
@@ -9775,6 +10264,8 @@ export type bookingsCreateWithoutTrip_distancesInput = {
   tour_start_date?: Date | string | null
   tour_end_date?: Date | string | null
   reminder_sent?: boolean | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineCreateNestedManyWithoutBookingsInput
@@ -9808,6 +10299,9 @@ export type bookingsCreateWithoutTrip_distancesInput = {
   visitors?: Prisma.visitorsCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsUncheckedCreateWithoutTrip_distancesInput = {
@@ -9873,6 +10367,8 @@ export type bookingsUncheckedCreateWithoutTrip_distancesInput = {
   provider_entity_id?: string | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineUncheckedCreateNestedManyWithoutBookingsInput
@@ -9893,6 +10389,9 @@ export type bookingsUncheckedCreateWithoutTrip_distancesInput = {
   visitors?: Prisma.visitorsUncheckedCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesUncheckedCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsCreateOrConnectWithoutTrip_distancesInput = {
@@ -9960,6 +10459,8 @@ export type bookingsUpdateWithoutTrip_distancesInput = {
   tour_start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   tour_end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUpdateManyWithoutBookingsNestedInput
@@ -9993,6 +10494,9 @@ export type bookingsUpdateWithoutTrip_distancesInput = {
   visitors?: Prisma.visitorsUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateWithoutTrip_distancesInput = {
@@ -10058,6 +10562,8 @@ export type bookingsUncheckedUpdateWithoutTrip_distancesInput = {
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUncheckedUpdateManyWithoutBookingsNestedInput
@@ -10078,6 +10584,9 @@ export type bookingsUncheckedUpdateWithoutTrip_distancesInput = {
   visitors?: Prisma.visitorsUncheckedUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUncheckedUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsCreateWithoutUsers_bookings_booked_byTousersInput = {
@@ -10129,6 +10638,8 @@ export type bookingsCreateWithoutUsers_bookings_booked_byTousersInput = {
   tour_start_date?: Date | string | null
   tour_end_date?: Date | string | null
   reminder_sent?: boolean | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineCreateNestedManyWithoutBookingsInput
@@ -10162,6 +10673,9 @@ export type bookingsCreateWithoutUsers_bookings_booked_byTousersInput = {
   visitors?: Prisma.visitorsCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsUncheckedCreateWithoutUsers_bookings_booked_byTousersInput = {
@@ -10226,6 +10740,8 @@ export type bookingsUncheckedCreateWithoutUsers_bookings_booked_byTousersInput =
   provider_entity_id?: string | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineUncheckedCreateNestedManyWithoutBookingsInput
@@ -10247,6 +10763,9 @@ export type bookingsUncheckedCreateWithoutUsers_bookings_booked_byTousersInput =
   visitors?: Prisma.visitorsUncheckedCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesUncheckedCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsCreateOrConnectWithoutUsers_bookings_booked_byTousersInput = {
@@ -10308,6 +10827,8 @@ export type bookingsCreateWithoutUsers_bookings_cancelled_byTousersInput = {
   tour_start_date?: Date | string | null
   tour_end_date?: Date | string | null
   reminder_sent?: boolean | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineCreateNestedManyWithoutBookingsInput
@@ -10341,6 +10862,9 @@ export type bookingsCreateWithoutUsers_bookings_cancelled_byTousersInput = {
   visitors?: Prisma.visitorsCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsUncheckedCreateWithoutUsers_bookings_cancelled_byTousersInput = {
@@ -10405,6 +10929,8 @@ export type bookingsUncheckedCreateWithoutUsers_bookings_cancelled_byTousersInpu
   provider_entity_id?: string | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineUncheckedCreateNestedManyWithoutBookingsInput
@@ -10426,6 +10952,9 @@ export type bookingsUncheckedCreateWithoutUsers_bookings_cancelled_byTousersInpu
   visitors?: Prisma.visitorsUncheckedCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesUncheckedCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsCreateOrConnectWithoutUsers_bookings_cancelled_byTousersInput = {
@@ -10487,6 +11016,8 @@ export type bookingsCreateWithoutUsers_bookings_driver_idTousersInput = {
   tour_start_date?: Date | string | null
   tour_end_date?: Date | string | null
   reminder_sent?: boolean | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineCreateNestedManyWithoutBookingsInput
@@ -10520,6 +11051,9 @@ export type bookingsCreateWithoutUsers_bookings_driver_idTousersInput = {
   visitors?: Prisma.visitorsCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsUncheckedCreateWithoutUsers_bookings_driver_idTousersInput = {
@@ -10584,6 +11118,8 @@ export type bookingsUncheckedCreateWithoutUsers_bookings_driver_idTousersInput =
   provider_entity_id?: string | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineUncheckedCreateNestedManyWithoutBookingsInput
@@ -10605,6 +11141,9 @@ export type bookingsUncheckedCreateWithoutUsers_bookings_driver_idTousersInput =
   visitors?: Prisma.visitorsUncheckedCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesUncheckedCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsCreateOrConnectWithoutUsers_bookings_driver_idTousersInput = {
@@ -10666,6 +11205,8 @@ export type bookingsCreateWithoutUsers_bookings_final_invoice_approved_byTousers
   tour_start_date?: Date | string | null
   tour_end_date?: Date | string | null
   reminder_sent?: boolean | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineCreateNestedManyWithoutBookingsInput
@@ -10699,6 +11240,9 @@ export type bookingsCreateWithoutUsers_bookings_final_invoice_approved_byTousers
   visitors?: Prisma.visitorsCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsUncheckedCreateWithoutUsers_bookings_final_invoice_approved_byTousersInput = {
@@ -10763,6 +11307,8 @@ export type bookingsUncheckedCreateWithoutUsers_bookings_final_invoice_approved_
   provider_entity_id?: string | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineUncheckedCreateNestedManyWithoutBookingsInput
@@ -10784,6 +11330,9 @@ export type bookingsUncheckedCreateWithoutUsers_bookings_final_invoice_approved_
   visitors?: Prisma.visitorsUncheckedCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesUncheckedCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsCreateOrConnectWithoutUsers_bookings_final_invoice_approved_byTousersInput = {
@@ -10909,6 +11458,8 @@ export type bookingsCreateWithoutVehicle_availability_blocksInput = {
   tour_start_date?: Date | string | null
   tour_end_date?: Date | string | null
   reminder_sent?: boolean | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineCreateNestedManyWithoutBookingsInput
@@ -10942,6 +11493,9 @@ export type bookingsCreateWithoutVehicle_availability_blocksInput = {
   visitors?: Prisma.visitorsCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsUncheckedCreateWithoutVehicle_availability_blocksInput = {
@@ -11007,6 +11561,8 @@ export type bookingsUncheckedCreateWithoutVehicle_availability_blocksInput = {
   provider_entity_id?: string | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineUncheckedCreateNestedManyWithoutBookingsInput
@@ -11027,6 +11583,9 @@ export type bookingsUncheckedCreateWithoutVehicle_availability_blocksInput = {
   visitors?: Prisma.visitorsUncheckedCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesUncheckedCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsCreateOrConnectWithoutVehicle_availability_blocksInput = {
@@ -11094,6 +11653,8 @@ export type bookingsUpdateWithoutVehicle_availability_blocksInput = {
   tour_start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   tour_end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUpdateManyWithoutBookingsNestedInput
@@ -11127,6 +11688,9 @@ export type bookingsUpdateWithoutVehicle_availability_blocksInput = {
   visitors?: Prisma.visitorsUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateWithoutVehicle_availability_blocksInput = {
@@ -11192,6 +11756,8 @@ export type bookingsUncheckedUpdateWithoutVehicle_availability_blocksInput = {
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUncheckedUpdateManyWithoutBookingsNestedInput
@@ -11212,6 +11778,9 @@ export type bookingsUncheckedUpdateWithoutVehicle_availability_blocksInput = {
   visitors?: Prisma.visitorsUncheckedUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUncheckedUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsCreateWithoutVehicle_incidentsInput = {
@@ -11263,6 +11832,8 @@ export type bookingsCreateWithoutVehicle_incidentsInput = {
   tour_start_date?: Date | string | null
   tour_end_date?: Date | string | null
   reminder_sent?: boolean | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineCreateNestedManyWithoutBookingsInput
@@ -11296,6 +11867,9 @@ export type bookingsCreateWithoutVehicle_incidentsInput = {
   visitors?: Prisma.visitorsCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsUncheckedCreateWithoutVehicle_incidentsInput = {
@@ -11361,6 +11935,8 @@ export type bookingsUncheckedCreateWithoutVehicle_incidentsInput = {
   provider_entity_id?: string | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineUncheckedCreateNestedManyWithoutBookingsInput
@@ -11381,6 +11957,9 @@ export type bookingsUncheckedCreateWithoutVehicle_incidentsInput = {
   visitors?: Prisma.visitorsUncheckedCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesUncheckedCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsCreateOrConnectWithoutVehicle_incidentsInput = {
@@ -11448,6 +12027,8 @@ export type bookingsUpdateWithoutVehicle_incidentsInput = {
   tour_start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   tour_end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUpdateManyWithoutBookingsNestedInput
@@ -11481,6 +12062,9 @@ export type bookingsUpdateWithoutVehicle_incidentsInput = {
   visitors?: Prisma.visitorsUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateWithoutVehicle_incidentsInput = {
@@ -11546,6 +12130,8 @@ export type bookingsUncheckedUpdateWithoutVehicle_incidentsInput = {
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUncheckedUpdateManyWithoutBookingsNestedInput
@@ -11566,6 +12152,9 @@ export type bookingsUncheckedUpdateWithoutVehicle_incidentsInput = {
   visitors?: Prisma.visitorsUncheckedUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUncheckedUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsCreateWithoutVehiclesInput = {
@@ -11617,6 +12206,8 @@ export type bookingsCreateWithoutVehiclesInput = {
   tour_start_date?: Date | string | null
   tour_end_date?: Date | string | null
   reminder_sent?: boolean | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineCreateNestedManyWithoutBookingsInput
@@ -11650,6 +12241,9 @@ export type bookingsCreateWithoutVehiclesInput = {
   visitors?: Prisma.visitorsCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsUncheckedCreateWithoutVehiclesInput = {
@@ -11714,6 +12308,8 @@ export type bookingsUncheckedCreateWithoutVehiclesInput = {
   provider_entity_id?: string | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineUncheckedCreateNestedManyWithoutBookingsInput
@@ -11735,6 +12331,9 @@ export type bookingsUncheckedCreateWithoutVehiclesInput = {
   visitors?: Prisma.visitorsUncheckedCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesUncheckedCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsCreateOrConnectWithoutVehiclesInput = {
@@ -11812,6 +12411,8 @@ export type bookingsCreateWithoutVisitorsInput = {
   tour_start_date?: Date | string | null
   tour_end_date?: Date | string | null
   reminder_sent?: boolean | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineCreateNestedManyWithoutBookingsInput
@@ -11845,6 +12446,9 @@ export type bookingsCreateWithoutVisitorsInput = {
   vehicle_incidents?: Prisma.vehicle_incidentsCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsUncheckedCreateWithoutVisitorsInput = {
@@ -11910,6 +12514,8 @@ export type bookingsUncheckedCreateWithoutVisitorsInput = {
   provider_entity_id?: string | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineUncheckedCreateNestedManyWithoutBookingsInput
@@ -11930,6 +12536,9 @@ export type bookingsUncheckedCreateWithoutVisitorsInput = {
   vehicle_incidents?: Prisma.vehicle_incidentsUncheckedCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesUncheckedCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsCreateOrConnectWithoutVisitorsInput = {
@@ -11997,6 +12606,8 @@ export type bookingsUpdateWithoutVisitorsInput = {
   tour_start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   tour_end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUpdateManyWithoutBookingsNestedInput
@@ -12030,6 +12641,9 @@ export type bookingsUpdateWithoutVisitorsInput = {
   vehicle_incidents?: Prisma.vehicle_incidentsUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateWithoutVisitorsInput = {
@@ -12095,6 +12709,8 @@ export type bookingsUncheckedUpdateWithoutVisitorsInput = {
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUncheckedUpdateManyWithoutBookingsNestedInput
@@ -12115,6 +12731,9 @@ export type bookingsUncheckedUpdateWithoutVisitorsInput = {
   vehicle_incidents?: Prisma.vehicle_incidentsUncheckedUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUncheckedUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsCreateWithoutWine_purchasesInput = {
@@ -12166,6 +12785,8 @@ export type bookingsCreateWithoutWine_purchasesInput = {
   tour_start_date?: Date | string | null
   tour_end_date?: Date | string | null
   reminder_sent?: boolean | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineCreateNestedManyWithoutBookingsInput
@@ -12199,6 +12820,9 @@ export type bookingsCreateWithoutWine_purchasesInput = {
   vehicle_incidents?: Prisma.vehicle_incidentsCreateNestedManyWithoutBookingsInput
   visitors?: Prisma.visitorsCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsUncheckedCreateWithoutWine_purchasesInput = {
@@ -12264,6 +12888,8 @@ export type bookingsUncheckedCreateWithoutWine_purchasesInput = {
   provider_entity_id?: string | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineUncheckedCreateNestedManyWithoutBookingsInput
@@ -12284,6 +12910,9 @@ export type bookingsUncheckedCreateWithoutWine_purchasesInput = {
   vehicle_incidents?: Prisma.vehicle_incidentsUncheckedCreateNestedManyWithoutBookingsInput
   visitors?: Prisma.visitorsUncheckedCreateNestedManyWithoutBookingsInput
   winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsCreateOrConnectWithoutWine_purchasesInput = {
@@ -12351,6 +12980,8 @@ export type bookingsUpdateWithoutWine_purchasesInput = {
   tour_start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   tour_end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUpdateManyWithoutBookingsNestedInput
@@ -12384,6 +13015,9 @@ export type bookingsUpdateWithoutWine_purchasesInput = {
   vehicle_incidents?: Prisma.vehicle_incidentsUpdateManyWithoutBookingsNestedInput
   visitors?: Prisma.visitorsUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateWithoutWine_purchasesInput = {
@@ -12449,6 +13083,8 @@ export type bookingsUncheckedUpdateWithoutWine_purchasesInput = {
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUncheckedUpdateManyWithoutBookingsNestedInput
@@ -12469,6 +13105,9 @@ export type bookingsUncheckedUpdateWithoutWine_purchasesInput = {
   vehicle_incidents?: Prisma.vehicle_incidentsUncheckedUpdateManyWithoutBookingsNestedInput
   visitors?: Prisma.visitorsUncheckedUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsCreateWithoutWinery_reviewsInput = {
@@ -12520,6 +13159,8 @@ export type bookingsCreateWithoutWinery_reviewsInput = {
   tour_start_date?: Date | string | null
   tour_end_date?: Date | string | null
   reminder_sent?: boolean | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineCreateNestedManyWithoutBookingsInput
@@ -12553,6 +13194,9 @@ export type bookingsCreateWithoutWinery_reviewsInput = {
   vehicle_incidents?: Prisma.vehicle_incidentsCreateNestedManyWithoutBookingsInput
   visitors?: Prisma.visitorsCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsUncheckedCreateWithoutWinery_reviewsInput = {
@@ -12618,6 +13262,8 @@ export type bookingsUncheckedCreateWithoutWinery_reviewsInput = {
   provider_entity_id?: string | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedCreateNestedManyWithoutBookingsInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedCreateNestedManyWithoutBookingsInput
   booking_timeline?: Prisma.booking_timelineUncheckedCreateNestedManyWithoutBookingsInput
@@ -12638,6 +13284,9 @@ export type bookingsUncheckedCreateWithoutWinery_reviewsInput = {
   vehicle_incidents?: Prisma.vehicle_incidentsUncheckedCreateNestedManyWithoutBookingsInput
   visitors?: Prisma.visitorsUncheckedCreateNestedManyWithoutBookingsInput
   wine_purchases?: Prisma.wine_purchasesUncheckedCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedOneWithoutBookingsInput
 }
 
 export type bookingsCreateOrConnectWithoutWinery_reviewsInput = {
@@ -12705,6 +13354,8 @@ export type bookingsUpdateWithoutWinery_reviewsInput = {
   tour_start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   tour_end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUpdateManyWithoutBookingsNestedInput
@@ -12738,6 +13389,9 @@ export type bookingsUpdateWithoutWinery_reviewsInput = {
   vehicle_incidents?: Prisma.vehicle_incidentsUpdateManyWithoutBookingsNestedInput
   visitors?: Prisma.visitorsUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateWithoutWinery_reviewsInput = {
@@ -12803,6 +13457,8 @@ export type bookingsUncheckedUpdateWithoutWinery_reviewsInput = {
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUncheckedUpdateManyWithoutBookingsNestedInput
@@ -12823,6 +13479,1131 @@ export type bookingsUncheckedUpdateWithoutWinery_reviewsInput = {
   vehicle_incidents?: Prisma.vehicle_incidentsUncheckedUpdateManyWithoutBookingsNestedInput
   visitors?: Prisma.visitorsUncheckedUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUncheckedUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateOneWithoutBookingsNestedInput
+}
+
+export type bookingsCreateWithoutDriver_tipsInput = {
+  booking_number: string
+  customer_name: string
+  customer_email: string
+  customer_phone?: string | null
+  party_size: number
+  tour_date: Date | string
+  start_time: Date | string
+  end_time: Date | string
+  duration_hours: runtime.Decimal | runtime.DecimalJsLike | number | string
+  pickup_location: string
+  dropoff_location?: string | null
+  special_requests?: string | null
+  base_price: runtime.Decimal | runtime.DecimalJsLike | number | string
+  gratuity?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  taxes?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  total_price: runtime.Decimal | runtime.DecimalJsLike | number | string
+  deposit_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  deposit_paid?: boolean | null
+  deposit_paid_at?: Date | string | null
+  final_payment_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  final_payment_paid?: boolean | null
+  final_payment_paid_at?: Date | string | null
+  status?: string
+  cancellation_reason?: string | null
+  cancelled_at?: Date | string | null
+  booking_source?: string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  completed_at?: Date | string | null
+  actual_hours?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  estimated_hours?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  hourly_rate?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  ready_for_final_invoice?: boolean | null
+  final_invoice_sent?: boolean | null
+  final_invoice_sent_at?: Date | string | null
+  final_invoice_approved_at?: Date | string | null
+  brand_code?: string | null
+  specific_social_media?: string | null
+  specific_ai?: string | null
+  wine_tour_preference?: string | null
+  hotel_concierge_name?: string | null
+  referral_other_details?: string | null
+  tour_type?: string | null
+  referral_source?: string | null
+  tour_duration_type?: string | null
+  tour_start_date?: Date | string | null
+  tour_end_date?: Date | string | null
+  reminder_sent?: boolean | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
+  ai_queries?: Prisma.ai_queriesCreateNestedManyWithoutBookingsInput
+  booking_line_items?: Prisma.booking_line_itemsCreateNestedManyWithoutBookingsInput
+  booking_timeline?: Prisma.booking_timelineCreateNestedManyWithoutBookingsInput
+  booking_wineries?: Prisma.booking_wineriesCreateNestedManyWithoutBookingsInput
+  users_bookings_booked_byTousers?: Prisma.usersCreateNestedOneWithoutBookings_bookings_booked_byTousersInput
+  booking_sources?: Prisma.booking_sourcesCreateNestedOneWithoutBookingsInput
+  brands?: Prisma.brandsCreateNestedOneWithoutBookingsInput
+  users_bookings_cancelled_byTousers?: Prisma.usersCreateNestedOneWithoutBookings_bookings_cancelled_byTousersInput
+  customers?: Prisma.customersCreateNestedOneWithoutBookingsInput
+  users_bookings_driver_idTousers?: Prisma.usersCreateNestedOneWithoutBookings_bookings_driver_idTousersInput
+  users_bookings_final_invoice_approved_byTousers?: Prisma.usersCreateNestedOneWithoutBookings_bookings_final_invoice_approved_byTousersInput
+  service_entities_bookings_provider_entity_idToservice_entities?: Prisma.service_entitiesCreateNestedOneWithoutBookings_bookings_provider_entity_idToservice_entitiesInput
+  tour_providers?: Prisma.tour_providersCreateNestedOneWithoutBookingsInput
+  service_entities_bookings_referrer_entity_idToservice_entities?: Prisma.service_entitiesCreateNestedOneWithoutBookings_bookings_referrer_entity_idToservice_entitiesInput
+  tenants?: Prisma.tenantsCreateNestedOneWithoutBookingsInput
+  time_cards?: Prisma.time_cardsCreateNestedOneWithoutBookingsInput
+  vehicles?: Prisma.vehiclesCreateNestedOneWithoutBookingsInput
+  commission_ledger?: Prisma.commission_ledgerCreateNestedManyWithoutBookingsInput
+  customer_tasting_notes?: Prisma.customer_tasting_notesCreateNestedManyWithoutBookingsInput
+  invoices?: Prisma.invoicesCreateNestedManyWithoutBookingsInput
+  itineraries?: Prisma.itinerariesCreateNestedManyWithoutBookingsInput
+  lunch_orders?: Prisma.lunch_ordersCreateNestedManyWithoutBookingsInput
+  payment_intents?: Prisma.payment_intentsCreateNestedManyWithoutBookingsInput
+  payments?: Prisma.paymentsCreateNestedManyWithoutBookingsInput
+  refunds?: Prisma.refundsCreateNestedManyWithoutBookingsInput
+  reservations?: Prisma.reservationsCreateNestedManyWithoutBookingsInput
+  shared_tours_tickets?: Prisma.shared_tours_ticketsCreateNestedManyWithoutBookingsInput
+  tour_offers?: Prisma.tour_offersCreateNestedManyWithoutBookingsInput
+  trip_distances?: Prisma.trip_distancesCreateNestedManyWithoutBookingsInput
+  vehicle_availability_blocks?: Prisma.vehicle_availability_blocksCreateNestedManyWithoutBookingsInput
+  vehicle_incidents?: Prisma.vehicle_incidentsCreateNestedManyWithoutBookingsInput
+  visitors?: Prisma.visitorsCreateNestedManyWithoutBookingsInput
+  wine_purchases?: Prisma.wine_purchasesCreateNestedManyWithoutBookingsInput
+  winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsCreateNestedOneWithoutBookingsInput
+}
+
+export type bookingsUncheckedCreateWithoutDriver_tipsInput = {
+  id?: number
+  booking_number: string
+  customer_id?: number | null
+  customer_name: string
+  customer_email: string
+  customer_phone?: string | null
+  party_size: number
+  tour_date: Date | string
+  start_time: Date | string
+  end_time: Date | string
+  duration_hours: runtime.Decimal | runtime.DecimalJsLike | number | string
+  pickup_location: string
+  dropoff_location?: string | null
+  special_requests?: string | null
+  driver_id?: number | null
+  vehicle_id?: number | null
+  time_card_id?: number | null
+  base_price: runtime.Decimal | runtime.DecimalJsLike | number | string
+  gratuity?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  taxes?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  total_price: runtime.Decimal | runtime.DecimalJsLike | number | string
+  deposit_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  deposit_paid?: boolean | null
+  deposit_paid_at?: Date | string | null
+  final_payment_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  final_payment_paid?: boolean | null
+  final_payment_paid_at?: Date | string | null
+  status?: string
+  cancellation_reason?: string | null
+  cancelled_at?: Date | string | null
+  cancelled_by?: number | null
+  booking_source?: string | null
+  booked_by?: number | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  completed_at?: Date | string | null
+  actual_hours?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  estimated_hours?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  hourly_rate?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  ready_for_final_invoice?: boolean | null
+  final_invoice_sent?: boolean | null
+  final_invoice_sent_at?: Date | string | null
+  final_invoice_approved_by?: number | null
+  final_invoice_approved_at?: Date | string | null
+  brand_id?: number | null
+  brand_code?: string | null
+  specific_social_media?: string | null
+  specific_ai?: string | null
+  wine_tour_preference?: string | null
+  hotel_concierge_name?: string | null
+  referral_other_details?: string | null
+  tour_type?: string | null
+  referral_source?: string | null
+  tour_duration_type?: string | null
+  tour_start_date?: Date | string | null
+  tour_end_date?: Date | string | null
+  tenant_id?: number | null
+  provider_id?: number | null
+  reminder_sent?: boolean | null
+  provider_entity_id?: string | null
+  booking_source_id?: string | null
+  referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
+  ai_queries?: Prisma.ai_queriesUncheckedCreateNestedManyWithoutBookingsInput
+  booking_line_items?: Prisma.booking_line_itemsUncheckedCreateNestedManyWithoutBookingsInput
+  booking_timeline?: Prisma.booking_timelineUncheckedCreateNestedManyWithoutBookingsInput
+  booking_wineries?: Prisma.booking_wineriesUncheckedCreateNestedManyWithoutBookingsInput
+  commission_ledger?: Prisma.commission_ledgerUncheckedCreateNestedManyWithoutBookingsInput
+  customer_tasting_notes?: Prisma.customer_tasting_notesUncheckedCreateNestedManyWithoutBookingsInput
+  invoices?: Prisma.invoicesUncheckedCreateNestedManyWithoutBookingsInput
+  itineraries?: Prisma.itinerariesUncheckedCreateNestedManyWithoutBookingsInput
+  lunch_orders?: Prisma.lunch_ordersUncheckedCreateNestedManyWithoutBookingsInput
+  payment_intents?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutBookingsInput
+  payments?: Prisma.paymentsUncheckedCreateNestedManyWithoutBookingsInput
+  refunds?: Prisma.refundsUncheckedCreateNestedManyWithoutBookingsInput
+  reservations?: Prisma.reservationsUncheckedCreateNestedManyWithoutBookingsInput
+  shared_tours_tickets?: Prisma.shared_tours_ticketsUncheckedCreateNestedManyWithoutBookingsInput
+  tour_offers?: Prisma.tour_offersUncheckedCreateNestedManyWithoutBookingsInput
+  trip_distances?: Prisma.trip_distancesUncheckedCreateNestedManyWithoutBookingsInput
+  vehicle_availability_blocks?: Prisma.vehicle_availability_blocksUncheckedCreateNestedManyWithoutBookingsInput
+  vehicle_incidents?: Prisma.vehicle_incidentsUncheckedCreateNestedManyWithoutBookingsInput
+  visitors?: Prisma.visitorsUncheckedCreateNestedManyWithoutBookingsInput
+  wine_purchases?: Prisma.wine_purchasesUncheckedCreateNestedManyWithoutBookingsInput
+  winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedOneWithoutBookingsInput
+}
+
+export type bookingsCreateOrConnectWithoutDriver_tipsInput = {
+  where: Prisma.bookingsWhereUniqueInput
+  create: Prisma.XOR<Prisma.bookingsCreateWithoutDriver_tipsInput, Prisma.bookingsUncheckedCreateWithoutDriver_tipsInput>
+}
+
+export type bookingsUpsertWithoutDriver_tipsInput = {
+  update: Prisma.XOR<Prisma.bookingsUpdateWithoutDriver_tipsInput, Prisma.bookingsUncheckedUpdateWithoutDriver_tipsInput>
+  create: Prisma.XOR<Prisma.bookingsCreateWithoutDriver_tipsInput, Prisma.bookingsUncheckedCreateWithoutDriver_tipsInput>
+  where?: Prisma.bookingsWhereInput
+}
+
+export type bookingsUpdateToOneWithWhereWithoutDriver_tipsInput = {
+  where?: Prisma.bookingsWhereInput
+  data: Prisma.XOR<Prisma.bookingsUpdateWithoutDriver_tipsInput, Prisma.bookingsUncheckedUpdateWithoutDriver_tipsInput>
+}
+
+export type bookingsUpdateWithoutDriver_tipsInput = {
+  booking_number?: Prisma.StringFieldUpdateOperationsInput | string
+  customer_name?: Prisma.StringFieldUpdateOperationsInput | string
+  customer_email?: Prisma.StringFieldUpdateOperationsInput | string
+  customer_phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  party_size?: Prisma.IntFieldUpdateOperationsInput | number
+  tour_date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  start_time?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  end_time?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  duration_hours?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  pickup_location?: Prisma.StringFieldUpdateOperationsInput | string
+  dropoff_location?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  special_requests?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  base_price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  gratuity?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  taxes?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  total_price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  deposit_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  deposit_paid?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  deposit_paid_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  final_payment_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  final_payment_paid?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  final_payment_paid_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  cancellation_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cancelled_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  booking_source?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  completed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  actual_hours?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  estimated_hours?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  hourly_rate?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  ready_for_final_invoice?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  final_invoice_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  final_invoice_sent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  final_invoice_approved_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  brand_code?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  specific_social_media?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  specific_ai?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  wine_tour_preference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hotel_concierge_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  referral_other_details?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tour_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  referral_source?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tour_duration_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tour_start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  tour_end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ai_queries?: Prisma.ai_queriesUpdateManyWithoutBookingsNestedInput
+  booking_line_items?: Prisma.booking_line_itemsUpdateManyWithoutBookingsNestedInput
+  booking_timeline?: Prisma.booking_timelineUpdateManyWithoutBookingsNestedInput
+  booking_wineries?: Prisma.booking_wineriesUpdateManyWithoutBookingsNestedInput
+  users_bookings_booked_byTousers?: Prisma.usersUpdateOneWithoutBookings_bookings_booked_byTousersNestedInput
+  booking_sources?: Prisma.booking_sourcesUpdateOneWithoutBookingsNestedInput
+  brands?: Prisma.brandsUpdateOneWithoutBookingsNestedInput
+  users_bookings_cancelled_byTousers?: Prisma.usersUpdateOneWithoutBookings_bookings_cancelled_byTousersNestedInput
+  customers?: Prisma.customersUpdateOneWithoutBookingsNestedInput
+  users_bookings_driver_idTousers?: Prisma.usersUpdateOneWithoutBookings_bookings_driver_idTousersNestedInput
+  users_bookings_final_invoice_approved_byTousers?: Prisma.usersUpdateOneWithoutBookings_bookings_final_invoice_approved_byTousersNestedInput
+  service_entities_bookings_provider_entity_idToservice_entities?: Prisma.service_entitiesUpdateOneWithoutBookings_bookings_provider_entity_idToservice_entitiesNestedInput
+  tour_providers?: Prisma.tour_providersUpdateOneWithoutBookingsNestedInput
+  service_entities_bookings_referrer_entity_idToservice_entities?: Prisma.service_entitiesUpdateOneWithoutBookings_bookings_referrer_entity_idToservice_entitiesNestedInput
+  tenants?: Prisma.tenantsUpdateOneWithoutBookingsNestedInput
+  time_cards?: Prisma.time_cardsUpdateOneWithoutBookingsNestedInput
+  vehicles?: Prisma.vehiclesUpdateOneWithoutBookingsNestedInput
+  commission_ledger?: Prisma.commission_ledgerUpdateManyWithoutBookingsNestedInput
+  customer_tasting_notes?: Prisma.customer_tasting_notesUpdateManyWithoutBookingsNestedInput
+  invoices?: Prisma.invoicesUpdateManyWithoutBookingsNestedInput
+  itineraries?: Prisma.itinerariesUpdateManyWithoutBookingsNestedInput
+  lunch_orders?: Prisma.lunch_ordersUpdateManyWithoutBookingsNestedInput
+  payment_intents?: Prisma.payment_intentsUpdateManyWithoutBookingsNestedInput
+  payments?: Prisma.paymentsUpdateManyWithoutBookingsNestedInput
+  refunds?: Prisma.refundsUpdateManyWithoutBookingsNestedInput
+  reservations?: Prisma.reservationsUpdateManyWithoutBookingsNestedInput
+  shared_tours_tickets?: Prisma.shared_tours_ticketsUpdateManyWithoutBookingsNestedInput
+  tour_offers?: Prisma.tour_offersUpdateManyWithoutBookingsNestedInput
+  trip_distances?: Prisma.trip_distancesUpdateManyWithoutBookingsNestedInput
+  vehicle_availability_blocks?: Prisma.vehicle_availability_blocksUpdateManyWithoutBookingsNestedInput
+  vehicle_incidents?: Prisma.vehicle_incidentsUpdateManyWithoutBookingsNestedInput
+  visitors?: Prisma.visitorsUpdateManyWithoutBookingsNestedInput
+  wine_purchases?: Prisma.wine_purchasesUpdateManyWithoutBookingsNestedInput
+  winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateOneWithoutBookingsNestedInput
+}
+
+export type bookingsUncheckedUpdateWithoutDriver_tipsInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  booking_number?: Prisma.StringFieldUpdateOperationsInput | string
+  customer_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  customer_name?: Prisma.StringFieldUpdateOperationsInput | string
+  customer_email?: Prisma.StringFieldUpdateOperationsInput | string
+  customer_phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  party_size?: Prisma.IntFieldUpdateOperationsInput | number
+  tour_date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  start_time?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  end_time?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  duration_hours?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  pickup_location?: Prisma.StringFieldUpdateOperationsInput | string
+  dropoff_location?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  special_requests?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  driver_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  vehicle_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  time_card_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  base_price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  gratuity?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  taxes?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  total_price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  deposit_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  deposit_paid?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  deposit_paid_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  final_payment_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  final_payment_paid?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  final_payment_paid_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  cancellation_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cancelled_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  cancelled_by?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  booking_source?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  booked_by?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  completed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  actual_hours?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  estimated_hours?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  hourly_rate?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  ready_for_final_invoice?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  final_invoice_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  final_invoice_sent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  final_invoice_approved_by?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  final_invoice_approved_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  brand_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  brand_code?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  specific_social_media?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  specific_ai?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  wine_tour_preference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hotel_concierge_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  referral_other_details?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tour_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  referral_source?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tour_duration_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tour_start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  tour_end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  tenant_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  provider_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ai_queries?: Prisma.ai_queriesUncheckedUpdateManyWithoutBookingsNestedInput
+  booking_line_items?: Prisma.booking_line_itemsUncheckedUpdateManyWithoutBookingsNestedInput
+  booking_timeline?: Prisma.booking_timelineUncheckedUpdateManyWithoutBookingsNestedInput
+  booking_wineries?: Prisma.booking_wineriesUncheckedUpdateManyWithoutBookingsNestedInput
+  commission_ledger?: Prisma.commission_ledgerUncheckedUpdateManyWithoutBookingsNestedInput
+  customer_tasting_notes?: Prisma.customer_tasting_notesUncheckedUpdateManyWithoutBookingsNestedInput
+  invoices?: Prisma.invoicesUncheckedUpdateManyWithoutBookingsNestedInput
+  itineraries?: Prisma.itinerariesUncheckedUpdateManyWithoutBookingsNestedInput
+  lunch_orders?: Prisma.lunch_ordersUncheckedUpdateManyWithoutBookingsNestedInput
+  payment_intents?: Prisma.payment_intentsUncheckedUpdateManyWithoutBookingsNestedInput
+  payments?: Prisma.paymentsUncheckedUpdateManyWithoutBookingsNestedInput
+  refunds?: Prisma.refundsUncheckedUpdateManyWithoutBookingsNestedInput
+  reservations?: Prisma.reservationsUncheckedUpdateManyWithoutBookingsNestedInput
+  shared_tours_tickets?: Prisma.shared_tours_ticketsUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_offers?: Prisma.tour_offersUncheckedUpdateManyWithoutBookingsNestedInput
+  trip_distances?: Prisma.trip_distancesUncheckedUpdateManyWithoutBookingsNestedInput
+  vehicle_availability_blocks?: Prisma.vehicle_availability_blocksUncheckedUpdateManyWithoutBookingsNestedInput
+  vehicle_incidents?: Prisma.vehicle_incidentsUncheckedUpdateManyWithoutBookingsNestedInput
+  visitors?: Prisma.visitorsUncheckedUpdateManyWithoutBookingsNestedInput
+  wine_purchases?: Prisma.wine_purchasesUncheckedUpdateManyWithoutBookingsNestedInput
+  winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateOneWithoutBookingsNestedInput
+}
+
+export type bookingsCreateWithoutTour_expensesInput = {
+  booking_number: string
+  customer_name: string
+  customer_email: string
+  customer_phone?: string | null
+  party_size: number
+  tour_date: Date | string
+  start_time: Date | string
+  end_time: Date | string
+  duration_hours: runtime.Decimal | runtime.DecimalJsLike | number | string
+  pickup_location: string
+  dropoff_location?: string | null
+  special_requests?: string | null
+  base_price: runtime.Decimal | runtime.DecimalJsLike | number | string
+  gratuity?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  taxes?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  total_price: runtime.Decimal | runtime.DecimalJsLike | number | string
+  deposit_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  deposit_paid?: boolean | null
+  deposit_paid_at?: Date | string | null
+  final_payment_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  final_payment_paid?: boolean | null
+  final_payment_paid_at?: Date | string | null
+  status?: string
+  cancellation_reason?: string | null
+  cancelled_at?: Date | string | null
+  booking_source?: string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  completed_at?: Date | string | null
+  actual_hours?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  estimated_hours?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  hourly_rate?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  ready_for_final_invoice?: boolean | null
+  final_invoice_sent?: boolean | null
+  final_invoice_sent_at?: Date | string | null
+  final_invoice_approved_at?: Date | string | null
+  brand_code?: string | null
+  specific_social_media?: string | null
+  specific_ai?: string | null
+  wine_tour_preference?: string | null
+  hotel_concierge_name?: string | null
+  referral_other_details?: string | null
+  tour_type?: string | null
+  referral_source?: string | null
+  tour_duration_type?: string | null
+  tour_start_date?: Date | string | null
+  tour_end_date?: Date | string | null
+  reminder_sent?: boolean | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
+  ai_queries?: Prisma.ai_queriesCreateNestedManyWithoutBookingsInput
+  booking_line_items?: Prisma.booking_line_itemsCreateNestedManyWithoutBookingsInput
+  booking_timeline?: Prisma.booking_timelineCreateNestedManyWithoutBookingsInput
+  booking_wineries?: Prisma.booking_wineriesCreateNestedManyWithoutBookingsInput
+  users_bookings_booked_byTousers?: Prisma.usersCreateNestedOneWithoutBookings_bookings_booked_byTousersInput
+  booking_sources?: Prisma.booking_sourcesCreateNestedOneWithoutBookingsInput
+  brands?: Prisma.brandsCreateNestedOneWithoutBookingsInput
+  users_bookings_cancelled_byTousers?: Prisma.usersCreateNestedOneWithoutBookings_bookings_cancelled_byTousersInput
+  customers?: Prisma.customersCreateNestedOneWithoutBookingsInput
+  users_bookings_driver_idTousers?: Prisma.usersCreateNestedOneWithoutBookings_bookings_driver_idTousersInput
+  users_bookings_final_invoice_approved_byTousers?: Prisma.usersCreateNestedOneWithoutBookings_bookings_final_invoice_approved_byTousersInput
+  service_entities_bookings_provider_entity_idToservice_entities?: Prisma.service_entitiesCreateNestedOneWithoutBookings_bookings_provider_entity_idToservice_entitiesInput
+  tour_providers?: Prisma.tour_providersCreateNestedOneWithoutBookingsInput
+  service_entities_bookings_referrer_entity_idToservice_entities?: Prisma.service_entitiesCreateNestedOneWithoutBookings_bookings_referrer_entity_idToservice_entitiesInput
+  tenants?: Prisma.tenantsCreateNestedOneWithoutBookingsInput
+  time_cards?: Prisma.time_cardsCreateNestedOneWithoutBookingsInput
+  vehicles?: Prisma.vehiclesCreateNestedOneWithoutBookingsInput
+  commission_ledger?: Prisma.commission_ledgerCreateNestedManyWithoutBookingsInput
+  customer_tasting_notes?: Prisma.customer_tasting_notesCreateNestedManyWithoutBookingsInput
+  invoices?: Prisma.invoicesCreateNestedManyWithoutBookingsInput
+  itineraries?: Prisma.itinerariesCreateNestedManyWithoutBookingsInput
+  lunch_orders?: Prisma.lunch_ordersCreateNestedManyWithoutBookingsInput
+  payment_intents?: Prisma.payment_intentsCreateNestedManyWithoutBookingsInput
+  payments?: Prisma.paymentsCreateNestedManyWithoutBookingsInput
+  refunds?: Prisma.refundsCreateNestedManyWithoutBookingsInput
+  reservations?: Prisma.reservationsCreateNestedManyWithoutBookingsInput
+  shared_tours_tickets?: Prisma.shared_tours_ticketsCreateNestedManyWithoutBookingsInput
+  tour_offers?: Prisma.tour_offersCreateNestedManyWithoutBookingsInput
+  trip_distances?: Prisma.trip_distancesCreateNestedManyWithoutBookingsInput
+  vehicle_availability_blocks?: Prisma.vehicle_availability_blocksCreateNestedManyWithoutBookingsInput
+  vehicle_incidents?: Prisma.vehicle_incidentsCreateNestedManyWithoutBookingsInput
+  visitors?: Prisma.visitorsCreateNestedManyWithoutBookingsInput
+  wine_purchases?: Prisma.wine_purchasesCreateNestedManyWithoutBookingsInput
+  winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsCreateNestedOneWithoutBookingsInput
+}
+
+export type bookingsUncheckedCreateWithoutTour_expensesInput = {
+  id?: number
+  booking_number: string
+  customer_id?: number | null
+  customer_name: string
+  customer_email: string
+  customer_phone?: string | null
+  party_size: number
+  tour_date: Date | string
+  start_time: Date | string
+  end_time: Date | string
+  duration_hours: runtime.Decimal | runtime.DecimalJsLike | number | string
+  pickup_location: string
+  dropoff_location?: string | null
+  special_requests?: string | null
+  driver_id?: number | null
+  vehicle_id?: number | null
+  time_card_id?: number | null
+  base_price: runtime.Decimal | runtime.DecimalJsLike | number | string
+  gratuity?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  taxes?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  total_price: runtime.Decimal | runtime.DecimalJsLike | number | string
+  deposit_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  deposit_paid?: boolean | null
+  deposit_paid_at?: Date | string | null
+  final_payment_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  final_payment_paid?: boolean | null
+  final_payment_paid_at?: Date | string | null
+  status?: string
+  cancellation_reason?: string | null
+  cancelled_at?: Date | string | null
+  cancelled_by?: number | null
+  booking_source?: string | null
+  booked_by?: number | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  completed_at?: Date | string | null
+  actual_hours?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  estimated_hours?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  hourly_rate?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  ready_for_final_invoice?: boolean | null
+  final_invoice_sent?: boolean | null
+  final_invoice_sent_at?: Date | string | null
+  final_invoice_approved_by?: number | null
+  final_invoice_approved_at?: Date | string | null
+  brand_id?: number | null
+  brand_code?: string | null
+  specific_social_media?: string | null
+  specific_ai?: string | null
+  wine_tour_preference?: string | null
+  hotel_concierge_name?: string | null
+  referral_other_details?: string | null
+  tour_type?: string | null
+  referral_source?: string | null
+  tour_duration_type?: string | null
+  tour_start_date?: Date | string | null
+  tour_end_date?: Date | string | null
+  tenant_id?: number | null
+  provider_id?: number | null
+  reminder_sent?: boolean | null
+  provider_entity_id?: string | null
+  booking_source_id?: string | null
+  referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
+  ai_queries?: Prisma.ai_queriesUncheckedCreateNestedManyWithoutBookingsInput
+  booking_line_items?: Prisma.booking_line_itemsUncheckedCreateNestedManyWithoutBookingsInput
+  booking_timeline?: Prisma.booking_timelineUncheckedCreateNestedManyWithoutBookingsInput
+  booking_wineries?: Prisma.booking_wineriesUncheckedCreateNestedManyWithoutBookingsInput
+  commission_ledger?: Prisma.commission_ledgerUncheckedCreateNestedManyWithoutBookingsInput
+  customer_tasting_notes?: Prisma.customer_tasting_notesUncheckedCreateNestedManyWithoutBookingsInput
+  invoices?: Prisma.invoicesUncheckedCreateNestedManyWithoutBookingsInput
+  itineraries?: Prisma.itinerariesUncheckedCreateNestedManyWithoutBookingsInput
+  lunch_orders?: Prisma.lunch_ordersUncheckedCreateNestedManyWithoutBookingsInput
+  payment_intents?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutBookingsInput
+  payments?: Prisma.paymentsUncheckedCreateNestedManyWithoutBookingsInput
+  refunds?: Prisma.refundsUncheckedCreateNestedManyWithoutBookingsInput
+  reservations?: Prisma.reservationsUncheckedCreateNestedManyWithoutBookingsInput
+  shared_tours_tickets?: Prisma.shared_tours_ticketsUncheckedCreateNestedManyWithoutBookingsInput
+  tour_offers?: Prisma.tour_offersUncheckedCreateNestedManyWithoutBookingsInput
+  trip_distances?: Prisma.trip_distancesUncheckedCreateNestedManyWithoutBookingsInput
+  vehicle_availability_blocks?: Prisma.vehicle_availability_blocksUncheckedCreateNestedManyWithoutBookingsInput
+  vehicle_incidents?: Prisma.vehicle_incidentsUncheckedCreateNestedManyWithoutBookingsInput
+  visitors?: Prisma.visitorsUncheckedCreateNestedManyWithoutBookingsInput
+  wine_purchases?: Prisma.wine_purchasesUncheckedCreateNestedManyWithoutBookingsInput
+  winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutBookingsInput
+  tour_completions?: Prisma.tour_completionsUncheckedCreateNestedOneWithoutBookingsInput
+}
+
+export type bookingsCreateOrConnectWithoutTour_expensesInput = {
+  where: Prisma.bookingsWhereUniqueInput
+  create: Prisma.XOR<Prisma.bookingsCreateWithoutTour_expensesInput, Prisma.bookingsUncheckedCreateWithoutTour_expensesInput>
+}
+
+export type bookingsUpsertWithoutTour_expensesInput = {
+  update: Prisma.XOR<Prisma.bookingsUpdateWithoutTour_expensesInput, Prisma.bookingsUncheckedUpdateWithoutTour_expensesInput>
+  create: Prisma.XOR<Prisma.bookingsCreateWithoutTour_expensesInput, Prisma.bookingsUncheckedCreateWithoutTour_expensesInput>
+  where?: Prisma.bookingsWhereInput
+}
+
+export type bookingsUpdateToOneWithWhereWithoutTour_expensesInput = {
+  where?: Prisma.bookingsWhereInput
+  data: Prisma.XOR<Prisma.bookingsUpdateWithoutTour_expensesInput, Prisma.bookingsUncheckedUpdateWithoutTour_expensesInput>
+}
+
+export type bookingsUpdateWithoutTour_expensesInput = {
+  booking_number?: Prisma.StringFieldUpdateOperationsInput | string
+  customer_name?: Prisma.StringFieldUpdateOperationsInput | string
+  customer_email?: Prisma.StringFieldUpdateOperationsInput | string
+  customer_phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  party_size?: Prisma.IntFieldUpdateOperationsInput | number
+  tour_date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  start_time?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  end_time?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  duration_hours?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  pickup_location?: Prisma.StringFieldUpdateOperationsInput | string
+  dropoff_location?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  special_requests?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  base_price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  gratuity?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  taxes?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  total_price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  deposit_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  deposit_paid?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  deposit_paid_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  final_payment_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  final_payment_paid?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  final_payment_paid_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  cancellation_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cancelled_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  booking_source?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  completed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  actual_hours?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  estimated_hours?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  hourly_rate?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  ready_for_final_invoice?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  final_invoice_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  final_invoice_sent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  final_invoice_approved_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  brand_code?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  specific_social_media?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  specific_ai?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  wine_tour_preference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hotel_concierge_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  referral_other_details?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tour_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  referral_source?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tour_duration_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tour_start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  tour_end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ai_queries?: Prisma.ai_queriesUpdateManyWithoutBookingsNestedInput
+  booking_line_items?: Prisma.booking_line_itemsUpdateManyWithoutBookingsNestedInput
+  booking_timeline?: Prisma.booking_timelineUpdateManyWithoutBookingsNestedInput
+  booking_wineries?: Prisma.booking_wineriesUpdateManyWithoutBookingsNestedInput
+  users_bookings_booked_byTousers?: Prisma.usersUpdateOneWithoutBookings_bookings_booked_byTousersNestedInput
+  booking_sources?: Prisma.booking_sourcesUpdateOneWithoutBookingsNestedInput
+  brands?: Prisma.brandsUpdateOneWithoutBookingsNestedInput
+  users_bookings_cancelled_byTousers?: Prisma.usersUpdateOneWithoutBookings_bookings_cancelled_byTousersNestedInput
+  customers?: Prisma.customersUpdateOneWithoutBookingsNestedInput
+  users_bookings_driver_idTousers?: Prisma.usersUpdateOneWithoutBookings_bookings_driver_idTousersNestedInput
+  users_bookings_final_invoice_approved_byTousers?: Prisma.usersUpdateOneWithoutBookings_bookings_final_invoice_approved_byTousersNestedInput
+  service_entities_bookings_provider_entity_idToservice_entities?: Prisma.service_entitiesUpdateOneWithoutBookings_bookings_provider_entity_idToservice_entitiesNestedInput
+  tour_providers?: Prisma.tour_providersUpdateOneWithoutBookingsNestedInput
+  service_entities_bookings_referrer_entity_idToservice_entities?: Prisma.service_entitiesUpdateOneWithoutBookings_bookings_referrer_entity_idToservice_entitiesNestedInput
+  tenants?: Prisma.tenantsUpdateOneWithoutBookingsNestedInput
+  time_cards?: Prisma.time_cardsUpdateOneWithoutBookingsNestedInput
+  vehicles?: Prisma.vehiclesUpdateOneWithoutBookingsNestedInput
+  commission_ledger?: Prisma.commission_ledgerUpdateManyWithoutBookingsNestedInput
+  customer_tasting_notes?: Prisma.customer_tasting_notesUpdateManyWithoutBookingsNestedInput
+  invoices?: Prisma.invoicesUpdateManyWithoutBookingsNestedInput
+  itineraries?: Prisma.itinerariesUpdateManyWithoutBookingsNestedInput
+  lunch_orders?: Prisma.lunch_ordersUpdateManyWithoutBookingsNestedInput
+  payment_intents?: Prisma.payment_intentsUpdateManyWithoutBookingsNestedInput
+  payments?: Prisma.paymentsUpdateManyWithoutBookingsNestedInput
+  refunds?: Prisma.refundsUpdateManyWithoutBookingsNestedInput
+  reservations?: Prisma.reservationsUpdateManyWithoutBookingsNestedInput
+  shared_tours_tickets?: Prisma.shared_tours_ticketsUpdateManyWithoutBookingsNestedInput
+  tour_offers?: Prisma.tour_offersUpdateManyWithoutBookingsNestedInput
+  trip_distances?: Prisma.trip_distancesUpdateManyWithoutBookingsNestedInput
+  vehicle_availability_blocks?: Prisma.vehicle_availability_blocksUpdateManyWithoutBookingsNestedInput
+  vehicle_incidents?: Prisma.vehicle_incidentsUpdateManyWithoutBookingsNestedInput
+  visitors?: Prisma.visitorsUpdateManyWithoutBookingsNestedInput
+  wine_purchases?: Prisma.wine_purchasesUpdateManyWithoutBookingsNestedInput
+  winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateOneWithoutBookingsNestedInput
+}
+
+export type bookingsUncheckedUpdateWithoutTour_expensesInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  booking_number?: Prisma.StringFieldUpdateOperationsInput | string
+  customer_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  customer_name?: Prisma.StringFieldUpdateOperationsInput | string
+  customer_email?: Prisma.StringFieldUpdateOperationsInput | string
+  customer_phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  party_size?: Prisma.IntFieldUpdateOperationsInput | number
+  tour_date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  start_time?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  end_time?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  duration_hours?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  pickup_location?: Prisma.StringFieldUpdateOperationsInput | string
+  dropoff_location?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  special_requests?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  driver_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  vehicle_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  time_card_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  base_price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  gratuity?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  taxes?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  total_price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  deposit_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  deposit_paid?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  deposit_paid_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  final_payment_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  final_payment_paid?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  final_payment_paid_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  cancellation_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cancelled_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  cancelled_by?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  booking_source?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  booked_by?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  completed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  actual_hours?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  estimated_hours?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  hourly_rate?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  ready_for_final_invoice?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  final_invoice_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  final_invoice_sent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  final_invoice_approved_by?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  final_invoice_approved_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  brand_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  brand_code?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  specific_social_media?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  specific_ai?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  wine_tour_preference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hotel_concierge_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  referral_other_details?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tour_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  referral_source?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tour_duration_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tour_start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  tour_end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  tenant_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  provider_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ai_queries?: Prisma.ai_queriesUncheckedUpdateManyWithoutBookingsNestedInput
+  booking_line_items?: Prisma.booking_line_itemsUncheckedUpdateManyWithoutBookingsNestedInput
+  booking_timeline?: Prisma.booking_timelineUncheckedUpdateManyWithoutBookingsNestedInput
+  booking_wineries?: Prisma.booking_wineriesUncheckedUpdateManyWithoutBookingsNestedInput
+  commission_ledger?: Prisma.commission_ledgerUncheckedUpdateManyWithoutBookingsNestedInput
+  customer_tasting_notes?: Prisma.customer_tasting_notesUncheckedUpdateManyWithoutBookingsNestedInput
+  invoices?: Prisma.invoicesUncheckedUpdateManyWithoutBookingsNestedInput
+  itineraries?: Prisma.itinerariesUncheckedUpdateManyWithoutBookingsNestedInput
+  lunch_orders?: Prisma.lunch_ordersUncheckedUpdateManyWithoutBookingsNestedInput
+  payment_intents?: Prisma.payment_intentsUncheckedUpdateManyWithoutBookingsNestedInput
+  payments?: Prisma.paymentsUncheckedUpdateManyWithoutBookingsNestedInput
+  refunds?: Prisma.refundsUncheckedUpdateManyWithoutBookingsNestedInput
+  reservations?: Prisma.reservationsUncheckedUpdateManyWithoutBookingsNestedInput
+  shared_tours_tickets?: Prisma.shared_tours_ticketsUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_offers?: Prisma.tour_offersUncheckedUpdateManyWithoutBookingsNestedInput
+  trip_distances?: Prisma.trip_distancesUncheckedUpdateManyWithoutBookingsNestedInput
+  vehicle_availability_blocks?: Prisma.vehicle_availability_blocksUncheckedUpdateManyWithoutBookingsNestedInput
+  vehicle_incidents?: Prisma.vehicle_incidentsUncheckedUpdateManyWithoutBookingsNestedInput
+  visitors?: Prisma.visitorsUncheckedUpdateManyWithoutBookingsNestedInput
+  wine_purchases?: Prisma.wine_purchasesUncheckedUpdateManyWithoutBookingsNestedInput
+  winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateOneWithoutBookingsNestedInput
+}
+
+export type bookingsCreateWithoutTour_completionsInput = {
+  booking_number: string
+  customer_name: string
+  customer_email: string
+  customer_phone?: string | null
+  party_size: number
+  tour_date: Date | string
+  start_time: Date | string
+  end_time: Date | string
+  duration_hours: runtime.Decimal | runtime.DecimalJsLike | number | string
+  pickup_location: string
+  dropoff_location?: string | null
+  special_requests?: string | null
+  base_price: runtime.Decimal | runtime.DecimalJsLike | number | string
+  gratuity?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  taxes?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  total_price: runtime.Decimal | runtime.DecimalJsLike | number | string
+  deposit_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  deposit_paid?: boolean | null
+  deposit_paid_at?: Date | string | null
+  final_payment_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  final_payment_paid?: boolean | null
+  final_payment_paid_at?: Date | string | null
+  status?: string
+  cancellation_reason?: string | null
+  cancelled_at?: Date | string | null
+  booking_source?: string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  completed_at?: Date | string | null
+  actual_hours?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  estimated_hours?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  hourly_rate?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  ready_for_final_invoice?: boolean | null
+  final_invoice_sent?: boolean | null
+  final_invoice_sent_at?: Date | string | null
+  final_invoice_approved_at?: Date | string | null
+  brand_code?: string | null
+  specific_social_media?: string | null
+  specific_ai?: string | null
+  wine_tour_preference?: string | null
+  hotel_concierge_name?: string | null
+  referral_other_details?: string | null
+  tour_type?: string | null
+  referral_source?: string | null
+  tour_duration_type?: string | null
+  tour_start_date?: Date | string | null
+  tour_end_date?: Date | string | null
+  reminder_sent?: boolean | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
+  ai_queries?: Prisma.ai_queriesCreateNestedManyWithoutBookingsInput
+  booking_line_items?: Prisma.booking_line_itemsCreateNestedManyWithoutBookingsInput
+  booking_timeline?: Prisma.booking_timelineCreateNestedManyWithoutBookingsInput
+  booking_wineries?: Prisma.booking_wineriesCreateNestedManyWithoutBookingsInput
+  users_bookings_booked_byTousers?: Prisma.usersCreateNestedOneWithoutBookings_bookings_booked_byTousersInput
+  booking_sources?: Prisma.booking_sourcesCreateNestedOneWithoutBookingsInput
+  brands?: Prisma.brandsCreateNestedOneWithoutBookingsInput
+  users_bookings_cancelled_byTousers?: Prisma.usersCreateNestedOneWithoutBookings_bookings_cancelled_byTousersInput
+  customers?: Prisma.customersCreateNestedOneWithoutBookingsInput
+  users_bookings_driver_idTousers?: Prisma.usersCreateNestedOneWithoutBookings_bookings_driver_idTousersInput
+  users_bookings_final_invoice_approved_byTousers?: Prisma.usersCreateNestedOneWithoutBookings_bookings_final_invoice_approved_byTousersInput
+  service_entities_bookings_provider_entity_idToservice_entities?: Prisma.service_entitiesCreateNestedOneWithoutBookings_bookings_provider_entity_idToservice_entitiesInput
+  tour_providers?: Prisma.tour_providersCreateNestedOneWithoutBookingsInput
+  service_entities_bookings_referrer_entity_idToservice_entities?: Prisma.service_entitiesCreateNestedOneWithoutBookings_bookings_referrer_entity_idToservice_entitiesInput
+  tenants?: Prisma.tenantsCreateNestedOneWithoutBookingsInput
+  time_cards?: Prisma.time_cardsCreateNestedOneWithoutBookingsInput
+  vehicles?: Prisma.vehiclesCreateNestedOneWithoutBookingsInput
+  commission_ledger?: Prisma.commission_ledgerCreateNestedManyWithoutBookingsInput
+  customer_tasting_notes?: Prisma.customer_tasting_notesCreateNestedManyWithoutBookingsInput
+  invoices?: Prisma.invoicesCreateNestedManyWithoutBookingsInput
+  itineraries?: Prisma.itinerariesCreateNestedManyWithoutBookingsInput
+  lunch_orders?: Prisma.lunch_ordersCreateNestedManyWithoutBookingsInput
+  payment_intents?: Prisma.payment_intentsCreateNestedManyWithoutBookingsInput
+  payments?: Prisma.paymentsCreateNestedManyWithoutBookingsInput
+  refunds?: Prisma.refundsCreateNestedManyWithoutBookingsInput
+  reservations?: Prisma.reservationsCreateNestedManyWithoutBookingsInput
+  shared_tours_tickets?: Prisma.shared_tours_ticketsCreateNestedManyWithoutBookingsInput
+  tour_offers?: Prisma.tour_offersCreateNestedManyWithoutBookingsInput
+  trip_distances?: Prisma.trip_distancesCreateNestedManyWithoutBookingsInput
+  vehicle_availability_blocks?: Prisma.vehicle_availability_blocksCreateNestedManyWithoutBookingsInput
+  vehicle_incidents?: Prisma.vehicle_incidentsCreateNestedManyWithoutBookingsInput
+  visitors?: Prisma.visitorsCreateNestedManyWithoutBookingsInput
+  wine_purchases?: Prisma.wine_purchasesCreateNestedManyWithoutBookingsInput
+  winery_reviews?: Prisma.winery_reviewsCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesCreateNestedManyWithoutBookingsInput
+}
+
+export type bookingsUncheckedCreateWithoutTour_completionsInput = {
+  id?: number
+  booking_number: string
+  customer_id?: number | null
+  customer_name: string
+  customer_email: string
+  customer_phone?: string | null
+  party_size: number
+  tour_date: Date | string
+  start_time: Date | string
+  end_time: Date | string
+  duration_hours: runtime.Decimal | runtime.DecimalJsLike | number | string
+  pickup_location: string
+  dropoff_location?: string | null
+  special_requests?: string | null
+  driver_id?: number | null
+  vehicle_id?: number | null
+  time_card_id?: number | null
+  base_price: runtime.Decimal | runtime.DecimalJsLike | number | string
+  gratuity?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  taxes?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  total_price: runtime.Decimal | runtime.DecimalJsLike | number | string
+  deposit_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  deposit_paid?: boolean | null
+  deposit_paid_at?: Date | string | null
+  final_payment_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  final_payment_paid?: boolean | null
+  final_payment_paid_at?: Date | string | null
+  status?: string
+  cancellation_reason?: string | null
+  cancelled_at?: Date | string | null
+  cancelled_by?: number | null
+  booking_source?: string | null
+  booked_by?: number | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  completed_at?: Date | string | null
+  actual_hours?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  estimated_hours?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  hourly_rate?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  ready_for_final_invoice?: boolean | null
+  final_invoice_sent?: boolean | null
+  final_invoice_sent_at?: Date | string | null
+  final_invoice_approved_by?: number | null
+  final_invoice_approved_at?: Date | string | null
+  brand_id?: number | null
+  brand_code?: string | null
+  specific_social_media?: string | null
+  specific_ai?: string | null
+  wine_tour_preference?: string | null
+  hotel_concierge_name?: string | null
+  referral_other_details?: string | null
+  tour_type?: string | null
+  referral_source?: string | null
+  tour_duration_type?: string | null
+  tour_start_date?: Date | string | null
+  tour_end_date?: Date | string | null
+  tenant_id?: number | null
+  provider_id?: number | null
+  reminder_sent?: boolean | null
+  provider_entity_id?: string | null
+  booking_source_id?: string | null
+  referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
+  ai_queries?: Prisma.ai_queriesUncheckedCreateNestedManyWithoutBookingsInput
+  booking_line_items?: Prisma.booking_line_itemsUncheckedCreateNestedManyWithoutBookingsInput
+  booking_timeline?: Prisma.booking_timelineUncheckedCreateNestedManyWithoutBookingsInput
+  booking_wineries?: Prisma.booking_wineriesUncheckedCreateNestedManyWithoutBookingsInput
+  commission_ledger?: Prisma.commission_ledgerUncheckedCreateNestedManyWithoutBookingsInput
+  customer_tasting_notes?: Prisma.customer_tasting_notesUncheckedCreateNestedManyWithoutBookingsInput
+  invoices?: Prisma.invoicesUncheckedCreateNestedManyWithoutBookingsInput
+  itineraries?: Prisma.itinerariesUncheckedCreateNestedManyWithoutBookingsInput
+  lunch_orders?: Prisma.lunch_ordersUncheckedCreateNestedManyWithoutBookingsInput
+  payment_intents?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutBookingsInput
+  payments?: Prisma.paymentsUncheckedCreateNestedManyWithoutBookingsInput
+  refunds?: Prisma.refundsUncheckedCreateNestedManyWithoutBookingsInput
+  reservations?: Prisma.reservationsUncheckedCreateNestedManyWithoutBookingsInput
+  shared_tours_tickets?: Prisma.shared_tours_ticketsUncheckedCreateNestedManyWithoutBookingsInput
+  tour_offers?: Prisma.tour_offersUncheckedCreateNestedManyWithoutBookingsInput
+  trip_distances?: Prisma.trip_distancesUncheckedCreateNestedManyWithoutBookingsInput
+  vehicle_availability_blocks?: Prisma.vehicle_availability_blocksUncheckedCreateNestedManyWithoutBookingsInput
+  vehicle_incidents?: Prisma.vehicle_incidentsUncheckedCreateNestedManyWithoutBookingsInput
+  visitors?: Prisma.visitorsUncheckedCreateNestedManyWithoutBookingsInput
+  wine_purchases?: Prisma.wine_purchasesUncheckedCreateNestedManyWithoutBookingsInput
+  winery_reviews?: Prisma.winery_reviewsUncheckedCreateNestedManyWithoutBookingsInput
+  driver_tips?: Prisma.driver_tipsUncheckedCreateNestedManyWithoutBookingsInput
+  tour_expenses?: Prisma.tour_expensesUncheckedCreateNestedManyWithoutBookingsInput
+}
+
+export type bookingsCreateOrConnectWithoutTour_completionsInput = {
+  where: Prisma.bookingsWhereUniqueInput
+  create: Prisma.XOR<Prisma.bookingsCreateWithoutTour_completionsInput, Prisma.bookingsUncheckedCreateWithoutTour_completionsInput>
+}
+
+export type bookingsUpsertWithoutTour_completionsInput = {
+  update: Prisma.XOR<Prisma.bookingsUpdateWithoutTour_completionsInput, Prisma.bookingsUncheckedUpdateWithoutTour_completionsInput>
+  create: Prisma.XOR<Prisma.bookingsCreateWithoutTour_completionsInput, Prisma.bookingsUncheckedCreateWithoutTour_completionsInput>
+  where?: Prisma.bookingsWhereInput
+}
+
+export type bookingsUpdateToOneWithWhereWithoutTour_completionsInput = {
+  where?: Prisma.bookingsWhereInput
+  data: Prisma.XOR<Prisma.bookingsUpdateWithoutTour_completionsInput, Prisma.bookingsUncheckedUpdateWithoutTour_completionsInput>
+}
+
+export type bookingsUpdateWithoutTour_completionsInput = {
+  booking_number?: Prisma.StringFieldUpdateOperationsInput | string
+  customer_name?: Prisma.StringFieldUpdateOperationsInput | string
+  customer_email?: Prisma.StringFieldUpdateOperationsInput | string
+  customer_phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  party_size?: Prisma.IntFieldUpdateOperationsInput | number
+  tour_date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  start_time?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  end_time?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  duration_hours?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  pickup_location?: Prisma.StringFieldUpdateOperationsInput | string
+  dropoff_location?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  special_requests?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  base_price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  gratuity?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  taxes?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  total_price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  deposit_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  deposit_paid?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  deposit_paid_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  final_payment_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  final_payment_paid?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  final_payment_paid_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  cancellation_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cancelled_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  booking_source?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  completed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  actual_hours?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  estimated_hours?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  hourly_rate?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  ready_for_final_invoice?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  final_invoice_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  final_invoice_sent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  final_invoice_approved_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  brand_code?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  specific_social_media?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  specific_ai?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  wine_tour_preference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hotel_concierge_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  referral_other_details?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tour_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  referral_source?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tour_duration_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tour_start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  tour_end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ai_queries?: Prisma.ai_queriesUpdateManyWithoutBookingsNestedInput
+  booking_line_items?: Prisma.booking_line_itemsUpdateManyWithoutBookingsNestedInput
+  booking_timeline?: Prisma.booking_timelineUpdateManyWithoutBookingsNestedInput
+  booking_wineries?: Prisma.booking_wineriesUpdateManyWithoutBookingsNestedInput
+  users_bookings_booked_byTousers?: Prisma.usersUpdateOneWithoutBookings_bookings_booked_byTousersNestedInput
+  booking_sources?: Prisma.booking_sourcesUpdateOneWithoutBookingsNestedInput
+  brands?: Prisma.brandsUpdateOneWithoutBookingsNestedInput
+  users_bookings_cancelled_byTousers?: Prisma.usersUpdateOneWithoutBookings_bookings_cancelled_byTousersNestedInput
+  customers?: Prisma.customersUpdateOneWithoutBookingsNestedInput
+  users_bookings_driver_idTousers?: Prisma.usersUpdateOneWithoutBookings_bookings_driver_idTousersNestedInput
+  users_bookings_final_invoice_approved_byTousers?: Prisma.usersUpdateOneWithoutBookings_bookings_final_invoice_approved_byTousersNestedInput
+  service_entities_bookings_provider_entity_idToservice_entities?: Prisma.service_entitiesUpdateOneWithoutBookings_bookings_provider_entity_idToservice_entitiesNestedInput
+  tour_providers?: Prisma.tour_providersUpdateOneWithoutBookingsNestedInput
+  service_entities_bookings_referrer_entity_idToservice_entities?: Prisma.service_entitiesUpdateOneWithoutBookings_bookings_referrer_entity_idToservice_entitiesNestedInput
+  tenants?: Prisma.tenantsUpdateOneWithoutBookingsNestedInput
+  time_cards?: Prisma.time_cardsUpdateOneWithoutBookingsNestedInput
+  vehicles?: Prisma.vehiclesUpdateOneWithoutBookingsNestedInput
+  commission_ledger?: Prisma.commission_ledgerUpdateManyWithoutBookingsNestedInput
+  customer_tasting_notes?: Prisma.customer_tasting_notesUpdateManyWithoutBookingsNestedInput
+  invoices?: Prisma.invoicesUpdateManyWithoutBookingsNestedInput
+  itineraries?: Prisma.itinerariesUpdateManyWithoutBookingsNestedInput
+  lunch_orders?: Prisma.lunch_ordersUpdateManyWithoutBookingsNestedInput
+  payment_intents?: Prisma.payment_intentsUpdateManyWithoutBookingsNestedInput
+  payments?: Prisma.paymentsUpdateManyWithoutBookingsNestedInput
+  refunds?: Prisma.refundsUpdateManyWithoutBookingsNestedInput
+  reservations?: Prisma.reservationsUpdateManyWithoutBookingsNestedInput
+  shared_tours_tickets?: Prisma.shared_tours_ticketsUpdateManyWithoutBookingsNestedInput
+  tour_offers?: Prisma.tour_offersUpdateManyWithoutBookingsNestedInput
+  trip_distances?: Prisma.trip_distancesUpdateManyWithoutBookingsNestedInput
+  vehicle_availability_blocks?: Prisma.vehicle_availability_blocksUpdateManyWithoutBookingsNestedInput
+  vehicle_incidents?: Prisma.vehicle_incidentsUpdateManyWithoutBookingsNestedInput
+  visitors?: Prisma.visitorsUpdateManyWithoutBookingsNestedInput
+  wine_purchases?: Prisma.wine_purchasesUpdateManyWithoutBookingsNestedInput
+  winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutBookingsNestedInput
+}
+
+export type bookingsUncheckedUpdateWithoutTour_completionsInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  booking_number?: Prisma.StringFieldUpdateOperationsInput | string
+  customer_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  customer_name?: Prisma.StringFieldUpdateOperationsInput | string
+  customer_email?: Prisma.StringFieldUpdateOperationsInput | string
+  customer_phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  party_size?: Prisma.IntFieldUpdateOperationsInput | number
+  tour_date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  start_time?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  end_time?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  duration_hours?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  pickup_location?: Prisma.StringFieldUpdateOperationsInput | string
+  dropoff_location?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  special_requests?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  driver_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  vehicle_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  time_card_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  base_price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  gratuity?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  taxes?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  total_price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  deposit_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  deposit_paid?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  deposit_paid_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  final_payment_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  final_payment_paid?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  final_payment_paid_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  cancellation_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cancelled_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  cancelled_by?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  booking_source?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  booked_by?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  completed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  actual_hours?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  estimated_hours?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  hourly_rate?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  ready_for_final_invoice?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  final_invoice_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  final_invoice_sent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  final_invoice_approved_by?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  final_invoice_approved_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  brand_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  brand_code?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  specific_social_media?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  specific_ai?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  wine_tour_preference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hotel_concierge_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  referral_other_details?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tour_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  referral_source?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tour_duration_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tour_start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  tour_end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  tenant_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  provider_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ai_queries?: Prisma.ai_queriesUncheckedUpdateManyWithoutBookingsNestedInput
+  booking_line_items?: Prisma.booking_line_itemsUncheckedUpdateManyWithoutBookingsNestedInput
+  booking_timeline?: Prisma.booking_timelineUncheckedUpdateManyWithoutBookingsNestedInput
+  booking_wineries?: Prisma.booking_wineriesUncheckedUpdateManyWithoutBookingsNestedInput
+  commission_ledger?: Prisma.commission_ledgerUncheckedUpdateManyWithoutBookingsNestedInput
+  customer_tasting_notes?: Prisma.customer_tasting_notesUncheckedUpdateManyWithoutBookingsNestedInput
+  invoices?: Prisma.invoicesUncheckedUpdateManyWithoutBookingsNestedInput
+  itineraries?: Prisma.itinerariesUncheckedUpdateManyWithoutBookingsNestedInput
+  lunch_orders?: Prisma.lunch_ordersUncheckedUpdateManyWithoutBookingsNestedInput
+  payment_intents?: Prisma.payment_intentsUncheckedUpdateManyWithoutBookingsNestedInput
+  payments?: Prisma.paymentsUncheckedUpdateManyWithoutBookingsNestedInput
+  refunds?: Prisma.refundsUncheckedUpdateManyWithoutBookingsNestedInput
+  reservations?: Prisma.reservationsUncheckedUpdateManyWithoutBookingsNestedInput
+  shared_tours_tickets?: Prisma.shared_tours_ticketsUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_offers?: Prisma.tour_offersUncheckedUpdateManyWithoutBookingsNestedInput
+  trip_distances?: Prisma.trip_distancesUncheckedUpdateManyWithoutBookingsNestedInput
+  vehicle_availability_blocks?: Prisma.vehicle_availability_blocksUncheckedUpdateManyWithoutBookingsNestedInput
+  vehicle_incidents?: Prisma.vehicle_incidentsUncheckedUpdateManyWithoutBookingsNestedInput
+  visitors?: Prisma.visitorsUncheckedUpdateManyWithoutBookingsNestedInput
+  wine_purchases?: Prisma.wine_purchasesUncheckedUpdateManyWithoutBookingsNestedInput
+  winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutBookingsNestedInput
 }
 
 export type bookingsCreateManyBooking_sourcesInput = {
@@ -12887,6 +14668,8 @@ export type bookingsCreateManyBooking_sourcesInput = {
   reminder_sent?: boolean | null
   provider_entity_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
 }
 
 export type bookingsUpdateWithoutBooking_sourcesInput = {
@@ -12938,6 +14721,8 @@ export type bookingsUpdateWithoutBooking_sourcesInput = {
   tour_start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   tour_end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUpdateManyWithoutBookingsNestedInput
@@ -12971,6 +14756,9 @@ export type bookingsUpdateWithoutBooking_sourcesInput = {
   visitors?: Prisma.visitorsUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateWithoutBooking_sourcesInput = {
@@ -13035,6 +14823,8 @@ export type bookingsUncheckedUpdateWithoutBooking_sourcesInput = {
   reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUncheckedUpdateManyWithoutBookingsNestedInput
@@ -13056,6 +14846,9 @@ export type bookingsUncheckedUpdateWithoutBooking_sourcesInput = {
   visitors?: Prisma.visitorsUncheckedUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUncheckedUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateManyWithoutBooking_sourcesInput = {
@@ -13120,6 +14913,8 @@ export type bookingsUncheckedUpdateManyWithoutBooking_sourcesInput = {
   reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type bookingsCreateManyBrandsInput = {
@@ -13184,6 +14979,8 @@ export type bookingsCreateManyBrandsInput = {
   provider_entity_id?: string | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
 }
 
 export type bookingsUpdateWithoutBrandsInput = {
@@ -13235,6 +15032,8 @@ export type bookingsUpdateWithoutBrandsInput = {
   tour_start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   tour_end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUpdateManyWithoutBookingsNestedInput
@@ -13268,6 +15067,9 @@ export type bookingsUpdateWithoutBrandsInput = {
   visitors?: Prisma.visitorsUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateWithoutBrandsInput = {
@@ -13332,6 +15134,8 @@ export type bookingsUncheckedUpdateWithoutBrandsInput = {
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUncheckedUpdateManyWithoutBookingsNestedInput
@@ -13353,6 +15157,9 @@ export type bookingsUncheckedUpdateWithoutBrandsInput = {
   visitors?: Prisma.visitorsUncheckedUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUncheckedUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateManyWithoutBrandsInput = {
@@ -13417,6 +15224,8 @@ export type bookingsUncheckedUpdateManyWithoutBrandsInput = {
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type bookingsCreateManyCustomersInput = {
@@ -13481,6 +15290,8 @@ export type bookingsCreateManyCustomersInput = {
   provider_entity_id?: string | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
 }
 
 export type bookingsUpdateWithoutCustomersInput = {
@@ -13532,6 +15343,8 @@ export type bookingsUpdateWithoutCustomersInput = {
   tour_start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   tour_end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUpdateManyWithoutBookingsNestedInput
@@ -13565,6 +15378,9 @@ export type bookingsUpdateWithoutCustomersInput = {
   visitors?: Prisma.visitorsUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateWithoutCustomersInput = {
@@ -13629,6 +15445,8 @@ export type bookingsUncheckedUpdateWithoutCustomersInput = {
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUncheckedUpdateManyWithoutBookingsNestedInput
@@ -13650,6 +15468,9 @@ export type bookingsUncheckedUpdateWithoutCustomersInput = {
   visitors?: Prisma.visitorsUncheckedUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUncheckedUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateManyWithoutCustomersInput = {
@@ -13714,6 +15535,8 @@ export type bookingsUncheckedUpdateManyWithoutCustomersInput = {
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type bookingsCreateManyService_entities_bookings_provider_entity_idToservice_entitiesInput = {
@@ -13778,6 +15601,8 @@ export type bookingsCreateManyService_entities_bookings_provider_entity_idToserv
   reminder_sent?: boolean | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
 }
 
 export type bookingsCreateManyService_entities_bookings_referrer_entity_idToservice_entitiesInput = {
@@ -13842,6 +15667,8 @@ export type bookingsCreateManyService_entities_bookings_referrer_entity_idToserv
   reminder_sent?: boolean | null
   provider_entity_id?: string | null
   booking_source_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
 }
 
 export type bookingsUpdateWithoutService_entities_bookings_provider_entity_idToservice_entitiesInput = {
@@ -13893,6 +15720,8 @@ export type bookingsUpdateWithoutService_entities_bookings_provider_entity_idTos
   tour_start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   tour_end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUpdateManyWithoutBookingsNestedInput
@@ -13926,6 +15755,9 @@ export type bookingsUpdateWithoutService_entities_bookings_provider_entity_idTos
   visitors?: Prisma.visitorsUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateWithoutService_entities_bookings_provider_entity_idToservice_entitiesInput = {
@@ -13990,6 +15822,8 @@ export type bookingsUncheckedUpdateWithoutService_entities_bookings_provider_ent
   reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUncheckedUpdateManyWithoutBookingsNestedInput
@@ -14011,6 +15845,9 @@ export type bookingsUncheckedUpdateWithoutService_entities_bookings_provider_ent
   visitors?: Prisma.visitorsUncheckedUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUncheckedUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateManyWithoutService_entities_bookings_provider_entity_idToservice_entitiesInput = {
@@ -14075,6 +15912,8 @@ export type bookingsUncheckedUpdateManyWithoutService_entities_bookings_provider
   reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type bookingsUpdateWithoutService_entities_bookings_referrer_entity_idToservice_entitiesInput = {
@@ -14126,6 +15965,8 @@ export type bookingsUpdateWithoutService_entities_bookings_referrer_entity_idTos
   tour_start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   tour_end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUpdateManyWithoutBookingsNestedInput
@@ -14159,6 +16000,9 @@ export type bookingsUpdateWithoutService_entities_bookings_referrer_entity_idTos
   visitors?: Prisma.visitorsUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateWithoutService_entities_bookings_referrer_entity_idToservice_entitiesInput = {
@@ -14223,6 +16067,8 @@ export type bookingsUncheckedUpdateWithoutService_entities_bookings_referrer_ent
   reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUncheckedUpdateManyWithoutBookingsNestedInput
@@ -14244,6 +16090,9 @@ export type bookingsUncheckedUpdateWithoutService_entities_bookings_referrer_ent
   visitors?: Prisma.visitorsUncheckedUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUncheckedUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateManyWithoutService_entities_bookings_referrer_entity_idToservice_entitiesInput = {
@@ -14308,6 +16157,8 @@ export type bookingsUncheckedUpdateManyWithoutService_entities_bookings_referrer
   reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type bookingsCreateManyTenantsInput = {
@@ -14372,6 +16223,8 @@ export type bookingsCreateManyTenantsInput = {
   provider_entity_id?: string | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
 }
 
 export type bookingsUpdateWithoutTenantsInput = {
@@ -14423,6 +16276,8 @@ export type bookingsUpdateWithoutTenantsInput = {
   tour_start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   tour_end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUpdateManyWithoutBookingsNestedInput
@@ -14456,6 +16311,9 @@ export type bookingsUpdateWithoutTenantsInput = {
   visitors?: Prisma.visitorsUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateWithoutTenantsInput = {
@@ -14520,6 +16378,8 @@ export type bookingsUncheckedUpdateWithoutTenantsInput = {
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUncheckedUpdateManyWithoutBookingsNestedInput
@@ -14541,6 +16401,9 @@ export type bookingsUncheckedUpdateWithoutTenantsInput = {
   visitors?: Prisma.visitorsUncheckedUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUncheckedUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateManyWithoutTenantsInput = {
@@ -14605,6 +16468,8 @@ export type bookingsUncheckedUpdateManyWithoutTenantsInput = {
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type bookingsCreateManyTime_cardsInput = {
@@ -14669,6 +16534,8 @@ export type bookingsCreateManyTime_cardsInput = {
   provider_entity_id?: string | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
 }
 
 export type bookingsUpdateWithoutTime_cardsInput = {
@@ -14720,6 +16587,8 @@ export type bookingsUpdateWithoutTime_cardsInput = {
   tour_start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   tour_end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUpdateManyWithoutBookingsNestedInput
@@ -14753,6 +16622,9 @@ export type bookingsUpdateWithoutTime_cardsInput = {
   visitors?: Prisma.visitorsUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateWithoutTime_cardsInput = {
@@ -14817,6 +16689,8 @@ export type bookingsUncheckedUpdateWithoutTime_cardsInput = {
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUncheckedUpdateManyWithoutBookingsNestedInput
@@ -14838,6 +16712,9 @@ export type bookingsUncheckedUpdateWithoutTime_cardsInput = {
   visitors?: Prisma.visitorsUncheckedUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUncheckedUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateManyWithoutTime_cardsInput = {
@@ -14902,6 +16779,8 @@ export type bookingsUncheckedUpdateManyWithoutTime_cardsInput = {
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type bookingsCreateManyTour_providersInput = {
@@ -14966,6 +16845,8 @@ export type bookingsCreateManyTour_providersInput = {
   provider_entity_id?: string | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
 }
 
 export type bookingsUpdateWithoutTour_providersInput = {
@@ -15017,6 +16898,8 @@ export type bookingsUpdateWithoutTour_providersInput = {
   tour_start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   tour_end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUpdateManyWithoutBookingsNestedInput
@@ -15050,6 +16933,9 @@ export type bookingsUpdateWithoutTour_providersInput = {
   visitors?: Prisma.visitorsUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateWithoutTour_providersInput = {
@@ -15114,6 +17000,8 @@ export type bookingsUncheckedUpdateWithoutTour_providersInput = {
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUncheckedUpdateManyWithoutBookingsNestedInput
@@ -15135,6 +17023,9 @@ export type bookingsUncheckedUpdateWithoutTour_providersInput = {
   visitors?: Prisma.visitorsUncheckedUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUncheckedUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateManyWithoutTour_providersInput = {
@@ -15199,6 +17090,8 @@ export type bookingsUncheckedUpdateManyWithoutTour_providersInput = {
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type bookingsCreateManyUsers_bookings_booked_byTousersInput = {
@@ -15263,6 +17156,8 @@ export type bookingsCreateManyUsers_bookings_booked_byTousersInput = {
   provider_entity_id?: string | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
 }
 
 export type bookingsCreateManyUsers_bookings_cancelled_byTousersInput = {
@@ -15327,6 +17222,8 @@ export type bookingsCreateManyUsers_bookings_cancelled_byTousersInput = {
   provider_entity_id?: string | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
 }
 
 export type bookingsCreateManyUsers_bookings_driver_idTousersInput = {
@@ -15391,6 +17288,8 @@ export type bookingsCreateManyUsers_bookings_driver_idTousersInput = {
   provider_entity_id?: string | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
 }
 
 export type bookingsCreateManyUsers_bookings_final_invoice_approved_byTousersInput = {
@@ -15455,6 +17354,8 @@ export type bookingsCreateManyUsers_bookings_final_invoice_approved_byTousersInp
   provider_entity_id?: string | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
 }
 
 export type bookingsUpdateWithoutUsers_bookings_booked_byTousersInput = {
@@ -15506,6 +17407,8 @@ export type bookingsUpdateWithoutUsers_bookings_booked_byTousersInput = {
   tour_start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   tour_end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUpdateManyWithoutBookingsNestedInput
@@ -15539,6 +17442,9 @@ export type bookingsUpdateWithoutUsers_bookings_booked_byTousersInput = {
   visitors?: Prisma.visitorsUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateWithoutUsers_bookings_booked_byTousersInput = {
@@ -15603,6 +17509,8 @@ export type bookingsUncheckedUpdateWithoutUsers_bookings_booked_byTousersInput =
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUncheckedUpdateManyWithoutBookingsNestedInput
@@ -15624,6 +17532,9 @@ export type bookingsUncheckedUpdateWithoutUsers_bookings_booked_byTousersInput =
   visitors?: Prisma.visitorsUncheckedUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUncheckedUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateManyWithoutUsers_bookings_booked_byTousersInput = {
@@ -15688,6 +17599,8 @@ export type bookingsUncheckedUpdateManyWithoutUsers_bookings_booked_byTousersInp
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type bookingsUpdateWithoutUsers_bookings_cancelled_byTousersInput = {
@@ -15739,6 +17652,8 @@ export type bookingsUpdateWithoutUsers_bookings_cancelled_byTousersInput = {
   tour_start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   tour_end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUpdateManyWithoutBookingsNestedInput
@@ -15772,6 +17687,9 @@ export type bookingsUpdateWithoutUsers_bookings_cancelled_byTousersInput = {
   visitors?: Prisma.visitorsUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateWithoutUsers_bookings_cancelled_byTousersInput = {
@@ -15836,6 +17754,8 @@ export type bookingsUncheckedUpdateWithoutUsers_bookings_cancelled_byTousersInpu
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUncheckedUpdateManyWithoutBookingsNestedInput
@@ -15857,6 +17777,9 @@ export type bookingsUncheckedUpdateWithoutUsers_bookings_cancelled_byTousersInpu
   visitors?: Prisma.visitorsUncheckedUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUncheckedUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateManyWithoutUsers_bookings_cancelled_byTousersInput = {
@@ -15921,6 +17844,8 @@ export type bookingsUncheckedUpdateManyWithoutUsers_bookings_cancelled_byTousers
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type bookingsUpdateWithoutUsers_bookings_driver_idTousersInput = {
@@ -15972,6 +17897,8 @@ export type bookingsUpdateWithoutUsers_bookings_driver_idTousersInput = {
   tour_start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   tour_end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUpdateManyWithoutBookingsNestedInput
@@ -16005,6 +17932,9 @@ export type bookingsUpdateWithoutUsers_bookings_driver_idTousersInput = {
   visitors?: Prisma.visitorsUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateWithoutUsers_bookings_driver_idTousersInput = {
@@ -16069,6 +17999,8 @@ export type bookingsUncheckedUpdateWithoutUsers_bookings_driver_idTousersInput =
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUncheckedUpdateManyWithoutBookingsNestedInput
@@ -16090,6 +18022,9 @@ export type bookingsUncheckedUpdateWithoutUsers_bookings_driver_idTousersInput =
   visitors?: Prisma.visitorsUncheckedUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUncheckedUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateManyWithoutUsers_bookings_driver_idTousersInput = {
@@ -16154,6 +18089,8 @@ export type bookingsUncheckedUpdateManyWithoutUsers_bookings_driver_idTousersInp
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type bookingsUpdateWithoutUsers_bookings_final_invoice_approved_byTousersInput = {
@@ -16205,6 +18142,8 @@ export type bookingsUpdateWithoutUsers_bookings_final_invoice_approved_byTousers
   tour_start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   tour_end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUpdateManyWithoutBookingsNestedInput
@@ -16238,6 +18177,9 @@ export type bookingsUpdateWithoutUsers_bookings_final_invoice_approved_byTousers
   visitors?: Prisma.visitorsUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateWithoutUsers_bookings_final_invoice_approved_byTousersInput = {
@@ -16302,6 +18244,8 @@ export type bookingsUncheckedUpdateWithoutUsers_bookings_final_invoice_approved_
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUncheckedUpdateManyWithoutBookingsNestedInput
@@ -16323,6 +18267,9 @@ export type bookingsUncheckedUpdateWithoutUsers_bookings_final_invoice_approved_
   visitors?: Prisma.visitorsUncheckedUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUncheckedUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateManyWithoutUsers_bookings_final_invoice_approved_byTousersInput = {
@@ -16387,6 +18334,8 @@ export type bookingsUncheckedUpdateManyWithoutUsers_bookings_final_invoice_appro
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type bookingsCreateManyVehiclesInput = {
@@ -16451,6 +18400,8 @@ export type bookingsCreateManyVehiclesInput = {
   provider_entity_id?: string | null
   booking_source_id?: string | null
   referrer_entity_id?: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_synced_at?: Date | string | null
 }
 
 export type bookingsUpdateWithoutVehiclesInput = {
@@ -16502,6 +18453,8 @@ export type bookingsUpdateWithoutVehiclesInput = {
   tour_start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   tour_end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   reminder_sent?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUpdateManyWithoutBookingsNestedInput
@@ -16535,6 +18488,9 @@ export type bookingsUpdateWithoutVehiclesInput = {
   visitors?: Prisma.visitorsUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateWithoutVehiclesInput = {
@@ -16599,6 +18555,8 @@ export type bookingsUncheckedUpdateWithoutVehiclesInput = {
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ai_queries?: Prisma.ai_queriesUncheckedUpdateManyWithoutBookingsNestedInput
   booking_line_items?: Prisma.booking_line_itemsUncheckedUpdateManyWithoutBookingsNestedInput
   booking_timeline?: Prisma.booking_timelineUncheckedUpdateManyWithoutBookingsNestedInput
@@ -16620,6 +18578,9 @@ export type bookingsUncheckedUpdateWithoutVehiclesInput = {
   visitors?: Prisma.visitorsUncheckedUpdateManyWithoutBookingsNestedInput
   wine_purchases?: Prisma.wine_purchasesUncheckedUpdateManyWithoutBookingsNestedInput
   winery_reviews?: Prisma.winery_reviewsUncheckedUpdateManyWithoutBookingsNestedInput
+  driver_tips?: Prisma.driver_tipsUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_expenses?: Prisma.tour_expensesUncheckedUpdateManyWithoutBookingsNestedInput
+  tour_completions?: Prisma.tour_completionsUncheckedUpdateOneWithoutBookingsNestedInput
 }
 
 export type bookingsUncheckedUpdateManyWithoutVehiclesInput = {
@@ -16684,6 +18645,8 @@ export type bookingsUncheckedUpdateManyWithoutVehiclesInput = {
   provider_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   booking_source_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   referrer_entity_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_event_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_calendar_synced_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 
@@ -16713,6 +18676,8 @@ export type BookingsCountOutputType = {
   visitors: number
   wine_purchases: number
   winery_reviews: number
+  driver_tips: number
+  tour_expenses: number
 }
 
 export type BookingsCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -16737,6 +18702,8 @@ export type BookingsCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensio
   visitors?: boolean | BookingsCountOutputTypeCountVisitorsArgs
   wine_purchases?: boolean | BookingsCountOutputTypeCountWine_purchasesArgs
   winery_reviews?: boolean | BookingsCountOutputTypeCountWinery_reviewsArgs
+  driver_tips?: boolean | BookingsCountOutputTypeCountDriver_tipsArgs
+  tour_expenses?: boolean | BookingsCountOutputTypeCountTour_expensesArgs
 }
 
 /**
@@ -16896,6 +18863,20 @@ export type BookingsCountOutputTypeCountWinery_reviewsArgs<ExtArgs extends runti
   where?: Prisma.winery_reviewsWhereInput
 }
 
+/**
+ * BookingsCountOutputType without action
+ */
+export type BookingsCountOutputTypeCountDriver_tipsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.driver_tipsWhereInput
+}
+
+/**
+ * BookingsCountOutputType without action
+ */
+export type BookingsCountOutputTypeCountTour_expensesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.tour_expensesWhereInput
+}
+
 
 export type bookingsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -16960,6 +18941,8 @@ export type bookingsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   provider_entity_id?: boolean
   booking_source_id?: boolean
   referrer_entity_id?: boolean
+  google_calendar_event_id?: boolean
+  google_calendar_synced_at?: boolean
   ai_queries?: boolean | Prisma.bookings$ai_queriesArgs<ExtArgs>
   booking_line_items?: boolean | Prisma.bookings$booking_line_itemsArgs<ExtArgs>
   booking_timeline?: boolean | Prisma.bookings$booking_timelineArgs<ExtArgs>
@@ -16994,6 +18977,9 @@ export type bookingsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   visitors?: boolean | Prisma.bookings$visitorsArgs<ExtArgs>
   wine_purchases?: boolean | Prisma.bookings$wine_purchasesArgs<ExtArgs>
   winery_reviews?: boolean | Prisma.bookings$winery_reviewsArgs<ExtArgs>
+  driver_tips?: boolean | Prisma.bookings$driver_tipsArgs<ExtArgs>
+  tour_expenses?: boolean | Prisma.bookings$tour_expensesArgs<ExtArgs>
+  tour_completions?: boolean | Prisma.bookings$tour_completionsArgs<ExtArgs>
   _count?: boolean | Prisma.BookingsCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["bookings"]>
 
@@ -17060,6 +19046,8 @@ export type bookingsSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   provider_entity_id?: boolean
   booking_source_id?: boolean
   referrer_entity_id?: boolean
+  google_calendar_event_id?: boolean
+  google_calendar_synced_at?: boolean
   users_bookings_booked_byTousers?: boolean | Prisma.bookings$users_bookings_booked_byTousersArgs<ExtArgs>
   booking_sources?: boolean | Prisma.bookings$booking_sourcesArgs<ExtArgs>
   brands?: boolean | Prisma.bookings$brandsArgs<ExtArgs>
@@ -17138,6 +19126,8 @@ export type bookingsSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   provider_entity_id?: boolean
   booking_source_id?: boolean
   referrer_entity_id?: boolean
+  google_calendar_event_id?: boolean
+  google_calendar_synced_at?: boolean
   users_bookings_booked_byTousers?: boolean | Prisma.bookings$users_bookings_booked_byTousersArgs<ExtArgs>
   booking_sources?: boolean | Prisma.bookings$booking_sourcesArgs<ExtArgs>
   brands?: boolean | Prisma.bookings$brandsArgs<ExtArgs>
@@ -17216,9 +19206,11 @@ export type bookingsSelectScalar = {
   provider_entity_id?: boolean
   booking_source_id?: boolean
   referrer_entity_id?: boolean
+  google_calendar_event_id?: boolean
+  google_calendar_synced_at?: boolean
 }
 
-export type bookingsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "booking_number" | "customer_id" | "customer_name" | "customer_email" | "customer_phone" | "party_size" | "tour_date" | "start_time" | "end_time" | "duration_hours" | "pickup_location" | "dropoff_location" | "special_requests" | "driver_id" | "vehicle_id" | "time_card_id" | "base_price" | "gratuity" | "taxes" | "total_price" | "deposit_amount" | "deposit_paid" | "deposit_paid_at" | "final_payment_amount" | "final_payment_paid" | "final_payment_paid_at" | "status" | "cancellation_reason" | "cancelled_at" | "cancelled_by" | "booking_source" | "booked_by" | "created_at" | "updated_at" | "completed_at" | "actual_hours" | "estimated_hours" | "hourly_rate" | "ready_for_final_invoice" | "final_invoice_sent" | "final_invoice_sent_at" | "final_invoice_approved_by" | "final_invoice_approved_at" | "brand_id" | "brand_code" | "specific_social_media" | "specific_ai" | "wine_tour_preference" | "hotel_concierge_name" | "referral_other_details" | "tour_type" | "referral_source" | "tour_duration_type" | "tour_start_date" | "tour_end_date" | "tenant_id" | "provider_id" | "reminder_sent" | "provider_entity_id" | "booking_source_id" | "referrer_entity_id", ExtArgs["result"]["bookings"]>
+export type bookingsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "booking_number" | "customer_id" | "customer_name" | "customer_email" | "customer_phone" | "party_size" | "tour_date" | "start_time" | "end_time" | "duration_hours" | "pickup_location" | "dropoff_location" | "special_requests" | "driver_id" | "vehicle_id" | "time_card_id" | "base_price" | "gratuity" | "taxes" | "total_price" | "deposit_amount" | "deposit_paid" | "deposit_paid_at" | "final_payment_amount" | "final_payment_paid" | "final_payment_paid_at" | "status" | "cancellation_reason" | "cancelled_at" | "cancelled_by" | "booking_source" | "booked_by" | "created_at" | "updated_at" | "completed_at" | "actual_hours" | "estimated_hours" | "hourly_rate" | "ready_for_final_invoice" | "final_invoice_sent" | "final_invoice_sent_at" | "final_invoice_approved_by" | "final_invoice_approved_at" | "brand_id" | "brand_code" | "specific_social_media" | "specific_ai" | "wine_tour_preference" | "hotel_concierge_name" | "referral_other_details" | "tour_type" | "referral_source" | "tour_duration_type" | "tour_start_date" | "tour_end_date" | "tenant_id" | "provider_id" | "reminder_sent" | "provider_entity_id" | "booking_source_id" | "referrer_entity_id" | "google_calendar_event_id" | "google_calendar_synced_at", ExtArgs["result"]["bookings"]>
 export type bookingsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   ai_queries?: boolean | Prisma.bookings$ai_queriesArgs<ExtArgs>
   booking_line_items?: boolean | Prisma.bookings$booking_line_itemsArgs<ExtArgs>
@@ -17254,6 +19246,9 @@ export type bookingsInclude<ExtArgs extends runtime.Types.Extensions.InternalArg
   visitors?: boolean | Prisma.bookings$visitorsArgs<ExtArgs>
   wine_purchases?: boolean | Prisma.bookings$wine_purchasesArgs<ExtArgs>
   winery_reviews?: boolean | Prisma.bookings$winery_reviewsArgs<ExtArgs>
+  driver_tips?: boolean | Prisma.bookings$driver_tipsArgs<ExtArgs>
+  tour_expenses?: boolean | Prisma.bookings$tour_expensesArgs<ExtArgs>
+  tour_completions?: boolean | Prisma.bookings$tour_completionsArgs<ExtArgs>
   _count?: boolean | Prisma.BookingsCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type bookingsIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -17324,6 +19319,9 @@ export type $bookingsPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     visitors: Prisma.$visitorsPayload<ExtArgs>[]
     wine_purchases: Prisma.$wine_purchasesPayload<ExtArgs>[]
     winery_reviews: Prisma.$winery_reviewsPayload<ExtArgs>[]
+    driver_tips: Prisma.$driver_tipsPayload<ExtArgs>[]
+    tour_expenses: Prisma.$tour_expensesPayload<ExtArgs>[]
+    tour_completions: Prisma.$tour_completionsPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: number
@@ -17388,6 +19386,8 @@ export type $bookingsPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     provider_entity_id: string | null
     booking_source_id: string | null
     referrer_entity_id: string | null
+    google_calendar_event_id: string | null
+    google_calendar_synced_at: Date | null
   }, ExtArgs["result"]["bookings"]>
   composites: {}
 }
@@ -17816,6 +19816,9 @@ export interface Prisma__bookingsClient<T, Null = never, ExtArgs extends runtime
   visitors<T extends Prisma.bookings$visitorsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.bookings$visitorsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$visitorsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   wine_purchases<T extends Prisma.bookings$wine_purchasesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.bookings$wine_purchasesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$wine_purchasesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   winery_reviews<T extends Prisma.bookings$winery_reviewsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.bookings$winery_reviewsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$winery_reviewsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  driver_tips<T extends Prisma.bookings$driver_tipsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.bookings$driver_tipsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$driver_tipsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  tour_expenses<T extends Prisma.bookings$tour_expensesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.bookings$tour_expensesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$tour_expensesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  tour_completions<T extends Prisma.bookings$tour_completionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.bookings$tour_completionsArgs<ExtArgs>>): Prisma.Prisma__tour_completionsClient<runtime.Types.Result.GetResult<Prisma.$tour_completionsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -17907,6 +19910,8 @@ export interface bookingsFieldRefs {
   readonly provider_entity_id: Prisma.FieldRef<"bookings", 'String'>
   readonly booking_source_id: Prisma.FieldRef<"bookings", 'String'>
   readonly referrer_entity_id: Prisma.FieldRef<"bookings", 'String'>
+  readonly google_calendar_event_id: Prisma.FieldRef<"bookings", 'String'>
+  readonly google_calendar_synced_at: Prisma.FieldRef<"bookings", 'DateTime'>
 }
     
 
@@ -19051,6 +21056,73 @@ export type bookings$winery_reviewsArgs<ExtArgs extends runtime.Types.Extensions
   take?: number
   skip?: number
   distinct?: Prisma.Winery_reviewsScalarFieldEnum | Prisma.Winery_reviewsScalarFieldEnum[]
+}
+
+/**
+ * bookings.driver_tips
+ */
+export type bookings$driver_tipsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the driver_tips
+   */
+  select?: Prisma.driver_tipsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the driver_tips
+   */
+  omit?: Prisma.driver_tipsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.driver_tipsInclude<ExtArgs> | null
+  where?: Prisma.driver_tipsWhereInput
+  orderBy?: Prisma.driver_tipsOrderByWithRelationInput | Prisma.driver_tipsOrderByWithRelationInput[]
+  cursor?: Prisma.driver_tipsWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Driver_tipsScalarFieldEnum | Prisma.Driver_tipsScalarFieldEnum[]
+}
+
+/**
+ * bookings.tour_expenses
+ */
+export type bookings$tour_expensesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the tour_expenses
+   */
+  select?: Prisma.tour_expensesSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the tour_expenses
+   */
+  omit?: Prisma.tour_expensesOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.tour_expensesInclude<ExtArgs> | null
+  where?: Prisma.tour_expensesWhereInput
+  orderBy?: Prisma.tour_expensesOrderByWithRelationInput | Prisma.tour_expensesOrderByWithRelationInput[]
+  cursor?: Prisma.tour_expensesWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Tour_expensesScalarFieldEnum | Prisma.Tour_expensesScalarFieldEnum[]
+}
+
+/**
+ * bookings.tour_completions
+ */
+export type bookings$tour_completionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the tour_completions
+   */
+  select?: Prisma.tour_completionsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the tour_completions
+   */
+  omit?: Prisma.tour_completionsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.tour_completionsInclude<ExtArgs> | null
+  where?: Prisma.tour_completionsWhereInput
 }
 
 /**
