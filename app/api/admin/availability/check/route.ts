@@ -15,7 +15,7 @@ import { pool } from '@/lib/db';
 const CheckAvailabilitySchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   startTime: z.string().regex(/^\d{2}:\d{2}$/),
-  durationHours: z.number().min(4).max(12),
+  durationHours: z.number().min(0).max(24), // 0 = flat-rate service, up to 24 hours
   partySize: z.number().min(1).max(50),
   brandId: z.number().optional(),
 });

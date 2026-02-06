@@ -19,13 +19,15 @@ export interface CustomerInfo {
 export interface TourDetails {
   date: string;
   start_time: string;
-  duration_hours: 4 | 6 | 8;
+  duration_hours: number; // Flexible: 0 for flat-rate services, any number for hourly
   party_size: number;
   pickup_location: string;
+  dropoff_location: string; // For airport transfers, different destinations, etc.
   special_requests: string;
   wine_preferences: string;
-  tour_type: 'standard' | 'private' | 'corporate';
+  tour_type: 'wine_tour' | 'private_transportation' | 'airport_transfer' | 'corporate' | 'dinner_service';
   how_did_you_hear: string;
+  custom_price: number | null; // Override calculated pricing with negotiated price
 }
 
 export interface ConsoleState {
@@ -275,10 +277,12 @@ export const DEFAULT_TOUR: TourDetails = {
   duration_hours: 6,
   party_size: 2,
   pickup_location: '',
+  dropoff_location: '',
   special_requests: '',
   wine_preferences: '',
-  tour_type: 'standard',
+  tour_type: 'wine_tour',
   how_did_you_hear: '',
+  custom_price: null,
 };
 
 export const REFERRAL_OPTIONS = [
@@ -294,7 +298,9 @@ export const REFERRAL_OPTIONS = [
 ];
 
 export const TOUR_TYPE_OPTIONS = [
-  { value: 'standard', label: 'Standard Tour' },
-  { value: 'private', label: 'Private Tour' },
+  { value: 'wine_tour', label: 'Wine Tour' },
+  { value: 'private_transportation', label: 'Private Transportation' },
+  { value: 'airport_transfer', label: 'Airport Transfer' },
+  { value: 'dinner_service', label: 'Dinner Service' },
   { value: 'corporate', label: 'Corporate Event' },
 ];
