@@ -167,10 +167,8 @@ export default function ClockInPage() {
           />
         ) : locationError ? (
           <AlertBanner
-            type="error"
-            message={locationError}
-            action="Retry"
-            onAction={getLocation}
+            type="warning"
+            message="Location unavailable - you can still clock in without it"
           />
         ) : (
           <AlertBanner type="info" message="Getting your location..." />
