@@ -16,6 +16,7 @@ export default function PricingCalculator({
   isLoading,
   customDiscount,
   onCustomDiscountChange,
+  customPriceOverride,
 }: PricingCalculatorProps) {
   if (isLoading) {
     return (
@@ -113,29 +114,53 @@ export default function PricingCalculator({
 
       {/* Total */}
       <div className="border-t-2 border-green-400 pt-3 mt-3">
-        <div className="flex justify-between items-center">
-          <span className="text-lg font-bold text-gray-900">Total</span>
-          <span className="text-2xl font-bold text-green-600">
-            {formatCurrency(pricing.total)}
-          </span>
-        </div>
+        {customPriceOverride != null ? (
+          <>
+            <div className="flex justify-between items-center text-gray-700 mb-1">
+              <span className="text-sm">Calculated Total</span>
+              <span className="text-sm line-through">{formatCurrency(pricing.total)}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-lg font-bold text-gray-900">Negotiated Price</span>
+              <span className="text-2xl font-bold text-orange-600">
+                {formatCurrency(customPriceOverride)}
+              </span>
+            </div>
+            <p className="text-xs text-orange-600 mt-1 font-semibold">
+              Manual price override active
+            </p>
+          </>
+        ) : (
+          <div className="flex justify-between items-center">
+            <span className="text-lg font-bold text-gray-900">Total</span>
+            <span className="text-2xl font-bold text-green-600">
+              {formatCurrency(pricing.total)}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Deposit Info */}
-      <div className="bg-white rounded-lg p-3 mt-4 border border-green-200">
-        <div className="flex justify-between items-center">
-          <span className="text-sm font-semibold text-gray-700">50% Deposit Due</span>
-          <span className="text-lg font-bold text-purple-600">
-            {formatCurrency(pricing.deposit)}
-          </span>
-        </div>
-        <div className="flex justify-between items-center mt-1">
-          <span className="text-sm text-gray-600">Balance Due (48h after tour)</span>
-          <span className="text-sm font-semibold text-gray-700">
-            {formatCurrency(pricing.total - pricing.deposit)}
-          </span>
-        </div>
-      </div>
+      {(() => {
+        const effectiveTotal = customPriceOverride != null ? customPriceOverride : pricing.total;
+        const effectiveDeposit = customPriceOverride != null ? Math.round(customPriceOverride * 50) / 100 : pricing.deposit;
+        return (
+          <div className="bg-white rounded-lg p-3 mt-4 border border-green-200">
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-semibold text-gray-700">50% Deposit Due</span>
+              <span className="text-lg font-bold text-purple-600">
+                {formatCurrency(effectiveDeposit)}
+              </span>
+            </div>
+            <div className="flex justify-between items-center mt-1">
+              <span className="text-sm text-gray-600">Balance Due (48h after tour)</span>
+              <span className="text-sm font-semibold text-gray-700">
+                {formatCurrency(effectiveTotal - effectiveDeposit)}
+              </span>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

@@ -177,6 +177,7 @@ export interface PricingCalculatorProps {
   customDiscount: number;
   onCustomDiscountChange: (discount: number) => void;
   onLineItemOverride?: (key: string, amount: number) => void;
+  customPriceOverride: number | null;
 }
 
 export interface VehicleSelectorProps {

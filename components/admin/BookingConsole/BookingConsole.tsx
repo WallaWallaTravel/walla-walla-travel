@@ -209,6 +209,10 @@ export default function BookingConsole() {
     setIsSaving(true);
 
     try {
+      // Use custom/negotiated price if set, otherwise use calculated price
+      const finalTotal = tour.custom_price != null ? tour.custom_price : pricing.total;
+      const finalDeposit = tour.custom_price != null ? Math.round(tour.custom_price * 50) / 100 : pricing.deposit;
+
       const response = await fetch('/api/admin/bookings/console/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -219,10 +223,11 @@ export default function BookingConsole() {
           vehicles: selectedVehicles,
           driver_id: selectedDriver,
           pricing: {
-            total_price: pricing.total,
-            deposit_amount: pricing.deposit,
+            total_price: finalTotal,
+            deposit_amount: finalDeposit,
             breakdown: pricing.breakdown,
             custom_discount: customDiscount > 0 ? customDiscount : undefined,
+            custom_price_override: tour.custom_price,
           },
         }),
       });
@@ -295,9 +300,9 @@ export default function BookingConsole() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           {/* Left Panel - Customer & Tour Info */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="lg:col-span-3 bg-white rounded-xl shadow-lg p-6">
             <CustomerPanel
               customer={customer}
               tour={tour}
@@ -308,7 +313,7 @@ export default function BookingConsole() {
           </div>
 
           {/* Right Panel - Availability, Pricing, Assignments */}
-          <div className="space-y-6">
+          <div className="lg:col-span-2 space-y-6">
             {/* Availability */}
             <div className="bg-white rounded-xl shadow-lg p-6">
               <AvailabilityPanel
@@ -343,6 +348,7 @@ export default function BookingConsole() {
                 isLoading={isLoadingPricing}
                 customDiscount={customDiscount}
                 onCustomDiscountChange={setCustomDiscount}
+                customPriceOverride={tour.custom_price}
               />
             </div>
 
