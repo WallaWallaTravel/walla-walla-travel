@@ -54,9 +54,7 @@ export default function CustomerPanel({
     }
   };
 
-  const getMinDate = () => {
-    return new Date().toISOString().split('T')[0];
-  };
+  // Admin can book any date - no minimum restriction
 
   return (
     <div className="space-y-6">
@@ -179,7 +177,6 @@ export default function CustomerPanel({
               name="date"
               value={tour.date}
               onChange={handleTourInput}
-              min={getMinDate()}
               className={`w-full px-4 py-2 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${
                 errors.date ? 'border-red-500' : 'border-gray-300'
               }`}
@@ -208,44 +205,29 @@ export default function CustomerPanel({
             )}
           </div>
 
-          <div className="md:col-span-2">
+          <div>
             <label htmlFor="duration_hours" className="block text-sm font-bold text-gray-900 mb-2">
-              Duration (hours)
+              Duration
             </label>
-            <div className="flex items-center gap-3">
-              <div className="flex gap-1">
-                {[4, 6, 8].map(hrs => (
-                  <button
-                    key={hrs}
-                    type="button"
-                    onClick={() => onTourChange({ duration_hours: hrs })}
-                    className={`px-4 py-2 text-sm font-medium rounded-lg border-2 transition-colors ${
-                      tour.duration_hours === hrs
-                        ? 'bg-purple-600 text-white border-purple-600'
-                        : 'bg-white text-gray-700 border-gray-300 hover:border-purple-400'
-                    }`}
-                  >
-                    {hrs}h
-                  </button>
-                ))}
-              </div>
-              <span className="text-gray-500">or</span>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  id="duration_hours"
-                  name="duration_hours"
-                  value={tour.duration_hours}
-                  onChange={handleTourInput}
-                  min={0}
-                  max={24}
-                  step={0.5}
-                  className="w-20 px-3 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-center"
-                />
-                <span className="text-gray-600">hours</span>
-              </div>
-            </div>
-            <p className="mt-1 text-xs text-gray-500">Use 0 for flat-rate services (airport transfers, etc.)</p>
+            <select
+              id="duration_hours"
+              name="duration_hours"
+              value={tour.duration_hours}
+              onChange={handleTourInput}
+              className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+            >
+              <option value={0}>Flat rate (no hourly)</option>
+              <option value={1}>1 hour</option>
+              <option value={2}>2 hours</option>
+              <option value={3}>3 hours</option>
+              <option value={4}>4 hours</option>
+              <option value={5}>5 hours</option>
+              <option value={6}>6 hours</option>
+              <option value={7}>7 hours</option>
+              <option value={8}>8 hours</option>
+              <option value={10}>10 hours</option>
+              <option value={12}>12 hours</option>
+            </select>
           </div>
 
           <div>
