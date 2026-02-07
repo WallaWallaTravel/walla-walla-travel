@@ -43,8 +43,10 @@ export default function CustomerPanel({
     const fieldName = name as keyof TourDetails;
 
     // Handle numeric fields
-    if (name === 'party_size' || name === 'duration_hours') {
+    if (name === 'party_size') {
       onTourChange({ [fieldName]: parseInt(value, 10) || 0 });
+    } else if (name === 'duration_hours') {
+      onTourChange({ [fieldName]: parseFloat(value) || 0 });
     } else if (name === 'custom_price') {
       // Custom price: null if empty, otherwise parse as float
       const numValue = value === '' ? null : parseFloat(value) || 0;
@@ -207,27 +209,20 @@ export default function CustomerPanel({
 
           <div>
             <label htmlFor="duration_hours" className="block text-sm font-bold text-gray-900 mb-2">
-              Duration
+              Duration (hours)
             </label>
-            <select
+            <input
+              type="number"
               id="duration_hours"
               name="duration_hours"
               value={tour.duration_hours}
               onChange={handleTourInput}
+              min={0}
+              max={24}
+              step={0.1}
               className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-            >
-              <option value={0}>Flat rate (no hourly)</option>
-              <option value={1}>1 hour</option>
-              <option value={2}>2 hours</option>
-              <option value={3}>3 hours</option>
-              <option value={4}>4 hours</option>
-              <option value={5}>5 hours</option>
-              <option value={6}>6 hours</option>
-              <option value={7}>7 hours</option>
-              <option value={8}>8 hours</option>
-              <option value={10}>10 hours</option>
-              <option value={12}>12 hours</option>
-            </select>
+              placeholder="6"
+            />
           </div>
 
           <div>
