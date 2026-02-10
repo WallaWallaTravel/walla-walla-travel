@@ -449,15 +449,28 @@ export default async function GeologyTopicPage({ params }: PageProps) {
 
             {/* CTA */}
             <div className="bg-gradient-to-br from-[#722F37] to-[#5a252c] rounded-xl p-6 text-white">
-              <h3 className="font-semibold mb-2">See It In Person</h3>
-              <p className="text-sm text-white/80 mb-4">
-                Experience Walla Walla&apos;s geology firsthand on a guided wine tour.
+              <h3 className="font-semibold mb-2">Tour with Kevin Pogue</h3>
+              <p className="text-sm text-white/80 mb-3">
+                See these formations up close with geologist Kevin Pogue. He leads
+                small-group tours in a Sprinter van through the landscapes that shape
+                Walla Walla wine.
               </p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className="px-2.5 py-0.5 bg-white/15 rounded-full text-xs font-medium text-white">
+                  Geology
+                </span>
+                <span className="px-2.5 py-0.5 bg-white/15 rounded-full text-xs font-medium text-white">
+                  Wine &amp; Geology
+                </span>
+                <span className="px-2.5 py-0.5 bg-white/15 rounded-full text-xs font-medium text-white">
+                  Wine Tours
+                </span>
+              </div>
               <Link
                 href="/book"
                 className="inline-block w-full text-center py-2 bg-white text-[#722F37] rounded-lg font-medium text-sm hover:bg-gray-100 transition-colors"
               >
-                Book a Tour
+                Inquire About Tours
               </Link>
             </div>
           </aside>
