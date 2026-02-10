@@ -3,25 +3,10 @@ import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper';
 import { sharedTourService } from '@/lib/services/shared-tour.service';
 import { query } from '@/lib/db';
 import { logger } from '@/lib/logger';
-import Stripe from 'stripe';
+import { getBrandStripeClient } from '@/lib/stripe-brands';
 
 interface RouteParams {
   params: Promise<{ tour_id: string }>;
-}
-
-// Lazy-load Stripe client
-let stripeClient: Stripe | null = null;
-function getStripe(): Stripe {
-  if (!stripeClient) {
-    if (!process.env.STRIPE_SECRET_KEY) {
-      throw new Error('STRIPE_SECRET_KEY is not configured');
-    }
-    stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY, {
-      apiVersion: '2025-10-29.clover',
-      typescript: true,
-    });
-  }
-  return stripeClient;
 }
 
 interface DiscountRequest {
@@ -224,7 +209,14 @@ export const POST = withAdminAuth(async (request: NextRequest, session: AuthSess
   // APPLY DISCOUNT AND ISSUE REFUNDS
   // ============================================================================
 
-  const stripe = getStripe();
+  // Shared tours use default Stripe account (NW Touring)
+  const stripe = getBrandStripeClient();
+  if (!stripe) {
+    return NextResponse.json(
+      { success: false, error: 'Payment processing not configured' },
+      { status: 500 }
+    );
+  }
   const refundResults: Array<{
     ticket_id: string;
     ticket_number: string;

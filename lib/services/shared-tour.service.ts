@@ -23,24 +23,18 @@
 import { query } from '@/lib/db';
 import { withTransaction, queryOne } from '@/lib/db-helpers';
 import { SHARED_TOUR_RATES } from '@/lib/types/pricing-models';
-import Stripe from 'stripe';
 import { logger } from '@/lib/logger';
 import { vehicleAvailabilityService } from './vehicle-availability.service';
 import type { PoolClient } from 'pg';
+import { getBrandStripeClient, getBrandStripePublishableKey } from '@/lib/stripe-brands';
 
-// Lazy-load Stripe client
-let stripeClient: Stripe | null = null;
-function getStripe(): Stripe {
-  if (!stripeClient) {
-    if (!process.env.STRIPE_SECRET_KEY) {
-      throw new Error('STRIPE_SECRET_KEY is not configured');
-    }
-    stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY, {
-      apiVersion: '2025-10-29.clover',
-      typescript: true,
-    });
+// Shared tours use the default Stripe account (NW Touring)
+function getStripe() {
+  const client = getBrandStripeClient();
+  if (!client) {
+    throw new Error('STRIPE_SECRET_KEY is not configured');
   }
-  return stripeClient;
+  return client;
 }
 
 // ============================================================================
@@ -138,6 +132,7 @@ export interface PaymentIntentResult {
   clientSecret: string;
   paymentIntentId: string;
   amount: number;
+  publishableKey: string;
 }
 
 export interface CreateTourRequest {
@@ -1333,6 +1328,7 @@ export const sharedTourService = {
         clientSecret: paymentIntent.client_secret!,
         paymentIntentId: paymentIntent.id,
         amount: ticket.total_amount,
+        publishableKey: getBrandStripePublishableKey(),
       };
     } catch (error) {
       logger.error('Failed to create payment intent', { ticketId, error });
@@ -1366,6 +1362,7 @@ export const sharedTourService = {
         clientSecret: paymentIntent.client_secret!,
         paymentIntentId: paymentIntent.id,
         amount: ticket.total_amount,
+        publishableKey: getBrandStripePublishableKey(),
       };
     } catch {
       // If retrieval fails, create a new payment intent

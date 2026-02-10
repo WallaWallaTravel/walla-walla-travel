@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { useStripe, useElements, PaymentElement } from '@stripe/react-stripe-js';
+import { useState, useMemo } from 'react';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, useStripe, useElements, PaymentElement } from '@stripe/react-stripe-js';
 import { BookingData } from '../page';
 
 interface Props {
@@ -11,14 +12,114 @@ interface Props {
   prevStep: () => void;
 }
 
-export default function Step4ReviewPayment({ bookingData, updateBookingData, nextStep, prevStep }: Props) {
+/**
+ * Inner payment form that lives inside Elements provider
+ */
+function PaymentFormInner({
+  bookingData,
+  nextStep,
+  setError: setParentError,
+}: {
+  bookingData: BookingData;
+  nextStep: () => void;
+  setError: (error: string) => void;
+}) {
   const stripe = useStripe();
   const elements = useElements();
-  
+  const [processing, setProcessing] = useState(false);
+  const [error, setError] = useState('');
+
+  const handlePayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!stripe || !elements) {
+      return;
+    }
+
+    setProcessing(true);
+    setError('');
+
+    try {
+      const { error: stripeError, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        redirect: 'if_required',
+      });
+
+      if (stripeError) {
+        setError(stripeError.message || 'Payment failed');
+        setProcessing(false);
+        return;
+      }
+
+      if (paymentIntent && paymentIntent.status === 'succeeded') {
+        // Confirm payment in our backend
+        await fetch('/api/payments/confirm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            payment_intent_id: paymentIntent.id,
+          }),
+        });
+
+        // Send confirmation email
+        await fetch('/api/bookings/send-confirmation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            booking_number: bookingData.booking_number,
+          }),
+        });
+
+        nextStep();
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Payment processing failed';
+      setError(msg);
+      setParentError(msg);
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handlePayment}>
+      <div className="mb-6">
+        <PaymentElement />
+      </div>
+
+      {error && (
+        <div className="mb-4 bg-red-50 border-2 border-red-200 rounded-lg p-4">
+          <p className="text-red-800 font-semibold">{error}</p>
+        </div>
+      )}
+
+      <button
+        type="submit"
+        disabled={!stripe || processing}
+        className="w-full px-6 py-4 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded-lg font-bold text-lg transition-colors shadow-lg"
+      >
+        {processing ? 'Processing Payment...' : `Pay $${bookingData.pricing?.deposit_required.toFixed(2)}`}
+      </button>
+
+      <p className="text-xs text-gray-500 text-center mt-4">
+        Secure payment powered by Stripe. Your payment information is encrypted and secure.
+      </p>
+    </form>
+  );
+}
+
+export default function Step4ReviewPayment({ bookingData, updateBookingData, nextStep, prevStep }: Props) {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [publishableKey, setPublishableKey] = useState<string | null>(null);
   const [bookingCreated, setBookingCreated] = useState(false);
+
+  // Dynamically load Stripe with the correct publishable key for the brand
+  const stripePromise = useMemo(() => {
+    const key = publishableKey || process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+    return key ? loadStripe(key) : null;
+  }, [publishableKey]);
 
   // Create booking and payment intent
   const createBookingAndPayment = async () => {
@@ -102,62 +203,13 @@ export default function Step4ReviewPayment({ bookingData, updateBookingData, nex
       });
 
       setClientSecret(paymentResult.data.client_secret);
+      if (paymentResult.data.publishable_key) {
+        setPublishableKey(paymentResult.data.publishable_key);
+      }
       setBookingCreated(true);
 
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to process booking. Please try again.');
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  const handlePayment = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!stripe || !elements) {
-      return;
-    }
-
-    setProcessing(true);
-    setError('');
-
-    try {
-      // Confirm payment
-      const { error: stripeError, paymentIntent } = await stripe.confirmPayment({
-        elements,
-        redirect: 'if_required',
-      });
-
-      if (stripeError) {
-        setError(stripeError.message || 'Payment failed');
-        setProcessing(false);
-        return;
-      }
-
-      if (paymentIntent && paymentIntent.status === 'succeeded') {
-        // Confirm payment in our backend
-        await fetch('/api/payments/confirm', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            payment_intent_id: paymentIntent.id,
-          }),
-        });
-
-        // Send confirmation email
-        await fetch('/api/bookings/send-confirmation', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            booking_number: bookingData.booking_number,
-          }),
-        });
-
-        nextStep();
-      }
-
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Payment processing failed');
     } finally {
       setProcessing(false);
     }
@@ -181,16 +233,16 @@ export default function Step4ReviewPayment({ bookingData, updateBookingData, nex
         <div className="space-y-6">
           {/* Tour Details */}
           <div className="bg-gray-50 rounded-xl p-6 border-2 border-gray-200">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">🍷 Tour Details</h3>
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Tour Details</h3>
             <div className="space-y-3">
               <div>
                 <span className="text-gray-600 font-semibold">Date:</span>
                 <p className="text-gray-900 font-bold">
-                  {new Date(bookingData.tour_date).toLocaleDateString('en-US', { 
-                    weekday: 'long', 
-                    month: 'long', 
-                    day: 'numeric', 
-                    year: 'numeric' 
+                  {new Date(bookingData.tour_date).toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric'
                   })}
                 </p>
               </div>
@@ -211,7 +263,7 @@ export default function Step4ReviewPayment({ bookingData, updateBookingData, nex
 
           {/* Wineries */}
           <div className="bg-yellow-50 rounded-xl p-6 border-2 border-yellow-200">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">🍇 Your Wineries</h3>
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Your Wineries</h3>
             <div className="space-y-2">
               {bookingData.selected_wineries.map((winery, index) => (
                 <div key={winery.id} className="flex items-center gap-3">
@@ -229,7 +281,7 @@ export default function Step4ReviewPayment({ bookingData, updateBookingData, nex
 
           {/* Customer Info */}
           <div className="bg-blue-50 rounded-xl p-6 border-2 border-blue-200">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">👤 Your Information</h3>
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Your Information</h3>
             <div className="space-y-2">
               <p className="text-gray-900 font-bold">{bookingData.customer_name}</p>
               <p className="text-gray-700">{bookingData.customer_email}</p>
@@ -249,10 +301,10 @@ export default function Step4ReviewPayment({ bookingData, updateBookingData, nex
           {/* Pricing Summary */}
           {bookingData.pricing && (
             <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border-2 border-green-200">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">💳 Payment Summary</h3>
-              
+              <h3 className="text-xl font-bold text-gray-900 mb-4">Payment Summary</h3>
+
               <div className="space-y-2 mb-4">
-                {bookingData.pricing.breakdown.filter(item => 
+                {bookingData.pricing.breakdown.filter(item =>
                   !item.label.includes('Suggested') && !item.label.includes('Deposit')
                 ).map((item, index) => (
                   <div key={index} className="flex justify-between text-gray-700">
@@ -269,7 +321,7 @@ export default function Step4ReviewPayment({ bookingData, updateBookingData, nex
                   <span className="text-gray-900">Total Tour Price:</span>
                   <span className="text-green-600">${bookingData.pricing.total.toFixed(2)}</span>
                 </div>
-                
+
                 <div className="bg-white rounded-lg p-4">
                   <div className="flex justify-between text-xl font-bold mb-2">
                     <span className="text-gray-900">Deposit Due Today:</span>
@@ -281,9 +333,9 @@ export default function Step4ReviewPayment({ bookingData, updateBookingData, nex
                 </div>
 
                 <div className="text-sm text-gray-600 space-y-1">
-                  <p>• Balance due: ${(bookingData.pricing.total - bookingData.pricing.deposit_required).toFixed(2)}</p>
-                  <p>• Charged 48 hours after tour concludes</p>
-                  <p>• Suggested gratuity: ${bookingData.pricing.estimated_gratuity.toFixed(2)} (15%)</p>
+                  <p>Balance due: ${(bookingData.pricing.total - bookingData.pricing.deposit_required).toFixed(2)}</p>
+                  <p>Charged 48 hours after tour concludes</p>
+                  <p>Suggested gratuity: ${bookingData.pricing.estimated_gratuity.toFixed(2)} (15%)</p>
                 </div>
               </div>
             </div>
@@ -291,50 +343,53 @@ export default function Step4ReviewPayment({ bookingData, updateBookingData, nex
 
           {/* Payment Form */}
           <div className="bg-white rounded-xl p-6 border-2 border-gray-300">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">💳 Payment Method</h3>
-            
-            {!clientSecret ? (
-              <button
-                onClick={createBookingAndPayment}
-                disabled={processing}
-                className="w-full px-6 py-4 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white rounded-lg font-bold text-lg transition-colors shadow-lg"
-              >
-                {processing ? 'Creating Booking...' : 'Continue to Payment'}
-              </button>
-            ) : (
-              <form onSubmit={handlePayment}>
-                <div className="mb-6">
-                  <PaymentElement />
-                </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Payment Method</h3>
 
+            {!clientSecret ? (
+              <>
                 {error && (
                   <div className="mb-4 bg-red-50 border-2 border-red-200 rounded-lg p-4">
-                    <p className="text-red-800 font-semibold">⚠️ {error}</p>
+                    <p className="text-red-800 font-semibold">{error}</p>
                   </div>
                 )}
-
                 <button
-                  type="submit"
-                  disabled={!stripe || processing}
-                  className="w-full px-6 py-4 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded-lg font-bold text-lg transition-colors shadow-lg"
+                  onClick={createBookingAndPayment}
+                  disabled={processing}
+                  className="w-full px-6 py-4 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white rounded-lg font-bold text-lg transition-colors shadow-lg"
                 >
-                  {processing ? 'Processing Payment...' : `Pay $${bookingData.pricing?.deposit_required.toFixed(2)}`}
+                  {processing ? 'Creating Booking...' : 'Continue to Payment'}
                 </button>
-
-                <p className="text-xs text-gray-500 text-center mt-4">
-                  🔒 Secure payment powered by Stripe. Your payment information is encrypted and secure.
-                </p>
-              </form>
-            )}
+              </>
+            ) : stripePromise ? (
+              <Elements
+                stripe={stripePromise}
+                options={{
+                  clientSecret,
+                  appearance: {
+                    theme: 'stripe',
+                    variables: {
+                      colorPrimary: '#2563eb',
+                      borderRadius: '8px',
+                    },
+                  },
+                }}
+              >
+                <PaymentFormInner
+                  bookingData={bookingData}
+                  nextStep={nextStep}
+                  setError={setError}
+                />
+              </Elements>
+            ) : null}
           </div>
 
           {/* Cancellation Policy */}
           <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-            <h4 className="font-bold text-gray-900 mb-2">📋 Cancellation Policy</h4>
+            <h4 className="font-bold text-gray-900 mb-2">Cancellation Policy</h4>
             <ul className="text-sm text-gray-600 space-y-1">
-              <li>• 72+ hours: Full refund minus processing fee</li>
-              <li>• 72-24 hours: 50% refund</li>
-              <li>• Less than 24 hours: No refund</li>
+              <li>45+ days before: Full refund of deposit</li>
+              <li>21-44 days before: 50% refund of deposit</li>
+              <li>Under 21 days: No refund of deposit</li>
             </ul>
           </div>
         </div>
@@ -347,10 +402,9 @@ export default function Step4ReviewPayment({ bookingData, updateBookingData, nex
           disabled={processing}
           className="px-8 py-4 bg-gray-200 hover:bg-gray-300 disabled:bg-gray-100 text-gray-900 rounded-lg font-bold text-lg transition-colors"
         >
-          ← Back
+          Back
         </button>
       </div>
     </div>
   );
 }
-

@@ -11,6 +11,7 @@
 
 import { BaseService } from './base.service';
 import { logger } from '@/lib/logger';
+import { getBrandStripeClient } from '@/lib/stripe-brands';
 
 interface RefundResult {
   refundId: string | null;
@@ -67,15 +68,16 @@ export class RefundService extends BaseService {
   async processBookingRefund(bookingId: number): Promise<RefundResult> {
     this.log('Processing refund for booking', { bookingId });
 
-    // Get booking details
+    // Get booking details (including brand_id for brand-specific Stripe routing)
     const booking = await this.queryOne<{
       id: number;
       tour_date: string;
       deposit_amount: number;
       deposit_paid: boolean;
       status: string;
+      brand_id: number | null;
     }>(
-      `SELECT id, tour_date, deposit_amount, deposit_paid, status
+      `SELECT id, tour_date, deposit_amount, deposit_paid, status, brand_id
        FROM bookings WHERE id = $1`,
       [bookingId]
     );
@@ -151,10 +153,18 @@ export class RefundService extends BaseService {
       };
     }
 
-    // Issue Stripe refund
+    // Issue Stripe refund using brand-specific client
     try {
-      const { getStripe } = await import('@/lib/stripe');
-      const stripe = getStripe();
+      const stripe = getBrandStripeClient(booking.brand_id ?? undefined);
+      if (!stripe) {
+        this.warn('Stripe not configured for brand', { bookingId, brandId: booking.brand_id });
+        return {
+          refundId: null,
+          refundAmount,
+          refundPercentage,
+          policyApplied: policyApplied + ' (Stripe not configured - manual refund needed)',
+        };
+      }
 
       const refundAmountCents = Math.round(refundAmount * 100);
 

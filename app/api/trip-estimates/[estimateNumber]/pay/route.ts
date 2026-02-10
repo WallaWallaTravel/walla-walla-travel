@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { tripEstimateService } from '@/lib/services/trip-estimate.service';
-import { getStripe, isStripeConfigured } from '@/lib/stripe';
+import { getBrandStripeClient, getBrandStripePublishableKey } from '@/lib/stripe-brands';
 import { z } from 'zod';
 
 interface RouteParams {
@@ -28,13 +28,6 @@ export async function POST(request: NextRequest, context: RouteParams) {
     return NextResponse.json(
       { success: false, error: 'Invalid estimate number' },
       { status: 400 }
-    );
-  }
-
-  if (!isStripeConfigured()) {
-    return NextResponse.json(
-      { success: false, error: 'Payment service not configured' },
-      { status: 503 }
     );
   }
 
@@ -74,7 +67,14 @@ export async function POST(request: NextRequest, context: RouteParams) {
   const customerEmail = parsed.success ? parsed.data.customer_email : undefined;
   const customerName = parsed.success ? parsed.data.customer_name : undefined;
 
-  const stripe = getStripe();
+  // Get brand-specific Stripe client (falls back to default/NW Touring if no brand)
+  const stripe = getBrandStripeClient(estimate.brand_id ?? undefined);
+  if (!stripe) {
+    return NextResponse.json(
+      { success: false, error: 'Payment service not configured' },
+      { status: 503 }
+    );
+  }
 
   const paymentIntent = await stripe.paymentIntents.create({
     amount: Math.round(estimate.deposit_amount * 100), // Convert to cents
@@ -100,6 +100,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
       client_secret: paymentIntent.client_secret,
       payment_intent_id: paymentIntent.id,
       amount: estimate.deposit_amount,
+      publishable_key: getBrandStripePublishableKey(estimate.brand_id ?? undefined),
     },
   });
 }

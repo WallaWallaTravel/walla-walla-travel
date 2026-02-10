@@ -2,6 +2,13 @@
 
 echo "Running pre-commit checks..."
 
+# Load environment variables for prisma generate
+if [ -f .env.local ]; then
+  set -a
+  . ./.env.local
+  set +a
+fi
+
 # Run build check
 echo "Checking build..."
 npm run build || {

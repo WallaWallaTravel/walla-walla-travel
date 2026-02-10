@@ -66,6 +66,7 @@ export const POST = withRateLimit(rateLimiters.payment)(
           client_secret: paymentResult.client_secret,
           payment_intent_id: paymentResult.payment_intent_id,
           amount: paymentResult.amount,
+          publishable_key: paymentResult.publishable_key,
         },
         timestamp: new Date().toISOString(),
       });

@@ -2,11 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { loadStripe } from '@stripe/stripe-js';
 import { ErrorLogger } from '@/lib/error-logger';
 import { logger } from '@/lib/logger';
 
-const _stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 const errorLogger = ErrorLogger.getInstance();
 
 interface Invoice {

@@ -180,6 +180,7 @@ export interface TipPageData {
   tour_total: number;
   brand_name: string;
   brand_logo_url?: string;
+  brand_id: number | null;
   tips_enabled: boolean;
   tip_code: string;
 }
@@ -188,6 +189,7 @@ export interface TipPaymentResult {
   client_secret: string;
   payment_intent_id: string;
   amount: number;
+  publishable_key: string;
 }
 
 export interface TipRecord {

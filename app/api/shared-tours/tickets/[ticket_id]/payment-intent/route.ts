@@ -45,6 +45,7 @@ export const POST = withErrorHandling(async (
       paymentIntentId: paymentIntent.paymentIntentId,
       amount: paymentIntent.amount,
       ticketNumber: ticket.ticket_number,
+      publishableKey: paymentIntent.publishableKey,
     },
   });
 });

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, useMemo } from 'react';
 import Link from 'next/link';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
@@ -15,9 +15,6 @@ import { logger } from '@/lib/logger';
  * 3. Review booking
  * 4. Complete payment
  */
-
-// Load Stripe outside component
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 interface Tour {
   id: string;
@@ -149,6 +146,13 @@ export default function BookSharedTourPage({ params }: { params: Promise<{ tour_
   // Payment state
   const [ticketId, setTicketId] = useState<string | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [publishableKey, setPublishableKey] = useState<string | null>(null);
+
+  // Dynamically load Stripe with the correct publishable key for the brand
+  const stripePromise = useMemo(() => {
+    const key = publishableKey || process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+    return key ? loadStripe(key) : null;
+  }, [publishableKey]);
 
   useEffect(() => {
     const fetchTour = async () => {
@@ -278,6 +282,9 @@ export default function BookSharedTourPage({ params }: { params: Promise<{ tour_
       }
 
       setClientSecret(paymentData.data.clientSecret);
+      if (paymentData.data.publishableKey) {
+        setPublishableKey(paymentData.data.publishableKey);
+      }
       setStep(4); // Move to payment step
 
     } catch (_err) {
@@ -841,7 +848,7 @@ export default function BookSharedTourPage({ params }: { params: Promise<{ tour_
         )}
 
         {/* Step 4: Payment */}
-        {step === 4 && clientSecret && pricing && (
+        {step === 4 && clientSecret && pricing && stripePromise && (
           <div className="bg-white rounded-xl border border-slate-200 p-6">
             <div className="text-center mb-6">
               <div className="bg-slate-50 rounded-lg p-4 inline-block">

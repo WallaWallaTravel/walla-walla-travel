@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
  * Stripe Payment Page for Reservation Deposits
  */
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Elements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
@@ -14,15 +14,13 @@ import { StripePaymentForm } from '@/components/payment/StripePaymentForm';
 import Link from 'next/link';
 import { useBookingTracking } from '@/lib/hooks/useBookingTracking';
 
-// Load Stripe
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
-
 function PaymentPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const reservationId = searchParams?.get('id');
 
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [publishableKey, setPublishableKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reservation, setReservation] = useState<{
@@ -36,6 +34,12 @@ function PaymentPageContent() {
 
   // Booking tracking
   const { trackBookingProgress, trackPageView: _trackPageView } = useBookingTracking();
+
+  // Dynamically load Stripe with the correct publishable key for the brand
+  const stripePromise = useMemo(() => {
+    const key = publishableKey || process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+    return key ? loadStripe(key) : null;
+  }, [publishableKey]);
 
   // Fetch reservation and create payment intent
   useEffect(() => {
@@ -73,8 +77,11 @@ function PaymentPageContent() {
           throw new Error('Failed to initialize payment');
         }
 
-        const { clientSecret } = await paymentResponse.json();
-        setClientSecret(clientSecret);
+        const paymentData = await paymentResponse.json();
+        setClientSecret(paymentData.clientSecret);
+        if (paymentData.publishable_key) {
+          setPublishableKey(paymentData.publishable_key);
+        }
         setLoading(false);
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : 'Failed to load payment');
@@ -150,7 +157,7 @@ function PaymentPageContent() {
     );
   }
 
-  if (!clientSecret || !reservation) {
+  if (!clientSecret || !reservation || !stripePromise) {
     return null;
   }
 
