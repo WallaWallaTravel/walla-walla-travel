@@ -37,43 +37,6 @@ const nextConfig: NextConfig = {
   
   // Webpack optimizations
   webpack: (config, { dev, isServer }) => {
-    // Only apply custom optimizations to client-side production builds
-    // Server builds have different requirements and shouldn't use browser-specific chunking
-    if (!dev && !isServer) {
-      // Enable tree shaking for client
-      config.optimization = {
-        ...config.optimization,
-        usedExports: true,
-        sideEffects: false,
-        minimize: true,
-      };
-      
-      // Split chunks for better caching (client-side only)
-      config.optimization.splitChunks = {
-        chunks: 'all',
-        cacheGroups: {
-          default: false,
-          vendors: false,
-          // Vendor chunk for node_modules
-          vendor: {
-            name: 'vendor',
-            chunks: 'all',
-            test: /node_modules/,
-            priority: 20,
-          },
-          // Commons chunk for shared code
-          common: {
-            name: 'common',
-            minChunks: 2,
-            chunks: 'all',
-            priority: 10,
-            reuseExistingChunk: true,
-            enforce: true,
-          },
-        },
-      };
-    }
-    
     // Analyze bundle (run with ANALYZE=true npm run build)
     if (process.env.ANALYZE === 'true') {
       const { BundleAnalyzerPlugin } = require('@next/bundle-analyzer')();
@@ -86,7 +49,7 @@ const nextConfig: NextConfig = {
         })
       );
     }
-    
+
     return config;
   },
   
