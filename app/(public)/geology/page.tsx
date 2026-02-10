@@ -348,20 +348,63 @@ export default async function GeologyLandingPage() {
         </section>
       )}
 
+      {/* Meet Your Guide */}
+      <section className="py-16 px-4">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-2xl font-bold text-gray-900 mb-8 text-center">Meet Your Guide</h2>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 flex flex-col sm:flex-row gap-8 items-start">
+            {/* Placeholder avatar — swap for a real photo later */}
+            <div className="flex-shrink-0 w-24 h-24 rounded-full bg-[#722F37]/10 flex items-center justify-center">
+              <span className="text-2xl font-bold text-[#722F37]">KP</span>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Kevin Pogue, Geologist</h3>
+              <p className="mt-2 text-gray-700 leading-relaxed">
+                Kevin Pogue has spent decades studying the geological forces that shaped Walla Walla
+                wine country. A geologist by training and a storyteller by nature, he brings the
+                landscape to life — connecting ancient floods, volcanic basalt, and windblown soils
+                to the wines you taste today.
+              </p>
+              <p className="mt-4 text-gray-700 leading-relaxed">
+                Kevin leads small-group tours in a comfortable Sprinter van, taking guests to the
+                formations and vineyards where geology and wine intersect. Whether you&apos;re new
+                to wine or a seasoned enthusiast, his tours offer a perspective you won&apos;t find
+                anywhere else in the valley.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="py-16 px-4 bg-gradient-to-br from-[#722F37] to-[#5a252c] text-white">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl font-bold mb-4">Experience It In Person</h2>
-          <p className="text-lg text-white/80 mb-8">
-            Join a guided geology tour and see these formations firsthand while learning
-            how they influence the wines you taste.
+          <h2 className="text-3xl font-bold mb-4">Explore Wine Country with a Geologist</h2>
+          <p className="text-lg text-white/80 mb-6">
+            Join Kevin Pogue for a small-group tour in a comfortable Sprinter van.
+            He&apos;ll connect the landscape&apos;s geological story to the wines you
+            taste — from ancient flood channels to the vineyards planted on them today.
           </p>
+          <div className="flex flex-wrap justify-center gap-3 mb-8">
+            <span className="px-4 py-1.5 bg-white/15 rounded-full text-sm font-medium text-white">
+              Geology Tours
+            </span>
+            <span className="px-4 py-1.5 bg-white/15 rounded-full text-sm font-medium text-white">
+              Geology &amp; Wine Combo
+            </span>
+            <span className="px-4 py-1.5 bg-white/15 rounded-full text-sm font-medium text-white">
+              Wine Tours with Geology
+            </span>
+          </div>
           <Link
             href="/book"
             className="inline-flex items-center px-8 py-4 bg-white text-[#722F37] rounded-lg font-semibold hover:bg-gray-100 transition-colors"
           >
-            Book a Tour
+            Inquire About Tours
           </Link>
+          <p className="mt-4 text-sm text-white/70">
+            Tours are customized for your group. We&apos;ll help you find the right experience.
+          </p>
         </div>
       </section>
     </div>
