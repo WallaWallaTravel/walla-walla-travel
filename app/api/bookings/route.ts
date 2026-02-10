@@ -8,8 +8,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { bookingService } from '@/lib/services/booking.service';
 import { sendBookingConfirmationEmail } from '@/lib/services/email-automation.service';
+import { auditService } from '@/lib/services/audit.service';
 import { z } from 'zod';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
@@ -51,7 +53,7 @@ const CreateBookingSchema = z.object({
  * List bookings with optional year/month filter
  */
 export const GET = withRateLimit(rateLimiters.api)(
-  withErrorHandling(async (request: NextRequest) => {
+  withAdminAuth(async (request: NextRequest, _session) => {
     const searchParams = request.nextUrl.searchParams;
     const year = searchParams.get('year');
     const month = searchParams.get('month');
@@ -99,6 +101,16 @@ export const POST = withCSRF(
     totalPrice: data.total_price,
     depositPaid: data.deposit_amount,
   });
+
+  // Audit log: booking created
+  auditService.logFromRequest(request, 0, 'booking_created', {
+    bookingId: booking.id,
+    bookingNumber: booking.booking_number,
+    customerEmail: data.customer_email,
+    partySize: data.party_size,
+    tourDate: data.tour_date,
+    totalPrice: data.total_price,
+  }).catch(() => {}); // Non-blocking
 
   // Send confirmation email (async, don't wait)
   if (booking.customer_email) {

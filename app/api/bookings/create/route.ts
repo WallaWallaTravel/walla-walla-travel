@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 import { bookingService } from '@/lib/services/booking.service';
 import { validate, createBookingSchema } from '@/lib/validation';
+import { auditService } from '@/lib/services/audit.service';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 
@@ -31,6 +32,14 @@ export const POST = withCSRF(
     payment,
     marketing_consent,
   });
+
+  // Audit log: full booking created
+  auditService.logFromRequest(request, 0, 'booking_created', {
+    bookingId: result.booking?.id,
+    bookingNumber: result.booking?.booking_number,
+    customerEmail: customer?.email,
+    partySize: booking?.party_size,
+  }).catch(() => {}); // Non-blocking
 
   // ✅ Return standardized success response
   return NextResponse.json({

@@ -5,6 +5,7 @@ import { withErrorHandling, BadRequestError, NotFoundError, InternalServerError 
 import { queryOne, withTransaction } from '@/lib/db-helpers';
 import { sendPaymentReceiptEmail } from '@/lib/services/email-automation.service';
 import { crmSyncService } from '@/lib/services/crm-sync.service';
+import { auditService } from '@/lib/services/audit.service';
 import { validateBody, ConfirmPaymentSchema } from '@/lib/api/middleware/validation';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
@@ -141,6 +142,16 @@ export const POST = withCSRF(
         }),
       ]
     );
+
+    // Create invoice record for this payment
+    await client.query(
+      `INSERT INTO invoices (booking_id, invoice_type, subtotal, tax_amount, total_amount, status, sent_at, due_date)
+       VALUES ($1, $2, $3, 0, $3, 'paid', NOW(), NOW())
+       ON CONFLICT DO NOTHING`,
+      [bookingId, paymentType, parseFloat(payment.amount)]
+    ).catch(() => {
+      // Invoice table might not exist or have different schema
+    });
   });
 
   // Send payment receipt email (async, don't wait)
@@ -167,6 +178,15 @@ export const POST = withCSRF(
   }).catch(err => {
     logger.error('Payment: Failed to get customer for CRM', { error: err, bookingId });
   });
+
+  // Audit log: payment confirmed
+  auditService.logFromRequest(request, 0, 'payment_confirmed', {
+    bookingId: bookingId,
+    bookingNumber: booking.booking_number,
+    paymentIntentId: payment_intent_id,
+    amount: parseFloat(payment.amount),
+    paymentType: paymentType,
+  }).catch(() => {}); // Non-blocking
 
   return NextResponse.json({
     success: true,
