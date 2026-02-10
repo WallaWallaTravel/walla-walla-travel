@@ -23,7 +23,7 @@ const updateSiteSchema = z.object({
   slug: z.string().min(1).max(150).optional(),
   description: z.string().optional().nullable(),
   site_type: z
-    .enum(['viewpoint', 'formation', 'vineyard_example', 'educational_marker'])
+    .enum(['viewpoint', 'formation', 'vineyard_example', 'educational_marker', 'museum', 'tour_stop'])
     .optional()
     .nullable(),
   latitude: z.number().optional().nullable(),

@@ -44,6 +44,8 @@ const SITE_TYPES = [
   { value: 'formation', label: 'Geological Formation' },
   { value: 'vineyard_example', label: 'Vineyard Example' },
   { value: 'educational_marker', label: 'Educational Marker' },
+  { value: 'museum', label: 'Museum' },
+  { value: 'tour_stop', label: 'Tour Stop' },
 ];
 
 // ============================================================================

@@ -171,9 +171,12 @@ export default function AdminPartnersPage() {
                     {new Date(partner.created_at).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button className="text-sm text-[#1E3A5F] hover:underline">
+                    <Link
+                      href={`/admin/partners/${partner.id}`}
+                      className="text-sm text-[#1E3A5F] hover:underline"
+                    >
                       View
-                    </button>
+                    </Link>
                   </td>
                 </tr>
               ))

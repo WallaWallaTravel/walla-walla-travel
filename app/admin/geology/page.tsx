@@ -233,8 +233,8 @@ export default async function GeologyDashboardPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Geology Content Manager</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Create and manage educational content about Walla Walla geology
+          <p className="mt-1 text-sm text-gray-600">
+            Welcome back, {session.user.name.split(' ')[0]}. Create and manage educational content about Walla Walla geology.
           </p>
         </div>
         <div className="flex gap-3">
@@ -297,7 +297,6 @@ export default async function GeologyDashboardPage() {
           subtitle="Bookable experiences"
           icon="🚐"
           color="rose"
-          href="/admin/geology/tours"
         />
         <StatCard
           title="Chat Messages"
@@ -307,6 +306,38 @@ export default async function GeologyDashboardPage() {
           color="stone"
         />
       </div>
+
+      {/* Getting Started Guide — shown when content is sparse */}
+      {stats.totalTopics === 0 && stats.totalFacts === 0 && (
+        <div className="bg-[#722F37]/5 border border-[#722F37]/20 rounded-xl p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-3">Getting Started</h2>
+          <p className="text-sm text-gray-700 mb-4">
+            This is where you build the geology content that powers the public website and the AI geology guide.
+            Here&apos;s a suggested workflow:
+          </p>
+          <ol className="space-y-2 text-sm text-gray-700">
+            <li className="flex gap-2">
+              <span className="font-semibold text-[#722F37]">1.</span>
+              <span><strong>Topics</strong> — Write in-depth articles about Walla Walla geology (Ice Age Floods, basalt, terroir, etc.)</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="font-semibold text-[#722F37]">2.</span>
+              <span><strong>Quick Facts</strong> — Add memorable, shareable facts visitors will love</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="font-semibold text-[#722F37]">3.</span>
+              <span><strong>Sites</strong> — Document the physical locations where geology is visible</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="font-semibold text-[#722F37]">4.</span>
+              <span><strong>AI Guidance</strong> — Train the AI guide on tone, key themes, and terminology</span>
+            </li>
+          </ol>
+          <p className="text-sm text-gray-600 mt-4">
+            Everything starts as a <strong>Draft</strong>. When you&apos;re happy with it, click <strong>Publish</strong> to make it live.
+          </p>
+        </div>
+      )}
 
       {/* Content Lists */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -415,8 +446,8 @@ export default async function GeologyDashboardPage() {
           >
             <span className="text-2xl">🧠</span>
             <div>
-              <p className="font-medium text-gray-900">Train AI</p>
-              <p className="text-sm text-gray-500">Guide the AI behavior</p>
+              <p className="font-medium text-gray-900">Train AI Guide</p>
+              <p className="text-sm text-gray-500">Set tone, themes, and terminology</p>
             </div>
           </Link>
 
@@ -427,20 +458,20 @@ export default async function GeologyDashboardPage() {
             <span className="text-2xl">📍</span>
             <div>
               <p className="font-medium text-gray-900">Add Site</p>
-              <p className="text-sm text-gray-500">Physical locations</p>
+              <p className="text-sm text-gray-500">Viewpoints, formations, and more</p>
             </div>
           </Link>
 
-          <Link
-            href="/admin/geology/tours"
-            className="flex items-center gap-3 p-4 rounded-lg border border-gray-200 hover:border-rose-300 hover:bg-rose-50 transition-colors"
+          <div
+            className="flex items-center gap-3 p-4 rounded-lg border border-gray-200 bg-gray-50 opacity-75 cursor-default"
+            title="Tours management coming soon"
           >
             <span className="text-2xl">🚐</span>
             <div>
-              <p className="font-medium text-gray-900">Manage Tours</p>
-              <p className="text-sm text-gray-500">Bookable experiences</p>
+              <p className="font-medium text-gray-700">Tours</p>
+              <p className="text-sm text-gray-500">Coming soon</p>
             </div>
-          </Link>
+          </div>
 
           <Link
             href="/geology"
@@ -449,8 +480,8 @@ export default async function GeologyDashboardPage() {
           >
             <span className="text-2xl">👁️</span>
             <div>
-              <p className="font-medium text-gray-900">Preview Site</p>
-              <p className="text-sm text-gray-500">View public pages</p>
+              <p className="font-medium text-gray-900">Preview Public Site</p>
+              <p className="text-sm text-gray-500">See what visitors see</p>
             </div>
           </Link>
         </div>

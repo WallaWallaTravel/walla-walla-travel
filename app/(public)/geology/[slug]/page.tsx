@@ -56,7 +56,7 @@ async function getTopic(slug: string): Promise<Topic | null> {
   try {
     const result = await query<Topic>(
       `SELECT id, slug, title, subtitle, content, excerpt, topic_type, difficulty,
-              hero_image_url, sources, verified, created_at, updated_at
+              hero_image_url, sources, author_name, verified, created_at, updated_at
        FROM geology_topics
        WHERE slug = $1 AND is_published = true`,
       [slug]
@@ -114,10 +114,116 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
+  const description = topic.excerpt || topic.subtitle || `Learn about ${topic.title} in Walla Walla wine country.`;
+
   return {
     title: `${topic.title} | Geology | Walla Walla Travel`,
-    description: topic.excerpt || topic.subtitle || `Learn about ${topic.title} in Walla Walla wine country.`,
+    description,
+    openGraph: {
+      title: topic.title,
+      description,
+      type: 'article',
+      ...(topic.hero_image_url && { images: [{ url: topic.hero_image_url }] }),
+    },
   };
+}
+
+// ============================================================================
+// Structured Data (SEO / AEO)
+// ============================================================================
+
+interface FaqItem {
+  question: string;
+  answer: string;
+}
+
+function parseFaqFromContent(content: string): FaqItem[] {
+  const items: FaqItem[] = [];
+  // Look for a FAQ section (## Frequently Asked Questions or similar)
+  const faqMatch = content.match(/##\s*(frequently asked questions|faq|common questions)[^\n]*/i);
+  if (!faqMatch || faqMatch.index === undefined) return items;
+
+  const faqContent = content.substring(faqMatch.index + faqMatch[0].length);
+  // Parse ### questions followed by answer paragraphs
+  const questionBlocks = faqContent.split(/###\s+/).filter(Boolean);
+
+  for (const block of questionBlocks) {
+    const lines = block.trim().split('\n');
+    const question = lines[0]?.trim().replace(/\?*$/, '?');
+    const answer = lines
+      .slice(1)
+      .map((l) => l.trim())
+      .filter(Boolean)
+      .join(' ')
+      .replace(/\*\*(.*?)\*\*/g, '$1')
+      .replace(/\*(.*?)\*/g, '$1')
+      .trim();
+    if (question && answer && answer.length > 5) {
+      items.push({ question, answer });
+    }
+  }
+  return items;
+}
+
+function ArticleJsonLd({ topic, faqItems }: { topic: Topic; faqItems: FaqItem[] }) {
+  const articleSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: topic.title,
+    ...(topic.excerpt && { description: topic.excerpt }),
+    ...(topic.subtitle && !topic.excerpt && { description: topic.subtitle }),
+    ...(topic.hero_image_url && { image: topic.hero_image_url }),
+    author: {
+      '@type': 'Person',
+      name: topic.author_name || 'Walla Walla Travel',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'Walla Walla Travel',
+      url: 'https://wallawalla.travel',
+    },
+    datePublished: topic.created_at,
+    dateModified: topic.updated_at,
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': `https://wallawalla.travel/geology/${topic.slug}`,
+    },
+    about: {
+      '@type': 'Thing',
+      name: 'Walla Walla Wine Country Geology',
+    },
+  };
+
+  const faqSchema =
+    faqItems.length > 0
+      ? {
+          '@context': 'https://schema.org',
+          '@type': 'FAQPage',
+          mainEntity: faqItems.map((item) => ({
+            '@type': 'Question',
+            name: item.question,
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: item.answer,
+            },
+          })),
+        }
+      : null;
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
+      />
+      {faqSchema && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+        />
+      )}
+    </>
+  );
 }
 
 // ============================================================================
@@ -236,8 +342,13 @@ export default async function GeologyTopicPage({ params }: PageProps) {
     getTopicFacts(topic.id),
   ]);
 
+  const faqItems = parseFaqFromContent(topic.content);
+
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Structured Data for SEO & AEO */}
+      <ArticleJsonLd topic={topic} faqItems={faqItems} />
+
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-[#1a1a2e] to-[#16213e] text-white">
         {topic.hero_image_url && (
