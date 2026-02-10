@@ -170,6 +170,7 @@ class PartnerContextService extends BaseService {
       FROM wineries w
       LEFT JOIN partner_profiles pp ON pp.winery_id = w.id AND pp.status = 'active'
       WHERE COALESCE(w.is_active, true) = true
+        AND pp.id IS NOT NULL
     `;
 
     const params: unknown[] = [];
@@ -242,7 +243,7 @@ class PartnerContextService extends BaseService {
         END as is_partner
       FROM restaurants r
       LEFT JOIN partner_profiles pp ON pp.restaurant_id = r.id AND pp.status = 'active'
-      WHERE r.is_active = true
+      WHERE r.is_active = true AND pp.id IS NOT NULL
       ORDER BY is_partner DESC, r.name ASC`
     );
     return result;
@@ -268,7 +269,7 @@ class PartnerContextService extends BaseService {
         END as is_partner
       FROM hotels h
       LEFT JOIN partner_profiles pp ON pp.hotel_id = h.id AND pp.status = 'active'
-      WHERE h.is_active = true
+      WHERE h.is_active = true AND pp.id IS NOT NULL
       ORDER BY is_partner DESC, h.display_order ASC, h.name ASC`
     );
     return result;
@@ -296,7 +297,8 @@ class PartnerContextService extends BaseService {
     const sections: string[] = [];
 
     // Header
-    sections.push('## PARTNER BUSINESSES (Use ONLY this data for recommendations)\n');
+    sections.push('## PARTNER BUSINESSES — YOUR COMPLETE BUSINESS KNOWLEDGE\n');
+    sections.push('You may ONLY mention businesses listed below. For any other business: "I don\'t have details on that one."\n');
 
     if (tripContext?.partySize) {
       sections.push(`*Filtered for group size: ${tripContext.partySize} guests*\n`);
@@ -308,19 +310,10 @@ class PartnerContextService extends BaseService {
 
       // Partners first with full details - EXCLUDE no-public-access wineries
       const partners = context.wineries.filter(w => w.is_partner && !this.isNoPublicAccess(w.name));
-      const nonPartners = context.wineries.filter(w => !w.is_partner && !this.isNoPublicAccess(w.name));
       const noAccessWineries = context.wineries.filter(w => this.isNoPublicAccess(w.name));
 
       for (const winery of partners) {
         sections.push(this.formatWinery(winery, true));
-      }
-
-      // Non-partners get minimal info (or exclude entirely)
-      if (nonPartners.length > 0) {
-        sections.push('\n*Other wineries (basic info only):*');
-        for (const winery of nonPartners.slice(0, 5)) { // Limit non-partners
-          sections.push(this.formatWinery(winery, false));
-        }
       }
 
       // List wineries that CANNOT be recommended - for reference only when asked
@@ -354,7 +347,7 @@ class PartnerContextService extends BaseService {
 
     // Priority rules reminder
     sections.push('\n---');
-    sections.push('**IMPORTANT**: Always recommend partner businesses first. If asked about non-partners, you may mention them briefly but encourage trying our partner establishments.');
+    sections.push('**REMEMBER**: These are the ONLY businesses you know about. Do not reference any business not listed above.');
 
     return sections.join('\n');
   }

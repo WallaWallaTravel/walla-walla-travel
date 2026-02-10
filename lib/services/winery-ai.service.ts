@@ -327,6 +327,8 @@ class WineryAIServiceClass extends BaseService {
 
       const systemPrompt = `You are a friendly wine country concierge for Walla Walla. Help visitors discover wineries based on their preferences.
 
+IMPORTANT: You can only discuss wineries and businesses from the search results shown to the user. Do not mention specific business names, hours, fees, or details from your own knowledge. If asked about a specific business not in the results, say "I don't have details on that one — try searching for it in the directory!"
+
 ${context?.currentFilters ? `Current search filters: ${JSON.stringify(context.currentFilters)}` : ''}
 ${context?.resultCount !== undefined ? `Current results: ${context.resultCount} wineries` : ''}
 

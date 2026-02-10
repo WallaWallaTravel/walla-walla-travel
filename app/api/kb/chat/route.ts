@@ -11,6 +11,8 @@ import { withErrorHandling, NotFoundError } from '@/lib/api/middleware/error-han
 import { validateBody, validateQuery } from '@/lib/api/middleware/validation';
 import { kbService } from '@/lib/services/kb.service';
 import { geminiService, ChatMessage } from '@/lib/services/gemini.service';
+import { partnerContextService } from '@/lib/services/partner-context.service';
+import type { TripContext } from '@/lib/services/partner-context.service';
 
 // ============================================================================
 // Request Schemas
@@ -68,6 +70,15 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   const relevantContent = await kbService.searchIndexedContent(data.message, 5);
   const kbContext = relevantContent.map((c) => `[${c.title}]: ${c.content_text}`).join('\n\n');
 
+  // Get partner context for business recommendations
+  const partnerContext = await partnerContextService.getRelevantPartners(
+    tripState ? { partySize: tripState.party_size } as TripContext : undefined
+  );
+  const partnerSection = partnerContextService.formatForAIPrompt(partnerContext);
+
+  // Combine partner data with KB context
+  const fullContext = `${partnerSection}\n\n---\n\n${kbContext}`;
+
   // Build context for AI
   const context = {
     visitorProfile: session.visitor_profile || undefined,
@@ -89,10 +100,10 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       : undefined,
   };
 
-  // Enhance message with KB context if available
+  // Enhance message with KB context and partner data
   let enhancedMessage = data.message;
-  if (kbContext) {
-    enhancedMessage = `[Knowledge Base Context:\n${kbContext}]\n\nUser: ${data.message}`;
+  if (fullContext) {
+    enhancedMessage = `[Knowledge Base Context:\n${fullContext}]\n\nUser: ${data.message}`;
   }
 
   // Get AI response
