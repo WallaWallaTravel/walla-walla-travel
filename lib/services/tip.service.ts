@@ -8,8 +8,13 @@
 
 import { BaseService } from './base.service';
 import { getStripe } from '@/lib/stripe';
-import { healthService } from '@/lib/services/health.service';
 import type Stripe from 'stripe';
+
+// Lazy-load healthService to avoid pulling Prisma into serverless bundles
+async function getHealthService() {
+  const { healthService } = await import('@/lib/services/health.service');
+  return healthService;
+}
 import type {
   TipRecord,
   TourCompletionResult,
@@ -236,7 +241,8 @@ class TipService extends BaseService {
     }
 
     const stripe = getStripe();
-    const paymentIntent = await healthService.withRetry(
+    const hs = await getHealthService();
+    const paymentIntent = await hs.withRetry(
       async () => {
         return stripe.paymentIntents.create({
           amount: Math.round(amount * 100), // Convert to cents
