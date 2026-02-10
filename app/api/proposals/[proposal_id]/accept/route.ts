@@ -7,8 +7,13 @@ import { sendEmailAfterResponse } from '@/lib/email-async';
 import { COMPANY_INFO } from '@/lib/config/company';
 import { getBrandEmailConfig } from '@/lib/email-brands';
 import { getBrandStripeClient } from '@/lib/stripe-brands';
-import { healthService } from '@/lib/services/health.service';
 import { logger } from '@/lib/logger';
+
+// Lazy-load healthService to avoid pulling Prisma into serverless bundle
+async function getHealthService() {
+  const { healthService } = await import('@/lib/services/health.service');
+  return healthService;
+}
 
 /**
  * POST /api/proposals/[proposal_id]/accept
@@ -135,7 +140,8 @@ export const POST = withRateLimit(rateLimiters.api)(
 
   if (stripe) {
     try {
-      paymentIntent = await healthService.withRetry(
+      const hs = await getHealthService();
+      paymentIntent = await hs.withRetry(
         () => stripe!.paymentIntents.create({
           amount: Math.round(depositAmount * 100), // Convert to cents
           currency: 'usd',
