@@ -3,10 +3,16 @@ import Stripe from 'stripe';
 import { withErrorHandling, NotFoundError, InternalServerError, BadRequestError } from '@/lib/api-errors';
 import { queryOne, query } from '@/lib/db-helpers';
 import { validateBody, CreatePaymentIntentSchema } from '@/lib/api/middleware/validation';
+import { auditService } from '@/lib/services/audit.service';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
-import { healthService } from '@/lib/services/health.service';
 import { logger } from '@/lib/logger';
+
+// Lazy-load healthService to avoid pulling Prisma into serverless bundle
+async function getHealthService() {
+  const { healthService } = await import('@/lib/services/health.service');
+  return healthService;
+}
 
 // Initialize Stripe with error handling
 let stripe: Stripe | null = null;
@@ -77,7 +83,11 @@ export const POST = withCSRF(
   // Create Stripe payment intent with retry logic
   let paymentIntent: Stripe.PaymentIntent;
   try {
-    paymentIntent = await healthService.withRetry(
+    // Idempotency key prevents duplicate charges on network retry
+    const idempotencyKey = `pi_${booking.booking_number}_${payment_type}_${Math.round(amount * 100)}`;
+
+    const hs = await getHealthService();
+    paymentIntent = await hs.withRetry(
       () => stripe!.paymentIntents.create({
         amount: Math.round(amount * 100), // Convert to cents
         currency: 'usd',
@@ -92,6 +102,8 @@ export const POST = withCSRF(
         automatic_payment_methods: {
           enabled: true,
         },
+      }, {
+        idempotencyKey,
       }),
       'stripe',
       3 // Max retries
@@ -99,7 +111,7 @@ export const POST = withCSRF(
   } catch (stripeError) {
     logger.error('Stripe payment intent creation failed', { error: String(stripeError) });
     return NextResponse.json(
-      healthService.serviceUnavailableResponse('Payment processing'),
+      { error: 'Payment processing temporarily unavailable', retryable: true },
       { status: 503, headers: { 'Retry-After': '30' } }
     );
   }
@@ -132,6 +144,15 @@ export const POST = withCSRF(
       paymentIntent.status,
     ]
   );
+
+  // Audit log: payment intent created
+  auditService.logFromRequest(request, 0, 'payment_intent_created', {
+    bookingId: booking.id,
+    bookingNumber: booking.booking_number,
+    amount,
+    paymentType: payment_type,
+    paymentIntentId: paymentIntent.id,
+  }).catch(() => {}); // Non-blocking
 
   return NextResponse.json({
     success: true,
