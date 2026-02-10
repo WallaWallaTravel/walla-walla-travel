@@ -39,6 +39,8 @@ export type AuditAction =
   | 'booking_updated'
   | 'booking_cancelled'
   | 'booking_assigned'
+  | 'booking_deleted'
+  | 'booking_status_changed'
   // Proposals
   | 'proposal_created'
   | 'proposal_sent'
@@ -46,8 +48,11 @@ export type AuditAction =
   | 'proposal_rejected'
   // Payments
   | 'payment_processed'
+  | 'payment_confirmed'
+  | 'payment_intent_created'
   | 'payment_refunded'
   | 'payment_failed'
+  | 'payment_webhook_received'
   // Admin actions
   | 'user_created'
   | 'user_updated'
