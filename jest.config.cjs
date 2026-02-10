@@ -18,7 +18,7 @@ const customJestConfig = {
   },
   // Transform ES modules from these packages
   transformIgnorePatterns: [
-    '/node_modules/(?!(uncrypto|@upstash)/)',
+    '/node_modules/(?!(uncrypto|@upstash|jose)/)',
   ],
   testMatch: ['**/__tests__/**/*.[jt]s?(x)', '**/?(*.)+(spec|test).[jt]s?(x)'],
   // Exclude integration tests by default - they require a running database

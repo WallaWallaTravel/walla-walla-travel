@@ -7,6 +7,21 @@ import { PoolClient, QueryResult, QueryResultRow } from 'pg';
 import { pool } from './db';
 
 /**
+ * Validate SQL identifier (table name, column name) to prevent injection.
+ * Only allows alphanumeric characters, underscores, and dots (for schema.table).
+ */
+const SAFE_IDENTIFIER_REGEX = /^[a-zA-Z_][a-zA-Z0-9_.]*$/;
+
+function validateIdentifier(name: string, type: 'table' | 'column'): void {
+  if (!SAFE_IDENTIFIER_REGEX.test(name)) {
+    throw new Error(`Invalid ${type} name: "${name}". Only alphanumeric characters, underscores, and dots are allowed.`);
+  }
+  if (name.length > 128) {
+    throw new Error(`${type} name too long: "${name}". Maximum 128 characters.`);
+  }
+}
+
+/**
  * Type for SQL query parameter values
  * Represents valid primitive values that can be passed to PostgreSQL queries
  */
@@ -121,6 +136,7 @@ export async function exists(
   conditions: string,
   params?: QueryParams
 ): Promise<boolean> {
+  validateIdentifier(table, 'table');
   const result = await query(
     `SELECT EXISTS(SELECT 1 FROM ${table} WHERE ${conditions})`,
     params
@@ -138,16 +154,18 @@ export async function insertOne<T extends QueryResultRow = QueryResultRow>(
   table: string,
   data: RecordData
 ): Promise<T> {
+  validateIdentifier(table, 'table');
   const columns = Object.keys(data);
+  columns.forEach(col => validateIdentifier(col, 'column'));
   const values = Object.values(data);
   const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
-  
+
   const text = `
     INSERT INTO ${table} (${columns.join(', ')})
     VALUES (${placeholders})
     RETURNING *
   `;
-  
+
   const result = await query<T>(text, values);
   return result.rows[0];
 }
@@ -166,9 +184,11 @@ export async function updateOne<T extends QueryResultRow = QueryResultRow>(
   conditions: string,
   conditionParams?: QueryParams
 ): Promise<T | null> {
+  validateIdentifier(table, 'table');
   const columns = Object.keys(data);
+  columns.forEach(col => validateIdentifier(col, 'column'));
   const values = Object.values(data);
-  
+
   const setClause = columns
     .map((col, i) => `${col} = $${i + 1}`)
     .join(', ');
@@ -205,6 +225,7 @@ export async function deleteOne(
   conditions: string,
   params?: QueryParams
 ): Promise<number> {
+  validateIdentifier(table, 'table');
   const text = `DELETE FROM ${table} WHERE ${conditions}`;
   const result = await query(text, params);
   return result.rowCount || 0;
