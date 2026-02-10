@@ -5,16 +5,16 @@
  */
 
 import { NextResponse } from 'next/server';
-import { withErrorHandling } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { driverService } from '@/lib/services/driver.service';
 
 /**
  * GET /api/drivers
  * Returns list of active drivers
- * 
- * ✅ REFACTORED: Reduced from 51 lines to 16 lines
+ *
+ * ✅ SECURED: Requires admin authentication
  */
-export const GET = withErrorHandling(async () => {
+export const GET = withAdminAuth(async (_request, _session) => {
   const drivers = await driverService.listActive();
 
   return NextResponse.json({

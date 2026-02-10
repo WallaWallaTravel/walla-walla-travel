@@ -4,6 +4,7 @@ import Stripe from 'stripe';
 import { getStripe } from '@/lib/stripe';
 import { query, queryOne, withTransaction } from '@/lib/db-helpers';
 import { logger } from '@/lib/logger';
+import { auditService } from '@/lib/services/audit.service';
 import { sendBookingConfirmationEmail } from '@/lib/services/email-automation.service';
 import { sharedTourService } from '@/lib/services/shared-tour.service';
 import { sendSharedTourConfirmationEmail } from '@/lib/email/templates/shared-tour-confirmation';
@@ -60,6 +61,13 @@ export async function POST(request: NextRequest) {
     type: event.type,
     id: event.id,
   });
+
+  // Audit log: webhook event received (non-blocking)
+  auditService.logActivity({
+    userId: 0, // System event
+    action: 'payment_webhook_received',
+    details: { eventType: event.type, eventId: event.id },
+  }).catch(() => {});
 
   try {
     switch (event.type) {
@@ -289,6 +297,18 @@ async function handleBookingPaymentSuccess(
     ).catch(() => {
       // Timeline table might not exist
     });
+
+    // Create invoice record for this payment
+    await query(
+      `INSERT INTO invoices (booking_id, invoice_type, subtotal, tax_amount, total_amount, status, sent_at, due_date)
+       VALUES ($1, $2, $3, 0, $3, 'paid', NOW(), NOW())
+       ON CONFLICT DO NOTHING`,
+      [targetBookingId, paymentType, amount / 100],
+      client
+    ).catch((err) => {
+      // Invoice table might not exist or have different schema
+      logger.warn('[Stripe Webhook] Could not create invoice record', { error: String(err) });
+    });
   });
 
   // Send confirmation email
@@ -299,6 +319,7 @@ async function handleBookingPaymentSuccess(
 
 /**
  * Handle failed payment
+ * Updates payment record, booking status, and proposal if applicable
  */
 async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
   const { id, metadata, last_payment_error } = paymentIntent;
@@ -309,31 +330,67 @@ async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
     error: last_payment_error?.message,
   });
 
-  // Update payment record
-  await query(
-    `UPDATE payments
-     SET status = 'failed',
-         failure_reason = $2,
-         failed_at = NOW(),
-         updated_at = NOW()
-     WHERE stripe_payment_intent_id = $1`,
-    [id, last_payment_error?.message || 'Payment failed']
-  );
+  const failureReason = last_payment_error?.message || 'Payment failed';
 
-  // Update proposal if applicable
-  if (metadata.proposal_id) {
-    try {
+  await withTransaction(async (client) => {
+    // Update payment record
+    await query(
+      `UPDATE payments
+       SET status = 'failed',
+           failure_reason = $2,
+           failed_at = NOW(),
+           updated_at = NOW()
+       WHERE stripe_payment_intent_id = $1`,
+      [id, failureReason],
+      client
+    );
+
+    // Update booking status if linked
+    if (metadata.booking_id) {
+      const bookingId = parseInt(metadata.booking_id);
       await query(
-        `UPDATE proposals
+        `UPDATE bookings
          SET payment_status = 'failed',
+             payment_failure_reason = $2,
              updated_at = NOW()
          WHERE id = $1`,
-        [parseInt(metadata.proposal_id)]
+        [bookingId, failureReason],
+        client
       );
-    } catch (err) {
-      logger.warn('[Stripe Webhook] Could not update proposal payment status', { error: err });
+
+      // Create timeline entry
+      await query(
+        `INSERT INTO booking_timeline (booking_id, event_type, description, created_at)
+         VALUES ($1, 'payment_failed', $2, NOW())`,
+        [bookingId, `Payment failed: ${failureReason}`],
+        client
+      ).catch(() => {
+        // Timeline table might not exist
+      });
+
+      logger.warn('[Stripe Webhook] Booking payment failed', {
+        bookingId,
+        paymentIntentId: id,
+        reason: failureReason,
+      });
     }
-  }
+
+    // Update proposal if applicable
+    if (metadata.proposal_id) {
+      try {
+        await query(
+          `UPDATE proposals
+           SET payment_status = 'failed',
+               updated_at = NOW()
+           WHERE id = $1`,
+          [parseInt(metadata.proposal_id)],
+          client
+        );
+      } catch (err) {
+        logger.warn('[Stripe Webhook] Could not update proposal payment status', { error: err });
+      }
+    }
+  });
 }
 
 /**

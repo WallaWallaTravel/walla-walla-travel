@@ -103,6 +103,14 @@ export async function sendBookingConfirmationEmail(bookingId: number): Promise<b
         ) VALUES ($1, $2, $3, $4, NOW(), 'sent')
       `, [bookingId, 'booking_confirmation', booking.customer_email, template.subject]);
 
+      // Track confirmation email timestamp on booking
+      await query(
+        `UPDATE bookings SET confirmation_email_sent_at = NOW(), updated_at = NOW() WHERE id = $1`,
+        [bookingId]
+      ).catch(err => {
+        logger.warn('[EmailAutomation] Could not update confirmation_email_sent_at', { error: err });
+      });
+
       // Log to CRM (async, non-blocking)
       crmSyncService.logEmailSent({
         customerEmail: booking.customer_email,
@@ -111,13 +119,46 @@ export async function sendBookingConfirmationEmail(bookingId: number): Promise<b
       }).catch(err => {
         logger.warn('[EmailAutomation] CRM logging failed', { error: err });
       });
+    } else {
+      // Log failed send for retry
+      await query(`
+        INSERT INTO email_logs (
+          booking_id,
+          email_type,
+          recipient,
+          subject,
+          sent_at,
+          status,
+          retry_count
+        ) VALUES ($1, $2, $3, $4, NOW(), 'failed', 0)
+      `, [bookingId, 'booking_confirmation', booking.customer_email, template.subject]).catch(() => {});
+
+      logger.warn('[EmailAutomation] Booking confirmation send failed, logged for retry', {
+        bookingId,
+        bookingNumber: booking.booking_number,
+      });
     }
 
     logger.info(`[EmailAutomation] Booking confirmation ${result ? 'sent' : 'failed'} for booking #${booking.booking_number}`);
     return result;
 
   } catch (error) {
-    logger.error('[EmailAutomation] Error sending booking confirmation', { error });
+    logger.error('[EmailAutomation] Error sending booking confirmation', { error, bookingId });
+
+    // Log error for retry
+    await query(`
+      INSERT INTO email_logs (
+        booking_id,
+        email_type,
+        recipient,
+        subject,
+        sent_at,
+        status,
+        error_message,
+        retry_count
+      ) VALUES ($1, 'booking_confirmation', 'unknown', 'Booking Confirmation', NOW(), 'error', $2, 0)
+    `, [bookingId, error instanceof Error ? error.message : 'Unknown error']).catch(() => {});
+
     return false;
   }
 }
@@ -492,11 +533,70 @@ export async function sendDriverAssignmentToCustomer(bookingId: number): Promise
   }
 }
 
+/**
+ * Retry failed confirmation emails
+ * Call this from a cron job or admin action to retry emails that failed to send.
+ * Retries up to 3 times, with increasing delays.
+ */
+export async function retryFailedEmails(): Promise<{ retried: number; succeeded: number; failed: number }> {
+  const maxRetries = 3;
+  let retried = 0;
+  let succeeded = 0;
+  let failed = 0;
+
+  try {
+    const failedEmails = await queryMany<{
+      id: number;
+      booking_id: number;
+      email_type: string;
+      retry_count: number;
+    }>(`
+      SELECT id, booking_id, email_type, COALESCE(retry_count, 0) as retry_count
+      FROM email_logs
+      WHERE status IN ('failed', 'error')
+        AND COALESCE(retry_count, 0) < $1
+        AND sent_at > NOW() - INTERVAL '24 hours'
+      ORDER BY sent_at ASC
+      LIMIT 10
+    `, [maxRetries]);
+
+    for (const email of failedEmails) {
+      retried++;
+
+      let success = false;
+      if (email.email_type === 'booking_confirmation') {
+        success = await sendBookingConfirmationEmail(email.booking_id);
+      }
+
+      if (success) {
+        succeeded++;
+        // Mark original as superseded
+        await query(
+          `UPDATE email_logs SET status = 'superseded', updated_at = NOW() WHERE id = $1`,
+          [email.id]
+        );
+      } else {
+        failed++;
+        await query(
+          `UPDATE email_logs SET retry_count = COALESCE(retry_count, 0) + 1, updated_at = NOW() WHERE id = $1`,
+          [email.id]
+        );
+      }
+    }
+  } catch (error) {
+    logger.error('[EmailAutomation] Error retrying failed emails', { error });
+  }
+
+  logger.info('[EmailAutomation] Retry results', { retried, succeeded, failed });
+  return { retried, succeeded, failed };
+}
+
 export const EmailAutomation = {
   sendBookingConfirmationEmail,
   sendPaymentReceiptEmail,
   sendTourReminderEmail,
   sendDriverAssignmentToCustomer,
   processTourReminders,
+  retryFailedEmails,
 };
 

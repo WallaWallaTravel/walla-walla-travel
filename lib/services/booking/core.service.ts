@@ -10,6 +10,8 @@ import { NotFoundError, ConflictError, ValidationError } from '@/lib/api/middlew
 import { crmSyncService } from '../crm-sync.service';
 import { crmTaskAutomationService } from '../crm-task-automation.service';
 import { googleCalendarSyncService } from '../google-calendar-sync.service';
+import { withTransaction as withClientTransaction } from '@/lib/db-helpers';
+import type { PoolClient } from 'pg';
 import {
   Booking,
   BookingStatus,
@@ -211,6 +213,10 @@ export class BookingCoreService extends BaseService {
 
   /**
    * Create a simple booking (used by v1 API)
+   *
+   * Uses a dedicated PoolClient transaction with advisory locking to prevent
+   * double-booking race conditions. Two concurrent requests for the same date
+   * are serialized by pg_advisory_xact_lock.
    */
   async createBooking(data: CreateBookingData): Promise<Booking> {
     this.log('Creating booking', {
@@ -218,48 +224,86 @@ export class BookingCoreService extends BaseService {
       tourDate: data.tourDate,
     });
 
-    return this.withTransaction(async () => {
+    // Use db-helpers withTransaction for proper connection-scoped transaction
+    return withClientTransaction(async (client: PoolClient) => {
       // 1. Validate data
       const validated = CreateBookingSchema.parse(data);
 
-      // 2. Check availability
-      await this.checkDateAvailability(validated.tourDate, validated.partySize);
+      // 2. Check if date is in the past
+      if (new Date(validated.tourDate) < new Date()) {
+        throw new ValidationError('Cannot book tours in the past');
+      }
 
-      // 3. Get or create customer
-      const customerId = await this.getOrCreateCustomer({
-        email: validated.customerEmail,
-        name: validated.customerName,
-        phone: validated.customerPhone,
-      });
+      // 3. Acquire advisory lock on the tour date to serialize concurrent bookings
+      // This prevents race conditions even when no bookings exist yet for the date
+      await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [validated.tourDate]);
 
-      // 4. Generate booking number
-      const bookingNumber = await this.generateBookingNumber();
+      // 4. Check capacity (safe now — no concurrent reader can pass this point)
+      const capacityResult = await client.query<{ total_party_size: string }>(
+        `SELECT COALESCE(SUM(party_size), 0) as total_party_size
+         FROM bookings
+         WHERE tour_date = $1
+         AND status IN ('pending', 'confirmed')`,
+        [validated.tourDate]
+      );
 
-      // 5. Create booking
+      const currentCapacity = parseInt(capacityResult.rows[0]?.total_party_size || '0', 10);
+      const maxCapacity = 50;
+
+      if (currentCapacity + validated.partySize > maxCapacity) {
+        throw new ConflictError('Not enough capacity available for this date');
+      }
+
+      // 5. Get or create customer (within same transaction)
+      const existingCustomer = await client.query<{ id: number }>(
+        'SELECT id FROM customers WHERE LOWER(email) = LOWER($1)',
+        [validated.customerEmail]
+      );
+
+      let customerId: number;
+      if (existingCustomer.rows.length > 0) {
+        await client.query(
+          'UPDATE customers SET name = $1, phone = $2, updated_at = NOW() WHERE id = $3',
+          [validated.customerName, validated.customerPhone, existingCustomer.rows[0].id]
+        );
+        customerId = existingCustomer.rows[0].id;
+      } else {
+        const newCustomer = await client.query<{ id: number }>(
+          `INSERT INTO customers (email, name, phone, created_at, updated_at)
+           VALUES ($1, $2, $3, NOW(), NOW())
+           RETURNING id`,
+          [validated.customerEmail, validated.customerName, validated.customerPhone]
+        );
+        customerId = newCustomer.rows[0].id;
+      }
+
+      // 6. Generate booking number (within same transaction for sequence safety)
+      const year = new Date().getFullYear();
+      const sequenceName = `booking_seq_${year}`;
+      await client.query(`CREATE SEQUENCE IF NOT EXISTS ${sequenceName} START 1`);
+      const seqResult = await client.query<{ seq: string }>(`SELECT nextval('${sequenceName}') as seq`);
+      const paddedNumber = seqResult.rows[0].seq.toString().padStart(5, '0');
+      const bookingNumber = `WWT-${year}-${paddedNumber}`;
+
+      // 7. Create booking
       const balanceDue = validated.totalPrice - validated.depositPaid;
-      const booking = await this.insert<Booking>('bookings', {
-        booking_number: bookingNumber,
-        customer_id: customerId,
-        customer_name: validated.customerName,
-        customer_email: validated.customerEmail,
-        customer_phone: validated.customerPhone,
-        party_size: validated.partySize,
-        tour_date: validated.tourDate,
-        start_time: validated.startTime,
-        duration_hours: validated.durationHours,
-        total_price: validated.totalPrice,
-        deposit_amount: validated.depositPaid,
-        deposit_paid: validated.depositPaid > 0,
-        final_payment_amount: balanceDue,
-        final_payment_paid: false,
-        base_price: validated.totalPrice,
-        gratuity: 0,
-        taxes: 0,
-        status: 'pending',
-        brand_id: validated.brandId || null,
-        created_at: new Date(),
-        updated_at: new Date(),
-      });
+      const bookingResult = await client.query<Booking>(
+        `INSERT INTO bookings (
+          booking_number, customer_id, customer_name, customer_email, customer_phone,
+          party_size, tour_date, start_time, duration_hours,
+          total_price, deposit_amount, deposit_paid, final_payment_amount, final_payment_paid,
+          base_price, gratuity, taxes, status, brand_id, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, NOW(), NOW())
+        RETURNING *`,
+        [
+          bookingNumber, customerId, validated.customerName, validated.customerEmail, validated.customerPhone,
+          validated.partySize, validated.tourDate, validated.startTime, validated.durationHours,
+          validated.totalPrice, validated.depositPaid, validated.depositPaid > 0, balanceDue, false,
+          validated.totalPrice, 0, 0, 'pending', validated.brandId || null,
+        ]
+      );
+
+      const booking = bookingResult.rows[0];
 
       this.log('Booking created successfully', {
         bookingId: booking.id,

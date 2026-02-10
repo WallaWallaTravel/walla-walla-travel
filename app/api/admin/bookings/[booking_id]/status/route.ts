@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, BadRequestError, NotFoundError, UnauthorizedError } from '@/lib/api/middleware/error-handler';
 import { getSessionFromRequest } from '@/lib/auth/session';
 import { query, queryOne } from '@/lib/db-helpers';
+import { auditService } from '@/lib/services/audit.service';
 import { z } from 'zod';
 import { logger } from '@/lib/logger';
 
@@ -85,6 +86,15 @@ export const PATCH = withErrorHandling(async (
     reason,
     updatedBy: session.user.id,
   });
+
+  // Audit log: booking status change
+  auditService.logFromRequest(request, session.user.id, 'booking_status_changed', {
+    bookingId,
+    bookingNumber: booking.booking_number,
+    oldStatus: booking.status,
+    newStatus: status,
+    reason,
+  }).catch(() => {}); // Non-blocking
 
   // Create timeline entry
   await query(

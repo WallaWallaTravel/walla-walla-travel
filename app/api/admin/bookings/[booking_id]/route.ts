@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { getServerSession } from '@/lib/auth';
+import { auditService } from '@/lib/services/audit.service';
 import { logger } from '@/lib/logger';
 
 interface RouteContext {
@@ -154,6 +155,13 @@ export async function DELETE(
       customerName: booking.customer_name,
       deletedBy: session.email,
     });
+
+    // Audit log: booking deleted (critical operation)
+    auditService.logFromRequest(request, parseInt(session.userId || '0'), 'booking_deleted', {
+      bookingId,
+      bookingNumber: booking.booking_number,
+      customerName: booking.customer_name,
+    }).catch(() => {}); // Non-blocking
 
     return NextResponse.json({
       success: true,

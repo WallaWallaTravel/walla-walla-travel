@@ -4,6 +4,7 @@ import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api-err
 import { queryOne, query, withTransaction } from '@/lib/db-helpers';
 import { sendDriverAssignmentToCustomer } from '@/lib/services/email-automation.service';
 import { sendEmail, EmailTemplates } from '@/lib/email';
+import { auditService } from '@/lib/services/audit.service';
 import { withComplianceCheck } from '@/lib/api/middleware/compliance-check';
 // import { complianceService } from '@/lib/services/compliance.service';
 
@@ -168,6 +169,15 @@ async function handleAssignment(
       logger.error('Failed to send customer notification', { error: err });
     });
   }
+
+  // Audit log: driver/vehicle assignment
+  auditService.logFromRequest(request, 0, 'booking_assigned', {
+    bookingId,
+    driverId: driver_id,
+    vehicleId: vehicle_id,
+    driverName: result.driver.name,
+    vehicleName: `${result.vehicle.make} ${result.vehicle.model}`,
+  }).catch(() => {}); // Non-blocking
 
   return NextResponse.json({
     success: true,
