@@ -8,7 +8,11 @@ import { query } from '@/lib/db';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { sanitizeHtml } from '@/lib/security';
+// Lightweight server-safe HTML sanitizer (avoids isomorphic-dompurify/JSDOM
+// which can fail in Vercel serverless). Content is admin-authored from our DB.
+function stripHtmlTags(input: string): string {
+  return input.replace(/<[^>]*>/g, '');
+}
 
 // ============================================================================
 // Types
@@ -308,7 +312,7 @@ function MarkdownContent({ content }: { content: string }) {
 
         // Regular paragraphs with basic formatting
         // First sanitize the input, then apply formatting
-        const sanitized = sanitizeHtml(paragraph);
+        const sanitized = stripHtmlTags(paragraph);
         const formatted = sanitized
           .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
           .replace(/\*(.*?)\*/g, '<em>$1</em>');
