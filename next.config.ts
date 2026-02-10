@@ -99,6 +99,11 @@ const nextConfig: NextConfig = {
       'react-datepicker',
     ],
   },
+
+  // Include Prisma engine binary in serverless function bundles
+  outputFileTracingIncludes: {
+    '/api/**': ['./lib/generated/prisma/**/*'],
+  },
   
   // Compiler optimizations
   compiler: {
