@@ -12,7 +12,7 @@ import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 import { validateBody } from '@/lib/api/middleware/validation';
 import { setSessionCookie } from '@/lib/auth/session';
 import { authService } from '@/lib/services/auth.service';
-// import { auditService } from '@/lib/services/audit.service';
+import { auditService } from '@/lib/services/audit.service';
 import { z } from 'zod';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 
@@ -37,6 +37,12 @@ export const POST = withRateLimit(rateLimiters.auth)(
 
   // ✅ Use auth service
   const result = await authService.login(credentials, getClientIp(request));
+
+  // ✅ Audit log: successful login
+  auditService.logFromRequest(request, result.user.id, 'login', {
+    email: credentials.email,
+    role: result.user.role,
+  }).catch(() => {}); // Non-blocking
 
   // ✅ Set session cookie and return standardized response
   const response = NextResponse.json({

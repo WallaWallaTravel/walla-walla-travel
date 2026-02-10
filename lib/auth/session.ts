@@ -38,6 +38,7 @@ function getSessionSecret(): Uint8Array {
 
 const SESSION_SECRET = getSessionSecret();
 const SESSION_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days
+const SESSION_REFRESH_THRESHOLD = 3.5 * 24 * 60 * 60; // 3.5 days in seconds
 
 /**
  * Get cookie domain for cross-subdomain sharing
@@ -198,4 +199,25 @@ export async function isDriver(): Promise<boolean> {
 export async function isPartner(): Promise<boolean> {
   const session = await getSession();
   return session?.user.role === 'partner';
+}
+
+/**
+ * Check if a session token should be refreshed (sliding window).
+ * Returns true if the token was issued more than SESSION_REFRESH_THRESHOLD seconds ago.
+ */
+export function shouldRefreshSession(session: SessionPayload): boolean {
+  const now = Math.floor(Date.now() / 1000);
+  return (now - session.iat) > SESSION_REFRESH_THRESHOLD;
+}
+
+/**
+ * Refresh a session by issuing a new token and setting it on the response.
+ * Used by middleware for sliding window session renewal.
+ */
+export async function refreshSessionOnResponse(
+  session: SessionPayload,
+  response: NextResponse
+): Promise<NextResponse> {
+  const newToken = await createSession(session.user);
+  return setSessionCookie(response, newToken);
 }

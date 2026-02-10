@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { getSessionFromRequest } from './lib/auth/session';
+import { getSessionFromRequest, shouldRefreshSession, refreshSessionOnResponse } from './lib/auth/session';
 
 // Correlation ID header name
 const CORRELATION_ID_HEADER = 'x-request-id';
@@ -280,7 +280,12 @@ export async function middleware(request: NextRequest) {
   }
 
   // Add security headers to all responses
-  const response = NextResponse.next();
+  let response = NextResponse.next();
+
+  // Sliding window session refresh: if token is past half-life, issue a fresh one
+  if (session && shouldRefreshSession(session)) {
+    response = await refreshSessionOnResponse(session, response);
+  }
 
   // Generate and add correlation ID for request tracing
   const existingCorrelationId = request.headers.get(CORRELATION_ID_HEADER);

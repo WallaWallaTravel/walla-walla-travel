@@ -1,16 +1,29 @@
 /**
  * Database Transaction Helper
- * 
- * Provides safe transaction management with automatic rollback on error
+ *
+ * Provides safe transaction management with automatic rollback on error.
+ * Uses pool.connect() to ensure all queries in a transaction run on the
+ * same dedicated connection (not random pool connections).
  */
 
-import { query } from '@/lib/db';
+import { pool, query } from '@/lib/db';
+import type { QueryResult, QueryResultRow } from 'pg';
 
 // ============================================================================
 // Transaction Callback Type
 // ============================================================================
 
 export type TransactionCallback<T> = (client: typeof query) => Promise<T>;
+
+/**
+ * Create a query function wrapper around a PoolClient that matches
+ * the signature of the pool-level query function.
+ */
+function createClientQuery(client: { query: <T extends QueryResultRow>(text: string, params?: unknown[]) => Promise<QueryResult<T>> }) {
+  return async function clientQuery<T = unknown>(text: string, params?: unknown[]): Promise<QueryResult<T & QueryResultRow>> {
+    return client.query<T & QueryResultRow>(text, params);
+  };
+}
 
 // ============================================================================
 // withTransaction - Execute operations in a transaction
@@ -19,22 +32,18 @@ export type TransactionCallback<T> = (client: typeof query) => Promise<T>;
 export async function withTransaction<T>(
   callback: TransactionCallback<T>
 ): Promise<T> {
-  // Begin transaction
-  await query('BEGIN', []);
-
+  const client = await pool.connect();
   try {
-    // Execute callback with query function
-    const result = await callback(query);
-
-    // Commit if successful
-    await query('COMMIT', []);
-
+    await client.query('BEGIN');
+    const clientQuery = createClientQuery(client) as typeof query;
+    const result = await callback(clientQuery);
+    await client.query('COMMIT');
     return result;
-
   } catch (error) {
-    // Rollback on error
-    await query('ROLLBACK', []);
+    await client.query('ROLLBACK');
     throw error;
+  } finally {
+    client.release();
   }
 }
 
@@ -42,7 +51,7 @@ export async function withTransaction<T>(
 // Transaction with Isolation Level
 // ============================================================================
 
-export type IsolationLevel = 
+export type IsolationLevel =
   | 'READ UNCOMMITTED'
   | 'READ COMMITTED'
   | 'REPEATABLE READ'
@@ -52,16 +61,18 @@ export async function withTransactionIsolation<T>(
   callback: TransactionCallback<T>,
   isolationLevel: IsolationLevel = 'READ COMMITTED'
 ): Promise<T> {
-  // Begin transaction with isolation level
-  await query(`BEGIN ISOLATION LEVEL ${isolationLevel}`, []);
-
+  const client = await pool.connect();
   try {
-    const result = await callback(query);
-    await query('COMMIT', []);
+    await client.query(`BEGIN ISOLATION LEVEL ${isolationLevel}`);
+    const clientQuery = createClientQuery(client) as typeof query;
+    const result = await callback(clientQuery);
+    await client.query('COMMIT');
     return result;
   } catch (error) {
-    await query('ROLLBACK', []);
+    await client.query('ROLLBACK');
     throw error;
+  } finally {
+    client.release();
   }
 }
 

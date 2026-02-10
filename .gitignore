@@ -62,6 +62,10 @@ logs
 # Railway (local development files)
 .railway
 
+# Prisma engine binaries (platform-specific, generated at build time)
+lib/generated/prisma/*.so.node
+lib/generated/prisma/*.dll.node
+
 # Temporary files
 tmp/
 temp/
