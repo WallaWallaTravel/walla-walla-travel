@@ -8,9 +8,15 @@
  */
 
 import Stripe from 'stripe';
-import { healthService } from '@/lib/services/health.service';
 import { withGracefulDegradation, OperationType } from '@/lib/services/queue.service';
 import { logger } from '@/lib/logger';
+
+// Lazy-load healthService to avoid pulling Prisma into serverless bundles
+// that only need getStripe() (e.g., webhook handlers)
+async function getHealthService() {
+  const { healthService } = await import('@/lib/services/health.service');
+  return healthService;
+}
 
 // Stripe client initialization with lazy loading
 let stripe: Stripe | null = null;
@@ -58,7 +64,8 @@ export async function createDepositPaymentIntent(
 ): Promise<Stripe.PaymentIntent> {
   const result = await withGracefulDegradation(
     async () => {
-      return healthService.withRetry(
+      const hs = await getHealthService();
+      return hs.withRetry(
         async () => {
           const client = getStripeClient();
           const paymentIntent = await client.paymentIntents.create({
@@ -112,7 +119,8 @@ export async function createDepositPaymentIntent(
  * Retrieve payment intent with retry logic
  */
 export async function getPaymentIntent(paymentIntentId: string): Promise<Stripe.PaymentIntent> {
-  return healthService.withRetry(
+  const hs = await getHealthService();
+  return hs.withRetry(
     async () => {
       const client = getStripeClient();
       return client.paymentIntents.retrieve(paymentIntentId);
