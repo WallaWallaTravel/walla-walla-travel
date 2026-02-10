@@ -162,7 +162,7 @@ CREATE INDEX IF NOT EXISTS idx_kb_itineraries_session ON kb_itineraries(session_
 -- Trip state persistence (for incremental building)
 CREATE TABLE IF NOT EXISTS kb_trip_states (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  session_id UUID REFERENCES kb_chat_sessions(id) UNIQUE ON DELETE CASCADE,
+  session_id UUID UNIQUE REFERENCES kb_chat_sessions(id) ON DELETE CASCADE,
   
   -- Dates
   dates_status VARCHAR(20) DEFAULT 'flexible',

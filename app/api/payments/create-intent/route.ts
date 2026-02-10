@@ -7,23 +7,12 @@ import { auditService } from '@/lib/services/audit.service';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 import { logger } from '@/lib/logger';
+import { getBrandStripeClient, getBrandStripePublishableKey } from '@/lib/stripe-brands';
 
 // Lazy-load healthService to avoid pulling Prisma into serverless bundle
 async function getHealthService() {
   const { healthService } = await import('@/lib/services/health.service');
   return healthService;
-}
-
-// Initialize Stripe with error handling
-let stripe: Stripe | null = null;
-try {
-  if (process.env.STRIPE_SECRET_KEY) {
-    stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-      apiVersion: '2025-10-29.clover',
-    });
-  }
-} catch (error) {
-  logger.error('Failed to initialize Stripe client', { error: String(error) });
 }
 
 interface Booking {
@@ -34,6 +23,7 @@ interface Booking {
   total_price: string;
   deposit_amount: string;
   final_payment_amount: string;
+  brand_id: number | null;
 }
 
 /**
@@ -49,17 +39,12 @@ interface Booking {
 export const POST = withCSRF(
   withRateLimit(rateLimiters.payment)(
     withErrorHandling(async (request: NextRequest) => {
-  // Check if Stripe is configured
-  if (!stripe) {
-    throw new InternalServerError('Payment processing not configured. Please contact support.');
-  }
-
   // Validate input with Zod schema
   const { booking_number, amount, payment_type } = await validateBody(request, CreatePaymentIntentSchema);
 
-  // Get booking details
+  // Get booking details (including brand_id for brand-specific Stripe routing)
   const booking = await queryOne<Booking>(
-    `SELECT id, booking_number, customer_email, customer_name, total_price, deposit_amount, final_payment_amount
+    `SELECT id, booking_number, customer_email, customer_name, total_price, deposit_amount, final_payment_amount, brand_id
      FROM bookings
      WHERE booking_number = $1`,
     [booking_number]
@@ -80,6 +65,12 @@ export const POST = withCSRF(
     );
   }
 
+  // Get brand-specific Stripe client (falls back to default/NW Touring if brand_id is null)
+  const stripe = getBrandStripeClient(booking.brand_id ?? undefined);
+  if (!stripe) {
+    throw new InternalServerError('Payment processing not configured. Please contact support.');
+  }
+
   // Create Stripe payment intent with retry logic
   let paymentIntent: Stripe.PaymentIntent;
   try {
@@ -88,7 +79,7 @@ export const POST = withCSRF(
 
     const hs = await getHealthService();
     paymentIntent = await hs.withRetry(
-      () => stripe!.paymentIntents.create({
+      () => stripe.paymentIntents.create({
         amount: Math.round(amount * 100), // Convert to cents
         currency: 'usd',
         metadata: {
@@ -162,6 +153,7 @@ export const POST = withCSRF(
       amount: amount,
       payment_type: payment_type,
       booking_number: booking.booking_number,
+      publishable_key: getBrandStripePublishableKey(booking.brand_id ?? undefined),
     },
     message: 'Payment intent created successfully'
   });

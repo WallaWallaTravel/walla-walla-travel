@@ -7,7 +7,7 @@
  */
 
 import { BaseService } from './base.service';
-import { getStripe } from '@/lib/stripe';
+import { getBrandStripeClient, getBrandStripePublishableKey } from '@/lib/stripe-brands';
 import type Stripe from 'stripe';
 
 // Lazy-load healthService to avoid pulling Prisma into serverless bundles
@@ -214,6 +214,7 @@ class TipService extends BaseService {
       tour_total: Number(booking.total_price),
       brand_name: brandName,
       brand_logo_url: brandLogoUrl,
+      brand_id: booking.brand_id,
       tips_enabled: completion.tips_enabled,
       tip_code: tipCode,
     };
@@ -240,7 +241,11 @@ class TipService extends BaseService {
       throw new Error('Tips are not enabled for this tour');
     }
 
-    const stripe = getStripe();
+    // Get brand-specific Stripe client based on booking's brand
+    const stripe = getBrandStripeClient(pageData.brand_id ?? undefined);
+    if (!stripe) {
+      throw new Error('Payment processing not configured');
+    }
     const hs = await getHealthService();
     const paymentIntent = await hs.withRetry(
       async () => {
@@ -288,6 +293,7 @@ class TipService extends BaseService {
       client_secret: paymentIntent.client_secret!,
       payment_intent_id: paymentIntent.id,
       amount,
+      publishable_key: getBrandStripePublishableKey(pageData.brand_id ?? undefined),
     };
   }
 
@@ -305,7 +311,24 @@ class TipService extends BaseService {
     let chargeId: string | null = null;
 
     if (paymentIntent.latest_charge) {
-      const stripe = getStripe();
+      // Determine brand from the tip's booking
+      const tipRecord = await this.queryOne<{ booking_id: number }>(
+        `SELECT booking_id FROM driver_tips WHERE stripe_payment_intent_id = $1`,
+        [paymentIntentId]
+      );
+      let brandId: number | undefined;
+      if (tipRecord) {
+        const bookingRecord = await this.queryOne<{ brand_id: number | null }>(
+          `SELECT brand_id FROM bookings WHERE id = $1`,
+          [tipRecord.booking_id]
+        );
+        brandId = bookingRecord?.brand_id ?? undefined;
+      }
+      const stripe = getBrandStripeClient(brandId);
+      if (!stripe) {
+        this.warn('Cannot retrieve charge - Stripe not configured', { paymentIntentId, brandId });
+        return;
+      }
       const charge = await stripe.charges.retrieve(paymentIntent.latest_charge as string);
       chargeId = charge.id;
       if (charge.payment_method_details?.card) {

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import {
   Elements,
@@ -9,8 +9,6 @@ import {
   useElements,
 } from '@stripe/react-stripe-js';
 import { TouchButton } from '@/components/mobile/TouchButton';
-
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 interface TipPaymentFormInnerProps {
   amount: number;
@@ -154,6 +152,7 @@ interface TipPaymentFormProps {
   amount: number;
   driverName: string;
   guestName?: string;
+  publishableKey?: string;
   onSuccess: () => void;
   onBack: () => void;
 }
@@ -171,12 +170,20 @@ export function TipPaymentForm({
   tipCode,
   amount,
   driverName,
+  publishableKey: publishableKeyProp,
   onSuccess,
   onBack,
 }: TipPaymentFormProps) {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [publishableKey, setPublishableKey] = useState<string | undefined>(publishableKeyProp);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Dynamically load Stripe with the correct publishable key for the brand
+  const stripePromise = useMemo(() => {
+    const key = publishableKey || process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+    return key ? loadStripe(key) : null;
+  }, [publishableKey]);
 
   useEffect(() => {
     const createPaymentIntent = async () => {
@@ -192,6 +199,9 @@ export function TipPaymentForm({
           throw new Error(data.error || 'Failed to create payment intent');
         }
         setClientSecret(data.data.client_secret);
+        if (data.data.publishable_key) {
+          setPublishableKey(data.data.publishable_key);
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Payment initialization failed');
       } finally {
@@ -245,7 +255,7 @@ export function TipPaymentForm({
     );
   }
 
-  if (!clientSecret) return null;
+  if (!clientSecret || !stripePromise) return null;
 
   return (
     <div className="space-y-4">

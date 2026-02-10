@@ -206,7 +206,7 @@ class GeminiServiceClass extends BaseService {
   private getChatModel() {
     const client = this.getClient();
     return client.getGenerativeModel({
-      model: 'gemini-2.0-flash-exp', // Using latest flash model
+      model: 'gemini-2.5-flash', // Using latest flash model
       generationConfig: {
         temperature: 0.7,
         maxOutputTokens: 2048,
@@ -222,7 +222,7 @@ class GeminiServiceClass extends BaseService {
   private getAnalysisModel() {
     const client = this.getClient();
     return client.getGenerativeModel({
-      model: 'gemini-2.0-flash-exp',
+      model: 'gemini-2.5-flash',
       generationConfig: {
         temperature: 0.3, // Lower temperature for factual tasks
         maxOutputTokens: 4096,

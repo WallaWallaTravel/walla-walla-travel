@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, useMemo } from 'react';
 import Link from 'next/link';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
@@ -11,9 +11,6 @@ import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-
  * Standalone payment page for completing ticket payment
  * Used by guests who received a payment link (e.g., from hotel booking)
  */
-
-// Load Stripe outside of component to avoid recreating on every render
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 interface TicketInfo {
   ticketId: string;
@@ -108,6 +105,13 @@ export default function PayTicketPage({ params }: { params: Promise<{ ticket_id:
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [publishableKey, setPublishableKey] = useState<string | null>(null);
+
+  // Dynamically load Stripe with the correct publishable key for the brand
+  const stripePromise = useMemo(() => {
+    const key = publishableKey || process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+    return key ? loadStripe(key) : null;
+  }, [publishableKey]);
 
   useEffect(() => {
     const initializePayment = async () => {
@@ -144,6 +148,9 @@ export default function PayTicketPage({ params }: { params: Promise<{ ticket_id:
         }
 
         setPaymentIntent(paymentData.data);
+        if (paymentData.data.publishableKey) {
+          setPublishableKey(paymentData.data.publishableKey);
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load payment information');
       } finally {
@@ -211,7 +218,7 @@ export default function PayTicketPage({ params }: { params: Promise<{ ticket_id:
     );
   }
 
-  if (!ticketInfo || !paymentIntent) {
+  if (!ticketInfo || !paymentIntent || !stripePromise) {
     return null;
   }
 

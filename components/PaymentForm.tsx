@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import {
   Elements,
@@ -8,8 +8,6 @@ import {
   useStripe,
   useElements
 } from '@stripe/react-stripe-js';
-
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 interface PaymentFormProps {
   bookingNumber: string;
@@ -203,8 +201,15 @@ function PaymentFormInner({ bookingNumber, baseAmount, depositAmount, isDeposit 
 
 export default function PaymentForm(props: PaymentFormProps) {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [publishableKey, setPublishableKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Dynamically load Stripe with the correct publishable key for the brand
+  const stripePromise = useMemo(() => {
+    const key = publishableKey || process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+    return key ? loadStripe(key) : null;
+  }, [publishableKey]);
 
   useEffect(() => {
     const createPaymentIntent = async () => {
@@ -215,13 +220,16 @@ export default function PaymentForm(props: PaymentFormProps) {
           body: JSON.stringify({
             booking_number: props.bookingNumber,
             amount: props.isDeposit ? props.depositAmount : props.baseAmount,
-            customer_email: 'customer@example.com',
+            payment_type: props.isDeposit ? 'deposit' : 'final_payment',
           }),
         });
 
         const data = await response.json();
         if (!data.success) throw new Error(data.error || 'Failed to create payment intent');
         setClientSecret(data.data.client_secret);
+        if (data.data.publishable_key) {
+          setPublishableKey(data.data.publishable_key);
+        }
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : 'Payment initialization failed');
       } finally {
@@ -233,7 +241,7 @@ export default function PaymentForm(props: PaymentFormProps) {
 
   if (loading) return <div className="flex items-center justify-center p-12"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>;
   if (error) return <div className="bg-red-50 border border-red-200 rounded-lg p-6"><h3 className="text-red-900 font-semibold mb-2">Error</h3><p className="text-red-700">{error}</p></div>;
-  if (!clientSecret) return null;
+  if (!clientSecret || !stripePromise) return null;
 
   return (
     <div className="max-w-2xl mx-auto p-4">

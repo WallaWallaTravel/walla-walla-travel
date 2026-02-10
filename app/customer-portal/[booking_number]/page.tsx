@@ -3,12 +3,8 @@
 import { useState, useEffect } from 'react';
 import { use } from 'react';
 import { useRouter } from 'next/navigation';
-import { loadStripe } from '@stripe/stripe-js';
-import { Elements } from '@stripe/react-stripe-js';
 import FinalPaymentForm from './FinalPaymentForm';
 import { MultiDayItineraryView } from '@/components/client-portal/MultiDayItineraryView';
-
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '');
 
 interface Booking {
   id: number;
@@ -396,16 +392,14 @@ export default function CustomerPortalPage({ params }: { params: Promise<{ booki
 
               {showPaymentForm && (
                 <div className="mt-4">
-                  <Elements stripe={stripePromise}>
-                    <FinalPaymentForm
-                      booking={booking}
-                      onSuccess={() => {
-                        setShowPaymentForm(false);
-                        loadBooking();
-                      }}
-                      onCancel={() => setShowPaymentForm(false)}
-                    />
-                  </Elements>
+                  <FinalPaymentForm
+                    booking={booking}
+                    onSuccess={() => {
+                      setShowPaymentForm(false);
+                      loadBooking();
+                    }}
+                    onCancel={() => setShowPaymentForm(false)}
+                  />
                 </div>
               )}
             </div>

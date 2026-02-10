@@ -2,12 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { loadStripe } from '@stripe/stripe-js';
-import { Elements } from '@stripe/react-stripe-js';
-
-// Initialize Stripe
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '');
-
 // Step components
 import Step1TourDetails from './steps/Step1TourDetails';
 import Step2WinerySelection from './steps/Step2WinerySelection';
@@ -197,14 +191,12 @@ export default function BookTourPage() {
           )}
 
           {currentStep === 4 && (
-            <Elements stripe={stripePromise}>
-              <Step4ReviewPayment
-                bookingData={bookingData}
-                updateBookingData={updateBookingData}
-                nextStep={nextStep}
-                prevStep={prevStep}
-              />
-            </Elements>
+            <Step4ReviewPayment
+              bookingData={bookingData}
+              updateBookingData={updateBookingData}
+              nextStep={nextStep}
+              prevStep={prevStep}
+            />
           )}
 
           {currentStep === 5 && (

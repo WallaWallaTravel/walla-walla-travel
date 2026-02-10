@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Stripe from 'stripe';
 import { logger } from '@/lib/logger';
 import { withErrorHandling, BadRequestError, NotFoundError, InternalServerError } from '@/lib/api-errors';
 import { queryOne, withTransaction } from '@/lib/db-helpers';
@@ -9,13 +8,7 @@ import { auditService } from '@/lib/services/audit.service';
 import { validateBody, ConfirmPaymentSchema } from '@/lib/api/middleware/validation';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
-
-// Initialize Stripe
-const stripe = process.env.STRIPE_SECRET_KEY
-  ? new Stripe(process.env.STRIPE_SECRET_KEY, {
-      apiVersion: '2025-10-29.clover',
-    })
-  : null;
+import { getBrandStripeClient } from '@/lib/stripe-brands';
 
 interface Payment {
   id: number;
@@ -30,6 +23,7 @@ interface Booking {
   customer_email: string;
   deposit_paid: boolean;
   final_payment_paid: boolean;
+  brand_id: number | null;
 }
 
 /**
@@ -43,25 +37,8 @@ interface Booking {
 export const POST = withCSRF(
   withRateLimit(rateLimiters.payment)(
     withErrorHandling(async (request: NextRequest) => {
-  // Check if Stripe is configured
-  if (!stripe) {
-    throw new InternalServerError('Payment processing not configured. Please contact support.');
-  }
-
   // Validate input with Zod schema
   const { payment_intent_id } = await validateBody(request, ConfirmPaymentSchema);
-
-  // Retrieve payment intent from Stripe
-  const paymentIntent = await stripe.paymentIntents.retrieve(payment_intent_id);
-
-  if (!paymentIntent) {
-    throw new NotFoundError('Payment intent');
-  }
-
-  // Check if payment succeeded
-  if (paymentIntent.status !== 'succeeded') {
-    throw new BadRequestError(`Payment not successful. Status: ${paymentIntent.status}`);
-  }
 
   // Get payment from database
   const payment = await queryOne<Payment>(
@@ -78,9 +55,9 @@ export const POST = withCSRF(
   const bookingId = payment.booking_id;
   const paymentType = payment.payment_type;
 
-  // Get booking details
+  // Get booking details (including brand_id for brand-specific Stripe routing)
   const booking = await queryOne<Booking>(
-    `SELECT id, booking_number, customer_email, deposit_paid, final_payment_paid
+    `SELECT id, booking_number, customer_email, deposit_paid, final_payment_paid, brand_id
      FROM bookings
      WHERE id = $1`,
     [bookingId]
@@ -88,6 +65,24 @@ export const POST = withCSRF(
 
   if (!booking) {
     throw new NotFoundError('Booking');
+  }
+
+  // Get brand-specific Stripe client
+  const stripe = getBrandStripeClient(booking.brand_id ?? undefined);
+  if (!stripe) {
+    throw new InternalServerError('Payment processing not configured. Please contact support.');
+  }
+
+  // Retrieve payment intent from Stripe
+  const paymentIntent = await stripe.paymentIntents.retrieve(payment_intent_id);
+
+  if (!paymentIntent) {
+    throw new NotFoundError('Payment intent');
+  }
+
+  // Check if payment succeeded
+  if (paymentIntent.status !== 'succeeded') {
+    throw new BadRequestError(`Payment not successful. Status: ${paymentIntent.status}`);
   }
 
   // Update payment and booking in a transaction
