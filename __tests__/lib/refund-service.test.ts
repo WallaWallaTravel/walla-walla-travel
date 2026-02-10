@@ -25,8 +25,8 @@ jest.mock('@/lib/monitoring/error-logger', () => ({
   logError: jest.fn(),
 }));
 
-jest.mock('@/lib/stripe', () => ({
-  getStripe: jest.fn(() => ({
+jest.mock('@/lib/stripe-brands', () => ({
+  getBrandStripeClient: jest.fn(() => ({
     refunds: {
       create: jest.fn(),
     },
@@ -224,16 +224,16 @@ describe('RefundService', () => {
 
     it('should process Stripe refund for 100% policy', async () => {
       const futureDate = new Date(Date.now() + 86400000 * 60).toISOString();
-      const { getStripe } = require('@/lib/stripe');
+      const { getBrandStripeClient } = require('@/lib/stripe-brands');
       const mockRefundCreate = jest.fn().mockResolvedValue({ id: 're_test123' });
-      getStripe.mockReturnValue({ refunds: { create: mockRefundCreate } });
+      getBrandStripeClient.mockReturnValue({ refunds: { create: mockRefundCreate } });
 
       mockQuery
         // Get booking
         .mockResolvedValueOnce({
           rows: [{
             id: 1, tour_date: futureDate, deposit_amount: 200,
-            deposit_paid: true, status: 'cancelled',
+            deposit_paid: true, status: 'cancelled', brand_id: null,
           }],
           rowCount: 1,
         } as any)
@@ -271,15 +271,15 @@ describe('RefundService', () => {
 
     it('should process 50% Stripe refund', async () => {
       const futureDate = new Date(Date.now() + 86400000 * 30).toISOString();
-      const { getStripe } = require('@/lib/stripe');
+      const { getBrandStripeClient } = require('@/lib/stripe-brands');
       const mockRefundCreate = jest.fn().mockResolvedValue({ id: 're_half' });
-      getStripe.mockReturnValue({ refunds: { create: mockRefundCreate } });
+      getBrandStripeClient.mockReturnValue({ refunds: { create: mockRefundCreate } });
 
       mockQuery
         .mockResolvedValueOnce({
           rows: [{
             id: 2, tour_date: futureDate, deposit_amount: 300,
-            deposit_paid: true, status: 'cancelled',
+            deposit_paid: true, status: 'cancelled', brand_id: null,
           }],
           rowCount: 1,
         } as any)
@@ -304,15 +304,15 @@ describe('RefundService', () => {
 
     it('should handle Stripe refund failure gracefully', async () => {
       const futureDate = new Date(Date.now() + 86400000 * 60).toISOString();
-      const { getStripe } = require('@/lib/stripe');
+      const { getBrandStripeClient } = require('@/lib/stripe-brands');
       const mockRefundCreate = jest.fn().mockRejectedValue(new Error('Stripe error'));
-      getStripe.mockReturnValue({ refunds: { create: mockRefundCreate } });
+      getBrandStripeClient.mockReturnValue({ refunds: { create: mockRefundCreate } });
 
       mockQuery
         .mockResolvedValueOnce({
           rows: [{
             id: 3, tour_date: futureDate, deposit_amount: 200,
-            deposit_paid: true, status: 'cancelled',
+            deposit_paid: true, status: 'cancelled', brand_id: null,
           }],
           rowCount: 1,
         } as any)
