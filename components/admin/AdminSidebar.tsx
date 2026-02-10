@@ -25,6 +25,7 @@ const NAV_ITEMS: NavItem[] = [
   // Proposals → replaced by Trip Proposals
   // Tour Offers → renamed to "Shared Tours", marked as coming soon
   { label: 'Leads', icon: '🎯', href: '/admin/leads', section: 'Sales Pipeline', dynamicBadge: 'pendingLeads', requiredAccess: 'admin' },
+  { label: 'Trip Estimates', icon: '💰', href: '/admin/trip-estimates', section: 'Sales Pipeline', requiredAccess: 'admin' },
   { label: 'Trip Proposals', icon: '🗺️', href: '/admin/trip-proposals', section: 'Sales Pipeline', requiredAccess: 'admin' },
   { label: 'Bookings', icon: '📅', href: '/admin/bookings', section: 'Sales Pipeline', requiredAccess: 'admin' },
   { label: 'Shared Tours', icon: '🎫', href: '/admin/shared-tours', section: 'Sales Pipeline', badge: 'Soon', requiredAccess: 'admin' },

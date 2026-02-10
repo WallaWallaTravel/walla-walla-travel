@@ -25,10 +25,14 @@ export async function POST(request: NextRequest) {
   const headersList = await headers();
   const signature = headersList.get('stripe-signature');
 
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  // Support both live and test webhook secrets (both endpoints point to same URL)
+  const webhookSecrets = [
+    process.env.STRIPE_WEBHOOK_SECRET_LIVE,
+    process.env.STRIPE_WEBHOOK_SECRET,
+  ].filter(Boolean) as string[];
 
-  if (!webhookSecret) {
-    logger.warn('[Stripe Webhook] STRIPE_WEBHOOK_SECRET not configured');
+  if (webhookSecrets.length === 0) {
+    logger.warn('[Stripe Webhook] No webhook secrets configured');
     return NextResponse.json(
       { error: 'Webhook not configured' },
       { status: 500 }
@@ -43,16 +47,24 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  let event: Stripe.Event;
+  let event: Stripe.Event | undefined;
 
-  try {
-    const stripe = getStripe();
-    event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-  } catch (err) {
-    const message = err instanceof Error ? err.message : 'Invalid signature';
-    logger.error('[Stripe Webhook] Signature verification failed', { error: message });
+  // Try each secret until one verifies (live secret first)
+  const stripe = getStripe();
+  let lastError = '';
+  for (const secret of webhookSecrets) {
+    try {
+      event = stripe.webhooks.constructEvent(body, signature, secret);
+      break;
+    } catch (err) {
+      lastError = err instanceof Error ? err.message : 'Invalid signature';
+    }
+  }
+
+  if (!event) {
+    logger.error('[Stripe Webhook] Signature verification failed', { error: lastError });
     return NextResponse.json(
-      { error: `Webhook signature verification failed: ${message}` },
+      { error: `Webhook signature verification failed: ${lastError}` },
       { status: 400 }
     );
   }
