@@ -1,35 +1,68 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 
 interface MarketingMetrics {
-  website_visits: number
-  booking_inquiries: number
-  bookings_made: number
-  new_leads: number
-  emails_sent: number
-  instagram_followers: number
+  summary: {
+    leads: {
+      total: number
+      new: number
+      qualified: number
+      converted: number
+      hot: number
+      period_count: number
+      conversion_rate: number
+    }
+    bookings: {
+      total: number
+      pending: number
+      confirmed: number
+      revenue: number
+      period_count: number
+    }
+    ab_tests: {
+      total: number
+      active: number
+      completed: number
+    }
+    competitors: {
+      unreviewed_changes: number
+      high_priority: number
+    }
+    social: {
+      scheduled: number
+      published_this_week: number
+    }
+  }
+  generated_at: string
 }
 
 export default function MarketingDashboard() {
   const [metrics, setMetrics] = useState<MarketingMetrics | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchMetrics = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const res = await fetch('/api/admin/marketing/metrics?period=30')
+      if (!res.ok) {
+        throw new Error(`Failed to load metrics (${res.status})`)
+      }
+      const data = await res.json()
+      setMetrics(data)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load metrics')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
-    // Simulated metrics for demo
-    setTimeout(() => {
-      setMetrics({
-        website_visits: 1247,
-        booking_inquiries: 23,
-        bookings_made: 8,
-        new_leads: 15,
-        emails_sent: 156,
-        instagram_followers: 2340,
-      })
-      setLoading(false)
-    }, 500)
-  }, [])
+    fetchMetrics()
+  }, [fetchMetrics])
 
   const marketingModules = [
     {
@@ -46,7 +79,7 @@ export default function MarketingDashboard() {
       icon: '📈',
       href: '/admin/marketing/analytics',
       color: 'from-indigo-500 to-purple-600',
-      stats: 'Real-time data',
+      stats: metrics ? `${metrics.summary.leads.conversion_rate}% conv. rate` : 'Loading...',
     },
     {
       title: 'A/B Testing',
@@ -54,7 +87,7 @@ export default function MarketingDashboard() {
       icon: '🧪',
       href: '/admin/marketing/ab-testing',
       color: 'from-purple-500 to-indigo-600',
-      stats: '3 active tests',
+      stats: metrics ? `${metrics.summary.ab_tests.active} active tests` : 'Loading...',
     },
     {
       title: 'Lead Management',
@@ -62,7 +95,7 @@ export default function MarketingDashboard() {
       icon: '🎯',
       href: '/admin/marketing/leads',
       color: 'from-green-500 to-emerald-600',
-      stats: '15 new leads',
+      stats: metrics ? `${metrics.summary.leads.new} new leads` : 'Loading...',
     },
     {
       title: 'Social Media',
@@ -70,7 +103,7 @@ export default function MarketingDashboard() {
       icon: '📱',
       href: '/admin/marketing/social',
       color: 'from-pink-500 to-rose-600',
-      stats: '12 scheduled',
+      stats: metrics ? `${metrics.summary.social.scheduled} scheduled` : 'Loading...',
     },
     {
       title: 'Content Suggestions',
@@ -86,7 +119,9 @@ export default function MarketingDashboard() {
       icon: '👁️',
       href: '/admin/marketing/competitors',
       color: 'from-orange-500 to-amber-600',
-      stats: '5 competitors',
+      stats: metrics && metrics.summary.competitors.unreviewed_changes > 0
+        ? `${metrics.summary.competitors.unreviewed_changes} unreviewed`
+        : 'All clear',
     },
     {
       title: 'Email Campaigns',
@@ -94,7 +129,7 @@ export default function MarketingDashboard() {
       icon: '📧',
       href: '/admin/marketing/email',
       color: 'from-blue-500 to-cyan-600',
-      stats: '2 active',
+      stats: metrics ? `${metrics.summary.bookings.period_count} bookings/30d` : 'Loading...',
     },
     {
       title: 'Content Calendar',
@@ -102,7 +137,7 @@ export default function MarketingDashboard() {
       icon: '📅',
       href: '/admin/marketing/calendar',
       color: 'from-teal-500 to-green-600',
-      stats: '8 planned',
+      stats: metrics ? `${metrics.summary.social.published_this_week} this week` : 'Loading...',
     },
     {
       title: 'Settings',
@@ -118,12 +153,32 @@ export default function MarketingDashboard() {
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">📊 Marketing Hub</h1>
-          <p className="text-gray-600 mt-2">
-            Manage all your marketing activities in one place
-          </p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Marketing Hub</h1>
+            <p className="text-gray-700 mt-2">
+              Manage all your marketing activities in one place
+            </p>
+          </div>
+          {metrics && (
+            <p className="text-xs text-gray-500">
+              Updated {new Date(metrics.generated_at).toLocaleTimeString()}
+            </p>
+          )}
         </div>
+
+        {/* Error State */}
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+            <p className="text-sm text-red-800">{error}</p>
+            <button
+              onClick={fetchMetrics}
+              className="mt-2 text-sm text-red-700 underline hover:text-red-900"
+            >
+              Try again
+            </button>
+          </div>
+        )}
 
         {/* Quick Stats */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
@@ -134,40 +189,40 @@ export default function MarketingDashboard() {
                 <div className="h-8 bg-gray-200 rounded w-16"></div>
               </div>
             ))
-          ) : (
+          ) : metrics ? (
             <>
               <div className="bg-white rounded-lg p-4 shadow-sm">
-                <p className="text-xs text-gray-500 uppercase">Website Visits</p>
-                <p className="text-2xl font-bold text-gray-900">{metrics?.website_visits.toLocaleString()}</p>
-                <p className="text-xs text-green-600">+12% vs last week</p>
+                <p className="text-xs text-gray-700 uppercase font-medium">Total Leads</p>
+                <p className="text-2xl font-bold text-gray-900">{metrics.summary.leads.total.toLocaleString()}</p>
+                <p className="text-xs text-gray-700">{metrics.summary.leads.period_count} this month</p>
               </div>
               <div className="bg-white rounded-lg p-4 shadow-sm">
-                <p className="text-xs text-gray-500 uppercase">Inquiries</p>
-                <p className="text-2xl font-bold text-gray-900">{metrics?.booking_inquiries}</p>
-                <p className="text-xs text-green-600">+8% vs last week</p>
+                <p className="text-xs text-gray-700 uppercase font-medium">Hot Leads</p>
+                <p className="text-2xl font-bold text-gray-900">{metrics.summary.leads.hot}</p>
+                <p className="text-xs text-gray-700">{metrics.summary.leads.qualified} qualified</p>
               </div>
               <div className="bg-white rounded-lg p-4 shadow-sm">
-                <p className="text-xs text-gray-500 uppercase">Bookings</p>
-                <p className="text-2xl font-bold text-gray-900">{metrics?.bookings_made}</p>
-                <p className="text-xs text-green-600">+5% vs last week</p>
+                <p className="text-xs text-gray-700 uppercase font-medium">Bookings</p>
+                <p className="text-2xl font-bold text-gray-900">{metrics.summary.bookings.confirmed}</p>
+                <p className="text-xs text-gray-700">{metrics.summary.bookings.pending} pending</p>
               </div>
               <div className="bg-white rounded-lg p-4 shadow-sm">
-                <p className="text-xs text-gray-500 uppercase">New Leads</p>
-                <p className="text-2xl font-bold text-gray-900">{metrics?.new_leads}</p>
-                <p className="text-xs text-green-600">+15% vs last week</p>
+                <p className="text-xs text-gray-700 uppercase font-medium">Revenue</p>
+                <p className="text-2xl font-bold text-gray-900">${metrics.summary.bookings.revenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                <p className="text-xs text-gray-700">{metrics.summary.bookings.period_count} bookings/30d</p>
               </div>
               <div className="bg-white rounded-lg p-4 shadow-sm">
-                <p className="text-xs text-gray-500 uppercase">Emails Sent</p>
-                <p className="text-2xl font-bold text-gray-900">{metrics?.emails_sent}</p>
-                <p className="text-xs text-gray-500">This month</p>
+                <p className="text-xs text-gray-700 uppercase font-medium">Conversion</p>
+                <p className="text-2xl font-bold text-gray-900">{metrics.summary.leads.conversion_rate}%</p>
+                <p className="text-xs text-gray-700">{metrics.summary.leads.converted} converted</p>
               </div>
               <div className="bg-white rounded-lg p-4 shadow-sm">
-                <p className="text-xs text-gray-500 uppercase">IG Followers</p>
-                <p className="text-2xl font-bold text-gray-900">{metrics?.instagram_followers.toLocaleString()}</p>
-                <p className="text-xs text-green-600">+45 this week</p>
+                <p className="text-xs text-gray-700 uppercase font-medium">Social Posts</p>
+                <p className="text-2xl font-bold text-gray-900">{metrics.summary.social.published_this_week}</p>
+                <p className="text-xs text-gray-700">{metrics.summary.social.scheduled} scheduled</p>
               </div>
             </>
-          )}
+          ) : null}
         </div>
 
         {/* Marketing Modules */}
@@ -186,13 +241,13 @@ export default function MarketingDashboard() {
                     <h3 className="text-lg font-semibold text-gray-900 mt-2 group-hover:text-purple-600 transition-colors">
                       {module.title}
                     </h3>
-                    <p className="text-sm text-gray-600 mt-1">
+                    <p className="text-sm text-gray-700 mt-1">
                       {module.description}
                     </p>
                   </div>
                 </div>
                 <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-500">{module.stats}</span>
+                  <span className="text-sm font-medium text-gray-700">{module.stats}</span>
                   <span className="text-purple-600 group-hover:translate-x-1 transition-transform">
                     →
                   </span>
@@ -210,75 +265,54 @@ export default function MarketingDashboard() {
               href="/admin/marketing/ab-testing/new"
               className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700"
             >
-              🧪 New A/B Test
+              New A/B Test
             </Link>
             <Link
               href="/admin/marketing/leads/new"
               className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700"
             >
-              ➕ Add Lead
+              Add Lead
             </Link>
             <Link
               href="/admin/marketing/social/schedule"
               className="px-4 py-2 bg-pink-600 text-white rounded-lg text-sm font-medium hover:bg-pink-700"
             >
-              📱 Schedule Post
+              Schedule Post
             </Link>
             <Link
               href="/admin/marketing/email/new"
               className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
             >
-              📧 New Campaign
+              New Campaign
             </Link>
             <Link
               href="/admin/marketing/suggestions"
               className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700"
             >
-              💡 Review Suggestions
+              Review Suggestions
             </Link>
           </div>
         </div>
 
-        {/* Recent Activity */}
-        <div className="mt-8 bg-white rounded-xl shadow-sm p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h2>
-          <div className="space-y-3">
-            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-              <span className="text-xl">🧪</span>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">A/B Test &quot;Caption Length&quot; completed</p>
-                <p className="text-xs text-gray-500">Winner: Long captions (+50% conversions)</p>
-              </div>
-              <span className="text-xs text-gray-400">2h ago</span>
-            </div>
-            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-              <span className="text-xl">🎯</span>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">New lead: Sarah Johnson</p>
-                <p className="text-xs text-gray-500">Corporate event, 20 guests</p>
-              </div>
-              <span className="text-xs text-gray-400">4h ago</span>
-            </div>
-            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-              <span className="text-xl">📱</span>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">Instagram post published</p>
-                <p className="text-xs text-gray-500">124 likes, 8 comments</p>
-              </div>
-              <span className="text-xs text-gray-400">Yesterday</span>
-            </div>
-            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-              <span className="text-xl">👁️</span>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">Competitor price change detected</p>
-                <p className="text-xs text-gray-500">Blue Mountain Tours: -15% on weekend tours</p>
-              </div>
-              <span className="text-xs text-gray-400">Yesterday</span>
-            </div>
+        {/* Competitor Alerts */}
+        {metrics && metrics.summary.competitors.high_priority > 0 && (
+          <div className="mt-8 bg-amber-50 border border-amber-200 rounded-xl p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">Competitor Alerts</h2>
+            <p className="text-sm text-gray-700">
+              {metrics.summary.competitors.high_priority} high-priority competitor changes need your review.{' '}
+              {metrics.summary.competitors.unreviewed_changes > metrics.summary.competitors.high_priority && (
+                <span>({metrics.summary.competitors.unreviewed_changes} total unreviewed)</span>
+              )}
+            </p>
+            <Link
+              href="/admin/marketing/competitors"
+              className="inline-block mt-3 text-sm font-medium text-amber-800 hover:text-amber-900 underline"
+            >
+              Review competitor changes →
+            </Link>
           </div>
-        </div>
+        )}
       </div>
     </div>
   )
 }
-
