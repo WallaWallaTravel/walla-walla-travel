@@ -37,6 +37,13 @@ const config: Config = {
           800: '#6F421E',
           900: '#5A3618',
         },
+        wwcc: {
+          tan: '#847b4a',
+          sage: '#719453',
+          cream: '#fffde3',
+          dark: '#2d2a1e',
+          text: '#4a4635',
+        },
       },
       boxShadow: {
         'soft': '0 2px 8px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.04)',

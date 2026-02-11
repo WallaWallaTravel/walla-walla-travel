@@ -117,11 +117,10 @@ export default function Step1TourDetails({ bookingData, updateBookingData, nextS
           <label className="block text-lg font-bold text-gray-900 mb-2">
             Tour Duration <span className="text-red-600">*</span>
           </label>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             {[
-              { hours: 4, label: '4 Hours', desc: '2-3 wineries' },
-              { hours: 6, label: '6 Hours', desc: '3-4 wineries' },
-              { hours: 8, label: '8 Hours', desc: '4-6 wineries' },
+              { hours: 5, label: '5 Hours', desc: '2 wineries + lunch' },
+              { hours: 6, label: '6 Hours', desc: '3 wineries' },
             ].map((option) => (
               <button
                 key={option.hours}

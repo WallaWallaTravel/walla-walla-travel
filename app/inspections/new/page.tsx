@@ -25,7 +25,7 @@ export default function VehicleInspection() {
           <select className="w-full p-3 border border-gray-300 rounded-lg text-gray-900 text-lg">
             <option>Van #101</option>
             <option>Van #102</option>
-            <option>SUV #201</option>
+            <option>Van #103</option>
           </select>
         </div>
 

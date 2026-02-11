@@ -1,7 +1,7 @@
 /**
  * Pricing Engine
  * Calculates dynamic pricing based on:
- * - Duration (4, 6, or 8 hours)
+ * - Duration (5 or 6 hours)
  * - Party size
  * - Day of week (weekend premium)
  * - Season/holidays
@@ -36,10 +36,9 @@ interface PricingResult {
 const PRICING_CONFIG = {
   // Base rates by duration (for base party size of 1-4)
   duration_rates: {
-    4: 600,  // 4-hour tour: $600
-    6: 900,  // 6-hour tour: $900
-    8: 1200  // 8-hour tour: $1200
-  },
+    5: 750,   // 5-hour tour (2 wineries + lunch): $750
+    6: 900,   // 6-hour tour (3 wineries): $900
+  } as Record<number, number>,
 
   // Per-person pricing (for guests beyond base 4)
   per_person_rate: 50,  // $50 per additional person beyond 4
@@ -47,10 +46,8 @@ const PRICING_CONFIG = {
 
   // Vehicle type multipliers
   vehicle_multipliers: {
-    sedan: 0.8,      // 20% discount for sedan (1-4 passengers)
-    sprinter: 1.0,   // Standard rate for sprinter van
-    luxury: 1.3      // 30% premium for luxury vehicle
-  },
+    sprinter: 1.0,   // Standard rate for sprinter van (only vehicle type)
+  } as Record<string, number>,
 
   // Surcharges
   weekend_surcharge_rate: 0.15,  // 15% weekend surcharge (Fri-Sun)
@@ -83,7 +80,7 @@ export function calculatePrice(request: PricingRequest): PricingResult {
   const { date, duration_hours, party_size, vehicle_type = 'sprinter' } = request;
 
   // 1. Get base price for duration
-  const baseDurationPrice = PRICING_CONFIG.duration_rates[duration_hours as 4 | 6 | 8] || 900;
+  const baseDurationPrice = PRICING_CONFIG.duration_rates[duration_hours as 5 | 6] || 900;
 
   // 2. Calculate per-person charge (for guests beyond base 4)
   const additionalGuests = Math.max(0, party_size - PRICING_CONFIG.base_party_size);
@@ -204,9 +201,8 @@ export function calculatePrice(request: PricingRequest): PricingResult {
  * Get price estimate for display
  */
 export function getPriceEstimate(duration_hours: number, party_size: number): string {
-  const basePrice = PRICING_CONFIG.duration_rates[duration_hours as 4 | 6 | 8] || 900;
-  const vehicleType = party_size > 4 ? 'sprinter' : 'sedan';
-  const multiplier = PRICING_CONFIG.vehicle_multipliers[vehicleType];
+  const basePrice = PRICING_CONFIG.duration_rates[duration_hours as 5 | 6] || 900;
+  const multiplier = PRICING_CONFIG.vehicle_multipliers['sprinter'];
   const estimatedPrice = basePrice * multiplier;
 
   return `$${estimatedPrice.toFixed(0)}`;
@@ -222,8 +218,8 @@ export function validatePricingRequest(request: PricingRequest): {
   const errors: string[] = [];
 
   // Check duration
-  if (![4, 6, 8].includes(request.duration_hours)) {
-    errors.push('Duration must be 4, 6, or 8 hours');
+  if (![5, 6].includes(request.duration_hours)) {
+    errors.push('Duration must be 5 or 6 hours');
   }
 
   // Check party size

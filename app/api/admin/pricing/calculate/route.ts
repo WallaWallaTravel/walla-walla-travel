@@ -105,9 +105,8 @@ export async function POST(request: Request) {
 
     // Duration base
     const durationLabels: Record<number, string> = {
-      4: '4-Hour Tour',
+      5: '5-Hour Tour',
       6: '6-Hour Tour',
-      8: '8-Hour Tour',
     };
     breakdown.push({
       label: `${durationLabels[duration_hours] || `${duration_hours}-Hour Tour`} (base 4 guests)`,

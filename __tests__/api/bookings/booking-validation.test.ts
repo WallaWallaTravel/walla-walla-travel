@@ -112,10 +112,10 @@ describe('Booking Validation Schemas', () => {
     });
 
     describe('duration_hours validation', () => {
-      it('should accept 4 hour duration', () => {
+      it('should accept 5 hour duration', () => {
         const result = CheckAvailabilitySchema.safeParse({
           ...validData,
-          duration_hours: 4,
+          duration_hours: 5,
         });
         expect(result.success).toBe(true);
       });
@@ -128,18 +128,18 @@ describe('Booking Validation Schemas', () => {
         expect(result.success).toBe(true);
       });
 
-      it('should accept 8 hour duration', () => {
+      it('should reject 4 hour duration (not 5 or 6)', () => {
+        const result = CheckAvailabilitySchema.safeParse({
+          ...validData,
+          duration_hours: 4,
+        });
+        expect(result.success).toBe(false);
+      });
+
+      it('should reject 8 hour duration (not 5 or 6)', () => {
         const result = CheckAvailabilitySchema.safeParse({
           ...validData,
           duration_hours: 8,
-        });
-        expect(result.success).toBe(true);
-      });
-
-      it('should reject 5 hour duration (not 4, 6, or 8)', () => {
-        const result = CheckAvailabilitySchema.safeParse({
-          ...validData,
-          duration_hours: 5,
         });
         expect(result.success).toBe(false);
       });
@@ -259,14 +259,6 @@ describe('Booking Validation Schemas', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should accept optional vehicle_type sedan', () => {
-      const result = CalculatePriceSchema.safeParse({
-        ...validData,
-        vehicle_type: 'sedan',
-      });
-      expect(result.success).toBe(true);
-    });
-
     it('should accept optional vehicle_type sprinter', () => {
       const result = CalculatePriceSchema.safeParse({
         ...validData,
@@ -275,12 +267,20 @@ describe('Booking Validation Schemas', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should accept optional vehicle_type luxury', () => {
+    it('should reject sedan vehicle_type', () => {
+      const result = CalculatePriceSchema.safeParse({
+        ...validData,
+        vehicle_type: 'sedan',
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject luxury vehicle_type', () => {
       const result = CalculatePriceSchema.safeParse({
         ...validData,
         vehicle_type: 'luxury',
       });
-      expect(result.success).toBe(true);
+      expect(result.success).toBe(false);
     });
 
     it('should reject invalid vehicle_type', () => {

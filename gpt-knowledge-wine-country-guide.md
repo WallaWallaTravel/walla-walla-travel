@@ -277,9 +277,8 @@ Plan your visit around these popular events (dates vary by year — check wallaw
 
 | Size | Experience | Vehicle |
 |------|-----------|---------|
-| **2–4 guests** | Intimate, personalized | Luxury sedan |
-| **5–8 guests** | Social, flexible | Sprinter van |
-| **9–14 guests** | Lively group experience | Large sprinter van |
+| **2–8 guests** | Intimate to social | Mercedes Sprinter van |
+| **9–14 guests** | Lively group experience | Mercedes Sprinter van |
 | **15+** | Custom arrangement | Multiple vehicles |
 
 ### Booking Lead Times
@@ -297,12 +296,11 @@ Plan your visit around these popular events (dates vary by year — check wallaw
 |------|----------|
 | 10:00 AM | Pickup from hotel |
 | 10:30 AM | **Winery #1** — Start with a lighter-style producer (whites, rosés) |
-| 11:30 AM | **Winery #2** — Transition to reds |
-| 12:30 PM | **Lunch break** — Local restaurant (1 hour) |
-| 1:45 PM | **Winery #3** — Explore a different neighborhood |
-| 2:45 PM | **Winery #4** — Save a bold producer for last |
-| 3:45 PM | Return to hotel / downtown |
-| 4:00 PM | Drop-off |
+| 11:45 AM | **Winery #2** — Transition to reds |
+| 12:45 PM | **Lunch break** — Local restaurant (1 hour) |
+| 2:00 PM | **Winery #3** — Save a bold producer for last |
+| 3:15 PM | Return to hotel / downtown |
+| 3:30 PM | Drop-off |
 
 ### Tips for Group Organizers
 
@@ -316,7 +314,7 @@ Plan your visit around these popular events (dates vary by year — check wallaw
 
 ## Insider Tips
 
-These tips come from 15+ years of local experience:
+These tips come from extensive local experience:
 
 ### At the Wineries
 

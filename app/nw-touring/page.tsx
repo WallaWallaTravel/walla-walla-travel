@@ -40,8 +40,8 @@ export default function NWTouringLandingPage() {
         <div className="max-w-6xl mx-auto px-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center text-sm text-slate-600">
             <div>
-              <div className="font-bold text-[#1e40af] text-2xl mb-1">15+</div>
-              <div>Years Experience</div>
+              <div className="font-bold text-[#1e40af] text-2xl mb-1">Local</div>
+              <div>Walla Walla Experts</div>
             </div>
             <div>
               <div className="font-bold text-[#1e40af] text-2xl mb-1">DOT</div>
@@ -167,30 +167,34 @@ export default function NWTouringLandingPage() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
-            {/* Classic Tasting */}
+          <div className="grid md:grid-cols-2 max-w-4xl mx-auto gap-6">
+            {/* Wine & Dine */}
             <div className="bg-white border-2 border-slate-200 rounded-lg overflow-hidden hover:border-[#1e40af] transition-colors">
               <div className="bg-slate-50 px-6 py-4 border-b border-slate-200">
-                <h3 className="text-xl font-bold text-slate-900">Classic Tasting</h3>
-                <p className="text-sm text-slate-500 mt-1">Perfect introduction to wine country</p>
+                <h3 className="text-xl font-bold text-slate-900">Wine & Dine</h3>
+                <p className="text-sm text-slate-500 mt-1">Wine tasting with a local lunch experience</p>
               </div>
               <div className="p-6">
                 <div className="flex items-baseline gap-1 mb-4">
-                  <span className="text-3xl font-bold text-[#1e40af]">$500</span>
+                  <span className="text-3xl font-bold text-[#1e40af]">$750</span>
                   <span className="text-slate-500">/ group</span>
                 </div>
                 <ul className="space-y-3 mb-6">
                   <li className="flex items-center text-sm text-slate-700">
                     <span className="text-[#1e40af] mr-2">◆</span>
-                    <strong>4 hours</strong>&nbsp;of guided touring
+                    <strong>~5 hours</strong>&nbsp;of guided touring
                   </li>
                   <li className="flex items-center text-sm text-slate-700">
                     <span className="text-[#1e40af] mr-2">◆</span>
-                    <strong>3-4 wineries</strong>&nbsp;hand-selected
+                    <strong>2 wineries</strong>&nbsp;hand-selected
                   </li>
                   <li className="flex items-center text-sm text-slate-700">
                     <span className="text-[#1e40af] mr-2">◆</span>
-                    Up to 6 guests in premium SUV
+                    Up to 14 guests in Mercedes Sprinter
+                  </li>
+                  <li className="flex items-center text-sm text-slate-700">
+                    <span className="text-[#1e40af] mr-2">◆</span>
+                    Lunch at a local restaurant
                   </li>
                   <li className="flex items-center text-sm text-slate-700">
                     <span className="text-[#1e40af] mr-2">◆</span>
@@ -205,26 +209,26 @@ export default function NWTouringLandingPage() {
                   Ideal for: Couples, small groups, first-time visitors
                 </p>
                 <Link
-                  href="/book?package=classic"
+                  href="/book?package=wine-dine"
                   className="block w-full text-center bg-[#1e40af] text-white py-3 font-semibold hover:bg-[#1e3a8a] transition-colors"
                 >
-                  Book Classic Tour
+                  Book Wine & Dine
                 </Link>
               </div>
             </div>
 
-            {/* Deep Dive - Most Popular */}
+            {/* The Walla Walla Experience - Most Popular */}
             <div className="bg-white border-2 border-[#1e40af] rounded-lg overflow-hidden relative shadow-lg">
               <div className="absolute top-0 right-0 bg-[#1e40af] text-white text-xs font-bold px-3 py-1">
                 MOST POPULAR
               </div>
               <div className="bg-[#1e40af] px-6 py-4">
-                <h3 className="text-xl font-bold text-white">Deep Dive</h3>
-                <p className="text-sm text-blue-200 mt-1">The quintessential Walla Walla experience</p>
+                <h3 className="text-xl font-bold text-white">The Walla Walla Experience</h3>
+                <p className="text-sm text-blue-200 mt-1">The quintessential Walla Walla wine tour</p>
               </div>
               <div className="p-6">
                 <div className="flex items-baseline gap-1 mb-4">
-                  <span className="text-3xl font-bold text-[#1e40af]">$750</span>
+                  <span className="text-3xl font-bold text-[#1e40af]">$900</span>
                   <span className="text-slate-500">/ group</span>
                 </div>
                 <ul className="space-y-3 mb-6">
@@ -234,15 +238,11 @@ export default function NWTouringLandingPage() {
                   </li>
                   <li className="flex items-center text-sm text-slate-700">
                     <span className="text-[#1e40af] mr-2">◆</span>
-                    <strong>4-5 wineries</strong>&nbsp;with varietals focus
+                    <strong>3 wineries</strong>&nbsp;with varietals focus
                   </li>
                   <li className="flex items-center text-sm text-slate-700">
                     <span className="text-[#1e40af] mr-2">◆</span>
-                    Up to 10 guests in Sprinter van
-                  </li>
-                  <li className="flex items-center text-sm text-slate-700">
-                    <span className="text-[#1e40af] mr-2">◆</span>
-                    Lunch at wine-country restaurant
+                    Up to 14 guests in Mercedes Sprinter
                   </li>
                   <li className="flex items-center text-sm text-slate-700">
                     <span className="text-[#1e40af] mr-2">◆</span>
@@ -252,64 +252,19 @@ export default function NWTouringLandingPage() {
                     <span className="text-[#1e40af] mr-2">◆</span>
                     Bottled water & snacks
                   </li>
+                  <li className="flex items-center text-sm text-slate-700">
+                    <span className="text-[#1e40af] mr-2">◆</span>
+                    Hotel pickup & drop-off
+                  </li>
                 </ul>
                 <p className="text-xs text-slate-500 mb-4">
                   Ideal for: Wine enthusiasts, groups of friends, celebrations
                 </p>
                 <Link
-                  href="/book?package=deep-dive"
+                  href="/book?package=walla-walla-experience"
                   className="block w-full text-center bg-[#1e40af] text-white py-3 font-semibold hover:bg-[#1e3a8a] transition-colors"
                 >
-                  Book Deep Dive
-                </Link>
-              </div>
-            </div>
-
-            {/* Full Valley Experience */}
-            <div className="bg-white border-2 border-slate-200 rounded-lg overflow-hidden hover:border-[#1e40af] transition-colors">
-              <div className="bg-slate-50 px-6 py-4 border-b border-slate-200">
-                <h3 className="text-xl font-bold text-slate-900">Full Valley Experience</h3>
-                <p className="text-sm text-slate-500 mt-1">The ultimate wine country immersion</p>
-              </div>
-              <div className="p-6">
-                <div className="flex items-baseline gap-1 mb-4">
-                  <span className="text-3xl font-bold text-[#1e40af]">$1,200</span>
-                  <span className="text-slate-500">/ group</span>
-                </div>
-                <ul className="space-y-3 mb-6">
-                  <li className="flex items-center text-sm text-slate-700">
-                    <span className="text-[#1e40af] mr-2">◆</span>
-                    <strong>8 hours</strong>&nbsp;full-day adventure
-                  </li>
-                  <li className="flex items-center text-sm text-slate-700">
-                    <span className="text-[#1e40af] mr-2">◆</span>
-                    <strong>6-7 wineries</strong>&nbsp;across sub-regions
-                  </li>
-                  <li className="flex items-center text-sm text-slate-700">
-                    <span className="text-[#1e40af] mr-2">◆</span>
-                    Up to 14 guests in luxury Sprinter
-                  </li>
-                  <li className="flex items-center text-sm text-slate-700">
-                    <span className="text-[#1e40af] mr-2">◆</span>
-                    Gourmet lunch + afternoon snacks
-                  </li>
-                  <li className="flex items-center text-sm text-slate-700">
-                    <span className="text-[#1e40af] mr-2">◆</span>
-                    VIP access & behind-the-scenes
-                  </li>
-                  <li className="flex items-center text-sm text-slate-700">
-                    <span className="text-[#1e40af] mr-2">◆</span>
-                    Professional photos of your group
-                  </li>
-                </ul>
-                <p className="text-xs text-slate-500 mb-4">
-                  Ideal for: Corporate groups, special occasions, serious collectors
-                </p>
-                <Link
-                  href="/book?package=full-valley"
-                  className="block w-full text-center bg-[#1e40af] text-white py-3 font-semibold hover:bg-[#1e3a8a] transition-colors"
-                >
-                  Book Full Valley
+                  Book The Walla Walla Experience
                 </Link>
               </div>
             </div>
@@ -371,7 +326,7 @@ export default function NWTouringLandingPage() {
                 Local Expertise
               </h3>
               <p className="text-slate-700 ml-8">
-                15+ years serving Walla Walla Valley means we know every winery, restaurant, and venue. 
+                Deep local roots in Walla Walla Valley means we know every winery, restaurant, and venue.
                 We provide recommendations and handle reservations seamlessly.
               </p>
             </div>
@@ -389,29 +344,17 @@ export default function NWTouringLandingPage() {
             </p>
           </div>
           
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="max-w-2xl mx-auto">
             <div className="bg-white border border-slate-200 p-6">
               <h3 className="text-lg font-bold text-slate-900 mb-3">
-                Mercedes Sprinter Vans
+                Mercedes Sprinter Fleet
               </h3>
               <p className="text-slate-600 mb-3">
-                Luxury transportation for groups of 8-14. Leather seating, climate control, 
-                premium audio system.
+                Our fleet of 3 Mercedes Sprinter vans provides luxury transportation for groups of all sizes,
+                from couples to parties of 14. Leather seating, climate control, and premium audio system.
               </p>
               <p className="text-sm text-slate-500">
-                Perfect for wine tours, corporate outings, and group transfers
-              </p>
-            </div>
-            <div className="bg-white border border-slate-200 p-6">
-              <h3 className="text-lg font-bold text-slate-900 mb-3">
-                Premium SUVs
-              </h3>
-              <p className="text-slate-600 mb-3">
-                Executive transportation for individuals and small groups up to 6 passengers. 
-                Ideal for airport transfers and private tours.
-              </p>
-              <p className="text-sm text-slate-500">
-                Perfect for executive travel and intimate wine experiences
+                Perfect for wine tours, corporate outings, celebrations, and group transfers
               </p>
             </div>
           </div>

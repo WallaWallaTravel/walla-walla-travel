@@ -7,7 +7,7 @@
 In a web flooded with AI-generated content recycling stale or incorrect data, we differentiate by being:
 - **Locally verified** - The founder lives here and knows the region firsthand
 - **Regularly updated** - Current data, not recycled information from years ago
-- **Honest about limitations** - We say "~6 wineries" when verified, not "15" when guessing
+- **Honest about limitations** - We say "2-3 wineries per tour" when verified, not "15" when guessing
 - **Research-backed** - Every specific claim is verified before publishing
 
 **Why this matters:**
@@ -365,6 +365,44 @@ export const POST = withErrorHandling(async (request) => {
 |-------|-------|-------|---------|
 | Walla Walla Travel | (509) 200-8000 | info@wallawalla.travel | wallawalla.travel |
 | NW Touring & Concierge | (509) 540-3600 | info@nwtouring.com | nwtouring.com |
+
+---
+
+## TOUR BUSINESS RULES (NON-NEGOTIABLE)
+
+**These rules are enforced across ALL pages, code, and AI-generated content. Violations are bugs.**
+
+### Winery Count Rules
+
+| Guideline | Rule |
+|-----------|------|
+| Sweet spot | **3 wineries** per tour |
+| Good short package | **2 wineries** + meal |
+| Absolute maximum | **4 wineries** — even 4 is usually too many for most groups |
+| NEVER | More than 4 wineries under any circumstances |
+
+### Duration Rules
+
+| Duration | Format |
+|----------|--------|
+| ~5 hours | 2 wineries + lunch |
+| 6 hours | 3 wineries (the standard/popular tour) |
+| NEVER | 8-hour tours — we do not offer them |
+
+### Fleet Rules
+
+**The fleet is 3 Mercedes Sprinter vans. NOTHING ELSE.**
+- No SUVs, no sedans, no limos, no town cars
+- ALL tours use Sprinter vans regardless of party size
+- Do not mention, offer, or reference any other vehicle type
+- The only valid vehicle type in code is `'sprinter'`
+
+### Accuracy Rules
+
+- **No false experience claims** — do not claim "15+ years" or any specific years of experience
+- **No inflated winery counts** — grep for "5 wineries", "6 wineries", "7 wineries", "4-5", "5-6", "6-7" and fix any found
+- **No 8-hour tour references** — grep for "8 hour", "8-hour" and remove/fix
+- **No SUV/sedan references** in customer-facing content (exception: competitor monitoring data)
 
 ---
 

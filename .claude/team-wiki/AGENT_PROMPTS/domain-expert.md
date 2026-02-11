@@ -45,7 +45,7 @@ NW TOURING & CONCIERGE (Motor Carrier)
 From CLAUDE.md:
 - **Locally verified** - Founder lives in Walla Walla
 - **Regularly updated** - Current data, not recycled
-- **Honest about limitations** - Say "~6 wineries" when verified
+- **Honest about limitations** - Say "2-3 wineries per tour" when verified
 - **Research-backed** - Every claim verified before publishing
 
 **Rule: If we can't verify it, we don't publish it.**

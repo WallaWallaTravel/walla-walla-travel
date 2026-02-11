@@ -82,7 +82,7 @@ export async function checkAvailability(
       }] : [],
       suggested_vehicle: result.vehicle_id ? {
         id: result.vehicle_id,
-        type: result.vehicle_capacity && result.vehicle_capacity >= 10 ? 'sprinter' : 'sedan',
+        type: 'sprinter',
         capacity: result.vehicle_capacity || 0,
         name: result.vehicle_name || ''
       } : null,
@@ -170,7 +170,7 @@ export async function getAvailableDates(
     // Check if any time slot is available on this date
     const slots = await vehicleAvailabilityService.getAvailableSlots({
       date: dateStr,
-      durationHours: 4, // Minimum tour duration
+      durationHours: 5, // Minimum tour duration
       partySize,
       brandId
     });

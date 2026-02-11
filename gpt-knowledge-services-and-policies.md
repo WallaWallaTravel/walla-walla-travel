@@ -58,8 +58,7 @@ Shared tours pair smaller groups together for a social wine tasting experience a
 
 ### Party Size & Vehicles
 
-- **1–4 guests:** Luxury sedan
-- **5–14 guests:** Luxury sprinter van
+- **1–14 guests:** Mercedes Sprinter van
 - **15+ guests:** Contact us for custom arrangements
 
 ### Additional Guests
@@ -71,9 +70,8 @@ Shared tours pair smaller groups together for a social wine tasting experience a
 
 | Duration | Base Rate |
 |----------|-----------|
-| 4 hours | $600 |
+| 5 hours | $750 |
 | 6 hours | $900 |
-| 8 hours | $1,200 |
 
 ### Surcharges & Discounts
 
@@ -96,7 +94,7 @@ Available as part of private transportation service. Walla Walla is approximatel
 
 ## What's Included
 
-- Luxury transportation (sedan or sprinter van based on group size)
+- Luxury transportation (Mercedes Sprinter van)
 - Professional, knowledgeable driver
 - Bottled water
 - Cooler for wine purchases
@@ -271,7 +269,7 @@ A: Contact us at info@wallawalla.travel or (509) 200-8000. See our cancellation 
 ### Tour Experience
 
 **Q: How many wineries will we visit?**
-A: The Classic Wine Tour visits 4–5 wineries in 6 hours. For private transportation, we recommend 3–4 wineries to allow plenty of time at each stop.
+A: The standard wine tour visits 3 wineries in 6 hours. For shorter tours, we offer 2 wineries + lunch in about 5 hours. We recommend no more than 3 wineries per tour to allow plenty of time at each stop.
 
 **Q: Do I need to make winery reservations?**
 A: We handle all winery reservations for Classic Wine Tours. For Private Transportation, we can help coordinate reservations or you can book your own.

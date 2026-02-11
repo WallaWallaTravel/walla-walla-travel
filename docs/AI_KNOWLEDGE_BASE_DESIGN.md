@@ -1432,10 +1432,8 @@ CREATE TABLE kb_pricing_config (
   id SERIAL PRIMARY KEY,
   
   -- Vehicle rates (per day) - INCLUDED in quotes
-  rate_sedan DECIMAL(10,2) DEFAULT 350.00,      -- 1-2 guests
-  rate_suv DECIMAL(10,2) DEFAULT 400.00,        -- 3-4 guests
-  rate_van DECIMAL(10,2) DEFAULT 500.00,        -- 5-8 guests
-  rate_sprinter DECIMAL(10,2) DEFAULT 650.00,   -- 9-14 guests
+  -- Fleet is Sprinter-only (no sedans, SUVs, or other vehicle types)
+  rate_sprinter DECIMAL(10,2) DEFAULT 650.00,   -- All group sizes (1-14 guests)
   
   -- Guide rate - INCLUDED in quotes
   rate_guide_per_day DECIMAL(10,2) DEFAULT 300.00,
@@ -4047,10 +4045,8 @@ CREATE TABLE kb_pricing_config (
   id SERIAL PRIMARY KEY,
   
   -- Vehicle rates (per day) - INCLUDED in quotes
-  rate_sedan DECIMAL(10,2) DEFAULT 350.00,      -- 1-2 guests
-  rate_suv DECIMAL(10,2) DEFAULT 400.00,        -- 3-4 guests
-  rate_van DECIMAL(10,2) DEFAULT 500.00,        -- 5-8 guests
-  rate_sprinter DECIMAL(10,2) DEFAULT 650.00,   -- 9-14 guests
+  -- Fleet is Sprinter-only (no sedans, SUVs, or other vehicle types)
+  rate_sprinter DECIMAL(10,2) DEFAULT 650.00,   -- All group sizes (1-14 guests)
   
   -- Guide rate - INCLUDED in quotes
   rate_guide_per_day DECIMAL(10,2) DEFAULT 300.00,

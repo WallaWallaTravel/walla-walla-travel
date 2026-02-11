@@ -304,7 +304,7 @@ export interface CreateBookingInput {
   party_size: number;
   tour_date: string;
   start_time: string;
-  duration_hours: 4.0 | 6.0 | 8.0;
+  duration_hours: 5.0 | 6.0;
   pickup_location: string;
   winery_ids: number[];
   special_requests?: string;
@@ -316,7 +316,7 @@ export interface CreateBookingInput {
 export interface BookingAvailabilityQuery {
   tour_date: string;
   start_time: string;
-  duration_hours: 4.0 | 6.0 | 8.0;
+  duration_hours: 5.0 | 6.0;
   party_size: number;
 }
 
@@ -407,13 +407,13 @@ export interface Payment {
 // PRICING RULE TYPES
 // ============================================================================
 
-export type VehicleType = 'sprinter' | 'luxury_sedan' | 'suv';
+export type VehicleType = 'sprinter';
 
 export interface PricingRule {
   id: number;
   name: string;
   vehicle_type: VehicleType;
-  duration_hours: 4.0 | 6.0 | 8.0;
+  duration_hours: 5.0 | 6.0;
   base_price: number;
   is_weekend: boolean;
   effective_from?: string;

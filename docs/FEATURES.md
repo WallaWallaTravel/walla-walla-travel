@@ -361,7 +361,7 @@ You now have a **world-class, enterprise-grade wine tour booking and management 
 2. Select date, duration, party size
 3. See live pricing update
 4. Choose available time slot
-5. Select 2-6 wineries
+5. Select 2-4 wineries
 6. Drag to reorder
 7. Enter customer information
 8. Review complete summary
