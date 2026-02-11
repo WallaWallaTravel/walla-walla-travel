@@ -184,7 +184,7 @@ function BookTourPageContent() {
     const source = searchParams.get('source');
     if (source === 'wwcc') {
       parts.push('[WWCC Country Club Partner Referral]');
-      parts.push('Club dining included in package.');
+      parts.push('Club dining featured with package.');
     }
 
     return parts.join('\n\n');

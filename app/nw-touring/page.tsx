@@ -162,7 +162,7 @@ export default function NWTouringLandingPage() {
               Wine Tour Packages
             </h2>
             <p className="text-lg text-slate-600 max-w-3xl mx-auto">
-              All-inclusive experiences with transportation, tasting fees, and insider access.
+              Curated experiences with transportation, expert guides, and insider access.
               Choose the pace that suits your group.
             </p>
           </div>
@@ -195,10 +195,6 @@ export default function NWTouringLandingPage() {
                   <li className="flex items-center text-sm text-slate-700">
                     <span className="text-[#1e40af] mr-2">◆</span>
                     Lunch at a local restaurant
-                  </li>
-                  <li className="flex items-center text-sm text-slate-700">
-                    <span className="text-[#1e40af] mr-2">◆</span>
-                    Tasting fees included
                   </li>
                   <li className="flex items-center text-sm text-slate-700">
                     <span className="text-[#1e40af] mr-2">◆</span>
@@ -243,10 +239,6 @@ export default function NWTouringLandingPage() {
                   <li className="flex items-center text-sm text-slate-700">
                     <span className="text-[#1e40af] mr-2">◆</span>
                     Up to 14 guests in Mercedes Sprinter
-                  </li>
-                  <li className="flex items-center text-sm text-slate-700">
-                    <span className="text-[#1e40af] mr-2">◆</span>
-                    All tasting fees included
                   </li>
                   <li className="flex items-center text-sm text-slate-700">
                     <span className="text-[#1e40af] mr-2">◆</span>

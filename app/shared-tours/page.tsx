@@ -184,7 +184,7 @@ export default function SharedToursPage() {
                   <p className="text-2xl font-bold text-slate-900">$115<span className="text-base font-normal text-slate-500">/person</span></p>
                 </div>
               </div>
-              <p className="text-sm text-slate-600">Includes transportation, tastings at 3 wineries, and lunch at a local restaurant</p>
+              <p className="text-sm text-slate-600">Includes transportation to 3 wineries and lunch at a local restaurant</p>
             </div>
             <div className="bg-white rounded-xl p-5 shadow-sm">
               <div className="flex items-center gap-3 mb-3">
@@ -198,7 +198,7 @@ export default function SharedToursPage() {
                   <p className="text-2xl font-bold text-slate-900">$95<span className="text-base font-normal text-slate-500">/person</span></p>
                 </div>
               </div>
-              <p className="text-sm text-slate-600">Transportation and tastings at 3 wineries (lunch not included)</p>
+              <p className="text-sm text-slate-600">Transportation to 3 wineries (lunch not included)</p>
             </div>
           </div>
         </div>
