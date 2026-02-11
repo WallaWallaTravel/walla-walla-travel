@@ -6,7 +6,7 @@
 
 ## About Walla Walla Travel
 
-Walla Walla Travel is a **destination management company (DMC)** based in Walla Walla, Washington. Founded by Ryan, who has lived in Walla Walla for over 15 years and has deep professional experience in the wine tour industry.
+Walla Walla Travel is a **destination management company (DMC)** based in Walla Walla, Washington. Founded by Ryan, a Walla Walla local with deep professional experience in the wine tour industry.
 
 **What we do:** We plan and coordinate wine country experiences — from curated wine tours to private transportation — so guests can focus on the people they're with and the wines they're discovering.
 
@@ -23,7 +23,7 @@ Walla Walla Travel is a **destination management company (DMC)** based in Walla 
 | Detail | Info |
 |--------|------|
 | **Duration** | 6 hours |
-| **What you get** | Visit 4–5 handpicked wineries with a knowledgeable driver |
+| **What you get** | Visit 3 handpicked wineries with a knowledgeable driver |
 | **Includes** | Luxury transportation, professional driver, bottled water, cooler for wine purchases |
 | **Available start times** | 10:00 AM, 11:00 AM |
 | **Best for** | First-time visitors, couples, small groups wanting a curated experience |
