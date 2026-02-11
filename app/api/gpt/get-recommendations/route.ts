@@ -222,7 +222,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   const totalDuration = topRecommendations.reduce((sum, r) =>
     sum + r.winery.average_visit_duration + 20, 0) / 60;
   const estimatedCostPerPerson = topRecommendations.reduce((sum, r) =>
-    sum + (r.winery.tasting_fee || 20), 0);
+    sum + (parseFloat(String(r.winery.tasting_fee)) || 20), 0);
 
   // Generate personalized message
   const hasPreferences = preferences.wine_styles?.length ||
