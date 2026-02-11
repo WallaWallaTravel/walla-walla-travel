@@ -8,7 +8,7 @@
 import { NextResponse } from 'next/server';
 
 const OPENAPI_SPEC = {
-  openapi: '3.0.0',
+  openapi: '3.1.0',
   info: {
     title: 'Walla Walla Wine Tours API',
     description: `API for exploring and booking premium wine tours in the Walla Walla Valley, Washington.
