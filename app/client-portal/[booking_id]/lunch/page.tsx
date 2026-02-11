@@ -70,7 +70,7 @@ export default function LunchOrderPage() {
       const [bookingRes, restaurantsRes, itineraryRes] = await Promise.all([
         fetch(`/api/bookings/${booking_id}`),
         fetch('/api/restaurants'),
-        fetch(`/api/itinerary/${booking_id}`)
+        fetch(`/api/itineraries/${booking_id}`)
       ]);
 
       if (bookingRes.ok) setBooking(await bookingRes.json());

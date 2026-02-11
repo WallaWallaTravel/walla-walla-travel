@@ -77,7 +77,7 @@ export default function CustomerPortalPage({ params }: { params: Promise<{ booki
       setBooking(result.data);
 
       // Load itinerary
-      const itineraryResponse = await fetch(`/api/itinerary/${result.data.id}`);
+      const itineraryResponse = await fetch(`/api/itineraries/${result.data.id}`);
       const itineraryResult = await itineraryResponse.json();
 
       if (itineraryResult.success) {

@@ -16,7 +16,7 @@ interface BookingRow {
   customer_email: string;
   customer_phone: string | null;
   tour_date: string;
-  pickup_time: string | null;
+  start_time: string | null;
   party_size: number;
   pickup_location: string | null;
   status: string;
@@ -61,8 +61,11 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     sql = `
       SELECT
         b.id, b.booking_number, b.customer_name, b.customer_email, b.customer_phone,
-        b.tour_date, b.pickup_time, b.party_size, b.pickup_location, b.status,
-        b.total_price, b.amount_paid, b.tour_type, b.special_requests,
+        b.tour_date, b.start_time, b.party_size, b.pickup_location, b.status,
+        b.total_price,
+        (CASE WHEN b.deposit_paid THEN COALESCE(b.deposit_amount, 0) ELSE 0 END +
+         CASE WHEN b.final_payment_paid THEN COALESCE(b.final_payment_amount, 0) ELSE 0 END)::numeric as amount_paid,
+        b.tour_type, b.special_requests,
         u.name as driver_name, u.phone as driver_phone
       FROM bookings b
       LEFT JOIN users u ON b.driver_id = u.id
@@ -73,8 +76,11 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     sql = `
       SELECT
         b.id, b.booking_number, b.customer_name, b.customer_email, b.customer_phone,
-        b.tour_date, b.pickup_time, b.party_size, b.pickup_location, b.status,
-        b.total_price, b.amount_paid, b.tour_type, b.special_requests,
+        b.tour_date, b.start_time, b.party_size, b.pickup_location, b.status,
+        b.total_price,
+        (CASE WHEN b.deposit_paid THEN COALESCE(b.deposit_amount, 0) ELSE 0 END +
+         CASE WHEN b.final_payment_paid THEN COALESCE(b.final_payment_amount, 0) ELSE 0 END)::numeric as amount_paid,
+        b.tour_type, b.special_requests,
         u.name as driver_name, u.phone as driver_phone
       FROM bookings b
       LEFT JOIN users u ON b.driver_id = u.id
@@ -151,8 +157,8 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   }
 
   // Add pickup info
-  if (booking.pickup_location && booking.pickup_time && booking.status === 'confirmed') {
-    statusMessage += ` Pickup is at ${booking.pickup_time} from ${booking.pickup_location}.`;
+  if (booking.pickup_location && booking.start_time && booking.status === 'confirmed') {
+    statusMessage += ` Pickup is at ${booking.start_time} from ${booking.pickup_location}.`;
   }
 
   // Add payment info
@@ -168,7 +174,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
         booking_number: booking.booking_number,
         status: booking.status,
         tour_date: booking.tour_date,
-        tour_time: booking.pickup_time || 'TBD',
+        tour_time: booking.start_time || 'TBD',
         party_size: booking.party_size,
         pickup_location: booking.pickup_location || 'TBD',
         wineries: wineryNames,
