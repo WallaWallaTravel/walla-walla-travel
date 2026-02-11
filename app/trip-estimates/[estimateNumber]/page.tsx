@@ -23,7 +23,7 @@ interface EstimateData {
 const TRIP_TYPE_CONFIG: Record<string, { icon: string; label: string }> = {
   wine_tour: { icon: '🍷', label: 'Wine Tour' },
   wine_group: { icon: '🍇', label: 'Wine Group' },
-  bachelorette: { icon: '🥂', label: 'Bachelorette' },
+  celebration: { icon: '🎉', label: 'Celebration' },
   corporate: { icon: '🏢', label: 'Corporate Event' },
   wedding: { icon: '💒', label: 'Wedding' },
   anniversary: { icon: '💍', label: 'Anniversary' },

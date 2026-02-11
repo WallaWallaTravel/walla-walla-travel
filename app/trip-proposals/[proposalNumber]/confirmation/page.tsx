@@ -77,7 +77,7 @@ export default function ConfirmationPage({
   const getTripTypeLabel = (type: string | null) => {
     const labels: Record<string, string> = {
       wine_tour: 'Wine Tour',
-      bachelorette: 'Bachelorette Party',
+      celebration: 'Celebration',
       bachelor: 'Bachelor Party',
       corporate: 'Corporate Event',
       birthday: 'Birthday Celebration',

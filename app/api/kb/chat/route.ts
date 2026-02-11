@@ -252,7 +252,7 @@ function analyzeResponseForStateUpdates(
     updates.party_type = 'couple';
   } else if (/family|kids|children/i.test(combined)) {
     updates.party_type = 'family';
-  } else if (/friends|group|bachelor|bachelorette/i.test(combined)) {
+  } else if (/friends|group|celebration/i.test(combined)) {
     updates.party_type = 'friends';
   } else if (/corporate|business|team|company/i.test(combined)) {
     updates.party_type = 'corporate';

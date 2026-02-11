@@ -206,7 +206,7 @@ Consider:
 - Group size (only suggest places that can accommodate)
 - Trip pace (relaxed = fewer stops, packed = more)
 - Time of day (lunch spots between wineries)
-- Occasion (anniversary = romantic spots, bachelorette = fun/lively)
+- Occasion (anniversary = romantic spots, celebration = fun/festive)
 
 ## EXCLUDED WINERIES (Never suggest these)
 - Leonetti Cellar - No public tastings (allocation only)

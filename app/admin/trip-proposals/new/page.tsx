@@ -107,7 +107,7 @@ interface FormData {
 const TRIP_TYPES = [
   { value: 'wine_tour', label: 'Wine Tour', icon: '🍷' },
   { value: 'wine_group', label: 'Wine Group', icon: '🍇' },
-  { value: 'bachelorette', label: 'Bachelorette', icon: '💒' },
+  { value: 'celebration', label: 'Celebration', icon: '🎉' },
   { value: 'corporate', label: 'Corporate', icon: '🏢' },
   { value: 'family', label: 'Family', icon: '👨‍👩‍👧‍👦' },
   { value: 'romantic', label: 'Romantic', icon: '💕' },

@@ -79,7 +79,7 @@ interface TripProposal {
 
 const TRIP_TYPE_LABELS: Record<string, { icon: string; label: string }> = {
   wine_tour: { icon: '🍷', label: 'Wine Tour' },
-  bachelorette: { icon: '💒', label: 'Bachelorette Party' },
+  celebration: { icon: '🎉', label: 'Celebration' },
   corporate: { icon: '🏢', label: 'Corporate Retreat' },
   family: { icon: '👨‍👩‍👧‍👦', label: 'Family Trip' },
   romantic: { icon: '💕', label: 'Romantic Getaway' },

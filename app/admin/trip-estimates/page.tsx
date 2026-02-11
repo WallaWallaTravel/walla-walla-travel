@@ -144,7 +144,7 @@ export default function TripEstimatesPage() {
     const types: Record<string, { icon: string; label: string; color: string }> = {
       wine_tour: { icon: '🍷', label: 'Wine Tour', color: 'bg-purple-100 text-purple-800' },
       wine_group: { icon: '🍇', label: 'Wine Group', color: 'bg-violet-100 text-violet-800' },
-      bachelorette: { icon: '🥂', label: 'Bachelorette', color: 'bg-pink-100 text-pink-800' },
+      celebration: { icon: '🎉', label: 'Celebration', color: 'bg-pink-100 text-pink-800' },
       corporate: { icon: '🏢', label: 'Corporate', color: 'bg-blue-100 text-blue-800' },
       wedding: { icon: '💒', label: 'Wedding', color: 'bg-rose-100 text-rose-800' },
       anniversary: { icon: '💍', label: 'Anniversary', color: 'bg-amber-100 text-amber-800' },

@@ -8,7 +8,7 @@ import { logger } from '@/lib/logger';
 const TRIP_TYPES = [
   { value: 'wine_tour', label: 'Wine Tour', icon: '🍷' },
   { value: 'wine_group', label: 'Wine Group', icon: '🍇' },
-  { value: 'bachelorette', label: 'Bachelorette', icon: '🥂' },
+  { value: 'celebration', label: 'Celebration', icon: '🎉' },
   { value: 'corporate', label: 'Corporate', icon: '🏢' },
   { value: 'wedding', label: 'Wedding', icon: '💒' },
   { value: 'anniversary', label: 'Anniversary', icon: '💍' },

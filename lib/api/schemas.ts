@@ -120,7 +120,7 @@ export const CreateProposalSchema = z.object({
   customer_company: z.string().optional(),
   
   // Event Details
-  event_type: z.enum(['corporate', 'wedding', 'private_group', 'bachelor_bachelorette', 'other']),
+  event_type: z.enum(['corporate', 'wedding', 'private_group', 'celebration', 'other']),
   event_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   party_size: z.number().int().min(1),
   duration_hours: z.number().min(1).max(12).optional(),

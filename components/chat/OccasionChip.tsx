@@ -13,7 +13,7 @@ const OCCASION_OPTIONS = [
   { value: 'Corporate', label: '💼 Corporate' },
   { value: 'Girls Trip', label: '👯 Girls Trip' },
   { value: 'Guys Trip', label: '🍻 Guys Trip' },
-  { value: 'Bachelorette', label: '💍 Bachelorette' },
+  { value: 'Celebration', label: '🎉 Celebration' },
   { value: 'Just for Fun', label: '🎉 Just for Fun' },
 ];
 

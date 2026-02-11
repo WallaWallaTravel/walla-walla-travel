@@ -13,7 +13,7 @@ import { getItineraryBySlug, type Itinerary } from '@/lib/data/itineraries';
 
 const tripTypes: { value: TripType; label: string; icon: string; description: string }[] = [
   { value: 'wine_tour', label: 'Wine Tour', icon: '🍷', description: 'Classic wine tasting adventure' },
-  { value: 'bachelorette', label: 'Bachelorette', icon: '💍', description: 'Celebrate before the big day' },
+  { value: 'celebration', label: 'Celebration', icon: '🎉', description: 'Celebrate a special occasion' },
   { value: 'corporate', label: 'Corporate', icon: '💼', description: 'Team building or client event' },
   { value: 'wedding', label: 'Wedding', icon: '💒', description: 'Wedding party or rehearsal' },
   { value: 'anniversary', label: 'Anniversary', icon: '❤️', description: 'Romantic celebration' },
@@ -183,7 +183,7 @@ function NewTripForm() {
                 type="text"
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                placeholder="e.g., Sarah&apos;s Bachelorette Wine Tour"
+                placeholder="e.g., Birthday Wine Tour"
                 className="w-full px-4 py-3 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#722F37] focus:border-transparent"
               />
             </div>

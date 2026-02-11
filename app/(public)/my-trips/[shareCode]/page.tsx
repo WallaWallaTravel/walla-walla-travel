@@ -810,7 +810,7 @@ export default function TripDetailPage() {
 
   const tripTypeIcons: Record<string, string> = {
     wine_tour: '🍷',
-    bachelorette: '💍',
+    celebration: '🎉',
     corporate: '💼',
     wedding: '💒',
     anniversary: '❤️',

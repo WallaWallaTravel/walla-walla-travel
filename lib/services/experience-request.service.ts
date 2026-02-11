@@ -72,7 +72,6 @@ const EXCLUDED_OCCASIONS = [
   'bachelorette',
   'bachelor',
   'party',
-  'celebration',
   'pub_crawl',
   'bar_hop',
 ];
