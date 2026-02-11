@@ -31,11 +31,7 @@ Walla Walla is one of the premier wine regions in the Pacific Northwest, known f
   servers: [
     {
       url: 'https://wallawalla.travel/api/gpt',
-      description: 'Production (after domain migration)'
-    },
-    {
-      url: 'https://walla-walla-final.vercel.app/api/gpt',
-      description: 'Vercel deployment (current)'
+      description: 'Production'
     }
   ],
   paths: {
