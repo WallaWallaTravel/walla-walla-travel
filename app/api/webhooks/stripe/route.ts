@@ -25,10 +25,12 @@ export async function POST(request: NextRequest) {
   const headersList = await headers();
   const signature = headersList.get('stripe-signature');
 
-  // Support both live and test webhook secrets (both endpoints point to same URL)
+  // Support webhook secrets from all Stripe accounts (NW Touring + WWT, live + test)
   const webhookSecrets = [
-    process.env.STRIPE_WEBHOOK_SECRET_LIVE,
-    process.env.STRIPE_WEBHOOK_SECRET,
+    process.env.STRIPE_WEBHOOK_SECRET_LIVE,        // NW Touring live
+    process.env.STRIPE_WEBHOOK_SECRET_WWT_LIVE,    // Walla Walla Travel live
+    process.env.STRIPE_WEBHOOK_SECRET,              // NW Touring test
+    process.env.STRIPE_WEBHOOK_SECRET_WWT_TEST,    // Walla Walla Travel test
   ].filter(Boolean) as string[];
 
   if (webhookSecrets.length === 0) {
