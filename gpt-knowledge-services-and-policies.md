@@ -149,9 +149,9 @@ Available as part of private transportation service. Walla Walla is approximatel
 
 | Timeframe | Refund |
 |-----------|--------|
-| **30+ days** before tour | Full refund (100%) |
-| **15–29 days** before tour | 50% refund |
-| **Less than 15 days** before tour | Non-refundable — but you CAN transfer your booking to someone else or reschedule to another available date |
+| **45+ days** before tour | Full refund (100%) of deposit |
+| **21–44 days** before tour | 50% refund of deposit |
+| **Within 21 days** of tour | Non-refundable — but you CAN transfer your booking to someone else or reschedule to another available date |
 
 ### Refund Processing
 
@@ -180,7 +180,7 @@ If we must cancel due to vehicle breakdown, driver illness, or circumstances bey
 
 | Change | Policy |
 |--------|--------|
-| **Date change** | Free rescheduling if more than 30 days in advance (subject to availability) |
+| **Date change** | Free rescheduling if more than 45 days in advance (subject to availability) |
 | **Party size increase** | Notify ASAP; additional guests may incur extra charges |
 | **Party size decrease** | Notify ASAP; reduction may not lower cost if vehicle/reservations already set |
 | **Itinerary changes** | Free adjustments to wineries and timing up to 48 hours before tour |
@@ -294,7 +294,7 @@ A: The remaining balance is due 48 hours AFTER your tour concludes. We're one of
 A: If severe weather (snow, ice, flooding) makes touring unsafe, we offer a full refund or free reschedule. Light rain doesn't stop wine touring — most tastings are indoors!
 
 **Q: Can I transfer my booking to someone else?**
-A: Yes! If you can't make your tour date (especially within 15 days), you can transfer the booking to another person at no charge.
+A: Yes! If you can't make your tour date (especially within 21 days), you can transfer the booking to another person at no charge.
 
 **Q: Is gratuity expected?**
 A: Gratuity is appreciated but never required. If you had a great experience, 15% is a common amount. Our drivers work hard to make your day special.

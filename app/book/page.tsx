@@ -123,7 +123,7 @@ function BookTourPageContent() {
   // Map trip types to tour types
   const tripTypeToTourType: Record<string, string> = {
     wine_tour: 'wine_tour',
-    bachelorette: 'bachelorette',
+    celebration: 'celebration',
     corporate: 'corporate',
     wedding: 'wedding',
     anniversary: 'anniversary',

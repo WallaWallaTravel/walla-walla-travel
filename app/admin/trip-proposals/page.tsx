@@ -199,7 +199,7 @@ function TripProposalsPageContent() {
   const getTripTypeBadge = (tripType: string) => {
     const types: Record<string, { icon: string; label: string; color: string }> = {
       wine_tour: { icon: '🍷', label: 'Wine Tour', color: 'bg-purple-100 text-purple-800' },
-      bachelorette: { icon: '💒', label: 'Bachelorette', color: 'bg-pink-100 text-pink-800' },
+      celebration: { icon: '🎉', label: 'Celebration', color: 'bg-pink-100 text-pink-800' },
       corporate: { icon: '🏢', label: 'Corporate', color: 'bg-blue-100 text-blue-800' },
       family: { icon: '👨‍👩‍👧‍👦', label: 'Family', color: 'bg-green-100 text-green-800' },
       romantic: { icon: '💕', label: 'Romantic', color: 'bg-red-100 text-red-800' },

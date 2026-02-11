@@ -169,7 +169,6 @@ Lifestyle > Travel
 
 ### IMPORTANT: Brand Protection
 **Never suggest or recommend:**
-- Bachelorette parties
 - Bachelor parties
 - Party buses
 - Pub crawls
