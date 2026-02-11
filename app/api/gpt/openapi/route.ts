@@ -305,7 +305,7 @@ Walla Walla is one of the premier wine regions in the Pacific Northwest, known f
                   party_size: { type: 'integer', minimum: 1, maximum: 14 },
                   tour_type: {
                     type: 'string',
-                    enum: ['wine_tour', 'private_transportation', 'corporate', 'bachelorette'],
+                    enum: ['wine_tour', 'private_transportation', 'corporate', 'celebration'],
                     description: 'Type of tour requested'
                   },
                   preferences: { type: 'string', description: 'Any special requests or preferences' },

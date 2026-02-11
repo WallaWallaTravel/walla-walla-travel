@@ -56,9 +56,9 @@ const TOUR_OPTIONS: TourOption[] = [
     available_times: ['10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM']
   },
   {
-    tour_type: 'bachelorette',
+    tour_type: 'celebration',
     name: 'Celebration Package',
-    description: 'Perfect for bachelorette parties, birthdays, and special celebrations. Includes champagne toast!',
+    description: 'Perfect for birthdays, anniversaries, milestones, and special celebrations. Includes champagne toast!',
     duration_hours: 7,
     price_per_person: 165,
     total_price: 0,
