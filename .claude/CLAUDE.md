@@ -397,6 +397,27 @@ export const POST = withErrorHandling(async (request) => {
 - Do not mention, offer, or reference any other vehicle type
 - The only valid vehicle type in code is `'sprinter'`
 
+### Tasting Fee Rules
+
+**Tasting fees are NEVER included in tour pricing by default.**
+- All brands: Walla Walla Travel, NW Touring, Herding Cats, partner pages
+- Typical tasting fees: $15-$40 per person per winery (guests pay directly)
+- Do NOT use phrases like "tasting fees included", "all-inclusive", or "includes tastings"
+- OK to say: "transportation to X wineries" or "visits to X wineries"
+- Exception: Only include tasting fees when manually/specifically configured for a particular booking, corporate group, or special event
+- If tasting fees ARE included for a specific package, it must be explicitly set up — never assumed
+
+### Language Rules
+
+**Avoid "fleet"** in non-commercial, personal, or country club contexts. Use "private Mercedes Sprinter" or "luxury transportation" instead. "Fleet" is fine for B2B, corporate, or large event contexts.
+
+### Dining / Meal Rules
+
+**Dining is NEVER "included" (pre-paid) in tour pricing by default.**
+- Use "arranged", "coordinated", "reserved", or "features" — NOT "included"
+- Exception: Only when manually/specifically configured for a particular booking or group
+- For WWCC partner packages: we coordinate club dining, guests pay their own tab
+
 ### Accuracy Rules
 
 - **No false experience claims** — do not claim "15+ years" or any specific years of experience
