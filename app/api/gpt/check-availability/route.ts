@@ -38,7 +38,7 @@ const TOUR_OPTIONS: TourOption[] = [
   {
     tour_type: 'wine_tour',
     name: 'Classic Wine Tour',
-    description: 'Visit 4-5 handpicked wineries with a knowledgeable driver. Includes transportation and bottled water.',
+    description: 'Visit 3 handpicked wineries with a knowledgeable driver. Includes transportation and bottled water.',
     duration_hours: 6,
     price_per_person: 125,
     total_price: 0, // Calculated dynamically
