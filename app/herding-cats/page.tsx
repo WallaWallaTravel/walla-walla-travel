@@ -82,7 +82,7 @@ export default function HerdingCatsLandingPage() {
               <h3 className="text-xl font-serif text-[#1A1614] mb-4" style={{ fontFamily: 'Georgia, serif' }}>
                 The Independent Spirit Tour
               </h3>
-              <p className="text-sm text-[#3A3633] mb-4">7-8 hours | 2-8 individuals</p>
+              <p className="text-sm text-[#3A3633] mb-4">6 hours | 2-8 individuals</p>
               <p className="text-[#1A1614] leading-relaxed mb-4" style={{ fontFamily: 'Georgia, serif' }}>
                 For groups demonstrating strong individual preferences yet collective desire for 
                 expertly guided exploration. Much like herding particularly headstrong felines, 

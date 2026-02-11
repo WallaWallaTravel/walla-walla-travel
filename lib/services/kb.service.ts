@@ -197,8 +197,6 @@ export interface KBDraftBooking {
 
 export interface KBPricingConfig {
   id: number;
-  rate_sedan: number;
-  rate_suv: number;
   rate_van: number;
   rate_sprinter: number;
   rate_guide_per_day: number;
@@ -608,17 +606,8 @@ class KBServiceClass extends BaseService {
       throw new Error('No active pricing configuration found');
     }
 
-    // Determine vehicle rate based on party size
-    let vehicleRate: number;
-    if (partySize <= 2) {
-      vehicleRate = Number(config.rate_sedan);
-    } else if (partySize <= 4) {
-      vehicleRate = Number(config.rate_suv);
-    } else if (partySize <= 8) {
-      vehicleRate = Number(config.rate_van);
-    } else {
-      vehicleRate = Number(config.rate_sprinter);
-    }
+    // All tours use sprinter vans
+    const vehicleRate = Number(config.rate_sprinter);
 
     const transportation = vehicleRate * days;
     const guide = Number(config.rate_guide_per_day) * days;

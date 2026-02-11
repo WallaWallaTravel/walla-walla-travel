@@ -842,9 +842,9 @@ export class TripProposalService extends BaseService {
     }
 
     return await this.withTransaction(async () => {
-      // Calculate total duration in hours (rough estimate: 8 hours per day)
+      // Calculate total duration in hours (6 hours per day — standard tour length)
       const numDays = proposal.days?.length || 1;
-      const durationHours = numDays * 8;
+      const durationHours = numDays * 6;
 
       // Generate booking number
       const bookingNumber = await this.generateBookingNumber();

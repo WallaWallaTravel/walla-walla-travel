@@ -85,13 +85,13 @@ describe('Rate Configuration', () => {
 
     it('handles large groups correctly', () => {
       const result = calculateWineTourPrice(
-        8, // 8 hours
+        6, // 6 hours
         12, // 12 guests
         new Date('2025-06-10') // Tuesday
       );
 
       expect(result.hourly_rate).toBe(140); // 12-14 guests, Sun-Wed
-      expect(result.subtotal).toBe(1120); // 8 × 140
+      expect(result.subtotal).toBe(840); // 6 × 140
       expect(result.rate_tier).toBe('12-14 guests');
     });
 

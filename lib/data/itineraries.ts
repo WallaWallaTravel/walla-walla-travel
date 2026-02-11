@@ -157,7 +157,7 @@ export const itineraries: Itinerary[] = [
       {
         question: 'How many wineries can we visit in a Walla Walla weekend?',
         answer:
-          'If you have a designated driver or book a tour, 3-4 wineries per day works well. If everyone is tasting and driving, limit to 1-2 stops per day with a full meal in between - safety comes first, and a professional tour lets everyone fully enjoy the experience.',
+          'If you have a designated driver or book a tour, 2-3 wineries per day works well. If everyone is tasting and driving, limit to 1-2 stops per day with a full meal in between - safety comes first, and a professional tour lets everyone fully enjoy the experience.',
       },
       {
         question: 'Do we need a car for this itinerary?',

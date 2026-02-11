@@ -13,12 +13,11 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_REGEX = /^\+?1?[-.\s]?\(?[0-9]{3}\)?[-.\s]?[0-9]{3}[-.\s]?[0-9]{4}$/;
 
 /**
- * Valid tour durations (4, 6, or 8 hours)
+ * Valid tour durations (5 or 6 hours)
  */
 export const tourDurationSchema = z.union([
-  z.literal(4.0),
-  z.literal(6.0),
-  z.literal(8.0)
+  z.literal(5.0),
+  z.literal(6.0)
 ]);
 
 /**
@@ -48,7 +47,7 @@ export const timeSchema = z.string().regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, {
 /**
  * Vehicle type validation
  */
-export const vehicleTypeSchema = z.enum(['sprinter', 'luxury_sedan', 'suv']);
+export const vehicleTypeSchema = z.literal('sprinter');
 
 /**
  * Booking status validation
@@ -92,7 +91,7 @@ export const calculatePriceSchema = z.object({
   duration_hours: tourDurationSchema,
   party_size: partySizeSchema,
   vehicle_type: vehicleTypeSchema.optional(),
-  winery_count: z.number().int().min(2).max(6).optional()
+  winery_count: z.number().int().min(2).max(4, "Maximum 4 wineries per tour").optional()
 });
 
 export type CalculatePriceInput = z.infer<typeof calculatePriceSchema>;
@@ -106,7 +105,7 @@ export type CalculatePriceInput = z.infer<typeof calculatePriceSchema>;
  */
 const winerySelectionSchema = z.object({
   winery_id: z.number().int().positive(),
-  visit_order: z.number().int().min(1).max(6)
+  visit_order: z.number().int().min(1).max(4)
 });
 
 /**
@@ -160,7 +159,7 @@ export const createBookingSchema = z.object({
   booking: bookingDetailsSchema,
   wineries: z.array(winerySelectionSchema)
     .min(2, "Select at least 2 wineries")
-    .max(6, "Maximum 6 wineries per tour")
+    .max(4, "Maximum 4 wineries per tour")
     .refine((wineries) => {
       // Validate unique winery IDs
       const ids = wineries.map(w => w.winery_id);
@@ -183,22 +182,18 @@ export const createBookingSchema = z.object({
   payment: paymentInfoSchema,
   marketing_consent: marketingConsentSchema.optional()
 }).refine((data) => {
-  // Validate winery count matches duration
   const wineryCount = data.wineries.length;
   const duration = data.booking.duration_hours;
 
-  if (duration === 4.0 && (wineryCount < 2 || wineryCount > 3)) {
+  if (duration === 5.0 && (wineryCount < 2 || wineryCount > 2)) {
     return false;
   }
-  if (duration === 6.0 && (wineryCount < 3 || wineryCount > 4)) {
-    return false;
-  }
-  if (duration === 8.0 && (wineryCount < 4 || wineryCount > 6)) {
+  if (duration === 6.0 && (wineryCount < 2 || wineryCount > 3)) {
     return false;
   }
   return true;
 }, {
-  message: "Winery count doesn't match tour duration. 4hr: 2-3 wineries, 6hr: 3-4 wineries, 8hr: 4-6 wineries",
+  message: "Winery count doesn't match tour duration. 5hr: 2 wineries + lunch, 6hr: 2-3 wineries",
   path: ["wineries"]
 });
 
@@ -277,7 +272,7 @@ export const createManualBookingSchema = z.object({
   booking: bookingDetailsSchema.extend({
     payment_status: z.enum(['paid_offline', 'payment_pending', 'deposit_paid']).default('payment_pending')
   }),
-  wineries: z.array(winerySelectionSchema).min(2).max(6),
+  wineries: z.array(winerySelectionSchema).min(2).max(4),
   assignment: z.object({
     driver_id: z.number().int().positive().optional(),
     vehicle_id: z.number().int().positive().optional()

@@ -35,8 +35,8 @@ export const POST = withErrorHandling(async (request: Request) => {
     throw new BadRequestError(validation.errors.join(', '));
   }
 
-  // Determine vehicle type based on party size if not specified
-  const selectedVehicleType = vehicle_type || (party_size > 4 ? 'sprinter' : 'sedan');
+  // All tours use sprinter vans
+  const selectedVehicleType = 'sprinter';
 
   // Calculate pricing
   const pricing = calculatePrice({
@@ -77,8 +77,8 @@ export const POST = withErrorHandling(async (request: Request) => {
         due_description: '48 hours after tour concludes'
       },
       vehicle: {
-        type: selectedVehicleType,
-        recommended: party_size > 4 ? 'sprinter' : 'sedan'
+        type: 'sprinter',
+        recommended: 'sprinter'
       },
       policies: {
         cancellation: {

@@ -51,30 +51,13 @@ describe('PricingService', () => {
   // ============================================================================
 
   describe('calculatePricing - vehicle type selection', () => {
-    it('should select luxury_sedan for party size <= 4', async () => {
-      const pricingRule = createMockPricingRule({ vehicle_type: 'luxury_sedan' });
+    it('should always select sprinter regardless of party size', async () => {
+      const pricingRule = createMockPricingRule({ vehicle_type: 'sprinter' });
       mockQuery.mockResolvedValueOnce(createMockQueryResult([pricingRule]));
 
       const result = await service.calculatePricing({
         tourDate: '2025-01-07', // Tuesday (weekday)
         partySize: 4,
-        durationHours: 6,
-      });
-
-      expect(result.vehicleType).toBe('luxury_sedan');
-      expect(mockQuery).toHaveBeenCalledWith(
-        expect.stringContaining('vehicle_type = $1'),
-        expect.arrayContaining(['luxury_sedan'])
-      );
-    });
-
-    it('should select sprinter for party size > 4', async () => {
-      const pricingRule = createMockPricingRule({ vehicle_type: 'sprinter' });
-      mockQuery.mockResolvedValueOnce(createMockQueryResult([pricingRule]));
-
-      const result = await service.calculatePricing({
-        tourDate: '2025-01-07',
-        partySize: 6,
         durationHours: 6,
       });
 
@@ -98,26 +81,13 @@ describe('PricingService', () => {
       expect(result.vehicleType).toBe('sprinter');
     });
 
-    it('should select luxury_sedan for exactly 4 guests', async () => {
-      const pricingRule = createMockPricingRule({ vehicle_type: 'luxury_sedan' });
-      mockQuery.mockResolvedValueOnce(createMockQueryResult([pricingRule]));
-
-      const result = await service.calculatePricing({
-        tourDate: '2025-01-07',
-        partySize: 4,
-        durationHours: 6,
-      });
-
-      expect(result.vehicleType).toBe('luxury_sedan');
-    });
-
-    it('should select sprinter for exactly 5 guests (boundary)', async () => {
+    it('should select sprinter for single guest', async () => {
       const pricingRule = createMockPricingRule({ vehicle_type: 'sprinter' });
       mockQuery.mockResolvedValueOnce(createMockQueryResult([pricingRule]));
 
       const result = await service.calculatePricing({
         tourDate: '2025-01-07',
-        partySize: 5,
+        partySize: 1,
         durationHours: 6,
       });
 
@@ -363,18 +333,18 @@ describe('PricingService', () => {
 
   describe('calculatePricing - duration queries', () => {
     it('should query with correct duration hours', async () => {
-      const pricingRule = createMockPricingRule({ duration_hours: 4 });
+      const pricingRule = createMockPricingRule({ duration_hours: 5 });
       mockQuery.mockResolvedValueOnce(createMockQueryResult([pricingRule]));
 
       await service.calculatePricing({
         tourDate: '2025-01-07',
         partySize: 6,
-        durationHours: 4,
+        durationHours: 5,
       });
 
       expect(mockQuery).toHaveBeenCalledWith(
         expect.stringContaining('duration_hours = $2'),
-        expect.arrayContaining([4])
+        expect.arrayContaining([5])
       );
     });
 
@@ -405,14 +375,9 @@ describe('PricingService', () => {
       expect(result).toBe('16:00');
     });
 
-    it('should calculate end time for 4-hour tour starting at 14:00', () => {
-      const result = service.calculateEndTime('14:00', 4, '2025-01-07');
-      expect(result).toBe('18:00');
-    });
-
-    it('should calculate end time for 8-hour tour starting at 09:00', () => {
-      const result = service.calculateEndTime('09:00', 8, '2025-01-07');
-      expect(result).toBe('17:00');
+    it('should calculate end time for 5-hour tour starting at 10:00', () => {
+      const result = service.calculateEndTime('10:00', 5, '2025-01-07');
+      expect(result).toBe('15:00');
     });
 
     it('should handle times with minutes', () => {
@@ -426,13 +391,13 @@ describe('PricingService', () => {
     });
 
     it('should preserve leading zeros in output', () => {
-      const result = service.calculateEndTime('03:00', 4, '2025-01-07');
-      expect(result).toBe('07:00');
+      const result = service.calculateEndTime('03:00', 5, '2025-01-07');
+      expect(result).toBe('08:00');
     });
 
     it('should handle single-digit hours in output', () => {
-      const result = service.calculateEndTime('01:00', 4, '2025-01-07');
-      expect(result).toBe('05:00');
+      const result = service.calculateEndTime('01:00', 5, '2025-01-07');
+      expect(result).toBe('06:00');
     });
   });
 
@@ -442,39 +407,39 @@ describe('PricingService', () => {
 
   describe('edge cases', () => {
     it('should handle single guest (minimum party size)', async () => {
-      const pricingRule = createMockPricingRule({ vehicle_type: 'luxury_sedan' });
+      const pricingRule = createMockPricingRule({ vehicle_type: 'sprinter' });
       mockQuery.mockResolvedValueOnce(createMockQueryResult([pricingRule]));
 
       const result = await service.calculatePricing({
         tourDate: '2025-01-07',
         partySize: 1,
-        durationHours: 4,
+        durationHours: 5,
       });
 
-      expect(result.vehicleType).toBe('luxury_sedan');
+      expect(result.vehicleType).toBe('sprinter');
     });
 
-    it('should handle minimum duration (4 hours)', async () => {
-      const pricingRule = createMockPricingRule({ duration_hours: 4 });
+    it('should handle minimum duration (5 hours)', async () => {
+      const pricingRule = createMockPricingRule({ duration_hours: 5 });
       mockQuery.mockResolvedValueOnce(createMockQueryResult([pricingRule]));
 
       const result = await service.calculatePricing({
         tourDate: '2025-01-07',
         partySize: 6,
-        durationHours: 4,
+        durationHours: 5,
       });
 
       expect(result).toBeDefined();
     });
 
-    it('should handle maximum duration (12 hours)', async () => {
-      const pricingRule = createMockPricingRule({ duration_hours: 12 });
+    it('should handle maximum duration (6 hours)', async () => {
+      const pricingRule = createMockPricingRule({ duration_hours: 6 });
       mockQuery.mockResolvedValueOnce(createMockQueryResult([pricingRule]));
 
       const result = await service.calculatePricing({
         tourDate: '2025-01-07',
         partySize: 6,
-        durationHours: 12,
+        durationHours: 6,
       });
 
       expect(result).toBeDefined();

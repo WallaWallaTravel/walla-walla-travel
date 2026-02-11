@@ -245,9 +245,8 @@ export default function ManualBookingModal({ onClose, onComplete }: Props) {
                     required
                     className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500"
                   >
-                    <option value="4">4 hours</option>
+                    <option value="5">5 hours</option>
                     <option value="6">6 hours</option>
-                    <option value="8">8 hours</option>
                   </select>
                 </div>
                 <div>

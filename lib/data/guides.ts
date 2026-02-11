@@ -240,7 +240,7 @@ export const guides: Guide[] = [
       {
         question: 'How much should I budget for wine tasting in Walla Walla?',
         answer:
-          'Plan for $20-40 per person per winery for tasting fees. Many fees are waived with purchase. If you book a tour, you can comfortably visit 3-4 wineries and let someone else handle the driving.',
+          'Plan for $20-40 per person per winery for tasting fees. Many fees are waived with purchase. If you book a tour, you can comfortably visit 2-3 wineries and let someone else handle the driving.',
       },
       {
         question: 'Do I need to know about wine to enjoy Walla Walla?',

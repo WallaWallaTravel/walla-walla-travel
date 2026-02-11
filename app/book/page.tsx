@@ -46,7 +46,7 @@ const PROVIDERS: Provider[] = [
     name: 'NW Touring & Concierge',
     tagline: 'Premium wine country transportation',
     color: '#B87333',
-    minHours: 4,
+    minHours: 5,
     baseRate: 125,
     maxGuests: 14,
   },
@@ -66,7 +66,7 @@ const createNewDay = (): TourDay => ({
   date: '',
   guests: 2,
   largeGroupSize: '',
-  hours: 4,
+  hours: 5,
 });
 
 const createNewService = (): ServiceItem => ({
@@ -86,20 +86,30 @@ const SERVICE_OPTIONS = [
 
 // Package configurations for tour packages from /nw-touring
 const TOUR_PACKAGES: Record<string, { name: string; hours: number; description: string }> = {
-  'classic': {
-    name: 'Classic Tasting',
-    hours: 4,
-    description: '4-hour tour with 3-4 wineries',
+  'wine-dine': {
+    name: 'Wine & Dine',
+    hours: 5,
+    description: '2 wineries + lunch (~5 hours)',
   },
-  'deep-dive': {
-    name: 'Deep Dive',
+  'walla-walla-experience': {
+    name: 'The Walla Walla Experience',
     hours: 6,
-    description: '6-hour tour with 4-5 wineries and lunch',
+    description: '3 wineries (6 hours, our most popular tour)',
   },
-  'full-valley': {
-    name: 'Full Valley Experience',
-    hours: 8,
-    description: '8-hour full-day tour with 6-7 wineries',
+  'wwcc-wine-dine': {
+    name: 'WWCC Wine & Dine',
+    hours: 5,
+    description: 'WWCC Country Club Package: 2 wineries + lunch at the club',
+  },
+  'wwcc-experience': {
+    name: 'WWCC Walla Walla Experience',
+    hours: 6,
+    description: 'WWCC Country Club Package: 3 wineries + dinner at the club',
+  },
+  'wwcc-custom': {
+    name: 'WWCC Custom Experience',
+    hours: 6,
+    description: 'WWCC Country Club Package: Custom wine & dine experience with club dining',
   },
 };
 
@@ -135,7 +145,7 @@ function BookTourPageContent() {
   const [isMultipleServices, setIsMultipleServices] = useState(false);
   const [tourDays, setTourDays] = useState<TourDay[]>([{
     ...createNewDay(),
-    hours: packageInfo?.hours || 4,
+    hours: packageInfo?.hours || 5,
     date: prefilledDate || '',
     guests: prefilledPartySize ? parseInt(prefilledPartySize, 10) : 2,
   }]);
@@ -169,6 +179,12 @@ function BookTourPageContent() {
     }
     if (packageInfo) {
       parts.push(`I'm interested in the ${packageInfo.name} package (${packageInfo.description}).`);
+    }
+
+    const source = searchParams.get('source');
+    if (source === 'wwcc') {
+      parts.push('[WWCC Country Club Partner Referral]');
+      parts.push('Club dining included in package.');
     }
 
     return parts.join('\n\n');

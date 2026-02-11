@@ -33,9 +33,9 @@ export const CheckAvailabilitySchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
   duration_hours: z.number()
     .int('Duration must be an integer')
-    .min(4, 'Minimum duration is 4 hours')
-    .max(8, 'Maximum duration is 8 hours')
-    .refine(val => [4, 6, 8].includes(val), 'Duration must be 4, 6, or 8 hours'),
+    .min(5, 'Minimum duration is 5 hours')
+    .max(6, 'Maximum duration is 6 hours')
+    .refine(val => [5, 6].includes(val), 'Duration must be 5 or 6 hours'),
   party_size: z.number()
     .int('Party size must be an integer')
     .min(1, 'Minimum party size is 1')
@@ -53,9 +53,9 @@ export type CheckAvailabilityInput = z.infer<typeof CheckAvailabilitySchema>;
 
 export const CalculatePriceSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  duration_hours: z.number().int().min(4).max(8),
+  duration_hours: z.number().int().min(5).max(6),
   party_size: z.number().int().min(1).max(14),
-  vehicle_type: z.enum(['sedan', 'sprinter', 'luxury']).optional(),
+  vehicle_type: z.literal('sprinter').optional(),
 });
 
 export type CalculatePriceInput = z.infer<typeof CalculatePriceSchema>;
@@ -89,7 +89,7 @@ export const CreateBookingSchema = z.object({
   booking: z.object({
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     start_time: z.string().regex(/^\d{2}:\d{2}$/),
-    duration_hours: z.number().int().min(4).max(8),
+    duration_hours: z.number().int().min(5).max(6),
     party_size: z.number().int().min(1).max(14),
     pickup_location: z.string().min(5, 'Pickup location is required'),
     dropoff_location: z.string().min(5, 'Dropoff location is required'),
@@ -114,7 +114,7 @@ export const UpdateBookingSchema = z.object({
   status: BookingStatusSchema.optional(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   start_time: z.string().regex(/^\d{2}:\d{2}$/).optional(),
-  duration_hours: z.number().int().min(4).max(8).optional(),
+  duration_hours: z.number().int().min(5).max(6).optional(),
   party_size: z.number().int().min(1).max(14).optional(),
   pickup_location: z.string().min(5).optional(),
   dropoff_location: z.string().min(5).optional(),

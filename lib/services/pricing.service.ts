@@ -7,7 +7,7 @@
  * and tour duration with configurable gratuity and tax rates.
  *
  * @features
- * - Party size-based vehicle assignment (sedan vs sprinter)
+ * - Sprinter-only fleet (all tours use sprinter vans)
  * - Weekend pricing multipliers
  * - Configurable gratuity percentages
  * - Tax calculation
@@ -38,7 +38,7 @@ export interface PricingDetails {
   totalPrice: number;
   depositAmount: number;
   finalPaymentAmount: number;
-  vehicleType: 'luxury_sedan' | 'sprinter';
+  vehicleType: 'sprinter';
 }
 
 export interface PricingInput {
@@ -62,8 +62,8 @@ export class PricingService extends BaseService {
     const dayOfWeek = tourDate.getDay();
     const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 
-    // Determine vehicle type based on party size
-    const vehicleType = input.partySize <= 4 ? 'luxury_sedan' : 'sprinter';
+    // All tours use sprinter vans
+    const vehicleType = 'sprinter' as const;
 
     // Get pricing rule from database
     const pricingRule = await this.queryOne<{
