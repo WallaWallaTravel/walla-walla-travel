@@ -28,12 +28,6 @@ export default function WWCCPartnerPage() {
               Est. 1923 &middot; Curated by Walla Walla Travel
             </p>
           </div>
-          <a
-            href="tel:+15092008000"
-            className="text-white/80 hover:text-white focus-visible:underline focus-visible:outline-none transition-colors text-sm font-medium"
-          >
-            (509) 200-8000
-          </a>
         </div>
       </header>
 
