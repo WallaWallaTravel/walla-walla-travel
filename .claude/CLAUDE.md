@@ -199,6 +199,12 @@ See `/Users/temp/INFRASTRUCTURE.md` for infrastructure overview.
 
 ## 📋 SLASH COMMANDS
 
+### Design
+| Command | Purpose |
+|---------|---------|
+| `/design` | Run BEFORE coding any UI — studies references, creates design brief with concrete values, gets approval |
+| `/design-review` | Run AFTER coding UI — 10-step audit producing A-F grade, auto-fixes contrast violations |
+
 ### Status & Planning
 | Command | Purpose |
 |---------|---------|

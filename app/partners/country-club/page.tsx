@@ -30,7 +30,7 @@ export default function WWCCPartnerPage() {
           </div>
           <a
             href="tel:+15092008000"
-            className="text-white/80 hover:text-white transition-colors text-sm font-medium"
+            className="text-white/80 hover:text-white focus-visible:underline focus-visible:outline-none transition-colors text-sm font-medium"
           >
             (509) 200-8000
           </a>
@@ -54,13 +54,13 @@ export default function WWCCPartnerPage() {
             <div className="flex flex-col sm:flex-row gap-3">
               <a
                 href="#packages"
-                className="inline-block bg-wwcc-sage text-white px-7 py-3.5 rounded-lg font-medium hover:bg-[#648548] transition-colors text-center"
+                className="inline-block bg-wwcc-sage text-white px-7 py-3.5 rounded-lg font-medium hover:bg-wwcc-sage-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 transition-colors text-center"
               >
                 Explore Packages
               </a>
               <Link
                 href="/book?source=wwcc"
-                className="inline-block border border-white/40 text-white px-7 py-3.5 rounded-lg font-medium hover:bg-white/10 transition-colors text-center"
+                className="inline-block border border-white/40 text-white px-7 py-3.5 rounded-lg font-medium hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 transition-colors text-center"
               >
                 Request a Custom Experience
               </Link>
@@ -150,7 +150,7 @@ export default function WWCCPartnerPage() {
                 </ul>
                 <Link
                   href="/book?source=wwcc&package=wwcc-wine-dine"
-                  className="block w-full text-center bg-wwcc-sage text-white py-3 rounded-lg font-medium hover:bg-[#648548] transition-colors"
+                  className="block w-full text-center bg-wwcc-sage text-white py-3 rounded-lg font-medium hover:bg-wwcc-sage-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 transition-colors"
                 >
                   Request a Quote
                 </Link>
@@ -191,7 +191,7 @@ export default function WWCCPartnerPage() {
                 </ul>
                 <Link
                   href="/book?source=wwcc&package=wwcc-experience"
-                  className="block w-full text-center bg-wwcc-dark text-white py-3 rounded-lg font-medium hover:bg-[#3d3a2a] transition-colors"
+                  className="block w-full text-center bg-wwcc-dark text-white py-3 rounded-lg font-medium hover:bg-wwcc-dark-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 transition-colors"
                 >
                   Request a Quote
                 </Link>
@@ -223,7 +223,7 @@ export default function WWCCPartnerPage() {
                 </ul>
                 <Link
                   href="/book?source=wwcc&package=wwcc-custom"
-                  className="block w-full text-center bg-wwcc-sage text-white py-3 rounded-lg font-medium hover:bg-[#648548] transition-colors"
+                  className="block w-full text-center bg-wwcc-sage text-white py-3 rounded-lg font-medium hover:bg-wwcc-sage-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 transition-colors"
                 >
                   Request a Custom Experience
                 </Link>
@@ -279,7 +279,7 @@ export default function WWCCPartnerPage() {
                 </ul>
                 <Link
                   href="/book?source=wwcc&package=wwcc-geology"
-                  className="block w-full text-center bg-wwcc-sage text-white py-3 rounded-lg font-medium hover:bg-[#648548] transition-colors"
+                  className="block w-full text-center bg-wwcc-sage text-white py-3 rounded-lg font-medium hover:bg-wwcc-sage-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 transition-colors"
                 >
                   Request a Quote
                 </Link>
@@ -315,7 +315,7 @@ export default function WWCCPartnerPage() {
                 </ul>
                 <Link
                   href="/book?source=wwcc&package=wwcc-geology-wine"
-                  className="block w-full text-center bg-wwcc-sage text-white py-3 rounded-lg font-medium hover:bg-[#648548] transition-colors"
+                  className="block w-full text-center bg-wwcc-sage text-white py-3 rounded-lg font-medium hover:bg-wwcc-sage-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 transition-colors"
                 >
                   Request a Quote
                 </Link>
@@ -371,7 +371,7 @@ export default function WWCCPartnerPage() {
                 </ul>
                 <Link
                   href="/book?source=wwcc&package=wwcc-golf-day"
-                  className="block w-full text-center bg-wwcc-sage text-white py-3 rounded-lg font-medium hover:bg-[#648548] transition-colors"
+                  className="block w-full text-center bg-wwcc-sage text-white py-3 rounded-lg font-medium hover:bg-wwcc-sage-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 transition-colors"
                 >
                   Request a Quote
                 </Link>
@@ -409,7 +409,7 @@ export default function WWCCPartnerPage() {
                 </p>
                 <Link
                   href="/book?source=wwcc&package=wwcc-golf-weekend"
-                  className="block w-full text-center bg-wwcc-dark text-white py-3 rounded-lg font-medium hover:bg-[#3d3a2a] transition-colors"
+                  className="block w-full text-center bg-wwcc-dark text-white py-3 rounded-lg font-medium hover:bg-wwcc-dark-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 transition-colors"
                 >
                   Request a Quote
                 </Link>
@@ -441,7 +441,7 @@ export default function WWCCPartnerPage() {
                 </ul>
                 <Link
                   href="/book?source=wwcc&package=wwcc-ultimate"
-                  className="block w-full text-center bg-wwcc-sage text-white py-3 rounded-lg font-medium hover:bg-[#648548] transition-colors"
+                  className="block w-full text-center bg-wwcc-sage text-white py-3 rounded-lg font-medium hover:bg-wwcc-sage-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 transition-colors"
                 >
                   Request a Quote
                 </Link>
@@ -542,19 +542,19 @@ export default function WWCCPartnerPage() {
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link
               href="/book?source=wwcc"
-              className="inline-block bg-wwcc-sage text-white px-7 py-3.5 rounded-lg font-medium hover:bg-[#648548] transition-colors"
+              className="inline-block bg-wwcc-sage text-white px-7 py-3.5 rounded-lg font-medium hover:bg-wwcc-sage-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 transition-colors"
             >
               Request a Custom Experience
             </Link>
             <Link
               href="/book?source=wwcc&type=group"
-              className="inline-block border border-white/40 text-white px-7 py-3.5 rounded-lg font-medium hover:bg-white/10 transition-colors"
+              className="inline-block border border-white/40 text-white px-7 py-3.5 rounded-lg font-medium hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 transition-colors"
             >
               Plan a Group Outing
             </Link>
             <a
               href="tel:+15092008000"
-              className="inline-block border border-white/40 text-white px-7 py-3.5 rounded-lg font-medium hover:bg-white/10 transition-colors"
+              className="inline-block border border-white/40 text-white px-7 py-3.5 rounded-lg font-medium hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 transition-colors"
             >
               (509) 200-8000
             </a>
@@ -570,51 +570,51 @@ export default function WWCCPartnerPage() {
               <p className={`${serif.className} text-white text-xl font-semibold mb-1`}>
                 Walla Walla Country Club
               </p>
-              <p className="text-white/40 text-xs tracking-wider mb-3">
+              <p className="text-white/60 text-xs tracking-wider mb-3">
                 Est. 1923
               </p>
               <p className="text-white/60 text-sm">
                 700 Country Club Dr, Walla Walla, WA 99362
               </p>
               <div className="mt-4 pt-4 border-t border-white/10">
-                <p className="text-white/40 text-xs mb-1">Experiences curated by</p>
+                <p className="text-white/60 text-xs mb-1">Experiences curated by</p>
                 <p className="text-white font-medium text-sm">Walla Walla Travel</p>
               </div>
             </div>
             <div>
-              <p className="text-white/40 text-xs tracking-wider uppercase mb-3">
+              <p className="text-white/60 text-xs tracking-wider uppercase mb-3">
                 Contact
               </p>
               <p className="text-white/70 text-sm mb-1.5">
-                <a href="tel:+15092008000" className="hover:text-white transition-colors">
+                <a href="tel:+15092008000" className="hover:text-white focus-visible:underline focus-visible:outline-none transition-colors">
                   (509) 200-8000
                 </a>
               </p>
               <p className="text-white/70 text-sm">
-                <a href="mailto:info@wallawalla.travel" className="hover:text-white transition-colors">
+                <a href="mailto:info@wallawalla.travel" className="hover:text-white focus-visible:underline focus-visible:outline-none transition-colors">
                   info@wallawalla.travel
                 </a>
               </p>
             </div>
             <div>
-              <p className="text-white/40 text-xs tracking-wider uppercase mb-3">
+              <p className="text-white/60 text-xs tracking-wider uppercase mb-3">
                 Legal
               </p>
               <div className="space-y-1.5">
-                <Link href="/privacy" className="block text-white/60 text-sm hover:text-white transition-colors">
+                <Link href="/privacy" className="block text-white/60 text-sm hover:text-white focus-visible:underline focus-visible:outline-none transition-colors">
                   Privacy Policy
                 </Link>
-                <Link href="/terms" className="block text-white/60 text-sm hover:text-white transition-colors">
+                <Link href="/terms" className="block text-white/60 text-sm hover:text-white focus-visible:underline focus-visible:outline-none transition-colors">
                   Terms of Service
                 </Link>
-                <Link href="/cancellation-policy" className="block text-white/60 text-sm hover:text-white transition-colors">
+                <Link href="/cancellation-policy" className="block text-white/60 text-sm hover:text-white focus-visible:underline focus-visible:outline-none transition-colors">
                   Cancellation Policy
                 </Link>
               </div>
             </div>
           </div>
           <div className="border-t border-white/10 pt-6 text-center">
-            <p className="text-white/30 text-sm">
+            <p className="text-white/50 text-sm">
               &copy; {new Date().getFullYear()} Walla Walla Travel. All rights reserved.
             </p>
           </div>
