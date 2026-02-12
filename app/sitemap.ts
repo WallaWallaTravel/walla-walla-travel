@@ -1,5 +1,6 @@
 import { MetadataRoute } from 'next';
 import { getAllWinerySlugs } from '@/lib/data/wineries';
+import { getAllHistoryEraSlugs } from '@/lib/data/history';
 import { logger } from '@/lib/logger';
 
 // Force dynamic rendering - sitemap needs fresh data
@@ -67,6 +68,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
+  // History pages (static data)
+  const historyLanding: MetadataRoute.Sitemap = [
+    {
+      url: `${baseUrl}/history`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+  ];
+
+  const historyPages: MetadataRoute.Sitemap = getAllHistoryEraSlugs().map((slug) => ({
+    url: `${baseUrl}/history/${slug}`,
+    lastModified: new Date(),
+    changeFrequency: 'monthly' as const,
+    priority: 0.7,
+  }));
+
   // Dynamic winery pages
   let wineryPages: MetadataRoute.Sitemap = [];
 
@@ -83,5 +101,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     logger.error('Error fetching winery slugs for sitemap', { error });
   }
 
-  return [...staticPages, ...wineryPages];
+  return [...staticPages, ...historyLanding, ...historyPages, ...wineryPages];
 }
