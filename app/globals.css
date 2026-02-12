@@ -1,6 +1,7 @@
 @import "tailwindcss";
+@config "../tailwind.config.ts";
 
-/* 
+/*
  * WALLA WALLA TRAVEL - Design System
  * Navy & Copper Palette - Modern, Professional, Premium
  */
