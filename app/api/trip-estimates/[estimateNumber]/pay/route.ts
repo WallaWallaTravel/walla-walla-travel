@@ -76,31 +76,40 @@ export async function POST(request: NextRequest, context: RouteParams) {
     );
   }
 
-  const paymentIntent = await stripe.paymentIntents.create({
-    amount: Math.round(estimate.deposit_amount * 100), // Convert to cents
-    currency: 'usd',
-    automatic_payment_methods: {
-      enabled: true,
-    },
-    metadata: {
-      type: 'trip_estimate_deposit',
-      estimate_number: estimate.estimate_number,
-      estimate_id: String(estimate.id),
-      customer_name: customerName || estimate.customer_name,
-      party_size: String(estimate.party_size),
-      trip_type: estimate.trip_type,
-    },
-    description: `Deposit for ${estimate.trip_title || estimate.trip_type} — ${estimate.customer_name}`,
-    receipt_email: customerEmail || estimate.customer_email || undefined,
-  });
+  try {
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(estimate.deposit_amount * 100), // Convert to cents
+      currency: 'usd',
+      automatic_payment_methods: {
+        enabled: true,
+      },
+      metadata: {
+        type: 'trip_estimate_deposit',
+        estimate_number: estimate.estimate_number,
+        estimate_id: String(estimate.id),
+        customer_name: customerName || estimate.customer_name,
+        party_size: String(estimate.party_size),
+        trip_type: estimate.trip_type,
+      },
+      description: `Deposit for ${estimate.trip_title || estimate.trip_type} — ${estimate.customer_name}`,
+      receipt_email: customerEmail || estimate.customer_email || undefined,
+    });
 
-  return NextResponse.json({
-    success: true,
-    data: {
-      client_secret: paymentIntent.client_secret,
-      payment_intent_id: paymentIntent.id,
-      amount: estimate.deposit_amount,
-      publishable_key: getBrandStripePublishableKey(estimate.brand_id ?? undefined),
-    },
-  });
+    return NextResponse.json({
+      success: true,
+      data: {
+        client_secret: paymentIntent.client_secret,
+        payment_intent_id: paymentIntent.id,
+        amount: estimate.deposit_amount,
+        publishable_key: getBrandStripePublishableKey(estimate.brand_id ?? undefined),
+      },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Payment processing failed';
+    console.error('Stripe payment intent error:', error);
+    return NextResponse.json(
+      { success: false, error: { message, statusCode: 500 } },
+      { status: 500 }
+    );
+  }
 }
