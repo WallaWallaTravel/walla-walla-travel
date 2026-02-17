@@ -3,7 +3,6 @@ import { withErrorHandling, UnauthorizedError, NotFoundError } from '@/lib/api/m
 import { getSessionFromRequest } from '@/lib/auth/session';
 import { partnerService } from '@/lib/services/partner.service';
 import { query } from '@/lib/db';
-import { withCSRF } from '@/lib/api/middleware/csrf';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 
 // Get client IP from request headers (Next.js 15 removed request.ip)
@@ -77,9 +76,8 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
  * PUT /api/partner/listing
  * Update partner's directory listing
  */
-export const PUT = withCSRF(
-  withRateLimit(rateLimiters.api)(
-    withErrorHandling(async (request: NextRequest) => {
+export const PUT = withRateLimit(rateLimiters.api)(
+  withErrorHandling(async (request: NextRequest) => {
   const session = await getSessionFromRequest(request);
 
   if (!session || (session.user.role as string !== 'partner' && session.user.role !== 'admin')) {
@@ -148,5 +146,5 @@ export const PUT = withCSRF(
     message: 'Listing updated successfully',
     timestamp: new Date().toISOString(),
   });
-})));
+}));
 

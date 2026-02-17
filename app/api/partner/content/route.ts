@@ -4,7 +4,6 @@ import { getSessionFromRequest } from '@/lib/auth/session';
 import { partnerService } from '@/lib/services/partner.service';
 import { query } from '@/lib/db';
 import { WINERY_CONTENT_TYPES } from '@/lib/config/content-types';
-import { withCSRF } from '@/lib/api/middleware/csrf';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 
 // Get client IP from request headers
@@ -81,9 +80,8 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
  * POST /api/partner/content
  * Create or update partner's narrative content
  */
-export const POST = withCSRF(
-  withRateLimit(rateLimiters.api)(
-    withErrorHandling(async (request: NextRequest) => {
+export const POST = withRateLimit(rateLimiters.api)(
+  withErrorHandling(async (request: NextRequest) => {
   const session = await getSessionFromRequest(request);
 
   if (!session || (session.user.role as string !== 'partner' && session.user.role !== 'admin')) {
@@ -168,4 +166,4 @@ export const POST = withCSRF(
     message: 'Content saved and submitted for review',
     timestamp: new Date().toISOString(),
   });
-})));
+}));

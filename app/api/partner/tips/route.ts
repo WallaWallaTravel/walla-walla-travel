@@ -4,7 +4,6 @@ import { getSessionFromRequest } from '@/lib/auth/session';
 import { partnerService } from '@/lib/services/partner.service';
 import { query } from '@/lib/db';
 import { INSIDER_TIP_TYPES } from '@/lib/config/content-types';
-import { withCSRF } from '@/lib/api/middleware/csrf';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 
 // Get client IP from request headers
@@ -66,9 +65,8 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
  * POST /api/partner/tips
  * Create a new insider tip
  */
-export const POST = withCSRF(
-  withRateLimit(rateLimiters.api)(
-    withErrorHandling(async (request: NextRequest) => {
+export const POST = withRateLimit(rateLimiters.api)(
+  withErrorHandling(async (request: NextRequest) => {
   const session = await getSessionFromRequest(request);
 
   if (!session || (session.user.role as string !== 'partner' && session.user.role !== 'admin')) {
@@ -136,15 +134,14 @@ export const POST = withCSRF(
     message: 'Tip created and submitted for review',
     timestamp: new Date().toISOString(),
   });
-})));
+}));
 
 /**
  * PUT /api/partner/tips
  * Update an existing insider tip
  */
-export const PUT = withCSRF(
-  withRateLimit(rateLimiters.api)(
-    withErrorHandling(async (request: NextRequest) => {
+export const PUT = withRateLimit(rateLimiters.api)(
+  withErrorHandling(async (request: NextRequest) => {
   const session = await getSessionFromRequest(request);
 
   if (!session || (session.user.role as string !== 'partner' && session.user.role !== 'admin')) {
@@ -210,15 +207,14 @@ export const PUT = withCSRF(
     message: 'Tip updated and submitted for review',
     timestamp: new Date().toISOString(),
   });
-})));
+}));
 
 /**
  * DELETE /api/partner/tips
  * Delete an insider tip
  */
-export const DELETE = withCSRF(
-  withRateLimit(rateLimiters.api)(
-    withErrorHandling(async (request: NextRequest) => {
+export const DELETE = withRateLimit(rateLimiters.api)(
+  withErrorHandling(async (request: NextRequest) => {
   const session = await getSessionFromRequest(request);
 
   if (!session || (session.user.role as string !== 'partner' && session.user.role !== 'admin')) {
@@ -261,4 +257,4 @@ export const DELETE = withCSRF(
     message: 'Tip deleted',
     timestamp: new Date().toISOString(),
   });
-})));
+}));

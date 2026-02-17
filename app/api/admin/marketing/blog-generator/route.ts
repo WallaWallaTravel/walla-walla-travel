@@ -3,22 +3,13 @@
  *
  * POST - Generate a long-form blog article using Claude AI
  * GET  - List blog drafts with filters
+ * PATCH - Update blog draft status
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { query } from '@/lib/db'
-import { getSessionFromRequest } from '@/lib/auth/session'
-import { withErrorHandling, UnauthorizedError, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler'
 import { logger } from '@/lib/logger'
-
-async function verifyAdmin(request: NextRequest) {
-  const session = await getSessionFromRequest(request)
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required')
-  }
-  return session
-}
 
 function getAnthropicClient() {
   const apiKey = process.env.ANTHROPIC_API_KEY
@@ -102,30 +93,29 @@ function estimateReadTime(wordCount: number): number {
   return Math.max(1, Math.ceil(wordCount / 250))
 }
 
-async function postHandler(request: NextRequest) {
-  const session = await verifyAdmin(request)
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { title, targetKeywords, category, tone, wordCountTarget } = body
 
-  const body = await request.json()
-  const { title, targetKeywords, category, tone, wordCountTarget } = body
+    if (!title || typeof title !== 'string' || title.trim().length === 0) {
+      return NextResponse.json({ error: 'Title is required' }, { status: 400 })
+    }
 
-  if (!title || typeof title !== 'string' || title.trim().length === 0) {
-    throw new BadRequestError('Title is required')
-  }
+    if (!targetKeywords || !Array.isArray(targetKeywords) || targetKeywords.length === 0) {
+      return NextResponse.json({ error: 'At least one target keyword is required' }, { status: 400 })
+    }
 
-  if (!targetKeywords || !Array.isArray(targetKeywords) || targetKeywords.length === 0) {
-    throw new BadRequestError('At least one target keyword is required')
-  }
+    if (!category || typeof category !== 'string') {
+      return NextResponse.json({ error: 'Category is required' }, { status: 400 })
+    }
 
-  if (!category || typeof category !== 'string') {
-    throw new BadRequestError('Category is required')
-  }
+    const wordTarget = wordCountTarget || 1500
+    const articleTone = tone || 'professional'
 
-  const wordTarget = wordCountTarget || 1500
-  const articleTone = tone || 'professional'
+    const anthropic = getAnthropicClient()
 
-  const anthropic = getAnthropicClient()
-
-  const systemPrompt = `You are an expert content writer specializing in wine tourism and travel content for the Walla Walla Valley, Washington State. You write long-form, SEO-optimized blog articles that are informative, engaging, and authoritative.
+    const systemPrompt = `You are an expert content writer specializing in wine tourism and travel content for the Walla Walla Valley, Washington State. You write long-form, SEO-optimized blog articles that are informative, engaging, and authoritative.
 
 Writing guidelines:
 - Write in a ${articleTone} tone
@@ -146,7 +136,7 @@ IMPORTANT RULES (Walla Walla Travel business rules):
 - Transportation is via Mercedes Sprinter vans
 - Do not claim specific years of experience`
 
-  const userPrompt = `Write a comprehensive blog article with the following specifications:
+    const userPrompt = `Write a comprehensive blog article with the following specifications:
 
 Title: ${title}
 Target Keywords: ${targetKeywords.join(', ')}
@@ -160,202 +150,219 @@ META_DESCRIPTION: [Your 150-160 character meta description here]
 
 The article should be well-structured, informative, and optimized for the target keywords while reading naturally.`
 
-  logger.info('Generating blog article', { title, keywords: targetKeywords, category })
+    logger.info('Generating blog article', { title, keywords: targetKeywords, category })
 
-  const completion = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
-    system: systemPrompt,
-    messages: [{ role: 'user', content: userPrompt }],
-    max_tokens: 8000,
-  })
+    const completion = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userPrompt }],
+      max_tokens: 8000,
+    })
 
-  const responseText = completion.content
-    .filter((block): block is Anthropic.TextBlock => block.type === 'text')
-    .map(block => block.text)
-    .join('')
+    const responseText = completion.content
+      .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+      .map(block => block.text)
+      .join('')
 
-  // Extract meta description
-  let metaDescription = ''
-  let articleContent = responseText
+    // Extract meta description
+    let metaDescription = ''
+    let articleContent = responseText
 
-  const metaMatch = responseText.match(/META_DESCRIPTION:\s*(.+?)(?:\n|$)/)
-  if (metaMatch) {
-    metaDescription = metaMatch[1].trim().substring(0, 320)
-    articleContent = responseText.replace(/META_DESCRIPTION:\s*.+?(?:\n|$)/, '').trim()
-  }
-
-  if (!metaDescription) {
-    metaDescription = `${title} - Your guide to ${targetKeywords[0]} in Walla Walla wine country.`.substring(0, 160)
-  }
-
-  const slug = slugify(title)
-  const wordCount = articleContent.split(/\s+/).filter(Boolean).length
-  const readTime = estimateReadTime(wordCount)
-  const seoScore = calculateSeoScore(articleContent, targetKeywords, metaDescription, title)
-
-  // Generate JSON-LD Article schema
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'Article',
-    headline: title,
-    description: metaDescription,
-    datePublished: new Date().toISOString(),
-    dateModified: new Date().toISOString(),
-    author: {
-      '@type': 'Organization',
-      name: 'Walla Walla Travel',
-      url: 'https://wallawalla.travel',
-    },
-    publisher: {
-      '@type': 'Organization',
-      name: 'Walla Walla Travel',
-      url: 'https://wallawalla.travel',
-    },
-    wordCount,
-    articleSection: category,
-    keywords: targetKeywords.join(', '),
-  }
-
-  // Store in database
-  const result = await query(`
-    INSERT INTO blog_drafts (
-      title, slug, meta_description, target_keywords, content,
-      word_count, estimated_read_time, json_ld, category,
-      status, seo_score, created_by, created_at, updated_at
-    ) VALUES (
-      $1, $2, $3, $4, $5,
-      $6, $7, $8, $9,
-      'draft', $10, $11, NOW(), NOW()
-    ) RETURNING *
-  `, [
-    title,
-    slug,
-    metaDescription,
-    targetKeywords,
-    articleContent,
-    wordCount,
-    readTime,
-    JSON.stringify(jsonLd),
-    category,
-    seoScore,
-    session.user.id || null,
-  ])
-
-  logger.info('Blog article generated', {
-    id: result.rows[0].id,
-    title,
-    wordCount,
-    seoScore,
-  })
-
-  return NextResponse.json({
-    success: true,
-    draft: result.rows[0],
-  })
-}
-
-async function getHandler(request: NextRequest) {
-  await verifyAdmin(request)
-
-  const { searchParams } = new URL(request.url)
-  const status = searchParams.get('status')
-  const category = searchParams.get('category')
-  const id = searchParams.get('id')
-  const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100)
-
-  // Single draft by ID
-  if (id) {
-    const result = await query(`
-      SELECT bd.*, u.name as created_by_name
-      FROM blog_drafts bd
-      LEFT JOIN users u ON bd.created_by = u.id
-      WHERE bd.id = $1
-    `, [parseInt(id)])
-
-    if (result.rows.length === 0) {
-      throw new NotFoundError('Blog draft not found')
+    const metaMatch = responseText.match(/META_DESCRIPTION:\s*(.+?)(?:\n|$)/)
+    if (metaMatch) {
+      metaDescription = metaMatch[1].trim().substring(0, 320)
+      articleContent = responseText.replace(/META_DESCRIPTION:\s*.+?(?:\n|$)/, '').trim()
     }
 
-    return NextResponse.json({ draft: result.rows[0] })
+    if (!metaDescription) {
+      metaDescription = `${title} - Your guide to ${targetKeywords[0]} in Walla Walla wine country.`.substring(0, 160)
+    }
+
+    const slug = slugify(title)
+    const wordCount = articleContent.split(/\s+/).filter(Boolean).length
+    const readTime = estimateReadTime(wordCount)
+    const seoScore = calculateSeoScore(articleContent, targetKeywords, metaDescription, title)
+
+    // Generate JSON-LD Article schema
+    const jsonLd = {
+      '@context': 'https://schema.org',
+      '@type': 'Article',
+      headline: title,
+      description: metaDescription,
+      datePublished: new Date().toISOString(),
+      dateModified: new Date().toISOString(),
+      author: {
+        '@type': 'Organization',
+        name: 'Walla Walla Travel',
+        url: 'https://wallawalla.travel',
+      },
+      publisher: {
+        '@type': 'Organization',
+        name: 'Walla Walla Travel',
+        url: 'https://wallawalla.travel',
+      },
+      wordCount,
+      articleSection: category,
+      keywords: targetKeywords.join(', '),
+    }
+
+    // Store in database
+    const result = await query(`
+      INSERT INTO blog_drafts (
+        title, slug, meta_description, target_keywords, content,
+        word_count, estimated_read_time, json_ld, category,
+        status, seo_score, created_at, updated_at
+      ) VALUES (
+        $1, $2, $3, $4, $5,
+        $6, $7, $8, $9,
+        'draft', $10, NOW(), NOW()
+      ) RETURNING *
+    `, [
+      title,
+      slug,
+      metaDescription,
+      targetKeywords,
+      articleContent,
+      wordCount,
+      readTime,
+      JSON.stringify(jsonLd),
+      category,
+      seoScore,
+    ])
+
+    logger.info('Blog article generated', {
+      id: result.rows[0].id,
+      title,
+      wordCount,
+      seoScore,
+    })
+
+    return NextResponse.json({
+      success: true,
+      draft: result.rows[0],
+    })
+  } catch (error) {
+    logger.error('Blog generation failed', { error })
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to generate blog article' },
+      { status: 500 }
+    )
   }
-
-  // List drafts
-  let queryText = `
-    SELECT
-      bd.id, bd.title, bd.slug, bd.meta_description,
-      bd.target_keywords, bd.word_count, bd.estimated_read_time,
-      bd.category, bd.status, bd.seo_score, bd.readability_score,
-      bd.published_at, bd.created_at, bd.updated_at,
-      u.name as created_by_name
-    FROM blog_drafts bd
-    LEFT JOIN users u ON bd.created_by = u.id
-    WHERE 1=1
-  `
-  const params: (string | number)[] = []
-  let paramIndex = 1
-
-  if (status && status !== 'all') {
-    queryText += ` AND bd.status = $${paramIndex++}`
-    params.push(status)
-  }
-
-  if (category && category !== 'all') {
-    queryText += ` AND bd.category = $${paramIndex++}`
-    params.push(category)
-  }
-
-  queryText += ` ORDER BY bd.created_at DESC LIMIT $${paramIndex++}`
-  params.push(limit)
-
-  const result = await query(queryText, params)
-
-  return NextResponse.json({
-    drafts: result.rows,
-    total: result.rows.length,
-  })
 }
 
-async function patchHandler(request: NextRequest) {
-  await verifyAdmin(request)
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const status = searchParams.get('status')
+    const category = searchParams.get('category')
+    const id = searchParams.get('id')
+    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100)
 
-  const body = await request.json()
-  const { id, status } = body
+    // Single draft by ID
+    if (id) {
+      const result = await query(`
+        SELECT bd.*, u.name as created_by_name
+        FROM blog_drafts bd
+        LEFT JOIN users u ON bd.created_by = u.id
+        WHERE bd.id = $1
+      `, [parseInt(id)])
 
-  if (!id) {
-    throw new BadRequestError('Draft ID is required')
+      if (result.rows.length === 0) {
+        return NextResponse.json({ error: 'Blog draft not found' }, { status: 404 })
+      }
+
+      return NextResponse.json({ draft: result.rows[0] })
+    }
+
+    // List drafts
+    let queryText = `
+      SELECT
+        bd.id, bd.title, bd.slug, bd.meta_description,
+        bd.target_keywords, bd.word_count, bd.estimated_read_time,
+        bd.category, bd.status, bd.seo_score, bd.readability_score,
+        bd.published_at, bd.created_at, bd.updated_at,
+        u.name as created_by_name
+      FROM blog_drafts bd
+      LEFT JOIN users u ON bd.created_by = u.id
+      WHERE 1=1
+    `
+    const params: (string | number)[] = []
+    let paramIndex = 1
+
+    if (status && status !== 'all') {
+      queryText += ` AND bd.status = $${paramIndex++}`
+      params.push(status)
+    }
+
+    if (category && category !== 'all') {
+      queryText += ` AND bd.category = $${paramIndex++}`
+      params.push(category)
+    }
+
+    queryText += ` ORDER BY bd.created_at DESC LIMIT $${paramIndex++}`
+    params.push(limit)
+
+    const result = await query(queryText, params)
+
+    return NextResponse.json({
+      drafts: result.rows,
+      total: result.rows.length,
+    })
+  } catch (error) {
+    logger.error('Failed to fetch blog drafts', { error })
+    return NextResponse.json(
+      { error: 'Failed to fetch blog drafts' },
+      { status: 500 }
+    )
   }
-
-  const validStatuses = ['draft', 'review', 'approved', 'published', 'archived']
-  if (!status || !validStatuses.includes(status)) {
-    throw new BadRequestError(`Status must be one of: ${validStatuses.join(', ')}`)
-  }
-
-  const updates: string[] = ['status = $2', 'updated_at = NOW()']
-  const params: (string | number | null)[] = [id, status]
-
-  if (status === 'published') {
-    updates.push('published_at = NOW()')
-  }
-
-  const result = await query(`
-    UPDATE blog_drafts
-    SET ${updates.join(', ')}
-    WHERE id = $1
-    RETURNING *
-  `, params)
-
-  if (result.rows.length === 0) {
-    throw new NotFoundError('Blog draft not found')
-  }
-
-  logger.info('Blog draft status updated', { draftId: id, newStatus: status })
-
-  return NextResponse.json({
-    success: true,
-    draft: result.rows[0],
-  })
 }
 
-export const GET = withErrorHandling(getHandler as typeof postHandler)
-export const POST = withErrorHandling(postHandler)
-export const PATCH = withErrorHandling(patchHandler)
+export async function PATCH(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { id, status } = body
+
+    if (!id) {
+      return NextResponse.json({ error: 'Draft ID is required' }, { status: 400 })
+    }
+
+    const validStatuses = ['draft', 'review', 'approved', 'published', 'archived']
+    if (!status || !validStatuses.includes(status)) {
+      return NextResponse.json(
+        { error: `Status must be one of: ${validStatuses.join(', ')}` },
+        { status: 400 }
+      )
+    }
+
+    const updates: string[] = ['status = $2', 'updated_at = NOW()']
+    const params: (string | number)[] = [id, status]
+
+    if (status === 'published') {
+      updates.push('published_at = NOW()')
+    }
+
+    const result = await query(`
+      UPDATE blog_drafts
+      SET ${updates.join(', ')}
+      WHERE id = $1
+      RETURNING *
+    `, params)
+
+    if (result.rows.length === 0) {
+      return NextResponse.json({ error: 'Blog draft not found' }, { status: 404 })
+    }
+
+    logger.info('Blog draft status updated', { draftId: id, newStatus: status })
+
+    return NextResponse.json({
+      success: true,
+      draft: result.rows[0],
+    })
+  } catch (error) {
+    logger.error('Failed to update blog draft', { error })
+    return NextResponse.json(
+      { error: 'Failed to update blog draft' },
+      { status: 500 }
+    )
+  }
+}

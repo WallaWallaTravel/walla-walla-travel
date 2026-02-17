@@ -170,9 +170,11 @@ export interface RouteContext<P = Record<string, string>> {
 }
 
 /** Generic API handler function signature for Next.js App Router */
-export type ApiHandler<T = unknown, P = Record<string, string>> = (
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type ApiHandler<T = any, P = Record<string, string>> = (
   request: NextRequest,
-  context: RouteContext<P>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  context: any
 ) => Promise<NextResponse<T>>;
 
 // ============================================================================
