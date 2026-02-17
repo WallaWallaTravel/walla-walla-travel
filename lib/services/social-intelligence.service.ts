@@ -10,6 +10,8 @@
  * - Seasonal calendar (holidays, wine seasons, tourism peaks)
  * - Media library (available images by category)
  * - Past posts (content gaps, days since last post per platform)
+ * - Top performing content (engagement feedback loop)
+ * - Learned preferences from content approvals
  */
 
 import { query } from '@/lib/db'
@@ -58,6 +60,24 @@ interface SeasonalContext {
   upcomingHolidays: string[]
   winerySeasons: string[]
   tourismContext: string
+}
+
+interface TopPerformingPost {
+  id: number
+  platform: string
+  content: string
+  content_type: string | null
+  engagement: number
+  impressions: number
+  clicks: number
+  published_at: string
+}
+
+interface LearnedPreference {
+  preference_type: string
+  platform: string | null
+  pattern: string
+  confidence_score: number
 }
 
 export interface ContentSuggestion {
@@ -280,19 +300,76 @@ class SocialIntelligenceService {
   }
 
   /**
+   * Get top performing posts from the last 30 days
+   * Feeds engagement data back into AI for smarter content generation
+   */
+  async getTopPerformingContent(): Promise<TopPerformingPost[]> {
+    try {
+      const result = await query<TopPerformingPost>(`
+        SELECT
+          id,
+          platform,
+          LEFT(content, 200) as content,
+          content_type,
+          engagement,
+          impressions,
+          clicks,
+          published_at::text
+        FROM scheduled_posts
+        WHERE status = 'published'
+          AND published_at >= NOW() - INTERVAL '30 days'
+          AND engagement > 0
+        ORDER BY engagement DESC
+        LIMIT 10
+      `)
+      return result.rows
+    } catch (error) {
+      logger.warn('Failed to fetch top performing content', { error })
+      return []
+    }
+  }
+
+  /**
+   * Get learned preferences from content approval history
+   * These patterns inform the AI about admin content preferences
+   */
+  async getLearnedPreferences(): Promise<LearnedPreference[]> {
+    try {
+      const result = await query<LearnedPreference>(`
+        SELECT
+          preference_type,
+          platform,
+          pattern,
+          confidence_score
+        FROM ai_learning_preferences
+        WHERE is_active = true
+          AND confidence_score >= 0.60
+        ORDER BY confidence_score DESC
+        LIMIT 15
+      `)
+      return result.rows
+    } catch (error) {
+      logger.warn('Failed to fetch learned preferences (table may not exist yet)', { error })
+      return []
+    }
+  }
+
+  /**
    * Generate daily content suggestions using AI
    */
   async generateDailySuggestions(): Promise<ContentSuggestion[]> {
-    // Gather all data sources
-    const [events, competitorChanges, contentGaps] = await Promise.all([
+    // Gather all data sources including performance feedback
+    const [events, competitorChanges, contentGaps, topPosts, preferences] = await Promise.all([
       this.getUpcomingEvents(),
       this.getRecentCompetitorChanges(),
       this.getContentGaps(),
+      this.getTopPerformingContent(),
+      this.getLearnedPreferences(),
     ])
 
     const seasonalContext = this.getSeasonalContext()
 
-    // Build context for AI
+    // Build context for AI — includes performance feedback loop
     const dataContext = {
       upcomingEvents: events.map(e => ({
         winery: e.winery_name,
@@ -309,6 +386,19 @@ class SocialIntelligenceService {
       contentGaps: contentGaps,
       seasonal: seasonalContext,
       today: new Date().toISOString().split('T')[0],
+      topPerformingContent: topPosts.map(p => ({
+        platform: p.platform,
+        content: p.content,
+        type: p.content_type,
+        engagement: p.engagement,
+        impressions: p.impressions,
+      })),
+      learnedPreferences: preferences.map(p => ({
+        type: p.preference_type,
+        platform: p.platform,
+        pattern: p.pattern,
+        confidence: p.confidence_score,
+      })),
     }
 
     // Generate suggestions using Claude
@@ -340,6 +430,8 @@ IMPORTANT:
 - Match platform style (Instagram: visual/emoji, LinkedIn: professional, Facebook: community)
 - Prioritize content gaps (platforms with no recent posts)
 - Consider upcoming events and holidays
+- LEARN FROM PERFORMANCE: The topPerformingContent shows what posts got the most engagement recently. Generate content similar in style, tone, and topic to high-performing posts.
+- RESPECT LEARNED PREFERENCES: The learnedPreferences show patterns the admin prefers. Follow these patterns when generating content (e.g., preferred tone, emoji usage, hashtag style, content length).
 
 Respond with a JSON array of suggestions in this exact format:
 [
@@ -397,6 +489,8 @@ Respond with a JSON array of suggestions in this exact format:
                 ...(events.length > 0 ? [{ type: 'events', detail: `${events.length} upcoming events` }] : []),
                 ...(competitorChanges.length > 0 ? [{ type: 'competitors', detail: `${competitorChanges.length} recent changes` }] : []),
                 { type: 'seasonal', detail: seasonalContext.season },
+                ...(topPosts.length > 0 ? [{ type: 'performance', detail: `${topPosts.length} top posts analyzed` }] : []),
+                ...(preferences.length > 0 ? [{ type: 'preferences', detail: `${preferences.length} learned patterns applied` }] : []),
               ],
               priority: item.priority || 5,
               suggested_media_urls: media.slice(0, 3).map(m => m.file_path),
@@ -480,6 +574,140 @@ Respond with a JSON array of suggestions in this exact format:
     }
 
     return baseContent
+  }
+
+  /**
+   * Analyze Search Console data for keyword opportunities.
+   * Finds keywords ranking #5-20 that could reach page 1 with optimization.
+   * Also identifies question-based queries (how, what, where, etc.)
+   */
+  async getKeywordOpportunities(): Promise<Array<{
+    query: string;
+    avg_position: number;
+    impressions: number;
+    clicks: number;
+    opportunity_type: string;
+  }>> {
+    try {
+      const result = await query<{
+        query: string;
+        avg_position: number;
+        impressions: number;
+        clicks: number;
+        opportunity_type: string;
+      }>(`
+        WITH keyword_stats AS (
+          SELECT
+            query,
+            ROUND(AVG(position)::numeric, 2)::float AS avg_position,
+            SUM(impressions)::int AS impressions,
+            SUM(clicks)::int AS clicks
+          FROM search_console_data
+          WHERE query IS NOT NULL
+            AND data_date >= CURRENT_DATE - INTERVAL '28 days'
+          GROUP BY query
+          HAVING AVG(position) BETWEEN 5 AND 20
+             AND SUM(impressions) >= 10
+        )
+        SELECT
+          query,
+          avg_position,
+          impressions,
+          clicks,
+          CASE
+            WHEN avg_position BETWEEN 5 AND 10 THEN 'striking_distance'
+            WHEN avg_position BETWEEN 11 AND 15 THEN 'near_page_one'
+            WHEN avg_position BETWEEN 16 AND 20 THEN 'page_two'
+            ELSE 'other'
+          END AS opportunity_type
+        FROM keyword_stats
+        ORDER BY
+          CASE
+            WHEN avg_position BETWEEN 5 AND 10 THEN 1
+            WHEN avg_position BETWEEN 11 AND 15 THEN 2
+            ELSE 3
+          END,
+          impressions DESC
+        LIMIT 50
+      `)
+
+      // Tag question-based queries separately
+      const opportunities = result.rows.map(row => {
+        const lowerQuery = row.query.toLowerCase()
+        const isQuestion = /^(how|what|where|when|why|which|who|can|do|does|is|are)\b/.test(lowerQuery)
+        return {
+          ...row,
+          opportunity_type: isQuestion ? 'question_keyword' : row.opportunity_type,
+        }
+      })
+
+      return opportunities
+    } catch (error) {
+      logger.warn('Failed to fetch keyword opportunities (search_console_data may not exist)', { error })
+      return []
+    }
+  }
+
+  /**
+   * Detect seasonal keyword spikes by comparing recent vs historical data.
+   * Compares the last 7 days of impressions against the previous 30 days average.
+   */
+  async getSeasonalKeywordTrends(): Promise<Array<{
+    query: string;
+    current_impressions: number;
+    previous_impressions: number;
+    growth_pct: number;
+  }>> {
+    try {
+      const result = await query<{
+        query: string;
+        current_impressions: number;
+        previous_impressions: number;
+        growth_pct: number;
+      }>(`
+        WITH recent AS (
+          SELECT
+            query,
+            SUM(impressions)::int AS current_impressions
+          FROM search_console_data
+          WHERE query IS NOT NULL
+            AND data_date >= CURRENT_DATE - INTERVAL '7 days'
+          GROUP BY query
+          HAVING SUM(impressions) >= 5
+        ),
+        previous AS (
+          SELECT
+            query,
+            ROUND(SUM(impressions)::numeric * 7.0 / 30.0)::int AS previous_impressions
+          FROM search_console_data
+          WHERE query IS NOT NULL
+            AND data_date >= CURRENT_DATE - INTERVAL '37 days'
+            AND data_date < CURRENT_DATE - INTERVAL '7 days'
+          GROUP BY query
+          HAVING SUM(impressions) >= 5
+        )
+        SELECT
+          r.query,
+          r.current_impressions,
+          COALESCE(p.previous_impressions, 0) AS previous_impressions,
+          CASE
+            WHEN COALESCE(p.previous_impressions, 0) = 0 THEN 100.0
+            ELSE ROUND(
+              ((r.current_impressions - p.previous_impressions)::numeric / p.previous_impressions * 100), 1
+            )::float
+          END AS growth_pct
+        FROM recent r
+        LEFT JOIN previous p ON r.query = p.query
+        WHERE r.current_impressions > COALESCE(p.previous_impressions, 0)
+        ORDER BY growth_pct DESC
+        LIMIT 30
+      `)
+
+      return result.rows
+    } catch (error) {
+      logger.warn('Failed to fetch seasonal keyword trends', { error })
+      return []
+    }
   }
 
   /**

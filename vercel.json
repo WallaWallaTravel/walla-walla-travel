@@ -10,11 +10,11 @@
     },
     {
       "path": "/api/cron/publish-social-posts",
-      "schedule": "0 9 * * *"
+      "schedule": "0 16 * * *"
     },
     {
       "path": "/api/cron/generate-suggestions",
-      "schedule": "0 6 * * *"
+      "schedule": "0 14 * * *"
     },
     {
       "path": "/api/cron/compliance",
@@ -23,6 +23,30 @@
     {
       "path": "/api/cron/retry-emails",
       "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/sync-post-metrics",
+      "schedule": "0 15 * * *"
+    },
+    {
+      "path": "/api/cron/weekly-marketing-report",
+      "schedule": "0 16 * * 1"
+    },
+    {
+      "path": "/api/cron/sync-search-console",
+      "schedule": "0 13 * * *"
+    },
+    {
+      "path": "/api/cron/seasonal-content-refresh",
+      "schedule": "0 17 1 * *"
+    },
+    {
+      "path": "/api/cron/trending-topics",
+      "schedule": "0 15 * * 1"
+    },
+    {
+      "path": "/api/cron/weekly-strategy",
+      "schedule": "0 18 * * 1"
     }
   ],
   "headers": [

@@ -286,6 +286,74 @@ class BufferService {
   }
 
   /**
+   * Get analytics/interactions for a sent update
+   */
+  async getUpdateInteractions(accessToken: string, updateId: string): Promise<{
+    impressions: number
+    engagement: number
+    clicks: number
+    shares: number
+  }> {
+    const response = await fetch(
+      `${BUFFER_API_BASE}/updates/${updateId}/interactions.json?access_token=${accessToken}`
+    )
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      logger.error('Failed to fetch Buffer update interactions', {
+        status: response.status,
+        updateId,
+        error: errorText,
+      })
+      throw new Error(`Failed to fetch update interactions: ${errorText}`)
+    }
+
+    const data = await response.json()
+
+    // Buffer returns { interactions: [...], total: number }
+    // Each interaction has a type: 'retweet', 'favorite', 'like', 'comment', 'click', 'share', etc.
+    const interactions: Array<{ type: string; value?: number }> = data.interactions || []
+
+    let impressions = 0
+    let engagement = 0
+    let clicks = 0
+    let shares = 0
+
+    for (const interaction of interactions) {
+      const value = interaction.value || 1
+      switch (interaction.type) {
+        case 'impression':
+        case 'impressions':
+        case 'reach':
+          impressions += value
+          break
+        case 'click':
+        case 'clicks':
+        case 'link_clicks':
+          clicks += value
+          break
+        case 'share':
+        case 'shares':
+        case 'retweet':
+        case 'repin':
+          shares += value
+          break
+        default:
+          // likes, comments, favorites, reactions all count as engagement
+          engagement += value
+          break
+      }
+    }
+
+    // If Buffer provides a total and we have no impressions, use total as engagement fallback
+    if (engagement === 0 && data.total) {
+      engagement = data.total
+    }
+
+    return { impressions, engagement, clicks, shares }
+  }
+
+  /**
    * Verify access token is still valid
    */
   async verifyToken(accessToken: string): Promise<boolean> {
