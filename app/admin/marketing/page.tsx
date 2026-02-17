@@ -286,6 +286,55 @@ export default function MarketingDashboard() {
           ) : null}
         </div>
 
+        {/* Alert Banners */}
+        {metrics && metrics.summary.suggestions.pending > 0 && (
+          <div className="mb-4 bg-indigo-50 border border-indigo-200 rounded-xl p-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-gray-900">
+                {metrics.summary.suggestions.pending} content suggestion{metrics.summary.suggestions.pending !== 1 ? 's are' : ' is'} ready for your review.
+              </p>
+            </div>
+            <Link
+              href="/admin/marketing/suggestions"
+              className="text-sm font-medium text-indigo-700 hover:text-indigo-900 whitespace-nowrap ml-4"
+            >
+              Review suggestions →
+            </Link>
+          </div>
+        )}
+
+        {metrics && metrics.summary.strategies.draft > 0 && (
+          <div className="mb-4 bg-violet-50 border border-violet-200 rounded-xl p-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-gray-900">
+                A new weekly strategy is ready for review.
+              </p>
+            </div>
+            <Link
+              href="/admin/marketing/strategy"
+              className="text-sm font-medium text-violet-700 hover:text-violet-900 whitespace-nowrap ml-4"
+            >
+              Review strategy →
+            </Link>
+          </div>
+        )}
+
+        {metrics && metrics.summary.competitors.high_priority > 0 && (
+          <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-gray-900">
+                {metrics.summary.competitors.high_priority} high-priority competitor change{metrics.summary.competitors.high_priority !== 1 ? 's need' : ' needs'} your review.
+              </p>
+            </div>
+            <Link
+              href="/admin/marketing/competitors"
+              className="text-sm font-medium text-amber-700 hover:text-amber-900 whitespace-nowrap ml-4"
+            >
+              Review changes →
+            </Link>
+          </div>
+        )}
+
         {/* Marketing Modules */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {marketingModules.map((module) => (
@@ -355,56 +404,6 @@ export default function MarketingDashboard() {
           </div>
         </div>
 
-        {/* Content Suggestions Alert */}
-        {metrics && metrics.summary.suggestions.pending > 0 && (
-          <div className="mt-8 bg-indigo-50 border border-indigo-200 rounded-xl p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-2">Content Suggestions Ready</h2>
-            <p className="text-sm text-gray-700">
-              {metrics.summary.suggestions.pending} content suggestion{metrics.summary.suggestions.pending !== 1 ? 's are' : ' is'} ready for your review.
-            </p>
-            <Link
-              href="/admin/marketing/suggestions"
-              className="inline-block mt-3 text-sm font-medium text-indigo-800 hover:text-indigo-900 underline"
-            >
-              Review suggestions →
-            </Link>
-          </div>
-        )}
-
-        {/* Weekly Strategy Alert */}
-        {metrics && metrics.summary.strategies.draft > 0 && (
-          <div className="mt-8 bg-violet-50 border border-violet-200 rounded-xl p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-2">New Weekly Strategy</h2>
-            <p className="text-sm text-gray-700">
-              A new weekly strategy is ready for review.
-            </p>
-            <Link
-              href="/admin/marketing/strategy"
-              className="inline-block mt-3 text-sm font-medium text-violet-800 hover:text-violet-900 underline"
-            >
-              Review strategy →
-            </Link>
-          </div>
-        )}
-
-        {/* Competitor Alerts */}
-        {metrics && metrics.summary.competitors.high_priority > 0 && (
-          <div className="mt-8 bg-amber-50 border border-amber-200 rounded-xl p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-2">Competitor Alerts</h2>
-            <p className="text-sm text-gray-700">
-              {metrics.summary.competitors.high_priority} high-priority competitor changes need your review.{' '}
-              {metrics.summary.competitors.unreviewed_changes > metrics.summary.competitors.high_priority && (
-                <span>({metrics.summary.competitors.unreviewed_changes} total unreviewed)</span>
-              )}
-            </p>
-            <Link
-              href="/admin/marketing/competitors"
-              className="inline-block mt-3 text-sm font-medium text-amber-800 hover:text-amber-900 underline"
-            >
-              Review competitor changes →
-            </Link>
-          </div>
-        )}
       </div>
     </div>
   )
