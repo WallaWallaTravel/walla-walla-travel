@@ -92,8 +92,8 @@ export default function SuggestionsPage() {
       setSuccess('Post scheduled successfully!')
       setTimeout(() => setSuccess(null), 3000)
 
-      // Remove from list
-      setSuggestions(suggestions.filter(s => s.id !== suggestion.id))
+      // Remove from list (use functional form to avoid stale closure)
+      setSuggestions(prev => prev.filter(s => s.id !== suggestion.id))
 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to accept suggestion')
@@ -116,7 +116,7 @@ export default function SuggestionsPage() {
         }),
       })
 
-      setSuggestions(suggestions.filter(s => s.id !== suggestionId))
+      setSuggestions(prev => prev.filter(s => s.id !== suggestionId))
     } catch {
       setError('Failed to dismiss suggestion')
     } finally {
@@ -271,7 +271,7 @@ export default function SuggestionsPage() {
           <div key={date} className="mb-8">
             <h2 className="text-sm font-medium text-gray-500 mb-4">
               {format(new Date(date), 'EEEE, MMMM d, yyyy')}
-              <span className="ml-2 text-gray-400">
+              <span className="ml-2 text-gray-600">
                 ({dateSuggestions.length} suggestion{dateSuggestions.length !== 1 ? 's' : ''})
               </span>
             </h2>
@@ -351,18 +351,61 @@ export default function SuggestionsPage() {
                         ))}
                       </div>
 
-                      {/* Media suggestion */}
-                      {suggestion.media_source !== 'none' && (
-                        <div className="p-3 bg-amber-50 rounded-lg border border-amber-100 mb-4">
-                          <p className="text-sm text-amber-800">
-                            <span className="font-medium">📷 Image:</span>{' '}
-                            {suggestion.media_source === 'library'
-                              ? `${suggestion.suggested_media_urls.length} photos from your library`
-                              : `Search Unsplash for "${suggestion.image_search_query}"`
-                            }
-                          </p>
-                        </div>
-                      )}
+                      {/* Media preview */}
+                      <div className="mb-4">
+                        {suggestion.media_source === 'library' && suggestion.suggested_media_urls.length > 0 ? (
+                          <div>
+                            <p className="text-xs font-medium text-gray-600 mb-2">From your media library</p>
+                            <div className="flex gap-2 overflow-x-auto">
+                              {suggestion.suggested_media_urls.slice(0, 3).map((url, i) => (
+                                /* eslint-disable-next-line @next/next/no-img-element */
+                                <img
+                                  key={i}
+                                  src={url}
+                                  alt={`Suggested media ${i + 1}`}
+                                  className="w-24 h-24 rounded-lg object-cover border border-gray-200 flex-shrink-0"
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        ) : suggestion.media_source === 'unsplash' && suggestion.suggested_media_urls.length > 0 ? (
+                          <div>
+                            <div className="flex gap-3 items-start">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={suggestion.suggested_media_urls[0]}
+                                alt={suggestion.image_search_query || 'Unsplash photo'}
+                                className="w-32 h-24 rounded-lg object-cover border border-gray-200 flex-shrink-0"
+                              />
+                              <div className="min-w-0">
+                                <p className="text-xs font-medium text-gray-600 mb-1">From Unsplash</p>
+                                {suggestion.data_sources
+                                  .filter((s) => s.type === 'unsplash')
+                                  .map((s, i) => (
+                                    <p key={i} className="text-xs text-gray-500">{s.detail}</p>
+                                  ))}
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 flex items-center gap-3">
+                            <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center text-gray-500 flex-shrink-0">
+                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+                              </svg>
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-gray-700">No image available</p>
+                              <p className="text-xs text-gray-500">
+                                <Link href="/admin/media/upload" className="text-purple-600 hover:text-purple-700 underline">
+                                  Add photos to your library
+                                </Link>
+                                {' '}for automatic image matching
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     {/* Actions */}
