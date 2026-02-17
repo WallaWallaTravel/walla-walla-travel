@@ -364,6 +364,45 @@ These tips come from extensive local experience:
 
 ---
 
+## Beyond Wine: The Full Walla Walla Experience
+
+Walla Walla is more than wine country — it's a vibrant small-town destination with a thriving food scene, arts community, and outdoor recreation.
+
+### Dining Scene
+
+Walla Walla has earned a reputation as a farm-to-table destination. The fertile valley produces exceptional local ingredients, and the restaurant scene punches well above its weight for a town this size.
+
+- **Farm-to-table dining** — multiple restaurants source directly from local farms and ranchers
+- **Wine-country cuisine** — menus designed to complement the region's wines
+- **Casual to upscale** — everything from craft brewpubs and food trucks to white-tablecloth restaurants
+- **Local character** — chef-owned restaurants with personal touches, not chain establishments
+
+For specific restaurant recommendations, ask and we'll search our local directory.
+
+### Lodging Landscape
+
+Accommodation options range from boutique to practical:
+
+- **Historic hotels** — restored downtown properties with wine-country character
+- **Boutique inns & B&Bs** — intimate, locally owned options often near vineyards
+- **Vacation rentals** — houses and cottages for groups and families
+- **National brands** — familiar hotel chains for reliable comfort
+- **Vineyard estates** — stay on a working vineyard property
+
+For specific lodging options, ask and we'll search our local directory.
+
+### Activities Beyond Wine
+
+- **Art galleries & studios** — downtown is home to a thriving arts community with galleries, public art, and working studios
+- **Shopping & boutiques** — locally owned shops, antique stores, and wine-country lifestyle boutiques along Main Street
+- **Outdoor recreation** — hiking in the Blue Mountains, cycling through vineyard roads, golf courses, and seasonal farmers markets
+- **Seasonal events** — balloon festivals, harvest celebrations, holiday markets, and live music throughout the year
+- **Spa & wellness** — day spas and wellness centers for post-wine-tour relaxation
+
+For specific recommendations in any of these categories, ask and we'll search our partner directory for current options.
+
+---
+
 ## Quick Reference: Wine Country at a Glance
 
 | Question | Answer |

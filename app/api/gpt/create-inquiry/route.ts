@@ -27,7 +27,7 @@ const InquirySchema = z.object({
     return !isNaN(parsed.getTime());
   }, 'Please provide a valid date in YYYY-MM-DD format'),
   party_size: z.number().int().min(1).max(14),
-  tour_type: z.enum(['wine_tour', 'private_transportation', 'corporate', 'celebration']).optional().default('wine_tour'),
+  tour_type: z.enum(['wine_tour', 'private_transportation', 'corporate', 'celebration', 'trip_planning', 'airport_transfer']).optional().default('wine_tour'),
   preferences: z.string().optional(),
   pickup_location: z.string().optional(),
   // Optional fields for ChatGPT integration
@@ -77,12 +77,21 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     wine_tour: 'Wine Tour',
     private_transportation: 'Private Transportation',
     corporate: 'Corporate Event',
-    celebration: 'Celebration'
+    celebration: 'Celebration',
+    trip_planning: 'Trip Planning',
+    airport_transfer: 'Airport Transfer'
   };
 
   // Map tour_type to experience_type and occasion
-  const experienceType = data.tour_type === 'private_transportation' ? 'private_tasting' :
-                         data.tour_type === 'corporate' ? 'corporate' : 'wine_tour';
+  const experienceTypeMap: Record<string, string> = {
+    wine_tour: 'wine_tour',
+    private_transportation: 'private_tasting',
+    corporate: 'corporate',
+    celebration: 'wine_tour',
+    trip_planning: 'concierge',
+    airport_transfer: 'transportation'
+  };
+  const experienceType = experienceTypeMap[data.tour_type] || 'wine_tour';
   const occasion = data.tour_type === 'celebration' ? 'friends_trip' :
                    data.tour_type === 'corporate' ? 'corporate' : null;
 

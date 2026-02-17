@@ -310,6 +310,61 @@ A: Yes! We provide a cooler in the vehicle specifically for your wine purchases.
 
 ---
 
+## Concierge & Trip Planning Services
+
+Beyond wine tours, Walla Walla Travel offers full concierge services to help visitors plan every aspect of their Walla Walla trip.
+
+### Trip Planning
+
+We coordinate complete Walla Walla itineraries covering:
+
+- **Lodging** — recommendations and booking assistance for hotels, inns, vacation rentals, and boutique properties
+- **Dining** — restaurant reservations at farm-to-table restaurants, casual eateries, and fine dining
+- **Activities** — gallery visits, shopping, outdoor adventures, spa experiences, and seasonal events
+- **Wine tours** — our core service, woven into the broader trip plan
+- **Transportation** — airport transfers, in-town rides, and inter-city transport
+
+**How trip planning works:**
+1. Contact us with your travel dates, group size, interests, and budget
+2. We consult with you to understand your priorities
+3. We build a custom day-by-day itinerary with confirmed reservations
+4. You arrive and enjoy — we handle the logistics
+
+Trip planning inquiries are free. Services like tours, transportation, and event coordination are quoted individually.
+
+### Airport Transfer Service
+
+We provide private Mercedes Sprinter van transfers between Walla Walla and regional airports:
+
+| Airport | Distance | Approximate Drive Time |
+|---------|----------|----------------------|
+| Walla Walla Regional (ALW) | 5 miles | 10 minutes |
+| Pasco/Tri-Cities (PSC) | 50 miles | 50 minutes |
+| Spokane (GEG) | 140 miles | 2.5 hours |
+| Portland (PDX) | 250 miles | 4 hours |
+| Seattle-Tacoma (SEA) | 270 miles | 4.5 hours |
+
+Contact us for transfer pricing based on your airport and group size.
+
+### Corporate & Group Events
+
+We coordinate corporate retreats, team outings, incentive trips, and private events in wine country. Services include:
+
+- Custom wine tour itineraries for groups up to 14 (or multiple vehicles for larger groups)
+- Restaurant buyouts and private dining coordination
+- Activity planning (e.g., blending sessions, vineyard tours, cooking classes)
+- Multi-day event logistics
+
+### Multi-Day Itineraries
+
+For visitors staying 2+ days, we create multi-day plans that balance wine touring with dining, relaxation, and activities. A typical 3-day visit might include:
+
+- **Day 1:** Arrival, downtown tasting rooms, dinner at a local restaurant
+- **Day 2:** Full wine tour (3 wineries + lunch)
+- **Day 3:** Morning gallery walk or farmers market, afternoon winery visit, departure
+
+---
+
 ## Liability & Insurance
 
 - NW Touring & Concierge maintains **commercial vehicle insurance** and **general liability coverage**
