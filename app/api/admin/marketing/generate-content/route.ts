@@ -3,6 +3,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { prisma } from '@/lib/prisma'
 import { logger } from '@/lib/logger'
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit'
+import { socialIntelligenceService } from '@/lib/services/social-intelligence.service'
 
 function getAnthropicClient() {
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -121,11 +122,50 @@ ${wineryContent.map(c => `- ${c.content_type}: ${c.content.substring(0, 200)}`).
 
     const isGeneralContent = contentType === 'general' && !winery
 
+    // Gather intelligence context in parallel
+    const [topPosts, preferences, benchmarks, seasonalContext] = await Promise.all([
+      socialIntelligenceService.getTopPerformingContent(),
+      socialIntelligenceService.getLearnedPreferences(),
+      socialIntelligenceService.getPerformanceBenchmarks(),
+      Promise.resolve(socialIntelligenceService.getSeasonalContext()),
+    ])
+
+    // Build performance intelligence section for the prompt
+    let intelligenceSection = ''
+
+    if (topPosts.length > 0) {
+      intelligenceSection += `\nTOP PERFORMING POSTS (learn from these - they got the most engagement recently):
+${topPosts.slice(0, 5).map(p => `- [${p.platform}/${p.content_type || 'general'}] engagement: ${p.engagement}, impressions: ${p.impressions} — "${p.content.substring(0, 120)}..."`).join('\n')}\n`
+    }
+
+    if (benchmarks.byContentType.length > 0) {
+      intelligenceSection += `\nPERFORMANCE BENCHMARKS BY CONTENT TYPE (what types work best):
+${benchmarks.byContentType.map(b => `- ${b.dimension_value}: avg engagement ${b.avg_engagement}, avg impressions ${b.avg_impressions} (${b.post_count} posts)`).join('\n')}\n`
+    }
+
+    if (benchmarks.byPlatform.length > 0) {
+      intelligenceSection += `\nPERFORMANCE BENCHMARKS BY PLATFORM:
+${benchmarks.byPlatform.map(b => `- ${b.dimension_value}: avg engagement ${b.avg_engagement}, avg impressions ${b.avg_impressions} (${b.post_count} posts)`).join('\n')}\n`
+    }
+
+    if (benchmarks.byLengthBucket.length > 0) {
+      intelligenceSection += `\nOPTIMAL CONTENT LENGTH (by engagement):
+${benchmarks.byLengthBucket.map(b => `- ${b.dimension_value}: avg engagement ${b.avg_engagement} (${b.post_count} posts)`).join('\n')}\n`
+    }
+
+    if (preferences.length > 0) {
+      intelligenceSection += `\nLEARNED ADMIN PREFERENCES (follow these patterns):
+${preferences.map(p => `- [${p.preference_type}${p.platform ? '/' + p.platform : ''}] ${p.pattern} (confidence: ${Math.round(p.confidence_score * 100)}%)`).join('\n')}\n`
+    }
+
     const systemPrompt = `You are a social media content expert specializing in wine industry marketing for the Walla Walla Valley wine region.
 You create engaging, authentic content that drives visits and builds brand awareness.
 
 Current date: ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-Current season: Winter
+Season: ${seasonalContext.season}
+${seasonalContext.upcomingHolidays.length > 0 ? `Upcoming holidays: ${seasonalContext.upcomingHolidays.join(', ')}` : ''}
+${seasonalContext.winerySeasons.length > 0 ? `Wine seasons: ${seasonalContext.winerySeasons.join(', ')}` : ''}
+Tourism context: ${seasonalContext.tourismContext}
 
 Platform: ${platform.toUpperCase()}
 Platform Guidelines: ${platformGuideline.style}
@@ -136,7 +176,7 @@ Objective: ${contentTypePrompt}
 
 Tone: ${tone}
 Tone Description: ${toneDescription}
-
+${intelligenceSection}
 IMPORTANT RULES:
 ${isGeneralContent ? `1. Create content about the Walla Walla Valley wine region as a whole
 2. Highlight what makes Walla Walla special - over 130 wineries, beautiful scenery, friendly atmosphere
@@ -145,7 +185,9 @@ ${isGeneralContent ? `1. Create content about the Walla Walla Valley wine region
 3. Include relevant emojis naturally (don't overdo it)
 4. For Instagram, use line breaks to improve readability
 5. End with a clear call-to-action appropriate to the platform
-6. Keep hashtag suggestions relevant to Walla Walla wine country`
+6. Keep hashtag suggestions relevant to Walla Walla wine country
+7. MATCH the style, tone, and length of top-performing posts when possible
+8. FOLLOW learned preferences from admin editing patterns`
 
     const userPrompt = isGeneralContent
       ? `Create a ${platform} post about visiting Walla Walla wine country.

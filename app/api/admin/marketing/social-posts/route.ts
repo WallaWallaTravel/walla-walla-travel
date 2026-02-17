@@ -81,7 +81,9 @@ async function postHandler(request: NextRequest) {
     timezone,
     ab_test_id,
     variant_letter,
-    created_by
+    created_by,
+    strategy_id,
+    content_type,
   } = body
 
   // Validation
@@ -94,9 +96,10 @@ async function postHandler(request: NextRequest) {
       content, media_urls, hashtags, link_url,
       platform, account_id, scheduled_for, timezone,
       status, ab_test_id, variant_letter, created_by,
+      strategy_id, content_type,
       created_at, updated_at
     ) VALUES (
-      $1, $2, $3, $4, $5, $6, $7, $8, 'scheduled', $9, $10, $11, NOW(), NOW()
+      $1, $2, $3, $4, $5, $6, $7, $8, 'scheduled', $9, $10, $11, $12, $13, NOW(), NOW()
     ) RETURNING *
   `, [
     content,
@@ -109,7 +112,9 @@ async function postHandler(request: NextRequest) {
     timezone || 'America/Los_Angeles',
     ab_test_id || null,
     variant_letter || null,
-    created_by || null
+    created_by || null,
+    strategy_id || null,
+    content_type || null,
   ])
 
   return NextResponse.json({

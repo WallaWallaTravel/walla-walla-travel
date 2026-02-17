@@ -11,6 +11,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
 import { bufferService } from '@/lib/services/buffer.service'
+import { socialIntelligenceService } from '@/lib/services/social-intelligence.service'
 import { logger } from '@/lib/logger'
 
 interface PostToSync {
@@ -118,10 +119,20 @@ export async function GET(request: NextRequest) {
 
     logger.info('Post metrics sync cron complete', results)
 
+    // After syncing metrics, categorize any uncategorized posts
+    // This ensures benchmark data by content_type stays useful
+    let categorization = { categorized: 0, errors: 0 }
+    try {
+      categorization = await socialIntelligenceService.categorizeUncategorizedPosts()
+    } catch (error) {
+      logger.warn('Post categorization step failed (non-blocking)', { error })
+    }
+
     return NextResponse.json({
       success: true,
-      message: `Synced ${results.synced} posts, ${results.failed} failed`,
+      message: `Synced ${results.synced} posts, ${results.failed} failed. Categorized ${categorization.categorized} posts.`,
       results,
+      categorization,
       timestamp: new Date().toISOString(),
     })
 
