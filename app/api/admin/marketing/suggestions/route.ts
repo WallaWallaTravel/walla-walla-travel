@@ -75,31 +75,42 @@ async function patchHandler(request: NextRequest) {
   await verifyAdmin(request)
 
   const body = await request.json()
-  const { id, status, scheduled_post_id } = body
+  const { id, status, scheduled_post_id, suggested_media_urls, media_source } = body
 
   if (!id) {
     throw new BadRequestError('Suggestion ID is required')
   }
 
-  if (!status) {
-    throw new BadRequestError('Status is required')
-  }
+  // Allow media-only updates (no status change required)
+  const setClause = ['updated_at = NOW()']
+  const params: (string | number | string[])[] = [id]
 
-  const validStatuses = ['pending', 'accepted', 'modified', 'dismissed', 'expired']
-  if (!validStatuses.includes(status)) {
-    throw new BadRequestError(`Invalid status. Must be one of: ${validStatuses.join(', ')}`)
-  }
+  if (status) {
+    const validStatuses = ['pending', 'accepted', 'modified', 'dismissed', 'expired']
+    if (!validStatuses.includes(status)) {
+      throw new BadRequestError(`Invalid status. Must be one of: ${validStatuses.join(', ')}`)
+    }
+    params.push(status)
+    setClause.push(`status = $${params.length}`)
 
-  const setClause = ['status = $2', 'updated_at = NOW()']
-  const params: (string | number)[] = [id, status]
-
-  if (status === 'accepted' || status === 'modified') {
-    setClause.push('accepted_at = NOW()')
+    if (status === 'accepted' || status === 'modified') {
+      setClause.push('accepted_at = NOW()')
+    }
   }
 
   if (scheduled_post_id) {
     params.push(scheduled_post_id)
     setClause.push(`scheduled_post_id = $${params.length}`)
+  }
+
+  if (suggested_media_urls) {
+    params.push(suggested_media_urls)
+    setClause.push(`suggested_media_urls = $${params.length}`)
+  }
+
+  if (media_source) {
+    params.push(media_source)
+    setClause.push(`media_source = $${params.length}`)
   }
 
   const result = await query(`
