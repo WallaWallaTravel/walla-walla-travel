@@ -80,6 +80,15 @@ interface LearnedPreference {
   confidence_score: number
 }
 
+export interface PerformanceBenchmark {
+  dimension: string
+  dimension_value: string
+  post_count: number
+  avg_engagement: number
+  avg_impressions: number
+  avg_clicks: number
+}
+
 export interface ContentSuggestion {
   platform: 'instagram' | 'facebook' | 'linkedin'
   content_type: string
@@ -355,16 +364,180 @@ class SocialIntelligenceService {
   }
 
   /**
+   * Get aggregate performance benchmarks from published posts (last 90 days).
+   * Computes avg engagement/impressions/clicks by content_type, platform,
+   * and content length bucket. Used to inform all AI prompts with data
+   * about what actually performs well.
+   */
+  async getPerformanceBenchmarks(): Promise<{
+    byContentType: PerformanceBenchmark[]
+    byPlatform: PerformanceBenchmark[]
+    byLengthBucket: PerformanceBenchmark[]
+  }> {
+    const emptyResult = { byContentType: [], byPlatform: [], byLengthBucket: [] }
+
+    try {
+      const [byContentType, byPlatform, byLengthBucket] = await Promise.all([
+        // Avg engagement by content_type
+        query<PerformanceBenchmark>(`
+          SELECT
+            'content_type' AS dimension,
+            COALESCE(content_type, 'uncategorized') AS dimension_value,
+            COUNT(*)::int AS post_count,
+            ROUND(COALESCE(AVG(engagement), 0))::int AS avg_engagement,
+            ROUND(COALESCE(AVG(impressions), 0))::int AS avg_impressions,
+            ROUND(COALESCE(AVG(clicks), 0))::int AS avg_clicks
+          FROM scheduled_posts
+          WHERE status = 'published'
+            AND published_at >= NOW() - INTERVAL '90 days'
+            AND engagement IS NOT NULL
+          GROUP BY content_type
+          HAVING COUNT(*) >= 2
+          ORDER BY avg_engagement DESC
+        `),
+        // Avg engagement by platform
+        query<PerformanceBenchmark>(`
+          SELECT
+            'platform' AS dimension,
+            platform AS dimension_value,
+            COUNT(*)::int AS post_count,
+            ROUND(COALESCE(AVG(engagement), 0))::int AS avg_engagement,
+            ROUND(COALESCE(AVG(impressions), 0))::int AS avg_impressions,
+            ROUND(COALESCE(AVG(clicks), 0))::int AS avg_clicks
+          FROM scheduled_posts
+          WHERE status = 'published'
+            AND published_at >= NOW() - INTERVAL '90 days'
+            AND engagement IS NOT NULL
+          GROUP BY platform
+          ORDER BY avg_engagement DESC
+        `),
+        // Avg engagement by content length bucket
+        query<PerformanceBenchmark>(`
+          SELECT
+            'length_bucket' AS dimension,
+            CASE
+              WHEN LENGTH(content) < 100 THEN 'short (<100 chars)'
+              WHEN LENGTH(content) < 300 THEN 'medium (100-300 chars)'
+              WHEN LENGTH(content) < 700 THEN 'long (300-700 chars)'
+              ELSE 'very_long (700+ chars)'
+            END AS dimension_value,
+            COUNT(*)::int AS post_count,
+            ROUND(COALESCE(AVG(engagement), 0))::int AS avg_engagement,
+            ROUND(COALESCE(AVG(impressions), 0))::int AS avg_impressions,
+            ROUND(COALESCE(AVG(clicks), 0))::int AS avg_clicks
+          FROM scheduled_posts
+          WHERE status = 'published'
+            AND published_at >= NOW() - INTERVAL '90 days'
+            AND engagement IS NOT NULL
+          GROUP BY CASE
+              WHEN LENGTH(content) < 100 THEN 'short (<100 chars)'
+              WHEN LENGTH(content) < 300 THEN 'medium (100-300 chars)'
+              WHEN LENGTH(content) < 700 THEN 'long (300-700 chars)'
+              ELSE 'very_long (700+ chars)'
+            END
+          HAVING COUNT(*) >= 2
+          ORDER BY avg_engagement DESC
+        `),
+      ])
+
+      return {
+        byContentType: byContentType.rows,
+        byPlatform: byPlatform.rows,
+        byLengthBucket: byLengthBucket.rows,
+      }
+    } catch (error) {
+      logger.warn('Failed to fetch performance benchmarks', { error })
+      return emptyResult
+    }
+  }
+
+  /**
+   * Categorize uncategorized published posts using Claude Haiku.
+   * Runs after metrics sync to ensure benchmark data (by content_type) stays useful.
+   */
+  async categorizeUncategorizedPosts(): Promise<{ categorized: number; errors: number }> {
+    const results = { categorized: 0, errors: 0 }
+
+    try {
+      // Find published posts with NULL content_type
+      const uncategorized = await query<{ id: number; content: string; platform: string }>(`
+        SELECT id, LEFT(content, 300) AS content, platform
+        FROM scheduled_posts
+        WHERE status = 'published'
+          AND content_type IS NULL
+          AND content IS NOT NULL
+          AND LENGTH(content) > 10
+        ORDER BY published_at DESC NULLS LAST
+        LIMIT 20
+      `)
+
+      if (uncategorized.rows.length === 0) {
+        return results
+      }
+
+      const anthropic = this.getAnthropic()
+
+      // Batch classify all posts in one call
+      const postsForClassification = uncategorized.rows.map((p, i) => (
+        `Post ${i + 1} (ID: ${p.id}, Platform: ${p.platform}):\n${p.content}`
+      )).join('\n\n---\n\n')
+
+      const response = await anthropic.messages.create({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 500,
+        messages: [{
+          role: 'user',
+          content: `Classify each social media post into exactly one category. Valid categories: wine_spotlight, event_promo, seasonal, educational, behind_scenes, customer_story, general.
+
+${postsForClassification}
+
+Respond with ONLY a JSON array of objects with "id" (number) and "content_type" (string). Example: [{"id": 1, "content_type": "wine_spotlight"}]`
+        }],
+      })
+
+      const text = response.content[0]
+      if (text.type !== 'text') return results
+
+      const jsonMatch = text.text.match(/\[[\s\S]*\]/)
+      if (!jsonMatch) return results
+
+      const classifications: Array<{ id: number; content_type: string }> = JSON.parse(jsonMatch[0])
+      const validTypes = ['wine_spotlight', 'event_promo', 'seasonal', 'educational', 'behind_scenes', 'customer_story', 'general']
+
+      for (const item of classifications) {
+        if (!validTypes.includes(item.content_type)) continue
+
+        try {
+          await query(
+            'UPDATE scheduled_posts SET content_type = $1, updated_at = NOW() WHERE id = $2 AND content_type IS NULL',
+            [item.content_type, item.id]
+          )
+          results.categorized++
+        } catch {
+          results.errors++
+        }
+      }
+
+      logger.info('Post categorization complete', results)
+    } catch (error) {
+      logger.warn('Failed to categorize posts', { error })
+    }
+
+    return results
+  }
+
+  /**
    * Generate daily content suggestions using AI
    */
   async generateDailySuggestions(): Promise<ContentSuggestion[]> {
     // Gather all data sources including performance feedback
-    const [events, competitorChanges, contentGaps, topPosts, preferences] = await Promise.all([
+    const [events, competitorChanges, contentGaps, topPosts, preferences, benchmarks] = await Promise.all([
       this.getUpcomingEvents(),
       this.getRecentCompetitorChanges(),
       this.getContentGaps(),
       this.getTopPerformingContent(),
       this.getLearnedPreferences(),
+      this.getPerformanceBenchmarks(),
     ])
 
     const seasonalContext = this.getSeasonalContext()
@@ -399,6 +572,20 @@ class SocialIntelligenceService {
         pattern: p.pattern,
         confidence: p.confidence_score,
       })),
+      performanceBenchmarks: {
+        byContentType: benchmarks.byContentType.map(b => ({
+          type: b.dimension_value,
+          avgEngagement: b.avg_engagement,
+          avgImpressions: b.avg_impressions,
+          posts: b.post_count,
+        })),
+        byPlatform: benchmarks.byPlatform.map(b => ({
+          platform: b.dimension_value,
+          avgEngagement: b.avg_engagement,
+          avgImpressions: b.avg_impressions,
+          posts: b.post_count,
+        })),
+      },
     }
 
     // Generate suggestions using Claude
@@ -431,6 +618,7 @@ IMPORTANT:
 - Prioritize content gaps (platforms with no recent posts)
 - Consider upcoming events and holidays
 - LEARN FROM PERFORMANCE: The topPerformingContent shows what posts got the most engagement recently. Generate content similar in style, tone, and topic to high-performing posts.
+- USE BENCHMARKS: The performanceBenchmarks show average engagement by content type and platform. Favor content types and lengths that historically perform well.
 - RESPECT LEARNED PREFERENCES: The learnedPreferences show patterns the admin prefers. Follow these patterns when generating content (e.g., preferred tone, emoji usage, hashtag style, content length).
 
 Respond with a JSON array of suggestions in this exact format:

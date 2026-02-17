@@ -16,7 +16,7 @@ const ResetRequestSchema = z.object({
  * Request a password reset email
  * Always returns success to prevent email enumeration
  */
-export const POST = withRateLimit(rateLimiters.auth)(
+export const POST = withRateLimit(rateLimiters.passwordReset)(
   withErrorHandling(async (request: NextRequest) => {
     const { email } = await validateBody(request, ResetRequestSchema);
 

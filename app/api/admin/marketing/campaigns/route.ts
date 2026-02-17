@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { getSessionFromRequest } from '@/lib/auth/session'
+import { socialIntelligenceService } from '@/lib/services/social-intelligence.service'
 import Anthropic from '@anthropic-ai/sdk'
 
 async function verifyAdmin(request: NextRequest) {
@@ -157,6 +158,36 @@ export async function POST(request: NextRequest) {
     try {
       const anthropic = getAnthropicClient()
 
+      // Gather performance intelligence for smarter campaign content
+      const [benchmarks, pastCampaigns] = await Promise.all([
+        socialIntelligenceService.getPerformanceBenchmarks(),
+        query<{ name: string; theme: string; performance: string }>(`
+          SELECT name, theme, performance::text
+          FROM marketing_campaigns
+          WHERE status = 'completed'
+            AND performance != '{}'::jsonb
+          ORDER BY end_date DESC
+          LIMIT 3
+        `).then(r => r.rows).catch(() => []),
+      ])
+
+      let campaignIntelligence = ''
+      if (benchmarks.byContentType.length > 0) {
+        campaignIntelligence += `\nPERFORMANCE DATA (use this to create better-performing content):
+Content type benchmarks: ${benchmarks.byContentType.map(b => `${b.dimension_value}: avg ${b.avg_engagement} engagement`).join(', ')}
+Platform benchmarks: ${benchmarks.byPlatform.map(b => `${b.dimension_value}: avg ${b.avg_engagement} engagement`).join(', ')}\n`
+      }
+      if (benchmarks.byLengthBucket.length > 0) {
+        campaignIntelligence += `Optimal content length: ${benchmarks.byLengthBucket[0].dimension_value} performs best (avg ${benchmarks.byLengthBucket[0].avg_engagement} engagement)\n`
+      }
+      if (pastCampaigns.length > 0) {
+        campaignIntelligence += `\nPAST CAMPAIGN RESULTS (learn from these):
+${pastCampaigns.map(c => {
+  const perf = typeof c.performance === 'string' ? JSON.parse(c.performance) : c.performance
+  return `- "${c.name}" (${c.theme}): ${perf.total_engagement || 0} total engagement, ${perf.avg_engagement || 0} avg per post`
+}).join('\n')}\n`
+      }
+
       // Generate social posts for each channel for each day
       if (socialChannels.length > 0) {
         const socialPrompt = `You are a social media marketing expert for Walla Walla wine country tourism.
@@ -177,7 +208,7 @@ IMPORTANT BUSINESS RULES:
 - Tasting fees are NEVER included in tour pricing
 - Standard tour is 6 hours
 - Do not claim specific years of experience
-
+${campaignIntelligence}
 Generate exactly ${socialChannels.length * dayCount} posts total (one per channel per day).
 
 Respond with a JSON array. Each item must have:
@@ -190,6 +221,7 @@ Keep posts varied, engaging, and authentic. Use emojis naturally but don't overd
 For Instagram: visual/story-driven, up to 2200 chars
 For Facebook: conversational, community-focused, up to 500 chars
 For LinkedIn: professional, up to 700 chars
+Match the content length and style that historically gets the best engagement.
 
 Return ONLY the JSON array, no other text.`
 

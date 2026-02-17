@@ -47,6 +47,10 @@
     {
       "path": "/api/cron/weekly-strategy",
       "schedule": "0 18 * * 1"
+    },
+    {
+      "path": "/api/cron/sync-campaign-performance",
+      "schedule": "0 17 * * *"
     }
   ],
   "headers": [

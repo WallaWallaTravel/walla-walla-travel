@@ -4,7 +4,85 @@ import {
   refreshAccessToken,
   syncDailyData,
 } from '@/lib/services/search-console.service';
+import { query } from '@/lib/db';
 import { logger } from '@/lib/logger';
+
+/**
+ * Match published blog_drafts to Search Console data by slug.
+ * Aggregates impressions, clicks, avg position over the last 30 days.
+ */
+async function syncBlogPerformance(): Promise<{ matched: number }> {
+  let matched = 0;
+
+  try {
+    // Find published blogs with slugs
+    const blogs = await query<{ id: number; slug: string }>(`
+      SELECT id, slug
+      FROM blog_drafts
+      WHERE status = 'published'
+        AND slug IS NOT NULL
+        AND (performance_synced_at IS NULL OR performance_synced_at < NOW() - INTERVAL '24 hours')
+      LIMIT 50
+    `);
+
+    for (const blog of blogs.rows) {
+      // Match Search Console pages containing this slug
+      const perfResult = await query<{
+        total_impressions: number;
+        total_clicks: number;
+        avg_ctr: number;
+        avg_position: number;
+        top_queries: string;
+      }>(`
+        SELECT
+          COALESCE(SUM(impressions), 0)::int AS total_impressions,
+          COALESCE(SUM(clicks), 0)::int AS total_clicks,
+          ROUND(COALESCE(AVG(ctr), 0)::numeric, 4)::float AS avg_ctr,
+          ROUND(COALESCE(AVG(position), 0)::numeric, 1)::float AS avg_position,
+          (
+            SELECT COALESCE(json_agg(q), '[]'::json)::text
+            FROM (
+              SELECT query, SUM(clicks)::int AS clicks, SUM(impressions)::int AS impressions
+              FROM search_console_data
+              WHERE page_url LIKE '%' || $1 || '%'
+                AND data_date >= CURRENT_DATE - INTERVAL '30 days'
+                AND query IS NOT NULL
+              GROUP BY query
+              ORDER BY SUM(clicks) DESC
+              LIMIT 5
+            ) q
+          ) AS top_queries
+        FROM search_console_data
+        WHERE page_url LIKE '%' || $1 || '%'
+          AND data_date >= CURRENT_DATE - INTERVAL '30 days'
+      `, [blog.slug]);
+
+      const perf = perfResult.rows[0];
+      if (perf && (perf.total_impressions > 0 || perf.total_clicks > 0)) {
+        await query(`
+          UPDATE blog_drafts
+          SET performance = $1, performance_synced_at = NOW(), updated_at = NOW()
+          WHERE id = $2
+        `, [
+          JSON.stringify({
+            impressions_30d: perf.total_impressions,
+            clicks_30d: perf.total_clicks,
+            avg_ctr: perf.avg_ctr,
+            avg_position: perf.avg_position,
+            top_queries: JSON.parse(perf.top_queries),
+            synced_at: new Date().toISOString(),
+          }),
+          blog.id,
+        ]);
+        matched++;
+      }
+    }
+  } catch (error) {
+    logger.warn('Blog performance sync failed (non-blocking)', { error });
+  }
+
+  return { matched };
+}
 
 function verifyCronSecret(request: NextRequest): boolean {
   const authHeader = request.headers.get('authorization');
@@ -54,10 +132,14 @@ export async function POST(request: NextRequest) {
     // Pull and store yesterday's data
     const result = await syncDailyData();
 
+    // After syncing Search Console data, match blog performance
+    const blogPerf = await syncBlogPerformance();
+
     const duration = Date.now() - startTime;
     logger.info('Search Console sync cron job completed', {
       duration: `${duration}ms`,
       ...result,
+      blogsMatched: blogPerf.matched,
     });
 
     return NextResponse.json({
@@ -68,6 +150,7 @@ export async function POST(request: NextRequest) {
       date: result.date,
       queries_stored: result.queriesStored,
       pages_stored: result.pagesStored,
+      blogs_matched: blogPerf.matched,
     });
   } catch (error) {
     const duration = Date.now() - startTime;

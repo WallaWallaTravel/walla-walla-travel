@@ -254,6 +254,110 @@ async function checkExistingStrategy(weekStart: string): Promise<boolean> {
   }
 }
 
+// ---------- Strategy Execution Tracking ----------
+
+interface ExecutionStats {
+  previousStrategyId: number | null
+  recommendedPostCount: number
+  publishedFromStrategy: number
+  executionRate: number
+  strategyPostAvgEngagement: number
+  adHocPostAvgEngagement: number
+  performanceLift: number | null
+}
+
+async function getLastWeekExecutionStats(): Promise<ExecutionStats | null> {
+  try {
+    // Find last week's strategy
+    const stratResult = await query<{
+      id: number
+      recommended_posts: string
+      week_start: string
+      week_end: string
+    }>(`
+      SELECT id, recommended_posts, week_start::text, week_end::text
+      FROM marketing_strategies
+      WHERE week_start < CURRENT_DATE
+      ORDER BY week_start DESC
+      LIMIT 1
+    `)
+
+    if (stratResult.rows.length === 0) return null
+
+    const prevStrategy = stratResult.rows[0]
+    const recommendedPosts = typeof prevStrategy.recommended_posts === 'string'
+      ? JSON.parse(prevStrategy.recommended_posts)
+      : prevStrategy.recommended_posts
+
+    const recommendedPostCount = Array.isArray(recommendedPosts) ? recommendedPosts.length : 0
+
+    // Count posts linked to this strategy
+    const linkedResult = await query<{ count: number; avg_engagement: number }>(`
+      SELECT
+        COUNT(*)::int AS count,
+        ROUND(COALESCE(AVG(engagement), 0))::int AS avg_engagement
+      FROM scheduled_posts
+      WHERE strategy_id = $1
+        AND status = 'published'
+    `, [prevStrategy.id])
+
+    const publishedFromStrategy = linkedResult.rows[0]?.count || 0
+    const strategyPostAvgEngagement = linkedResult.rows[0]?.avg_engagement || 0
+
+    // Get avg engagement of ad-hoc posts in the same period
+    const adHocResult = await query<{ avg_engagement: number }>(`
+      SELECT ROUND(COALESCE(AVG(engagement), 0))::int AS avg_engagement
+      FROM scheduled_posts
+      WHERE strategy_id IS NULL
+        AND status = 'published'
+        AND published_at >= $1::date
+        AND published_at <= $2::date + INTERVAL '1 day'
+        AND engagement > 0
+    `, [prevStrategy.week_start, prevStrategy.week_end])
+
+    const adHocPostAvgEngagement = adHocResult.rows[0]?.avg_engagement || 0
+
+    const executionRate = recommendedPostCount > 0
+      ? Math.round((publishedFromStrategy / recommendedPostCount) * 100)
+      : 0
+
+    const performanceLift = adHocPostAvgEngagement > 0 && strategyPostAvgEngagement > 0
+      ? Math.round(((strategyPostAvgEngagement - adHocPostAvgEngagement) / adHocPostAvgEngagement) * 100)
+      : null
+
+    // Save execution summary back to the previous strategy
+    await query(`
+      UPDATE marketing_strategies
+      SET execution_summary = $1, updated_at = NOW()
+      WHERE id = $2
+    `, [
+      JSON.stringify({
+        recommended_post_count: recommendedPostCount,
+        published_from_strategy: publishedFromStrategy,
+        execution_rate_pct: executionRate,
+        strategy_avg_engagement: strategyPostAvgEngagement,
+        ad_hoc_avg_engagement: adHocPostAvgEngagement,
+        performance_lift_pct: performanceLift,
+        computed_at: new Date().toISOString(),
+      }),
+      prevStrategy.id,
+    ])
+
+    return {
+      previousStrategyId: prevStrategy.id,
+      recommendedPostCount,
+      publishedFromStrategy,
+      executionRate,
+      strategyPostAvgEngagement,
+      adHocPostAvgEngagement,
+      performanceLift,
+    }
+  } catch (error) {
+    logger.warn('Failed to compute execution stats', { error })
+    return null
+  }
+}
+
 // ---------- Strategy Generation ----------
 
 async function generateStrategy(data: {
@@ -263,6 +367,8 @@ async function generateStrategy(data: {
   topPosts: TopPost[]
   contentGaps: ContentGapData[]
   seasonalContext: ReturnType<typeof socialIntelligenceService.getSeasonalContext>
+  benchmarks?: { byContentType: Array<{ dimension_value: string; avg_engagement: number; avg_impressions: number; post_count: number }>; byPlatform: Array<{ dimension_value: string; avg_engagement: number; avg_impressions: number; post_count: number }> }
+  executionStats?: ExecutionStats | null
   weekStart: string
   weekEnd: string
 }): Promise<StrategyOutput> {
@@ -300,6 +406,19 @@ SEASONAL CONTEXT:
 - Upcoming holidays: ${data.seasonalContext.upcomingHolidays.join(', ') || 'None in next 14 days'}
 - Wine seasons: ${data.seasonalContext.winerySeasons.join(', ') || 'None active'}
 - Tourism context: ${data.seasonalContext.tourismContext}
+
+${data.benchmarks ? `PERFORMANCE BENCHMARKS (90-day averages — use this to recommend content types that actually perform well):
+By content type: ${JSON.stringify(data.benchmarks.byContentType)}
+By platform: ${JSON.stringify(data.benchmarks.byPlatform)}` : ''}
+
+${data.executionStats ? `LAST WEEK'S STRATEGY EXECUTION:
+- Recommended posts: ${data.executionStats.recommendedPostCount}
+- Actually published: ${data.executionStats.publishedFromStrategy}
+- Execution rate: ${data.executionStats.executionRate}%
+- Strategy posts avg engagement: ${data.executionStats.strategyPostAvgEngagement}
+- Ad-hoc posts avg engagement: ${data.executionStats.adHocPostAvgEngagement}
+${data.executionStats.performanceLift !== null ? `- Performance lift: ${data.executionStats.performanceLift > 0 ? '+' : ''}${data.executionStats.performanceLift}% vs ad-hoc` : '- Not enough data to compare'}
+Consider this execution feedback when making this week's recommendations. If execution rate was low, make recommendations more actionable. If strategy posts outperformed, lean into what worked.` : ''}
 
 Create a strategy with:
 
@@ -515,12 +634,16 @@ export async function GET(request: NextRequest) {
       competitorActivity,
       topPosts,
       contentGaps,
+      benchmarks,
+      executionStats,
     ] = await Promise.all([
       getSocialPerformance(),
       getSearchConsoleTrends(),
       getCompetitorActivity(),
       getTopPerformingPosts(),
       getContentGaps(),
+      socialIntelligenceService.getPerformanceBenchmarks(),
+      getLastWeekExecutionStats(),
     ])
 
     const seasonalContext = socialIntelligenceService.getSeasonalContext()
@@ -544,6 +667,11 @@ export async function GET(request: NextRequest) {
       topPosts,
       contentGaps,
       seasonalContext,
+      benchmarks: {
+        byContentType: benchmarks.byContentType,
+        byPlatform: benchmarks.byPlatform,
+      },
+      executionStats,
       weekStart,
       weekEnd,
     })

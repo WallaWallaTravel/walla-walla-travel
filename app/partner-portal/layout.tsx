@@ -34,8 +34,8 @@ export default function PartnerPortalLayout({ children }: { children: ReactNode 
         const res = await fetch('/api/auth/me');
         if (res.ok) {
           const data = await res.json();
-          if (data.success && data.data?.user) {
-            const user = data.data.user;
+          if (data.user) {
+            const user = data.user;
             if (user.role === 'partner' || user.role === 'admin') {
               setJwtUser(user);
               setAuthType('jwt');
