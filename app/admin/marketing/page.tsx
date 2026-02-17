@@ -30,6 +30,17 @@ interface MarketingMetrics {
       unreviewed_changes: number
       high_priority: number
     }
+    suggestions: {
+      pending: number
+      today: number
+    }
+    strategies: {
+      draft: number
+      active: number
+    }
+    campaigns: {
+      draft: number
+    }
     social: {
       scheduled: number
       published_this_week: number
@@ -119,7 +130,12 @@ export default function MarketingDashboard() {
       icon: '💡',
       href: '/admin/marketing/suggestions',
       color: 'from-amber-500 to-orange-600',
-      stats: 'NEW',
+      stats: metrics
+        ? metrics.summary.suggestions.pending > 0
+          ? `${metrics.summary.suggestions.pending} pending`
+          : 'No pending'
+        : 'Loading...',
+      statsColor: metrics && metrics.summary.suggestions.pending > 0 ? 'text-emerald-600' : undefined,
     },
     {
       title: 'Competitor Monitor',
@@ -130,6 +146,7 @@ export default function MarketingDashboard() {
       stats: metrics && metrics.summary.competitors.unreviewed_changes > 0
         ? `${metrics.summary.competitors.unreviewed_changes} unreviewed`
         : 'All clear',
+      statsColor: metrics && metrics.summary.competitors.unreviewed_changes > 0 ? 'text-orange-600' : undefined,
     },
     {
       title: 'Email Campaigns',
@@ -161,7 +178,12 @@ export default function MarketingDashboard() {
       icon: '🚀',
       href: '/admin/marketing/campaigns',
       color: 'from-violet-500 to-indigo-600',
-      stats: 'NEW',
+      stats: metrics
+        ? metrics.summary.campaigns.draft > 0
+          ? `${metrics.summary.campaigns.draft} draft`
+          : 'No drafts'
+        : 'Loading...',
+      statsColor: metrics && metrics.summary.campaigns.draft > 0 ? 'text-indigo-600' : undefined,
     },
     {
       title: 'Weekly Strategy',
@@ -169,7 +191,14 @@ export default function MarketingDashboard() {
       icon: '🧠',
       href: '/admin/marketing/strategy',
       color: 'from-cyan-500 to-blue-600',
-      stats: 'NEW',
+      stats: metrics
+        ? metrics.summary.strategies.draft > 0
+          ? `${metrics.summary.strategies.draft} draft`
+          : metrics.summary.strategies.active > 0
+            ? 'Active'
+            : 'No strategies'
+        : 'Loading...',
+      statsColor: metrics && metrics.summary.strategies.draft > 0 ? 'text-violet-600' : metrics && metrics.summary.strategies.active > 0 ? 'text-emerald-600' : undefined,
     },
     {
       title: 'Settings',
@@ -279,7 +308,7 @@ export default function MarketingDashboard() {
                   </div>
                 </div>
                 <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700">{module.stats}</span>
+                  <span className={`text-sm font-medium ${module.statsColor || 'text-gray-700'}`}>{module.stats}</span>
                   <span className="text-purple-600 group-hover:translate-x-1 transition-transform">
                     →
                   </span>
@@ -325,6 +354,38 @@ export default function MarketingDashboard() {
             </Link>
           </div>
         </div>
+
+        {/* Content Suggestions Alert */}
+        {metrics && metrics.summary.suggestions.pending > 0 && (
+          <div className="mt-8 bg-indigo-50 border border-indigo-200 rounded-xl p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">Content Suggestions Ready</h2>
+            <p className="text-sm text-gray-700">
+              {metrics.summary.suggestions.pending} content suggestion{metrics.summary.suggestions.pending !== 1 ? 's are' : ' is'} ready for your review.
+            </p>
+            <Link
+              href="/admin/marketing/suggestions"
+              className="inline-block mt-3 text-sm font-medium text-indigo-800 hover:text-indigo-900 underline"
+            >
+              Review suggestions →
+            </Link>
+          </div>
+        )}
+
+        {/* Weekly Strategy Alert */}
+        {metrics && metrics.summary.strategies.draft > 0 && (
+          <div className="mt-8 bg-violet-50 border border-violet-200 rounded-xl p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">New Weekly Strategy</h2>
+            <p className="text-sm text-gray-700">
+              A new weekly strategy is ready for review.
+            </p>
+            <Link
+              href="/admin/marketing/strategy"
+              className="inline-block mt-3 text-sm font-medium text-violet-800 hover:text-violet-900 underline"
+            >
+              Review strategy →
+            </Link>
+          </div>
+        )}
 
         {/* Competitor Alerts */}
         {metrics && metrics.summary.competitors.high_priority > 0 && (

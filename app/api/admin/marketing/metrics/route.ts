@@ -65,6 +65,29 @@ async function getHandler(request: NextRequest) {
     FROM competitor_changes
   `).catch(() => ({ rows: [{ unreviewed_changes: 0, high_priority_changes: 0 }] }))
 
+  // Get content suggestion metrics
+  const suggestionsQuery = await query(`
+    SELECT
+      COUNT(*) FILTER (WHERE status = 'pending') as pending,
+      COUNT(*) FILTER (WHERE status = 'pending' AND suggestion_date = CURRENT_DATE) as today
+    FROM content_suggestions
+  `).catch(() => ({ rows: [{ pending: 0, today: 0 }] }))
+
+  // Get marketing strategy metrics
+  const strategiesQuery = await query(`
+    SELECT
+      COUNT(*) FILTER (WHERE status = 'draft') as draft,
+      COUNT(*) FILTER (WHERE status = 'active') as active
+    FROM marketing_strategies
+  `).catch(() => ({ rows: [{ draft: 0, active: 0 }] }))
+
+  // Get campaign metrics
+  const campaignsQuery = await query(`
+    SELECT
+      COUNT(*) FILTER (WHERE status = 'draft') as draft
+    FROM marketing_campaigns
+  `).catch(() => ({ rows: [{ draft: 0 }] }))
+
   // Get scheduled posts count
   const socialQuery = await query(`
     SELECT
@@ -127,6 +150,17 @@ async function getHandler(request: NextRequest) {
       competitors: {
         unreviewed_changes: parseInt(competitorQuery.rows[0]?.unreviewed_changes) || 0,
         high_priority: parseInt(competitorQuery.rows[0]?.high_priority_changes) || 0
+      },
+      suggestions: {
+        pending: parseInt(suggestionsQuery.rows[0]?.pending) || 0,
+        today: parseInt(suggestionsQuery.rows[0]?.today) || 0
+      },
+      strategies: {
+        draft: parseInt(strategiesQuery.rows[0]?.draft) || 0,
+        active: parseInt(strategiesQuery.rows[0]?.active) || 0
+      },
+      campaigns: {
+        draft: parseInt(campaignsQuery.rows[0]?.draft) || 0
       },
       social: {
         scheduled: parseInt(socialQuery.rows[0]?.scheduled_posts) || 0,
