@@ -10,17 +10,18 @@ import { NextResponse } from 'next/server';
 const OPENAPI_SPEC = {
   openapi: '3.1.0',
   info: {
-    title: 'Walla Walla Wine Tours API',
-    description: `API for exploring and booking premium wine tours in the Walla Walla Valley, Washington.
+    title: 'Walla Walla Travel Concierge API',
+    description: `API for the Walla Walla Travel concierge — covering wine tours, dining, lodging, activities, trip planning, and airport transfers in Walla Walla Valley, Washington.
 
 This API allows you to:
 - Search for wineries by name, style, or specialties
+- Search the local business directory (restaurants, hotels, boutiques, galleries, activities)
 - Check tour availability for specific dates
 - Get personalized winery recommendations
 - Look up booking status
-- Create booking inquiries
+- Create booking and concierge inquiries (wine tours, trip planning, airport transfers)
 
-Walla Walla is one of the premier wine regions in the Pacific Northwest, known for exceptional Cabernet Sauvignon, Syrah, and Merlot.`,
+Walla Walla is one of the premier wine regions in the Pacific Northwest, known for exceptional Cabernet Sauvignon, Syrah, and Merlot — plus a vibrant dining, arts, and outdoor scene.`,
     version: '1.0.0',
     contact: {
       name: 'Walla Walla Travel',
@@ -79,6 +80,60 @@ Walla Walla is one of the premier wine regions in the Pacific Northwest, known f
                     wineries: {
                       type: 'array',
                       items: { $ref: '#/components/schemas/Winery' }
+                    },
+                    total: { type: 'integer' }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    '/search-directory': {
+      get: {
+        operationId: 'searchDirectory',
+        summary: 'Search local business directory',
+        description: 'Search for restaurants, hotels, boutiques, galleries, and activities in the Walla Walla area. Only returns active partner listings. Results auto-update as new partners join.',
+        parameters: [
+          {
+            name: 'query',
+            in: 'query',
+            required: false,
+            description: 'Search text — can be a business name or keyword (e.g., "Italian", "spa", "gallery")',
+            schema: { type: 'string' }
+          },
+          {
+            name: 'type',
+            in: 'query',
+            required: false,
+            description: 'Filter by business category',
+            schema: {
+              type: 'string',
+              enum: ['restaurant', 'hotel', 'boutique', 'gallery', 'activity', 'other']
+            }
+          },
+          {
+            name: 'limit',
+            in: 'query',
+            required: false,
+            description: 'Maximum number of results to return',
+            schema: { type: 'integer', default: 10, maximum: 25 }
+          }
+        ],
+        responses: {
+          '200': {
+            description: 'List of matching businesses',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    message: { type: 'string', description: 'Human-friendly summary of results' },
+                    businesses: {
+                      type: 'array',
+                      items: { $ref: '#/components/schemas/Business' }
                     },
                     total: { type: 'integer' }
                   }
@@ -289,7 +344,7 @@ Walla Walla is one of the premier wine regions in the Pacific Northwest, known f
       post: {
         operationId: 'createInquiry',
         summary: 'Create a booking inquiry',
-        description: 'Submit a booking inquiry to request a wine tour. The Walla Walla Travel team will follow up with availability and pricing details.',
+        description: 'Submit a booking or concierge inquiry. Covers wine tours, trip planning, airport transfers, and more. The Walla Walla Travel team will follow up within 24 hours.',
         requestBody: {
           required: true,
           content: {
@@ -305,8 +360,8 @@ Walla Walla is one of the premier wine regions in the Pacific Northwest, known f
                   party_size: { type: 'integer', minimum: 1, maximum: 14 },
                   tour_type: {
                     type: 'string',
-                    enum: ['wine_tour', 'private_transportation', 'corporate', 'celebration'],
-                    description: 'Type of tour requested'
+                    enum: ['wine_tour', 'private_transportation', 'corporate', 'celebration', 'trip_planning', 'airport_transfer'],
+                    description: 'Type of service requested. Use trip_planning for full concierge requests, airport_transfer for transfer-only.'
                   },
                   preferences: { type: 'string', description: 'Any special requests or preferences' },
                   pickup_location: { type: 'string', description: 'Where to be picked up' }
@@ -326,7 +381,12 @@ Walla Walla is one of the premier wine regions in the Pacific Northwest, known f
                     success: { type: 'boolean' },
                     message: { type: 'string', description: 'Confirmation message' },
                     inquiry_id: { type: 'string' },
-                    estimated_response_time: { type: 'string' }
+                    estimated_response_time: { type: 'string' },
+                    next_steps: {
+                      type: 'array',
+                      items: { type: 'string' },
+                      description: 'Suggested follow-up actions for the guest'
+                    }
                   }
                 }
               }
@@ -338,6 +398,21 @@ Walla Walla is one of the premier wine regions in the Pacific Northwest, known f
   },
   components: {
     schemas: {
+      Business: {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+          business_type: {
+            type: 'string',
+            enum: ['restaurant', 'hotel', 'boutique', 'gallery', 'activity', 'other']
+          },
+          short_description: { type: 'string' },
+          address: { type: 'string' },
+          city: { type: 'string', default: 'Walla Walla' },
+          phone: { type: 'string' },
+          website: { type: 'string', format: 'uri' }
+        }
+      },
       Winery: {
         type: 'object',
         properties: {
