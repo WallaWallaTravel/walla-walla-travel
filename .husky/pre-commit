@@ -9,10 +9,24 @@ if [ -f .env.local ]; then
   set +a
 fi
 
-# Run build check
-echo "Checking build..."
-npm run build || {
-  echo "Build failed. Fix errors before committing."
+# Generate Prisma client (needed for type-checking)
+echo "Generating Prisma client..."
+npx prisma generate || {
+  echo "Prisma generate failed."
+  exit 1
+}
+
+# Type-check (catches real code errors)
+echo "Checking types..."
+npx tsc --noEmit || {
+  echo "TypeScript errors found. Fix before committing."
+  exit 1
+}
+
+# Lint (catches code quality issues)
+echo "Linting..."
+npx next lint || {
+  echo "Lint errors found. Fix before committing."
   exit 1
 }
 
