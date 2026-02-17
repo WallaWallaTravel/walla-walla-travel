@@ -16,7 +16,6 @@
 
 import { query } from '@/lib/db'
 import { logger } from '@/lib/logger'
-import { unsplashService } from '@/lib/services/unsplash.service'
 import Anthropic from '@anthropic-ai/sdk'
 
 // Types
@@ -708,38 +707,8 @@ Respond with a JSON array of suggestions in this exact format:
             // Check for available media with smart content-type matching
             const media = await this.getAvailableMedia(wineryId || undefined, undefined, item.content_type)
 
-            let mediaUrls: string[] = media.slice(0, 3).map(m => m.file_path)
-            let mediaSource: 'library' | 'unsplash' | 'none' = media.length > 0 ? 'library' : 'none'
-            const dataSources = [
-              ...(events.length > 0 ? [{ type: 'events', detail: `${events.length} upcoming events` }] : []),
-              ...(competitorChanges.length > 0 ? [{ type: 'competitors', detail: `${competitorChanges.length} recent changes` }] : []),
-              { type: 'seasonal', detail: seasonalContext.season },
-              ...(topPosts.length > 0 ? [{ type: 'performance', detail: `${topPosts.length} top posts analyzed` }] : []),
-              ...(preferences.length > 0 ? [{ type: 'preferences', detail: `${preferences.length} learned patterns applied` }] : []),
-            ]
-
-            // Unsplash fallback: if library has no images and we have a search query
-            if (media.length === 0 && item.image_search_query) {
-              try {
-                const unsplashResult = await unsplashService.searchPhotos(item.image_search_query, {
-                  perPage: 1,
-                  orientation: 'landscape',
-                })
-                if (unsplashResult.results.length > 0) {
-                  const photo = unsplashResult.results[0]
-                  mediaUrls = [photo.urls.regular]
-                  mediaSource = 'unsplash'
-                  dataSources.push({
-                    type: 'unsplash',
-                    detail: `Photo by ${photo.user.name} on Unsplash`,
-                  })
-                  // Track download per Unsplash API guidelines
-                  await unsplashService.trackDownload(photo)
-                }
-              } catch (unsplashError) {
-                logger.warn('Unsplash fallback failed', { error: unsplashError, query: item.image_search_query })
-              }
-            }
+            const mediaUrls: string[] = media.slice(0, 3).map(m => m.file_path)
+            const mediaSource: 'library' | 'unsplash' | 'none' = media.length > 0 ? 'library' : 'none'
 
             suggestions.push({
               platform: item.platform,
@@ -750,7 +719,13 @@ Respond with a JSON array of suggestions in this exact format:
               suggested_hashtags: item.suggested_hashtags || [],
               suggested_time: this.getOptimalPostTime(item.platform),
               reasoning: item.reasoning,
-              data_sources: dataSources,
+              data_sources: [
+                ...(events.length > 0 ? [{ type: 'events', detail: `${events.length} upcoming events` }] : []),
+                ...(competitorChanges.length > 0 ? [{ type: 'competitors', detail: `${competitorChanges.length} recent changes` }] : []),
+                { type: 'seasonal', detail: seasonalContext.season },
+                ...(topPosts.length > 0 ? [{ type: 'performance', detail: `${topPosts.length} top posts analyzed` }] : []),
+                ...(preferences.length > 0 ? [{ type: 'preferences', detail: `${preferences.length} learned patterns applied` }] : []),
+              ],
               priority: item.priority || 5,
               suggested_media_urls: mediaUrls,
               media_source: mediaSource,

@@ -24,6 +24,15 @@ interface ContentSuggestion {
   created_at: string
 }
 
+interface UnsplashResult {
+  id: string
+  url: string
+  thumb: string
+  alt: string
+  attribution: string
+  attributionLink: string
+}
+
 export default function SuggestionsPage() {
   const [suggestions, setSuggestions] = useState<ContentSuggestion[]>([])
   const [loading, setLoading] = useState(true)
@@ -31,6 +40,10 @@ export default function SuggestionsPage() {
   const [processing, setProcessing] = useState<number | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [generating, setGenerating] = useState(false)
+
+  // Unsplash search state — keyed by suggestion ID
+  const [searchingImage, setSearchingImage] = useState<number | null>(null)
+  const [unsplashResults, setUnsplashResults] = useState<Record<number, UnsplashResult[]>>({})
 
   // Fetch suggestions
   useEffect(() => {
@@ -48,6 +61,70 @@ export default function SuggestionsPage() {
       setError('Failed to load suggestions')
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Search Unsplash for a suggestion (user-initiated)
+  const handleSearchUnsplash = async (suggestion: ContentSuggestion) => {
+    const query = suggestion.image_search_query || `${suggestion.content_type} wine winery`
+    setSearchingImage(suggestion.id)
+
+    try {
+      const response = await fetch(
+        `/api/admin/marketing/unsplash?q=${encodeURIComponent(query)}&orientation=landscape&count=6`
+      )
+      if (!response.ok) throw new Error('Search failed')
+
+      const data = await response.json()
+      setUnsplashResults(prev => ({ ...prev, [suggestion.id]: data.photos || [] }))
+    } catch {
+      setError('Failed to search Unsplash. Check that UNSPLASH_ACCESS_KEY is configured.')
+    } finally {
+      setSearchingImage(null)
+    }
+  }
+
+  // Select an Unsplash photo for a suggestion
+  const handleSelectPhoto = async (suggestion: ContentSuggestion, photo: UnsplashResult) => {
+    // Update the suggestion in the database
+    try {
+      await fetch('/api/admin/marketing/suggestions', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: suggestion.id,
+          suggested_media_urls: [photo.url],
+          media_source: 'unsplash',
+        }),
+      })
+
+      // Track download per Unsplash API guidelines
+      await fetch('/api/admin/marketing/unsplash', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ photo_id: photo.id }),
+      })
+
+      // Update local state
+      setSuggestions(prev =>
+        prev.map(s =>
+          s.id === suggestion.id
+            ? { ...s, suggested_media_urls: [photo.url], media_source: 'unsplash' as const }
+            : s
+        )
+      )
+
+      // Clear search results for this suggestion
+      setUnsplashResults(prev => {
+        const next = { ...prev }
+        delete next[suggestion.id]
+        return next
+      })
+
+      setSuccess('Image selected!')
+      setTimeout(() => setSuccess(null), 2000)
+    } catch {
+      setError('Failed to save image selection')
     }
   }
 
@@ -253,7 +330,7 @@ export default function SuggestionsPage() {
           <div className="bg-white rounded-xl p-12 text-center">
             <div className="text-5xl mb-4">💡</div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">No pending suggestions</h3>
-            <p className="text-gray-500 mb-6">
+            <p className="text-gray-600 mb-6">
               Suggestions are generated daily at 6 AM, or you can generate them manually.
             </p>
             <button
@@ -279,6 +356,7 @@ export default function SuggestionsPage() {
             <div className="space-y-4">
               {dateSuggestions.map(suggestion => {
                 const platformInfo = getPlatformInfo(suggestion.platform)
+                const photos = unsplashResults[suggestion.id]
 
                 return (
                   <div key={suggestion.id} className="bg-white rounded-xl shadow-sm overflow-hidden">
@@ -370,6 +448,7 @@ export default function SuggestionsPage() {
                           </div>
                         ) : suggestion.media_source === 'unsplash' && suggestion.suggested_media_urls.length > 0 ? (
                           <div>
+                            <p className="text-xs font-medium text-gray-600 mb-2">From Unsplash</p>
                             <div className="flex gap-3 items-start">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
@@ -377,32 +456,91 @@ export default function SuggestionsPage() {
                                 alt={suggestion.image_search_query || 'Unsplash photo'}
                                 className="w-32 h-24 rounded-lg object-cover border border-gray-200 flex-shrink-0"
                               />
-                              <div className="min-w-0">
-                                <p className="text-xs font-medium text-gray-600 mb-1">From Unsplash</p>
-                                {suggestion.data_sources
-                                  .filter((s) => s.type === 'unsplash')
-                                  .map((s, i) => (
-                                    <p key={i} className="text-xs text-gray-500">{s.detail}</p>
-                                  ))}
+                              <div className="min-w-0 flex flex-col gap-2">
+                                <button
+                                  onClick={() => handleSearchUnsplash(suggestion)}
+                                  disabled={searchingImage === suggestion.id}
+                                  className="text-xs text-purple-600 hover:text-purple-700 font-medium"
+                                >
+                                  Change image
+                                </button>
                               </div>
                             </div>
                           </div>
                         ) : (
-                          <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center text-gray-500 flex-shrink-0">
-                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
-                              </svg>
+                          <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center text-gray-500 flex-shrink-0">
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+                                </svg>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-700">No image yet</p>
+                                <p className="text-xs text-gray-600">
+                                  <Link href="/admin/media/upload" className="text-purple-600 hover:text-purple-700 underline">
+                                    Upload photos
+                                  </Link>
+                                  {' '}for automatic matching, or search Unsplash below
+                                </p>
+                              </div>
+                              <button
+                                onClick={() => handleSearchUnsplash(suggestion)}
+                                disabled={searchingImage === suggestion.id}
+                                className="px-3 py-1.5 bg-purple-100 text-purple-700 rounded-lg text-xs font-medium hover:bg-purple-200 disabled:opacity-50 flex items-center gap-1 flex-shrink-0"
+                              >
+                                {searchingImage === suggestion.id ? (
+                                  <>
+                                    <div className="w-3 h-3 border-2 border-purple-300 border-t-purple-700 rounded-full animate-spin" />
+                                    Searching...
+                                  </>
+                                ) : (
+                                  'Find Image'
+                                )}
+                              </button>
                             </div>
-                            <div>
-                              <p className="text-sm font-medium text-gray-700">No image available</p>
-                              <p className="text-xs text-gray-500">
-                                <Link href="/admin/media/upload" className="text-purple-600 hover:text-purple-700 underline">
-                                  Add photos to your library
-                                </Link>
-                                {' '}for automatic image matching
-                              </p>
+                          </div>
+                        )}
+
+                        {/* Unsplash search results grid */}
+                        {photos && photos.length > 0 && (
+                          <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                            <p className="text-xs font-medium text-gray-700 mb-2">
+                              Select an image from Unsplash
+                              {suggestion.image_search_query && (
+                                <span className="text-gray-500 font-normal"> — &quot;{suggestion.image_search_query}&quot;</span>
+                              )}
+                            </p>
+                            <div className="grid grid-cols-3 gap-2">
+                              {photos.map((photo) => (
+                                <button
+                                  key={photo.id}
+                                  onClick={() => handleSelectPhoto(suggestion, photo)}
+                                  className="relative group rounded-lg overflow-hidden border-2 border-transparent hover:border-purple-500 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                >
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img
+                                    src={photo.thumb}
+                                    alt={photo.alt}
+                                    className="w-full h-20 object-cover"
+                                  />
+                                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                                    <span className="text-white text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                                      Select
+                                    </span>
+                                  </div>
+                                </button>
+                              ))}
                             </div>
+                            <p className="text-[10px] text-gray-500 mt-2">
+                              Photos provided by Unsplash. {photos[0]?.attribution}
+                            </p>
+                          </div>
+                        )}
+
+                        {photos && photos.length === 0 && (
+                          <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200 text-center">
+                            <p className="text-sm text-gray-600">No photos found. Try uploading your own images instead.</p>
                           </div>
                         )}
                       </div>
