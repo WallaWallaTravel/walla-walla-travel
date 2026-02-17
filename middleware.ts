@@ -149,7 +149,7 @@ export async function middleware(request: NextRequest) {
   const subdomainAllowedRoutes: Record<string, string[]> = {
     admin: ['/admin', '/login'],
     drivers: ['/driver-portal', '/driver', '/workflow', '/inspections', '/time-clock', '/login'],
-    partners: ['/partner-portal', '/partner-setup', '/login'],
+    partners: ['/partner-portal', '/partner-setup', '/reset-password', '/login'],
     app: ['/book', '/login', '/embed', '/payment'],
     business: ['/contribute', '/login'],
   };

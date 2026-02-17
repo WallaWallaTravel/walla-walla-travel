@@ -9,7 +9,6 @@ import { getSessionFromRequest } from '@/lib/auth/session';
 import { partnerService } from '@/lib/services/partner.service';
 import { query } from '@/lib/db';
 import { logger } from '@/lib/logger';
-import { withCSRF } from '@/lib/api/middleware/csrf';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 
 // Lazy import supabase admin to avoid initialization errors when key is missing
@@ -121,9 +120,8 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
  * POST /api/partner/photos
  * Upload a new photo
  */
-export const POST = withCSRF(
-  withRateLimit(rateLimiters.api)(
-    withErrorHandling(async (request: NextRequest) => {
+export const POST = withRateLimit(rateLimiters.api)(
+  withErrorHandling(async (request: NextRequest) => {
   const session = await getSessionFromRequest(request);
 
   if (!session || (session.user.role as string !== 'partner' && session.user.role !== 'admin')) {
@@ -311,15 +309,14 @@ export const POST = withCSRF(
     message: 'Photo uploaded successfully',
     timestamp: new Date().toISOString(),
   });
-})));
+}));
 
 /**
  * DELETE /api/partner/photos
  * Delete a photo
  */
-export const DELETE = withCSRF(
-  withRateLimit(rateLimiters.api)(
-    withErrorHandling(async (request: NextRequest) => {
+export const DELETE = withRateLimit(rateLimiters.api)(
+  withErrorHandling(async (request: NextRequest) => {
   const session = await getSessionFromRequest(request);
 
   if (!session || (session.user.role as string !== 'partner' && session.user.role !== 'admin')) {
@@ -387,4 +384,4 @@ export const DELETE = withCSRF(
     message: 'Photo deleted successfully',
     timestamp: new Date().toISOString(),
   });
-})));
+}));

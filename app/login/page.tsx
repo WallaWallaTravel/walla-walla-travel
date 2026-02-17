@@ -97,7 +97,7 @@ function LoginPageContent() {
         const subdomainAllowedRoutes: Record<string, string[]> = {
           admin: ['/admin'],
           drivers: ['/driver-portal', '/driver', '/workflow', '/inspections', '/time-clock'],
-          partners: ['/partner-portal', '/partner-setup'],
+          partners: ['/partner-portal', '/partner-setup', '/reset-password'],
           app: ['/book', '/embed', '/payment'],
         }
         
@@ -209,12 +209,22 @@ function LoginPageContent() {
           </div>
 
           <div className="mb-5">
-            <label 
-              htmlFor="password" 
-              className="block text-sm font-medium text-slate-700 mb-1.5"
-            >
-              Password
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-slate-700"
+              >
+                Password
+              </label>
+              {portal === 'partners' && (
+                <Link
+                  href="/reset-password"
+                  className="text-xs text-emerald-600 hover:text-emerald-700 font-medium"
+                >
+                  Forgot password?
+                </Link>
+              )}
+            </div>
             <input
               id="password"
               type="password"

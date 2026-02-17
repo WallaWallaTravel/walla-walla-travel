@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, UnauthorizedError } from '@/lib/api/middleware/error-handler';
 import { getSessionFromRequest } from '@/lib/auth/session';
 import { partnerService } from '@/lib/services/partner.service';
-import { withCSRF } from '@/lib/api/middleware/csrf';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 import { pool } from '@/lib/db';
 
@@ -67,9 +66,8 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
  * PUT /api/partner/profile
  * Update partner profile
  */
-export const PUT = withCSRF(
-  withRateLimit(rateLimiters.api)(
-    withErrorHandling(async (request: NextRequest) => {
+export const PUT = withRateLimit(rateLimiters.api)(
+  withErrorHandling(async (request: NextRequest) => {
   const session = await getSessionFromRequest(request);
 
   // Note: 'partner' role check may fail if role is not in the type union - use string comparison
@@ -86,5 +84,5 @@ export const PUT = withCSRF(
     profile: updatedProfile,
     timestamp: new Date().toISOString(),
   });
-})));
+}));
 
