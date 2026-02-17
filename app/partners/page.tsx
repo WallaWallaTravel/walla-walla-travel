@@ -44,19 +44,19 @@ export default function PartnersPage() {
             </div>
             <h3 className="text-lg font-semibold text-slate-900 mb-2">Premium Clientele</h3>
             <p className="text-slate-600 text-sm">
-              We work with discerning customers who value quality wine experiences
+              We work with discerning customers who value quality experiences
             </p>
           </div>
 
           <div className="bg-white rounded-xl p-6 border border-slate-200">
             <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center mb-4">
               <svg className="w-6 h-6 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-slate-900 mb-2">Easy Scheduling</h3>
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">Thoughtful Guidance</h3>
             <p className="text-slate-600 text-sm">
-              We coordinate all visits and handle logistics seamlessly
+              From free resources to full planning services, we guide visitors to meaningful, high-quality experiences
             </p>
           </div>
 
