@@ -45,6 +45,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       type: 'website',
       url: `https://wallawalla.travel/neighborhoods/${slug}`,
     },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${neighborhood.name} - Walla Walla Wine District`,
+      description: neighborhood.description,
+    },
     alternates: {
       canonical: `https://wallawalla.travel/neighborhoods/${slug}`,
     },

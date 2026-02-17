@@ -21,6 +21,11 @@ export const metadata: Metadata = {
     type: 'website',
     url: 'https://wallawalla.travel/itineraries',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Walla Walla Wine Tour Itineraries',
+    description: 'Day-by-day trip plans for your perfect wine country visit.',
+  },
   alternates: {
     canonical: 'https://wallawalla.travel/itineraries',
   },

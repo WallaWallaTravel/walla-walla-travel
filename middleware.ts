@@ -18,7 +18,7 @@ function generateCorrelationId(): string {
 }
 
 /**
- * Security headers for all responses
+ * Security headers applied to all responses (no cache directives)
  */
 function getSecurityHeaders(): Record<string, string> {
   return {
@@ -29,7 +29,14 @@ function getSecurityHeaders(): Record<string, string> {
     'X-XSS-Protection': '1; mode=block',
     'Referrer-Policy': 'strict-origin-when-cross-origin',
     'Permissions-Policy': 'camera=(), microphone=(self), geolocation=()',
-    // Force no caching of HTML pages to ensure middleware redirects work
+  };
+}
+
+/**
+ * Cache headers for protected/admin routes — prevent caching sensitive pages
+ */
+function getProtectedCacheHeaders(): Record<string, string> {
+  return {
     'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
     'Pragma': 'no-cache',
     'Expires': '0',
@@ -38,13 +45,55 @@ function getSecurityHeaders(): Record<string, string> {
 }
 
 /**
- * Add security headers to response
+ * Cache headers for public content — allow CDN caching for better performance
  */
-function addSecurityHeaders(response: NextResponse): NextResponse {
-  const headers = getSecurityHeaders();
-  Object.entries(headers).forEach(([key, value]) => {
+function getPublicCacheHeaders(): Record<string, string> {
+  return {
+    'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+  };
+}
+
+/**
+ * Routes that require no-cache headers (protected, auth, admin)
+ */
+const protectedPrefixes = [
+  '/admin',
+  '/driver-portal',
+  '/partner-portal',
+  '/workflow',
+  '/inspections',
+  '/time-clock',
+  '/login',
+  '/payment',
+  '/embed',
+];
+
+/**
+ * Check if a pathname is a protected route that should not be cached
+ */
+function isProtectedPathname(pathname: string): boolean {
+  return protectedPrefixes.some(
+    prefix => pathname === prefix || pathname.startsWith(prefix + '/')
+  );
+}
+
+/**
+ * Add security + cache headers to response based on route type
+ */
+function addSecurityHeaders(response: NextResponse, pathname?: string): NextResponse {
+  const securityHeaders = getSecurityHeaders();
+  Object.entries(securityHeaders).forEach(([key, value]) => {
     response.headers.set(key, value);
   });
+
+  // Apply cache headers based on route type
+  const cacheHeaders = pathname && !isProtectedPathname(pathname)
+    ? getPublicCacheHeaders()
+    : getProtectedCacheHeaders();
+  Object.entries(cacheHeaders).forEach(([key, value]) => {
+    response.headers.set(key, value);
+  });
+
   return response;
 }
 
@@ -296,7 +345,7 @@ export async function middleware(request: NextRequest) {
   response.headers.set('X-Middleware-Subdomain', subdomain || 'none');
   response.headers.set('X-Middleware-Pathname', pathname);
 
-  return addSecurityHeaders(response);
+  return addSecurityHeaders(response, pathname);
 }
 
 // Configure which routes should run through middleware

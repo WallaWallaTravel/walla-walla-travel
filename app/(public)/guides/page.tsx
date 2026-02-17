@@ -21,6 +21,11 @@ export const metadata: Metadata = {
     type: 'website',
     url: 'https://wallawalla.travel/guides',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Walla Walla Wine Country Guides',
+    description: 'Everything you need to know for the perfect wine country visit.',
+  },
   alternates: {
     canonical: 'https://wallawalla.travel/guides',
   },

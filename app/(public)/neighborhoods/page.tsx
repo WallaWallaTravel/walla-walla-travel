@@ -20,6 +20,11 @@ export const metadata: Metadata = {
     type: 'website',
     url: 'https://wallawalla.travel/neighborhoods',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Explore Walla Walla Wine Districts',
+    description: 'Get to know the different wine tasting areas of Walla Walla Valley.',
+  },
   alternates: {
     canonical: 'https://wallawalla.travel/neighborhoods',
   },

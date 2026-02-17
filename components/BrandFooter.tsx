@@ -41,8 +41,8 @@ export default function BrandFooter({ brandId }: BrandFooterProps) {
                 </Link>
               </li>
               <li>
-                <Link href="/tours" className="text-gray-600 hover:text-[#8B1538] transition-colors">
-                  Tours & Services
+                <Link href="/plan-your-visit" className="text-gray-600 hover:text-[#8B1538] transition-colors">
+                  Plan Your Visit
                 </Link>
               </li>
               <li>

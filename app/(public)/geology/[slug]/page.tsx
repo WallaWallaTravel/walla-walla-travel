@@ -8,6 +8,7 @@ import { query } from '@/lib/db';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { BreadcrumbJsonLd } from '@/components/seo/BreadcrumbJsonLd';
 // Lightweight server-safe HTML sanitizer (avoids isomorphic-dompurify/JSDOM
 // which can fail in Vercel serverless). Content is admin-authored from our DB.
 function stripHtmlTags(input: string): string {
@@ -128,6 +129,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description,
       type: 'article',
       ...(topic.hero_image_url && { images: [{ url: topic.hero_image_url }] }),
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: topic.title,
+      description,
+    },
+    alternates: {
+      canonical: `https://wallawalla.travel/geology/${slug}`,
     },
   };
 }
@@ -348,9 +357,16 @@ export default async function GeologyTopicPage({ params }: PageProps) {
 
   const faqItems = parseFaqFromContent(topic.content);
 
+  const breadcrumbs = [
+    { name: 'Home', url: 'https://wallawalla.travel' },
+    { name: 'Geology', url: 'https://wallawalla.travel/geology' },
+    { name: topic.title, url: `https://wallawalla.travel/geology/${slug}` },
+  ];
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Structured Data for SEO & AEO */}
+      <BreadcrumbJsonLd items={breadcrumbs} />
       <ArticleJsonLd topic={topic} faqItems={faqItems} />
 
       {/* Hero Section */}

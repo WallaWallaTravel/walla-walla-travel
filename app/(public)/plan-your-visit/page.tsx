@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Metadata } from 'next';
+import { BreadcrumbJsonLd } from '@/components/seo/BreadcrumbJsonLd';
 
 export const metadata: Metadata = {
   title: 'Plan Your Visit | Walla Walla Wine Country',
@@ -11,11 +12,31 @@ export const metadata: Metadata = {
     'plan wine tasting trip',
     'Walla Walla travel planning',
   ],
+  openGraph: {
+    title: 'Plan Your Visit | Walla Walla Wine Country',
+    description: 'Plan your perfect Walla Walla wine country trip. Get personalized help from our team or build your own itinerary.',
+    type: 'website',
+    url: 'https://wallawalla.travel/plan-your-visit',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Plan Your Visit | Walla Walla Wine Country',
+    description: 'Plan your perfect Walla Walla wine country trip. Get personalized help from our team or build your own itinerary.',
+  },
+  alternates: {
+    canonical: 'https://wallawalla.travel/plan-your-visit',
+  },
 };
 
 export default function PlanYourVisitPage() {
+  const breadcrumbs = [
+    { name: 'Home', url: 'https://wallawalla.travel' },
+    { name: 'Plan Your Visit', url: 'https://wallawalla.travel/plan-your-visit' },
+  ];
+
   return (
     <div className="min-h-screen bg-gray-50">
+      <BreadcrumbJsonLd items={breadcrumbs} />
       {/* Hero Section */}
       <div className="bg-gradient-to-br from-[#8B1538] to-[#722F37] text-white py-16 md:py-24">
         <div className="max-w-5xl mx-auto px-4 text-center">

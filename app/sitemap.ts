@@ -1,6 +1,11 @@
 import { MetadataRoute } from 'next';
 import { getAllWinerySlugs } from '@/lib/data/wineries';
 import { getAllHistoryEraSlugs } from '@/lib/data/history';
+import { getAllGuideSlugs } from '@/lib/data/guides';
+import { getAllItinerarySlugs } from '@/lib/data/itineraries';
+import { getAllNeighborhoodSlugs } from '@/lib/data/neighborhoods';
+import { getAllBestOfCategorySlugs } from '@/lib/data/best-of-categories';
+import { query } from '@/lib/db';
 import { logger } from '@/lib/logger';
 
 // Force dynamic rendering - sitemap needs fresh data
@@ -10,8 +15,9 @@ export const dynamic = 'force-dynamic';
  * Dynamic Sitemap Generation
  *
  * Generates a sitemap.xml for search engines with:
- * - Static pages (home, wineries, tours, etc.)
+ * - Static pages (home, wineries, about, etc.)
  * - Dynamic winery pages (fetched from database)
+ * - Content pages (guides, itineraries, neighborhoods, best-of, geology)
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://wallawalla.travel';
@@ -31,9 +37,39 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.9,
     },
     {
-      url: `${baseUrl}/tours`,
+      url: `${baseUrl}/geology`,
       lastModified: new Date(),
-      changeFrequency: 'weekly',
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/guides`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/itineraries`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/neighborhoods`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/best-of`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/plan-your-visit`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
       priority: 0.8,
     },
     {
@@ -41,6 +77,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 0.7, // E-E-A-T page - higher priority
+    },
+    {
+      url: `${baseUrl}/inquiry`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.7,
     },
     {
       url: `${baseUrl}/contact`,
@@ -85,6 +127,38 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
+  // Guide pages (static data)
+  const guidePages: MetadataRoute.Sitemap = getAllGuideSlugs().map((slug) => ({
+    url: `${baseUrl}/guides/${slug}`,
+    lastModified: new Date(),
+    changeFrequency: 'monthly' as const,
+    priority: 0.7,
+  }));
+
+  // Itinerary pages (static data)
+  const itineraryPages: MetadataRoute.Sitemap = getAllItinerarySlugs().map((slug) => ({
+    url: `${baseUrl}/itineraries/${slug}`,
+    lastModified: new Date(),
+    changeFrequency: 'monthly' as const,
+    priority: 0.7,
+  }));
+
+  // Neighborhood pages (static data)
+  const neighborhoodPages: MetadataRoute.Sitemap = getAllNeighborhoodSlugs().map((slug) => ({
+    url: `${baseUrl}/neighborhoods/${slug}`,
+    lastModified: new Date(),
+    changeFrequency: 'monthly' as const,
+    priority: 0.7,
+  }));
+
+  // Best-of category pages (static data)
+  const bestOfPages: MetadataRoute.Sitemap = getAllBestOfCategorySlugs().map((slug) => ({
+    url: `${baseUrl}/best-of/${slug}`,
+    lastModified: new Date(),
+    changeFrequency: 'monthly' as const,
+    priority: 0.7,
+  }));
+
   // Dynamic winery pages
   let wineryPages: MetadataRoute.Sitemap = [];
 
@@ -101,5 +175,32 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     logger.error('Error fetching winery slugs for sitemap', { error });
   }
 
-  return [...staticPages, ...historyLanding, ...historyPages, ...wineryPages];
+  // Dynamic geology topic pages
+  let geologyPages: MetadataRoute.Sitemap = [];
+
+  try {
+    const result = await query<{ slug: string }>(
+      'SELECT slug FROM geology_topics WHERE is_published = true ORDER BY display_order ASC'
+    );
+    geologyPages = result.rows.map((row) => ({
+      url: `${baseUrl}/geology/${row.slug}`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    }));
+  } catch (error) {
+    logger.error('Error fetching geology slugs for sitemap', { error });
+  }
+
+  return [
+    ...staticPages,
+    ...historyLanding,
+    ...historyPages,
+    ...guidePages,
+    ...itineraryPages,
+    ...neighborhoodPages,
+    ...bestOfPages,
+    ...wineryPages,
+    ...geologyPages,
+  ];
 }
