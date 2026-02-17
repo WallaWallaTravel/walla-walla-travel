@@ -32,7 +32,8 @@ export async function GET(request: NextRequest) {
     // Generate OAuth URL for connect button
     let authUrl: string | null = null
     try {
-      const redirectUri = new URL('/api/admin/marketing/seo/oauth', process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000').toString()
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+      const redirectUri = new URL('/api/admin/marketing/seo/oauth', baseUrl).toString()
       authUrl = generateAuthUrl(redirectUri)
     } catch {
       // OAuth env vars not configured — that's ok, we'll show setup instructions

@@ -11,6 +11,7 @@ import { z } from 'zod';
 
 const StatusUpdateSchema = z.object({
   status: z.enum(TRIP_ESTIMATE_STATUS),
+  payment_intent_id: z.string().optional(),
 });
 
 interface RouteContext {
@@ -46,9 +47,15 @@ export const POST = withAdminAuth(async (request: NextRequest, _session, context
     );
   }
 
+  const metadata: Record<string, unknown> = {};
+  if (parseResult.data.payment_intent_id) {
+    metadata.payment_intent_id = parseResult.data.payment_intent_id;
+  }
+
   const updated = await tripEstimateService.updateStatus(
     estimateId,
-    parseResult.data.status
+    parseResult.data.status,
+    Object.keys(metadata).length > 0 ? metadata : undefined
   );
 
   return NextResponse.json({

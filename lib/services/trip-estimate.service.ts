@@ -368,6 +368,11 @@ export class TripEstimateService extends BaseService {
     }
 
     // Create trip proposal from estimate data
+    const formatDate = (d: unknown): string => {
+      if (d instanceof Date) return d.toISOString().split('T')[0];
+      return String(d).split('T')[0];
+    };
+
     const proposal = await tripProposalService.create(
       {
         customer_name: estimate.customer_name,
@@ -376,8 +381,12 @@ export class TripEstimateService extends BaseService {
         trip_type: estimate.trip_type,
         trip_title: estimate.trip_title || undefined,
         party_size: estimate.party_size,
-        start_date: estimate.start_date || new Date().toISOString().split('T')[0],
-        end_date: estimate.end_date || undefined,
+        start_date: estimate.start_date
+          ? formatDate(estimate.start_date)
+          : new Date().toISOString().split('T')[0],
+        end_date: estimate.end_date
+          ? formatDate(estimate.end_date)
+          : undefined,
         brand_id: estimate.brand_id || undefined,
         introduction: estimate.trip_description || undefined,
         deposit_percentage: estimate.subtotal > 0
