@@ -21,6 +21,11 @@ export const metadata: Metadata = {
     type: 'website',
     url: 'https://wallawalla.travel/best-of',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Best Wineries in Walla Walla by Category',
+    description: 'Curated lists of the best Walla Walla wineries for every type of visitor.',
+  },
   alternates: {
     canonical: 'https://wallawalla.travel/best-of',
   },

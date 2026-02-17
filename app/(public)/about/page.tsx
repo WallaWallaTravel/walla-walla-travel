@@ -12,6 +12,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import type { Metadata } from 'next';
 import { FAQJsonLd } from '@/components/seo/FAQJsonLd';
+import { BreadcrumbJsonLd } from '@/components/seo/BreadcrumbJsonLd';
 
 export const metadata: Metadata = {
   title: 'About Us | Walla Walla Travel',
@@ -29,6 +30,14 @@ export const metadata: Metadata = {
     description: 'Founded by Ryan with 15 years in Walla Walla and wine tour industry experience. Focused on genuine hospitality and meaningful connections.',
     type: 'website',
     url: 'https://wallawalla.travel/about',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'About Walla Walla Travel',
+    description: 'Founded by Ryan with 15 years in Walla Walla and wine tour industry experience. Focused on genuine hospitality and meaningful connections.',
+  },
+  alternates: {
+    canonical: 'https://wallawalla.travel/about',
   },
   other: {
     'article:modified_time': '2026-01-09T00:00:00Z',
@@ -60,8 +69,14 @@ const aboutFAQs = [
 ];
 
 export default function AboutPage() {
+  const breadcrumbs = [
+    { name: 'Home', url: 'https://wallawalla.travel' },
+    { name: 'About', url: 'https://wallawalla.travel/about' },
+  ];
+
   return (
     <>
+      <BreadcrumbJsonLd items={breadcrumbs} />
       <FAQJsonLd
         faqs={aboutFAQs}
         pageUrl="https://wallawalla.travel/about"

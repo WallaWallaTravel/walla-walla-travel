@@ -7,11 +7,28 @@
 import { query } from '@/lib/db';
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { BreadcrumbJsonLd } from '@/components/seo/BreadcrumbJsonLd';
 
 export const metadata: Metadata = {
   title: 'Geology of Walla Walla Wine Country | Walla Walla Travel',
   description:
     'Discover the fascinating geological history that makes Walla Walla one of the most unique wine regions in the world. From Ice Age floods to volcanic basalt.',
+  openGraph: {
+    title: 'Geology of Walla Walla Wine Country',
+    description:
+      'Discover the fascinating geological history that makes Walla Walla one of the most unique wine regions in the world.',
+    type: 'website',
+    url: 'https://wallawalla.travel/geology',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Geology of Walla Walla Wine Country',
+    description:
+      'Discover the fascinating geological history that makes Walla Walla one of the most unique wine regions in the world.',
+  },
+  alternates: {
+    canonical: 'https://wallawalla.travel/geology',
+  },
 };
 
 // ============================================================================
@@ -212,8 +229,14 @@ export default async function GeologyLandingPage() {
   const featuredTopics = topics.filter((t) => t.is_featured);
   const otherTopics = topics.filter((t) => !t.is_featured);
 
+  const breadcrumbs = [
+    { name: 'Home', url: 'https://wallawalla.travel' },
+    { name: 'Geology', url: 'https://wallawalla.travel/geology' },
+  ];
+
   return (
     <div className="min-h-screen bg-gray-50">
+      <BreadcrumbJsonLd items={breadcrumbs} />
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-[#1a1a2e] to-[#16213e] text-white py-24 px-4 overflow-hidden">
         {/* Background Image */}

@@ -23,6 +23,12 @@ export const metadata: Metadata = {
     type: 'website',
     url: 'https://wallawalla.travel/history',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'History of the Walla Walla Valley',
+    description:
+      'From Indigenous peoples to modern wine country — the story of one of the Pacific Northwest\'s most historic valleys.',
+  },
   alternates: {
     canonical: 'https://wallawalla.travel/history',
   },

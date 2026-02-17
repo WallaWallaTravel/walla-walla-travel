@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import Link from 'next/link';
 import { getWineries } from '@/lib/data/wineries';
 import { WineryDirectoryClient } from '@/components/wineries/WineryDirectoryClient';
+import { BreadcrumbJsonLd } from '@/components/seo/BreadcrumbJsonLd';
 
 // Force dynamic rendering to avoid database connection at build time
 export const dynamic = 'force-dynamic';
@@ -46,8 +47,14 @@ export default async function WineriesPage() {
   // Fetch data on the server - this content is visible to search engines
   const wineries = await getWineries();
 
+  const breadcrumbs = [
+    { name: 'Home', url: 'https://wallawalla.travel' },
+    { name: 'Wineries', url: 'https://wallawalla.travel/wineries' },
+  ];
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-stone-50 to-white">
+      <BreadcrumbJsonLd items={breadcrumbs} />
       {/* Hero Section - Static content for SEO */}
       <div className="bg-gradient-to-r from-stone-800 to-stone-900 text-white py-12 px-4">
         <div className="max-w-6xl mx-auto">

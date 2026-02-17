@@ -52,6 +52,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       type: 'article',
       url: `https://wallawalla.travel/best-of/${category}`,
     },
+    twitter: {
+      card: 'summary_large_image',
+      title: categoryData.title,
+      description: categoryData.metaDescription,
+    },
     alternates: {
       canonical: `https://wallawalla.travel/best-of/${category}`,
     },
