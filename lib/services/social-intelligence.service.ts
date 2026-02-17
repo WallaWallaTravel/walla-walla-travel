@@ -16,6 +16,7 @@
 
 import { query } from '@/lib/db'
 import { logger } from '@/lib/logger'
+import { unsplashService } from '@/lib/services/unsplash.service'
 import Anthropic from '@anthropic-ai/sdk'
 
 // Types
@@ -173,35 +174,78 @@ class SocialIntelligenceService {
   }
 
   /**
-   * Get available media assets
+   * Get available media assets from library, with smart tag matching by content type
    */
-  async getAvailableMedia(wineryId?: number, category?: string): Promise<MediaAsset[]> {
+  async getAvailableMedia(wineryId?: number, category?: string, contentType?: string): Promise<MediaAsset[]> {
     try {
+      const params: (number | string | string[])[] = []
+
+      // Build tag-matching array based on content type
+      const tagKeywords = this.getTagKeywordsForContentType(contentType)
+
       let queryText = `
-        SELECT id, file_path, title, category, tags, winery_id
-        FROM media
-        WHERE is_active = true
+        SELECT ml.id, ml.file_path, ml.title, ml.category, ml.tags, wm.winery_id
+        FROM media_library ml
+        LEFT JOIN winery_media wm ON ml.id = wm.media_id
+        WHERE ml.is_active = true
       `
-      const params: (number | string)[] = []
 
       if (wineryId) {
         params.push(wineryId)
-        queryText += ` AND winery_id = $${params.length}`
+        queryText += ` AND (wm.winery_id = $${params.length} OR wm.winery_id IS NULL)`
       }
 
       if (category) {
         params.push(category)
-        queryText += ` AND category = $${params.length}`
+        queryText += ` AND ml.category = $${params.length}`
       }
 
-      queryText += ` ORDER BY created_at DESC LIMIT 20`
+      if (tagKeywords.length > 0) {
+        params.push(tagKeywords)
+        queryText += ` AND ml.tags && $${params.length}::text[]`
+      }
+
+      queryText += ` ORDER BY ml.is_hero DESC, ml.created_at DESC LIMIT 20`
 
       const result = await query<MediaAsset>(queryText, params)
+
+      // If tag filtering returned nothing, try again without tag filter
+      if (result.rows.length === 0 && tagKeywords.length > 0) {
+        return this.getAvailableMedia(wineryId, category, undefined)
+      }
+
       return result.rows
     } catch (error) {
       logger.warn('Failed to fetch media assets', { error })
       return []
     }
+  }
+
+  /**
+   * Map content types to relevant tag keywords for smart image matching
+   */
+  private getTagKeywordsForContentType(contentType?: string): string[] {
+    if (!contentType) return []
+
+    const now = new Date()
+    const month = now.getMonth() + 1
+    const seasonTags: string[] = []
+    if (month >= 3 && month <= 5) seasonTags.push('spring', 'bloom', 'blossom')
+    else if (month >= 6 && month <= 8) seasonTags.push('summer', 'sunshine', 'outdoor')
+    else if (month >= 9 && month <= 11) seasonTags.push('fall', 'autumn', 'harvest')
+    else seasonTags.push('winter', 'cozy', 'holiday')
+
+    const mapping: Record<string, string[]> = {
+      wine_spotlight: ['wine', 'tasting', 'bottle', 'glass', 'cellar', 'barrel'],
+      event_promo: ['event', 'gathering', 'celebration', 'party', 'group'],
+      seasonal: seasonTags,
+      behind_scenes: ['behind', 'cellar', 'vineyard', 'barrel', 'production', 'winemaker'],
+      educational: ['vineyard', 'grapes', 'process', 'terroir', 'soil'],
+      customer_story: ['guest', 'tour', 'tasting', 'group', 'experience'],
+      general: [],
+    }
+
+    return mapping[contentType] || []
   }
 
   /**
@@ -661,8 +705,41 @@ Respond with a JSON array of suggestions in this exact format:
               }
             }
 
-            // Check for available media
-            const media = await this.getAvailableMedia(wineryId || undefined)
+            // Check for available media with smart content-type matching
+            const media = await this.getAvailableMedia(wineryId || undefined, undefined, item.content_type)
+
+            let mediaUrls: string[] = media.slice(0, 3).map(m => m.file_path)
+            let mediaSource: 'library' | 'unsplash' | 'none' = media.length > 0 ? 'library' : 'none'
+            const dataSources = [
+              ...(events.length > 0 ? [{ type: 'events', detail: `${events.length} upcoming events` }] : []),
+              ...(competitorChanges.length > 0 ? [{ type: 'competitors', detail: `${competitorChanges.length} recent changes` }] : []),
+              { type: 'seasonal', detail: seasonalContext.season },
+              ...(topPosts.length > 0 ? [{ type: 'performance', detail: `${topPosts.length} top posts analyzed` }] : []),
+              ...(preferences.length > 0 ? [{ type: 'preferences', detail: `${preferences.length} learned patterns applied` }] : []),
+            ]
+
+            // Unsplash fallback: if library has no images and we have a search query
+            if (media.length === 0 && item.image_search_query) {
+              try {
+                const unsplashResult = await unsplashService.searchPhotos(item.image_search_query, {
+                  perPage: 1,
+                  orientation: 'landscape',
+                })
+                if (unsplashResult.results.length > 0) {
+                  const photo = unsplashResult.results[0]
+                  mediaUrls = [photo.urls.regular]
+                  mediaSource = 'unsplash'
+                  dataSources.push({
+                    type: 'unsplash',
+                    detail: `Photo by ${photo.user.name} on Unsplash`,
+                  })
+                  // Track download per Unsplash API guidelines
+                  await unsplashService.trackDownload(photo)
+                }
+              } catch (unsplashError) {
+                logger.warn('Unsplash fallback failed', { error: unsplashError, query: item.image_search_query })
+              }
+            }
 
             suggestions.push({
               platform: item.platform,
@@ -673,16 +750,10 @@ Respond with a JSON array of suggestions in this exact format:
               suggested_hashtags: item.suggested_hashtags || [],
               suggested_time: this.getOptimalPostTime(item.platform),
               reasoning: item.reasoning,
-              data_sources: [
-                ...(events.length > 0 ? [{ type: 'events', detail: `${events.length} upcoming events` }] : []),
-                ...(competitorChanges.length > 0 ? [{ type: 'competitors', detail: `${competitorChanges.length} recent changes` }] : []),
-                { type: 'seasonal', detail: seasonalContext.season },
-                ...(topPosts.length > 0 ? [{ type: 'performance', detail: `${topPosts.length} top posts analyzed` }] : []),
-                ...(preferences.length > 0 ? [{ type: 'preferences', detail: `${preferences.length} learned patterns applied` }] : []),
-              ],
+              data_sources: dataSources,
               priority: item.priority || 5,
-              suggested_media_urls: media.slice(0, 3).map(m => m.file_path),
-              media_source: media.length > 0 ? 'library' : (item.image_search_query ? 'unsplash' : 'none'),
+              suggested_media_urls: mediaUrls,
+              media_source: mediaSource,
               image_search_query: item.image_search_query || null,
             })
           }
@@ -739,7 +810,7 @@ Respond with a JSON array of suggestions in this exact format:
         data_sources: [{ type: 'content_gap', detail: `${gap.days_since_last_post} days gap` }],
         priority: Math.min(10, gap.days_since_last_post),
         suggested_media_urls: [],
-        media_source: 'unsplash',
+        media_source: 'none',
         image_search_query: 'walla walla vineyard',
       })
     }
