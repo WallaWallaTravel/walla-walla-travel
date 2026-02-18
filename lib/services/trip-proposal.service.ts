@@ -100,7 +100,7 @@ export class TripProposalService extends BaseService {
         discount_percentage: validated.discount_percentage || 0,
         discount_reason: validated.discount_reason || null,
         gratuity_percentage: validated.gratuity_percentage || 0,
-        tax_rate: validated.tax_rate || 0.089,
+        tax_rate: validated.tax_rate || 0.091,
         deposit_percentage: validated.deposit_percentage || 50,
         created_by: userId || null,
       });

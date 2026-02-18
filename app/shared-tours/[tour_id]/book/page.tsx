@@ -573,7 +573,7 @@ export default function BookSharedTourPage({ params }: { params: Promise<{ tour_
                     <span className="text-slate-900">${pricing.subtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-600">Tax (8.9%)</span>
+                    <span className="text-slate-600">Tax (9.1%)</span>
                     <span className="text-slate-900">${pricing.tax_amount.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between pt-2 border-t border-slate-200">
@@ -815,7 +815,7 @@ export default function BookSharedTourPage({ params }: { params: Promise<{ tour_
                   <span className="text-slate-900">${pricing.subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-700">Tax (8.9%)</span>
+                  <span className="text-slate-700">Tax (9.1%)</span>
                   <span className="text-slate-900">${pricing.tax_amount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between pt-2 border-t border-[#E07A5F]/30">

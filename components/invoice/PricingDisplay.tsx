@@ -73,7 +73,7 @@ export function HourlyTourPricing({
             <span>{formatPrice(pricing.subtotal)}</span>
           </div>
           <div className="flex justify-between text-gray-600">
-            <span>Tax (8.9%)</span>
+            <span>Tax (9.1%)</span>
             <span>{formatPrice(pricing.tax)}</span>
           </div>
         </div>
@@ -147,7 +147,7 @@ export function SharedTourPricing({
             <span>{formatPrice(pricing.subtotal)}</span>
           </div>
           <div className="flex justify-between text-gray-600">
-            <span>Tax (8.9%)</span>
+            <span>Tax (9.1%)</span>
             <span>{formatPrice(pricing.tax)}</span>
           </div>
         </div>
@@ -197,7 +197,7 @@ export function FixedTourPricing({
             <span>{formatPrice(pricing.fixedAmount)}</span>
           </div>
           <div className="flex justify-between text-gray-600 pt-2 border-t">
-            <span>Tax (8.9%)</span>
+            <span>Tax (9.1%)</span>
             <span>{formatPrice(pricing.tax)}</span>
           </div>
         </div>

@@ -76,7 +76,7 @@ export const NW_TOURING_BOOKING_SECTIONS: TermsSection[] = [
       {
         id: 'pricing',
         label: 'Pricing',
-        content: 'Tour pricing is based on party size and vehicle requirements. Rates may vary based on day of week, season, and special events. All pricing is subject to applicable state and local taxes (currently 8.9% in Washington).',
+        content: 'Tour pricing is based on party size and vehicle requirements. Rates may vary based on day of week, season, and special events. All pricing is subject to applicable state and local taxes (currently 9.1% in Washington).',
       },
     ],
   },

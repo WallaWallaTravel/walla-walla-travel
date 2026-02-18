@@ -107,7 +107,7 @@ export default function PricingCalculator({
         </div>
 
         <div className="flex justify-between items-center text-gray-700">
-          <span className="text-sm">WA State Tax (8.9%)</span>
+          <span className="text-sm">WA State Tax (9.1%)</span>
           <span className="font-semibold">{formatCurrency(pricing.taxes)}</span>
         </div>
       </div>

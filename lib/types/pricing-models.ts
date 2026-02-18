@@ -255,7 +255,7 @@ export function calculateHourlyTourPrice(
   const rateInfo = getHourlyTourRate(guestCount, date);
   const billableHours = Math.max(hours, rateInfo.minimumHours);
   const subtotal = rateInfo.hourlyRate * billableHours;
-  const taxRate = 0.089; // WA state tax
+  const taxRate = 0.091; // WA state + local tax
   const tax = subtotal * taxRate;
 
   return {
@@ -284,7 +284,7 @@ export function calculateSharedTourPrice(
     : SHARED_TOUR_RATES.base.perPersonRate;
 
   const subtotal = rate * ticketCount;
-  const taxRate = 0.089;
+  const taxRate = 0.091;
   const tax = subtotal * taxRate;
 
   return {
@@ -305,7 +305,7 @@ export function calculateFixedTourPrice(
   description: string,
   fixedAmount: number
 ): FixedTourPriceResult {
-  const taxRate = 0.089;
+  const taxRate = 0.091;
   const tax = fixedAmount * taxRate;
 
   return {

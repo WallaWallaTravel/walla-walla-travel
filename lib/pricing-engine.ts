@@ -59,7 +59,7 @@ const PRICING_CONFIG = {
 
   // Additional costs
   gratuity_rate: 0.15,  // Suggested 15% gratuity
-  tax_rate: 0.089,      // 8.9% WA state tax
+  tax_rate: 0.091,      // 9.1% WA state + local tax (Walla Walla)
 
   // Deposit
   deposit_percentage: 0.50  // 50% deposit required
@@ -163,7 +163,7 @@ export function calculatePrice(request: PricingRequest): PricingResult {
   });
 
   breakdown.push({
-    label: 'WA State Tax (8.9%)',
+    label: 'WA State Tax (9.1%)',
     amount: taxes
   });
 

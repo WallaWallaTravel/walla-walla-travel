@@ -50,8 +50,8 @@ describe('Rate Configuration', () => {
       expect(result.hourly_rate).toBe(105); // 5-6 guests, Sun-Wed
       expect(result.hours).toBe(6);
       expect(result.subtotal).toBe(630); // 6 × 105
-      expect(result.tax).toBeCloseTo(56.07, 2); // 630 × 0.089
-      expect(result.total).toBeCloseTo(686.07, 2);
+      expect(result.tax).toBeCloseTo(57.33, 2); // 630 × 0.091
+      expect(result.total).toBeCloseTo(687.33, 2);
       expect(result.day_type).toBe('Sun-Wed');
       expect(result.rate_tier).toBe('5-6 guests');
     });
@@ -66,8 +66,8 @@ describe('Rate Configuration', () => {
       expect(result.hourly_rate).toBe(115); // 5-6 guests, Thu-Sat
       expect(result.hours).toBe(6);
       expect(result.subtotal).toBe(690); // 6 × 115
-      expect(result.tax).toBeCloseTo(61.41, 2); // 690 × 0.089
-      expect(result.total).toBeCloseTo(751.41, 2);
+      expect(result.tax).toBeCloseTo(62.79, 2); // 690 × 0.091
+      expect(result.total).toBeCloseTo(752.79, 2);
       expect(result.day_type).toBe('Thu-Sat');
     });
 

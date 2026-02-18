@@ -29,13 +29,15 @@ const CreateConsoleBookingSchema = z.object({
   tour: z.object({
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     start_time: z.string().regex(/^\d{2}:\d{2}$/),
-    duration_hours: z.number().min(4).max(12),
+    duration_hours: z.number().min(0).max(12),
     party_size: z.number().min(1).max(50),
     pickup_location: z.string().min(1),
+    dropoff_location: z.string().optional(),
     special_requests: z.string().optional(),
     wine_preferences: z.string().optional(),
-    tour_type: z.enum(['standard', 'private', 'corporate']).optional(),
+    tour_type: z.enum(['wine_tour', 'private_transportation', 'airport_transfer', 'corporate', 'dinner_service']).optional(),
     how_did_you_hear: z.string().optional(),
+    custom_price: z.number().nullable().optional(),
   }),
   vehicles: z.array(z.number()).min(0),
   driver_id: z.number().nullable().optional(),
@@ -49,6 +51,7 @@ const CreateConsoleBookingSchema = z.object({
       editable: z.boolean().optional(),
     })),
     custom_discount: z.number().optional(),
+    custom_price_override: z.number().nullable().optional(),
   }),
 });
 
@@ -170,7 +173,7 @@ export async function POST(request: Request) {
         endTime,
         tour.duration_hours,
         tour.pickup_location,
-        tour.pickup_location, // dropoff same as pickup
+        tour.dropoff_location || tour.pickup_location, // dropoff defaults to pickup
         tour.special_requests || null,
         pricing.total_price,
         pricing.total_price, // base_price = total for now
