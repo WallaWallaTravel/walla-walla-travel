@@ -171,6 +171,17 @@ export function getRates(): RateConfig {
   return defaultRates;
 }
 
+/**
+ * Safely parse a date string as local time.
+ * new Date('YYYY-MM-DD') parses as UTC midnight, which can shift the day
+ * in non-UTC timezones. This parses as local midnight instead.
+ */
+function parseLocalDate(date: Date | string): Date {
+  if (date instanceof Date) return date;
+  const [y, m, d] = date.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
 // Helper to format currency
 export function formatCurrency(amount: number): string {
   // Handle undefined, null, or NaN values
@@ -185,7 +196,7 @@ export function formatCurrency(amount: number): string {
  */
 export function getHourlyRate(partySize: number, date: Date | string): number {
   const rates = getRates();
-  const tourDate = typeof date === 'string' ? new Date(date) : date;
+  const tourDate = parseLocalDate(date);
   const dayOfWeek = tourDate.getDay(); // 0=Sunday, 6=Saturday
   
   // Determine if Thu-Sat (4=Thu, 5=Fri, 6=Sat)
@@ -222,7 +233,7 @@ export function calculateWineTourPrice(
   minimum_hours: number;
 } {
   const rates = getRates();
-  const tourDate = typeof date === 'string' ? new Date(date) : date;
+  const tourDate = parseLocalDate(date);
   const dayOfWeek = tourDate.getDay();
 
   // Determine if Thu-Sat (4=Thu, 5=Fri, 6=Sat)
@@ -329,7 +340,7 @@ export function calculateWaitTimePrice(hours: number, partySize: number = 4, dat
   const billableHours = Math.max(hours, rates.wait_time.minimum_hours);
   
   // Determine if Thu-Sat
-  const tourDate = typeof date === 'string' ? new Date(date) : date;
+  const tourDate = parseLocalDate(date);
   const dayOfWeek = tourDate.getDay();
   const isThuSat = dayOfWeek >= 4 && dayOfWeek <= 6;
   
@@ -367,7 +378,7 @@ export function calculateDeposit(total: number, customPercentage?: number): numb
  * Get day of week name
  */
 export function getDayOfWeek(date: Date | string): string {
-  const tourDate = typeof date === 'string' ? new Date(date) : date;
+  const tourDate = parseLocalDate(date);
   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   return days[tourDate.getDay()];
 }

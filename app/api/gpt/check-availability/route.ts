@@ -81,7 +81,9 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     throw new BadRequestError('Please provide the party size (number of guests).');
   }
 
-  const tourDate = new Date(dateStr);
+  // Parse as local time (new Date('YYYY-MM-DD') parses as UTC, causing timezone bugs)
+  const [tdY, tdM, tdD] = dateStr.split('-').map(Number);
+  const tourDate = new Date(tdY, tdM - 1, tdD);
   const partySize = parseInt(partySizeStr);
 
   // Validate date is in the future

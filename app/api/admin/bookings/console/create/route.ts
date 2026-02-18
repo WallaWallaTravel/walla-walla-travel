@@ -108,9 +108,9 @@ export async function POST(request: Request) {
       phone: customer.phone,
     });
 
-    // Update customer with can_text preference
+    // Update customer with text consent preference
     await pool.query(
-      `UPDATE customers SET can_text = $1 WHERE id = $2`,
+      `UPDATE customers SET sms_marketing_consent = $1 WHERE id = $2`,
       [customer.can_text, customerId]
     );
 

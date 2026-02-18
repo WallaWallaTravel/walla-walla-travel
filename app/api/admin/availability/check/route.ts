@@ -127,7 +127,9 @@ export async function POST(request: Request) {
     const warnings: string[] = [];
 
     // Check for high season (May-October)
-    const tourDate = new Date(date);
+    // Parse as local time (new Date('YYYY-MM-DD') parses as UTC, causing timezone bugs)
+    const [warnY, warnM, warnD] = date.split('-').map(Number);
+    const tourDate = new Date(warnY, warnM - 1, warnD);
     const month = tourDate.getMonth();
     if (month >= 4 && month <= 9) {
       warnings.push('High season - consider confirming availability with driver');

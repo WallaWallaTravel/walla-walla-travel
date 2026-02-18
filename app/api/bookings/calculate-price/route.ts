@@ -47,7 +47,9 @@ export const POST = withErrorHandling(async (request: Request) => {
   });
 
   // Calculate final payment date (48 hours after tour concludes)
-  const tourDate = new Date(date);
+  // Parse as local time (new Date('YYYY-MM-DD') parses as UTC, causing timezone bugs)
+  const [fpY, fpM, fpD] = date.split('-').map(Number);
+  const tourDate = new Date(fpY, fpM - 1, fpD);
   const finalPaymentDate = new Date(tourDate);
   finalPaymentDate.setHours(finalPaymentDate.getHours() + 48);
 

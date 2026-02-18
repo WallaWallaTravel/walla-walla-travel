@@ -150,7 +150,10 @@ export function getCancellationTier(daysBeforeTour: number): CancellationTier {
  * Calculate days between now and tour date
  */
 export function getDaysUntilTour(tourDate: Date | string): number {
-  const tour = typeof tourDate === 'string' ? new Date(tourDate) : tourDate;
+  // Parse as local time (new Date('YYYY-MM-DD') parses as UTC, causing timezone bugs)
+  const tour = typeof tourDate === 'string'
+    ? (() => { const [y, m, d] = tourDate.split('-').map(Number); return new Date(y, m - 1, d); })()
+    : tourDate;
   const now = new Date();
   const diffTime = tour.getTime() - now.getTime();
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));

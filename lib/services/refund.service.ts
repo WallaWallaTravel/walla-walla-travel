@@ -34,7 +34,10 @@ export class RefundService extends BaseService {
     refundPercentage: number;
     policyApplied: string;
   } {
-    const tour = new Date(tourDate);
+    // Parse as local time (new Date('YYYY-MM-DD') parses as UTC, causing timezone bugs)
+    const tour = typeof tourDate === 'string'
+      ? (() => { const [y, m, d] = tourDate.split('-').map(Number); return new Date(y, m - 1, d); })()
+      : tourDate;
     const now = new Date();
     const daysUntilTour = Math.floor(
       (tour.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)

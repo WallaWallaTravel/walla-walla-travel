@@ -29,7 +29,9 @@ export const partySizeSchema = z.number().int().min(1).max(14);
  * Tour date validation (future date only)
  */
 export const tourDateSchema = z.string().refine((date) => {
-  const tourDate = new Date(date);
+  // Parse as local time (new Date('YYYY-MM-DD') parses as UTC, causing timezone bugs)
+  const [y, m, d] = date.split('-').map(Number);
+  const tourDate = new Date(y, m - 1, d);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   return tourDate >= today;
