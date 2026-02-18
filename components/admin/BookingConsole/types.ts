@@ -226,7 +226,9 @@ export function validateTour(tour: TourDetails): Record<string, string> {
   if (!tour.date) {
     errors.date = 'Tour date is required';
   } else {
-    const tourDate = new Date(tour.date);
+    // Parse as local time (new Date('YYYY-MM-DD') parses as UTC, causing timezone bugs)
+    const [y, m, d] = tour.date.split('-').map(Number);
+    const tourDate = new Date(y, m - 1, d);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     if (tourDate < today) {
