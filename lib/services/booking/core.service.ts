@@ -230,7 +230,12 @@ export class BookingCoreService extends BaseService {
       const validated = CreateBookingSchema.parse(data);
 
       // 2. Check if date is in the past
-      if (new Date(validated.tourDate) < new Date()) {
+      // Parse as local time (new Date('YYYY-MM-DD') parses as UTC, causing timezone bugs)
+      const [bookY, bookM, bookD] = validated.tourDate.split('-').map(Number);
+      const bookingDate = new Date(bookY, bookM - 1, bookD);
+      const todayCheck = new Date();
+      todayCheck.setHours(0, 0, 0, 0);
+      if (bookingDate < todayCheck) {
         throw new ValidationError('Cannot book tours in the past');
       }
 
@@ -657,7 +662,12 @@ export class BookingCoreService extends BaseService {
    */
   async checkDateAvailability(date: string, partySize: number): Promise<void> {
     // Check if date is in the past
-    if (new Date(date) < new Date()) {
+    // Parse as local time (new Date('YYYY-MM-DD') parses as UTC, causing timezone bugs)
+    const [chkY, chkM, chkD] = date.split('-').map(Number);
+    const chkDate = new Date(chkY, chkM - 1, chkD);
+    const chkToday = new Date();
+    chkToday.setHours(0, 0, 0, 0);
+    if (chkDate < chkToday) {
       throw new ValidationError('Cannot book tours in the past');
     }
 

@@ -300,7 +300,10 @@ export function getDepositAmount(partySize: number): number {
  * Check if booking qualifies for full refund
  */
 export function qualifiesForFullRefund(tourDate: Date | string): boolean {
-  const tour = typeof tourDate === 'string' ? new Date(tourDate) : tourDate;
+  // Parse as local time (new Date('YYYY-MM-DD') parses as UTC, causing timezone bugs)
+  const tour = typeof tourDate === 'string'
+    ? (() => { const [y, m, d] = tourDate.split('-').map(Number); return new Date(y, m - 1, d); })()
+    : tourDate;
   const now = new Date();
   const diffTime = tour.getTime() - now.getTime();
   const daysUntil = Math.ceil(diffTime / (1000 * 60 * 60 * 24));

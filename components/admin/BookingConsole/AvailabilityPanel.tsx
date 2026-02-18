@@ -91,12 +91,15 @@ export default function AvailabilityPanel({
               {statusText}
             </h4>
             <p className="text-sm text-gray-600">
-              {new Date(tour.date).toLocaleDateString('en-US', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              })}
+              {(() => {
+                const [y, m, d] = tour.date.split('-').map(Number);
+                return new Date(y, m - 1, d).toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                });
+              })()}
               {' at '}
               {tour.start_time}
             </p>
