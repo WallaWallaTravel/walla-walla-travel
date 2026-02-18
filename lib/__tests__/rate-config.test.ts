@@ -110,8 +110,8 @@ describe('Rate Configuration', () => {
       expect(result.per_person_rate).toBe(95);
       expect(result.guests).toBe(6);
       expect(result.subtotal).toBe(570); // 6 × 95
-      expect(result.tax).toBeCloseTo(50.73, 2);
-      expect(result.total).toBeCloseTo(620.73, 2);
+      expect(result.tax).toBeCloseTo(51.87, 2); // 570 × 0.091
+      expect(result.total).toBeCloseTo(621.87, 2);
     });
 
     it('calculates with lunch rate correctly', () => {
@@ -120,8 +120,8 @@ describe('Rate Configuration', () => {
       expect(result.per_person_rate).toBe(115);
       expect(result.guests).toBe(6);
       expect(result.subtotal).toBe(690); // 6 × 115
-      expect(result.tax).toBeCloseTo(61.41, 2);
-      expect(result.total).toBeCloseTo(751.41, 2);
+      expect(result.tax).toBeCloseTo(62.79, 2); // 690 × 0.091
+      expect(result.total).toBeCloseTo(752.79, 2);
     });
   });
 
