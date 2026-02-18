@@ -109,11 +109,23 @@ export async function middleware(request: NextRequest) {
   const hostname = request.headers.get('host') || '';
 
   // ============================================================================
+  // WWW → NON-WWW REDIRECT (canonical domain)
+  // ============================================================================
+
+  const hostWithoutPort = hostname.split(':')[0];
+  if (hostWithoutPort.startsWith('www.')) {
+    const nonWwwUrl = new URL(request.url);
+    nonWwwUrl.host = hostname.replace(/^www\./, '');
+    const response = NextResponse.redirect(nonWwwUrl, 301);
+    response.headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+    return response;
+  }
+
+  // ============================================================================
   // SUBDOMAIN ROUTING
   // ============================================================================
 
   // Extract subdomain (handle localhost:3000, admin.localhost:3000, admin.wallawallatravel.com)
-  const hostWithoutPort = hostname.split(':')[0];
   const parts = hostWithoutPort.split('.');
 
   // Determine subdomain

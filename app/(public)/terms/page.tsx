@@ -8,7 +8,10 @@ import { getSetting } from '@/lib/settings/settings-service';
 
 export const metadata = {
   title: 'Terms and Conditions | Walla Walla Travel',
-  description: 'Terms and conditions for Walla Walla Travel wine country tours and transportation services'
+  description: 'Terms and conditions for Walla Walla Travel wine country tours and transportation services',
+  alternates: {
+    canonical: 'https://wallawalla.travel/terms',
+  },
 };
 
 // Default deposit amounts (fallback if settings unavailable)

@@ -11,6 +11,9 @@ import { FAQJsonLd } from '@/components/seo/FAQJsonLd';
 export const metadata = {
   title: 'Cancellation Policy | Walla Walla Travel',
   description: 'Cancellation and refund policy for Walla Walla Travel wine country tours. Full refund 30+ days out, 50% refund 15-29 days, no refund under 15 days.',
+  alternates: {
+    canonical: 'https://wallawalla.travel/cancellation-policy',
+  },
   other: {
     'article:modified_time': '2025-11-11T00:00:00Z',
   },
