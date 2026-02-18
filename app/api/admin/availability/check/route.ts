@@ -20,13 +20,11 @@ const CheckAvailabilitySchema = z.object({
   brandId: z.number().optional(),
 });
 
-interface Driver {
+interface DriverRow {
   id: number;
-  first_name: string;
-  last_name: string;
+  name: string;
   email: string;
   phone: string | null;
-  status: string;
 }
 
 export async function POST(request: Request) {
@@ -93,12 +91,13 @@ export async function POST(request: Request) {
       available: (conflictMap.get(v.id)?.length || 0) === 0 && v.capacity >= partySize,
     }));
 
-    // Get available drivers
-    const driversResult = await pool.query<Driver>(
-      `SELECT id, first_name, last_name, email, phone, status
-       FROM drivers
-       WHERE status = 'active'
-       ORDER BY last_name, first_name`
+    // Get available drivers (drivers are users with role = 'driver' or 'owner')
+    const driversResult = await pool.query<DriverRow>(
+      `SELECT id, name, email, phone
+       FROM users
+       WHERE role IN ('driver', 'owner')
+       AND is_active = true
+       ORDER BY name`
     );
 
     // Check driver availability for the date
@@ -118,7 +117,7 @@ export async function POST(request: Request) {
 
     const drivers = driversResult.rows.map(d => ({
       id: d.id,
-      name: `${d.first_name} ${d.last_name}`,
+      name: d.name,
       email: d.email,
       phone: d.phone || '',
       available: !busyDriverIds.has(d.id),
