@@ -20,6 +20,9 @@ export const metadata: Metadata = {
     'developer API',
     'AI data access',
   ],
+  alternates: {
+    canonical: 'https://wallawalla.travel/api-docs',
+  },
   openGraph: {
     title: 'Walla Walla Travel API Documentation',
     description: 'Access verified Walla Walla Valley data for your application or AI system.',
