@@ -332,7 +332,9 @@ export class VehicleAvailabilityService extends BaseService {
     }
 
     // Validate date is not in the past
-    const requestDate = new Date(date);
+    // Parse as local time (new Date('YYYY-MM-DD') parses as UTC, causing timezone bugs)
+    const [y, m, d] = date.split('-').map(Number);
+    const requestDate = new Date(y, m - 1, d);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
