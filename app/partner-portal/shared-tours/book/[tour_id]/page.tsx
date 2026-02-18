@@ -130,7 +130,7 @@ export default function PartnerBookGuestPage({ params }: { params: Promise<{ tou
       ? tour.lunch_price_per_person
       : tour.base_price_per_person;
     const subtotal = pricePerPerson * formData.ticket_count;
-    const tax = subtotal * 0.089;
+    const tax = subtotal * 0.091;
     return subtotal + tax;
   };
 
@@ -383,7 +383,7 @@ export default function PartnerBookGuestPage({ params }: { params: Promise<{ tou
                 ${calculateTotal().toFixed(2)}
               </span>
             </div>
-            <p className="text-xs text-slate-500 mt-1">Includes 8.9% tax</p>
+            <p className="text-xs text-slate-500 mt-1">Includes 9.1% tax</p>
           </div>
 
           <button

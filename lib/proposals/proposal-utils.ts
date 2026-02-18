@@ -233,7 +233,7 @@ export function calculateProposalTotals(data: Partial<ProposalData>) {
   const afterDiscount = subtotal - discountAmount;
   
   // Tax rate from config
-  const taxRate = 0.089; // 8.9%
+  const taxRate = 0.091; // 9.1%
   const taxAmount = afterDiscount * taxRate;
   
   const total = afterDiscount + taxAmount;

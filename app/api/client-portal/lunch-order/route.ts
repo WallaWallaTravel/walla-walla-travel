@@ -60,7 +60,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     return sum + (item.price * item.quantity);
   }, 0);
 
-  const tax = subtotal * 0.089; // 8.9% WA state tax
+  const tax = subtotal * 0.091; // 9.1% WA state + local tax
   const total = subtotal + tax;
 
   // Get restaurant details for email
@@ -204,7 +204,7 @@ ORDER DETAILS:
   email += `
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   Subtotal: $${subtotal.toFixed(2)}
-  Tax (8.9%): $${tax.toFixed(2)}
+  Tax (9.1%): $${tax.toFixed(2)}
   TOTAL: $${total.toFixed(2)}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 `;

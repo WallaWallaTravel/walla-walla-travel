@@ -173,7 +173,7 @@ export default function ClientProposalView({ params }: { params: Promise<{ propo
 
   const calculateTax = (subtotal: number, discountAmount: number) => {
     const taxableAmount = subtotal - discountAmount;
-    return taxableAmount * 0.089; // 8.9% tax rate
+    return taxableAmount * 0.091; // 9.1% tax rate
   };
 
   const calculateDeposit = (total: number) => {

@@ -470,7 +470,7 @@ export default function ReserveRefinePage() {
                         <strong>Not included:</strong> Winery tasting fees (typically $20-30/person) & lunch (typically $11-18/person)
                       </p>
                       <p className="text-xs text-blue-600 italic mt-1">
-                        ℹ️ Prices shown before tax (8.9% WA sales tax applies). Final cost based on actual tour time & services.
+                        ℹ️ Prices shown before tax (9.1% WA sales tax applies). Final cost based on actual tour time & services.
                       </p>
                     </div>
                   </div>

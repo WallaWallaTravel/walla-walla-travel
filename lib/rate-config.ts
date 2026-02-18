@@ -83,7 +83,7 @@ export interface RateConfig {
   };
   
   // Tax
-  tax_rate: number;             // 8.9% WA state tax
+  tax_rate: number;             // 9.1% WA state + local tax
   
   // Deposit
   deposit_percentage: number;   // 50% deposit (default)
@@ -162,7 +162,7 @@ export const defaultRates: RateConfig = {
     custom_itinerary: 0,      // TBD
   },
   
-  tax_rate: 0.089,            // 8.9% WA state tax
+  tax_rate: 0.091,            // 9.1% WA state + local tax (Walla Walla)
   deposit_percentage: 0.50,   // 50% deposit (default, can be overridden)
 };
 

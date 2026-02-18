@@ -96,7 +96,7 @@ export async function POST(request: Request) {
       : 0;
 
     const finalSubtotal = baseSubtotal - discountAmount;
-    const finalTaxes = finalSubtotal * 0.089; // WA state tax
+    const finalTaxes = finalSubtotal * 0.091; // WA state + local tax
     const finalTotal = finalSubtotal + finalTaxes;
     const deposit = finalTotal * 0.5;
 
@@ -182,7 +182,7 @@ export async function POST(request: Request) {
 
     // Taxes
     breakdown.push({
-      label: 'WA State Tax (8.9%)',
+      label: 'WA State Tax (9.1%)',
       amount: finalTaxes,
       key: 'tax',
     });

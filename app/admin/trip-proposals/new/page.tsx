@@ -160,7 +160,7 @@ export default function NewTripProposalPage() {
     valid_until: defaultValidUntil,
     deposit_percentage: 50,
     gratuity_percentage: 0,
-    tax_rate: 8.9,
+    tax_rate: 9.1,
     discount_amount: 0,
     discount_reason: '',
     days: [],

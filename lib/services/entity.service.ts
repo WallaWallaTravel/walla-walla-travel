@@ -422,7 +422,7 @@ export async function createBookingLineItem(data: {
 }): Promise<BookingLineItem> {
   const quantity = data.quantity || 1;
   const subtotal = data.unit_price * quantity;
-  const taxRate = data.tax_rate || 0.089;
+  const taxRate = data.tax_rate || 0.091;
   const taxAmount = Math.round(subtotal * taxRate * 100) / 100;
   const total = subtotal + taxAmount;
 

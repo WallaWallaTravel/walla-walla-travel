@@ -209,7 +209,7 @@ export async function getPricingGuidanceContext(): Promise<string> {
     guidance += `- You CAN quote total pricing\n`;
     guidance += `- Use conservative ranges with 10-15% buffer\n`;
     guidance += `- Example: "For ${consultationUnder} guests, a full-day tour typically runs $650-$850 depending on duration and wineries"\n`;
-    guidance += `- Include tax in your quote (8.9%)\n`;
+    guidance += `- Include tax in your quote (9.1%)\n`;
     guidance += `- Direct them to "Reserve & Customize" booking flow\n\n`;
     
     guidance += `### For groups of ${perPersonOver}+ guests:\n`;

@@ -228,7 +228,7 @@ function generateConfirmationHtml({
                 <td style="padding: 4px 0; color: #1f2937; text-align: right;">$${ticket.subtotal.toFixed(2)}</td>
               </tr>
               <tr>
-                <td style="padding: 4px 0; color: #4b5563;">Tax (8.9%)</td>
+                <td style="padding: 4px 0; color: #4b5563;">Tax (9.1%)</td>
                 <td style="padding: 4px 0; color: #1f2937; text-align: right;">$${ticket.tax_amount.toFixed(2)}</td>
               </tr>
               <tr>
@@ -328,7 +328,7 @@ ${ticket.dietary_restrictions ? `\nDietary notes: ${ticket.dietary_restrictions}
 PAYMENT CONFIRMED
 ─────────────────────────────────
 ${ticket.ticket_count} × $${ticket.price_per_person.toFixed(2)} = $${ticket.subtotal.toFixed(2)}
-Tax (8.9%): $${ticket.tax_amount.toFixed(2)}
+Tax (9.1%): $${ticket.tax_amount.toFixed(2)}
 Total Paid: $${ticket.total_amount.toFixed(2)}
 
 ─────────────────────────────────
