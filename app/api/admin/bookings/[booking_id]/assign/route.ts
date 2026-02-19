@@ -62,8 +62,9 @@ async function handleAssignment(
     }
 
     // 2. Verify driver exists and is available
+    // Drivers can have role 'driver' or 'owner' (owner also drives)
     const driver = await queryOne(
-      `SELECT * FROM users WHERE id = $1 AND role = 'driver'`,
+      `SELECT * FROM users WHERE id = $1 AND role IN ('driver', 'owner') AND is_active = true`,
       [driver_id],
       client
     );
