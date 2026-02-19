@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
-import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api-errors';
+import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { queryOne, query, withTransaction } from '@/lib/db-helpers';
 import { sendDriverAssignmentToCustomer } from '@/lib/services/email-automation.service';
 import { sendEmail, EmailTemplates } from '@/lib/email';
 import { auditService } from '@/lib/services/audit.service';
 import { withComplianceCheck } from '@/lib/api/middleware/compliance-check';
-// import { complianceService } from '@/lib/services/compliance.service';
+
 
 /**
  * PUT /api/admin/bookings/[booking_id]/assign
@@ -58,7 +58,7 @@ async function handleAssignment(
     );
 
     if (!booking) {
-      throw new NotFoundError('Booking');
+      throw new NotFoundError('Booking not found');
     }
 
     // 2. Verify driver exists and is available
@@ -70,7 +70,7 @@ async function handleAssignment(
     );
 
     if (!driver) {
-      throw new NotFoundError('Driver');
+      throw new NotFoundError('Driver not found');
     }
 
     // 3. Verify vehicle exists
@@ -81,7 +81,7 @@ async function handleAssignment(
     );
 
     if (!vehicle) {
-      throw new NotFoundError('Vehicle');
+      throw new NotFoundError('Vehicle not found');
     }
 
     // 4. Check for conflicts (driver or vehicle already booked at overlapping time)

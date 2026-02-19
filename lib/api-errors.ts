@@ -225,6 +225,18 @@ export function handleApiError(error: unknown): NextResponse {
         { status: 400 }
       );
     }
+
+    // All other database errors (undefined column, undefined table, syntax errors, etc.)
+    // Surface the actual DB error message — these are internal admin operations
+    // and the real error is critical for diagnosing issues
+    return NextResponse.json(
+      formatErrorResponse(
+        new InternalServerError(
+          `Database error: ${error.message}`
+        )
+      ),
+      { status: 500 }
+    );
   }
 
   // Handle validation errors (Zod, etc.)
@@ -237,15 +249,12 @@ export function handleApiError(error: unknown): NextResponse {
     );
   }
 
-  // Handle generic errors
+  // Handle generic errors — surface the actual error message for admin routes
+  // since these are internal operations and the real error aids debugging
   if (error instanceof Error) {
     return NextResponse.json(
       formatErrorResponse(
-        new InternalServerError(
-          process.env.NODE_ENV === 'development'
-            ? error.message
-            : 'An unexpected error occurred'
-        )
+        new InternalServerError(error.message)
       ),
       { status: 500 }
     );

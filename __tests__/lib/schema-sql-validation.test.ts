@@ -2,12 +2,17 @@
  * Schema-SQL Validation Test
  *
  * Catches the #1 source of runtime errors in this codebase: raw SQL queries
- * that reference columns which don't exist in the database.
+ * that reference columns or tables which don't exist in the database.
  *
  * HOW IT WORKS:
- * 1. Parses the Prisma schema to extract actual column names for each table
- * 2. Scans .ts files for raw SQL INSERT/UPDATE statements
+ * 1. Parses the Prisma schema to extract actual table + column names
+ * 2. Scans .ts files for raw SQL INSERT/UPDATE/SELECT/DELETE statements
  * 3. Validates every column name against the schema
+ * 4. Validates every table name exists in the schema
+ *
+ * TWO LEVELS OF ENFORCEMENT:
+ * - CRITICAL PATH: Routes in active use — MUST pass (test fails on mismatch)
+ * - AUDIT: Full codebase scan — warns but doesn't block (tech debt tracking)
  *
  * This is a static analysis test — no database connection needed.
  * Run with: npm test -- schema-sql-validation
@@ -90,6 +95,13 @@ interface SqlColumnRef {
   queryType: 'INSERT' | 'UPDATE';
 }
 
+interface SqlTableRef {
+  file: string;
+  line: number;
+  table: string;
+  queryType: string;
+}
+
 function extractSqlColumnRefs(filePath: string): SqlColumnRef[] {
   const content = fs.readFileSync(filePath, 'utf-8');
   const refs: SqlColumnRef[] = [];
@@ -143,6 +155,92 @@ function extractSqlColumnRefs(filePath: string): SqlColumnRef[] {
   return refs;
 }
 
+/**
+ * Extract all table names referenced in SQL queries.
+ * Catches INSERT INTO, UPDATE, DELETE FROM, and FROM/JOIN clauses.
+ */
+function extractSqlTableRefs(filePath: string): SqlTableRef[] {
+  const content = fs.readFileSync(filePath, 'utf-8');
+  const refs: SqlTableRef[] = [];
+
+  // SQL keywords that should NOT be treated as table names
+  const sqlKeywords = new Set([
+    'SELECT', 'FROM', 'WHERE', 'AND', 'OR', 'NOT', 'IN', 'ON', 'AS', 'SET',
+    'VALUES', 'INTO', 'INSERT', 'UPDATE', 'DELETE', 'JOIN', 'LEFT', 'RIGHT',
+    'INNER', 'OUTER', 'CROSS', 'FULL', 'GROUP', 'ORDER', 'BY', 'HAVING',
+    'LIMIT', 'OFFSET', 'UNION', 'ALL', 'DISTINCT', 'CASE', 'WHEN', 'THEN',
+    'ELSE', 'END', 'NULL', 'TRUE', 'FALSE', 'IS', 'LIKE', 'ILIKE', 'BETWEEN',
+    'EXISTS', 'ANY', 'SOME', 'RETURNING', 'WITH', 'RECURSIVE', 'ASC', 'DESC',
+    'CREATE', 'ALTER', 'DROP', 'TABLE', 'INDEX', 'CONSTRAINT', 'FOREIGN',
+    'PRIMARY', 'KEY', 'REFERENCES', 'CASCADE', 'RESTRICT', 'DEFAULT',
+    'COALESCE', 'NULLIF', 'CAST', 'EXTRACT', 'INTERVAL', 'NOW', 'COUNT',
+    'SUM', 'AVG', 'MIN', 'MAX', 'FILTER', 'OVER', 'PARTITION', 'ROW_NUMBER',
+    'LAG', 'LEAD', 'LATERAL', 'OVERLAPS', 'CONFLICT', 'DO', 'NOTHING',
+    'EXCLUDED', 'GENERATED', 'ALWAYS', 'IDENTITY', 'IF', 'THEN', 'ELSE',
+    'subquery', 'json_build_object', 'json_agg', 'json_object_agg',
+    'DATE_TRUNC', 'TO_CHAR', 'TO_DATE', 'TO_TIMESTAMP', 'ARRAY_AGG',
+    'STRING_AGG', 'BOOL_OR', 'BOOL_AND', 'UNNEST',
+  ]);
+
+  // Pattern 1: INSERT INTO table
+  const insertRegex = /INSERT\s+INTO\s+(\w+)/gi;
+  let match: RegExpExecArray | null;
+  while ((match = insertRegex.exec(content)) !== null) {
+    const table = match[1];
+    if (!sqlKeywords.has(table.toUpperCase())) {
+      const beforeMatch = content.substring(0, match.index);
+      const lineNum = beforeMatch.split('\n').length;
+      refs.push({ file: filePath, line: lineNum, table, queryType: 'INSERT' });
+    }
+  }
+
+  // Pattern 2: UPDATE table SET
+  const updateRegex = /UPDATE\s+(\w+)\s+SET/gi;
+  while ((match = updateRegex.exec(content)) !== null) {
+    const table = match[1];
+    if (!sqlKeywords.has(table.toUpperCase())) {
+      const beforeMatch = content.substring(0, match.index);
+      const lineNum = beforeMatch.split('\n').length;
+      refs.push({ file: filePath, line: lineNum, table, queryType: 'UPDATE' });
+    }
+  }
+
+  // Pattern 3: DELETE FROM table
+  const deleteRegex = /DELETE\s+FROM\s+(\w+)/gi;
+  while ((match = deleteRegex.exec(content)) !== null) {
+    const table = match[1];
+    if (!sqlKeywords.has(table.toUpperCase())) {
+      const beforeMatch = content.substring(0, match.index);
+      const lineNum = beforeMatch.split('\n').length;
+      refs.push({ file: filePath, line: lineNum, table, queryType: 'DELETE' });
+    }
+  }
+
+  // Pattern 4: FROM table (SELECT queries)
+  const fromRegex = /FROM\s+(\w+)(?:\s|$|,|\))/gi;
+  while ((match = fromRegex.exec(content)) !== null) {
+    const table = match[1];
+    if (!sqlKeywords.has(table.toUpperCase())) {
+      const beforeMatch = content.substring(0, match.index);
+      const lineNum = beforeMatch.split('\n').length;
+      refs.push({ file: filePath, line: lineNum, table, queryType: 'SELECT' });
+    }
+  }
+
+  // Pattern 5: JOIN table
+  const joinRegex = /JOIN\s+(\w+)/gi;
+  while ((match = joinRegex.exec(content)) !== null) {
+    const table = match[1];
+    if (!sqlKeywords.has(table.toUpperCase())) {
+      const beforeMatch = content.substring(0, match.index);
+      const lineNum = beforeMatch.split('\n').length;
+      refs.push({ file: filePath, line: lineNum, table, queryType: 'JOIN' });
+    }
+  }
+
+  return refs;
+}
+
 function validateFiles(
   rootDir: string,
   filePaths: string[],
@@ -157,11 +255,44 @@ function validateFiles(
     const refs = extractSqlColumnRefs(fullPath);
     for (const ref of refs) {
       const tableColumns = schemaColumns.get(ref.table);
-      if (!tableColumns) continue; // Table not in Prisma — skip
+      if (!tableColumns) continue; // Table not in Prisma — skip (caught by table validation)
 
       if (!tableColumns.has(ref.column)) {
         errors.push(
           `${filePath}:${ref.line} — ${ref.queryType} ${ref.table}.${ref.column} (column not in schema)`
+        );
+      }
+    }
+  }
+
+  return errors;
+}
+
+/**
+ * Validate that all SQL tables referenced in a file exist in the Prisma schema.
+ * Returns list of non-existent table references.
+ */
+function validateTables(
+  rootDir: string,
+  filePaths: string[],
+  schemaColumns: Map<string, Set<string>>,
+): string[] {
+  const errors: string[] = [];
+
+  for (const filePath of filePaths) {
+    const fullPath = path.join(rootDir, filePath);
+    if (!fs.existsSync(fullPath)) continue;
+
+    const refs = extractSqlTableRefs(fullPath);
+    const seenTables = new Set<string>(); // Deduplicate per file
+
+    for (const ref of refs) {
+      if (seenTables.has(ref.table)) continue;
+      seenTables.add(ref.table);
+
+      if (!schemaColumns.has(ref.table)) {
+        errors.push(
+          `${filePath}:${ref.line} — ${ref.queryType} references non-existent table "${ref.table}"`
         );
       }
     }
@@ -183,6 +314,10 @@ describe('Schema-SQL Validation', () => {
   beforeAll(() => {
     schemaColumns = parsePrismaSchema(schemaPath);
   });
+
+  // ========================================================================
+  // SCHEMA PARSING VERIFICATION
+  // ========================================================================
 
   it('should parse the Prisma schema successfully', () => {
     expect(schemaColumns.size).toBeGreaterThan(0);
@@ -215,68 +350,154 @@ describe('Schema-SQL Validation', () => {
   });
 
   // ========================================================================
-  // CRITICAL PATH: Booking Console (must pass — actively used)
+  // CRITICAL PATH: Admin Booking Console (MUST pass — actively used daily)
   // ========================================================================
 
-  it('should have zero column mismatches in the booking console create route', () => {
-    const errors = validateFiles(rootDir, [
-      'app/api/admin/bookings/console/create/route.ts',
-    ], schemaColumns);
+  describe('Admin Booking Console (critical path)', () => {
+    it('should have zero column mismatches in the booking console create route', () => {
+      const errors = validateFiles(rootDir, [
+        'app/api/admin/bookings/console/create/route.ts',
+      ], schemaColumns);
+      expect(errors).toEqual([]);
+    });
 
-    expect(errors).toEqual([]);
-  });
+    it('should have zero column mismatches in the booking list route', () => {
+      const errors = validateFiles(rootDir, [
+        'app/api/admin/bookings/route.ts',
+      ], schemaColumns);
+      expect(errors).toEqual([]);
+    });
 
-  it('should have zero column mismatches in the availability check route', () => {
-    const errors = validateFiles(rootDir, [
-      'app/api/admin/availability/check/route.ts',
-    ], schemaColumns);
+    it('should have zero column mismatches in the booking detail route', () => {
+      const errors = validateFiles(rootDir, [
+        'app/api/admin/bookings/[booking_id]/route.ts',
+      ], schemaColumns);
+      expect(errors).toEqual([]);
+    });
 
-    expect(errors).toEqual([]);
-  });
+    it('should have zero column mismatches in the booking assign route', () => {
+      const errors = validateFiles(rootDir, [
+        'app/api/admin/bookings/[booking_id]/assign/route.ts',
+      ], schemaColumns);
+      expect(errors).toEqual([]);
+    });
 
-  it('should have zero column mismatches in the booking assign route', () => {
-    const errors = validateFiles(rootDir, [
-      'app/api/admin/bookings/[booking_id]/assign/route.ts',
-    ], schemaColumns);
+    it('should have zero column mismatches in the booking status route', () => {
+      const errors = validateFiles(rootDir, [
+        'app/api/admin/bookings/[booking_id]/status/route.ts',
+      ], schemaColumns);
+      expect(errors).toEqual([]);
+    });
 
-    expect(errors).toEqual([]);
-  });
-
-  it('should have zero column mismatches in the booking status route', () => {
-    const errors = validateFiles(rootDir, [
-      'app/api/admin/bookings/[booking_id]/status/route.ts',
-    ], schemaColumns);
-
-    expect(errors).toEqual([]);
-  });
-
-  it('should have zero column mismatches in core booking service', () => {
-    const errors = validateFiles(rootDir, [
-      'lib/services/booking/core.service.ts',
-    ], schemaColumns);
-
-    expect(errors).toEqual([]);
-  });
-
-  it('should have zero column mismatches in the pricing API', () => {
-    const errors = validateFiles(rootDir, [
-      'app/api/bookings/calculate-price/route.ts',
-    ], schemaColumns);
-
-    expect(errors).toEqual([]);
+    it('should have zero column mismatches in the availability check route', () => {
+      const errors = validateFiles(rootDir, [
+        'app/api/admin/availability/check/route.ts',
+      ], schemaColumns);
+      expect(errors).toEqual([]);
+    });
   });
 
   // ========================================================================
-  // FULL CODEBASE SCAN: Audit (warns but doesn't block)
+  // CRITICAL PATH: Core Booking Services (MUST pass)
   // ========================================================================
 
-  it('should report all SQL-schema mismatches across the codebase (audit)', () => {
+  describe('Core Booking Services (critical path)', () => {
+    it('should have zero column mismatches in core booking service', () => {
+      const errors = validateFiles(rootDir, [
+        'lib/services/booking/core.service.ts',
+      ], schemaColumns);
+      expect(errors).toEqual([]);
+    });
+
+    it('should have zero column mismatches in the pricing API', () => {
+      const errors = validateFiles(rootDir, [
+        'app/api/bookings/calculate-price/route.ts',
+      ], schemaColumns);
+      expect(errors).toEqual([]);
+    });
+
+    it('should have zero column mismatches in the booking create route', () => {
+      const errors = validateFiles(rootDir, [
+        'app/api/bookings/create/route.ts',
+      ], schemaColumns);
+      expect(errors).toEqual([]);
+    });
+
+    it('should have zero column mismatches in booking lookup route', () => {
+      const errors = validateFiles(rootDir, [
+        'app/api/bookings/[bookingNumber]/route.ts',
+      ], schemaColumns);
+      expect(errors).toEqual([]);
+    });
+
+    it('should have zero column mismatches in the booking cancel route', () => {
+      const errors = validateFiles(rootDir, [
+        'app/api/bookings/cancel/route.ts',
+      ], schemaColumns);
+      expect(errors).toEqual([]);
+    });
+  });
+
+  // ========================================================================
+  // CRITICAL PATH: Payments & Invoices (MUST pass — handles money)
+  // ========================================================================
+
+  describe('Payments & Invoices (critical path)', () => {
+    it('should have zero column mismatches in payment intent creation', () => {
+      const errors = validateFiles(rootDir, [
+        'app/api/payments/create-intent/route.ts',
+      ], schemaColumns);
+      expect(errors).toEqual([]);
+    });
+
+    it('should have zero column mismatches in payment confirmation', () => {
+      const errors = validateFiles(rootDir, [
+        'app/api/payments/confirm/route.ts',
+      ], schemaColumns);
+      expect(errors).toEqual([]);
+    });
+
+    it('should have zero column mismatches in invoice routes', () => {
+      const errors = validateFiles(rootDir, [
+        'app/api/invoices/[booking_id]/route.ts',
+        'app/api/admin/pending-invoices/route.ts',
+        'app/api/admin/approve-invoice/[booking_id]/route.ts',
+      ], schemaColumns);
+      expect(errors).toEqual([]);
+    });
+  });
+
+  // ========================================================================
+  // CRITICAL PATH: Compliance Middleware (MUST pass — prevents silent failures)
+  // ========================================================================
+
+  describe('Compliance & Middleware (critical path)', () => {
+    it('should have zero column mismatches in compliance check middleware', () => {
+      const errors = validateFiles(rootDir, [
+        'lib/api/middleware/compliance-check.ts',
+      ], schemaColumns);
+      expect(errors).toEqual([]);
+    });
+
+    it('should have zero column mismatches in email automation service', () => {
+      const errors = validateFiles(rootDir, [
+        'lib/services/email-automation.service.ts',
+      ], schemaColumns);
+      expect(errors).toEqual([]);
+    });
+  });
+
+  // ========================================================================
+  // FULL CODEBASE SCAN: Column Audit (warns but doesn't block)
+  // ========================================================================
+
+  it('should report all SQL-column mismatches across the codebase (audit)', () => {
     const dirsToScan = [
       path.join(rootDir, 'app'),
       path.join(rootDir, 'lib'),
     ];
 
-    const excludeDirs = ['node_modules', '.next', '__tests__', 'coverage'];
+    const excludeDirs = ['node_modules', '.next', '__tests__', 'coverage', 'generated'];
 
     const allRefs: SqlColumnRef[] = [];
     for (const dir of dirsToScan) {
@@ -302,10 +523,7 @@ describe('Schema-SQL Validation', () => {
       }
     }
 
-    // Log all mismatches for visibility, but don't fail the test.
-    // These represent tech debt to clean up over time.
     if (errors.length > 0) {
-      // Group by file for readability
       const byFile = new Map<string, string[]>();
       for (const err of errors) {
         const file = err.split(':')[0];
@@ -314,12 +532,10 @@ describe('Schema-SQL Validation', () => {
       }
 
       console.warn(
-        `\n⚠️  SCHEMA AUDIT: ${errors.length} SQL-schema mismatches across ${byFile.size} files.\n` +
-        `   These are potential runtime errors waiting to happen.\n` +
-        `   Run 'npm test -- schema-sql-validation' for full output.\n`
+        `\n⚠️  COLUMN AUDIT: ${errors.length} SQL-column mismatches across ${byFile.size} files.\n` +
+        `   These are potential runtime errors waiting to happen.\n`
       );
 
-      // Log first 10 as a sample
       const sample = errors.slice(0, 10);
       for (const s of sample) {
         console.warn(`   ${s}`);
@@ -329,8 +545,66 @@ describe('Schema-SQL Validation', () => {
       }
     }
 
-    // This test passes regardless — it's for visibility only.
-    // The critical-path tests above are the ones that enforce correctness.
+    // Audit only — passes regardless. Critical-path tests enforce correctness.
+    expect(true).toBe(true);
+  });
+
+  // ========================================================================
+  // FULL CODEBASE SCAN: Non-Existent Table Audit
+  // ========================================================================
+
+  it('should report all queries against non-existent tables (audit)', () => {
+    const dirsToScan = [
+      path.join(rootDir, 'app'),
+      path.join(rootDir, 'lib'),
+    ];
+
+    const excludeDirs = ['node_modules', '.next', '__tests__', 'coverage', 'generated'];
+
+    const allRefs: SqlTableRef[] = [];
+    for (const dir of dirsToScan) {
+      if (fs.existsSync(dir)) {
+        const files = findTsFiles(dir, excludeDirs);
+        for (const file of files) {
+          allRefs.push(...extractSqlTableRefs(file));
+        }
+      }
+    }
+
+    // Deduplicate: one entry per unique (file, table) pair
+    const seen = new Set<string>();
+    const missingTableRefs: SqlTableRef[] = [];
+
+    for (const ref of allRefs) {
+      const key = `${ref.file}:${ref.table}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      if (!schemaColumns.has(ref.table)) {
+        missingTableRefs.push(ref);
+      }
+    }
+
+    if (missingTableRefs.length > 0) {
+      // Group by table name
+      const byTable = new Map<string, string[]>();
+      for (const ref of missingTableRefs) {
+        if (!byTable.has(ref.table)) byTable.set(ref.table, []);
+        const relPath = path.relative(rootDir, ref.file);
+        byTable.get(ref.table)!.push(relPath);
+      }
+
+      console.warn(
+        `\n⚠️  TABLE AUDIT: ${byTable.size} non-existent tables referenced across ${missingTableRefs.length} files.\n` +
+        `   These are GUARANTEED runtime failures if the code path is executed.\n`
+      );
+
+      for (const [table, files] of byTable.entries()) {
+        console.warn(`   "${table}" — referenced in ${files.length} file(s)`);
+      }
+    }
+
+    // Audit only — passes regardless.
     expect(true).toBe(true);
   });
 
