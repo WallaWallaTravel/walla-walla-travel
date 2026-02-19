@@ -97,8 +97,9 @@ export const PATCH = withErrorHandling(async (
   }).catch(() => {}); // Non-blocking
 
   // Create timeline entry
+  // Column is event_description (not description) per Prisma schema
   await query(
-    `INSERT INTO booking_timeline (booking_id, event_type, description, created_at)
+    `INSERT INTO booking_timeline (booking_id, event_type, event_description, created_at)
      VALUES ($1, $2, $3, NOW())`,
     [
       bookingId,
@@ -106,7 +107,6 @@ export const PATCH = withErrorHandling(async (
       reason || `Status changed to ${status}`,
     ]
   ).catch(err => {
-    // Timeline is optional, don't fail if table doesn't exist
     logger.warn('[Booking] Failed to create timeline entry', { error: err });
   });
 

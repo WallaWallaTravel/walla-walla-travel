@@ -83,17 +83,16 @@ async function handleAssignment(
       throw new NotFoundError('Vehicle');
     }
 
-    // 4. Check for conflicts
+    // 4. Check for conflicts (driver or vehicle already booked at overlapping time)
     const conflicts = await queryOne(
       `SELECT COUNT(*) as count
        FROM bookings b
-       LEFT JOIN vehicle_assignments va ON va.booking_id = b.id
        WHERE b.tour_date = $1
        AND b.id != $2
        AND b.status NOT IN ('cancelled', 'completed')
        AND (
          b.driver_id = $3
-         OR va.vehicle_id = $4
+         OR b.vehicle_id = $4
        )
        AND (
          (b.start_time, b.end_time) OVERLAPS ($5::time, $6::time)
@@ -106,41 +105,19 @@ async function handleAssignment(
       throw new BadRequestError('Driver or vehicle has conflicting booking');
     }
 
-    // 5. Update booking with driver
+    // 5. Update booking with driver and vehicle
+    // bookings table has driver_id and vehicle_id columns directly
+    // (vehicle_assignments table is for time-card tracking, not booking assignment)
     await query(
-      `UPDATE bookings 
-       SET driver_id = $1, 
+      `UPDATE bookings
+       SET driver_id = $1,
+           vehicle_id = $2,
            status = CASE WHEN status = 'pending' THEN 'assigned' ELSE status END,
            updated_at = NOW()
-       WHERE id = $2`,
-      [driver_id, bookingId],
+       WHERE id = $3`,
+      [driver_id, vehicle_id, bookingId],
       client
     );
-
-    // 6. Create or update vehicle assignment
-    const existingAssignment = await queryOne(
-      `SELECT id FROM vehicle_assignments WHERE booking_id = $1`,
-      [bookingId],
-      client
-    );
-
-    if (existingAssignment) {
-      await query(
-        `UPDATE vehicle_assignments 
-         SET vehicle_id = $1, assigned_at = NOW()
-         WHERE booking_id = $2`,
-        [vehicle_id, bookingId],
-        client
-      );
-    } else {
-      await query(
-        `INSERT INTO vehicle_assignments (booking_id, vehicle_id, assigned_at)
-         VALUES ($1, $2, NOW())
-         RETURNING id`,
-        [bookingId, vehicle_id],
-        client
-      );
-    }
 
     return { booking, driver, vehicle };
   });

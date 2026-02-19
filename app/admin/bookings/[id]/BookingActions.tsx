@@ -108,10 +108,6 @@ export function BookingActions({ bookingId, bookingNumber, status, customerEmail
     }
   };
 
-  const handleViewItinerary = () => {
-    window.open(`/trip/${bookingNumber}`, '_blank');
-  };
-
   const handlePrint = () => {
     window.print();
   };
@@ -195,13 +191,6 @@ export function BookingActions({ bookingId, bookingNumber, status, customerEmail
           ) : (
             <>✉️ Send Reminder Email</>
           )}
-        </button>
-
-        <button
-          onClick={handleViewItinerary}
-          className="w-full border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-3 rounded-lg font-medium transition-colors"
-        >
-          📋 View Itinerary
         </button>
 
         <button
