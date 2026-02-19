@@ -296,11 +296,10 @@ export function withErrorHandling<T = unknown, P = Record<string, string>>(
       // Log unexpected errors
       logger.error('[ERROR] Unexpected error', { error });
 
-      // Return generic error for unknown errors (don't expose internal details)
+      // Surface actual error message — these are internal admin operations
+      // and the real error is critical for diagnosing issues
       const genericError = new ApiError(
-        process.env.NODE_ENV === 'development'
-          ? errorMessage
-          : 'Internal server error',
+        errorMessage || 'Internal server error',
         500
       );
 
@@ -348,6 +347,9 @@ interface DatabaseError {
 }
 
 function handleDatabaseError(error: DatabaseError): ApiError {
+  // Extract actual message for diagnostic purposes
+  const realMessage = hasMessage(error) ? (error as { message: string }).message : '';
+
   // PostgreSQL error codes
   switch (error.code) {
     case '23505': // Unique violation
@@ -363,10 +365,25 @@ function handleDatabaseError(error: DatabaseError): ApiError {
       return new BadRequestError('Invalid data format', 'INVALID_FORMAT');
 
     case '42P01': // Undefined table
-      return new ServiceUnavailableError('Database schema error', 'SCHEMA_ERROR');
+      return new ServiceUnavailableError(
+        `Database schema error: ${realMessage}`,
+        'SCHEMA_ERROR'
+      );
+
+    case '42703': // Undefined column
+      return new ServiceUnavailableError(
+        `Database schema error: ${realMessage}`,
+        'SCHEMA_ERROR'
+      );
 
     default:
-      return new ApiError('Database operation failed', 500, 'DATABASE_ERROR');
+      // Surface actual DB error message — these are internal admin operations
+      // and the real error is critical for diagnosing issues
+      return new ApiError(
+        `Database error: ${realMessage || 'operation failed'}`,
+        500,
+        'DATABASE_ERROR'
+      );
   }
 }
 

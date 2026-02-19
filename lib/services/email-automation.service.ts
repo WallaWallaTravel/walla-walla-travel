@@ -103,14 +103,6 @@ export async function sendBookingConfirmationEmail(bookingId: number): Promise<b
         ) VALUES ($1, $2, $3, $4, NOW(), 'sent')
       `, [bookingId, 'booking_confirmation', booking.customer_email, template.subject]);
 
-      // Track confirmation email timestamp on booking
-      await query(
-        `UPDATE bookings SET confirmation_email_sent_at = NOW(), updated_at = NOW() WHERE id = $1`,
-        [bookingId]
-      ).catch(err => {
-        logger.warn('[EmailAutomation] Could not update confirmation_email_sent_at', { error: err });
-      });
-
       // Log to CRM (async, non-blocking)
       crmSyncService.logEmailSent({
         customerEmail: booking.customer_email,
