@@ -234,6 +234,22 @@ describe('Schema-SQL Validation', () => {
     expect(errors).toEqual([]);
   });
 
+  it('should have zero column mismatches in the booking assign route', () => {
+    const errors = validateFiles(rootDir, [
+      'app/api/admin/bookings/[booking_id]/assign/route.ts',
+    ], schemaColumns);
+
+    expect(errors).toEqual([]);
+  });
+
+  it('should have zero column mismatches in the booking status route', () => {
+    const errors = validateFiles(rootDir, [
+      'app/api/admin/bookings/[booking_id]/status/route.ts',
+    ], schemaColumns);
+
+    expect(errors).toEqual([]);
+  });
+
   it('should have zero column mismatches in core booking service', () => {
     const errors = validateFiles(rootDir, [
       'lib/services/booking/core.service.ts',
