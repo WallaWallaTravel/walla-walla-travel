@@ -271,7 +271,7 @@ export const DEFAULT_CUSTOMER: CustomerInfo = {
   last_name: '',
   email: '',
   phone: '',
-  can_text: false,
+  can_text: true,
 };
 
 export const DEFAULT_TOUR: TourDetails = {
