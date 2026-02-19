@@ -283,10 +283,37 @@ export function withComplianceCheck<T = unknown, P = Record<string, string>>(
 
       // If trying to override and allowed
       if (isOverrideAttempt && canOverride && overrideReason) {
-        // Get session to log who is overriding
-        const session = await getServerSession();
+        // Log the override (non-blocking)
+        try {
+          const session = await getServerSession();
+          await complianceService.logComplianceCheck(
+            config.checkType,
+            request.nextUrl.pathname,
+            result,
+            {
+              driverId: entities.driverId,
+              vehicleId: entities.vehicleId,
+              bookingId: entities.bookingId,
+              tourDate: entities.tourDate,
+              triggeredBy: session?.userId ? parseInt(session.userId, 10) : undefined,
+              requestIp: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
+              userAgent: request.headers.get('user-agent') || undefined,
+              wasOverridden: true,
+              overriddenBy: session?.userId ? parseInt(session.userId, 10) : undefined,
+              overrideReason,
+            }
+          );
+        } catch (logError) {
+          logger.warn('[ComplianceCheck] Failed to log override', { error: logError });
+        }
 
-        // Log the override
+        // Allow the operation to proceed
+        return handler(request, context);
+      }
+
+      // Log the block (non-blocking)
+      try {
+        const session = await getSessionFromRequest(request);
         await complianceService.logComplianceCheck(
           config.checkType,
           request.nextUrl.pathname,
@@ -297,40 +324,13 @@ export function withComplianceCheck<T = unknown, P = Record<string, string>>(
             bookingId: entities.bookingId,
             tourDate: entities.tourDate,
             triggeredBy: session?.userId ? parseInt(session.userId, 10) : undefined,
-            requestIp:
-              request.headers.get('x-forwarded-for') ||
-              request.headers.get('x-real-ip') ||
-              undefined,
+            requestIp: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
             userAgent: request.headers.get('user-agent') || undefined,
-            wasOverridden: true,
-            overriddenBy: session?.userId ? parseInt(session.userId, 10) : undefined,
-            overrideReason,
           }
         );
-
-        // Allow the operation to proceed
-        return handler(request, context);
+      } catch (logError) {
+        logger.warn('[ComplianceCheck] Failed to log block', { error: logError });
       }
-
-      // Log the block
-      const session = await getSessionFromRequest(request);
-      await complianceService.logComplianceCheck(
-        config.checkType,
-        request.nextUrl.pathname,
-        result,
-        {
-          driverId: entities.driverId,
-          vehicleId: entities.vehicleId,
-          bookingId: entities.bookingId,
-          tourDate: entities.tourDate,
-          triggeredBy: session?.userId ? parseInt(session.userId, 10) : undefined,
-          requestIp:
-            request.headers.get('x-forwarded-for') ||
-            request.headers.get('x-real-ip') ||
-            undefined,
-          userAgent: request.headers.get('user-agent') || undefined,
-        }
-      );
 
       // Return blocked response
       const response: ComplianceBlockedResponse = {
@@ -353,21 +353,26 @@ export function withComplianceCheck<T = unknown, P = Record<string, string>>(
       return NextResponse.json(response, { status: 403 });
     }
 
-    // Compliance passed - log warnings if any
+    // Compliance passed - log warnings if any (non-blocking)
     if (result.allWarnings.length > 0) {
-      const session = await getSessionFromRequest(request);
-      await complianceService.logComplianceCheck(
-        config.checkType,
-        request.nextUrl.pathname,
-        result,
-        {
-          driverId: entities.driverId,
-          vehicleId: entities.vehicleId,
-          bookingId: entities.bookingId,
-          tourDate: entities.tourDate,
-          triggeredBy: session?.userId ? parseInt(session.userId, 10) : undefined,
-        }
-      );
+      try {
+        const session = await getSessionFromRequest(request);
+        await complianceService.logComplianceCheck(
+          config.checkType,
+          request.nextUrl.pathname,
+          result,
+          {
+            driverId: entities.driverId,
+            vehicleId: entities.vehicleId,
+            bookingId: entities.bookingId,
+            tourDate: entities.tourDate,
+            triggeredBy: session?.userId ? parseInt(session.userId, 10) : undefined,
+          }
+        );
+      } catch (logError) {
+        // Don't block the operation if audit logging fails
+        logger.warn('[ComplianceCheck] Failed to log compliance warnings', { error: logError });
+      }
     }
 
     // Proceed with the handler
