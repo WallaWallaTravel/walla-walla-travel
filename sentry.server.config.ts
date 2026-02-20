@@ -29,10 +29,7 @@ if (SENTRY_DSN) {
     debug: process.env.NODE_ENV === 'development',
 
     // Integrations for server-side monitoring
-    integrations: [
-      // Capture database queries
-      Sentry.prismaIntegration(),
-    ],
+    integrations: [],
 
     // Filter out noisy errors
     ignoreErrors: [

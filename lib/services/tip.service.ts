@@ -10,7 +10,7 @@ import { BaseService } from './base.service';
 import { getBrandStripeClient, getBrandStripePublishableKey } from '@/lib/stripe-brands';
 import type Stripe from 'stripe';
 
-// Lazy-load healthService to avoid pulling Prisma into serverless bundles
+// Lazy-load healthService to avoid circular imports in serverless bundles
 async function getHealthService() {
   const { healthService } = await import('@/lib/services/health.service');
   return healthService;

@@ -3,27 +3,16 @@
  *
  * Retries confirmation emails that failed to send (up to 3 attempts per email).
  * Processes up to 10 failed emails per run.
- *
- * For Vercel: Add to vercel.json with path "/api/cron/retry-emails"
- * Recommended schedule: every 15 minutes
- *
- * Security: Protected by CRON_SECRET environment variable
+ * Recommended schedule: every 15 minutes.
+ * Protected by CRON_SECRET (fail-closed).
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { retryFailedEmails } from '@/lib/services/email-automation.service';
-import { withErrorHandling, UnauthorizedError } from '@/lib/api/middleware/error-handler';
+import { withCronAuth } from '@/lib/api/middleware/cron-auth';
 import { logger } from '@/lib/logger';
 
-export const GET = withErrorHandling(async (request: NextRequest) => {
-  // Verify cron secret (for Vercel cron jobs)
-  const authHeader = request.headers.get('authorization');
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    throw new UnauthorizedError('Unauthorized');
-  }
-
+export const GET = withCronAuth(async (_request: NextRequest) => {
   const result = await retryFailedEmails();
 
   if (result.retried > 0) {

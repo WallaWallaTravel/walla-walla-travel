@@ -174,7 +174,7 @@ function ItineraryTab({
                     )}
                   </div>
                   <button
-                    onClick={() => removeStop(tripId, stop.id)}
+                    onClick={() => removeStop(shareCode, stop.id)}
                     className="text-stone-400 hover:text-red-500 transition-colors"
                   >
                     ✕
@@ -206,13 +206,13 @@ function ItineraryTab({
 // Guests Tab
 // ============================================================================
 
-function GuestsTab({ 
-  guests, 
-  tripId,
-  onAddGuest 
-}: { 
-  guests: TripGuest[]; 
-  tripId: number;
+function GuestsTab({
+  guests,
+  shareCode,
+  onAddGuest
+}: {
+  guests: TripGuest[];
+  shareCode: string;
   onAddGuest: () => void;
 }) {
   const removeGuest = useTripPlannerStore((state) => state.removeGuest);
@@ -275,7 +275,7 @@ function GuestsTab({
             {guest.rsvp_status}
           </span>
           <button
-            onClick={() => removeGuest(tripId, guest.id)}
+            onClick={() => removeGuest(shareCode, guest.id)}
             className="text-stone-400 hover:text-red-500 transition-colors"
           >
             ✕
@@ -414,11 +414,11 @@ function ShareTab({
 // Add Stop Modal
 // ============================================================================
 
-function AddStopModal({ 
-  tripId, 
-  onClose 
-}: { 
-  tripId: number; 
+function AddStopModal({
+  shareCode,
+  onClose
+}: {
+  shareCode: string;
   onClose: () => void;
 }) {
   const addStop = useTripPlannerStore((state) => state.addStop);
@@ -431,7 +431,7 @@ function AddStopModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await addStop(tripId, formData);
+    await addStop(shareCode, formData);
     onClose();
   };
 
@@ -516,11 +516,11 @@ function AddStopModal({
 // Add Guest Modal
 // ============================================================================
 
-function AddGuestModal({ 
-  tripId, 
-  onClose 
-}: { 
-  tripId: number; 
+function AddGuestModal({
+  shareCode,
+  onClose
+}: {
+  shareCode: string;
   onClose: () => void;
 }) {
   const addGuest = useTripPlannerStore((state) => state.addGuest);
@@ -532,7 +532,7 @@ function AddGuestModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await addGuest(tripId, formData);
+    await addGuest(shareCode, formData);
     onClose();
   };
 
@@ -810,7 +810,7 @@ export default function TripDetailPage() {
 
   const tripTypeIcons: Record<string, string> = {
     wine_tour: '🍷',
-    celebration: '🎉',
+    bachelorette: '🎉',
     corporate: '💼',
     wedding: '💒',
     anniversary: '❤️',
@@ -893,7 +893,7 @@ export default function TripDetailPage() {
               {activeTab === 'guests' && (
                 <GuestsTab
                   guests={guests}
-                  tripId={trip.id}
+                  shareCode={shareCode}
                   onAddGuest={() => setShowAddGuest(true)}
                 />
               )}
@@ -931,10 +931,10 @@ export default function TripDetailPage() {
 
       {/* Modals */}
       {showAddStop && (
-        <AddStopModal tripId={trip.id} onClose={() => setShowAddStop(false)} />
+        <AddStopModal shareCode={shareCode} onClose={() => setShowAddStop(false)} />
       )}
       {showAddGuest && (
-        <AddGuestModal tripId={trip.id} onClose={() => setShowAddGuest(false)} />
+        <AddGuestModal shareCode={shareCode} onClose={() => setShowAddGuest(false)} />
       )}
       {showHandoff && (
         <HandoffModal trip={trip} onClose={() => setShowHandoff(false)} />

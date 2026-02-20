@@ -4,7 +4,7 @@ import { query } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
 import { COMPANY_INFO } from '@/lib/config/company';
-import { withErrorHandling, UnauthorizedError, BadRequestError, ValidationError } from '@/lib/api/middleware/error-handler';
+import { withErrorHandling, BadRequestError, ValidationError } from '@/lib/api/middleware/error-handler';
 
 // Request body schema
 const SupervisorHelpSchema = z.object({
@@ -19,11 +19,7 @@ const SupervisorHelpSchema = z.object({
  * Refactored: Zod validation + structured logging + withErrorHandling
  */
 export const POST = withErrorHandling(async (request: NextRequest) => {
-  const authResult = await requireAuth();
-  if ('status' in authResult) {
-    throw new UnauthorizedError('Unauthorized');
-  }
-  const session = authResult;
+  const session = await requireAuth();
 
   // Parse and validate request body
   let rawBody: unknown;

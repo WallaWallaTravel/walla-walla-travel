@@ -164,10 +164,10 @@ class CrmSyncService extends BaseService {
     contact = await this.queryOne<CrmContact>(
       `INSERT INTO crm_contacts (
         email, name, phone, customer_id, contact_type, lifecycle_stage,
-        lead_temperature, source, source_detail
-      ) VALUES ($1, $2, $3, $4, 'individual', 'customer', 'warm', $5, $6)
+        lead_temperature, source, source_detail, brand_id
+      ) VALUES ($1, $2, $3, $4, 'individual', 'customer', 'warm', $5, $6, $7)
       RETURNING *`,
-      [data.email, data.name, data.phone, data.customerId, data.source || 'booking', data.sourceDetail]
+      [data.email, data.name, data.phone, data.customerId, data.source || 'booking', data.sourceDetail, null]
     );
 
     this.log('CRM contact created', { contactId: contact!.id });
@@ -229,10 +229,10 @@ class CrmSyncService extends BaseService {
       contact = await this.queryOne<CrmContact>(
         `INSERT INTO crm_contacts (
           email, name, phone, company, contact_type, lifecycle_stage,
-          lead_temperature, source, source_detail
-        ) VALUES ($1, $2, $3, $4, 'corporate', 'lead', 'hot', 'corporate_request', $5)
+          lead_temperature, source, source_detail, brand_id
+        ) VALUES ($1, $2, $3, $4, 'corporate', 'lead', 'hot', 'corporate_request', $5, $6)
         RETURNING *`,
-        [data.contactEmail, data.contactName, data.contactPhone, data.companyName, data.eventType]
+        [data.contactEmail, data.contactName, data.contactPhone, data.companyName, data.eventType, this.getBrandId(data.brand)]
       );
     } else {
       // Update contact to corporate if it was individual
@@ -271,8 +271,8 @@ class CrmSyncService extends BaseService {
     const deal = await this.queryOne<CrmDeal>(
       `INSERT INTO crm_deals (
         contact_id, stage_id, brand, title, description,
-        party_size, expected_tour_date, corporate_request_id
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        party_size, expected_tour_date, corporate_request_id, brand_id
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING *`,
       [
         contact!.id,
@@ -283,6 +283,7 @@ class CrmSyncService extends BaseService {
         data.partySize,
         tourDate,
         data.requestId,
+        this.getBrandId(brand),
       ]
     );
 
@@ -334,10 +335,10 @@ class CrmSyncService extends BaseService {
       contact = await this.queryOne<CrmContact>(
         `INSERT INTO crm_contacts (
           email, name, phone, contact_type, lifecycle_stage,
-          lead_temperature, source, source_detail
-        ) VALUES ($1, $2, $3, 'individual', 'lead', 'warm', 'consultation', $4)
+          lead_temperature, source, source_detail, brand_id
+        ) VALUES ($1, $2, $3, 'individual', 'lead', 'warm', 'consultation', $4, $5)
         RETURNING *`,
-        [data.ownerEmail, data.ownerName, data.ownerPhone, `Trip: ${data.tripTitle}`]
+        [data.ownerEmail, data.ownerName, data.ownerPhone, `Trip: ${data.tripTitle}`, this.getBrandId(data.brand)]
       );
     } else {
       // Update existing contact if they're still a lead
@@ -381,8 +382,8 @@ class CrmSyncService extends BaseService {
     deal = await this.queryOne<CrmDeal>(
       `INSERT INTO crm_deals (
         contact_id, stage_id, brand, title, description,
-        party_size, expected_tour_date, consultation_id
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        party_size, expected_tour_date, consultation_id, brand_id
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING *`,
       [
         contact!.id,
@@ -393,6 +394,7 @@ class CrmSyncService extends BaseService {
         data.partySize,
         tourDate,
         data.tripId,
+        this.getBrandId(brand),
       ]
     );
 
@@ -468,8 +470,8 @@ class CrmSyncService extends BaseService {
     deal = await this.queryOne<CrmDeal>(
       `INSERT INTO crm_deals (
         contact_id, stage_id, brand, title,
-        party_size, expected_tour_date, estimated_value, booking_id
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        party_size, expected_tour_date, estimated_value, booking_id, brand_id
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING *`,
       [
         contact.id,
@@ -480,6 +482,7 @@ class CrmSyncService extends BaseService {
         data.tourDate,
         data.totalAmount,
         data.bookingId,
+        this.getBrandId(brand),
       ]
     );
 
@@ -610,8 +613,8 @@ class CrmSyncService extends BaseService {
       contact = await this.queryOne<CrmContact>(
         `INSERT INTO crm_contacts (
           email, name, phone, company, contact_type, lifecycle_stage,
-          lead_temperature, source, source_detail
-        ) VALUES ($1, $2, $3, $4, $5, 'lead', 'warm', 'trip_proposal', $6)
+          lead_temperature, source, source_detail, brand_id
+        ) VALUES ($1, $2, $3, $4, $5, 'lead', 'warm', 'trip_proposal', $6, $7)
         RETURNING *`,
         [
           data.customerEmail,
@@ -620,6 +623,7 @@ class CrmSyncService extends BaseService {
           data.customerCompany || null,
           data.customerCompany ? 'corporate' : 'individual',
           `Proposal ${data.proposalNumber}`,
+          this.getBrandId(data.brand),
         ]
       );
     } else {
@@ -664,8 +668,8 @@ class CrmSyncService extends BaseService {
     deal = await this.queryOne<CrmDeal>(
       `INSERT INTO crm_deals (
         contact_id, stage_id, brand, title,
-        party_size, expected_tour_date, estimated_value, trip_proposal_id
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        party_size, expected_tour_date, estimated_value, trip_proposal_id, brand_id
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING *`,
       [
         contact.id,
@@ -676,6 +680,7 @@ class CrmSyncService extends BaseService {
         data.startDate,
         data.estimatedValue || null,
         data.proposalId,
+        this.getBrandId(brand),
       ]
     );
 
@@ -1099,6 +1104,15 @@ class CrmSyncService extends BaseService {
       refunded: 'Lost',
     };
     return statusMap[status] || 'New Inquiry';
+  }
+
+  private getBrandId(brand?: Brand | string): number {
+    const brandIdMap: Record<string, number> = {
+      'walla_walla_travel': 1,
+      'herding_cats': 2,
+      'nw_touring': 3,
+    };
+    return brandIdMap[brand || 'walla_walla_travel'] || 1;
   }
 
   private async getDefaultStageId(brand: Brand): Promise<number | null> {

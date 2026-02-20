@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { query } from '@/lib/db';
 import { logger } from '@/lib/logger';
 
 /**
@@ -20,16 +20,15 @@ export async function GET(
 
   try {
     // Look up winery by slug
-    const winery = await prisma.wineries.findUnique({
-      where: { slug },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        website: true,
-        is_active: true,
-      },
-    });
+    const wineryResult = await query(
+      `SELECT id, name, slug, website, is_active
+       FROM wineries
+       WHERE slug = $1
+       LIMIT 1`,
+      [slug]
+    );
+
+    const winery = wineryResult.rows[0];
 
     if (!winery) {
       logger.warn(`[Booking Redirect] Winery not found: ${slug}`);
@@ -50,23 +49,12 @@ export async function GET(
 
     // Log the click for analytics
     try {
-      await prisma.$executeRaw`
-        INSERT INTO booking_clicks (
-          winery_id,
-          winery_slug,
-          referrer,
-          user_agent,
-          ip_address,
-          created_at
-        ) VALUES (
-          ${winery.id},
-          ${winery.slug},
-          ${referrer},
-          ${userAgent},
-          ${ip},
-          NOW()
-        )
-      `;
+      await query(
+        `INSERT INTO booking_clicks (
+          winery_id, winery_slug, referrer, user_agent, ip_address, created_at
+        ) VALUES ($1, $2, $3, $4, $5, NOW())`,
+        [winery.id, winery.slug, referrer, userAgent, ip]
+      );
     } catch (logError) {
       // Don't block redirect if logging fails - table might not exist yet
       logger.warn(`[Booking Redirect] Failed to log click: ${logError}`);

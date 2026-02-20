@@ -18,11 +18,7 @@ interface BreakRequest {
 
 export const POST = withErrorHandling(async (request: NextRequest) => {
   // Check authentication
-  const authResult = await requireAuth();
-  if ('status' in authResult) {
-    return authResult;
-  }
-  const session = authResult;
+  const session = await requireAuth();
 
   logApiRequest('POST', '/api/workflow/breaks', session.userId);
 
@@ -151,11 +147,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
 
 export const GET = withErrorHandling(async (request: NextRequest) => {
   // Check authentication
-  const authResult = await requireAuth();
-  if ('status' in authResult) {
-    return authResult;
-  }
-  const session = authResult;
+  const session = await requireAuth();
 
   logApiRequest('GET', '/api/workflow/breaks', session.userId);
 

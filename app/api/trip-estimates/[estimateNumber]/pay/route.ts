@@ -4,12 +4,13 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { withErrorHandling, RouteContext } from '@/lib/api/middleware/error-handler';
 import { tripEstimateService } from '@/lib/services/trip-estimate.service';
 import { getBrandStripeClient, getBrandStripePublishableKey } from '@/lib/stripe-brands';
 import { z } from 'zod';
 
 interface RouteParams {
-  params: Promise<{ estimateNumber: string }>;
+  estimateNumber: string;
 }
 
 const PaymentRequestSchema = z.object({
@@ -21,62 +22,62 @@ const PaymentRequestSchema = z.object({
  * POST /api/trip-estimates/[estimateNumber]/pay
  * Create a Stripe payment intent for the deposit amount
  */
-export async function POST(request: NextRequest, context: RouteParams) {
-  const { estimateNumber } = await context.params;
+export const POST = withErrorHandling<unknown, RouteParams>(
+  async (request: NextRequest, context: RouteContext<RouteParams>) => {
+    const { estimateNumber } = await context.params;
 
-  if (!estimateNumber || !estimateNumber.startsWith('TE-')) {
-    return NextResponse.json(
-      { success: false, error: 'Invalid estimate number' },
-      { status: 400 }
-    );
-  }
-
-  const estimate = await tripEstimateService.getByNumber(estimateNumber);
-
-  if (!estimate) {
-    return NextResponse.json(
-      { success: false, error: 'Estimate not found' },
-      { status: 404 }
-    );
-  }
-
-  // Only allow payment for sent/viewed estimates
-  if (!['sent', 'viewed'].includes(estimate.status)) {
-    if (estimate.status === 'deposit_paid') {
+    if (!estimateNumber || !estimateNumber.startsWith('TE-')) {
       return NextResponse.json(
-        { success: false, error: 'Deposit has already been paid' },
+        { success: false, error: 'Invalid estimate number' },
         { status: 400 }
       );
     }
-    return NextResponse.json(
-      { success: false, error: 'Estimate not available for payment' },
-      { status: 400 }
-    );
-  }
 
-  if (!estimate.deposit_amount || estimate.deposit_amount <= 0) {
-    return NextResponse.json(
-      { success: false, error: 'No deposit amount set on this estimate' },
-      { status: 400 }
-    );
-  }
+    const estimate = await tripEstimateService.getByNumber(estimateNumber);
 
-  // Parse optional body
-  const body = await request.json().catch(() => ({}));
-  const parsed = PaymentRequestSchema.safeParse(body);
-  const customerEmail = parsed.success ? parsed.data.customer_email : undefined;
-  const customerName = parsed.success ? parsed.data.customer_name : undefined;
+    if (!estimate) {
+      return NextResponse.json(
+        { success: false, error: 'Estimate not found' },
+        { status: 404 }
+      );
+    }
 
-  // Get brand-specific Stripe client (falls back to default/NW Touring if no brand)
-  const stripe = getBrandStripeClient(estimate.brand_id ?? undefined);
-  if (!stripe) {
-    return NextResponse.json(
-      { success: false, error: 'Payment service not configured' },
-      { status: 503 }
-    );
-  }
+    // Only allow payment for sent/viewed estimates
+    if (!['sent', 'viewed'].includes(estimate.status)) {
+      if (estimate.status === 'deposit_paid') {
+        return NextResponse.json(
+          { success: false, error: 'Deposit has already been paid' },
+          { status: 400 }
+        );
+      }
+      return NextResponse.json(
+        { success: false, error: 'Estimate not available for payment' },
+        { status: 400 }
+      );
+    }
 
-  try {
+    if (!estimate.deposit_amount || estimate.deposit_amount <= 0) {
+      return NextResponse.json(
+        { success: false, error: 'No deposit amount set on this estimate' },
+        { status: 400 }
+      );
+    }
+
+    // Parse optional body
+    const body = await request.json().catch(() => ({}));
+    const parsed = PaymentRequestSchema.safeParse(body);
+    const customerEmail = parsed.success ? parsed.data.customer_email : undefined;
+    const customerName = parsed.success ? parsed.data.customer_name : undefined;
+
+    // Get brand-specific Stripe client (falls back to default/NW Touring if no brand)
+    const stripe = getBrandStripeClient(estimate.brand_id ?? undefined);
+    if (!stripe) {
+      return NextResponse.json(
+        { success: false, error: 'Payment service not configured' },
+        { status: 503 }
+      );
+    }
+
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(estimate.deposit_amount * 100), // Convert to cents
       currency: 'usd',
@@ -104,12 +105,5 @@ export async function POST(request: NextRequest, context: RouteParams) {
         publishable_key: getBrandStripePublishableKey(estimate.brand_id ?? undefined),
       },
     });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Payment processing failed';
-    console.error('Stripe payment intent error:', error);
-    return NextResponse.json(
-      { success: false, error: { message, statusCode: 500 } },
-      { status: 500 }
-    );
   }
-}
+);

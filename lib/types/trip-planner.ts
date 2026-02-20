@@ -2,7 +2,7 @@
 
 export type TripType =
   | 'wine_tour'
-  | 'celebration'
+  | 'bachelorette'
   | 'corporate'
   | 'wedding'
   | 'anniversary'

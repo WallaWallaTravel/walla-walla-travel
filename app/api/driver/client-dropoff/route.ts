@@ -26,9 +26,6 @@ const ClientDropoffSchema = z.object({
 export const POST = withErrorHandling(async (request: NextRequest) => {
   // Check authentication
   const authResult = await requireAuth();
-  if ('status' in authResult) {
-    return authResult;
-  }
 
   logApiRequest('POST', '/api/driver/client-dropoff', authResult.userId);
 
@@ -182,9 +179,6 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
 export const GET = withErrorHandling(async () => {
   // Check authentication
   const authResult = await requireAuth();
-  if ('status' in authResult) {
-    return authResult;
-  }
 
   const driverId = parseInt(authResult.userId);
 

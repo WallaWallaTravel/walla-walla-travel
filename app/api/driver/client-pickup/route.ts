@@ -26,9 +26,6 @@ const ClientPickupSchema = z.object({
 export const POST = withErrorHandling(async (request: NextRequest) => {
   // Check authentication
   const authResult = await requireAuth();
-  if ('status' in authResult) {
-    return authResult;
-  }
 
   logApiRequest('POST', '/api/driver/client-pickup', authResult.userId);
 
@@ -137,9 +134,6 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
 export const GET = withErrorHandling(async () => {
   // Check authentication
   const authResult = await requireAuth();
-  if ('status' in authResult) {
-    return authResult;
-  }
 
   const driverId = parseInt(authResult.userId);
 

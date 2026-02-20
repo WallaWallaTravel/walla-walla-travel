@@ -13,6 +13,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { query } from '@/lib/db'
 import { logger } from '@/lib/logger'
+import { withCronAuth } from '@/lib/api/middleware/cron-auth'
 
 interface TrendingTopic {
   topic: string
@@ -44,14 +45,7 @@ const currentSeason = () => {
   return 'Winter'
 }
 
-export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get('authorization')
-  const cronSecret = process.env.CRON_SECRET
-
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
+export const GET = withCronAuth(async (_request: NextRequest) => {
   logger.info('Starting trending topics detection cron')
 
   try {
@@ -201,6 +195,6 @@ Respond with ONLY a JSON array, no markdown formatting:
       timestamp: new Date().toISOString(),
     }, { status: 500 })
   }
-}
+})
 
 export const POST = GET

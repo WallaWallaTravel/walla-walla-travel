@@ -7,17 +7,24 @@
 import { NextRequest } from 'next/server';
 import { GET, OPTIONS } from '@/app/api/gpt/openapi/route';
 
+// Helper to call wrapped GET handler with required arguments
+function callGET() {
+  const request = new NextRequest('http://localhost:3000/api/gpt/openapi');
+  const context = { params: Promise.resolve({}) };
+  return GET(request, context);
+}
+
 describe('GET /api/gpt/openapi', () => {
   describe('OpenAPI spec structure', () => {
     it('should return valid OpenAPI 3.0 spec', async () => {
-      const response = await GET();
+      const response = await callGET();
       const data = await response.json();
 
-      expect(data.openapi).toBe('3.0.0');
+      expect(data.openapi).toBe('3.1.0');
     });
 
     it('should include API info', async () => {
-      const response = await GET();
+      const response = await callGET();
       const data = await response.json();
 
       expect(data.info).toBeDefined();
@@ -28,7 +35,7 @@ describe('GET /api/gpt/openapi', () => {
     });
 
     it('should include server URL', async () => {
-      const response = await GET();
+      const response = await callGET();
       const data = await response.json();
 
       expect(data.servers).toBeDefined();
@@ -39,7 +46,7 @@ describe('GET /api/gpt/openapi', () => {
 
   describe('paths definition', () => {
     it('should define /search-wineries endpoint', async () => {
-      const response = await GET();
+      const response = await callGET();
       const data = await response.json();
 
       expect(data.paths['/search-wineries']).toBeDefined();
@@ -48,7 +55,7 @@ describe('GET /api/gpt/openapi', () => {
     });
 
     it('should define /check-availability endpoint', async () => {
-      const response = await GET();
+      const response = await callGET();
       const data = await response.json();
 
       expect(data.paths['/check-availability']).toBeDefined();
@@ -57,7 +64,7 @@ describe('GET /api/gpt/openapi', () => {
     });
 
     it('should define /get-recommendations endpoint', async () => {
-      const response = await GET();
+      const response = await callGET();
       const data = await response.json();
 
       expect(data.paths['/get-recommendations']).toBeDefined();
@@ -66,7 +73,7 @@ describe('GET /api/gpt/openapi', () => {
     });
 
     it('should define /booking-status endpoint', async () => {
-      const response = await GET();
+      const response = await callGET();
       const data = await response.json();
 
       expect(data.paths['/booking-status']).toBeDefined();
@@ -75,7 +82,7 @@ describe('GET /api/gpt/openapi', () => {
     });
 
     it('should define /create-inquiry endpoint', async () => {
-      const response = await GET();
+      const response = await callGET();
       const data = await response.json();
 
       expect(data.paths['/create-inquiry']).toBeDefined();
@@ -86,7 +93,7 @@ describe('GET /api/gpt/openapi', () => {
 
   describe('parameters', () => {
     it('should define parameters for search-wineries', async () => {
-      const response = await GET();
+      const response = await callGET();
       const data = await response.json();
 
       const params = data.paths['/search-wineries'].get.parameters;
@@ -102,7 +109,7 @@ describe('GET /api/gpt/openapi', () => {
     });
 
     it('should define required parameters for check-availability', async () => {
-      const response = await GET();
+      const response = await callGET();
       const data = await response.json();
 
       const params = data.paths['/check-availability'].get.parameters;
@@ -114,7 +121,7 @@ describe('GET /api/gpt/openapi', () => {
     });
 
     it('should define requestBody for get-recommendations', async () => {
-      const response = await GET();
+      const response = await callGET();
       const data = await response.json();
 
       const endpoint = data.paths['/get-recommendations'].post;
@@ -124,7 +131,7 @@ describe('GET /api/gpt/openapi', () => {
     });
 
     it('should define required fields for create-inquiry', async () => {
-      const response = await GET();
+      const response = await callGET();
       const data = await response.json();
 
       const schema = data.paths['/create-inquiry'].post.requestBody.content['application/json'].schema;
@@ -137,21 +144,21 @@ describe('GET /api/gpt/openapi', () => {
 
   describe('responses', () => {
     it('should define 200 response for search-wineries', async () => {
-      const response = await GET();
+      const response = await callGET();
       const data = await response.json();
 
       expect(data.paths['/search-wineries'].get.responses['200']).toBeDefined();
     });
 
     it('should define 404 response for booking-status', async () => {
-      const response = await GET();
+      const response = await callGET();
       const data = await response.json();
 
       expect(data.paths['/booking-status'].get.responses['404']).toBeDefined();
     });
 
     it('should define 201 response for create-inquiry', async () => {
-      const response = await GET();
+      const response = await callGET();
       const data = await response.json();
 
       expect(data.paths['/create-inquiry'].post.responses['201']).toBeDefined();
@@ -160,7 +167,7 @@ describe('GET /api/gpt/openapi', () => {
 
   describe('components', () => {
     it('should define Winery schema', async () => {
-      const response = await GET();
+      const response = await callGET();
       const data = await response.json();
 
       expect(data.components.schemas.Winery).toBeDefined();
@@ -170,7 +177,7 @@ describe('GET /api/gpt/openapi', () => {
     });
 
     it('should define TourOption schema', async () => {
-      const response = await GET();
+      const response = await callGET();
       const data = await response.json();
 
       expect(data.components.schemas.TourOption).toBeDefined();
@@ -179,7 +186,7 @@ describe('GET /api/gpt/openapi', () => {
     });
 
     it('should define WineryRecommendation schema', async () => {
-      const response = await GET();
+      const response = await callGET();
       const data = await response.json();
 
       expect(data.components.schemas.WineryRecommendation).toBeDefined();
@@ -187,7 +194,7 @@ describe('GET /api/gpt/openapi', () => {
     });
 
     it('should define BookingStatus schema', async () => {
-      const response = await GET();
+      const response = await callGET();
       const data = await response.json();
 
       expect(data.components.schemas.BookingStatus).toBeDefined();
@@ -198,7 +205,7 @@ describe('GET /api/gpt/openapi', () => {
 
   describe('CORS headers', () => {
     it('should include CORS headers in response', async () => {
-      const response = await GET();
+      const response = await callGET();
 
       expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*');
       expect(response.headers.get('Access-Control-Allow-Methods')).toContain('GET');
@@ -217,7 +224,7 @@ describe('GET /api/gpt/openapi', () => {
 
   describe('content type', () => {
     it('should return application/json content type', async () => {
-      const response = await GET();
+      const response = await callGET();
 
       expect(response.headers.get('Content-Type')).toBe('application/json');
     });

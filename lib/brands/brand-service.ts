@@ -44,8 +44,8 @@ export interface Brand {
 export async function getBrandByCode(code: string): Promise<Brand | null> {
   try {
     const result = await query(
-      'SELECT * FROM brands WHERE brand_code = $1 AND active = true',
-      [code.toUpperCase()]
+      'SELECT * FROM brands WHERE LOWER(brand_code) = LOWER($1) AND active = true',
+      [code]
     );
     
     return result.rows[0] || null;

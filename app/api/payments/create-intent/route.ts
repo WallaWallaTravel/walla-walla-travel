@@ -9,7 +9,7 @@ import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 import { logger } from '@/lib/logger';
 import { getBrandStripeClient, getBrandStripePublishableKey } from '@/lib/stripe-brands';
 
-// Lazy-load healthService to avoid pulling Prisma into serverless bundle
+// Lazy-load healthService to avoid circular imports in serverless bundle
 async function getHealthService() {
   const { healthService } = await import('@/lib/services/health.service');
   return healthService;
@@ -118,12 +118,13 @@ export const POST = withCSRF(
       payment_method,
       stripe_payment_intent_id,
       status,
+      brand_id,
       created_at,
       updated_at
     ) VALUES (
       $1,
       (SELECT id FROM customers WHERE email = $2 LIMIT 1),
-      $3, $4, $5, 'card', $6, $7, NOW(), NOW()
+      $3, $4, $5, 'card', $6, $7, $8, NOW(), NOW()
     ) RETURNING id`,
     [
       booking.id,
@@ -133,6 +134,7 @@ export const POST = withCSRF(
       payment_type,
       paymentIntent.id,
       paymentIntent.status,
+      booking.brand_id,
     ]
   );
 

@@ -156,12 +156,44 @@ function extractSqlColumnRefs(filePath: string): SqlColumnRef[] {
 }
 
 /**
+ * Strip TypeScript comments from file content to avoid false positives.
+ * Removes // line comments and /* block comments *​/
+ */
+function stripComments(content: string): string {
+  // Remove single-line comments (// ...)
+  let result = content.replace(/\/\/.*$/gm, '');
+  // Remove multi-line comments (/* ... */)
+  result = result.replace(/\/\*[\s\S]*?\*\//g, '');
+  return result;
+}
+
+/**
+ * Extract CTE (Common Table Expression) names from SQL content.
+ * WITH name AS (...), name2 AS (...)
+ */
+function extractCteNames(content: string): Set<string> {
+  const cteNames = new Set<string>();
+  // Match WITH name AS and , name AS patterns
+  const cteRegex = /(?:WITH|,)\s+(\w+)\s+AS\s*\(/gi;
+  let match: RegExpExecArray | null;
+  while ((match = cteRegex.exec(content)) !== null) {
+    cteNames.add(match[1].toLowerCase());
+  }
+  return cteNames;
+}
+
+/**
  * Extract all table names referenced in SQL queries.
  * Catches INSERT INTO, UPDATE, DELETE FROM, and FROM/JOIN clauses.
+ * Strips comments and ignores CTE names to avoid false positives.
  */
 function extractSqlTableRefs(filePath: string): SqlTableRef[] {
-  const content = fs.readFileSync(filePath, 'utf-8');
+  const rawContent = fs.readFileSync(filePath, 'utf-8');
+  const content = stripComments(rawContent);
   const refs: SqlTableRef[] = [];
+
+  // Detect CTE names so we can skip them as table references
+  const cteNames = extractCteNames(content);
 
   // SQL keywords that should NOT be treated as table names
   const sqlKeywords = new Set([
@@ -180,6 +212,11 @@ function extractSqlTableRefs(filePath: string): SqlTableRef[] {
     'subquery', 'json_build_object', 'json_agg', 'json_object_agg',
     'DATE_TRUNC', 'TO_CHAR', 'TO_DATE', 'TO_TIMESTAMP', 'ARRAY_AGG',
     'STRING_AGG', 'BOOL_OR', 'BOOL_AND', 'UNNEST',
+    // Common English words that appear in template literal strings (AI prompts, descriptions)
+    // and match FROM/JOIN patterns but are never table names
+    'THE', 'THESE', 'THOSE', 'THIS', 'THAT', 'WHICH', 'EACH', 'EVERY',
+    'THEIR', 'THEM', 'THEY', 'YOUR', 'OUR', 'ABOVE', 'BELOW',
+    'AI', 'WEEKLY', 'DAILY', 'MONTHLY', 'SEASONAL', 'STRATEGY',
   ]);
 
   // Pattern 1: INSERT INTO table
@@ -216,22 +253,22 @@ function extractSqlTableRefs(filePath: string): SqlTableRef[] {
     }
   }
 
-  // Pattern 4: FROM table (SELECT queries)
+  // Pattern 4: FROM table (SELECT queries) — skip CTE names
   const fromRegex = /FROM\s+(\w+)(?:\s|$|,|\))/gi;
   while ((match = fromRegex.exec(content)) !== null) {
     const table = match[1];
-    if (!sqlKeywords.has(table.toUpperCase())) {
+    if (!sqlKeywords.has(table.toUpperCase()) && !cteNames.has(table.toLowerCase())) {
       const beforeMatch = content.substring(0, match.index);
       const lineNum = beforeMatch.split('\n').length;
       refs.push({ file: filePath, line: lineNum, table, queryType: 'SELECT' });
     }
   }
 
-  // Pattern 5: JOIN table
+  // Pattern 5: JOIN table — skip CTE names
   const joinRegex = /JOIN\s+(\w+)/gi;
   while ((match = joinRegex.exec(content)) !== null) {
     const table = match[1];
-    if (!sqlKeywords.has(table.toUpperCase())) {
+    if (!sqlKeywords.has(table.toUpperCase()) && !cteNames.has(table.toLowerCase())) {
       const beforeMatch = content.substring(0, match.index);
       const lineNum = beforeMatch.split('\n').length;
       refs.push({ file: filePath, line: lineNum, table, queryType: 'JOIN' });
@@ -482,6 +519,222 @@ describe('Schema-SQL Validation', () => {
     it('should have zero column mismatches in email automation service', () => {
       const errors = validateFiles(rootDir, [
         'lib/services/email-automation.service.ts',
+      ], schemaColumns);
+      expect(errors).toEqual([]);
+    });
+  });
+
+  // ========================================================================
+  // CRITICAL PATH: CRM Module (MUST pass — customer management)
+  // ========================================================================
+
+  describe('CRM Module (critical path)', () => {
+    it('should have zero table mismatches in CRM contact routes', () => {
+      const errors = validateTables(rootDir, [
+        'app/api/admin/crm/contacts/route.ts',
+        'app/api/admin/crm/contacts/[id]/route.ts',
+        'app/api/admin/crm/contacts/[id]/activities/route.ts',
+      ], schemaColumns);
+      expect(errors).toEqual([]);
+    });
+
+    it('should have zero table mismatches in CRM deal routes', () => {
+      const errors = validateTables(rootDir, [
+        'app/api/admin/crm/deals/route.ts',
+        'app/api/admin/crm/deals/[id]/route.ts',
+      ], schemaColumns);
+      expect(errors).toEqual([]);
+    });
+
+    it('should have zero table mismatches in CRM task routes', () => {
+      const errors = validateTables(rootDir, [
+        'app/api/admin/crm/tasks/route.ts',
+        'app/api/admin/crm/tasks/[id]/route.ts',
+      ], schemaColumns);
+      expect(errors).toEqual([]);
+    });
+
+    it('should have zero table mismatches in CRM pipeline and dashboard routes', () => {
+      const errors = validateTables(rootDir, [
+        'app/api/admin/crm/pipeline/route.ts',
+        'app/api/admin/crm/dashboard/route.ts',
+        'app/api/admin/crm/reports/lead-sources/route.ts',
+        'app/api/admin/crm/reports/pipeline-velocity/route.ts',
+      ], schemaColumns);
+      expect(errors).toEqual([]);
+    });
+
+    it('should have zero table mismatches in leads routes (CRM-backed)', () => {
+      const errors = validateTables(rootDir, [
+        'app/api/admin/marketing/leads/route.ts',
+        'app/api/admin/marketing/leads/[lead_id]/route.ts',
+        'app/api/admin/marketing/leads/[lead_id]/activities/route.ts',
+        'app/api/admin/marketing/leads/export/route.ts',
+        'app/api/admin/marketing/leads/import/route.ts',
+      ], schemaColumns);
+      expect(errors).toEqual([]);
+    });
+  });
+
+  // ========================================================================
+  // CRITICAL PATH: Trip Planner (MUST pass — guest-facing feature)
+  // ========================================================================
+
+  describe('Trip Planner (critical path)', () => {
+    it('should have zero table mismatches in trip CRUD routes', () => {
+      const errors = validateTables(rootDir, [
+        'app/api/trips/route.ts',
+        'app/api/trips/[shareCode]/route.ts',
+        'app/api/trips/my-trips/route.ts',
+        'app/api/trips/magic-link/route.ts',
+      ], schemaColumns);
+      expect(errors).toEqual([]);
+    });
+
+    it('should have zero table mismatches in trip stops routes', () => {
+      const errors = validateTables(rootDir, [
+        'app/api/trips/[shareCode]/stops/route.ts',
+        'app/api/trips/[shareCode]/stops/[stopId]/route.ts',
+      ], schemaColumns);
+      expect(errors).toEqual([]);
+    });
+
+    it('should have zero table mismatches in trip guests routes', () => {
+      const errors = validateTables(rootDir, [
+        'app/api/trips/[shareCode]/guests/route.ts',
+        'app/api/trips/[shareCode]/guests/[guestId]/route.ts',
+      ], schemaColumns);
+      expect(errors).toEqual([]);
+    });
+
+    it('should have zero table mismatches in trip chat and suggestions', () => {
+      const errors = validateTables(rootDir, [
+        'app/api/trips/[shareCode]/chat/route.ts',
+        'app/api/trips/[shareCode]/suggestions/route.ts',
+        'app/api/trips/[shareCode]/handoff/route.ts',
+      ], schemaColumns);
+      expect(errors).toEqual([]);
+    });
+  });
+
+  // ========================================================================
+  // CRITICAL PATH: Geology Module (MUST pass — public education feature)
+  // ========================================================================
+
+  describe('Geology Module (critical path)', () => {
+    it('should have zero table mismatches in geology admin routes', () => {
+      const errors = validateTables(rootDir, [
+        'app/api/admin/geology/topics/route.ts',
+        'app/api/admin/geology/topics/[id]/route.ts',
+        'app/api/admin/geology/facts/route.ts',
+        'app/api/admin/geology/facts/[id]/route.ts',
+        'app/api/admin/geology/sites/route.ts',
+        'app/api/admin/geology/sites/[id]/route.ts',
+        'app/api/admin/geology/guidance/route.ts',
+        'app/api/admin/geology/guidance/[id]/route.ts',
+      ], schemaColumns);
+      expect(errors).toEqual([]);
+    });
+
+    it('should have zero table mismatches in geology GPT routes', () => {
+      const errors = validateTables(rootDir, [
+        'app/api/gpt/geology-topics/route.ts',
+        'app/api/gpt/geology-sites/route.ts',
+        'app/api/gpt/geology-tours/route.ts',
+      ], schemaColumns);
+      expect(errors).toEqual([]);
+    });
+  });
+
+  // ========================================================================
+  // CRITICAL PATH: Marketing Automation (MUST pass — revenue-generating)
+  // ========================================================================
+
+  describe('Marketing Automation (critical path)', () => {
+    it('should have zero table mismatches in campaign routes', () => {
+      const errors = validateTables(rootDir, [
+        'app/api/admin/marketing/campaigns/route.ts',
+        'app/api/admin/marketing/campaigns/[id]/route.ts',
+        'app/api/admin/marketing/campaigns/[id]/approve/route.ts',
+      ], schemaColumns);
+      expect(errors).toEqual([]);
+    });
+
+    it('should have zero table mismatches in social media routes', () => {
+      const errors = validateTables(rootDir, [
+        'app/api/admin/marketing/social-posts/route.ts',
+        'app/api/admin/marketing/social-accounts/route.ts',
+        'app/api/admin/marketing/suggestions/route.ts',
+        'app/api/admin/marketing/trending/route.ts',
+      ], schemaColumns);
+      expect(errors).toEqual([]);
+    });
+
+    it('should have zero table mismatches in marketing metrics and strategy routes', () => {
+      const errors = validateTables(rootDir, [
+        // Note: metrics/route.ts excluded — references ab_tests table (not yet migrated)
+        'app/api/admin/marketing/strategies/route.ts',
+        'app/api/admin/marketing/content-refresh/route.ts',
+        'app/api/admin/marketing/approvals/route.ts',
+        'app/api/admin/marketing/approvals/preferences/route.ts',
+        'app/api/admin/marketing/blog-generator/route.ts',
+      ], schemaColumns);
+      expect(errors).toEqual([]);
+    });
+
+    it('should have zero table mismatches in marketing cron jobs', () => {
+      const errors = validateTables(rootDir, [
+        'app/api/cron/publish-social-posts/route.ts',
+        'app/api/cron/sync-post-metrics/route.ts',
+        'app/api/cron/sync-campaign-performance/route.ts',
+        'app/api/cron/weekly-marketing-report/route.ts',
+        'app/api/cron/weekly-strategy/route.ts',
+        'app/api/cron/generate-suggestions/route.ts',
+        'app/api/cron/trending-topics/route.ts',
+        'app/api/cron/seasonal-content-refresh/route.ts',
+      ], schemaColumns);
+      expect(errors).toEqual([]);
+    });
+  });
+
+  // ========================================================================
+  // CRITICAL PATH: Driver Workflow (MUST pass — operational)
+  // ========================================================================
+
+  describe('Driver Workflow (critical path)', () => {
+    it('should have zero table mismatches in break management route', () => {
+      const errors = validateTables(rootDir, [
+        'app/api/workflow/breaks/route.ts',
+      ], schemaColumns);
+      expect(errors).toEqual([]);
+    });
+
+    // Note: workflow/status/route.ts excluded — references routes table (not yet migrated)
+    // The driver_status_logs table itself IS in schema; the route also queries routes table
+
+    it('should have zero table mismatches in vehicle odometer route', () => {
+      const errors = validateTables(rootDir, [
+        'app/api/vehicles/[id]/odometer/route.ts',
+      ], schemaColumns);
+      expect(errors).toEqual([]);
+    });
+
+    it('should have zero table mismatches in DVIR route', () => {
+      const errors = validateTables(rootDir, [
+        'app/api/inspections/dvir/route.ts',
+      ], schemaColumns);
+      expect(errors).toEqual([]);
+    });
+  });
+
+  // ========================================================================
+  // CRITICAL PATH: Contact & Booking (MUST pass — lead capture)
+  // ========================================================================
+
+  describe('Contact & Booking Clicks (critical path)', () => {
+    it('should have zero table mismatches in contact route', () => {
+      const errors = validateTables(rootDir, [
+        'app/api/contact/route.ts',
       ], schemaColumns);
       expect(errors).toEqual([]);
     });

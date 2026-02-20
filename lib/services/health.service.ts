@@ -1,6 +1,6 @@
 import { logger } from '@/lib/logger';
 import { circuitBreaker as redisCircuitBreaker, isRedisAvailable, redis } from '@/lib/redis';
-import { prisma } from '@/lib/prisma';
+import { query as dbQuery } from '@/lib/db';
 
 /**
  * Service Health Monitoring with Redis Persistence
@@ -423,7 +423,7 @@ export async function probeDatabaseHealth(): Promise<{
 
   try {
     // Execute a lightweight query
-    await prisma.$queryRaw`SELECT 1 as health_check`;
+    await dbQuery('SELECT 1 as health_check');
     const latencyMs = Date.now() - startTime;
     await recordServiceSuccess('database');
     return { available: true, latencyMs };

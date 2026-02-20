@@ -48,7 +48,7 @@ export function AddToTripButton({
     setIsAdding(true);
 
     try {
-      await addStop(trip.id, {
+      await addStop(trip.share_code, {
         name: winery.name,
         winery_id: winery.id,
         stop_type: 'winery',
@@ -78,7 +78,7 @@ export function AddToTripButton({
       });
 
       if (newTrip) {
-        await addStop(newTrip.id, {
+        await addStop(newTrip.share_code, {
           name: winery.name,
           winery_id: winery.id,
           stop_type: 'winery',
@@ -351,7 +351,7 @@ export function AddToTripButtonCompact({ winery }: { winery: WineryInfo }) {
     setIsAdding(true);
 
     try {
-      await addStop(trip.id, {
+      await addStop(trip.share_code, {
         name: winery.name,
         winery_id: winery.id,
         stop_type: 'winery',
@@ -379,7 +379,7 @@ export function AddToTripButtonCompact({ winery }: { winery: WineryInfo }) {
       });
 
       if (newTrip) {
-        await addStop(newTrip.id, {
+        await addStop(newTrip.share_code, {
           name: winery.name,
           winery_id: winery.id,
           stop_type: 'winery',

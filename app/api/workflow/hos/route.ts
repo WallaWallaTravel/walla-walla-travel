@@ -10,11 +10,7 @@ import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 
 export const GET = withErrorHandling(async (request: NextRequest) => {
   // Check authentication
-  const authResult = await requireAuth();
-  if ('status' in authResult) {
-    return authResult;
-  }
-  const session = authResult;
+  const session = await requireAuth();
 
   logApiRequest('GET', '/api/workflow/hos', session.userId);
 

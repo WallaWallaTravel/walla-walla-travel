@@ -13,6 +13,7 @@ import { query } from '@/lib/db'
 import { bufferService } from '@/lib/services/buffer.service'
 import { socialIntelligenceService } from '@/lib/services/social-intelligence.service'
 import { logger } from '@/lib/logger'
+import { withCronAuth } from '@/lib/api/middleware/cron-auth'
 
 interface PostToSync {
   id: number
@@ -23,15 +24,7 @@ interface PostToSync {
   connection_status: string
 }
 
-export async function GET(request: NextRequest) {
-  // Verify cron secret
-  const authHeader = request.headers.get('authorization')
-  const cronSecret = process.env.CRON_SECRET
-
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
+export const GET = withCronAuth(async (_request: NextRequest) => {
   logger.info('Starting post metrics sync cron')
 
   try {
@@ -146,7 +139,7 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
     }, { status: 500 })
   }
-}
+})
 
 // Also support POST for manual triggering
 export const POST = GET

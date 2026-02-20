@@ -2,21 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { competitorMonitoringService } from '@/lib/services/competitor-monitoring.service';
 import { logger } from '@/lib/logger';
+import { withCronAuth } from '@/lib/api/middleware/cron-auth';
 import type { ChangeType, Significance, ThreatLevel, MonitoringResult } from '@/types/competitors';
-
-// Verify the request is from Vercel Cron
-function verifyCronSecret(request: NextRequest): boolean {
-  const authHeader = request.headers.get('authorization');
-  if (!authHeader) return false;
-
-  const cronSecret = process.env.CRON_SECRET;
-  if (!cronSecret) {
-    // In development, allow without secret
-    return process.env.NODE_ENV === 'development';
-  }
-
-  return authHeader === `Bearer ${cronSecret}`;
-}
 
 // Simple HTML to text extraction
 function extractText(html: string): string {
@@ -307,71 +294,41 @@ function getRecommendedActions(changeType: ChangeType, threatLevel: ThreatLevel)
 }
 
 // POST handler for manual triggers and Vercel Cron
-export async function POST(request: NextRequest) {
-  if (!verifyCronSecret(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
+export const POST = withCronAuth(async (_request: NextRequest) => {
   const startTime = Date.now();
 
-  try {
-    logger.info('Starting competitor monitoring job');
+  logger.info('Starting competitor monitoring job');
 
-    const result = await monitorCompetitors();
+  const result = await monitorCompetitors();
 
-    const duration = Date.now() - startTime;
-    logger.info('Competitor monitoring job completed', {
-      duration: `${duration}ms`,
-      checked: result.checked,
-      changesDetected: result.changesDetected,
-      errors: result.errors.length,
-    });
+  const duration = Date.now() - startTime;
+  logger.info('Competitor monitoring job completed', {
+    duration: `${duration}ms`,
+    checked: result.checked,
+    changesDetected: result.changesDetected,
+    errors: result.errors.length,
+  });
 
-    return NextResponse.json({
-      success: true,
-      started_at: new Date(startTime).toISOString(),
-      completed_at: new Date().toISOString(),
-      duration_ms: duration,
-      competitors_checked: result.checked,
-      total_changes_detected: result.changesDetected,
-      results: result.results,
-      errors: result.errors,
-    });
-  } catch (error) {
-    logger.error('Competitor monitoring job failed', { error });
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : 'Monitoring job failed',
-      },
-      { status: 500 }
-    );
-  }
-}
+  return NextResponse.json({
+    success: true,
+    started_at: new Date(startTime).toISOString(),
+    completed_at: new Date().toISOString(),
+    duration_ms: duration,
+    competitors_checked: result.checked,
+    total_changes_detected: result.changesDetected,
+    results: result.results,
+    errors: result.errors,
+  });
+});
 
 // GET handler for health check
-export async function GET(request: NextRequest) {
-  if (!verifyCronSecret(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+export const GET = withCronAuth(async (_request: NextRequest) => {
+  const stats = await competitorMonitoringService.getStatistics();
 
-  try {
-    const stats = await competitorMonitoringService.getStatistics();
-
-    return NextResponse.json({
-      status: 'healthy',
-      last_check: stats.lastCheckAt,
-      active_competitors: stats.activeCompetitors,
-      unreviewed_changes: stats.unreviewedChanges,
-    });
-  } catch (error) {
-    return NextResponse.json(
-      {
-        status: 'unhealthy',
-        error: error instanceof Error ? error.message : 'Unknown error',
-      },
-      { status: 500 }
-    );
-  }
-}
+  return NextResponse.json({
+    status: 'healthy',
+    last_check: stats.lastCheckAt,
+    active_competitors: stats.activeCompetitors,
+    unreviewed_changes: stats.unreviewedChanges,
+  });
+});

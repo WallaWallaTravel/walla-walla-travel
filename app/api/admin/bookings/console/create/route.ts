@@ -15,7 +15,8 @@
  * - bookings.tour_type: exists, should be populated from request
  */
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 import { z } from 'zod';
 import { pool } from '@/lib/db';
 import { vehicleAvailabilityService } from '@/lib/services/vehicle-availability.service';
@@ -61,7 +62,7 @@ const CreateConsoleBookingSchema = z.object({
   }),
 });
 
-export async function POST(request: Request) {
+export const POST = withErrorHandling(async (request: NextRequest) => {
   const holdBlockIds: number[] = [];
 
   try {
@@ -311,4 +312,4 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
-}
+});

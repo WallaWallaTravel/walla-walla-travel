@@ -174,12 +174,20 @@ export class ExperienceRequestService extends BaseService {
 
     if (!contact) {
       // Create new contact as a lead
+      // Map experience brand codes to brand_id
+      const experienceBrandIdMap: Record<string, number> = {
+        'wwt': 1,   // walla_walla_travel
+        'hcwt': 2,  // herding_cats
+        'nwtc': 3,  // nw_touring
+      };
+      const contactBrandId = experienceBrandIdMap[request.brand] || 1;
+
       contact = await crmSyncService['queryOne']<{ id: number; email: string }>(
         `INSERT INTO crm_contacts (
           email, name, phone, contact_type, lifecycle_stage,
           lead_temperature, source, source_detail,
-          notes, created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, 'lead', 'warm', 'experience_request', $5, $6, NOW(), NOW())
+          notes, brand_id, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, 'lead', 'warm', 'experience_request', $5, $6, $7, NOW(), NOW())
         RETURNING id, email`,
         [
           request.contact_email,
@@ -188,6 +196,7 @@ export class ExperienceRequestService extends BaseService {
           request.experience_type === 'corporate' ? 'corporate' : 'individual',
           request.source,
           `Experience Request ${request.request_number}: ${request.party_size} guests for ${request.preferred_date}`,
+          contactBrandId,
         ]
       );
 

@@ -18,63 +18,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { runComplianceNotifications } from '@/lib/services/compliance-notification.service';
 import { logger } from '@/lib/logger';
+import { withCronAuth } from '@/lib/api/middleware/cron-auth';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // 60 seconds timeout for cron job
 
-export async function GET(request: NextRequest) {
-  // Verify cron secret or authorization
-  const cronSecret = request.headers.get('x-cron-secret');
-  const authHeader = request.headers.get('authorization');
-  const expectedSecret = process.env.CRON_SECRET;
+export const GET = withCronAuth(async (_request: NextRequest) => {
+  logger.info('Starting daily compliance notification run');
 
-  // Check for valid cron secret
-  if (cronSecret && cronSecret === expectedSecret) {
-    // Valid cron request
-  } else if (authHeader && authHeader.startsWith('Bearer ')) {
-    // Check for bearer token matching cron secret
-    const token = authHeader.replace('Bearer ', '');
-    if (token !== expectedSecret) {
-      logger.warn('Unauthorized cron access attempt', {
-        ip: request.headers.get('x-forwarded-for') || 'unknown',
-      });
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-  } else {
-    logger.warn('Missing cron authentication', {
-      ip: request.headers.get('x-forwarded-for') || 'unknown',
-    });
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const result = await runComplianceNotifications();
 
-  try {
-    logger.info('Starting daily compliance notification run');
+  logger.info('Compliance notification run completed', result);
 
-    const result = await runComplianceNotifications();
-
-    logger.info('Compliance notification run completed', result);
-
-    return NextResponse.json({
-      success: true,
-      message: 'Compliance check completed',
-      result,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    logger.error('Compliance cron job failed', { error });
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Compliance check failed',
-        timestamp: new Date().toISOString(),
-      },
-      { status: 500 }
-    );
-  }
-}
+  return NextResponse.json({
+    success: true,
+    message: 'Compliance check completed',
+    result,
+    timestamp: new Date().toISOString(),
+  });
+});
 
 // Also support POST for webhooks
-export async function POST(request: NextRequest) {
-  return GET(request);
-}
+export const POST = GET;

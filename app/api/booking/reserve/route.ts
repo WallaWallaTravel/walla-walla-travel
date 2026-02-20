@@ -147,9 +147,10 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
           payment_type,
           payment_method,
           status,
+          brand_id,
           created_at
-        ) VALUES ($1, $2, $3, 'deposit', 'card', 'pending', NOW())`,
-        [reservationId, customerId, data.depositAmount]
+        ) VALUES ($1, $2, $3, 'deposit', 'card', 'pending', $4, NOW())`,
+        [reservationId, customerId, data.depositAmount, data.brandId || 1]
       );
     }
 

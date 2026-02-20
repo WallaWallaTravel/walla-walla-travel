@@ -6,6 +6,7 @@
  */
 
 import { NextResponse } from 'next/server';
+import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 
 const OPENAPI_SPEC = {
   openapi: '3.1.0',
@@ -496,7 +497,7 @@ Walla Walla is one of the premier wine regions in the Pacific Northwest, known f
   }
 };
 
-export async function GET() {
+export const GET = withErrorHandling(async () => {
   return NextResponse.json(OPENAPI_SPEC, {
     headers: {
       'Content-Type': 'application/json',
@@ -505,7 +506,7 @@ export async function GET() {
       'Access-Control-Allow-Headers': 'Content-Type'
     }
   });
-}
+});
 
 export async function OPTIONS() {
   return new NextResponse(null, {

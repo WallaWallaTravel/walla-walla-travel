@@ -35,7 +35,7 @@ export default function MyFavoritesPage() {
       if (newTrip) {
         // Add all favorites as stops
         for (const fav of favorites) {
-          await addStop(newTrip.id, {
+          await addStop(newTrip.share_code, {
             name: fav.name,
             winery_id: fav.id,
             stop_type: 'winery',
@@ -45,7 +45,7 @@ export default function MyFavoritesPage() {
         }
 
         // Request handoff to WWT staff
-        await requestHandoff(newTrip.id,
+        await requestHandoff(newTrip.share_code,
           `Created from ${favorites.length} saved winer${favorites.length !== 1 ? 'ies' : 'y'}. Client would like planning assistance.`
         );
 

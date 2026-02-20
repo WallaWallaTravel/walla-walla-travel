@@ -11,7 +11,7 @@ async function verifyAdmin(request: NextRequest) {
   return session
 }
 
-// GET - Fetch activities for a lead
+// GET - Fetch activities for a lead (now from crm_activities)
 async function getHandler(
   request: NextRequest,
   { params }: { params: Promise<{ lead_id: string }> }
@@ -26,17 +26,17 @@ async function getHandler(
 
   const result = await query(`
     SELECT
-      la.*,
+      a.*,
       u.name as performed_by_name
-    FROM lead_activities la
-    LEFT JOIN users u ON la.performed_by = u.id
-    WHERE la.lead_id = $1
-    ORDER BY la.created_at DESC
+    FROM crm_activities a
+    LEFT JOIN users u ON a.performed_by = u.id
+    WHERE a.contact_id = $1
+    ORDER BY a.created_at DESC
     LIMIT $2 OFFSET $3
   `, [id, limit, offset])
 
   const countResult = await query(
-    'SELECT COUNT(*) FROM lead_activities WHERE lead_id = $1',
+    'SELECT COUNT(*) FROM crm_activities WHERE contact_id = $1',
     [id]
   )
 
@@ -48,7 +48,7 @@ async function getHandler(
   })
 }
 
-// POST - Log new activity
+// POST - Log new activity (now inserts into crm_activities)
 async function postHandler(
   request: NextRequest,
   { params }: { params: Promise<{ lead_id: string }> }
@@ -79,8 +79,8 @@ async function postHandler(
   }
 
   const result = await query(`
-    INSERT INTO lead_activities (
-      lead_id, activity_type, description, metadata, performed_by, created_at
+    INSERT INTO crm_activities (
+      contact_id, activity_type, description, metadata, performed_by, created_at
     ) VALUES ($1, $2, $3, $4, $5, NOW())
     RETURNING *
   `, [
@@ -91,12 +91,12 @@ async function postHandler(
     performed_by || null
   ])
 
-  // Update last_contact_at on the lead for certain activities
+  // Update last_contacted_at on the CRM contact for certain activities
   const contactActivities = ['email_sent', 'call_made', 'call_received', 'meeting']
   if (contactActivities.includes(activity_type)) {
     await query(`
-      UPDATE leads
-      SET last_contact_at = NOW(), updated_at = NOW()
+      UPDATE crm_contacts
+      SET last_contacted_at = NOW(), updated_at = NOW()
       WHERE id = $1
     `, [id])
   }

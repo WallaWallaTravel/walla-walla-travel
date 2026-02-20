@@ -9,7 +9,7 @@ import { getBrandEmailConfig } from '@/lib/email-brands';
 import { getBrandStripeClient } from '@/lib/stripe-brands';
 import { logger } from '@/lib/logger';
 
-// Lazy-load healthService to avoid pulling Prisma into serverless bundle
+// Lazy-load healthService to avoid circular imports in serverless bundle
 async function getHealthService() {
   const { healthService } = await import('@/lib/services/health.service');
   return healthService;

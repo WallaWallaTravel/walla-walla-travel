@@ -152,7 +152,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     'phone', 'company', 'contact_type', 'lifecycle_stage', 'lead_temperature',
     'source', 'source_detail', 'preferred_wineries', 'dietary_restrictions',
     'accessibility_needs', 'notes', 'email_marketing_consent', 'sms_marketing_consent',
-    'assigned_to'
+    'assigned_to', 'brand_id'
   ];
 
   for (const field of optionalFields) {

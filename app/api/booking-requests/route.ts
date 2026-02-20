@@ -203,6 +203,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       provider: data.provider,
       estimatedTotal: data.estimatedTotal,
       notes: data.notes,
+      brandId,
     }).catch((err) => {
       logger.error('Failed to sync booking request to CRM', { error: err, reservationNumber });
     });
@@ -438,6 +439,7 @@ interface SyncBookingRequestParams {
   provider: string;
   estimatedTotal: string;
   notes?: string;
+  brandId?: number;
 }
 
 async function syncBookingRequestToCrm(params: SyncBookingRequestParams): Promise<void> {
@@ -453,8 +455,8 @@ async function syncBookingRequestToCrm(params: SyncBookingRequestParams): Promis
       `INSERT INTO crm_contacts (
         email, name, phone, customer_id, contact_type, lifecycle_stage,
         lead_temperature, source, source_detail,
-        notes, created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, 'individual', 'lead', 'hot', 'booking_request', $5, $6, NOW(), NOW())
+        notes, brand_id, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, 'individual', 'lead', 'hot', 'booking_request', $5, $6, $7, NOW(), NOW())
       RETURNING id, email`,
       [
         params.customerEmail,
@@ -463,6 +465,7 @@ async function syncBookingRequestToCrm(params: SyncBookingRequestParams): Promis
         params.customerId,
         params.provider,
         `Booking Request ${params.reservationNumber}: ${params.tourType} for ${params.partySize} guests on ${params.startDate}`,
+        params.brandId || null,
       ]
     );
 

@@ -11,11 +11,7 @@ import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 
 export const GET = withErrorHandling(async (_request: NextRequest) => {
   // Check authentication
-  const authResult = await requireAuth();
-  if ('status' in authResult) {
-    return authResult;
-  }
-  const session = authResult;
+  const session = await requireAuth();
 
   logApiRequest('GET', '/api/workflow/status', session.userId);
 
@@ -133,11 +129,7 @@ export const GET = withErrorHandling(async (_request: NextRequest) => {
 
 export const PUT = withErrorHandling(async (request: NextRequest) => {
   // Check authentication
-  const authResult = await requireAuth();
-  if ('status' in authResult) {
-    return authResult;
-  }
-  const session = authResult;
+  const session = await requireAuth();
 
   logApiRequest('PUT', '/api/workflow/status', session.userId);
 

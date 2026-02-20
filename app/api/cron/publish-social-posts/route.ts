@@ -11,7 +11,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
 import { bufferService, BufferCreateUpdatePayload } from '@/lib/services/buffer.service'
-import { withErrorHandling, UnauthorizedError } from '@/lib/api/middleware/error-handler'
+import { withCronAuth } from '@/lib/api/middleware/cron-auth'
 import { logger } from '@/lib/logger'
 
 interface PostToPublish {
@@ -27,15 +27,7 @@ interface PostToPublish {
   connection_status: string | null
 }
 
-export const GET = withErrorHandling(async (request: NextRequest) => {
-  // Verify cron secret
-  const authHeader = request.headers.get('authorization')
-  const cronSecret = process.env.CRON_SECRET
-
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    throw new UnauthorizedError('Unauthorized')
-  }
-
+export const GET = withCronAuth(async (_request: NextRequest) => {
   logger.info('Starting social post publishing cron')
 
   // Find posts ready to publish

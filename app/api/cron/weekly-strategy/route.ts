@@ -14,6 +14,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
 import { socialIntelligenceService } from '@/lib/services/social-intelligence.service'
 import { logger } from '@/lib/logger'
+import { withCronAuth } from '@/lib/api/middleware/cron-auth'
 import Anthropic from '@anthropic-ai/sdk'
 
 // ---------- Types ----------
@@ -590,14 +591,7 @@ async function createSuggestionsFromStrategy(
 
 // ---------- Route Handlers ----------
 
-export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get('authorization')
-  const cronSecret = process.env.CRON_SECRET
-
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
+export const GET = withCronAuth(async (_request: NextRequest) => {
   logger.info('Starting weekly strategy generation')
 
   try {
@@ -715,6 +709,6 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
     }, { status: 500 })
   }
-}
+})
 
 export const POST = GET

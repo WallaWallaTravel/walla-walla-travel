@@ -134,7 +134,7 @@ export function TripAssistant({ shareCode, tripTitle, className = '' }: TripAssi
     if (!currentTrip) return;
 
     if (action.type === 'add_stop' && action.data) {
-      await addStop(currentTrip.id, {
+      await addStop(currentTrip.share_code, {
         name: action.data.name || 'New Stop',
         stop_type: action.data.stopType || 'winery',
         day_number: action.data.dayNumber || 1,

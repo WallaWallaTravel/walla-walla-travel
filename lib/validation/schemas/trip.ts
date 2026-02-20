@@ -6,7 +6,7 @@ import { z } from 'zod';
 
 export const tripTypeSchema = z.enum([
   'wine_tour',
-  'celebration',
+  'bachelorette',
   'corporate',
   'wedding',
   'anniversary',

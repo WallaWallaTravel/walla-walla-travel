@@ -23,7 +23,7 @@ function TripCard({ trip }: { trip: TripSummary }) {
 
   const tripTypeIcons: Record<string, string> = {
     wine_tour: '🍷',
-    celebration: '🎉',
+    bachelorette: '🎉',
     corporate: '💼',
     wedding: '💒',
     anniversary: '❤️',

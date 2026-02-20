@@ -4,7 +4,7 @@ import {
   requireAuth,
 } from '@/app/api/utils';
 import { logApiRequest } from '@/lib/logger';
-import { withErrorHandling, UnauthorizedError } from '@/lib/api/middleware/error-handler';
+import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 
 /**
  * Session verification endpoint
@@ -14,11 +14,7 @@ export const GET = withErrorHandling(async () => {
   logApiRequest('GET', '/api/auth/verify');
 
   // Check if user has valid session
-  const authResult = await requireAuth();
-  if ('status' in authResult) {
-    throw new UnauthorizedError('Session invalid or expired');
-  }
-  const session = authResult;
+  const session = await requireAuth();
 
   // Session is valid
   return successResponse({
@@ -36,11 +32,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   logApiRequest('POST', '/api/auth/verify');
 
   // Check if user has valid session
-  const authResult = await requireAuth();
-  if ('status' in authResult) {
-    throw new UnauthorizedError('Session invalid or expired');
-  }
-  const session = authResult;
+  const session = await requireAuth();
 
   // Session is valid
   return successResponse({

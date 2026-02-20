@@ -6,9 +6,10 @@
  */
 
 import { NextResponse } from 'next/server'
+import { withErrorHandling } from '@/lib/api/middleware/error-handler'
 import { bufferService } from '@/lib/services/buffer.service'
 
-export async function GET() {
+export const GET = withErrorHandling(async () => {
   try {
     // Construct the callback URL
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
@@ -28,4 +29,4 @@ export async function GET() {
 
     return NextResponse.redirect(settingsUrl)
   }
-}
+})

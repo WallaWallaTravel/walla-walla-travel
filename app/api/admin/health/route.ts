@@ -8,7 +8,7 @@ import {
   resetCircuitBreaker,
 } from '@/lib/services/health.service';
 import { redis } from '@/lib/redis';
-import { prisma } from '@/lib/prisma';
+import { query as dbQuery } from '@/lib/db';
 import { logger } from '@/lib/logger';
 
 /**
@@ -35,9 +35,8 @@ export const GET = withErrorHandling(async (_request: Request) => {
     // Get database pool statistics (if available)
     let dbPoolStats = null;
     try {
-      // Prisma doesn't expose pool metrics directly, but we can check connection
       const dbStart = Date.now();
-      await prisma.$queryRaw`SELECT 1`;
+      await dbQuery('SELECT 1');
       const dbLatency = Date.now() - dbStart;
       dbPoolStats = {
         connected: true,

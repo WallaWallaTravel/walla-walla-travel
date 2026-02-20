@@ -18,6 +18,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
 import { logger } from '@/lib/logger'
+import { withCronAuth } from '@/lib/api/middleware/cron-auth'
 import Anthropic from '@anthropic-ai/sdk'
 
 export const dynamic = 'force-dynamic'
@@ -47,26 +48,6 @@ interface ContentIssue {
   current_content: string
   suggested_update: string
   urgency: 'low' | 'medium' | 'high' | 'critical'
-}
-
-function verifyCronSecret(request: NextRequest): boolean {
-  const authHeader = request.headers.get('authorization')
-  const cronSecret = process.env.CRON_SECRET
-
-  if (!cronSecret) {
-    return process.env.NODE_ENV === 'development'
-  }
-
-  if (authHeader === `Bearer ${cronSecret}`) {
-    return true
-  }
-
-  const xCronSecret = request.headers.get('x-cron-secret')
-  if (xCronSecret === cronSecret) {
-    return true
-  }
-
-  return false
 }
 
 function extractText(html: string): string {
@@ -511,11 +492,7 @@ async function runSeasonalContentRefresh(): Promise<{
   }
 }
 
-export async function GET(request: NextRequest) {
-  if (!verifyCronSecret(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
+export const GET = withCronAuth(async (_request: NextRequest) => {
   const startTime = Date.now()
 
   try {
@@ -577,8 +554,6 @@ export async function GET(request: NextRequest) {
       duration_ms: duration,
     }, { status: 500 })
   }
-}
+})
 
-export async function POST(request: NextRequest) {
-  return GET(request)
-}
+export const POST = GET
