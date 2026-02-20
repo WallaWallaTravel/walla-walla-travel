@@ -21,6 +21,9 @@ export function PublicHeader() {
           <Link href="/wineries" className="text-gray-600 hover:text-[#8B1538] transition-colors font-medium">
             Wineries
           </Link>
+          <Link href="/stays" className="text-gray-600 hover:text-[#8B1538] transition-colors">
+            Stays
+          </Link>
           <Link href="/neighborhoods" className="text-gray-600 hover:text-[#8B1538] transition-colors">
             Districts
           </Link>
@@ -71,6 +74,13 @@ export function PublicHeader() {
             onClick={() => setMobileMenuOpen(false)}
           >
             Wineries
+          </Link>
+          <Link
+            href="/stays"
+            className="block py-2 text-gray-600 hover:text-[#8B1538]"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            Stays
           </Link>
           <Link
             href="/neighborhoods"
