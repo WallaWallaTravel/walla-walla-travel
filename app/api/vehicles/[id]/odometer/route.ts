@@ -1,7 +1,6 @@
 import { NextRequest } from 'next/server';
 import {
   successResponse,
-  errorResponse,
   requireAuth,
   getOptionalAuth,
   parseRequestBody,
@@ -29,11 +28,7 @@ export const PUT = withErrorHandling(async (
   const { id } = await params;
 
   // Check authentication - required for odometer updates
-  const authResult = await requireAuth();
-  if ('status' in authResult) {
-    return authResult;
-  }
-  const session = authResult;
+  const session = await requireAuth();
 
   logApiRequest('PUT', `/api/vehicles/${id}/odometer`, session.userId);
 

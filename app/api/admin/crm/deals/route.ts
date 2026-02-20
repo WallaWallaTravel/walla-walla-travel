@@ -189,7 +189,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   let paramIndex = 4;
 
   const optionalFields: (keyof CreateDealData)[] = [
-    'deal_type_id', 'brand', 'description', 'party_size',
+    'deal_type_id', 'brand', 'brand_id', 'description', 'party_size',
     'expected_tour_date', 'expected_close_date', 'estimated_value',
     'assigned_to', 'consultation_id', 'corporate_request_id', 'trip_proposal_id'
   ];

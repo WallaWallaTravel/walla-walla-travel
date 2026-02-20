@@ -430,8 +430,8 @@ export const POST = withCSRF(
                 email, name, phone, company, contact_type, lifecycle_stage,
                 lead_temperature, source, source_detail, notes,
                 total_bookings, total_revenue,
-                created_at, updated_at
-              ) VALUES ($1, $2, $3, $4, 'individual', $5, 'warm', 'import', $6, $7, $8, $9, NOW(), NOW())`,
+                brand_id, created_at, updated_at
+              ) VALUES ($1, $2, $3, $4, 'individual', $5, 'warm', 'import', $6, $7, $8, $9, 1, NOW(), NOW())`,
               [
                 row.email,
                 row.name,

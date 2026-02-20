@@ -7,7 +7,8 @@
  * Supports custom discounts and multi-vehicle bookings.
  */
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 import { z } from 'zod';
 import { calculatePrice } from '@/lib/pricing-engine';
 import { getRates } from '@/lib/rate-config';
@@ -20,19 +21,18 @@ const CalculatePricingSchema = z.object({
   custom_discount: z.number().min(0).max(100).optional(),
 });
 
-export async function POST(request: Request) {
-  try {
-    const body = await request.json();
-    const parsed = CalculatePricingSchema.safeParse(body);
+export const POST = withErrorHandling(async (request: NextRequest) => {
+  const body = await request.json();
+  const parsed = CalculatePricingSchema.safeParse(body);
 
-    if (!parsed.success) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid request', details: parsed.error.flatten() },
-        { status: 400 }
-      );
-    }
+  if (!parsed.success) {
+    return NextResponse.json(
+      { success: false, error: 'Invalid request', details: parsed.error.flatten() },
+      { status: 400 }
+    );
+  }
 
-    const { date, duration_hours, party_size, custom_discount } = parsed.data;
+  const { date, duration_hours, party_size, custom_discount } = parsed.data;
     const rates = getRates();
 
     // Calculate pricing using real hourly rate card
@@ -106,11 +106,4 @@ export async function POST(request: Request) {
         minimum_hours: pricing.minimum_hours,
       },
     });
-  } catch (error) {
-    console.error('Pricing calculation error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to calculate pricing' },
-      { status: 500 }
-    );
-  }
-}
+});

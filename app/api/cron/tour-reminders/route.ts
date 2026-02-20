@@ -3,28 +3,16 @@
  * POST /api/cron/tour-reminders
  *
  * Sends reminder emails to customers with tours in the next 48 hours.
- * Should be called by a cron job (e.g., hourly)
- *
- * Protected by CRON_SECRET in production
+ * Should be called hourly.
+ * Protected by CRON_SECRET (fail-closed).
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { processTourReminders } from '@/lib/services/email-automation.service';
 import { logger } from '@/lib/logger';
-import { withErrorHandling, UnauthorizedError } from '@/lib/api/middleware/error-handler';
+import { withCronAuth } from '@/lib/api/middleware/cron-auth';
 
-export const POST = withErrorHandling(async (request: NextRequest) => {
-  // Verify cron secret in production
-  const cronSecret = process.env.CRON_SECRET;
-  const authHeader = request.headers.get('authorization');
-
-  if (process.env.NODE_ENV === 'production' && cronSecret) {
-    if (authHeader !== `Bearer ${cronSecret}`) {
-      logger.warn('Unauthorized cron request');
-      throw new UnauthorizedError('Unauthorized');
-    }
-  }
-
+export const POST = withCronAuth(async (_request: NextRequest) => {
   logger.info('Processing tour reminders');
 
   const result = await processTourReminders();
@@ -44,10 +32,3 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
 
 // Also support GET for easy testing
 export const GET = POST;
-
-
-
-
-
-
-

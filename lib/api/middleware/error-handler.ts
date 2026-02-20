@@ -175,7 +175,7 @@ export type ApiHandler<T = any, P = Record<string, string>> = (
   request: NextRequest,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   context: any
-) => Promise<NextResponse<T>>;
+) => Promise<NextResponse>;
 
 // ============================================================================
 // Main Error Handling Wrapper
@@ -215,8 +215,8 @@ function isZodLikeError(error: unknown): error is { name: string; errors: Array<
 
 export function withErrorHandling<T = unknown, P = Record<string, string>>(
   handler: ApiHandler<T, P>
-): (request: NextRequest, context: RouteContext<P>) => Promise<NextResponse<T | ErrorResponse>> {
-  return async (request: NextRequest, context: RouteContext<P>): Promise<NextResponse<T | ErrorResponse>> => {
+): (request: NextRequest, context: RouteContext<P>) => Promise<NextResponse> {
+  return async (request: NextRequest, context: RouteContext<P>): Promise<NextResponse> => {
     const requestId = generateRequestId();
     const startTime = Date.now();
 

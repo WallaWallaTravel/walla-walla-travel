@@ -11,7 +11,7 @@ import Stripe from 'stripe';
 import { withGracefulDegradation, OperationType } from '@/lib/services/queue.service';
 import { logger } from '@/lib/logger';
 
-// Lazy-load healthService to avoid pulling Prisma into serverless bundles
+// Lazy-load healthService to avoid circular imports in serverless bundles
 // that only need getStripe() (e.g., webhook handlers)
 async function getHealthService() {
   const { healthService } = await import('@/lib/services/health.service');

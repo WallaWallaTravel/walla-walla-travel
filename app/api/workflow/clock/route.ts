@@ -62,11 +62,7 @@ function formatDate(date: Date): string {
 
 export const POST = withErrorHandling(async (request: NextRequest) => {
   // Check authentication
-  const authResult = await requireAuth();
-  if ('status' in authResult) {
-    return errorResponse('Please log in to access time clock features', 401);
-  }
-  const session = authResult;
+  const session = await requireAuth();
 
   // Parse and validate request body
   let rawBody: unknown;
@@ -531,11 +527,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
 
 // GET endpoint to check current clock status
 export const GET = withErrorHandling(async (_request: NextRequest) => {
-  const authResult = await requireAuth();
-  if ('status' in authResult) {
-    return errorResponse('Please log in to check clock status', 401);
-  }
-  const session = authResult;
+  const session = await requireAuth();
 
   // Log the API request
   logApiRequest('GET', '/api/workflow/clock', session.userId);

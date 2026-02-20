@@ -3,28 +3,16 @@
  * POST /api/cron/annual-reengagement
  *
  * Creates follow-up tasks for customers whose last tour was approximately 1 year ago.
- * Should be called by a cron job daily.
- *
- * Protected by CRON_SECRET in production
+ * Should be called daily.
+ * Protected by CRON_SECRET (fail-closed).
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { crmTaskAutomationService } from '@/lib/services/crm-task-automation.service';
 import { logger } from '@/lib/logger';
-import { withErrorHandling, UnauthorizedError } from '@/lib/api/middleware/error-handler';
+import { withCronAuth } from '@/lib/api/middleware/cron-auth';
 
-export const POST = withErrorHandling(async (request: NextRequest) => {
-  // Verify cron secret in production
-  const cronSecret = process.env.CRON_SECRET;
-  const authHeader = request.headers.get('authorization');
-
-  if (process.env.NODE_ENV === 'production' && cronSecret) {
-    if (authHeader !== `Bearer ${cronSecret}`) {
-      logger.warn('Unauthorized cron request to annual-reengagement');
-      throw new UnauthorizedError('Unauthorized');
-    }
-  }
-
+export const POST = withCronAuth(async (_request: NextRequest) => {
   logger.info('Processing annual re-engagement tasks');
 
   const result = await crmTaskAutomationService.processAnnualReengagement();

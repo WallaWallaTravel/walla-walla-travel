@@ -10,6 +10,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { withErrorHandling, RouteContext } from '@/lib/api/middleware/error-handler';
 import { query } from '@/lib/db';
 import {
   generateICalendar,
@@ -65,11 +66,13 @@ function getBaseUrl(request: NextRequest): string {
   return `${protocol}://${host}`;
 }
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> }
-): Promise<NextResponse> {
-  const { path } = await params;
+interface CalendarRouteParams {
+  path: string[];
+}
+
+export const GET = withErrorHandling<unknown, CalendarRouteParams>(
+  async (request: NextRequest, context: RouteContext<CalendarRouteParams>): Promise<NextResponse> => {
+  const { path } = await context.params;
   const { searchParams } = new URL(request.url);
   const token = searchParams.get('token');
 
@@ -294,4 +297,4 @@ export async function GET(
     logger.error('Error generating calendar feed', { error, feedType });
     return new NextResponse('Internal server error', { status: 500 });
   }
-}
+});

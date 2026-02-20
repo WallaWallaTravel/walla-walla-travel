@@ -9,7 +9,6 @@ import { validate, profileUpdateSchema } from '@/lib/validation';
 import { logApiRequest } from '@/lib/logger';
 import {
   withErrorHandling,
-  UnauthorizedError,
   NotFoundError,
   BadRequestError,
   ValidationError
@@ -21,11 +20,7 @@ import {
  */
 export const GET = withErrorHandling(async () => {
   // Check authentication
-  const authResult = await requireAuth();
-  if ('status' in authResult) {
-    throw new UnauthorizedError('Authentication required');
-  }
-  const session = authResult;
+  const session = await requireAuth();
 
   logApiRequest('GET', '/api/auth/profile', session.userId);
 
@@ -49,11 +44,7 @@ export const GET = withErrorHandling(async () => {
 
 export const PUT = withErrorHandling(async (request: NextRequest) => {
   // Check authentication
-  const authResult = await requireAuth();
-  if ('status' in authResult) {
-    throw new UnauthorizedError('Authentication required');
-  }
-  const session = authResult;
+  const session = await requireAuth();
 
   logApiRequest('PUT', '/api/auth/profile', session.userId);
 

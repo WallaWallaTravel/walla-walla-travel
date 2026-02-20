@@ -7,11 +7,12 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { withErrorHandling } from '@/lib/api/middleware/error-handler'
 import { query } from '@/lib/db'
 import { bufferService } from '@/lib/services/buffer.service'
 import { logger } from '@/lib/logger'
 
-export async function GET(request: NextRequest) {
+export const GET = withErrorHandling(async (request: NextRequest) => {
   const searchParams = request.nextUrl.searchParams
   const code = searchParams.get('code')
   const error = searchParams.get('error')
@@ -128,11 +129,11 @@ export async function GET(request: NextRequest) {
     settingsUrl.searchParams.set('success', `buffer_connected: Connected ${profiles.length} profile(s)`)
     return NextResponse.redirect(settingsUrl)
 
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+  } catch (catchError) {
+    const errorMessage = catchError instanceof Error ? catchError.message : 'Unknown error'
     logger.error('Buffer OAuth callback failed', { error: errorMessage })
 
     settingsUrl.searchParams.set('error', `buffer_token_error: ${errorMessage}`)
     return NextResponse.redirect(settingsUrl)
   }
-}
+})

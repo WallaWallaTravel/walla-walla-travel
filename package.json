@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
@@ -28,10 +28,6 @@
     "prepare": "node -e \"if(process.env.CI!=='true'&&!process.env.VERCEL)require('husky')()\"",
     "db:setup": "node scripts/setup-database.js",
     "db:verify": "node scripts/verify-database.js",
-    "db:studio": "npx prisma studio",
-    "db:pull": "npx prisma db pull",
-    "db:push": "npx prisma db push",
-    "db:generate": "npx prisma generate",
     "type-check": "tsc --noEmit",
     "validate": "npm run format:check && npm run lint && npm run type-check && npm run test"
   },
@@ -87,7 +83,6 @@
     "@commitlint/config-conventional": "^19.8.1",
     "@eslint/eslintrc": "^3",
     "@playwright/test": "^1.57.0",
-    "@prisma/client": "^6.18.0",
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
@@ -110,7 +105,6 @@
     "lint-staged": "^16.2.6",
     "node-fetch": "^2.7.0",
     "prettier": "^3.6.2",
-    "prisma": "^6.18.0",
     "tailwindcss": "^4",
     "ts-jest": "^29.4.5",
     "typescript": "^5"

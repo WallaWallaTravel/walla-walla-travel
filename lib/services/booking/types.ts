@@ -73,6 +73,7 @@ export interface CreateFullBookingData {
     special_requests?: string;
     dietary_restrictions?: string;
     accessibility_needs?: string;
+    brand_id?: number;
   };
   wineries: Winery[];
   payment: {

@@ -12,6 +12,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { sendEmail } from '@/lib/email'
+import { withCronAuth } from '@/lib/api/middleware/cron-auth'
 import Anthropic from '@anthropic-ai/sdk'
 
 // ---------- Types ----------
@@ -340,15 +341,7 @@ function buildReportEmail(data: WeeklyData, aiSummary: string): string {
 
 // ---------- Route Handler ----------
 
-export async function GET(request: NextRequest) {
-  // Verify cron secret
-  const authHeader = request.headers.get('authorization')
-  const cronSecret = process.env.CRON_SECRET
-
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
+export const GET = withCronAuth(async (_request: NextRequest) => {
   logger.info('Starting weekly marketing report generation')
 
   try {
@@ -425,7 +418,7 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
     }, { status: 500 })
   }
-}
+})
 
 // Also support POST for manual triggering
 export const POST = GET

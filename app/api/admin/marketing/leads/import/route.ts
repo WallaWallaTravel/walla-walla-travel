@@ -25,7 +25,7 @@ interface ImportedLead {
   notes?: string
 }
 
-// POST - Import leads from CSV/JSON
+// POST - Import leads from CSV/JSON (now inserts into crm_contacts)
 async function postHandler(request: NextRequest) {
   await verifyAdmin(request)
 
@@ -60,9 +60,9 @@ async function postHandler(request: NextRequest) {
       continue
     }
 
-    // Check for duplicate email
+    // Check for duplicate email in crm_contacts
     const existing = await query(
-      'SELECT id FROM leads WHERE email = $1',
+      'SELECT id FROM crm_contacts WHERE email = $1',
       [lead.email.toLowerCase()]
     )
 
@@ -86,42 +86,80 @@ async function postHandler(request: NextRequest) {
     if (score >= 70) temperature = 'hot'
     else if (score >= 50) temperature = 'warm'
 
-    // Parse interested_services
-    let services: string[] = []
+    // Parse interested_services for source_detail
+    let servicesStr: string | null = null
     if (typeof lead.interested_services === 'string') {
-      services = lead.interested_services.split(',').map(s => s.trim()).filter(Boolean)
+      servicesStr = lead.interested_services.split(',').map(s => s.trim()).filter(Boolean).join(', ')
     } else if (Array.isArray(lead.interested_services)) {
-      services = lead.interested_services
+      servicesStr = lead.interested_services.join(', ')
     }
+
+    // Combine first_name + last_name into name
+    const fullName = [lead.first_name, lead.last_name].filter(Boolean).join(' ')
 
     try {
       const result = await query(`
-        INSERT INTO leads (
-          first_name, last_name, email, phone, company,
-          source, interested_services, party_size_estimate,
-          estimated_date, budget_range, notes,
-          score, temperature, status,
-          created_at, updated_at
+        INSERT INTO crm_contacts (
+          email, name, phone, company, contact_type, lifecycle_stage,
+          lead_score, lead_temperature, source, source_detail, notes,
+          brand_id, created_at, updated_at
         ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'new', NOW(), NOW()
+          $1, $2, $3, $4, $5, 'lead', $6, $7, $8, $9, $10, 1, NOW(), NOW()
         ) RETURNING id
       `, [
-        lead.first_name,
-        lead.last_name || null,
         lead.email.toLowerCase(),
+        fullName,
         lead.phone || null,
         lead.company || null,
-        lead.source || 'import',
-        services,
-        lead.party_size_estimate ? parseInt(String(lead.party_size_estimate)) : null,
-        lead.estimated_date || null,
-        lead.budget_range || null,
-        lead.notes || null,
+        lead.company ? 'corporate' : 'individual',
         score,
-        temperature
+        temperature,
+        lead.source || 'import',
+        servicesStr,
+        lead.notes || null,
       ])
 
-      imported.push(result.rows[0].id)
+      const contactId = result.rows[0].id
+
+      // If party size, estimated date, or budget provided, create a deal (same pattern as POST in leads/route.ts)
+      if (lead.party_size_estimate || lead.estimated_date || lead.budget_range) {
+        const stageResult = await query(`
+          SELECT ps.id
+          FROM crm_pipeline_stages ps
+          JOIN crm_pipeline_templates pt ON ps.template_id = pt.id
+          WHERE (pt.brand = 'walla_walla_travel' OR pt.brand IS NULL)
+            AND ps.is_won = false AND ps.is_lost = false
+          ORDER BY pt.is_default DESC, ps.sort_order ASC
+          LIMIT 1
+        `)
+
+        if (stageResult.rows.length > 0) {
+          let estimatedValue: number | null = null
+          if (lead.budget_range) {
+            const match = String(lead.budget_range).match(/\$?([\d,]+)/)
+            if (match) {
+              estimatedValue = parseInt(match[1].replace(/,/g, ''))
+            }
+          }
+
+          await query(`
+            INSERT INTO crm_deals (
+              contact_id, stage_id, brand, title, description,
+              party_size, expected_tour_date, estimated_value, brand_id
+            ) VALUES ($1, $2, 'walla_walla_travel', $3, $4, $5, $6, $7, 1)
+          `, [
+            contactId,
+            stageResult.rows[0].id,
+            `Lead - ${fullName}`,
+            servicesStr || lead.notes || 'Imported lead',
+            lead.party_size_estimate ? parseInt(String(lead.party_size_estimate)) : null,
+            lead.estimated_date || null,
+            estimatedValue
+          ])
+        }
+      }
+
+      imported.push(contactId)
     } catch (err) {
       skipped++
       errors.push(`Row ${i + 1}: Database error - ${(err as Error).message}`)

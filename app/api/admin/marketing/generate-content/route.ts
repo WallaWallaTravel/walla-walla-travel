@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
-import { prisma } from '@/lib/prisma'
+import { query } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit'
+import { withErrorHandling } from '@/lib/api/middleware/error-handler'
 import { socialIntelligenceService } from '@/lib/services/social-intelligence.service'
 
 function getAnthropicClient() {
@@ -57,8 +58,7 @@ const TONE_DESCRIPTIONS: Record<string, string> = {
   educational: 'Informative, teaching-focused, accessible',
 }
 
-export const POST = withRateLimit(rateLimiters.aiGeneration)(async (request: NextRequest) => {
-  try {
+export const POST = withRateLimit(rateLimiters.aiGeneration)(withErrorHandling(async (request: NextRequest) => {
     const body: GenerateRequest = await request.json()
     const { wineryId, platform, contentType, tone, customPrompt } = body
 
@@ -69,33 +69,28 @@ export const POST = withRateLimit(rateLimiters.aiGeneration)(async (request: Nex
     // For general content, winery is optional
     if (wineryId) {
       // Fetch winery data
-      winery = await prisma.wineries.findUnique({
-        where: { id: wineryId },
-        select: {
-          id: true,
-          name: true,
-          description: true,
-          short_description: true,
-          specialties: true,
-          winemaker: true,
-          owner: true,
-          founded_year: true,
-          production_volume: true,
-          price_range: true,
-        },
-      })
+      const wineryResult = await query(
+        `SELECT id, name, description, short_description, specialties,
+                winemaker, owner, founded_year, production_volume, price_range
+         FROM wineries WHERE id = $1`,
+        [wineryId]
+      )
+
+      winery = wineryResult.rows[0]
 
       if (!winery) {
         return NextResponse.json({ error: 'Winery not found' }, { status: 404 })
       }
 
       // Fetch winery content for context
-      wineryContent = await prisma.$queryRaw<Array<{content_type: string, content: string}>>`
-        SELECT content_type, content
-        FROM winery_content
-        WHERE winery_id = ${wineryId}
-        LIMIT 5
-      `
+      const contentResult = await query<{content_type: string, content: string}>(
+        `SELECT content_type, content
+         FROM winery_content
+         WHERE winery_id = $1
+         LIMIT 5`,
+        [wineryId]
+      )
+      wineryContent = contentResult.rows
 
       // Build context from winery data
       wineryContext = `
@@ -263,11 +258,4 @@ Respond in this exact JSON format:
       bestTimeToPost: platformGuideline.bestTimes,
       imagePrompt: parsedResponse.imagePrompt,
     })
-  } catch (error) {
-    logger.error('Content generation error', { error })
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to generate content' },
-      { status: 500 }
-    )
-  }
-});
+}));

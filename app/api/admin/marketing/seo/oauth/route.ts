@@ -4,13 +4,14 @@ import {
   storeTokens,
 } from '@/lib/services/search-console.service';
 import { logger } from '@/lib/logger';
+import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 
 /**
  * Google Search Console OAuth callback handler.
  * Receives the authorization code from Google, exchanges it for tokens,
  * stores them in the integrations table, and redirects back to the admin SEO page.
  */
-export async function GET(request: NextRequest) {
+export const GET = withErrorHandling(async (request: NextRequest) => {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
   const error = searchParams.get('error');
@@ -64,4 +65,4 @@ export async function GET(request: NextRequest) {
     );
     return NextResponse.redirect(redirectUrl);
   }
-}
+});

@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
 import { logger } from '@/lib/logger'
+import { withErrorHandling } from '@/lib/api/middleware/error-handler'
 
 interface ApprovalRequest {
   contentType: 'social_post' | 'email' | 'blog' | 'page_update' | 'campaign'
@@ -21,140 +22,124 @@ interface ApprovalRequest {
   notes?: string
 }
 
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url)
-    const contentType = searchParams.get('contentType')
-    const action = searchParams.get('action')
-    const limit = parseInt(searchParams.get('limit') || '50')
+export const GET = withErrorHandling(async (request: NextRequest) => {
+  const { searchParams } = new URL(request.url)
+  const contentType = searchParams.get('contentType')
+  const action = searchParams.get('action')
+  const limit = parseInt(searchParams.get('limit') || '50')
 
-    let queryText = `
-      SELECT
-        ca.*,
-        u.name as approver_name
-      FROM content_approvals ca
-      LEFT JOIN users u ON ca.approved_by = u.id
-      WHERE 1=1
-    `
-    const params: (string | number)[] = []
+  let queryText = `
+    SELECT
+      ca.*,
+      u.name as approver_name
+    FROM content_approvals ca
+    LEFT JOIN users u ON ca.approved_by = u.id
+    WHERE 1=1
+  `
+  const params: (string | number)[] = []
 
-    if (contentType) {
-      params.push(contentType)
-      queryText += ` AND ca.content_type = $${params.length}`
-    }
+  if (contentType) {
+    params.push(contentType)
+    queryText += ` AND ca.content_type = $${params.length}`
+  }
 
-    if (action) {
-      params.push(action)
-      queryText += ` AND ca.action = $${params.length}`
-    }
+  if (action) {
+    params.push(action)
+    queryText += ` AND ca.action = $${params.length}`
+  }
 
-    params.push(limit)
-    queryText += ` ORDER BY ca.created_at DESC LIMIT $${params.length}`
+  params.push(limit)
+  queryText += ` ORDER BY ca.created_at DESC LIMIT $${params.length}`
 
-    const result = await query(queryText, params)
+  const result = await query(queryText, params)
 
-    // Get approval stats
-    const statsResult = await query<{
-      total: number
-      approved: number
-      edited: number
-      rejected: number
-    }>(`
-      SELECT
-        COUNT(*)::int as total,
-        COUNT(*) FILTER (WHERE action = 'approved')::int as approved,
-        COUNT(*) FILTER (WHERE action = 'edited')::int as edited,
-        COUNT(*) FILTER (WHERE action = 'rejected')::int as rejected
-      FROM content_approvals
-      WHERE created_at >= NOW() - INTERVAL '30 days'
-    `)
+  // Get approval stats
+  const statsResult = await query<{
+    total: number
+    approved: number
+    edited: number
+    rejected: number
+  }>(`
+    SELECT
+      COUNT(*)::int as total,
+      COUNT(*) FILTER (WHERE action = 'approved')::int as approved,
+      COUNT(*) FILTER (WHERE action = 'edited')::int as edited,
+      COUNT(*) FILTER (WHERE action = 'rejected')::int as rejected
+    FROM content_approvals
+    WHERE created_at >= NOW() - INTERVAL '30 days'
+  `)
 
-    return NextResponse.json({
-      approvals: result.rows,
-      stats: statsResult.rows[0] || { total: 0, approved: 0, edited: 0, rejected: 0 },
-    })
-  } catch (error) {
-    logger.error('Failed to fetch approvals', { error })
+  return NextResponse.json({
+    approvals: result.rows,
+    stats: statsResult.rows[0] || { total: 0, approved: 0, edited: 0, rejected: 0 },
+  })
+});
+
+export const POST = withErrorHandling(async (request: NextRequest) => {
+  const body: ApprovalRequest = await request.json()
+  const {
+    contentType,
+    contentId,
+    action,
+    originalContent,
+    finalContent,
+    platform,
+    contentCategory,
+    tone,
+    notes,
+  } = body
+
+  if (!contentType || !contentId || !action || !originalContent) {
     return NextResponse.json(
-      { error: 'Failed to fetch approvals' },
-      { status: 500 }
+      { error: 'Missing required fields: contentType, contentId, action, originalContent' },
+      { status: 400 }
     )
   }
-}
 
-export async function POST(request: NextRequest) {
-  try {
-    const body: ApprovalRequest = await request.json()
-    const {
-      contentType,
-      contentId,
-      action,
-      originalContent,
-      finalContent,
-      platform,
-      contentCategory,
-      tone,
-      notes,
-    } = body
-
-    if (!contentType || !contentId || !action || !originalContent) {
-      return NextResponse.json(
-        { error: 'Missing required fields: contentType, contentId, action, originalContent' },
-        { status: 400 }
-      )
-    }
-
-    // Compute edit diff if content was edited
-    let editDiff: string | null = null
-    if (action === 'edited' && finalContent) {
-      editDiff = computeSimpleDiff(originalContent, finalContent)
-    }
-
-    // Record the approval
-    const result = await query<{ id: number }>(`
-      INSERT INTO content_approvals (
-        content_type, content_id, action,
-        original_content, final_content, edit_diff,
-        platform, content_category, tone,
-        notes, created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
-      RETURNING id
-    `, [
-      contentType,
-      contentId,
-      action,
-      originalContent,
-      finalContent || null,
-      editDiff,
-      platform || null,
-      contentCategory || null,
-      tone || null,
-      notes || null,
-    ])
-
-    // Update learning preferences based on this approval
-    await updateLearningPreferences(action, originalContent, finalContent, platform, contentCategory)
-
-    logger.info('Content approval recorded', {
-      id: result.rows[0].id,
-      contentType,
-      contentId,
-      action,
-    })
-
-    return NextResponse.json({
-      success: true,
-      id: result.rows[0].id,
-      message: `Content ${action} recorded`,
-    })
-  } catch (error) {
-    logger.error('Failed to record approval', { error })
-    return NextResponse.json(
-      { error: 'Failed to record approval' },
-      { status: 500 }
-    )
+  // Compute edit diff if content was edited
+  let editDiff: string | null = null
+  if (action === 'edited' && finalContent) {
+    editDiff = computeSimpleDiff(originalContent, finalContent)
   }
-}
+
+  // Record the approval
+  const result = await query<{ id: number }>(`
+    INSERT INTO content_approvals (
+      content_type, content_id, action,
+      original_content, final_content, edit_diff,
+      platform, content_category, tone,
+      notes, created_at
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
+    RETURNING id
+  `, [
+    contentType,
+    contentId,
+    action,
+    originalContent,
+    finalContent || null,
+    editDiff,
+    platform || null,
+    contentCategory || null,
+    tone || null,
+    notes || null,
+  ])
+
+  // Update learning preferences based on this approval
+  await updateLearningPreferences(action, originalContent, finalContent, platform, contentCategory)
+
+  logger.info('Content approval recorded', {
+    id: result.rows[0].id,
+    contentType,
+    contentId,
+    action,
+  })
+
+  return NextResponse.json({
+    success: true,
+    id: result.rows[0].id,
+    message: `Content ${action} recorded`,
+  })
+});
 
 function computeSimpleDiff(original: string, final: string): string {
   const originalLines = original.split('\n')

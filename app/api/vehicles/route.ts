@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withOptionalAuth } from '@/lib/api/middleware/auth-wrapper';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { validateQuery } from '@/lib/api/middleware/validation';
 import { ListVehiclesQuerySchema } from '@/lib/validation/schemas/vehicle.schemas';
 import { vehicleService } from '@/lib/services/vehicle.service';
@@ -7,10 +7,9 @@ import { vehicleService } from '@/lib/services/vehicle.service';
 /**
  * GET /api/vehicles
  * Returns list of vehicles with availability status and pagination
- * 
- * ✅ REFACTORED: Now using service layer and Zod validation
+ * Requires admin authentication.
  */
-export const GET = withOptionalAuth(async (request: NextRequest, _session) => {
+export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   // ✅ Validate query parameters with Zod
   const filters = validateQuery(request, ListVehiclesQuerySchema);
 

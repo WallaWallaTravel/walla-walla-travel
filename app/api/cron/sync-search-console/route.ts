@@ -6,6 +6,7 @@ import {
 } from '@/lib/services/search-console.service';
 import { query } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { withCronAuth } from '@/lib/api/middleware/cron-auth';
 
 /**
  * Match published blog_drafts to Search Console data by slug.
@@ -84,23 +85,7 @@ async function syncBlogPerformance(): Promise<{ matched: number }> {
   return { matched };
 }
 
-function verifyCronSecret(request: NextRequest): boolean {
-  const authHeader = request.headers.get('authorization');
-  if (!authHeader) return false;
-
-  const cronSecret = process.env.CRON_SECRET;
-  if (!cronSecret) {
-    return process.env.NODE_ENV === 'development';
-  }
-
-  return authHeader === `Bearer ${cronSecret}`;
-}
-
-export async function POST(request: NextRequest) {
-  if (!verifyCronSecret(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
+export const POST = withCronAuth(async (_request: NextRequest) => {
   const startTime = Date.now();
 
   try {
@@ -168,30 +153,16 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});
 
-export async function GET(request: NextRequest) {
-  if (!verifyCronSecret(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+export const GET = withCronAuth(async (_request: NextRequest) => {
+  const integration = await getIntegration();
 
-  try {
-    const integration = await getIntegration();
-
-    return NextResponse.json({
-      status: integration ? 'configured' : 'not_configured',
-      is_active: integration?.is_active ?? false,
-      last_sync_at: integration?.last_sync_at ?? null,
-      last_error: integration?.last_error ?? null,
-      token_expires_at: integration?.token_expires_at ?? null,
-    });
-  } catch (error) {
-    return NextResponse.json(
-      {
-        status: 'error',
-        error: error instanceof Error ? error.message : 'Unknown error',
-      },
-      { status: 500 }
-    );
-  }
-}
+  return NextResponse.json({
+    status: integration ? 'configured' : 'not_configured',
+    is_active: integration?.is_active ?? false,
+    last_sync_at: integration?.last_sync_at ?? null,
+    last_error: integration?.last_error ?? null,
+    token_expires_at: integration?.token_expires_at ?? null,
+  });
+});

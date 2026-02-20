@@ -45,6 +45,7 @@ export interface Payment {
   stripe_payment_intent_id?: string;
   transaction_date?: string;
   notes?: string;
+  brand_id?: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -57,6 +58,7 @@ export const CreatePaymentSchema = z.object({
   paymentMethod: z.string(),
   stripePaymentIntentId: z.string().optional(),
   notes: z.string().optional(),
+  brandId: z.number().int().positive().optional(),
 });
 
 export class PaymentService extends BaseService {
@@ -77,6 +79,7 @@ export class PaymentService extends BaseService {
       stripe_payment_intent_id: data.stripePaymentIntentId || null,
       transaction_date: new Date().toISOString(),
       notes: data.notes || null,
+      brand_id: data.brandId || null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     });

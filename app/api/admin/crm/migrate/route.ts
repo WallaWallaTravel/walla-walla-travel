@@ -174,9 +174,9 @@ export const POST = withCSRF(
                   email, name, phone, customer_id, contact_type, lifecycle_stage,
                   lead_temperature, source, source_detail,
                   total_bookings, total_revenue, last_booking_date,
-                  created_at, updated_at
+                  brand_id, created_at, updated_at
                 ) VALUES ($1, $2, $3, $4, 'individual', $5, 'warm', 'migration', 'customer_migration',
-                  $6, $7, $8, $9, NOW())`,
+                  $6, $7, $8, 1, $9, NOW())`,
                 [
                   customer.email,
                   customer.name,

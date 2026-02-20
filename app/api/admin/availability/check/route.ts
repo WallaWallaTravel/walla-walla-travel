@@ -7,7 +7,8 @@
  * vehicles, drivers, and any conflicts or warnings.
  */
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 import { z } from 'zod';
 import { vehicleAvailabilityService } from '@/lib/services/vehicle-availability.service';
 import { pool } from '@/lib/db';
@@ -27,19 +28,18 @@ interface DriverRow {
   phone: string | null;
 }
 
-export async function POST(request: Request) {
-  try {
-    const body = await request.json();
-    const parsed = CheckAvailabilitySchema.safeParse(body);
+export const POST = withErrorHandling(async (request: NextRequest) => {
+  const body = await request.json();
+  const parsed = CheckAvailabilitySchema.safeParse(body);
 
-    if (!parsed.success) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid request', details: parsed.error.flatten() },
-        { status: 400 }
-      );
-    }
+  if (!parsed.success) {
+    return NextResponse.json(
+      { success: false, error: 'Invalid request', details: parsed.error.flatten() },
+      { status: 400 }
+    );
+  }
 
-    const { date, startTime, durationHours, partySize, brandId } = parsed.data;
+  const { date, startTime, durationHours, partySize, brandId } = parsed.data;
 
     // Calculate end time
     const [hours, minutes] = startTime.split(':').map(Number);
@@ -170,11 +170,4 @@ export async function POST(request: Request) {
         warnings,
       },
     });
-  } catch (error) {
-    console.error('Availability check error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to check availability' },
-      { status: 500 }
-    );
-  }
-}
+});

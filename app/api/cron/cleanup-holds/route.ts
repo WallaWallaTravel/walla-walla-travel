@@ -1,29 +1,16 @@
 /**
  * Cron: Cleanup Expired Holds
  *
- * This endpoint should be called periodically (e.g., every 5 minutes)
- * to clean up abandoned hold blocks that were never converted to bookings.
- *
- * For Vercel: Add to vercel.json with path "/api/cron/cleanup-holds"
- * and schedule every 5 minutes
- *
- * Security: Protected by CRON_SECRET environment variable
+ * Cleans up abandoned hold blocks that were never converted to bookings.
+ * Should be called every 5 minutes.
+ * Protected by CRON_SECRET (fail-closed).
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { vehicleAvailabilityService } from '@/lib/services/vehicle-availability.service';
-import { withErrorHandling, UnauthorizedError } from '@/lib/api/middleware/error-handler';
+import { withCronAuth } from '@/lib/api/middleware/cron-auth';
 
-export const GET = withErrorHandling(async (request: NextRequest) => {
-  // Verify cron secret (for Vercel cron jobs)
-  const authHeader = request.headers.get('authorization');
-  const cronSecret = process.env.CRON_SECRET;
-
-  // In production, require authorization
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    throw new UnauthorizedError('Unauthorized');
-  }
-
+export const GET = withCronAuth(async (_request: NextRequest) => {
   const deletedCount = await vehicleAvailabilityService.cleanupExpiredHolds();
 
   return NextResponse.json({

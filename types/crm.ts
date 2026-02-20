@@ -15,13 +15,16 @@ export type LeadTemperature = 'cold' | 'warm' | 'hot';
 export type ActivityType =
   | 'call'
   | 'email'
+  | 'sms'
   | 'meeting'
   | 'note'
   | 'proposal_sent'
   | 'proposal_viewed'
   | 'payment_received'
   | 'system'
-  | 'status_change';
+  | 'status_change'
+  | 'booking_created'
+  | 'tour_completed';
 
 export type CallOutcome = 'connected' | 'voicemail' | 'no_answer' | 'busy' | 'wrong_number';
 
@@ -112,6 +115,7 @@ export interface CrmContact {
   assigned_to: number | null;
   stripe_customer_id: string | null;
   customer_id: number | null;
+  brand_id: number | null;
   created_at: string;
   updated_at: string;
   last_contacted_at: string | null;
@@ -145,6 +149,7 @@ export interface CreateContactData {
   email_marketing_consent?: boolean;
   sms_marketing_consent?: boolean;
   assigned_to?: number;
+  brand_id?: number;
 }
 
 export interface UpdateContactData extends Partial<CreateContactData> {
@@ -162,6 +167,7 @@ export interface CrmDeal {
   stage_id: number;
   deal_type_id: number | null;
   brand: Brand | null;
+  brand_id: number | null;
   title: string;
   description: string | null;
   party_size: number | null;
@@ -198,6 +204,7 @@ export interface CreateDealData {
   stage_id: number;
   deal_type_id?: number;
   brand?: Brand;
+  brand_id?: number;
   title: string;
   description?: string;
   party_size?: number;
@@ -464,6 +471,7 @@ export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
 export const ACTIVITY_TYPE_ICONS: Record<ActivityType, string> = {
   call: '📞',
   email: '📧',
+  sms: '💬',
   meeting: '🤝',
   note: '📝',
   proposal_sent: '📤',
@@ -471,6 +479,8 @@ export const ACTIVITY_TYPE_ICONS: Record<ActivityType, string> = {
   payment_received: '💰',
   system: '⚙️',
   status_change: '🔄',
+  booking_created: '📅',
+  tour_completed: '✅',
 };
 
 export const BRAND_LABELS: Record<Brand, string> = {

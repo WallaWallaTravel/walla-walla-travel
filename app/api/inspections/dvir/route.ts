@@ -31,11 +31,7 @@ const DVIRSchema = z.object({
  */
 export const POST = withErrorHandling(async (request: NextRequest) => {
   // Check authentication
-  const authResult = await requireAuth();
-  if ('status' in authResult) {
-    return authResult;
-  }
-  const session = authResult;
+  const session = await requireAuth();
 
   logApiRequest('POST', '/api/inspections/dvir', session.userId);
 
@@ -136,11 +132,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
  */
 export const GET = withErrorHandling(async (request: NextRequest) => {
   // Check authentication
-  const authResult = await requireAuth();
-  if ('status' in authResult) {
-    return authResult;
-  }
-  const session = authResult;
+  const session = await requireAuth();
 
   const { searchParams } = new URL(request.url);
   const dvirId = searchParams.get('id');

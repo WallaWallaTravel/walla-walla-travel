@@ -6,21 +6,19 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { withErrorHandling, RouteContext as ErrorRouteContext } from '@/lib/api/middleware/error-handler';
 import { query } from '@/lib/db';
 import { getServerSession } from '@/lib/auth';
 import { auditService } from '@/lib/services/audit.service';
 import { logger } from '@/lib/logger';
 
-interface RouteContext {
-  params: Promise<{ booking_id: string }>;
+interface BookingRouteParams {
+  booking_id: string;
 }
 
 // GET - Get booking details
-export async function GET(
-  request: NextRequest,
-  context: RouteContext
-): Promise<NextResponse> {
-  try {
+export const GET = withErrorHandling<unknown, BookingRouteParams>(
+  async (request: NextRequest, context: ErrorRouteContext<BookingRouteParams>): Promise<NextResponse> => {
     const session = await getServerSession();
     if (!session?.role || !['admin', 'staff'].includes(session.role)) {
       return NextResponse.json(
@@ -63,21 +61,12 @@ export async function GET(
     }
 
     return NextResponse.json({ success: true, data: result.rows[0] });
-  } catch (error) {
-    logger.error('Error fetching booking', { error });
-    return NextResponse.json(
-      { success: false, error: { message: 'Failed to fetch booking', statusCode: 500 } },
-      { status: 500 }
-    );
   }
-}
+);
 
 // DELETE - Permanently delete booking
-export async function DELETE(
-  request: NextRequest,
-  context: RouteContext
-): Promise<NextResponse> {
-  try {
+export const DELETE = withErrorHandling<unknown, BookingRouteParams>(
+  async (request: NextRequest, context: ErrorRouteContext<BookingRouteParams>): Promise<NextResponse> => {
     const session = await getServerSession();
     if (!session?.role || !['admin', 'staff'].includes(session.role)) {
       return NextResponse.json(
@@ -171,12 +160,5 @@ export async function DELETE(
         booking_number: booking.booking_number,
       },
     });
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    logger.error('Error deleting booking', { error: errorMessage, stack: error instanceof Error ? error.stack : undefined });
-    return NextResponse.json(
-      { success: false, error: { message: `Failed to delete booking: ${errorMessage}`, statusCode: 500 } },
-      { status: 500 }
-    );
   }
-}
+);

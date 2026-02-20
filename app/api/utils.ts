@@ -3,6 +3,7 @@ import { getServerSession } from '@/lib/auth';
 import type { NextRequest } from 'next/server';
 import { logger } from '@/lib/logger';
 import { generateSecureString } from '@/lib/utils';
+import { UnauthorizedError } from '@/lib/api/middleware/error-handler';
 
 // Standard API response format
 interface ApiResponse<T = unknown> {
@@ -54,15 +55,17 @@ export function errorResponse(error: string, status: number = 400): NextResponse
 }
 
 // Auth middleware - uses cookie-based session
-export async function requireAuth(): Promise<Session | NextResponse> {
+// Throws UnauthorizedError on failure (caught by withErrorHandling)
+export async function requireAuth(): Promise<Session> {
   try {
     const session = await getServerSession();
     if (!session) {
-      return errorResponse('Unauthorized - Please login', 401);
+      throw new UnauthorizedError('Unauthorized - Please login');
     }
     return session;
-  } catch (_error) {
-    return errorResponse('Authentication failed', 401);
+  } catch (error) {
+    if (error instanceof UnauthorizedError) throw error;
+    throw new UnauthorizedError('Authentication failed');
   }
 }
 

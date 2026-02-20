@@ -100,6 +100,7 @@ export class BookingCreationService extends BaseService {
         status: 'confirmed',
         booking_source: 'online',
         confirmation_email_sent: false,
+        brand_id: data.booking.brand_id || 1,
         created_at: new Date(),
         updated_at: new Date(),
       });
@@ -115,6 +116,7 @@ export class BookingCreationService extends BaseService {
         customerId: customer.id,
         amount: pricing.depositAmount,
         stripePaymentMethodId: data.payment.stripe_payment_method_id,
+        brandId: data.booking.brand_id,
       });
 
       // 8. Create booking timeline event
@@ -197,13 +199,14 @@ export class BookingCreationService extends BaseService {
     customerId: number;
     amount: number;
     stripePaymentMethodId: string;
+    brandId?: number;
   }): Promise<void> {
     await this.query(
       `INSERT INTO payments (
         booking_id, customer_id, amount, currency, payment_type,
         payment_method, stripe_payment_intent_id, status,
-        created_at, updated_at, succeeded_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+        brand_id, created_at, updated_at, succeeded_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
       [
         params.bookingId,
         params.customerId,
@@ -213,6 +216,7 @@ export class BookingCreationService extends BaseService {
         'card',
         params.stripePaymentMethodId,
         'succeeded',
+        params.brandId || 1,
       ]
     );
   }

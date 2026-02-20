@@ -4,10 +4,11 @@
  *
  * Destroys session and clears cookie
  *
- * ✅ REFACTORED: Structured logging
+ * REFACTORED: Structured logging + withErrorHandling middleware
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 import { clearSessionCookie, getSessionFromRequest } from '@/lib/auth/session';
 import { query } from '@/lib/db';
 import { logger } from '@/lib/logger';
@@ -21,7 +22,7 @@ function getClientIp(request: NextRequest): string {
   return forwarded?.split(',')[0].trim() || realIp || 'unknown';
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withErrorHandling(async (request: NextRequest) => {
   try {
     // Get session to log who's logging out
     const session = await getSessionFromRequest(request);
@@ -55,10 +56,10 @@ export async function POST(request: NextRequest) {
 
     return clearSessionCookie(response);
   }
-}
+});
 
 // Also support GET for simple logout links
-export async function GET(request: NextRequest) {
+export const GET = withErrorHandling(async (request: NextRequest) => {
   const session = await getSessionFromRequest(request);
 
   if (session) {
@@ -74,4 +75,4 @@ export async function GET(request: NextRequest) {
   // Redirect to homepage
   const response = NextResponse.redirect(new URL('/', request.url));
   return clearSessionCookie(response);
-}
+});

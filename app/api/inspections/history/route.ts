@@ -16,11 +16,7 @@ import { query } from '@/lib/db';
  */
 export const GET = withErrorHandling(async (request: NextRequest) => {
   // Check authentication
-  const authResult = await requireAuth();
-  if ('status' in authResult) {
-    return authResult;
-  }
-  const session = authResult;
+  const session = await requireAuth();
 
   logApiRequest('GET', '/api/inspections/history', session.userId);
 

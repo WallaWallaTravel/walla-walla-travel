@@ -101,8 +101,8 @@ async function findOrCreateContact(
   const result = await pool.query(
     `INSERT INTO crm_contacts (
       email, name, phone, company, contact_type, lifecycle_stage,
-      lead_temperature, source, source_detail
-    ) VALUES ($1, $2, $3, $4, $5, 'lead', $6, $7, $8)
+      lead_temperature, source, source_detail, brand_id
+    ) VALUES ($1, $2, $3, $4, $5, 'lead', $6, $7, $8, 1)
     RETURNING id`,
     [
       email,
@@ -183,8 +183,8 @@ async function backfillConsultations() {
       const dealResult = await pool.query(
         `INSERT INTO crm_deals (
           contact_id, stage_id, brand, title, description,
-          party_size, expected_tour_date, consultation_id
-        ) VALUES ($1, $2, 'walla_walla_travel', $3, $4, $5, $6, $7)
+          party_size, expected_tour_date, consultation_id, brand_id
+        ) VALUES ($1, $2, 'walla_walla_travel', $3, $4, $5, $6, $7, 1)
         RETURNING id`,
         [
           contactId,
@@ -294,8 +294,8 @@ async function backfillCorporateRequests() {
         const dealResult = await pool.query(
           `INSERT INTO crm_deals (
             contact_id, stage_id, brand, title, description,
-            party_size, expected_tour_date, corporate_request_id
-          ) VALUES ($1, $2, 'walla_walla_travel', $3, $4, $5, $6, $7)
+            party_size, expected_tour_date, corporate_request_id, brand_id
+          ) VALUES ($1, $2, 'walla_walla_travel', $3, $4, $5, $6, $7, 1)
           RETURNING id`,
           [
             contactId,

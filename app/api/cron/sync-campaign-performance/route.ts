@@ -12,6 +12,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
 import { logger } from '@/lib/logger'
+import { withCronAuth } from '@/lib/api/middleware/cron-auth'
 
 interface CampaignToSync {
   id: number
@@ -33,14 +34,7 @@ interface ItemWithMetrics {
   post_status: string | null
 }
 
-export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get('authorization')
-  const cronSecret = process.env.CRON_SECRET
-
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
+export const GET = withCronAuth(async (_request: NextRequest) => {
   logger.info('Starting campaign performance sync')
 
   try {
@@ -178,6 +172,6 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
     }, { status: 500 })
   }
-}
+})
 
 export const POST = GET

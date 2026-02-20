@@ -158,9 +158,10 @@ export const POST = withErrorHandling<unknown, { proposal_id: string }>(async (
         final_payment_amount,
         final_payment_paid,
         booking_source,
+        brand_id,
         created_at,
         updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), $11, $12, $13, NOW(), NOW())
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), $11, $12, $13, $14, NOW(), NOW())
       RETURNING id, booking_number`,
       [
         bookingNumber,
@@ -176,6 +177,7 @@ export const POST = withErrorHandling<unknown, { proposal_id: string }>(async (
         depositAmount, // final_payment_amount
         false, // final_payment_paid
         'proposal',
+        proposal.brand_id || 1,
       ],
       client
     );
@@ -205,9 +207,10 @@ export const POST = withErrorHandling<unknown, { proposal_id: string }>(async (
         payment_method,
         stripe_payment_intent_id,
         status,
+        brand_id,
         created_at,
         succeeded_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())`,
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())`,
       [
         booking.id,
         customerId,
@@ -217,6 +220,7 @@ export const POST = withErrorHandling<unknown, { proposal_id: string }>(async (
         'card',
         payment_intent_id,
         'succeeded',
+        proposal.brand_id || 1,
       ],
       client
     );

@@ -13,7 +13,7 @@ import { getItineraryBySlug, type Itinerary } from '@/lib/data/itineraries';
 
 const tripTypes: { value: TripType; label: string; icon: string; description: string }[] = [
   { value: 'wine_tour', label: 'Wine Tour', icon: '🍷', description: 'Classic wine tasting adventure' },
-  { value: 'celebration', label: 'Celebration', icon: '🎉', description: 'Celebrate a special occasion' },
+  { value: 'bachelorette', label: 'Bachelorette', icon: '🎉', description: 'Bachelorette party or celebration' },
   { value: 'corporate', label: 'Corporate', icon: '💼', description: 'Team building or client event' },
   { value: 'wedding', label: 'Wedding', icon: '💒', description: 'Wedding party or rehearsal' },
   { value: 'anniversary', label: 'Anniversary', icon: '❤️', description: 'Romantic celebration' },
@@ -79,7 +79,7 @@ function NewTripForm() {
           for (const stop of day.stops) {
             // Map itinerary stop type to trip stop type
             const stopType = stop.type === 'lodging' ? 'accommodation' : stop.type;
-            await addStop(result.id, {
+            await addStop(result.share_code, {
               name: stop.name,
               stop_type: stopType as 'winery' | 'restaurant' | 'activity' | 'accommodation',
               day_number: day.dayNumber,

@@ -41,15 +41,15 @@ export interface TripPlannerState {
   clearError: () => void;
 
   // Stop Actions
-  addStop: (tripId: number, stop: AddStopRequest) => Promise<void>;
-  removeStop: (tripId: number, stopId: number) => Promise<void>;
+  addStop: (shareCode: string, stop: AddStopRequest) => Promise<void>;
+  removeStop: (shareCode: string, stopId: number) => Promise<void>;
 
   // Guest Actions
-  addGuest: (tripId: number, guest: AddGuestRequest) => Promise<void>;
-  removeGuest: (tripId: number, guestId: number) => Promise<void>;
+  addGuest: (shareCode: string, guest: AddGuestRequest) => Promise<void>;
+  removeGuest: (shareCode: string, guestId: number) => Promise<void>;
 
   // Handoff Actions
-  requestHandoff: (tripId: number, notes?: string) => Promise<boolean>;
+  requestHandoff: (shareCode: string, notes?: string) => Promise<boolean>;
 
   // AI Chat Actions
   sendChatMessage: (shareCode: string, message: string) => Promise<void>;
@@ -155,10 +155,10 @@ export const useTripPlannerStore = create<TripPlannerState>((set, get) => ({
     return updatedTrip;
   },
 
-  addStop: async (tripId: number, stop: AddStopRequest) => {
+  addStop: async (shareCode: string, stop: AddStopRequest) => {
     set({ isSaving: true, error: null });
 
-    const result = await apiPost<Trip['stops'][0]>(`/api/trips/${tripId}/stops`, stop, {
+    const result = await apiPost<Trip['stops'][0]>(`/api/trips/${shareCode}/stops`, stop, {
       timeout: TRIP_API_TIMEOUT,
     });
 
@@ -186,10 +186,10 @@ export const useTripPlannerStore = create<TripPlannerState>((set, get) => ({
     }
   },
 
-  removeStop: async (tripId: number, stopId: number) => {
+  removeStop: async (shareCode: string, stopId: number) => {
     set({ isSaving: true, error: null });
 
-    const result = await apiDelete(`/api/trips/${tripId}/stops/${stopId}`, {
+    const result = await apiDelete(`/api/trips/${shareCode}/stops/${stopId}`, {
       timeout: TRIP_API_TIMEOUT,
     });
 
@@ -217,10 +217,10 @@ export const useTripPlannerStore = create<TripPlannerState>((set, get) => ({
     }
   },
 
-  addGuest: async (tripId: number, guest: AddGuestRequest) => {
+  addGuest: async (shareCode: string, guest: AddGuestRequest) => {
     set({ isSaving: true, error: null });
 
-    const result = await apiPost<Trip['guests'][0]>(`/api/trips/${tripId}/guests`, guest, {
+    const result = await apiPost<Trip['guests'][0]>(`/api/trips/${shareCode}/guests`, guest, {
       timeout: TRIP_API_TIMEOUT,
     });
 
@@ -248,10 +248,10 @@ export const useTripPlannerStore = create<TripPlannerState>((set, get) => ({
     }
   },
 
-  removeGuest: async (tripId: number, guestId: number) => {
+  removeGuest: async (shareCode: string, guestId: number) => {
     set({ isSaving: true, error: null });
 
-    const result = await apiDelete(`/api/trips/${tripId}/guests/${guestId}`, {
+    const result = await apiDelete(`/api/trips/${shareCode}/guests/${guestId}`, {
       timeout: TRIP_API_TIMEOUT,
     });
 
@@ -285,10 +285,10 @@ export const useTripPlannerStore = create<TripPlannerState>((set, get) => ({
     }
   },
 
-  requestHandoff: async (tripId: number, notes?: string) => {
+  requestHandoff: async (shareCode: string, notes?: string) => {
     set({ isSaving: true, error: null });
 
-    const result = await apiPost<{ success: boolean }>(`/api/trips/${tripId}/handoff`, { notes }, {
+    const result = await apiPost<{ success: boolean }>(`/api/trips/${shareCode}/handoff`, { notes }, {
       timeout: TRIP_API_TIMEOUT,
     });
 
@@ -413,8 +413,8 @@ export const useTripPlannerStore = create<TripPlannerState>((set, get) => ({
       notes: suggestion.reason,
     };
 
-    // Use existing addStop action
-    await get().addStop(currentTrip.id, stopRequest);
+    // Use existing addStop action with share_code (API routes use shareCode, not numeric id)
+    await get().addStop(currentTrip.share_code, stopRequest);
 
     // Remove the applied suggestion from the list
     set({

@@ -17,19 +17,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { bookingTrackingService } from '@/lib/services/booking-tracking.service';
 import { Resend } from 'resend';
 import { logger } from '@/lib/logger';
-import { withErrorHandling, UnauthorizedError } from '@/lib/api/middleware/error-handler';
+import { withCronAuth } from '@/lib/api/middleware/cron-auth';
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
-export const GET = withErrorHandling<unknown>(async (request: NextRequest) => {
-  // Verify cron secret
-  const authHeader = request.headers.get('authorization');
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    throw new UnauthorizedError('Unauthorized');
-  }
-
+export const GET = withCronAuth(async (_request: NextRequest) => {
   // Check if Resend is configured
   if (!resend) {
     return NextResponse.json({

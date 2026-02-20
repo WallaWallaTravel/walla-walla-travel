@@ -2,20 +2,6 @@
 
 echo "Running pre-commit checks..."
 
-# Load environment variables for prisma generate
-if [ -f .env.local ]; then
-  set -a
-  . ./.env.local
-  set +a
-fi
-
-# Generate Prisma client (needed for type-checking)
-echo "Generating Prisma client..."
-npx prisma generate || {
-  echo "Prisma generate failed."
-  exit 1
-}
-
 # Type-check (catches real code errors)
 echo "Checking types..."
 npx tsc --noEmit || {
@@ -27,6 +13,13 @@ npx tsc --noEmit || {
 echo "Linting..."
 npx next lint || {
   echo "Lint errors found. Fix before committing."
+  exit 1
+}
+
+# Schema validation & feature health (catches missing tables/columns)
+echo "Validating schema integrity..."
+npx jest --testPathPatterns="schema-sql-validation|feature-health" --silent || {
+  echo "Schema validation or feature health tests failed. Fix before committing."
   exit 1
 }
 

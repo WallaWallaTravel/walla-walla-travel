@@ -62,8 +62,8 @@ export const POST = withRateLimit(rateLimiters.api)(
         `INSERT INTO crm_contacts (
           email, name, phone, contact_type, lifecycle_stage,
           lead_temperature, source, source_detail,
-          notes, created_at, updated_at
-        ) VALUES ($1, $2, $3, 'individual', 'lead', 'warm', 'website_contact', $4, $5, NOW(), NOW())
+          notes, brand_id, created_at, updated_at
+        ) VALUES ($1, $2, $3, 'individual', 'lead', 'warm', 'website_contact', $4, $5, 1, NOW(), NOW())
         RETURNING id, email, name`,
         [
           data.email,

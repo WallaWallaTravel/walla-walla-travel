@@ -202,8 +202,8 @@ async function postHandler(request: NextRequest) {
   const contactResult = await query(`
     INSERT INTO crm_contacts (
       email, name, phone, company, contact_type, lifecycle_stage,
-      lead_score, lead_temperature, source, source_detail, notes, assigned_to
-    ) VALUES ($1, $2, $3, $4, $5, 'lead', $6, $7, $8, $9, $10, $11)
+      lead_score, lead_temperature, source, source_detail, notes, assigned_to, brand_id
+    ) VALUES ($1, $2, $3, $4, $5, 'lead', $6, $7, $8, $9, $10, $11, 1)
     ON CONFLICT (email) DO UPDATE SET
       name = EXCLUDED.name,
       phone = COALESCE(EXCLUDED.phone, crm_contacts.phone),
@@ -260,8 +260,8 @@ async function postHandler(request: NextRequest) {
       await query(`
         INSERT INTO crm_deals (
           contact_id, stage_id, brand, title, description,
-          party_size, expected_tour_date, estimated_value
-        ) VALUES ($1, $2, 'walla_walla_travel', $3, $4, $5, $6, $7)
+          party_size, expected_tour_date, estimated_value, brand_id
+        ) VALUES ($1, $2, 'walla_walla_travel', $3, $4, $5, $6, $7, 1)
       `, [
         contact.id,
         stageResult.rows[0].id,
