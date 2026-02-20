@@ -8,6 +8,7 @@ import { TripStop, TripGuest, AddStopRequest, AddGuestRequest } from '@/lib/type
 import { AddToHomeScreen } from '@/components/AddToHomeScreen';
 import { TripAssistant } from '@/components/trip-planner/TripAssistant';
 import { SmartSuggestions } from '@/components/trip-planner/SmartSuggestions';
+import { LodgingPicker } from '@/components/trip-planner/LodgingPicker';
 
 // ============================================================================
 // Consultation Success Banner
@@ -468,6 +469,51 @@ function AddStopModal({
               className="w-full px-4 py-2 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#722F37]"
             />
           </div>
+
+          {formData.stop_type === 'accommodation' && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-stone-700 mb-2">Property (optional)</label>
+                <LodgingPicker
+                  selectedId={formData.lodging_property_id}
+                  onSelect={(property) => {
+                    if (property) {
+                      setFormData({
+                        ...formData,
+                        lodging_property_id: property.id,
+                        name: property.name,
+                      });
+                    } else {
+                      setFormData({
+                        ...formData,
+                        lodging_property_id: undefined,
+                      });
+                    }
+                  }}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-stone-700 mb-2">Check-in</label>
+                  <input
+                    type="date"
+                    value={formData.check_in_date || ''}
+                    onChange={(e) => setFormData({ ...formData, check_in_date: e.target.value || undefined })}
+                    className="w-full px-4 py-2 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#722F37]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-stone-700 mb-2">Check-out</label>
+                  <input
+                    type="date"
+                    value={formData.check_out_date || ''}
+                    onChange={(e) => setFormData({ ...formData, check_out_date: e.target.value || undefined })}
+                    className="w-full px-4 py-2 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#722F37]"
+                  />
+                </div>
+              </div>
+            </>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-stone-700 mb-2">Day</label>

@@ -108,6 +108,9 @@ export const addStopSchema = z.object({
   notes: z.string().max(2000).optional(),
   special_requests: z.string().max(2000).optional(),
   estimated_cost_per_person: z.number().min(0).optional(),
+  lodging_property_id: z.number().int().positive().optional(),
+  check_in_date: z.string().optional(),
+  check_out_date: z.string().optional(),
 });
 
 // ============================================================================

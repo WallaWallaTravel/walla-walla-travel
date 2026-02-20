@@ -43,12 +43,13 @@ export const POST = withErrorHandling<unknown, RouteParams>(
     const result = await query(
       `INSERT INTO trip_stops (
         trip_id, stop_type, name, description,
-        winery_id, day_number, stop_order,
+        winery_id, lodging_property_id, check_in_date, check_out_date,
+        day_number, stop_order,
         planned_arrival, planned_departure, duration_minutes,
         notes, special_requests, estimated_cost_per_person,
         added_by, status
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'suggested'
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, 'suggested'
       )
       RETURNING *`,
       [
@@ -57,6 +58,9 @@ export const POST = withErrorHandling<unknown, RouteParams>(
         validated.name,
         validated.description || null,
         validated.winery_id || null,
+        validated.lodging_property_id || null,
+        validated.check_in_date || null,
+        validated.check_out_date || null,
         validated.day_number,
         stopOrder,
         validated.planned_arrival || null,
@@ -93,6 +97,9 @@ export const POST = withErrorHandling<unknown, RouteParams>(
         name: stop.name,
         description: stop.description,
         winery_id: stop.winery_id,
+        lodging_property_id: stop.lodging_property_id || null,
+        check_in_date: stop.check_in_date || null,
+        check_out_date: stop.check_out_date || null,
         day_number: stop.day_number,
         stop_order: stop.stop_order,
         planned_arrival: stop.planned_arrival,

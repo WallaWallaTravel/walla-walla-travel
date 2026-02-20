@@ -46,6 +46,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Business Portal', icon: '🏪', href: '/admin/business-portal', section: 'Content', requiredAccess: 'admin' },
   { label: 'Media Library', icon: '📸', href: '/admin/media', section: 'Content', requiredAccess: 'admin' },
   { label: 'Wine Directory', icon: '🍷', href: '/admin/wine-directory', section: 'Content', requiredAccess: 'admin' },
+  { label: 'Lodging', icon: '🏨', href: '/admin/lodging', section: 'Content', requiredAccess: 'admin' },
 
   // Geology (geology_admin and admin) - unchanged
   { label: 'Geology Dashboard', icon: '🪨', href: '/admin/geology', section: 'Geology', requiredAccess: 'geology' },

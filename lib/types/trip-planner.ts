@@ -55,6 +55,9 @@ export interface TripStop {
   winery_id?: number;
   winery_name?: string;
   restaurant_id?: number;
+  lodging_property_id?: number;
+  check_in_date?: string;
+  check_out_date?: string;
   name: string;
   description?: string;
   stop_type: StopType;
@@ -84,6 +87,12 @@ export interface TripStop {
     id: number;
     name: string;
     cuisine_type?: string;
+  };
+  lodging?: {
+    id: number;
+    name: string;
+    cover_image_url?: string;
+    property_type?: string;
   };
 }
 
@@ -169,6 +178,9 @@ export interface AddStopRequest {
   winery_id?: number;
   winery_name?: string;
   restaurant_id?: number;
+  lodging_property_id?: number;
+  check_in_date?: string;
+  check_out_date?: string;
   name: string;
   description?: string;
   stop_type: StopType;
