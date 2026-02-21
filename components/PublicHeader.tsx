@@ -33,6 +33,9 @@ export function PublicHeader() {
           <Link href="/itineraries" className="text-gray-600 hover:text-[#8B1538] transition-colors">
             Itineraries
           </Link>
+          <Link href="/events" className="text-gray-600 hover:text-[#8B1538] transition-colors">
+            Events
+          </Link>
           <Link href="/geology" className="text-gray-600 hover:text-[#8B1538] transition-colors">
             Geology
           </Link>
@@ -102,6 +105,13 @@ export function PublicHeader() {
             onClick={() => setMobileMenuOpen(false)}
           >
             Itineraries
+          </Link>
+          <Link
+            href="/events"
+            className="block py-2 text-gray-600 hover:text-[#8B1538]"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            Events
           </Link>
           <Link
             href="/geology"
