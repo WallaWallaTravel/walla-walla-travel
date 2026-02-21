@@ -19,6 +19,7 @@ interface Stop {
   duration_minutes?: number;
   per_person_cost: string;
   flat_cost: string;
+  cost_note?: string;
   client_notes?: string;
 }
 
@@ -43,6 +44,7 @@ interface Inclusion {
   id: number;
   inclusion_type: string;
   description: string;
+  pricing_type: 'flat' | 'per_person' | 'per_day';
   quantity: number;
   unit_price: string;
   total_price: string;
@@ -307,7 +309,7 @@ export default function ClientTripProposalView({
                       <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-200"></div>
 
                       <div className="space-y-6">
-                        {day.stops.map((stop, stopIndex) => {
+                        {day.stops.map((stop) => {
                           const icon = STOP_TYPE_ICONS[stop.stop_type] || '📍';
                           const venueName =
                             stop.winery?.name ||
@@ -315,9 +317,6 @@ export default function ClientTripProposalView({
                             stop.hotel?.name ||
                             stop.custom_name ||
                             'Stop';
-                          const totalCost =
-                            parseFloat(stop.flat_cost) +
-                            parseFloat(stop.per_person_cost) * proposal.party_size;
 
                           return (
                             <div key={stop.id} className="relative pl-16">
@@ -325,35 +324,33 @@ export default function ClientTripProposalView({
                               <div className="absolute left-4 w-5 h-5 bg-[#8B1538] rounded-full border-4 border-white shadow"></div>
 
                               <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                                <div className="flex items-start justify-between mb-2">
-                                  <div>
-                                    <div className="flex items-center gap-2 mb-1">
-                                      <span className="text-2xl">{icon}</span>
-                                      <h5 className="font-bold text-gray-900">{venueName}</h5>
-                                    </div>
-                                    {stop.scheduled_time && (
-                                      <p className="text-sm text-gray-600">
-                                        {formatTime(stop.scheduled_time)}
-                                        {stop.duration_minutes && (
-                                          <span> • {stop.duration_minutes} min</span>
-                                        )}
-                                      </p>
-                                    )}
-                                    {stop.custom_address && (
-                                      <p className="text-sm text-gray-500 mt-1">
-                                        {stop.custom_address}
-                                      </p>
-                                    )}
-                                    {stop.client_notes && (
-                                      <p className="text-sm text-gray-600 mt-2 italic">
-                                        {stop.client_notes}
-                                      </p>
-                                    )}
+                                <div>
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-2xl">{icon}</span>
+                                    <h5 className="font-bold text-gray-900">{venueName}</h5>
                                   </div>
-                                  {totalCost > 0 && (
-                                    <span className="font-bold text-[#8B1538]">
-                                      {formatCurrency(totalCost)}
-                                    </span>
+                                  {stop.scheduled_time && (
+                                    <p className="text-sm text-gray-600">
+                                      {formatTime(stop.scheduled_time)}
+                                      {stop.duration_minutes && (
+                                        <span> • {stop.duration_minutes} min</span>
+                                      )}
+                                    </p>
+                                  )}
+                                  {stop.custom_address && (
+                                    <p className="text-sm text-gray-500 mt-1">
+                                      {stop.custom_address}
+                                    </p>
+                                  )}
+                                  {stop.cost_note && (
+                                    <p className="text-sm text-gray-500 mt-1 italic">
+                                      {stop.cost_note}
+                                    </p>
+                                  )}
+                                  {stop.client_notes && (
+                                    <p className="text-sm text-gray-600 mt-2 italic">
+                                      {stop.client_notes}
+                                    </p>
                                   )}
                                 </div>
                               </div>
@@ -369,32 +366,50 @@ export default function ClientTripProposalView({
           </div>
         )}
 
-        {/* Included Services */}
+        {/* Services */}
         {proposal.inclusions && proposal.inclusions.length > 0 && (
           <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-            <h3 className="text-2xl font-bold text-gray-900 mb-6">What&apos;s Included</h3>
+            <h3 className="text-2xl font-bold text-gray-900 mb-6">Services</h3>
             <div className="space-y-4">
-              {proposal.inclusions.map((inclusion) => (
-                <div
-                  key={inclusion.id}
-                  className="flex items-center justify-between py-3 border-b border-gray-200 last:border-0"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-green-500 text-xl">✓</span>
-                    <div>
-                      <p className="font-medium text-gray-900">{inclusion.description}</p>
-                      {inclusion.quantity > 1 && (
-                        <p className="text-sm text-gray-600">Quantity: {inclusion.quantity}</p>
-                      )}
+              {proposal.inclusions.map((inclusion) => {
+                const unitPrice = parseFloat(inclusion.unit_price) || 0;
+                const quantity = inclusion.quantity || 1;
+                const pricingType = inclusion.pricing_type || 'flat';
+                let displayTotal: number;
+                let detail = '';
+
+                if (pricingType === 'per_person') {
+                  displayTotal = unitPrice * proposal.party_size;
+                  detail = `${formatCurrency(unitPrice)}/person x ${proposal.party_size} guests`;
+                } else if (pricingType === 'per_day' && quantity > 1) {
+                  displayTotal = unitPrice * quantity;
+                  detail = `${quantity} x ${formatCurrency(unitPrice)}`;
+                } else {
+                  displayTotal = unitPrice;
+                }
+
+                return (
+                  <div
+                    key={inclusion.id}
+                    className="flex items-center justify-between py-3 border-b border-gray-200 last:border-0"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-green-500 text-xl">✓</span>
+                      <div>
+                        <p className="font-medium text-gray-900">{inclusion.description}</p>
+                        {detail && (
+                          <p className="text-sm text-gray-600">{detail}</p>
+                        )}
+                      </div>
                     </div>
+                    {displayTotal > 0 && (
+                      <span className="font-bold text-gray-900">
+                        {formatCurrency(displayTotal)}
+                      </span>
+                    )}
                   </div>
-                  {parseFloat(inclusion.total_price) > 0 && (
-                    <span className="font-bold text-gray-900">
-                      {formatCurrency(inclusion.total_price)}
-                    </span>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

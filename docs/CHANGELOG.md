@@ -9,9 +9,35 @@ All notable changes to the Walla Walla Travel project will be documented in this
 ### Added
 - Offline support infrastructure (PWA manifest, offline storage library)
 - Voice inspection roadmap and planning
+- **Service-Level Billing for Trip Proposals** — Billing moved from per-stop pricing to service line items with `pricing_type` support (flat, per_person, per_day)
+- Service line item templates: Airport Transfer, Multi-Day Tour, Planning/Coordination Fee, Arranged Tasting Program, Custom
+- `cost_note` field on trip proposal stops for informational text (e.g., "Tasting fee ~$25/pp, paid at winery")
+- `pricing_type` column on `trip_proposal_inclusions` table (flat, per_person, per_day)
+- `arranged_tasting` inclusion type
+- **Lodging Directory** — Public lodging listing with property types, amenities, search/filtering
+- Admin lodging management CRUD with image upload
+- Trip planner lodging integration for hotel stops
+- Lodging service unit tests and click tracking tests
+- **Standardized Error Handling** — All API routes wrapped with `withErrorHandling` middleware
+- Brand service with `brand_id` support on bookings and proposals
+- CRM sync service unit tests
+- Booking service unit tests (core, creation, availability)
 
 ### Changed
 - Documentation structure (consolidated status files, created START_HERE.md)
+- Trip proposal pricing calculation now uses service line items only (stops subtotal is always $0)
+- Client-facing proposal view no longer shows per-stop dollar amounts
+- Admin proposal builder hides per-stop billing fields, adds cost_note input
+- Tax rate labels updated from 8.9% to 9.1% across all pages
+- API response format standardized to `{ success, data }` pattern
+
+### Fixed
+- Proposal duplication now copies `pricing_type` on inclusions
+- Edit page `recalculatePricing` properly reloads full proposal after pricing update
+- Dead auth checks removed from service callers
+
+### Database
+- Migration 079: Added `cost_note` to `trip_proposal_stops`, `pricing_type` to `trip_proposal_inclusions`
 
 ---
 
@@ -168,4 +194,4 @@ We follow [Semantic Versioning](https://semver.org/):
 ---
 
 **Maintained By:** Development Team  
-**Last Updated:** November 5, 2025
+**Last Updated:** February 20, 2026

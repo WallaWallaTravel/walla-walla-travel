@@ -433,6 +433,72 @@ export const POST = withErrorHandling(async (request) => {
 
 ---
 
+## TRIP PROPOSAL SYSTEM
+
+### Architecture Overview
+
+Trip proposals are the core deliverable for custom travel planning. Key files:
+
+| File | Purpose |
+|------|----------|
+| `lib/services/trip-proposal.service.ts` | Business logic, pricing calculations, CRUD operations |
+| `lib/types/trip-proposal.ts` | TypeScript type definitions for proposals, stops, inclusions |
+| `app/admin/trip-proposals/new/page.tsx` | Admin: create new proposal |
+| `app/admin/trip-proposals/[id]/page.tsx` | Admin: edit existing proposal |
+| `app/trip-proposals/[proposalNumber]/page.tsx` | Client-facing proposal view |
+
+### Service-Level Billing Model (NON-NEGOTIABLE)
+
+**Billing lives at the SERVICE level, not the stop level.** This is the foundational design decision.
+
+- **Stops** are itinerary-only (schedule/logistics) — they have NO billing fields visible in the UI
+- **All billing** goes through Service Line Items (the `trip_proposal_inclusions` table with `pricing_type`)
+- **Three pricing types:**
+
+| `pricing_type` | Calculation | Example |
+|-----------------|-------------|----------|
+| `flat` | Fixed amount | Airport transfer: $150 |
+| `per_person` | amount × party_size | Arranged tasting: $25 × 6 guests = $150 |
+| `per_day` | amount × quantity | Multi-day tour: $800 × 3 days = $2,400 |
+
+- **Stop `cost_note` field**: Optional informational text only (e.g., "Tasting fee ~$25/pp, paid at winery") — never calculated, never shown as a dollar amount
+- **Legacy columns**: `per_person_cost` and `flat_cost` remain in DB for backward compatibility but are always set to 0 for new proposals
+
+### Service Line Item Templates
+
+Quick-add templates available in the admin UI:
+
+| Template | Default `pricing_type` |
+|----------|------------------------|
+| Airport Transfer | `flat` |
+| Multi-Day Tour | `per_day` |
+| Planning/Coordination Fee | `flat` |
+| Arranged Tasting Program | `per_person` |
+| Custom | `flat` |
+
+### Pricing Calculation Formula
+
+All calculations use service line item totals — never stop costs.
+
+```
+subtotal              = sum of all service line item totals (NOT stop costs)
+discount_amount       = subtotal × discount_percentage
+subtotal_after_discount = subtotal - discount_amount
+taxes                 = subtotal_after_discount × tax_rate
+gratuity              = subtotal_after_discount × gratuity_percentage
+total                 = subtotal_after_discount + taxes + gratuity
+deposit               = total × deposit_percentage
+```
+
+### Anti-Patterns (NEVER DO)
+
+- **Never** show per-stop dollar amounts in the client-facing proposal
+- **Never** calculate subtotal from stop costs
+- **Never** add billing fields (`per_person_cost`, `flat_cost`) to stop card UI
+- **Never** create an inclusion without setting `pricing_type`
+
+---
+
 ## 🤖 AI ENGINEERING TEAM
 
 This project is managed by an 8-agent AI engineering team. The team framework provides:
@@ -465,6 +531,45 @@ Located in `.claude/team-wiki/`:
 
 ---
 
+## 🔍 PROACTIVE IMPROVEMENT TRIGGERS
+
+### After Completing Any Feature
+Claude should automatically check:
+1. **Test coverage**: Does the new/modified service have unit tests? If not, flag it: "This service has no test coverage. Want me to add tests?"
+2. **Documentation currency**: Is the changelog up to date? Are any docs referencing outdated patterns?
+3. **Type safety**: Are there any `any` types in the new code? Any missing return types?
+
+### After Modifying Trip Proposals
+- Verify `calculatePricing()` still only uses service line items (not stop costs)
+- Verify client-facing view doesn't show per-stop dollar amounts
+- Check that any new inclusion types are added to `INCLUSION_TYPES` in types and Zod schemas
+- Run: `npx jest __tests__/lib/trip-proposal.service.test.ts --no-coverage`
+
+### After Modifying API Routes
+- Verify the route is wrapped with `withErrorHandling`
+- Verify response format follows `{ success: true, data: ... }` pattern
+- Check that the route has proper auth checks where needed
+
+### After Modifying Database Schema
+- Verify migration file follows naming convention: `NNN-description.sql`
+- Verify corresponding TypeScript types are updated
+- Verify Zod schemas are updated to match
+- Check that the service layer handles the new/changed columns
+
+### After Modifying Pricing/Billing
+- Verify tax rate is 9.1% (0.091) not 8.9%
+- Verify deposit percentage defaults are correct
+- Verify the pricing formula: subtotal → discount → tax → gratuity → total → deposit
+- Run pricing tests
+
+### Weekly Maintenance Checks (on /standup)
+- Are there services without test coverage?
+- Are there console.log statements that should use the logger?
+- Are there TODO comments that should be resolved?
+- Is the changelog up to date?
+
+---
+
 ## 📚 KEY FILES TO READ
 
 ### For Auditor's Dream
@@ -477,6 +582,8 @@ Located in `.claude/team-wiki/`:
 1. `lib/services/booking.service.ts` - Business logic
 2. `lib/api/middleware/error-handler.ts` - Error handling
 3. `app/api/` - API routes
+4. `lib/services/trip-proposal.service.ts` - Trip proposal business logic & pricing
+5. `lib/types/trip-proposal.ts` - Trip proposal type definitions
 
 ### For Context
 1. `CLAUDE_CODE_HANDOFF.md` - Immediate tasks
@@ -584,5 +691,5 @@ When adding tests, follow existing patterns in `__tests__/`.
 
 ---
 
-**Last Updated:** January 9, 2026
-**Active Focus:** Auditor's Dream Supabase setup + Walla Walla Travel commercial readiness
+**Last Updated:** February 20, 2026
+**Active Focus:** Trip proposal service-level billing + Auditor's Dream Supabase setup + Walla Walla Travel commercial readiness

@@ -49,6 +49,7 @@ interface StopData {
   per_person_cost: string;
   flat_cost: string;
   cost_notes?: string;
+  cost_note?: string;
   reservation_status: string;
   client_notes?: string;
   internal_notes?: string;
@@ -78,6 +79,7 @@ interface InclusionData {
   id: number;
   inclusion_type: string;
   description: string;
+  pricing_type: 'flat' | 'per_person' | 'per_day';
   quantity: number;
   unit_price: string;
   total_price: string;
@@ -279,7 +281,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
       });
       const result = await response.json();
       if (result.success) {
-        setProposal(result.data);
+        await loadProposal();
         alert('Pricing recalculated!');
       } else {
         alert(result.error || 'Failed to recalculate pricing');
@@ -799,7 +801,6 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                           {day.stops.map((stop) => {
                             const stopType = STOP_TYPES.find((t) => t.value === stop.stop_type);
                             const venueName = stop.winery?.name || stop.restaurant?.name || stop.hotel?.name || stop.custom_name || 'Unknown';
-                            const totalCost = parseFloat(stop.flat_cost) + parseFloat(stop.per_person_cost) * proposal.party_size;
 
                             return (
                               <div key={stop.id} className="border border-gray-200 rounded-lg p-3 bg-gray-50">
@@ -813,15 +814,12 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                                       </div>
                                     </div>
                                   </div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-bold text-[#8B1538]">{formatCurrency(totalCost)}</span>
-                                    <button
-                                      onClick={() => deleteStop(day.id, stop.id)}
-                                      className="text-red-600 hover:text-red-800 text-sm"
-                                    >
-                                      ✕
-                                    </button>
-                                  </div>
+                                  <button
+                                    onClick={() => deleteStop(day.id, stop.id)}
+                                    className="text-red-600 hover:text-red-800 text-sm"
+                                  >
+                                    ✕
+                                  </button>
                                 </div>
 
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
@@ -897,24 +895,29 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                                     className="px-2 py-1.5 border border-gray-300 rounded text-sm"
                                   />
 
-                                  <div className="relative">
-                                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500 text-xs">
-                                      $
-                                    </span>
-                                    <input
-                                      type="number"
-                                      min="0"
-                                      step="0.01"
-                                      value={parseFloat(stop.flat_cost) || ''}
-                                      onChange={(e) =>
-                                        updateStop(day.id, stop.id, {
-                                          flat_cost: parseFloat(e.target.value) || 0,
-                                        })
-                                      }
-                                      placeholder="Flat"
-                                      className="w-full pl-6 pr-2 py-1.5 border border-gray-300 rounded text-sm"
-                                    />
-                                  </div>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={stop.duration_minutes || ''}
+                                    onChange={(e) =>
+                                      updateStop(day.id, stop.id, { duration_minutes: parseInt(e.target.value) || null })
+                                    }
+                                    placeholder="Min"
+                                    className="px-2 py-1.5 border border-gray-300 rounded text-sm"
+                                  />
+                                </div>
+
+                                {/* Cost Note (informational) */}
+                                <div className="mt-2">
+                                  <input
+                                    type="text"
+                                    value={stop.cost_note || ''}
+                                    onChange={(e) =>
+                                      updateStop(day.id, stop.id, { cost_note: e.target.value })
+                                    }
+                                    placeholder="e.g., Tasting fee ~$25/pp, paid at winery"
+                                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm text-gray-600 italic"
+                                  />
                                 </div>
                               </div>
                             );

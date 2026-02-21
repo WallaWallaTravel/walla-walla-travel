@@ -67,8 +67,12 @@ export const INCLUSION_TYPES = [
   'chauffeur',
   'gratuity',
   'planning_fee',
+  'arranged_tasting',
   'custom',
 ] as const;
+
+export const PRICING_TYPES = ['flat', 'per_person', 'per_day'] as const;
+export type PricingType = (typeof PRICING_TYPES)[number];
 
 export type InclusionType = (typeof INCLUSION_TYPES)[number];
 
@@ -206,10 +210,11 @@ export interface TripProposalStop {
   scheduled_time: string | null; // HH:MM format
   duration_minutes: number | null;
 
-  // Pricing
+  // Pricing (legacy — new proposals use service line items)
   per_person_cost: number;
   flat_cost: number;
   cost_notes: string | null;
+  cost_note: string | null;
 
   // Hotel specific
   room_rate: number;
@@ -283,6 +288,7 @@ export interface TripProposalInclusion {
   unit: string | null;
   unit_price: number;
   total_price: number;
+  pricing_type: PricingType;
   sort_order: number;
   show_on_proposal: boolean;
   notes: string | null;
@@ -392,6 +398,7 @@ export interface AddStopInput {
   per_person_cost?: number;
   flat_cost?: number;
   cost_notes?: string;
+  cost_note?: string;
   room_rate?: number;
   num_rooms?: number;
   nights?: number;
@@ -425,6 +432,7 @@ export interface AddInclusionInput {
   unit?: string;
   unit_price?: number;
   total_price?: number;
+  pricing_type?: PricingType;
   sort_order?: number;
   show_on_proposal?: boolean;
   notes?: string;
@@ -482,6 +490,7 @@ export const AddStopSchema = z.object({
   per_person_cost: z.number().min(0).optional(),
   flat_cost: z.number().min(0).optional(),
   cost_notes: z.string().optional(),
+  cost_note: z.string().optional(),
   room_rate: z.number().min(0).optional(),
   num_rooms: z.number().int().min(0).optional(),
   nights: z.number().int().min(1).optional(),
@@ -509,6 +518,7 @@ export const AddInclusionSchema = z.object({
   unit: z.string().max(50).optional(),
   unit_price: z.number().min(0).optional(),
   total_price: z.number().min(0).optional(),
+  pricing_type: z.enum(PRICING_TYPES).optional(),
   sort_order: z.number().int().min(0).optional(),
   show_on_proposal: z.boolean().optional(),
   notes: z.string().optional(),
@@ -528,6 +538,7 @@ export interface TripProposalListResponse {
 export interface TripProposalPricingBreakdown {
   stops_subtotal: number;
   inclusions_subtotal: number;
+  services_subtotal: number;
   subtotal: number;
   discount_amount: number;
   subtotal_after_discount: number;
