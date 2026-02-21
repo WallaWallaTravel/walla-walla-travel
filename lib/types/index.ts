@@ -49,3 +49,6 @@ export * from './database';
 
 // Booking system types (Phase 2) - PaymentStatus defined here takes precedence
 export * from './booking';
+
+// Event system types
+export * from './events';

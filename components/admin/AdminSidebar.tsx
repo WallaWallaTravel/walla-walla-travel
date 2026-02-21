@@ -64,6 +64,9 @@ const NAV_ITEMS: NavItem[] = [
   // Services section REMOVED - features live inside Trip Proposals
   // Additional Services, Lunch Orders → managed within Trip Proposals
 
+  // Events (admin only)
+  { label: 'Events', icon: '🎉', href: '/admin/events', section: 'Events', requiredAccess: 'admin' },
+
   // Partners (admin only) - unchanged
   { label: 'Partners', icon: '🤝', href: '/admin/partners', section: 'Partners', requiredAccess: 'admin' },
 

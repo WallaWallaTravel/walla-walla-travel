@@ -122,6 +122,53 @@ export async function middleware(request: NextRequest) {
   }
 
   // ============================================================================
+  // EVENTS DOMAIN ROUTING
+  // wallawallaevents.com → serve events content from same app
+  // ============================================================================
+
+  const eventsDomains = ['wallawallaevents.com', 'events.localhost'];
+  const isEventsDomain = eventsDomains.some(d => hostWithoutPort === d || hostWithoutPort.endsWith(`.${d}`));
+
+  if (isEventsDomain) {
+    // Passthrough routes that should work as-is on events domain
+    const eventsPassthrough = ['/events', '/api', '/_next', '/login', '/organizer-portal'];
+    const isPassthrough = eventsPassthrough.some(
+      prefix => pathname === prefix || pathname.startsWith(prefix + '/')
+    );
+
+    // Static files always pass through
+    const isStaticFile = /\.(svg|png|jpg|jpeg|gif|webp|js|css|json|txt|xml|ico)$/.test(pathname);
+
+    if (pathname === '/') {
+      // Rewrite root to /events (events homepage)
+      const response = NextResponse.rewrite(new URL('/events', request.url));
+      response.headers.set('x-events-domain', 'true');
+      return addSecurityHeaders(response, '/events');
+    }
+
+    if (isPassthrough || isStaticFile) {
+      // Let these routes pass through, but set the events domain header
+      const response = NextResponse.next();
+      response.headers.set('x-events-domain', 'true');
+      // Continue to auth checks below (don't return yet for protected routes)
+      // For non-protected routes, we can return early
+      if (!pathname.startsWith('/login') && !pathname.startsWith('/organizer-portal')) {
+        return addSecurityHeaders(response, pathname);
+      }
+      // For login and organizer-portal, fall through to auth section below
+      // but still set the events domain header
+    } else {
+      // All other paths on events domain → redirect to wallawalla.travel
+      const travelDomain = process.env.NEXT_PUBLIC_TRAVEL_DOMAIN || 'wallawalla.travel';
+      const redirectUrl = new URL(pathname, `https://${travelDomain}`);
+      redirectUrl.search = request.nextUrl.search;
+      const response = NextResponse.redirect(redirectUrl, 301);
+      response.headers.set('Cache-Control', 'public, max-age=86400');
+      return response;
+    }
+  }
+
+  // ============================================================================
   // SUBDOMAIN ROUTING
   // ============================================================================
 
@@ -146,6 +193,7 @@ export async function middleware(request: NextRequest) {
       partners: 'partners',
       app: 'app',
       business: 'business',
+      events: 'events',
     };
     if (parts[0] in subdomainMap) {
       subdomain = subdomainMap[parts[0]];
@@ -342,6 +390,11 @@ export async function middleware(request: NextRequest) {
 
   // Add security headers to all responses
   let response = NextResponse.next();
+
+  // Propagate events domain header for downstream components
+  if (isEventsDomain) {
+    response.headers.set('x-events-domain', 'true');
+  }
 
   // Sliding window session refresh: if token is past half-life, issue a fresh one
   if (session && shouldRefreshSession(session)) {
