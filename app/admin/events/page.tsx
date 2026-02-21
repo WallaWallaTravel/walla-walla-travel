@@ -23,6 +23,7 @@ export default function AdminEventsPage() {
   const [events, setEvents] = useState<EventListData | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [hideInstances, setHideInstances] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchEvents = useCallback(async () => {
@@ -130,6 +131,15 @@ export default function AdminEventsPage() {
           <option value="cancelled">Cancelled</option>
           <option value="past">Past</option>
         </select>
+        <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={hideInstances}
+            onChange={(e) => setHideInstances(e.target.checked)}
+            className="rounded border-gray-300"
+          />
+          <span className="text-sm text-gray-700">Hide instances</span>
+        </label>
       </div>
 
       {/* Table */}
@@ -156,14 +166,23 @@ export default function AdminEventsPage() {
                 </tr>
               </thead>
               <tbody>
-                {events.data.map((event) => (
+                {events.data
+                  .filter((event) => !hideInstances || !event.parent_event_id)
+                  .map((event) => (
                   <tr
                     key={event.id}
                     className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
                   >
                     <td className="px-4 py-3">
                       <div>
-                        <p className="font-medium text-gray-900">{event.title}</p>
+                        <p className="font-medium text-gray-900">
+                          {event.title}
+                          {event.is_recurring && (
+                            <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-indigo-50 text-indigo-700">
+                              Recurring
+                            </span>
+                          )}
+                        </p>
                         {event.venue_name && (
                           <p className="text-xs text-gray-600 mt-0.5">{event.venue_name}</p>
                         )}

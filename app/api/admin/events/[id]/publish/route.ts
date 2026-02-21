@@ -23,7 +23,15 @@ export const POST = withErrorHandling<unknown, RouteParams>(
     }
 
     const { id } = await context.params;
-    const event = await eventsService.publish(Number(id));
+
+    // Check if event is recurring — publish entire series if so
+    const existing = await eventsService.getById(Number(id));
+    let event;
+    if (existing?.is_recurring) {
+      event = await eventsService.publishRecurringSeries(Number(id));
+    } else {
+      event = await eventsService.publish(Number(id));
+    }
 
     return NextResponse.json({
       success: true,

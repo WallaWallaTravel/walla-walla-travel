@@ -3,12 +3,22 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import type { EventCategory } from '@/lib/types/events';
+import { RecurrenceSection } from '@/components/events/RecurrenceSection';
 
 export default function AdminCreateEventPage() {
   const router = useRouter();
   const [categories, setCategories] = useState<EventCategory[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurrenceRule, setRecurrenceRule] = useState<{
+    frequency: 'weekly' | 'biweekly' | 'monthly';
+    days_of_week?: number[];
+    day_of_month?: number;
+    end_type: 'count' | 'until_date';
+    count?: number;
+    until_date?: string;
+  } | null>(null);
 
   const [form, setForm] = useState({
     title: '',
@@ -97,6 +107,11 @@ export default function AdminCreateEventPage() {
       if (form.feature_priority) payload.feature_priority = parseInt(form.feature_priority);
       if (form.meta_title) payload.meta_title = form.meta_title;
       if (form.meta_description) payload.meta_description = form.meta_description;
+
+      if (isRecurring && recurrenceRule) {
+        payload.is_recurring = true;
+        payload.recurrence_rule = recurrenceRule;
+      }
 
       // Create event
       const createResponse = await fetch('/api/admin/events', {
@@ -309,6 +324,15 @@ export default function AdminCreateEventPage() {
             )}
           </div>
         </section>
+
+        {/* Recurrence */}
+        <RecurrenceSection
+          isRecurring={isRecurring}
+          onIsRecurringChange={setIsRecurring}
+          recurrenceRule={recurrenceRule}
+          onRecurrenceRuleChange={setRecurrenceRule}
+          startDate={form.start_date}
+        />
 
         {/* Location */}
         <section className="bg-white rounded-xl border border-gray-200 p-6">
