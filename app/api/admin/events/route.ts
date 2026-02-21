@@ -48,6 +48,15 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   const body = await request.json();
   const data = createEventSchema.parse(body);
 
+  // Handle recurring event creation
+  if (data.is_recurring && data.recurrence_rule) {
+    const result = await eventsService.createRecurringEvent(data, session.user.id);
+    return NextResponse.json(
+      { success: true, data: { event: result.parent, instanceCount: result.instanceCount } },
+      { status: 201 }
+    );
+  }
+
   const event = await eventsService.create(data, session.user.id);
 
   return NextResponse.json(

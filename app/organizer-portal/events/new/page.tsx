@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { RecurrenceSection } from '@/components/events/RecurrenceSection';
 
 interface Category {
   id: number;
@@ -94,6 +95,15 @@ export default function CreateEventPage() {
   const [saving, setSaving] = useState(false);
   const [submitAction, setSubmitAction] = useState<'draft' | 'review'>('draft');
   const [error, setError] = useState('');
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurrenceRule, setRecurrenceRule] = useState<{
+    frequency: 'weekly' | 'biweekly' | 'monthly';
+    days_of_week?: number[];
+    day_of_month?: number;
+    end_type: 'count' | 'until_date';
+    count?: number;
+    until_date?: string;
+  } | null>(null);
 
   useEffect(() => {
     async function fetchCategories() {
@@ -140,13 +150,18 @@ export default function CreateEventPage() {
     }
 
     try {
-      const payload = {
+      const payload: Record<string, unknown> = {
         ...form,
         category_id: form.category_id ? parseInt(form.category_id, 10) : null,
         tags: form.tags ? form.tags.split(',').map((t) => t.trim()).filter(Boolean) : [],
         price_min: form.price_min ? parseFloat(form.price_min) : null,
         price_max: form.price_max ? parseFloat(form.price_max) : null,
       };
+
+      if (isRecurring && recurrenceRule) {
+        payload.is_recurring = true;
+        payload.recurrence_rule = recurrenceRule;
+      }
 
       const res = await fetch('/api/organizer/events', {
         method: 'POST',
@@ -364,6 +379,15 @@ export default function CreateEventPage() {
             )}
           </div>
         </section>
+
+        {/* Recurrence */}
+        <RecurrenceSection
+          isRecurring={isRecurring}
+          onIsRecurringChange={setIsRecurring}
+          recurrenceRule={recurrenceRule}
+          onRecurrenceRuleChange={setRecurrenceRule}
+          startDate={form.start_date}
+        />
 
         {/* Location */}
         <section className="bg-white rounded-xl border border-gray-200 p-6">

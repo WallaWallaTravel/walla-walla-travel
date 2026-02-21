@@ -3,6 +3,7 @@
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import type { EventCategory, EventWithCategory } from '@/lib/types/events';
+import { RecurrenceSection } from '@/components/events/RecurrenceSection';
 
 export default function AdminEditEventPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -11,6 +12,9 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [parentEventId, setParentEventId] = useState<number | null>(null);
+  const [recurrenceRule, setRecurrenceRule] = useState<any>(null);
 
   const [form, setForm] = useState({
     title: '',
@@ -96,6 +100,10 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
           meta_description: event.meta_description || '',
           status: event.status || 'draft',
         });
+
+        setIsRecurring(event.is_recurring || false);
+        setParentEventId(event.parent_event_id || null);
+        setRecurrenceRule(event.recurrence_rule || null);
       } catch (err) {
         setError('Failed to load event');
         console.error(err);
@@ -110,7 +118,7 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSave = async () => {
+  const handleSave = async (scope?: 'series') => {
     setIsSubmitting(true);
     setError(null);
 
@@ -146,7 +154,10 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
         meta_description: form.meta_description || null,
       };
 
-      const response = await fetch(`/api/admin/events/${id}`, {
+      const url = scope
+        ? `/api/admin/events/${id}?scope=series`
+        : `/api/admin/events/${id}`;
+      const response = await fetch(url, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -208,6 +219,13 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
       {error && (
         <div className="mb-6 p-4 rounded-lg bg-red-50 border border-red-200">
           <p className="text-sm text-red-800">{error}</p>
+        </div>
+      )}
+
+      {parentEventId && (
+        <div className="mb-6 p-4 rounded-lg bg-blue-50 border border-blue-200">
+          <p className="text-sm text-blue-800 font-medium">This event is part of a recurring series</p>
+          <p className="text-sm text-blue-700 mt-1">Changes will apply to this date only unless you choose to update all future instances.</p>
         </div>
       )}
 
@@ -284,6 +302,18 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
             )}
           </div>
         </section>
+
+        {/* Recurrence (read-only for parent events) */}
+        {isRecurring && !parentEventId && recurrenceRule && (
+          <RecurrenceSection
+            isRecurring={true}
+            onIsRecurringChange={() => {}}
+            recurrenceRule={recurrenceRule}
+            onRecurrenceRuleChange={() => {}}
+            startDate={form.start_date}
+            readOnly
+          />
+        )}
 
         {/* Location */}
         <section className="bg-white rounded-xl border border-gray-200 p-6">
@@ -385,13 +415,45 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
 
         {/* Actions */}
         <div className="flex items-center gap-3 pb-8">
-          <button
-            onClick={handleSave}
-            disabled={isSubmitting || !form.title || !form.description || !form.start_date}
-            className="px-5 py-2.5 rounded-lg bg-[#1E3A5F] text-white font-medium hover:bg-[#1E3A5F]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isSubmitting ? 'Saving...' : 'Save Changes'}
-          </button>
+          {/* Parent event: save all future instances */}
+          {isRecurring && !parentEventId ? (
+            <>
+              <button
+                onClick={() => handleSave('series')}
+                disabled={isSubmitting || !form.title || !form.description || !form.start_date}
+                className="px-5 py-2.5 rounded-lg bg-[#1E3A5F] text-white font-medium hover:bg-[#1E3A5F]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? 'Saving...' : 'Save All Future Instances'}
+              </button>
+            </>
+          ) : parentEventId ? (
+            /* Instance event: save this or all future */
+            <>
+              <button
+                onClick={() => handleSave()}
+                disabled={isSubmitting || !form.title || !form.description || !form.start_date}
+                className="px-5 py-2.5 rounded-lg bg-[#1E3A5F] text-white font-medium hover:bg-[#1E3A5F]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? 'Saving...' : 'Save This Instance'}
+              </button>
+              <button
+                onClick={() => handleSave('series')}
+                disabled={isSubmitting || !form.title || !form.description || !form.start_date}
+                className="px-5 py-2.5 rounded-lg border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? 'Saving...' : 'Save All Future'}
+              </button>
+            </>
+          ) : (
+            /* Standalone event */
+            <button
+              onClick={() => handleSave()}
+              disabled={isSubmitting || !form.title || !form.description || !form.start_date}
+              className="px-5 py-2.5 rounded-lg bg-[#1E3A5F] text-white font-medium hover:bg-[#1E3A5F]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? 'Saving...' : 'Save Changes'}
+            </button>
+          )}
           <button
             onClick={() => router.back()}
             className="px-5 py-2.5 text-gray-600 font-medium hover:text-gray-900 transition-colors"

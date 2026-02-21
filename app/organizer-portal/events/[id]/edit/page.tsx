@@ -120,6 +120,7 @@ export default function EditEventPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [notFound, setNotFound] = useState(false);
+  const [parentEventId, setParentEventId] = useState<number | null>(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -143,6 +144,7 @@ export default function EditEventPage() {
         const event = eventData.event || eventData;
 
         setEventStatus(event.status || 'draft');
+        setParentEventId(event.parent_event_id || null);
         setForm({
           title: event.title || '',
           short_description: event.short_description || '',
@@ -291,6 +293,15 @@ export default function EditEventPage() {
       {!canEdit && !isPublished && (
         <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-6">
           <p className="text-gray-700 text-sm">This event cannot be edited in its current status.</p>
+        </div>
+      )}
+
+      {parentEventId && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+          <p className="text-blue-800 text-sm font-medium">Part of a recurring series</p>
+          <p className="text-blue-700 text-sm mt-1">
+            You are editing this single date only. Contact an admin to make changes across the entire series.
+          </p>
         </div>
       )}
 

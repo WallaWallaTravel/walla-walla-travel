@@ -6,6 +6,11 @@ import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import { tripProposalEmailService } from '@/lib/services/trip-proposal-email.service';
 import { query, withTransaction } from '@/lib/db-helpers';
 import { logger } from '@/lib/logger';
+import { z } from 'zod';
+
+const ConfirmPaymentSchema = z.object({
+  payment_intent_id: z.string().min(1, 'payment_intent_id is required'),
+});
 
 /**
  * POST /api/trip-proposals/[proposalNumber]/confirm-payment
@@ -21,11 +26,11 @@ export const POST = withErrorHandling<unknown, RouteParams>(
   async (request: NextRequest, context) => {
     const { proposalNumber } = await (context as RouteContext<RouteParams>).params;
     const body = await request.json();
-    const { payment_intent_id } = body;
-
-    if (!payment_intent_id) {
-      throw new BadRequestError('payment_intent_id is required');
+    const parseResult = ConfirmPaymentSchema.safeParse(body);
+    if (!parseResult.success) {
+      throw new BadRequestError(parseResult.error.issues[0]?.message || 'Invalid request');
     }
+    const { payment_intent_id } = parseResult.data;
 
     // Look up proposal by proposal number
     const proposal = await tripProposalService.getByNumber(proposalNumber);
@@ -72,16 +77,21 @@ export const POST = withErrorHandling<unknown, RouteParams>(
 
     // Update proposal and create payment record in a transaction
     await withTransaction(async (client) => {
-      // Mark deposit as paid on the trip proposal
-      await query(
+      // Mark deposit as paid (AND deposit_paid = false prevents TOCTOU race)
+      const updateResult = await query(
         `UPDATE trip_proposals
          SET deposit_paid = true,
              deposit_paid_at = NOW(),
              updated_at = NOW()
-         WHERE id = $1`,
+         WHERE id = $1 AND deposit_paid = false`,
         [proposal.id],
         client
       );
+
+      // If no rows updated, another request already processed this payment
+      if (updateResult.rowCount === 0) {
+        return;
+      }
 
       // Insert payment record (wrapped in try/catch since payments table schema may vary)
       try {

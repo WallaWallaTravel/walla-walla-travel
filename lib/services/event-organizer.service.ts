@@ -358,6 +358,32 @@ export class EventOrganizerService extends BaseService {
     // Import events service dynamically to avoid circular dependency
     const { eventsService } = await import('./events.service');
 
+    // Handle recurring events
+    if (data.is_recurring && data.recurrence_rule) {
+      const result = await eventsService.createRecurringEvent(data, userId);
+      const targetStatus = profile.auto_approve ? 'published' : 'draft';
+
+      // Update parent and all children with organizer_id
+      await this.query(
+        `UPDATE events SET organizer_id = $1 WHERE id = $2 OR parent_event_id = $2`,
+        [profile.id, result.parent.id]
+      );
+
+      // If auto-approve, publish all children
+      if (profile.auto_approve) {
+        await this.query(
+          `UPDATE events SET status = 'published', published_at = NOW()
+           WHERE parent_event_id = $1 AND start_date >= CURRENT_DATE`,
+          [result.parent.id]
+        );
+      }
+
+      return {
+        id: result.parent.id,
+        status: targetStatus,
+      };
+    }
+
     const event = await eventsService.create(data, userId);
 
     // Update the event with organizer_id and auto-approve status

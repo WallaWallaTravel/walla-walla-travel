@@ -6,6 +6,62 @@
 
 import { z } from 'zod';
 
+// ============================================================================
+// Recurrence Rule Schema
+// ============================================================================
+
+const recurrenceFrequencySchema = z.enum(['weekly', 'biweekly', 'monthly']);
+const recurrenceEndTypeSchema = z.enum(['count', 'until_date']);
+
+export const recurrenceRuleSchema = z.object({
+  frequency: recurrenceFrequencySchema,
+  days_of_week: z.array(z.number().int().min(0).max(6)).optional(),
+  day_of_month: z.number().int().min(1).max(28).optional(),
+  end_type: recurrenceEndTypeSchema,
+  count: z.number().int().min(1).max(52).optional(),
+  until_date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format')
+    .optional(),
+}).superRefine((data, ctx) => {
+  // days_of_week required for weekly/biweekly
+  if ((data.frequency === 'weekly' || data.frequency === 'biweekly') &&
+      (!data.days_of_week || data.days_of_week.length === 0)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Days of week are required for weekly/biweekly recurrence',
+      path: ['days_of_week'],
+    });
+  }
+
+  // day_of_month required for monthly
+  if (data.frequency === 'monthly' && !data.day_of_month) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Day of month is required for monthly recurrence',
+      path: ['day_of_month'],
+    });
+  }
+
+  // count required when end_type is 'count'
+  if (data.end_type === 'count' && !data.count) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Count is required when end type is "count"',
+      path: ['count'],
+    });
+  }
+
+  // until_date required when end_type is 'until_date'
+  if (data.end_type === 'until_date' && !data.until_date) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'End date is required when end type is "until_date"',
+      path: ['until_date'],
+    });
+  }
+});
+
 /**
  * Slug format validation
  */
@@ -98,6 +154,10 @@ export const createEventSchema = z.object({
   // SEO
   meta_title: z.string().max(255).trim().optional().nullable(),
   meta_description: z.string().max(300).trim().optional().nullable(),
+
+  // Recurring
+  is_recurring: z.boolean().optional().default(false),
+  recurrence_rule: recurrenceRuleSchema.optional().nullable(),
 }).refine(
   (data) => {
     if (data.end_date && data.start_date) {
@@ -234,6 +294,7 @@ export const updateOrganizerStatusSchema = z.object({
 // Type Exports
 // ============================================================================
 
+export type RecurrenceRuleInput = z.infer<typeof recurrenceRuleSchema>;
 export type CreateEventInput = z.infer<typeof createEventSchema>;
 export type UpdateEventInput = z.infer<typeof updateEventSchema>;
 export type EventFiltersInput = z.infer<typeof eventFiltersSchema>;

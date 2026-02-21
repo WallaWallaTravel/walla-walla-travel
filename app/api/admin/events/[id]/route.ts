@@ -53,7 +53,26 @@ export const PUT = withErrorHandling<unknown, RouteParams>(
     const body = await request.json();
     const data = updateEventSchema.parse(body);
 
-    const event = await eventsService.updateEvent(Number(id), data);
+    const { searchParams } = new URL(request.url);
+    const scope = searchParams.get('scope');
+
+    // Fetch the event to check recurring status
+    const existing = await eventsService.getById(Number(id));
+    if (!existing) {
+      throw new NotFoundError('Event not found');
+    }
+
+    let event;
+    if (scope === 'series' && existing.is_recurring) {
+      // Update entire recurring series
+      event = await eventsService.updateRecurringSeries(Number(id), data);
+    } else if (existing.parent_event_id) {
+      // Update a single instance of a recurring series
+      event = await eventsService.updateSingleInstance(Number(id), data);
+    } else {
+      // Standard update
+      event = await eventsService.updateEvent(Number(id), data);
+    }
 
     return NextResponse.json({
       success: true,

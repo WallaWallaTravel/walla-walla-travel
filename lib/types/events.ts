@@ -26,6 +26,22 @@ export interface EventCategory {
 
 export type EventStatus = 'draft' | 'published' | 'cancelled' | 'past' | 'pending_review';
 
+// ============================================================================
+// Recurring Events
+// ============================================================================
+
+export type RecurrenceFrequency = 'weekly' | 'biweekly' | 'monthly';
+export type RecurrenceEndType = 'count' | 'until_date';
+
+export interface RecurrenceRule {
+  frequency: RecurrenceFrequency;
+  days_of_week?: number[];      // 0=Sun..6=Sat (weekly/biweekly)
+  day_of_month?: number;        // 1-28 (monthly)
+  end_type: RecurrenceEndType;
+  count?: number;               // 1-52
+  until_date?: string;          // YYYY-MM-DD
+}
+
 export interface Event {
   id: number;
   title: string;
@@ -82,6 +98,12 @@ export interface Event {
   view_count: number;
   click_count: number;
 
+  // Recurring Events
+  is_recurring: boolean;
+  recurrence_rule: RecurrenceRule | null;
+  parent_event_id: number | null;
+  is_instance_override: boolean;
+
   // Timestamps
   created_by: number | null;
   created_at: string;
@@ -128,6 +150,10 @@ export interface CreateEventData {
   feature_priority?: number;
   meta_title?: string | null;
   meta_description?: string | null;
+
+  // Recurring
+  is_recurring?: boolean;
+  recurrence_rule?: RecurrenceRule | null;
 }
 
 export type UpdateEventData = Partial<CreateEventData> & {

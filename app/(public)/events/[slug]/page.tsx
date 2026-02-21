@@ -79,6 +79,11 @@ export default async function EventDetailPage({ params }: PageProps) {
       )
     : [];
 
+  // Get series siblings if this is a recurring instance
+  const seriesSiblings = event.parent_event_id
+    ? await eventsService.getSeriesSiblings(event.id)
+    : [];
+
   // JSON-LD structured data
   const canonical = await getCanonicalUrl(`/events/${slug}`);
   const jsonLd = {
@@ -231,6 +236,12 @@ export default async function EventDetailPage({ params }: PageProps) {
                 )}
               </div>
 
+              {event.parent_event_id && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 mb-4">
+                  Recurring event
+                </span>
+              )}
+
               {/* Venue */}
               {event.venue_name && (
                 <div className="flex items-start gap-2 mb-6 text-gray-700">
@@ -322,6 +333,45 @@ export default async function EventDetailPage({ params }: PageProps) {
                       {tag}
                     </span>
                   ))}
+                </div>
+              )}
+
+              {/* Other Dates in Series */}
+              {seriesSiblings.length > 0 && (
+                <div className="mb-8">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-3">Other Upcoming Dates</h2>
+                  <div className="space-y-2">
+                    {seriesSiblings.slice(0, 6).map((sibling) => (
+                      <Link
+                        key={sibling.id}
+                        href={`/events/${sibling.slug}`}
+                        className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors border border-gray-100"
+                      >
+                        <svg
+                          className="w-5 h-5 text-gray-500 shrink-0"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                          />
+                        </svg>
+                        <span className="text-gray-900 font-medium">{formatDate(sibling.start_date)}</span>
+                        {!sibling.is_all_day && sibling.start_time && (
+                          <span className="text-gray-600 text-sm">{formatTime(sibling.start_time)}</span>
+                        )}
+                      </Link>
+                    ))}
+                    {seriesSiblings.length > 6 && (
+                      <p className="text-sm text-gray-600 pl-3">
+                        +{seriesSiblings.length - 6} more dates
+                      </p>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

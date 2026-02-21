@@ -23,7 +23,15 @@ export const POST = withErrorHandling<unknown, RouteParams>(
     }
 
     const { id } = await context.params;
-    const event = await eventsService.cancel(Number(id));
+
+    // Check if event is recurring — cancel entire series if so
+    const existing = await eventsService.getById(Number(id));
+    let event;
+    if (existing?.is_recurring) {
+      event = await eventsService.cancelRecurringSeries(Number(id));
+    } else {
+      event = await eventsService.cancel(Number(id));
+    }
 
     return NextResponse.json({
       success: true,
