@@ -217,7 +217,6 @@ export class TripProposalService extends BaseService {
       duration_minutes: validated.duration_minutes || null,
       per_person_cost: validated.per_person_cost || 0,
       flat_cost: validated.flat_cost || 0,
-      cost_notes: validated.cost_notes || null,
       cost_note: validated.cost_note || null,
       room_rate: validated.room_rate || 0,
       num_rooms: validated.num_rooms || 0,
@@ -370,7 +369,6 @@ export class TripProposalService extends BaseService {
               'duration_minutes', s.duration_minutes,
               'per_person_cost', s.per_person_cost,
               'flat_cost', s.flat_cost,
-              'cost_notes', s.cost_notes,
               'cost_note', s.cost_note,
               'room_rate', s.room_rate,
               'num_rooms', s.num_rooms,
@@ -808,7 +806,7 @@ export class TripProposalService extends BaseService {
 
     // Update the proposal with calculated values
     await this.update<TripProposal>('trip_proposals', proposalId, {
-      subtotal: subtotalAfterDiscount,
+      subtotal: subtotal,
       discount_amount: discountAmount,
       taxes,
       gratuity_amount: gratuityAmount,
@@ -1085,7 +1083,7 @@ export class TripProposalService extends BaseService {
             duration_minutes: stop.duration_minutes || undefined,
             per_person_cost: stop.per_person_cost,
             flat_cost: stop.flat_cost,
-            cost_notes: stop.cost_notes || undefined,
+            cost_note: stop.cost_note || undefined,
             room_rate: stop.room_rate,
             num_rooms: stop.num_rooms,
             nights: stop.nights,

@@ -48,7 +48,6 @@ interface StopData {
   duration_minutes?: number;
   per_person_cost: string;
   flat_cost: string;
-  cost_notes?: string;
   cost_note?: string;
   reservation_status: string;
   client_notes?: string;
