@@ -4664,7 +4664,7 @@ model trip_proposal_stops {
   duration_minutes         Int?
   per_person_cost          Decimal?           @default(0) @db.Decimal(10, 2)
   flat_cost                Decimal?           @default(0) @db.Decimal(10, 2)
-  cost_notes               String?
+  cost_note                String?
   room_rate                Decimal?           @default(0) @db.Decimal(10, 2)
   num_rooms                Int?               @default(0)
   nights                   Int?               @default(1)
@@ -4707,7 +4707,7 @@ model trip_proposals {
   discount_percentage                                  Decimal?                   @default(0) @db.Decimal(5, 2)
   discount_reason                                      String?
   taxes                                                Decimal?                   @default(0) @db.Decimal(10, 2)
-  tax_rate                                             Decimal?                   @default(0.089) @db.Decimal(5, 4)
+  tax_rate                                             Decimal?                   @default(0.091) @db.Decimal(5, 4)
   gratuity_percentage                                  Int?                       @default(0)
   gratuity_amount                                      Decimal?                   @default(0) @db.Decimal(10, 2)
   total                                                Decimal?                   @default(0) @db.Decimal(10, 2)
@@ -4733,6 +4733,7 @@ model trip_proposals {
   accepted_at                                          DateTime?                  @db.Timestamptz(6)
   accepted_signature                                   String?
   accepted_ip                                          String?                    @db.VarChar(50)
+  sent_at                                              DateTime?                  @db.Timestamptz(6)
   created_by                                           Int?
   created_at                                           DateTime?                  @default(now()) @db.Timestamptz(6)
   updated_at                                           DateTime?                  @default(now()) @db.Timestamptz(6)

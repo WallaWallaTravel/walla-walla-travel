@@ -46,7 +46,6 @@ interface StopData {
   duration_minutes?: number;
   per_person_cost: number;
   flat_cost: number;
-  cost_notes?: string;
   cost_note?: string;
   reservation_status: string;
   client_notes?: string;
@@ -516,7 +515,6 @@ export default function NewTripProposalPage() {
               duration_minutes: stop.duration_minutes || null,
               per_person_cost: 0,
               flat_cost: 0,
-              cost_notes: stop.cost_notes || null,
               cost_note: stop.cost_note || null,
               reservation_status: stop.reservation_status,
               client_notes: stop.client_notes || null,

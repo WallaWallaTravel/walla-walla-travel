@@ -502,7 +502,6 @@ describe('TripProposalService', () => {
         duration_minutes: 60,
         per_person_cost: 0,
         flat_cost: 0,
-        cost_notes: null,
         cost_note: 'Tasting fee ~$25/pp',
         room_rate: 0,
         num_rooms: 0,

@@ -154,6 +154,9 @@ export interface TripProposal {
   accepted_signature: string | null;
   accepted_ip: string | null;
 
+  // Sent tracking
+  sent_at: string | null;
+
   // Metadata
   created_by: number | null;
   created_at: string;
@@ -213,7 +216,6 @@ export interface TripProposalStop {
   // Pricing (legacy — new proposals use service line items)
   per_person_cost: number;
   flat_cost: number;
-  cost_notes: string | null;
   cost_note: string | null;
 
   // Hotel specific
@@ -397,7 +399,6 @@ export interface AddStopInput {
   duration_minutes?: number;
   per_person_cost?: number;
   flat_cost?: number;
-  cost_notes?: string;
   cost_note?: string;
   room_rate?: number;
   num_rooms?: number;
@@ -489,7 +490,6 @@ export const AddStopSchema = z.object({
   duration_minutes: z.number().int().min(0).optional(),
   per_person_cost: z.number().min(0).optional(),
   flat_cost: z.number().min(0).optional(),
-  cost_notes: z.string().optional(),
   cost_note: z.string().optional(),
   room_rate: z.number().min(0).optional(),
   num_rooms: z.number().int().min(0).optional(),
