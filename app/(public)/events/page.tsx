@@ -4,18 +4,26 @@ import { eventsService } from '@/lib/services/events.service';
 import { EventCard } from '@/components/events/EventCard';
 import { CategoryGrid } from '@/components/events/CategoryGrid';
 import { EventsSearchBar } from '@/components/events/EventsSearchBar';
+import { getCanonicalUrl } from '@/lib/utils/domain';
 
-export const metadata: Metadata = {
-  title: 'Events in Walla Walla | Walla Walla Events',
-  description:
-    'Discover upcoming events in Walla Walla, Washington — wine tastings, festivals, live music, art, dining, and more.',
-  openGraph: {
-    title: 'Events in Walla Walla',
+export async function generateMetadata(): Promise<Metadata> {
+  const canonical = await getCanonicalUrl('/events');
+
+  return {
+    title: 'Events in Walla Walla | Walla Walla Events',
     description:
       'Discover upcoming events in Walla Walla, Washington — wine tastings, festivals, live music, art, dining, and more.',
-    type: 'website',
-  },
-};
+    alternates: {
+      canonical,
+    },
+    openGraph: {
+      title: 'Events in Walla Walla',
+      description:
+        'Discover upcoming events in Walla Walla, Washington — wine tastings, festivals, live music, art, dining, and more.',
+      type: 'website',
+    },
+  };
+}
 
 export const dynamic = 'force-dynamic';
 
@@ -46,8 +54,23 @@ export default async function EventsHomePage({
 
   const totalPages = Math.ceil(events.total / limit);
 
+  const canonical = await getCanonicalUrl('/events');
+  const collectionJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: 'Events in Walla Walla',
+    description:
+      'Discover upcoming events in Walla Walla, Washington — wine tastings, festivals, live music, art, dining, and more.',
+    url: canonical,
+  };
+
   return (
     <div className="min-h-screen bg-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionJsonLd) }}
+      />
+
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-[#8B1538]/5 via-white to-[#8B1538]/5 py-16 sm:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">

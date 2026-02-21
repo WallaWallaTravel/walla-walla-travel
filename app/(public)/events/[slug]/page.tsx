@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { eventsService } from '@/lib/services/events.service';
 import { EventCard } from '@/components/events/EventCard';
+import { getCanonicalUrl } from '@/lib/utils/domain';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -16,9 +17,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return { title: 'Event Not Found' };
   }
 
+  const canonical = await getCanonicalUrl(`/events/${slug}`);
+
   return {
     title: event.meta_title || `${event.title} | Walla Walla Events`,
     description: event.meta_description || event.short_description || event.description.substring(0, 160),
+    alternates: {
+      canonical,
+    },
     openGraph: {
       title: event.meta_title || event.title,
       description: event.meta_description || event.short_description || undefined,
@@ -74,11 +80,15 @@ export default async function EventDetailPage({ params }: PageProps) {
     : [];
 
   // JSON-LD structured data
+  const canonical = await getCanonicalUrl(`/events/${slug}`);
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Event',
     name: event.title,
     description: event.short_description || event.description.substring(0, 200),
+    url: canonical,
+    eventStatus: 'https://schema.org/EventScheduled',
+    eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
     startDate: event.start_time
       ? `${event.start_date}T${event.start_time}`
       : event.start_date,
@@ -273,9 +283,6 @@ export default async function EventDetailPage({ params }: PageProps) {
                     href={event.ticket_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    onClick={() => {
-                      // Client-side tracking will be handled by a client component if needed
-                    }}
                     className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#8B1538] text-white font-medium hover:bg-[#722F37] transition-colors"
                   >
                     Get Tickets

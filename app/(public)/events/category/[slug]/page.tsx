@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { eventsService } from '@/lib/services/events.service';
 import { EventCard } from '@/components/events/EventCard';
+import { getCanonicalUrl } from '@/lib/utils/domain';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -17,9 +18,20 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return { title: 'Category Not Found' };
   }
 
+  const description = category.description || `Browse ${category.name.toLowerCase()} events happening in Walla Walla, Washington.`;
+  const canonical = await getCanonicalUrl(`/events/category/${slug}`);
+
   return {
     title: `${category.name} Events in Walla Walla | Walla Walla Events`,
-    description: category.description || `Browse ${category.name.toLowerCase()} events happening in Walla Walla, Washington.`,
+    description,
+    alternates: {
+      canonical,
+    },
+    openGraph: {
+      title: `${category.name} Events in Walla Walla`,
+      description,
+      type: 'website',
+    },
   };
 }
 
@@ -41,8 +53,23 @@ export default async function CategoryEventsPage({ params, searchParams }: PageP
   const events = await eventsService.getByCategory(slug, limit, offset);
   const totalPages = Math.ceil(events.total / limit);
 
+  const canonical = await getCanonicalUrl(`/events/category/${slug}`);
+  const categoryDescription = category.description || `Browse ${category.name.toLowerCase()} events happening in Walla Walla, Washington.`;
+  const collectionJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: `${category.name} Events in Walla Walla`,
+    description: categoryDescription,
+    url: canonical,
+  };
+
   return (
     <div className="min-h-screen bg-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionJsonLd) }}
+      />
+
       {/* Category Header */}
       <section className="bg-gradient-to-br from-[#8B1538]/5 via-white to-[#8B1538]/5 py-12 sm:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
