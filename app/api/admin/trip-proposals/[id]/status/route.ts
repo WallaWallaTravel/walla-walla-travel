@@ -4,8 +4,10 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { after } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
+import { tripProposalEmailService } from '@/lib/services/trip-proposal-email.service';
 import { TRIP_PROPOSAL_STATUS } from '@/lib/types/trip-proposal';
 import { z } from 'zod';
 
@@ -62,6 +64,13 @@ export const PATCH = withAdminAuth(async (request: NextRequest, session, context
       ip_address: ip,
     }
   );
+
+  // Trigger "proposal sent" email when status changes to 'sent' (non-blocking)
+  if (parseResult.data.status === 'sent') {
+    after(async () => {
+      await tripProposalEmailService.sendProposalSentEmail(proposalId);
+    });
+  }
 
   return NextResponse.json({
     success: true,

@@ -4,8 +4,10 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { after } from 'next/server';
 import { withErrorHandling, RouteContext } from '@/lib/api/middleware/error-handler';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
+import { tripProposalEmailService } from '@/lib/services/trip-proposal-email.service';
 import { z } from 'zod';
 
 interface RouteParams {
@@ -101,6 +103,11 @@ export const POST = withErrorHandling<unknown, RouteParams>(
         ip_address: ip,
       }
     );
+
+    // Trigger "accepted" email (non-blocking)
+    after(async () => {
+      await tripProposalEmailService.sendProposalAcceptedEmail(proposal.id);
+    });
 
     return NextResponse.json({
       success: true,

@@ -137,6 +137,12 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
     metadata,
   });
 
+  // Check if this is a trip proposal deposit payment
+  if (metadata.payment_type === 'trip_proposal_deposit' && metadata.trip_proposal_id) {
+    await handleTripProposalPaymentSuccess(paymentIntent);
+    return;
+  }
+
   // Check if this is a proposal payment
   if (metadata.payment_type === 'proposal_deposit' && metadata.proposal_id) {
     await handleProposalPaymentSuccess(paymentIntent);
@@ -576,6 +582,100 @@ async function handleDriverTipPaymentSuccess(paymentIntent: Stripe.PaymentIntent
       error,
     });
   }
+}
+
+/**
+ * Handle trip proposal deposit payment success
+ * Updates deposit_paid status and inserts payment record.
+ * Idempotent: checks if already paid before updating.
+ */
+async function handleTripProposalPaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
+  const { id, metadata, amount } = paymentIntent;
+  const tripProposalId = parseInt(metadata.trip_proposal_id);
+
+  logger.info('[Stripe Webhook] Processing trip proposal deposit payment', {
+    paymentIntentId: id,
+    tripProposalId,
+    proposalNumber: metadata.proposal_number,
+    amount: amount / 100,
+  });
+
+  // Check if already processed (idempotent)
+  const proposal = await queryOne(
+    `SELECT id, deposit_paid, proposal_number FROM trip_proposals WHERE id = $1`,
+    [tripProposalId]
+  );
+
+  if (!proposal) {
+    logger.warn('[Stripe Webhook] Trip proposal not found', { tripProposalId });
+    return;
+  }
+
+  if (proposal.deposit_paid) {
+    logger.info('[Stripe Webhook] Trip proposal deposit already marked as paid', {
+      tripProposalId,
+      proposalNumber: proposal.proposal_number,
+    });
+    return;
+  }
+
+  // Update deposit status
+  await withTransaction(async (client) => {
+    await query(
+      `UPDATE trip_proposals
+       SET deposit_paid = true,
+           deposit_paid_at = NOW(),
+           updated_at = NOW()
+       WHERE id = $1`,
+      [tripProposalId],
+      client
+    );
+
+    // Insert payment record (best-effort)
+    await query(
+      `INSERT INTO payments (
+        trip_proposal_id, amount, payment_type,
+        stripe_payment_intent_id, status, created_at
+      ) VALUES ($1, $2, 'trip_proposal_deposit', $3, 'succeeded', NOW())
+      ON CONFLICT DO NOTHING`,
+      [tripProposalId, amount / 100, id],
+      client
+    ).catch((err) => {
+      logger.warn('[Stripe Webhook] Could not insert payment record for trip proposal', {
+        error: String(err),
+        tripProposalId,
+      });
+    });
+  });
+
+  // Send deposit received email (non-blocking, check for idempotency)
+  try {
+    const alreadySent = await queryOne(
+      `SELECT id FROM email_logs
+       WHERE trip_proposal_id = $1 AND email_type = 'trip_proposal_deposit_received'
+       LIMIT 1`,
+      [tripProposalId]
+    );
+
+    if (!alreadySent) {
+      // Dynamic import to avoid circular dependencies
+      const { tripProposalEmailService } = await import('@/lib/services/trip-proposal-email.service');
+      await tripProposalEmailService.sendDepositReceivedEmail(tripProposalId, amount / 100);
+    } else {
+      logger.info('[Stripe Webhook] Deposit email already sent for trip proposal', { tripProposalId });
+    }
+  } catch (err) {
+    logger.error('[Stripe Webhook] Failed to send trip proposal deposit email', {
+      error: err,
+      tripProposalId,
+    });
+  }
+
+  logger.info('[Stripe Webhook] Trip proposal deposit payment recorded', {
+    tripProposalId,
+    proposalNumber: metadata.proposal_number,
+    amount: amount / 100,
+  });
 }
 
 /**
