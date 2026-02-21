@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { COMPANY_INFO, getPhoneLink, getEmailLink } from '@/lib/config/company';
-import { isEventsDomain, getTravelUrl, getEventsUrl } from '@/lib/utils/domain';
+import { isEventsDomain, getTravelUrl } from '@/lib/utils/domain';
 
 export default async function Footer() {
   const onEventsDomain = await isEventsDomain();
