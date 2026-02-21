@@ -203,6 +203,19 @@ export default function ConfirmationPage({
               </div>
             </div>
 
+            {/* Pay Deposit CTA */}
+            <div className="mb-8">
+              <Link
+                href={`/trip-proposals/${proposalNumber}/pay`}
+                className="block w-full text-center bg-[#8B1538] text-white px-8 py-4 rounded-lg font-bold text-lg hover:bg-[#6B1028] transition-colors shadow-lg"
+              >
+                Pay Deposit Now ({formatCurrency(proposal.deposit_amount)})
+              </Link>
+              <p className="text-center text-gray-600 text-sm mt-3">
+                50% deposit to confirm your booking. Balance due 48 hours after your tour concludes.
+              </p>
+            </div>
+
             {/* Next Steps */}
             <div className="mb-8">
               <h3 className="font-bold text-gray-900 mb-4 text-lg">What&apos;s Next?</h3>
@@ -214,7 +227,7 @@ export default function ConfirmationPage({
                   <div>
                     <p className="font-medium text-gray-900">Pay Your Deposit</p>
                     <p className="text-gray-600 text-sm">
-                      We&apos;ll send you a secure payment link to complete your deposit within 24 hours.
+                      Use the button above to securely pay your deposit and confirm your trip.
                     </p>
                   </div>
                 </div>
@@ -248,7 +261,7 @@ export default function ConfirmationPage({
             <div className="space-y-3">
               <Link
                 href={`/trip-proposals/${proposalNumber}`}
-                className="block w-full text-center bg-[#8B1538] text-white px-8 py-4 rounded-lg font-bold text-lg hover:bg-[#6B1028] transition-colors shadow-lg"
+                className="block w-full text-center bg-white text-[#8B1538] border-2 border-[#8B1538] px-8 py-4 rounded-lg font-bold text-lg hover:bg-gray-50 transition-colors"
               >
                 View Your Trip Details
               </Link>
