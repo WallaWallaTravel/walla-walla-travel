@@ -20,7 +20,7 @@ export interface AuthenticatedSession {
     id: number;
     email: string;
     name: string;
-    role: 'admin' | 'geology_admin' | 'driver' | 'partner';
+    role: 'admin' | 'geology_admin' | 'driver' | 'partner' | 'organizer';
   };
   isLoggedIn: boolean;
 }

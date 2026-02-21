@@ -55,7 +55,7 @@ export interface SessionUser {
   id: number;
   email: string;
   name: string;
-  role: 'admin' | 'geology_admin' | 'driver' | 'partner';
+  role: 'admin' | 'geology_admin' | 'driver' | 'partner' | 'organizer';
 }
 
 export interface SessionPayload {
@@ -163,7 +163,7 @@ export function clearSessionCookie(response: NextResponse): NextResponse {
 /**
  * Require authentication (throws redirect if not authenticated)
  */
-export async function requireAuth(allowedRoles?: Array<'admin' | 'geology_admin' | 'driver' | 'partner'>): Promise<SessionPayload> {
+export async function requireAuth(allowedRoles?: Array<'admin' | 'geology_admin' | 'driver' | 'partner' | 'organizer'>): Promise<SessionPayload> {
   const session = await getSession();
 
   if (!session) {
@@ -199,6 +199,14 @@ export async function isDriver(): Promise<boolean> {
 export async function isPartner(): Promise<boolean> {
   const session = await getSession();
   return session?.user.role === 'partner';
+}
+
+/**
+ * Check if user has organizer role
+ */
+export async function isOrganizer(): Promise<boolean> {
+  const session = await getSession();
+  return session?.user.role === 'organizer';
 }
 
 /**
