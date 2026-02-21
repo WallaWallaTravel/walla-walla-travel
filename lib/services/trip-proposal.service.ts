@@ -218,6 +218,7 @@ export class TripProposalService extends BaseService {
       per_person_cost: validated.per_person_cost || 0,
       flat_cost: validated.flat_cost || 0,
       cost_notes: validated.cost_notes || null,
+      cost_note: validated.cost_note || null,
       room_rate: validated.room_rate || 0,
       num_rooms: validated.num_rooms || 0,
       nights: validated.nights || 1,
@@ -293,6 +294,7 @@ export class TripProposalService extends BaseService {
       unit: validated.unit || null,
       unit_price: validated.unit_price || 0,
       total_price: totalPrice,
+      pricing_type: validated.pricing_type || 'flat',
       sort_order: sortOrder,
       show_on_proposal: validated.show_on_proposal ?? true,
       notes: validated.notes || null,
@@ -369,6 +371,7 @@ export class TripProposalService extends BaseService {
               'per_person_cost', s.per_person_cost,
               'flat_cost', s.flat_cost,
               'cost_notes', s.cost_notes,
+              'cost_note', s.cost_note,
               'room_rate', s.room_rate,
               'num_rooms', s.num_rooms,
               'nights', s.nights,
@@ -763,24 +766,35 @@ export class TripProposalService extends BaseService {
       throw new NotFoundError('TripProposal', proposalId.toString());
     }
 
-    // Calculate stops subtotal
-    const stopsResult = await this.queryOne<{ total: string }>(
-      `SELECT COALESCE(SUM(
-        (per_person_cost * $2) + flat_cost + (room_rate * num_rooms * nights)
-       ), 0) as total
-       FROM trip_proposal_stops s
-       JOIN trip_proposal_days d ON s.trip_proposal_day_id = d.id
-       WHERE d.trip_proposal_id = $1`,
-      [proposalId, proposal.party_size]
-    );
-    const stopsSubtotal = parseFloat(stopsResult?.total || '0');
+    // Stops subtotal is now 0 — all billing goes through service line items
+    const stopsSubtotal = 0;
 
-    // Calculate inclusions subtotal
-    const inclusionsResult = await this.queryOne<{ total: string }>(
-      'SELECT COALESCE(SUM(total_price), 0) as total FROM trip_proposal_inclusions WHERE trip_proposal_id = $1',
+    // Calculate inclusions (service line items) subtotal with pricing_type support
+    const inclusionsRows = await this.query<{
+      unit_price: string;
+      quantity: string;
+      total_price: string;
+      pricing_type: string;
+    }>(
+      'SELECT unit_price, quantity, total_price, COALESCE(pricing_type, \'flat\') as pricing_type FROM trip_proposal_inclusions WHERE trip_proposal_id = $1',
       [proposalId]
     );
-    const inclusionsSubtotal = parseFloat(inclusionsResult?.total || '0');
+
+    let inclusionsSubtotal = 0;
+    for (const row of inclusionsRows.rows) {
+      const unitPrice = parseFloat(row.unit_price) || 0;
+      const quantity = parseFloat(row.quantity) || 1;
+      const pricingType = row.pricing_type || 'flat';
+
+      if (pricingType === 'per_person') {
+        inclusionsSubtotal += unitPrice * proposal.party_size;
+      } else if (pricingType === 'per_day') {
+        inclusionsSubtotal += unitPrice * quantity;
+      } else {
+        // flat rate
+        inclusionsSubtotal += unitPrice * quantity;
+      }
+    }
 
     // Calculate totals
     const subtotal = stopsSubtotal + inclusionsSubtotal;
@@ -806,6 +820,7 @@ export class TripProposalService extends BaseService {
     return {
       stops_subtotal: stopsSubtotal,
       inclusions_subtotal: inclusionsSubtotal,
+      services_subtotal: inclusionsSubtotal,
       subtotal,
       discount_amount: discountAmount,
       subtotal_after_discount: subtotalAfterDiscount,
@@ -1090,6 +1105,7 @@ export class TripProposalService extends BaseService {
           unit: inclusion.unit || undefined,
           unit_price: inclusion.unit_price,
           total_price: inclusion.total_price,
+          pricing_type: inclusion.pricing_type || 'flat',
           sort_order: inclusion.sort_order,
           show_on_proposal: inclusion.show_on_proposal,
           notes: inclusion.notes || undefined,

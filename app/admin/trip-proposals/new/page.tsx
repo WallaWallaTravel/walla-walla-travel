@@ -47,6 +47,7 @@ interface StopData {
   per_person_cost: number;
   flat_cost: number;
   cost_notes?: string;
+  cost_note?: string;
   reservation_status: string;
   client_notes?: string;
   internal_notes?: string;
@@ -76,6 +77,7 @@ interface InclusionData {
   id: string;
   inclusion_type: string;
   description: string;
+  pricing_type: 'flat' | 'per_person' | 'per_day';
   quantity: number;
   unit_price: number;
   total_price: number;
@@ -130,7 +132,23 @@ const INCLUSION_TYPES = [
   { value: 'transportation', label: 'Transportation' },
   { value: 'chauffeur', label: 'Professional Chauffeur' },
   { value: 'gratuity', label: 'Gratuity' },
+  { value: 'planning_fee', label: 'Planning Fee' },
+  { value: 'arranged_tasting', label: 'Arranged Tasting' },
   { value: 'custom', label: 'Custom' },
+];
+
+const SERVICE_TEMPLATES = [
+  { label: 'Airport Transfer', inclusion_type: 'transportation', description: 'Airport Transfer', pricing_type: 'flat' as const },
+  { label: 'Multi-Day Tour', inclusion_type: 'transportation', description: 'Wine Country Tour', pricing_type: 'per_day' as const },
+  { label: 'Planning Fee', inclusion_type: 'planning_fee', description: 'Planning & Coordination', pricing_type: 'flat' as const },
+  { label: 'Arranged Tasting', inclusion_type: 'arranged_tasting', description: 'Arranged Tasting Program', pricing_type: 'per_person' as const },
+  { label: 'Custom', inclusion_type: 'custom', description: '', pricing_type: 'flat' as const },
+];
+
+const PRICING_TYPE_OPTIONS = [
+  { value: 'flat', label: 'Flat Rate' },
+  { value: 'per_person', label: 'Per Person' },
+  { value: 'per_day', label: 'Per Day/Unit' },
 ];
 
 export default function NewTripProposalPage() {
@@ -165,24 +183,7 @@ export default function NewTripProposalPage() {
     discount_reason: '',
     days: [],
     guests: [],
-    inclusions: [
-      {
-        id: `incl-${Date.now()}`,
-        inclusion_type: 'transportation',
-        description: 'Luxury transportation',
-        quantity: 1,
-        unit_price: 0,
-        total_price: 0,
-      },
-      {
-        id: `incl-${Date.now() + 1}`,
-        inclusion_type: 'chauffeur',
-        description: 'Professional chauffeur',
-        quantity: 1,
-        unit_price: 0,
-        total_price: 0,
-      },
-    ],
+    inclusions: [],
   });
 
   useEffect(() => {
@@ -345,11 +346,25 @@ export default function NewTripProposalPage() {
     }));
   };
 
+  const addServiceFromTemplate = (template: typeof SERVICE_TEMPLATES[number]) => {
+    const newInclusion: InclusionData = {
+      id: `incl-${Date.now()}`,
+      inclusion_type: template.inclusion_type,
+      description: template.description,
+      pricing_type: template.pricing_type,
+      quantity: 1,
+      unit_price: 0,
+      total_price: 0,
+    };
+    setFormData(prev => ({ ...prev, inclusions: [...prev.inclusions, newInclusion] }));
+  };
+
   const addInclusion = () => {
     const newInclusion: InclusionData = {
       id: `incl-${Date.now()}`,
       inclusion_type: 'custom',
       description: '',
+      pricing_type: 'flat',
       quantity: 1,
       unit_price: 0,
       total_price: 0,
@@ -363,7 +378,13 @@ export default function NewTripProposalPage() {
       inclusions: prev.inclusions.map((incl, idx) => {
         if (idx !== index) return incl;
         const updated = { ...incl, ...updates };
-        updated.total_price = updated.quantity * updated.unit_price;
+        if (updated.pricing_type === 'per_person') {
+          updated.total_price = updated.unit_price * prev.party_size;
+        } else if (updated.pricing_type === 'per_day') {
+          updated.total_price = updated.unit_price * updated.quantity;
+        } else {
+          updated.total_price = updated.unit_price;
+        }
         return updated;
       }),
     }));
@@ -377,21 +398,19 @@ export default function NewTripProposalPage() {
   };
 
   const calculateTotals = () => {
-    // Calculate stops total
-    let stopsTotal = 0;
-    formData.days.forEach(day => {
-      day.stops.forEach(stop => {
-        stopsTotal += stop.flat_cost + (stop.per_person_cost * formData.party_size);
-      });
+    // Services total (from service line items only — stops no longer carry pricing)
+    let servicesTotal = 0;
+    formData.inclusions.forEach(incl => {
+      if (incl.pricing_type === 'per_person') {
+        servicesTotal += incl.unit_price * formData.party_size;
+      } else if (incl.pricing_type === 'per_day') {
+        servicesTotal += incl.unit_price * incl.quantity;
+      } else {
+        servicesTotal += incl.unit_price;
+      }
     });
 
-    // Calculate inclusions total
-    const inclusionsTotal = formData.inclusions.reduce(
-      (sum, incl) => sum + incl.total_price,
-      0
-    );
-
-    const subtotal = stopsTotal + inclusionsTotal;
+    const subtotal = servicesTotal;
     const afterDiscount = subtotal - formData.discount_amount;
     const taxes = afterDiscount * (formData.tax_rate / 100);
     const gratuity = afterDiscount * (formData.gratuity_percentage / 100);
@@ -399,8 +418,7 @@ export default function NewTripProposalPage() {
     const deposit = total * (formData.deposit_percentage / 100);
 
     return {
-      stopsTotal,
-      inclusionsTotal,
+      servicesTotal,
       subtotal,
       discount: formData.discount_amount,
       afterDiscount,
@@ -496,9 +514,10 @@ export default function NewTripProposalPage() {
               custom_address: stop.custom_address || null,
               scheduled_time: stop.scheduled_time || null,
               duration_minutes: stop.duration_minutes || null,
-              per_person_cost: stop.per_person_cost,
-              flat_cost: stop.flat_cost,
+              per_person_cost: 0,
+              flat_cost: 0,
               cost_notes: stop.cost_notes || null,
+              cost_note: stop.cost_note || null,
               reservation_status: stop.reservation_status,
               client_notes: stop.client_notes || null,
               internal_notes: stop.internal_notes || null,
@@ -532,6 +551,7 @@ export default function NewTripProposalPage() {
           body: JSON.stringify({
             inclusion_type: inclusion.inclusion_type,
             description: inclusion.description,
+            pricing_type: inclusion.pricing_type,
             quantity: inclusion.quantity,
             unit_price: inclusion.unit_price,
           }),
@@ -864,7 +884,6 @@ export default function NewTripProposalPage() {
                                 <StopCard
                                   key={stop.id}
                                   stop={stop}
-                                  partySize={formData.party_size}
                                   wineries={wineries}
                                   restaurants={restaurants}
                                   hotels={hotels}
@@ -986,15 +1005,71 @@ export default function NewTripProposalPage() {
                   {/* Pricing Tab */}
                   {activeTab === 'pricing' && (
                     <div className="space-y-6">
-                      {/* Inclusions */}
+                      {/* Service Line Items */}
                       <div>
-                        <h3 className="font-bold text-gray-900 mb-3">Included Services</h3>
+                        <h3 className="font-bold text-gray-900 mb-3">Service Line Items</h3>
+
+                        {/* Quick-add template buttons */}
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          {SERVICE_TEMPLATES.map((template) => (
+                            <button
+                              key={template.label}
+                              type="button"
+                              onClick={() => addServiceFromTemplate(template)}
+                              className="px-3 py-2 bg-gray-100 hover:bg-[#FDF2F4] hover:text-[#8B1538] text-gray-700 rounded-lg text-sm font-medium transition-colors border border-gray-200 hover:border-[#8B1538]"
+                            >
+                              + {template.label}
+                            </button>
+                          ))}
+                        </div>
+
                         <div className="space-y-3">
+                          {formData.inclusions.length === 0 && (
+                            <div className="text-center py-6 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                              <p className="text-gray-600 font-medium mb-1">No service line items yet</p>
+                              <p className="text-sm text-gray-500">Use the buttons above to add services</p>
+                            </div>
+                          )}
+
                           {formData.inclusions.map((inclusion, index) => (
                             <div
                               key={inclusion.id}
                               className="border-2 border-gray-200 rounded-lg p-3"
                             >
+                              <div className="flex items-start justify-between mb-2">
+                                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
+                                  <input
+                                    type="text"
+                                    value={inclusion.description}
+                                    onChange={(e) =>
+                                      updateInclusion(index, { description: e.target.value })
+                                    }
+                                    placeholder="Description"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                  />
+                                  <select
+                                    value={inclusion.pricing_type}
+                                    onChange={(e) =>
+                                      updateInclusion(index, { pricing_type: e.target.value as InclusionData['pricing_type'] })
+                                    }
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                  >
+                                    {PRICING_TYPE_OPTIONS.map((opt) => (
+                                      <option key={opt.value} value={opt.value}>
+                                        {opt.label}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => removeInclusion(index)}
+                                  className="ml-2 text-red-600 hover:text-red-800"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+
                               <div className="grid grid-cols-12 gap-3 items-center">
                                 <div className="col-span-3">
                                   <select
@@ -1011,31 +1086,7 @@ export default function NewTripProposalPage() {
                                     ))}
                                   </select>
                                 </div>
-                                <div className="col-span-4">
-                                  <input
-                                    type="text"
-                                    value={inclusion.description}
-                                    onChange={(e) =>
-                                      updateInclusion(index, { description: e.target.value })
-                                    }
-                                    placeholder="Description"
-                                    className="w-full px-2 py-2 border border-gray-300 rounded-lg text-sm"
-                                  />
-                                </div>
-                                <div className="col-span-1">
-                                  <input
-                                    type="number"
-                                    min="1"
-                                    value={inclusion.quantity}
-                                    onChange={(e) =>
-                                      updateInclusion(index, {
-                                        quantity: parseInt(e.target.value) || 1,
-                                      })
-                                    }
-                                    className="w-full px-2 py-2 border border-gray-300 rounded-lg text-sm text-center"
-                                  />
-                                </div>
-                                <div className="col-span-2">
+                                <div className="col-span-3">
                                   <div className="relative">
                                     <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500 text-sm">
                                       $
@@ -1044,39 +1095,54 @@ export default function NewTripProposalPage() {
                                       type="number"
                                       min="0"
                                       step="0.01"
-                                      value={inclusion.unit_price}
+                                      value={inclusion.unit_price || ''}
+                                      onFocus={(e) => e.target.select()}
                                       onChange={(e) =>
                                         updateInclusion(index, {
                                           unit_price: parseFloat(e.target.value) || 0,
                                         })
                                       }
+                                      placeholder="Amount"
                                       className="w-full pl-6 pr-2 py-2 border border-gray-300 rounded-lg text-sm"
                                     />
                                   </div>
                                 </div>
-                                <div className="col-span-1 text-right font-bold text-sm">
-                                  {formatCurrency(inclusion.total_price)}
-                                </div>
-                                <div className="col-span-1 text-right">
-                                  <button
-                                    type="button"
-                                    onClick={() => removeInclusion(index)}
-                                    className="text-red-600 hover:text-red-800"
-                                  >
-                                    ✕
-                                  </button>
+                                {inclusion.pricing_type === 'per_day' && (
+                                  <div className="col-span-2">
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-gray-500 text-xs">x</span>
+                                      <input
+                                        type="number"
+                                        min="1"
+                                        value={inclusion.quantity}
+                                        onChange={(e) =>
+                                          updateInclusion(index, {
+                                            quantity: parseInt(e.target.value) || 1,
+                                          })
+                                        }
+                                        className="w-full px-2 py-2 border border-gray-300 rounded-lg text-sm text-center"
+                                      />
+                                    </div>
+                                  </div>
+                                )}
+                                <div className={`${inclusion.pricing_type === 'per_day' ? 'col-span-4' : 'col-span-6'} text-right`}>
+                                  <span className="text-sm text-gray-500">
+                                    {inclusion.pricing_type === 'per_person' && `$${inclusion.unit_price}/pp x ${formData.party_size} = `}
+                                    {inclusion.pricing_type === 'per_day' && `$${inclusion.unit_price} x ${inclusion.quantity} = `}
+                                  </span>
+                                  <span className="font-bold text-gray-900">
+                                    {formatCurrency(
+                                      inclusion.pricing_type === 'per_person'
+                                        ? inclusion.unit_price * formData.party_size
+                                        : inclusion.pricing_type === 'per_day'
+                                        ? inclusion.unit_price * inclusion.quantity
+                                        : inclusion.unit_price
+                                    )}
+                                  </span>
                                 </div>
                               </div>
                             </div>
                           ))}
-
-                          <button
-                            type="button"
-                            onClick={addInclusion}
-                            className="w-full px-4 py-2 border-2 border-dashed border-gray-300 hover:border-[#8B1538] text-gray-600 hover:text-[#8B1538] rounded-lg font-medium text-sm transition-colors"
-                          >
-                            + Add Inclusion
-                          </button>
                         </div>
                       </div>
 
@@ -1192,13 +1258,8 @@ export default function NewTripProposalPage() {
 
                 <div className="space-y-3 mb-6">
                   <div className="flex justify-between text-gray-700">
-                    <span>Stops & Venues</span>
-                    <span className="font-bold">{formatCurrency(totals.stopsTotal)}</span>
-                  </div>
-
-                  <div className="flex justify-between text-gray-700">
-                    <span>Inclusions</span>
-                    <span className="font-bold">{formatCurrency(totals.inclusionsTotal)}</span>
+                    <span>Services</span>
+                    <span className="font-bold">{formatCurrency(totals.servicesTotal)}</span>
                   </div>
 
                   <div className="border-t pt-3 flex justify-between text-gray-900">
@@ -1299,7 +1360,6 @@ export default function NewTripProposalPage() {
 // Stop Card Component
 interface StopCardProps {
   stop: StopData;
-  partySize: number;
   wineries: Winery[];
   restaurants: Restaurant[];
   hotels: Hotel[];
@@ -1309,7 +1369,6 @@ interface StopCardProps {
 
 function StopCard({
   stop,
-  partySize,
   wineries,
   restaurants,
   hotels,
@@ -1317,7 +1376,6 @@ function StopCard({
   onRemove,
 }: StopCardProps) {
   const stopType = STOP_TYPES.find((t) => t.value === stop.stop_type);
-  const totalCost = stop.flat_cost + stop.per_person_cost * partySize;
 
   return (
     <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
@@ -1326,18 +1384,13 @@ function StopCard({
           <span className="text-xl">{stopType?.icon || '📍'}</span>
           <span className="font-bold text-sm">{stopType?.label || 'Stop'}</span>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="font-bold text-[#8B1538]">
-            {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(totalCost)}
-          </span>
-          <button
-            type="button"
-            onClick={onRemove}
-            className="text-red-600 hover:text-red-800 text-sm font-bold"
-          >
-            ✕
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={onRemove}
+          className="text-red-600 hover:text-red-800 text-sm font-bold"
+        >
+          ✕
+        </button>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -1436,43 +1489,20 @@ function StopCard({
             className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
           />
         </div>
-
-        {/* Pricing */}
-        <div>
-          <div className="relative">
-            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500 text-xs">
-              $/pp
-            </span>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={stop.per_person_cost || ''}
-              onChange={(e) => onUpdate({ per_person_cost: parseFloat(e.target.value) || 0 })}
-              className="w-full pl-8 pr-2 py-1.5 border border-gray-300 rounded text-sm"
-            />
-          </div>
-        </div>
-
-        <div>
-          <div className="relative">
-            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500 text-xs">
-              $
-            </span>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={stop.flat_cost || ''}
-              onChange={(e) => onUpdate({ flat_cost: parseFloat(e.target.value) || 0 })}
-              placeholder="Flat"
-              className="w-full pl-6 pr-2 py-1.5 border border-gray-300 rounded text-sm"
-            />
-          </div>
-        </div>
       </div>
 
-      {/* Notes */}
+      {/* Cost Note (informational, not calculated) */}
+      <div className="mt-2">
+        <input
+          type="text"
+          value={stop.cost_note || ''}
+          onChange={(e) => onUpdate({ cost_note: e.target.value })}
+          placeholder="e.g., Tasting fee ~$25/pp, paid at winery"
+          className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm text-gray-600 italic"
+        />
+      </div>
+
+      {/* Client Notes */}
       <div className="mt-2">
         <input
           type="text"
