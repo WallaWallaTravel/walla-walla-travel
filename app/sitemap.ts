@@ -175,6 +175,50 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     logger.error('Error fetching winery slugs for sitemap', { error });
   }
 
+  // Events homepage
+  const eventsHomepage: MetadataRoute.Sitemap = [
+    {
+      url: `${baseUrl}/events`,
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 0.9,
+    },
+  ];
+
+  // Dynamic event category pages
+  let eventCategoryPages: MetadataRoute.Sitemap = [];
+
+  try {
+    const result = await query<{ slug: string }>(
+      "SELECT slug FROM event_categories WHERE is_active = true ORDER BY sort_order ASC"
+    );
+    eventCategoryPages = result.rows.map((row) => ({
+      url: `${baseUrl}/events/category/${row.slug}`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.7,
+    }));
+  } catch (error) {
+    logger.error('Error fetching event category slugs for sitemap', { error });
+  }
+
+  // Dynamic individual event pages
+  let eventPages: MetadataRoute.Sitemap = [];
+
+  try {
+    const result = await query<{ slug: string }>(
+      "SELECT slug FROM events WHERE status = 'published' AND start_date >= CURRENT_DATE ORDER BY start_date ASC"
+    );
+    eventPages = result.rows.map((row) => ({
+      url: `${baseUrl}/events/${row.slug}`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.6,
+    }));
+  } catch (error) {
+    logger.error('Error fetching event slugs for sitemap', { error });
+  }
+
   // Dynamic geology topic pages
   let geologyPages: MetadataRoute.Sitemap = [];
 
@@ -202,5 +246,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...bestOfPages,
     ...wineryPages,
     ...geologyPages,
+    ...eventsHomepage,
+    ...eventCategoryPages,
+    ...eventPages,
   ];
 }

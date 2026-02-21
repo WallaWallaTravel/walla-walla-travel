@@ -38,6 +38,7 @@ export default function robots(): MetadataRoute.Robots {
     '/driver-portal/',
     '/winery-portal/',
     '/partner-portal/',
+    '/organizer-portal/',
     '/auth/',
     '/login',
     '/signup',
@@ -50,6 +51,7 @@ export default function robots(): MetadataRoute.Robots {
     '/api/admin/',
     '/api/partner/',
     '/api/driver/',
+    '/api/organizer/',
     '/api/bookings/',
     '/api/internal/',
   ];
