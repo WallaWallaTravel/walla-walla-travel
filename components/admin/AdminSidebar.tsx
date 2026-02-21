@@ -66,6 +66,7 @@ const NAV_ITEMS: NavItem[] = [
 
   // Events (admin only)
   { label: 'Events', icon: '🎉', href: '/admin/events', section: 'Events', requiredAccess: 'admin' },
+  { label: 'Organizers', icon: '📋', href: '/admin/organizers', section: 'Events', requiredAccess: 'admin' },
 
   // Partners (admin only) - unchanged
   { label: 'Partners', icon: '🤝', href: '/admin/partners', section: 'Partners', requiredAccess: 'admin' },

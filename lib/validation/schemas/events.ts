@@ -175,6 +175,62 @@ export const trackEventSchema = z.object({
 });
 
 // ============================================================================
+// Organizer Schemas
+// ============================================================================
+
+/**
+ * Invite organizer validation
+ */
+export const inviteOrganizerSchema = z.object({
+  organization_name: z
+    .string()
+    .min(2, 'Organization name must be at least 2 characters')
+    .max(255, 'Organization name must not exceed 255 characters')
+    .trim(),
+  contact_name: z
+    .string()
+    .min(2, 'Contact name must be at least 2 characters')
+    .max(255, 'Contact name must not exceed 255 characters')
+    .trim(),
+  contact_email: z.string().email('Invalid email address').trim().toLowerCase(),
+  contact_phone: z.string().max(50).optional().nullable(),
+  website: z.string().url('Invalid website URL').optional().nullable(),
+  notes: z.string().max(1000).trim().optional(),
+});
+
+/**
+ * Complete organizer setup
+ */
+export const organizerSetupSchema = z.object({
+  token: z.string().min(1, 'Setup token is required'),
+  password: z
+    .string()
+    .min(8, 'Password must be at least 8 characters')
+    .max(128, 'Password must not exceed 128 characters'),
+});
+
+/**
+ * Update organizer profile
+ */
+export const updateOrganizerProfileSchema = z.object({
+  organization_name: z.string().min(2).max(255).trim().optional(),
+  contact_name: z.string().min(2).max(255).trim().optional(),
+  contact_phone: z.string().max(50).optional().nullable(),
+  website: z.string().url().optional().nullable(),
+  description: z.string().max(2000).trim().optional().nullable(),
+  logo_url: z.string().url().optional().nullable(),
+});
+
+/**
+ * Update organizer status (admin)
+ */
+export const updateOrganizerStatusSchema = z.object({
+  status: z.enum(['pending', 'active', 'suspended']).optional(),
+  trust_level: z.enum(['standard', 'trusted']).optional(),
+  auto_approve: z.boolean().optional(),
+});
+
+// ============================================================================
 // Type Exports
 // ============================================================================
 
@@ -182,3 +238,7 @@ export type CreateEventInput = z.infer<typeof createEventSchema>;
 export type UpdateEventInput = z.infer<typeof updateEventSchema>;
 export type EventFiltersInput = z.infer<typeof eventFiltersSchema>;
 export type TrackEventInput = z.infer<typeof trackEventSchema>;
+export type InviteOrganizerInput = z.infer<typeof inviteOrganizerSchema>;
+export type OrganizerSetupInput = z.infer<typeof organizerSetupSchema>;
+export type UpdateOrganizerProfileInput = z.infer<typeof updateOrganizerProfileSchema>;
+export type UpdateOrganizerStatusInput = z.infer<typeof updateOrganizerStatusSchema>;

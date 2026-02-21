@@ -60,6 +60,7 @@ const protectedPrefixes = [
   '/admin',
   '/driver-portal',
   '/partner-portal',
+  '/organizer-portal',
   '/workflow',
   '/inspections',
   '/time-clock',
@@ -281,6 +282,7 @@ export async function middleware(request: NextRequest) {
     '/admin',
     '/driver-portal',
     '/partner-portal',
+    '/organizer-portal',
     '/workflow',
     '/inspections',
     '/time-clock',
@@ -348,6 +350,17 @@ export async function middleware(request: NextRequest) {
         NextResponse.redirect(new URL('/login?error=forbidden', request.url))
       );
     }
+
+    // Organizer-only routes (admins can also access for oversight)
+    if (
+      pathname.startsWith('/organizer-portal') &&
+      role !== 'organizer' &&
+      session.user.role !== 'admin'
+    ) {
+      return addSecurityHeaders(
+        NextResponse.redirect(new URL('/login?error=forbidden', request.url))
+      );
+    }
   }
 
   // If logged in and trying to access login page, redirect to appropriate dashboard
@@ -358,6 +371,8 @@ export async function middleware(request: NextRequest) {
       dashboardUrl = '/driver-portal/dashboard';
     } else if (userRole === 'partner') {
       dashboardUrl = '/partner-portal/dashboard';
+    } else if (userRole === 'organizer') {
+      dashboardUrl = '/organizer-portal/dashboard';
     } else if (userRole === 'geology_admin') {
       dashboardUrl = '/admin/geology';
     }

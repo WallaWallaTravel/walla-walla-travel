@@ -135,6 +135,70 @@ export type UpdateEventData = Partial<CreateEventData> & {
 };
 
 // ============================================================================
+// Event Organizer
+// ============================================================================
+
+export type OrganizerStatus = 'pending' | 'active' | 'suspended';
+export type TrustLevel = 'standard' | 'trusted';
+
+export interface EventOrganizer {
+  id: number;
+  user_id: number;
+  organization_name: string;
+  contact_name: string;
+  contact_email: string;
+  contact_phone: string | null;
+  website: string | null;
+  description: string | null;
+  logo_url: string | null;
+  status: OrganizerStatus;
+  trust_level: TrustLevel;
+  auto_approve: boolean;
+  invited_by: number | null;
+  invited_at: string | null;
+  setup_token: string | null;
+  setup_token_expires_at: string | null;
+  setup_completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EventOrganizerWithUser extends EventOrganizer {
+  user_email: string;
+  user_name: string;
+}
+
+export interface OrganizerInvitation {
+  organization_name: string;
+  contact_name: string;
+  contact_email: string;
+  contact_phone?: string | null;
+  website?: string | null;
+  notes?: string;
+}
+
+export interface OrganizerDashboardData {
+  profile: EventOrganizer;
+  stats: {
+    total_events: number;
+    published_events: number;
+    pending_events: number;
+    draft_events: number;
+    total_views: number;
+    upcoming_events: number;
+  };
+}
+
+export interface UpdateOrganizerProfileData {
+  organization_name?: string;
+  contact_name?: string;
+  contact_phone?: string | null;
+  website?: string | null;
+  description?: string | null;
+  logo_url?: string | null;
+}
+
+// ============================================================================
 // Filters & List Results
 // ============================================================================
 
