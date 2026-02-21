@@ -25,6 +25,15 @@ function formatCurrency(amount: number): string {
   return `$${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 /**
  * Wraps content in the standard branded email shell (header + footer).
  */
@@ -112,15 +121,18 @@ export function buildProposalSentEmail(data: ProposalSentData): { subject: strin
   const brand = getBrandEmailConfig(data.brand_id);
   const proposalUrl = `${BASE_URL}/trip-proposals/${data.proposal_number}`;
 
+  const safeName = escapeHtml(data.customer_name);
+  const safeProposalNumber = escapeHtml(data.proposal_number);
+
   const customMessageHtml = data.custom_message
     ? `<div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 18px; margin: 0 0 24px 0;">
-        <p style="margin: 0; font-size: 15px; color: #1e3a8a; line-height: 1.6;">${data.custom_message}</p>
+        <p style="margin: 0; font-size: 15px; color: #1e3a8a; line-height: 1.6;">${escapeHtml(data.custom_message)}</p>
       </div>`
     : '';
 
   const bodyHtml = `
       <p style="font-size: 16px; color: #111827; margin: 0 0 20px 0;">
-        Hi ${data.customer_name},
+        Hi ${safeName},
       </p>
 
       <p style="font-size: 15px; color: #374151; margin: 0 0 24px 0; line-height: 1.6;">
@@ -130,8 +142,8 @@ export function buildProposalSentEmail(data: ProposalSentData): { subject: strin
 ${customMessageHtml}
 
 ${summaryCard(brand, 'Proposal Summary', [
-    { label: 'Proposal #:', value: data.proposal_number },
-    { label: 'Trip Type:', value: data.trip_type },
+    { label: 'Proposal #:', value: safeProposalNumber },
+    { label: 'Trip Type:', value: escapeHtml(data.trip_type) },
     { label: 'Dates:', value: `${data.start_date} – ${data.end_date}` },
     { label: 'Party Size:', value: `${data.party_size} guests` },
     { label: 'Total:', value: formatCurrency(data.total) },
@@ -208,9 +220,11 @@ export function buildProposalAcceptedEmail(data: ProposalAcceptedData): { subjec
   const brand = getBrandEmailConfig(data.brand_id);
   const payUrl = `${BASE_URL}/trip-proposals/${data.proposal_number}/pay`;
 
+  const safeName = escapeHtml(data.customer_name);
+
   const bodyHtml = `
       <p style="font-size: 16px; color: #111827; margin: 0 0 20px 0;">
-        Hi ${data.customer_name},
+        Hi ${safeName},
       </p>
 
       <p style="font-size: 15px; color: #374151; margin: 0 0 24px 0; line-height: 1.6;">
@@ -218,8 +232,8 @@ export function buildProposalAcceptedEmail(data: ProposalAcceptedData): { subjec
       </p>
 
 ${summaryCard(brand, 'Trip Details', [
-    { label: 'Proposal #:', value: data.proposal_number },
-    { label: 'Trip Type:', value: data.trip_type },
+    { label: 'Proposal #:', value: escapeHtml(data.proposal_number) },
+    { label: 'Trip Type:', value: escapeHtml(data.trip_type) },
     { label: 'Dates:', value: `${data.start_date} – ${data.end_date}` },
     { label: 'Party Size:', value: `${data.party_size} guests` },
     { label: 'Total:', value: formatCurrency(data.total) },
@@ -310,13 +324,13 @@ export function buildProposalAcceptedStaffEmail(data: ProposalAcceptedStaffData)
       </p>
 
 ${summaryCard(brand, 'Customer', [
-    { label: 'Name:', value: data.customer_name },
-    { label: 'Email:', value: data.customer_email },
+    { label: 'Name:', value: escapeHtml(data.customer_name) },
+    { label: 'Email:', value: escapeHtml(data.customer_email) },
   ])}
 
 ${summaryCard(brand, 'Proposal Details', [
-    { label: 'Proposal #:', value: data.proposal_number },
-    { label: 'Trip Type:', value: data.trip_type },
+    { label: 'Proposal #:', value: escapeHtml(data.proposal_number) },
+    { label: 'Trip Type:', value: escapeHtml(data.trip_type) },
     { label: 'Start Date:', value: data.start_date },
     { label: 'Party Size:', value: `${data.party_size} guests` },
     { label: 'Total:', value: formatCurrency(data.total) },
@@ -329,7 +343,7 @@ ${ctaButton(brand, 'View in Admin', adminUrl)}
         This is an automated staff notification from ${brand.name}.
       </p>`;
 
-  const html = emailShell(brand, 'Trip Proposal Accepted', `${data.proposal_number} — ${data.customer_name}`, bodyHtml);
+  const html = emailShell(brand, 'Trip Proposal Accepted', `${escapeHtml(data.proposal_number)} — ${escapeHtml(data.customer_name)}`, bodyHtml);
 
   const text = `Trip Proposal Accepted: ${data.proposal_number}
 
@@ -381,9 +395,12 @@ interface DepositReceivedData {
 export function buildDepositReceivedEmail(data: DepositReceivedData): { subject: string; html: string; text: string } {
   const brand = getBrandEmailConfig(data.brand_id);
 
+  const safeName = escapeHtml(data.customer_name);
+  const safeProposalNumber = escapeHtml(data.proposal_number);
+
   const bodyHtml = `
       <p style="font-size: 16px; color: #111827; margin: 0 0 20px 0;">
-        Hi ${data.customer_name},
+        Hi ${safeName},
       </p>
 
       <p style="font-size: 15px; color: #374151; margin: 0 0 24px 0; line-height: 1.6;">
@@ -396,7 +413,7 @@ export function buildDepositReceivedEmail(data: DepositReceivedData): { subject:
         <table style="width: 100%; border-collapse: collapse;">
           <tr>
             <td style="padding: 8px 0; font-size: 14px; color: #374151;">Proposal #</td>
-            <td style="padding: 8px 0; font-size: 14px; color: #111827; text-align: right; font-weight: 600;">${data.proposal_number}</td>
+            <td style="padding: 8px 0; font-size: 14px; color: #111827; text-align: right; font-weight: 600;">${safeProposalNumber}</td>
           </tr>
           <tr>
             <td style="padding: 8px 0; font-size: 14px; color: #374151;">Trip Total</td>
@@ -498,9 +515,9 @@ export function buildDepositReceivedStaffEmail(data: DepositReceivedStaffData): 
       </p>
 
 ${summaryCard(brand, 'Payment Details', [
-    { label: 'Proposal #:', value: data.proposal_number },
-    { label: 'Customer:', value: data.customer_name },
-    { label: 'Email:', value: data.customer_email },
+    { label: 'Proposal #:', value: escapeHtml(data.proposal_number) },
+    { label: 'Customer:', value: escapeHtml(data.customer_name) },
+    { label: 'Email:', value: escapeHtml(data.customer_email) },
     { label: 'Amount Paid:', value: formatCurrency(data.amount_paid) },
     { label: 'Trip Total:', value: formatCurrency(data.total) },
     { label: 'Balance Remaining:', value: formatCurrency(data.balance_remaining) },

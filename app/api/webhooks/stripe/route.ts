@@ -591,7 +591,11 @@ async function handleDriverTipPaymentSuccess(paymentIntent: Stripe.PaymentIntent
  */
 async function handleTripProposalPaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
   const { id, metadata, amount } = paymentIntent;
-  const tripProposalId = parseInt(metadata.trip_proposal_id);
+  const tripProposalId = parseInt(metadata.trip_proposal_id, 10);
+  if (isNaN(tripProposalId)) {
+    logger.warn('[Stripe Webhook] Invalid trip_proposal_id in metadata', { metadata });
+    return;
+  }
 
   logger.info('[Stripe Webhook] Processing trip proposal deposit payment', {
     paymentIntentId: id,
@@ -621,15 +625,20 @@ async function handleTripProposalPaymentSuccess(paymentIntent: Stripe.PaymentInt
 
   // Update deposit status
   await withTransaction(async (client) => {
-    await query(
+    const updateResult = await query(
       `UPDATE trip_proposals
        SET deposit_paid = true,
            deposit_paid_at = NOW(),
            updated_at = NOW()
-       WHERE id = $1`,
+       WHERE id = $1 AND deposit_paid = false`,
       [tripProposalId],
       client
     );
+
+    // If no rows updated, another process already handled this
+    if (updateResult.rowCount === 0) {
+      return;
+    }
 
     // Insert payment record (best-effort)
     await query(

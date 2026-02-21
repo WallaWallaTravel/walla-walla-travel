@@ -14,6 +14,7 @@ interface TripProposal {
   total: string;
   deposit_amount: string;
   deposit_percentage: number;
+  deposit_paid: boolean;
   start_date: string;
   end_date: string | null;
   party_size: number;
@@ -205,15 +206,25 @@ export default function ConfirmationPage({
 
             {/* Pay Deposit CTA */}
             <div className="mb-8">
-              <Link
-                href={`/trip-proposals/${proposalNumber}/pay`}
-                className="block w-full text-center bg-[#8B1538] text-white px-8 py-4 rounded-lg font-bold text-lg hover:bg-[#6B1028] transition-colors shadow-lg"
-              >
-                Pay Deposit Now ({formatCurrency(proposal.deposit_amount)})
-              </Link>
-              <p className="text-center text-gray-600 text-sm mt-3">
-                50% deposit to confirm your booking. Balance due 48 hours after your tour concludes.
-              </p>
+              {proposal.deposit_paid ? (
+                <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-center">
+                  <div className="text-3xl mb-2">✓</div>
+                  <p className="text-green-800 font-bold text-lg">Deposit Received</p>
+                  <p className="text-green-700 text-sm mt-1">Your deposit has been paid. You&apos;re all set!</p>
+                </div>
+              ) : (
+                <>
+                  <Link
+                    href={`/trip-proposals/${proposalNumber}/pay`}
+                    className="block w-full text-center bg-[#8B1538] text-white px-8 py-4 rounded-lg font-bold text-lg hover:bg-[#6B1028] transition-colors shadow-lg"
+                  >
+                    Pay Deposit Now ({formatCurrency(proposal.deposit_amount)})
+                  </Link>
+                  <p className="text-center text-gray-600 text-sm mt-3">
+                    50% deposit to confirm your booking. Balance due 48 hours after your tour concludes.
+                  </p>
+                </>
+              )}
             </div>
 
             {/* Next Steps */}
