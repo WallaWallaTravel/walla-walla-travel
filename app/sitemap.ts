@@ -190,7 +190,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   try {
     const result = await query<{ slug: string }>(
-      "SELECT slug FROM event_categories WHERE is_active = true ORDER BY sort_order ASC"
+      "SELECT slug FROM event_categories WHERE is_active = true ORDER BY display_order ASC"
     );
     eventCategoryPages = result.rows.map((row) => ({
       url: `${baseUrl}/events/category/${row.slug}`,
