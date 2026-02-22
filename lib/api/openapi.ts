@@ -366,6 +366,234 @@ export const generateOpenAPISpec = (): OpenAPISchema => {
             }
           }
         }
+      },
+      '/wineries/{slug}': {
+        get: {
+          summary: 'Get winery by slug',
+          description: 'Retrieve detailed information about a specific winery by its URL slug',
+          tags: ['Wineries'],
+          parameters: [
+            {
+              name: 'slug',
+              in: 'path',
+              required: true,
+              schema: { type: 'string' },
+              description: 'URL-friendly winery identifier (e.g., "lecole-no-41")'
+            }
+          ],
+          responses: {
+            '200': {
+              description: 'Successful response',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean' },
+                      data: { $ref: '#/components/schemas/Winery' }
+                    }
+                  }
+                }
+              }
+            },
+            '404': {
+              description: 'Winery not found',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/Error' }
+                }
+              }
+            }
+          }
+        }
+      },
+      '/restaurants': {
+        get: {
+          summary: 'List restaurants',
+          description: 'Get all active restaurants in Walla Walla',
+          tags: ['Restaurants'],
+          responses: {
+            '200': {
+              description: 'Successful response',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean' },
+                      data: {
+                        type: 'array',
+                        items: { $ref: '#/components/schemas/Restaurant' }
+                      },
+                      timestamp: { type: 'string', format: 'date-time' }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      '/events': {
+        get: {
+          summary: 'List events',
+          description: 'Get published events in Walla Walla with filtering and pagination',
+          tags: ['Events'],
+          parameters: [
+            {
+              name: 'category',
+              in: 'query',
+              schema: { type: 'string' },
+              description: 'Filter by category slug'
+            },
+            {
+              name: 'search',
+              in: 'query',
+              schema: { type: 'string', maxLength: 200 },
+              description: 'Search events by title or description'
+            },
+            {
+              name: 'startDate',
+              in: 'query',
+              schema: { type: 'string', format: 'date' },
+              description: 'Filter events starting on or after this date (YYYY-MM-DD)'
+            },
+            {
+              name: 'endDate',
+              in: 'query',
+              schema: { type: 'string', format: 'date' },
+              description: 'Filter events starting on or before this date (YYYY-MM-DD)'
+            },
+            {
+              name: 'isFree',
+              in: 'query',
+              schema: { type: 'boolean' },
+              description: 'Filter by free events only'
+            },
+            {
+              name: 'isFeatured',
+              in: 'query',
+              schema: { type: 'boolean' },
+              description: 'Filter by featured events only'
+            },
+            {
+              name: 'limit',
+              in: 'query',
+              schema: { type: 'integer', default: 20, minimum: 1, maximum: 100 },
+              description: 'Number of results per page'
+            },
+            {
+              name: 'offset',
+              in: 'query',
+              schema: { type: 'integer', default: 0, minimum: 0 },
+              description: 'Number of results to skip'
+            }
+          ],
+          responses: {
+            '200': {
+              description: 'Successful response',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean' },
+                      data: {
+                        type: 'array',
+                        items: { $ref: '#/components/schemas/Event' }
+                      },
+                      pagination: {
+                        type: 'object',
+                        properties: {
+                          total: { type: 'integer' },
+                          limit: { type: 'integer' },
+                          offset: { type: 'integer' },
+                          hasMore: { type: 'boolean' }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      '/shared-tours': {
+        get: {
+          summary: 'List shared wine tours',
+          description: 'Get upcoming shared/group wine tours with availability. Shared tours run Sunday-Wednesday and allow individual guests to join at per-person pricing.',
+          tags: ['Shared Tours'],
+          parameters: [
+            {
+              name: 'start_date',
+              in: 'query',
+              schema: { type: 'string', format: 'date' },
+              description: 'Filter tours starting on or after this date (YYYY-MM-DD)'
+            },
+            {
+              name: 'end_date',
+              in: 'query',
+              schema: { type: 'string', format: 'date' },
+              description: 'Filter tours starting on or before this date (YYYY-MM-DD)'
+            }
+          ],
+          responses: {
+            '200': {
+              description: 'Successful response',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean' },
+                      data: {
+                        type: 'array',
+                        items: { $ref: '#/components/schemas/SharedTour' }
+                      },
+                      count: { type: 'integer' }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      '/announcements': {
+        get: {
+          summary: 'List active announcements',
+          description: 'Get currently active announcements, optionally filtered by display position',
+          tags: ['Announcements'],
+          parameters: [
+            {
+              name: 'position',
+              in: 'query',
+              schema: { type: 'string', enum: ['top', 'homepage', 'booking'] },
+              description: 'Filter by display position'
+            }
+          ],
+          responses: {
+            '200': {
+              description: 'Successful response',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean' },
+                      announcements: {
+                        type: 'array',
+                        items: { $ref: '#/components/schemas/Announcement' }
+                      },
+                      count: { type: 'integer' }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     },
     components: {
@@ -477,6 +705,96 @@ export const generateOpenAPISpec = (): OpenAPISchema => {
             preferred_date: { type: 'string', format: 'date' },
             budget_range: { type: 'string' },
             special_requests: { type: 'string' }
+          }
+        },
+        Restaurant: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer', description: 'Unique restaurant identifier' },
+            name: { type: 'string' },
+            slug: { type: 'string', description: 'URL-friendly identifier' },
+            description: { type: 'string' },
+            cuisine_type: { type: 'string' },
+            address: { type: 'string' },
+            city: { type: 'string' },
+            phone: { type: 'string' },
+            website: { type: 'string', format: 'uri' },
+            price_range: { type: 'string', description: 'Price indicator (e.g., $$, $$$)' },
+            rating: { type: 'number', format: 'decimal' },
+            image_url: { type: 'string', format: 'uri' },
+            is_active: { type: 'boolean' }
+          }
+        },
+        Event: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer', description: 'Unique event identifier' },
+            title: { type: 'string' },
+            slug: { type: 'string', description: 'URL-friendly identifier' },
+            short_description: { type: 'string' },
+            description: { type: 'string' },
+            start_date: { type: 'string', format: 'date' },
+            end_date: { type: 'string', format: 'date' },
+            start_time: { type: 'string', format: 'time' },
+            end_time: { type: 'string', format: 'time' },
+            is_all_day: { type: 'boolean' },
+            venue_name: { type: 'string' },
+            address: { type: 'string' },
+            city: { type: 'string' },
+            is_free: { type: 'boolean' },
+            price_min: { type: 'number', format: 'decimal' },
+            price_max: { type: 'number', format: 'decimal' },
+            ticket_url: { type: 'string', format: 'uri' },
+            organizer_name: { type: 'string' },
+            featured_image_url: { type: 'string', format: 'uri' },
+            is_featured: { type: 'boolean' },
+            status: {
+              type: 'string',
+              enum: ['draft', 'published', 'cancelled', 'past', 'pending_review']
+            },
+            tags: { type: 'array', items: { type: 'string' } }
+          }
+        },
+        SharedTour: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid', description: 'Unique tour identifier' },
+            tour_date: { type: 'string', format: 'date' },
+            start_time: { type: 'string', format: 'time' },
+            duration_hours: { type: 'number' },
+            title: { type: 'string' },
+            description: { type: 'string' },
+            meeting_location: { type: 'string' },
+            wineries_preview: { type: 'array', items: { type: 'string' }, description: 'List of planned winery names' },
+            max_guests: { type: 'integer' },
+            min_guests: { type: 'integer' },
+            base_price_per_person: { type: 'number', format: 'decimal', description: 'Tour-only price per person' },
+            lunch_price_per_person: { type: 'number', format: 'decimal', description: 'Tour with lunch price per person' },
+            status: {
+              type: 'string',
+              enum: ['open', 'full', 'confirmed', 'cancelled', 'completed']
+            },
+            tickets_sold: { type: 'integer' },
+            spots_available: { type: 'integer' },
+            minimum_met: { type: 'boolean', description: 'Whether minimum guest count has been reached' },
+            accepting_bookings: { type: 'boolean' }
+          }
+        },
+        Announcement: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer', description: 'Unique announcement identifier' },
+            title: { type: 'string' },
+            message: { type: 'string' },
+            link_text: { type: 'string' },
+            link_url: { type: 'string', format: 'uri' },
+            type: { type: 'string', description: 'Announcement type (e.g., info, warning)' },
+            position: {
+              type: 'string',
+              enum: ['top', 'homepage', 'booking'],
+              description: 'Where the announcement is displayed'
+            },
+            background_color: { type: 'string', description: 'CSS color value for the announcement background' }
           }
         },
         Error: {

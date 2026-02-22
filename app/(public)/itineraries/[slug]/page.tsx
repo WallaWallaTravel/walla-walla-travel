@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { getItineraryBySlug, getAllItinerarySlugs, getAllItineraries } from '@/lib/data/itineraries';
 import { BreadcrumbJsonLd } from '@/components/seo/BreadcrumbJsonLd';
 import { FAQJsonLd } from '@/components/seo/FAQJsonLd';
+import { TourJsonLd } from '@/components/seo/TourJsonLd';
 import { FAQSection } from '@/components/FAQSection';
 
 // Generate static params for all itineraries
@@ -90,6 +91,23 @@ export default async function ItineraryPage({ params }: PageProps) {
       {/* Schema Markup */}
       <BreadcrumbJsonLd items={breadcrumbs} />
       <FAQJsonLd faqs={itinerary.faqs} pageUrl={`https://wallawalla.travel/itineraries/${slug}`} />
+      <TourJsonLd
+        name={itinerary.title}
+        description={itinerary.description}
+        url={`https://wallawalla.travel/itineraries/${slug}`}
+        touristType={itinerary.bestFor}
+        duration={itinerary.duration}
+        itineraryItems={itinerary.days.flatMap((day) =>
+          day.stops
+            .filter((stop) => stop.type === 'winery')
+            .map((stop) => ({ name: stop.name, description: stop.description }))
+        )}
+        provider={{
+          name: 'Walla Walla Travel',
+          url: 'https://wallawalla.travel',
+          telephone: '+1-509-200-8000',
+        }}
+      />
 
       <div className="min-h-screen bg-gradient-to-b from-[#faf7f5] to-white">
         {/* Hero Section */}

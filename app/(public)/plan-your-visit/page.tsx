@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Metadata } from 'next';
 import { BreadcrumbJsonLd } from '@/components/seo/BreadcrumbJsonLd';
+import { TourJsonLd } from '@/components/seo/TourJsonLd';
 
 export const metadata: Metadata = {
   title: 'Plan Your Visit | Walla Walla Wine Country',
@@ -37,6 +38,22 @@ export default function PlanYourVisitPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <BreadcrumbJsonLd items={breadcrumbs} />
+      <TourJsonLd
+        name="Walla Walla Wine Tours"
+        description="Guided wine tours through Walla Walla Valley with luxury Mercedes Sprinter transportation, visiting 3 handpicked wineries."
+        url="https://wallawalla.travel/plan-your-visit"
+        touristType={['Wine enthusiasts', 'Couples', 'Groups', 'First-timers']}
+        offers={[
+          { name: 'Classic Wine Tour', price: 125, description: 'Visit 3 handpicked wineries with a knowledgeable driver. 6 hours.' },
+          { name: 'Private Transportation', price: 85, description: 'Hourly private transportation service. You choose the wineries. 5 hours.' },
+          { name: 'Celebration Package', price: 165, description: 'Special occasions with champagne toast, snacks, and celebration decor. 7 hours.' },
+        ]}
+        provider={{
+          name: 'Walla Walla Travel',
+          url: 'https://wallawalla.travel',
+          telephone: '+1-509-200-8000',
+        }}
+      />
       {/* Hero Section */}
       <div className="bg-gradient-to-br from-[#8B1538] to-[#722F37] text-white py-16 md:py-24">
         <div className="max-w-5xl mx-auto px-4 text-center">
