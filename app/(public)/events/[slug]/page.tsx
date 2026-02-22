@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { eventsService } from '@/lib/services/events.service';
 import { EventCard } from '@/components/events/EventCard';
+import { EventJsonLd } from '@/components/seo/EventJsonLd';
 import { getCanonicalUrl } from '@/lib/utils/domain';
 
 interface PageProps {
@@ -86,60 +87,10 @@ export default async function EventDetailPage({ params }: PageProps) {
 
   // JSON-LD structured data
   const canonical = await getCanonicalUrl(`/events/${slug}`);
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'Event',
-    name: event.title,
-    description: event.short_description || event.description.substring(0, 200),
-    url: canonical,
-    eventStatus: 'https://schema.org/EventScheduled',
-    eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
-    startDate: event.start_time
-      ? `${event.start_date}T${event.start_time}`
-      : event.start_date,
-    endDate: event.end_date
-      ? event.end_time
-        ? `${event.end_date}T${event.end_time}`
-        : event.end_date
-      : undefined,
-    location: event.venue_name
-      ? {
-          '@type': 'Place',
-          name: event.venue_name,
-          address: {
-            '@type': 'PostalAddress',
-            streetAddress: event.address || undefined,
-            addressLocality: event.city,
-            addressRegion: event.state,
-            postalCode: event.zip || undefined,
-          },
-        }
-      : undefined,
-    image: event.featured_image_url || undefined,
-    isAccessibleForFree: event.is_free,
-    offers: !event.is_free && event.ticket_url
-      ? {
-          '@type': 'Offer',
-          url: event.ticket_url,
-          price: event.price_min || undefined,
-          priceCurrency: 'USD',
-        }
-      : undefined,
-    organizer: event.organizer_name
-      ? {
-          '@type': 'Organization',
-          name: event.organizer_name,
-          url: event.organizer_website || undefined,
-        }
-      : undefined,
-  };
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <EventJsonLd event={event} url={canonical} />
 
       <div className="min-h-screen bg-white">
         {/* Hero Image */}

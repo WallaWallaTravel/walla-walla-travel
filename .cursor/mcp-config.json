@@ -12,8 +12,11 @@
         "server.restart",
         "server.check"
       ]
+    },
+    "content-server": {
+      "command": "node",
+      "args": ["/Users/temp/walla-walla-final/.cursor/mcp-content-server.js"],
+      "description": "Read-only content access for Walla Walla Travel data (wineries, events, tours, restaurants, guides)"
     }
   }
 }
-
-
