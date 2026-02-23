@@ -88,6 +88,8 @@ interface TripProposal {
   id: number;
   proposal_number: string;
   status: string;
+  access_token: string;
+  planning_phase: string;
   brand_id: number | null;
   customer_name: string;
   customer_email: string | null;
@@ -156,7 +158,10 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
   const [hotels, setHotels] = useState<Hotel[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'days' | 'guests' | 'pricing'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'days' | 'guests' | 'pricing' | 'notes'>('overview');
+  const [notes, setNotes] = useState<Array<{ id: number; author_type: string; author_name: string; content: string; context_type: string | null; context_id: number | null; is_read: boolean; created_at: string }>>([]);
+  const [newNote, setNewNote] = useState('');
+  const [notesLoading, setNotesLoading] = useState(false);
 
   useEffect(() => {
     loadProposal();
@@ -166,6 +171,13 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
     loadHotels();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  useEffect(() => {
+    if (activeTab === 'notes' && proposal) {
+      loadNotes();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, proposal?.id]);
 
   const loadProposal = async () => {
     try {
@@ -498,6 +510,68 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
     });
   };
 
+  const loadNotes = async () => {
+    if (!proposal) return;
+    setNotesLoading(true);
+    try {
+      const response = await fetch(`/api/admin/trip-proposals/${id}/notes`);
+      const result = await response.json();
+      if (result.success) {
+        setNotes(result.data?.notes || []);
+      }
+    } catch (error) {
+      logger.error('Failed to load notes', { error });
+    } finally {
+      setNotesLoading(false);
+    }
+  };
+
+  const sendNote = async () => {
+    if (!newNote.trim() || !proposal) return;
+    try {
+      const response = await fetch(`/api/admin/trip-proposals/${id}/notes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          author_name: 'Staff',
+          content: newNote.trim(),
+        }),
+      });
+      const result = await response.json();
+      if (result.success) {
+        setNewNote('');
+        loadNotes();
+      } else {
+        alert(result.error || 'Failed to send note');
+      }
+    } catch (error) {
+      logger.error('Failed to send note', { error });
+      alert('Failed to send note');
+    }
+  };
+
+  const updatePlanningPhase = async (phase: string) => {
+    setSaving(true);
+    try {
+      const response = await fetch(`/api/admin/trip-proposals/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planning_phase: phase }),
+      });
+      const result = await response.json();
+      if (result.success) {
+        setProposal({ ...proposal!, ...result.data });
+      } else {
+        alert(result.error?.message || result.error || 'Failed to update planning phase');
+      }
+    } catch (error) {
+      logger.error('Failed to update planning phase', { error });
+      alert('Failed to update planning phase');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -603,6 +677,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                   { key: 'days', label: '📅 Days & Stops' },
                   { key: 'guests', label: '👥 Guests' },
                   { key: 'pricing', label: '💰 Pricing' },
+                  { key: 'notes', label: '💬 Notes' },
                 ].map((tab) => (
                   <button
                     key={tab.key}
@@ -1101,12 +1176,134 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                     </button>
                   </div>
                 )}
+
+                {/* Notes Tab */}
+                {activeTab === 'notes' && (
+                  <div className="space-y-4">
+                    {!notes.length && !notesLoading && (
+                      <button
+                        onClick={loadNotes}
+                        className="w-full px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors"
+                      >
+                        Load Notes
+                      </button>
+                    )}
+
+                    {notesLoading && (
+                      <div className="text-center py-8 text-gray-600">Loading notes...</div>
+                    )}
+
+                    {/* Notes thread */}
+                    <div className="space-y-3 max-h-[500px] overflow-y-auto">
+                      {notes.length === 0 && !notesLoading && (
+                        <div className="text-center py-8">
+                          <p className="text-gray-600">No notes yet. Start the conversation.</p>
+                        </div>
+                      )}
+                      {notes.map((note) => (
+                        <div
+                          key={note.id}
+                          className={`p-3 rounded-xl ${
+                            note.author_type === 'staff'
+                              ? 'bg-indigo-50 border border-indigo-100'
+                              : 'bg-gray-50 border border-gray-200'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm font-semibold text-gray-900">
+                              {note.author_name}
+                              {note.context_type && (
+                                <span className="ml-2 text-xs font-normal text-gray-600 bg-gray-200 px-2 py-0.5 rounded-full">
+                                  {note.context_type} #{note.context_id}
+                                </span>
+                              )}
+                            </span>
+                            <span className="text-xs text-gray-600">
+                              {new Date(note.created_at).toLocaleString()}
+                            </span>
+                          </div>
+                          <p className="text-gray-700 text-sm whitespace-pre-wrap">{note.content}</p>
+                          {!note.is_read && note.author_type === 'client' && (
+                            <span className="inline-block mt-1 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">
+                              New
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Send note */}
+                    <div className="flex gap-2 pt-2 border-t border-gray-200">
+                      <input
+                        type="text"
+                        value={newNote}
+                        onChange={(e) => setNewNote(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendNote()}
+                        placeholder="Type a note..."
+                        className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      />
+                      <button
+                        onClick={sendNote}
+                        disabled={!newNote.trim()}
+                        className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium disabled:opacity-50 transition-colors"
+                      >
+                        Send
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Pricing Sidebar */}
-          <div className="lg:col-span-1">
+          {/* Sidebar */}
+          <div className="lg:col-span-1 space-y-6">
+            {/* Client Link + Planning Phase */}
+            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">Client Link</h3>
+              <div className="flex items-center gap-2 mb-4">
+                <input
+                  type="text"
+                  readOnly
+                  value={`${typeof window !== 'undefined' ? window.location.origin : ''}/my-trip/${proposal.access_token || '...'}`}
+                  className="flex-1 text-xs px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 truncate"
+                />
+                <button
+                  onClick={() => {
+                    const url = `${window.location.origin}/my-trip/${proposal.access_token || ''}`;
+                    navigator.clipboard.writeText(url);
+                    alert('Link copied!');
+                  }}
+                  className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-medium shrink-0"
+                >
+                  Copy
+                </button>
+              </div>
+
+              <h3 className="text-sm font-semibold text-gray-900 mb-2">Planning Phase</h3>
+              <div className="flex gap-1">
+                {[
+                  { value: 'proposal', label: 'Proposal' },
+                  { value: 'active_planning', label: 'Active' },
+                  { value: 'finalized', label: 'Final' },
+                ].map((phase) => (
+                  <button
+                    key={phase.value}
+                    onClick={() => updatePlanningPhase(phase.value)}
+                    disabled={saving || (proposal.planning_phase || 'proposal') === phase.value}
+                    className={`flex-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                      (proposal.planning_phase || 'proposal') === phase.value
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                    } disabled:cursor-default`}
+                  >
+                    {phase.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Pricing */}
             <div className="sticky top-6 bg-white rounded-xl shadow-lg p-6 border-2 border-[#8B1538]">
               <h2 className="text-2xl font-bold text-gray-900 mb-4">💰 Pricing</h2>
 

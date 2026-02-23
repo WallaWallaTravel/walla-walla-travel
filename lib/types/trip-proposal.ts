@@ -24,6 +24,9 @@ export const TRIP_PROPOSAL_STATUS = [
 
 export type TripProposalStatus = (typeof TRIP_PROPOSAL_STATUS)[number];
 
+export const PLANNING_PHASES = ['proposal', 'active_planning', 'finalized'] as const;
+export type PlanningPhase = (typeof PLANNING_PHASES)[number];
+
 export const TRIP_TYPES = [
   'wine_tour',
   'wine_group',
@@ -90,6 +93,8 @@ export interface TripProposal {
   id: number;
   proposal_number: string;
   status: TripProposalStatus;
+  access_token: string;
+  planning_phase: PlanningPhase;
 
   // Customer info
   customer_name: string;
@@ -370,6 +375,7 @@ export interface CreateTripProposalInput {
  */
 export interface UpdateTripProposalInput extends Partial<CreateTripProposalInput> {
   status?: TripProposalStatus;
+  planning_phase?: PlanningPhase;
 }
 
 /**
@@ -467,6 +473,7 @@ export const CreateTripProposalSchema = z.object({
 
 export const UpdateTripProposalSchema = CreateTripProposalSchema.partial().extend({
   status: z.enum(TRIP_PROPOSAL_STATUS).optional(),
+  planning_phase: z.enum(PLANNING_PHASES).optional(),
 });
 
 export const AddDaySchema = z.object({

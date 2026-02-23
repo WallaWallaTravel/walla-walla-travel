@@ -383,6 +383,18 @@ export async function middleware(request: NextRequest) {
   // TEST ROUTE PROTECTION
   // ============================================================================
 
+  // ============================================================================
+  // PUBLIC CLIENT PORTAL (/my-trip/[token])
+  // No auth required — token-based access
+  // ============================================================================
+
+  if (pathname.startsWith('/my-trip/') || pathname === '/my-trip') {
+    const response = NextResponse.next();
+    const correlationId = request.headers.get(CORRELATION_ID_HEADER) || generateCorrelationId();
+    response.headers.set(CORRELATION_ID_HEADER, correlationId);
+    return addSecurityHeaders(response, pathname);
+  }
+
   const testRoutes = [
     '/test',
     '/test-mobile',
