@@ -20,6 +20,7 @@ import {
   TripProposalInclusion,
   TripProposalActivity,
   TripProposalStatus,
+  PlanningPhase,
   CreateTripProposalInput,
   UpdateTripProposalInput,
   AddDayInput,
@@ -78,10 +79,15 @@ export class TripProposalService extends BaseService {
       // Calculate valid_until if not provided (30 days default)
       const validUntil = validated.valid_until || this.calculateValidUntil(30);
 
+      // Generate access token for client-facing URL
+      const accessToken = generateSecureString(64);
+
       // Create the proposal
       const proposal = await this.insert<TripProposal>('trip_proposals', {
         proposal_number: proposalNumber,
         status: 'draft',
+        access_token: accessToken,
+        planning_phase: 'proposal',
         customer_name: validated.customer_name,
         customer_email: validated.customer_email || null,
         customer_phone: validated.customer_phone || null,
@@ -323,6 +329,55 @@ export class TripProposalService extends BaseService {
       'SELECT * FROM trip_proposals WHERE proposal_number = $1',
       [proposalNumber]
     );
+  }
+
+  /**
+   * Get proposal by access token (for /my-trip/[token] routes)
+   */
+  async getByAccessToken(accessToken: string): Promise<TripProposal | null> {
+    this.log('Fetching trip proposal by access token');
+    if (!accessToken || accessToken.length < 32) return null;
+    return this.queryOne<TripProposal>(
+      'SELECT * FROM trip_proposals WHERE access_token = $1',
+      [accessToken]
+    );
+  }
+
+  /**
+   * Update planning phase with validation
+   */
+  async updatePlanningPhase(id: number, phase: PlanningPhase): Promise<TripProposal> {
+    this.log('Updating planning phase', { id, phase });
+
+    const proposal = await this.getById(id);
+    if (!proposal) {
+      throw new NotFoundError('TripProposal', id.toString());
+    }
+
+    const validTransitions: Record<PlanningPhase, PlanningPhase[]> = {
+      proposal: ['active_planning'],
+      active_planning: ['finalized', 'proposal'], // can revert to proposal
+      finalized: ['active_planning'], // can reopen for changes
+    };
+
+    if (!validTransitions[proposal.planning_phase]?.includes(phase)) {
+      throw new ValidationError(
+        `Cannot transition planning phase from ${proposal.planning_phase} to ${phase}`
+      );
+    }
+
+    const updated = await this.update<TripProposal>('trip_proposals', id, {
+      planning_phase: phase,
+    });
+    if (!updated) {
+      throw new NotFoundError('TripProposal', id.toString());
+    }
+
+    await this.logActivity(id, `phase_${phase}`, `Planning phase changed to ${phase}`, {
+      actor_type: 'staff',
+    });
+
+    return updated;
   }
 
   /**
