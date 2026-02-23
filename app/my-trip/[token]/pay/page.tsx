@@ -307,7 +307,7 @@ export default function MyTripPaymentPage() {
     return null;
   }
 
-  const brandConfig = getBrandEmailConfig(proposal.brand_id ?? undefined);
+  const _brandConfig = getBrandEmailConfig(proposal.brand_id ?? undefined);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">

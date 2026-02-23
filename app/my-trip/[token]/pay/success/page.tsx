@@ -29,7 +29,7 @@ export default function MyTripPaymentSuccessPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
-  const [confirmed, setConfirmed] = useState(false);
+  const [_confirmed, setConfirmed] = useState(false);
 
   useEffect(() => {
     if (token) {
