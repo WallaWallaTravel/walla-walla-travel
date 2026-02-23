@@ -1,12 +1,14 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef, Suspense } from 'react';
 import { useParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { ProposalProvider } from '@/lib/contexts/proposal-context';
 import { useProposalRealtime } from '@/hooks/useProposalRealtime';
+import { useGuestIdentity } from '@/hooks/useGuestIdentity';
 import { apiGet } from '@/lib/utils/fetch-utils';
 import NoteThread from '@/components/my-trip/NoteThread';
+import GuestRegistrationGate from '@/components/my-trip/GuestRegistrationGate';
 import type { TripProposalFull, PlanningPhase } from '@/lib/types/trip-proposal';
 import type { ProposalNote } from '@/lib/types/proposal-notes';
 
@@ -18,11 +20,7 @@ interface Tab {
   phases: PlanningPhase[];
 }
 
-export default function MyTripLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function MyTripLayoutInner({ children }: { children: React.ReactNode }) {
   const params = useParams<{ token: string }>();
   const pathname = usePathname();
   const token = params.token;
@@ -30,6 +28,16 @@ export default function MyTripLayout({
   const [proposal, setProposal] = useState<TripProposalFull | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Guest identity
+  const {
+    guestId,
+    guestToken,
+    guest,
+    isRegistered,
+    loading: guestLoading,
+    registerGuest,
+  } = useGuestIdentity(token);
 
   // Notes panel state: 'closed' | 'minimized' | 'open'
   const [notesState, setNotesState] = useState<'closed' | 'minimized' | 'open'>('closed');
@@ -138,18 +146,19 @@ export default function MyTripLayout({
   const handleSendNote = useCallback(
     async (content: string) => {
       if (!token || !proposal) return;
+      const authorName = guest?.name || proposal.customer_name || 'Guest';
       const res = await fetch(`/api/my-trip/${token}/notes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          author_name: proposal.customer_name || 'Guest',
+          author_name: authorName,
           content,
         }),
       });
       if (!res.ok) throw new Error('Failed to send message');
       await fetchNotes();
     },
-    [token, proposal, fetchNotes]
+    [token, proposal, guest, fetchNotes]
   );
 
   const planningPhase: PlanningPhase = proposal?.planning_phase ?? 'proposal';
@@ -318,9 +327,20 @@ export default function MyTripLayout({
             planningPhase,
             accessToken: token,
             refreshProposal: fetchProposal,
+            guestId,
+            guestToken,
+            guestName: guest?.name ?? null,
           }}
         >
-          {children}
+          <GuestRegistrationGate
+            guestToken={guestToken}
+            isRegistered={isRegistered}
+            guestName={guest?.name ?? null}
+            loading={guestLoading}
+            onRegister={registerGuest}
+          >
+            {children}
+          </GuestRegistrationGate>
         </ProposalProvider>
       </main>
 
@@ -447,7 +467,7 @@ export default function MyTripLayout({
                         notes={notes}
                         onSendNote={handleSendNote}
                         isReadOnly={isReadOnly}
-                        authorName={proposal.customer_name || 'Guest'}
+                        authorName={guest?.name || proposal.customer_name || 'Guest'}
                         compact
                       />
                     </div>
@@ -459,5 +479,33 @@ export default function MyTripLayout({
         </>
       )}
     </div>
+  );
+}
+
+export default function MyTripLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-slate-50">
+        <header className="bg-white border-b border-gray-200">
+          <div className="max-w-4xl mx-auto px-4 py-6">
+            <div className="h-7 w-64 bg-gray-200 rounded animate-pulse" />
+            <div className="mt-2 h-4 w-40 bg-gray-100 rounded animate-pulse" />
+          </div>
+        </header>
+        <main className="max-w-4xl mx-auto px-4 py-8">
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-40 bg-white rounded-xl border border-gray-200 animate-pulse" />
+            ))}
+          </div>
+        </main>
+      </div>
+    }>
+      <MyTripLayoutInner>{children}</MyTripLayoutInner>
+    </Suspense>
   );
 }

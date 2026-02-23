@@ -72,6 +72,7 @@ interface GuestData {
   dietary_restrictions?: string;
   room_assignment?: string;
   is_primary: boolean;
+  guest_access_token?: string;
 }
 
 interface InclusionData {
@@ -163,6 +164,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
   const [notes, setNotes] = useState<Array<{ id: number; author_type: string; author_name: string; content: string; context_type: string | null; context_id: number | null; is_read: boolean; created_at: string }>>([]);
   const [newNote, setNewNote] = useState('');
   const [notesLoading, setNotesLoading] = useState(false);
+  const [lunchOrders, setLunchOrders] = useState<Array<{ id: number; ordering_mode: string; day?: { day_number: number; title: string | null }; supplier?: { name: string } }>>([]);
 
   useEffect(() => {
     loadProposal();
@@ -170,6 +172,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
     loadWineries();
     loadRestaurants();
     loadHotels();
+    loadLunchOrders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -568,6 +571,47 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
     } catch (error) {
       logger.error('Failed to update planning phase', { error });
       alert('Failed to update planning phase');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const loadLunchOrders = async () => {
+    try {
+      const response = await fetch(`/api/admin/trip-proposals/${id}/lunch`);
+      const result = await response.json();
+      if (result.success && result.data?.orders) {
+        setLunchOrders(result.data.orders.map((o: Record<string, unknown>) => ({
+          id: o.id,
+          ordering_mode: (o as Record<string, string>).ordering_mode || 'coordinator',
+          day: o.day as { day_number: number; title: string | null } | undefined,
+          supplier: o.supplier as { name: string } | undefined,
+        })));
+      }
+    } catch (error) {
+      logger.error('Failed to load lunch orders', { error });
+    }
+  };
+
+  const updateLunchOrderingMode = async (orderId: number, mode: string) => {
+    setSaving(true);
+    try {
+      const response = await fetch(`/api/admin/lunch-orders/${orderId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ordering_mode: mode }),
+      });
+      const result = await response.json();
+      if (result.success) {
+        setLunchOrders((prev) =>
+          prev.map((o) => (o.id === orderId ? { ...o, ordering_mode: mode } : o))
+        );
+      } else {
+        alert(result.error || 'Failed to update ordering mode');
+      }
+    } catch (error) {
+      logger.error('Failed to update lunch ordering mode', { error });
+      alert('Failed to update ordering mode');
     } finally {
       setSaving(false);
     }
@@ -1068,6 +1112,30 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                             </div>
                           )}
                         </div>
+
+                        {/* Per-guest link */}
+                        {guest.guest_access_token && (
+                          <div className="mt-3 pt-3 border-t border-gray-100">
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                readOnly
+                                value={`${typeof window !== 'undefined' ? window.location.origin : ''}/my-trip/${proposal.access_token}?guest=${guest.guest_access_token}`}
+                                className="flex-1 text-xs px-2 py-1.5 bg-gray-50 border border-gray-200 rounded text-gray-600 truncate"
+                              />
+                              <button
+                                onClick={() => {
+                                  const url = `${window.location.origin}/my-trip/${proposal.access_token}?guest=${guest.guest_access_token}`;
+                                  navigator.clipboard.writeText(url);
+                                  alert('Guest link copied!');
+                                }}
+                                className="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded text-xs font-medium shrink-0 transition-colors"
+                              >
+                                Copy Link
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))}
 
@@ -1329,6 +1397,47 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                 </label>
               </div>
             </div>
+
+            {/* Lunch Ordering Mode */}
+            {lunchOrders.length > 0 && (
+              <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Lunch Ordering Mode</h3>
+                <div className="space-y-3">
+                  {lunchOrders.map((order) => (
+                    <div key={order.id} className="border border-gray-200 rounded-lg p-3">
+                      <p className="text-xs font-medium text-gray-700 mb-2">
+                        {order.day ? `Day ${order.day.day_number}${order.day.title ? ` - ${order.day.title}` : ''}` : 'Lunch'}
+                        {order.supplier && ` (${order.supplier.name})`}
+                      </p>
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => updateLunchOrderingMode(order.id, 'coordinator')}
+                          disabled={saving || order.ordering_mode === 'coordinator'}
+                          className={`flex-1 px-2 py-1.5 rounded text-xs font-medium transition-colors ${
+                            order.ordering_mode === 'coordinator'
+                              ? 'bg-indigo-600 text-white'
+                              : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                          } disabled:cursor-default`}
+                        >
+                          Coordinator
+                        </button>
+                        <button
+                          onClick={() => updateLunchOrderingMode(order.id, 'individual')}
+                          disabled={saving || order.ordering_mode === 'individual'}
+                          className={`flex-1 px-2 py-1.5 rounded text-xs font-medium transition-colors ${
+                            order.ordering_mode === 'individual'
+                              ? 'bg-violet-600 text-white'
+                              : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                          } disabled:cursor-default`}
+                        >
+                          Individual
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Pricing */}
             <div className="sticky top-6 bg-white rounded-xl shadow-lg p-6 border-2 border-[#8B1538]">

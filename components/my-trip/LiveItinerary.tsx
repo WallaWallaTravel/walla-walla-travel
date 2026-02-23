@@ -200,8 +200,12 @@ function formatTime(time: string | null): string | null {
   return `${hour12}:${m.toString().padStart(2, '0')} ${period}`;
 }
 
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr + 'T00:00:00');
+function formatDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return '';
+  // Handle both ISO strings ("2026-04-15T07:00:00.000Z") and date-only ("2026-04-15")
+  const raw = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+  const date = new Date(raw + 'T00:00:00');
+  if (isNaN(date.getTime())) return '';
   return date.toLocaleDateString('en-US', {
     weekday: 'long',
     month: 'long',
@@ -588,14 +592,9 @@ export function LiveItinerary({ proposal, planningPhase }: LiveItineraryProps) {
       {proposal.total > 0 && <PricingBreakdown proposal={proposal} />}
 
       {/* Validity notice */}
-      {proposal.valid_until && planningPhase === 'proposal' && (
+      {proposal.valid_until && planningPhase === 'proposal' && formatDate(proposal.valid_until) && (
         <p className="text-xs text-gray-600 text-center">
-          This proposal is valid until{' '}
-          {new Date(proposal.valid_until + 'T00:00:00').toLocaleDateString(
-            'en-US',
-            { month: 'long', day: 'numeric', year: 'numeric' }
-          )}
-          .
+          This proposal is valid until {formatDate(proposal.valid_until)}.
         </p>
       )}
     </div>

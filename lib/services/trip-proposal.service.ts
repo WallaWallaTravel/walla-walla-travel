@@ -391,8 +391,8 @@ export class TripProposalService extends BaseService {
       `SELECT tp.*,
         JSON_BUILD_OBJECT(
           'id', b.id,
-          'name', b.name,
-          'code', b.code
+          'name', b.brand_name,
+          'code', b.brand_code
         ) as brand
        FROM trip_proposals tp
        LEFT JOIN brands b ON tp.brand_id = b.id

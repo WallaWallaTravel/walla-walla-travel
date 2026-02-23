@@ -16,7 +16,7 @@ interface GuestData {
 }
 
 export default function GuestsPage() {
-  const { proposal, planningPhase, accessToken } = useProposal();
+  const { proposal, planningPhase, accessToken, guestId } = useProposal();
   const [guests, setGuests] = useState<GuestData[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<Partial<GuestData>>({});
@@ -29,6 +29,11 @@ export default function GuestsPage() {
   }, [proposal?.guests]);
 
   const isReadOnly = planningPhase === 'finalized' || planningPhase === 'proposal';
+
+  // If guest is identified, only show their card
+  const visibleGuests = guestId
+    ? guests.filter((g) => g.id === guestId)
+    : guests;
 
   const startEdit = useCallback((guest: GuestData) => {
     if (isReadOnly) return;
@@ -86,9 +91,13 @@ export default function GuestsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">Guest List</h2>
+          <h2 className="text-xl font-semibold text-gray-900">
+            {guestId ? 'Your Details' : 'Guest List'}
+          </h2>
           <p className="text-sm text-gray-600 mt-1">
-            {guests.length} guest{guests.length !== 1 ? 's' : ''} registered
+            {guestId
+              ? 'Update your dietary and accessibility information below.'
+              : `${guests.length} guest${guests.length !== 1 ? 's' : ''} registered`}
           </p>
         </div>
         {planningPhase === 'finalized' && (
@@ -98,7 +107,7 @@ export default function GuestsPage() {
         )}
       </div>
 
-      {guests.length === 0 ? (
+      {visibleGuests.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-8 text-center">
           <div className="text-4xl mb-3">👥</div>
           <p className="text-gray-700 font-medium">No guests added yet</p>
@@ -108,7 +117,7 @@ export default function GuestsPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {guests.map((guest) => (
+          {visibleGuests.map((guest) => (
             <div
               key={guest.id}
               className="bg-white rounded-xl border border-gray-200 shadow-sm p-5"
