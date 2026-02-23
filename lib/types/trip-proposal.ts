@@ -280,6 +280,8 @@ export interface TripProposalGuest {
   room_assignment: string | null;
   rsvp_status: RsvpStatus;
   rsvp_responded_at: string | null;
+  guest_access_token: string;
+  is_registered: boolean;
   created_at: string;
   updated_at: string;
 }

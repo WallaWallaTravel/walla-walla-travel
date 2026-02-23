@@ -68,7 +68,7 @@ export async function apiGet<T = unknown>(
     if (!response.ok) {
       return {
         success: false,
-        error: data.error || `HTTP ${response.status}: ${response.statusText}`,
+        error: typeof data.error === 'string' ? data.error : data.error?.message || `HTTP ${response.status}: ${response.statusText}`,
       };
     }
     
@@ -109,7 +109,7 @@ export async function apiPost<T = unknown, B = object>(
     if (!response.ok) {
       return {
         success: false,
-        error: data.error || `HTTP ${response.status}: ${response.statusText}`,
+        error: typeof data.error === 'string' ? data.error : data.error?.message || `HTTP ${response.status}: ${response.statusText}`,
       };
     }
     
@@ -151,7 +151,7 @@ export async function apiPut<T = unknown, B = object>(
     if (!response.ok) {
       return {
         success: false,
-        error: data.error || `HTTP ${response.status}: ${response.statusText}`,
+        error: typeof data.error === 'string' ? data.error : data.error?.message || `HTTP ${response.status}: ${response.statusText}`,
       };
     }
     
@@ -193,7 +193,7 @@ export async function apiPatch<T = unknown, B = object>(
     if (!response.ok) {
       return {
         success: false,
-        error: data.error || `HTTP ${response.status}: ${response.statusText}`,
+        error: typeof data.error === 'string' ? data.error : data.error?.message || `HTTP ${response.status}: ${response.statusText}`,
       };
     }
 
@@ -233,7 +233,7 @@ export async function apiDelete<T = unknown>(
     if (!response.ok) {
       return {
         success: false,
-        error: data.error || `HTTP ${response.status}: ${response.statusText}`,
+        error: typeof data.error === 'string' ? data.error : data.error?.message || `HTTP ${response.status}: ${response.statusText}`,
       };
     }
     

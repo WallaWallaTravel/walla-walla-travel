@@ -8,6 +8,9 @@ interface ProposalContextValue {
   planningPhase: PlanningPhase;
   accessToken: string;
   refreshProposal: () => void;
+  guestId: number | null;
+  guestToken: string | null;
+  guestName: string | null;
 }
 
 const ProposalContext = createContext<ProposalContextValue | null>(null);

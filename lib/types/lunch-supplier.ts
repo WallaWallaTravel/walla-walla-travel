@@ -109,6 +109,7 @@ export interface ProposalLunchOrder {
   total: number;
   cutoff_at: string | null;
   status: LunchOrderStatus;
+  ordering_mode: 'coordinator' | 'individual';
   sent_to_supplier_at: string | null;
   supplier_confirmed_at: string | null;
   supplier_reference: string | null;

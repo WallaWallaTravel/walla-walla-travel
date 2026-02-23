@@ -98,14 +98,16 @@ export default function NoteThread({
 
   return (
     <div
-      className={`flex flex-col bg-white rounded-xl border border-gray-200 shadow-sm ${
-        compact ? '' : 'h-full'
+      className={`flex flex-col ${
+        compact
+          ? 'h-full'
+          : 'bg-white rounded-xl border border-gray-200 shadow-sm h-full'
       }`}
     >
       {/* Messages area */}
       <div
         ref={scrollRef}
-        className={`flex-1 overflow-y-auto ${containerHeight} ${padding} space-y-3`}
+        className={`flex-1 overflow-y-auto ${compact ? '' : containerHeight} ${padding} space-y-3`}
       >
         {notes.length === 0 && (
           <div className="flex flex-col items-center justify-center py-8 text-center">

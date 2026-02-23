@@ -4,11 +4,13 @@ import { useEffect, useState, useCallback } from 'react';
 import { useProposal } from '@/lib/contexts/proposal-context';
 import { apiGet, apiPost } from '@/lib/utils/fetch-utils';
 import LunchOrderForm from '@/components/my-trip/LunchOrderForm';
+import IndividualLunchOrderForm from '@/components/my-trip/IndividualLunchOrderForm';
 import type {
   ProposalLunchOrder,
   LunchMenuItem,
   LunchOrderStatus,
   SubmitLunchOrderInput,
+  GuestOrder,
 } from '@/lib/types/lunch-supplier';
 
 // ============================================================================
@@ -77,7 +79,7 @@ function StatusBadge({ status }: { status: LunchOrderStatus }) {
 // ============================================================================
 
 export default function LunchPage() {
-  const { proposal, planningPhase, accessToken } = useProposal();
+  const { proposal, planningPhase, accessToken, guestId, guestName } = useProposal();
 
   const [orders, setOrders] = useState<LunchOrderWithMenu[]>([]);
   const [loading, setLoading] = useState(true);
@@ -137,6 +139,11 @@ export default function LunchPage() {
     name: g.name,
     dietary_restrictions: g.dietary_restrictions,
   }));
+
+  // Find this guest's dietary restrictions
+  const currentGuestDietary = guestId
+    ? (proposal.guests || []).find((g) => g.id === guestId)?.dietary_restrictions
+    : null;
 
   // Loading skeleton
   if (loading) {
@@ -269,6 +276,17 @@ export default function LunchPage() {
           order.status === 'confirmed' ||
           order.status === 'cancelled';
 
+        // Individual ordering mode
+        const isIndividual = order.ordering_mode === 'individual';
+
+        // Find this guest's existing order within the JSONB
+        const existingGuestOrder: GuestOrder | null =
+          guestId && guestName
+            ? (Array.isArray(order.guest_orders)
+                ? order.guest_orders.find((go) => go.guest_name === guestName)
+                : null) ?? null
+            : null;
+
         return (
           <section key={order.id}>
             {/* Order header */}
@@ -277,14 +295,37 @@ export default function LunchPage() {
                 <h2 className="text-lg font-semibold text-gray-900">
                   {dayLabel}
                 </h2>
-                <p className="text-sm text-gray-600">{supplierName}</p>
+                <p className="text-sm text-gray-600">
+                  {supplierName}
+                  {isIndividual && (
+                    <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-violet-50 text-violet-700">
+                      Individual ordering
+                    </span>
+                  )}
+                </p>
               </div>
               <StatusBadge status={order.status} />
             </div>
 
             {showSummary ? (
               <OrderSummary order={order} />
+            ) : isIndividual && guestId && guestName ? (
+              // Individual mode + identified guest: show single-guest form
+              <IndividualLunchOrderForm
+                guestId={guestId}
+                guestName={guestName}
+                menuItems={order.menu_items || []}
+                cutoffAt={order.cutoff_at}
+                orderId={order.id}
+                accessToken={accessToken}
+                existingOrder={existingGuestOrder}
+                dietaryRestrictions={currentGuestDietary}
+              />
+            ) : isIndividual && !guestId ? (
+              // Individual mode + coordinator view: show read-only summary of submissions so far
+              <OrderSummary order={order} />
             ) : (
+              // Coordinator mode: show full form
               <LunchOrderForm
                 order={order}
                 menuItems={order.menu_items || []}

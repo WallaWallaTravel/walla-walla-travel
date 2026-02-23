@@ -36,9 +36,14 @@ export const GET = withErrorHandling<unknown, RouteParams>(
       );
     }
 
-    // Allow viewing of sent/viewed/accepted/converted proposals
-    // Draft and expired proposals are not visible to clients
-    if (['draft', 'expired', 'declined'].includes(proposal.status)) {
+    // Determine if the client can view this proposal.
+    // Standard flow: status must be sent/viewed/accepted/converted.
+    // Direct-share flow (e.g., wine tours): admin sets planning_phase to
+    // active_planning and shares the link — viewable regardless of status.
+    const isDirectShare = proposal.planning_phase !== 'proposal';
+    const isBlockedStatus = ['draft', 'expired', 'declined'].includes(proposal.status);
+
+    if (isBlockedStatus && !isDirectShare) {
       return NextResponse.json(
         { success: false, error: 'Trip not available' },
         { status: 404 }
