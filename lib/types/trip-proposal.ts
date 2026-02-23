@@ -127,6 +127,7 @@ export interface TripProposal {
   deposit_paid: boolean;
   deposit_paid_at: string | null;
   deposit_payment_id: number | null;
+  skip_deposit_on_accept: boolean;
 
   // Balance
   balance_due: number;
@@ -376,6 +377,7 @@ export interface CreateTripProposalInput {
 export interface UpdateTripProposalInput extends Partial<CreateTripProposalInput> {
   status?: TripProposalStatus;
   planning_phase?: PlanningPhase;
+  skip_deposit_on_accept?: boolean;
 }
 
 /**
@@ -469,6 +471,7 @@ export const CreateTripProposalSchema = z.object({
   gratuity_percentage: z.number().min(0).max(100).optional(),
   tax_rate: z.number().min(0).max(1).optional(),
   deposit_percentage: z.number().int().min(0).max(100).optional(),
+  skip_deposit_on_accept: z.boolean().optional(),
 });
 
 export const UpdateTripProposalSchema = CreateTripProposalSchema.partial().extend({

@@ -110,6 +110,7 @@ interface TripProposal {
   taxes: string;
   total: string;
   deposit_amount: string;
+  skip_deposit_on_accept?: boolean;
   created_at: string;
   updated_at: string;
   days?: DayData[];
@@ -1300,6 +1301,32 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                     {phase.label}
                   </button>
                 ))}
+              </div>
+
+              {/* Accept Behavior Toggle */}
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <h3 className="text-sm font-semibold text-gray-900 mb-2">On Accept Behavior</h3>
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={proposal.skip_deposit_on_accept || false}
+                    onChange={() =>
+                      updateProposal({
+                        skip_deposit_on_accept: !proposal.skip_deposit_on_accept,
+                      })
+                    }
+                    disabled={saving}
+                    className="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-gray-900">
+                      Skip deposit — grant immediate planning access
+                    </span>
+                    <p className="text-xs text-gray-600 mt-0.5">
+                      Default: deposit required. Check for large custom trips.
+                    </p>
+                  </div>
+                </label>
               </div>
             </div>
 

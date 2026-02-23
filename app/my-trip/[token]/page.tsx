@@ -5,7 +5,7 @@ import { useProposal } from '@/lib/contexts/proposal-context';
 import { LiveItinerary } from '@/components/my-trip/LiveItinerary';
 
 export default function MyTripPage() {
-  const { proposal, planningPhase, accessToken } = useProposal();
+  const { proposal, planningPhase, accessToken, refreshProposal } = useProposal();
   const [accepting, setAccepting] = useState(false);
   const [declining, setDeclining] = useState(false);
   const [responded, setResponded] = useState(false);
@@ -21,6 +21,21 @@ export default function MyTripPage() {
       });
 
       if (res.ok) {
+        const data = await res.json();
+
+        if (data.action === 'deposit_required') {
+          // Redirect to deposit payment page
+          window.location.href = `/my-trip/${accessToken}/pay`;
+          return;
+        }
+
+        if (data.action === 'planning_unlocked') {
+          // Skip deposit — refresh to show unlocked tabs (Lunch, Guests)
+          refreshProposal();
+          return;
+        }
+
+        // Fallback for unexpected action
         setResponded(true);
       }
     } catch {
@@ -108,7 +123,7 @@ export default function MyTripPage() {
         </div>
       )}
 
-      {/* Confirmation after responding */}
+      {/* Confirmation after responding (decline only) */}
       {responded && (
         <div className="mt-8 bg-emerald-50 rounded-xl border border-emerald-200 p-6 text-center">
           <svg
