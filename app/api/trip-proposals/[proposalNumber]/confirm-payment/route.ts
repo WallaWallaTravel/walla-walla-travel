@@ -77,11 +77,13 @@ export const POST = withErrorHandling<unknown, RouteParams>(
 
     // Update proposal and create payment record in a transaction
     await withTransaction(async (client) => {
-      // Mark deposit as paid (AND deposit_paid = false prevents TOCTOU race)
+      // Mark deposit as paid and unlock planning phase
+      // (AND deposit_paid = false prevents TOCTOU race)
       const updateResult = await query(
         `UPDATE trip_proposals
          SET deposit_paid = true,
              deposit_paid_at = NOW(),
+             planning_phase = 'active_planning',
              updated_at = NOW()
          WHERE id = $1 AND deposit_paid = false`,
         [proposal.id],
