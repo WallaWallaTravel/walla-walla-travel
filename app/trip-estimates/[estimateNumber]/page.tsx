@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from 'react';
 import { logger } from '@/lib/logger';
+import { formatCurrency } from '@/lib/utils/format';
 
 interface EstimateData {
   estimate_number: string;
@@ -68,10 +69,6 @@ export default function TripEstimateClientPage({
 
     loadEstimate();
   }, [estimateNumber]);
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
-  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString + 'T00:00:00').toLocaleDateString('en-US', {

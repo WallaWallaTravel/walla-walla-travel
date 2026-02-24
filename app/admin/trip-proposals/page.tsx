@@ -4,6 +4,8 @@ import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { logger } from '@/lib/logger';
+import { useToast } from '@/lib/hooks/useToast';
+import { ToastContainer } from '@/components/ui/ToastContainer';
 
 interface TripProposal {
   id: number;
@@ -44,6 +46,7 @@ function TripProposalsPageContent() {
     offset: 0,
     hasMore: false,
   });
+  const { toasts, toast, dismissToast } = useToast();
 
   useEffect(() => {
     if (urlStatus && urlStatus !== statusFilter) {
@@ -98,14 +101,14 @@ function TripProposalsPageContent() {
       const result = await response.json();
 
       if (result.success) {
-        alert('Trip proposal deleted successfully');
+        toast('Trip proposal deleted successfully', 'success');
         loadProposals();
       } else {
-        alert(result.error || 'Failed to delete trip proposal');
+        toast(result.error || 'Failed to delete trip proposal', 'error');
       }
     } catch (error) {
       logger.error('Failed to delete trip proposal', { error });
-      alert('Failed to delete trip proposal');
+      toast('Failed to delete trip proposal', 'error');
     }
   };
 
@@ -118,14 +121,14 @@ function TripProposalsPageContent() {
       const result = await response.json();
 
       if (result.success) {
-        alert(`Trip proposal duplicated! New proposal: ${result.data.proposal_number}`);
+        toast(`Trip proposal duplicated! New proposal: ${result.data.proposal_number}`, 'success');
         loadProposals();
       } else {
-        alert(result.error || 'Failed to duplicate trip proposal');
+        toast(result.error || 'Failed to duplicate trip proposal', 'error');
       }
     } catch (error) {
       logger.error('Failed to duplicate trip proposal', { error });
-      alert('Failed to duplicate trip proposal');
+      toast('Failed to duplicate trip proposal', 'error');
     }
   };
 
@@ -150,16 +153,14 @@ function TripProposalsPageContent() {
       const result = await response.json();
 
       if (result.success) {
-        alert(
-          `Success!\n\nBooking ${result.data.booking_number} created.\n\nRedirecting to booking details...`
-        );
+        toast(`Booking ${result.data.booking_number} created!`, 'success');
         router.push(`/admin/bookings/${result.data.booking_id}`);
       } else {
-        alert(result.error || 'Failed to convert trip proposal');
+        toast(result.error || 'Failed to convert trip proposal', 'error');
       }
     } catch (error) {
       logger.error('Failed to convert trip proposal', { error });
-      alert('Failed to convert trip proposal to booking');
+      toast('Failed to convert trip proposal to booking', 'error');
     } finally {
       setConverting(null);
     }
@@ -244,6 +245,7 @@ function TripProposalsPageContent() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -251,7 +253,7 @@ function TripProposalsPageContent() {
             <h1 className="text-4xl font-bold text-gray-900">🗺️ Trip Proposals</h1>
             <Link
               href="/admin/trip-proposals/new"
-              className="px-6 py-3 bg-[#8B1538] hover:bg-[#7A1230] text-white rounded-lg font-bold transition-colors shadow-lg"
+              className="px-6 py-3 bg-brand hover:bg-brand-hover text-white rounded-lg font-bold transition-colors shadow-lg"
             >
               + New Trip Proposal
             </Link>
@@ -275,7 +277,7 @@ function TripProposalsPageContent() {
                   setStatusFilter(e.target.value);
                   setPagination((prev) => ({ ...prev, offset: 0 }));
                 }}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#8B1538] focus:ring-4 focus:ring-[#FDF2F4]"
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand focus:ring-4 focus:ring-brand-light"
               >
                 <option value="all">All Proposals</option>
                 <option value="draft">Drafts</option>
@@ -301,7 +303,7 @@ function TripProposalsPageContent() {
                   setPagination((prev) => ({ ...prev, offset: 0 }));
                 }}
                 placeholder="Customer name or email..."
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#8B1538] focus:ring-4 focus:ring-[#FDF2F4]"
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand focus:ring-4 focus:ring-brand-light"
               />
             </div>
           </div>
@@ -332,7 +334,7 @@ function TripProposalsPageContent() {
             {!searchTerm && statusFilter === 'all' && (
               <Link
                 href="/admin/trip-proposals/new"
-                className="inline-block px-6 py-3 bg-[#8B1538] hover:bg-[#7A1230] text-white rounded-lg font-bold transition-colors"
+                className="inline-block px-6 py-3 bg-brand hover:bg-brand-hover text-white rounded-lg font-bold transition-colors"
               >
                 + Create First Trip Proposal
               </Link>
@@ -366,7 +368,7 @@ function TripProposalsPageContent() {
                     </div>
 
                     <div className="text-right">
-                      <div className="text-2xl font-bold text-[#8B1538]">
+                      <div className="text-2xl font-bold text-brand">
                         {formatCurrency(proposal.total)}
                       </div>
                       <div className="text-sm text-gray-600">
@@ -420,7 +422,7 @@ function TripProposalsPageContent() {
                             <span className="text-gray-500">📧</span>
                             <a
                               href={`mailto:${proposal.customer_email}`}
-                              className="text-[#8B1538] hover:underline"
+                              className="text-brand hover:underline"
                             >
                               {proposal.customer_email}
                             </a>
@@ -431,7 +433,7 @@ function TripProposalsPageContent() {
                             <span className="text-gray-500">📱</span>
                             <a
                               href={`tel:${proposal.customer_phone}`}
-                              className="text-[#8B1538] hover:underline"
+                              className="text-brand hover:underline"
                             >
                               {proposal.customer_phone}
                             </a>

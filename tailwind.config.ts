@@ -37,6 +37,11 @@ const config: Config = {
           800: '#6F421E',
           900: '#5A3618',
         },
+        brand: {
+          DEFAULT: '#8B1538',
+          hover: '#7A1230',
+          light: '#FDF2F4',
+        },
         wwcc: {
           gold: '#847b4a',
           'gold-dark': '#6B5D35',

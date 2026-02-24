@@ -8,6 +8,7 @@ import BrandFooter from '@/components/BrandFooter';
 import { getHourlyRate } from '@/lib/rate-config';
 import { logger } from '@/lib/logger';
 import { ProposalFeedbackPanel } from '@/components/proposals/ProposalFeedbackPanel';
+import { formatCurrency, formatDateLong } from '@/lib/utils/format';
 
 interface ServiceItem {
   id: string;
@@ -155,22 +156,6 @@ export default function ClientProposalView({ params }: { params: Promise<{ propo
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
-
   const calculateTax = (subtotal: number, discountAmount: number) => {
     const taxableAmount = subtotal - discountAmount;
     return taxableAmount * 0.091; // 9.1% tax rate
@@ -294,7 +279,7 @@ export default function ClientProposalView({ params }: { params: Promise<{ propo
               </div>
               <div className="ml-3">
                 <p className="text-sm text-amber-800 font-medium">
-                  This proposal expired on {formatDate(proposal.valid_until)}. Please contact us to request an updated proposal.
+                  This proposal expired on {formatDateLong(proposal.valid_until)}. Please contact us to request an updated proposal.
                 </p>
               </div>
             </div>
@@ -414,7 +399,7 @@ export default function ClientProposalView({ params }: { params: Promise<{ propo
                         <span className="text-3xl font-bold text-gray-900">Day {day.day}</span>
                         <h4 className="text-xl font-bold text-gray-900">{day.title}</h4>
                       </div>
-                      <p className="text-sm text-gray-600">{formatDate(day.date)}</p>
+                      <p className="text-sm text-gray-600">{formatDateLong(day.date)}</p>
                     </div>
 
                     {/* Activities */}
@@ -503,7 +488,7 @@ export default function ClientProposalView({ params }: { params: Promise<{ propo
                       <h4 className="text-lg font-bold text-gray-900">
                         {getServiceTypeLabel(item.service_type)}
                       </h4>
-                      <p className="text-sm text-gray-600 mb-2">{formatDate(item.date)}</p>
+                      <p className="text-sm text-gray-600 mb-2">{formatDateLong(item.date)}</p>
                       
                       {/* Description */}
                       {item.description && (() => {
@@ -658,7 +643,7 @@ export default function ClientProposalView({ params }: { params: Promise<{ propo
             <div className="text-center">
               <h3 className="text-2xl font-bold text-gray-900 mb-4">Ready to Book Your Experience?</h3>
               <p className="text-gray-600 mb-6">
-                This proposal is valid until {formatDate(proposal.valid_until)}
+                This proposal is valid until {formatDateLong(proposal.valid_until)}
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                 <Link
