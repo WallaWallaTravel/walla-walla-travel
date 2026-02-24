@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth, AuthSession, RouteContext } from '@/lib/api/middleware/auth-wrapper';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
+import { queryOne } from '@/lib/db-helpers';
 
 interface RouteParams { id: string; guestId: string; }
 
@@ -14,6 +15,15 @@ export const PATCH = withAdminAuth(
     const body = await request.json();
     const gId = parseInt(guestId);
     const proposalId = parseInt(id);
+
+    // B6 FIX: Verify guest belongs to this proposal before any action
+    const guest = await queryOne(
+      'SELECT id FROM trip_proposal_guests WHERE id = $1 AND trip_proposal_id = $2',
+      [gId, proposalId]
+    );
+    if (!guest) {
+      return NextResponse.json({ success: false, error: 'Guest not found in this proposal' }, { status: 404 });
+    }
 
     // Handle sponsor toggle
     if (body.is_sponsored !== undefined) {

@@ -65,8 +65,9 @@ export async function POST(request: NextRequest) {
 
   if (!event) {
     logger.error('[Stripe Webhook] Signature verification failed', { error: lastError });
+    // C11 FIX: Don't expose internal error details in the response
     return NextResponse.json(
-      { error: `Webhook signature verification failed: ${lastError}` },
+      { error: 'Webhook verification failed' },
       { status: 400 }
     );
   }

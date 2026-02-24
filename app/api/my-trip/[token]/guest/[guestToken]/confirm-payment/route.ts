@@ -16,6 +16,10 @@ const ConfirmSchema = z.object({
 /**
  * POST /api/my-trip/[token]/guest/[guestToken]/confirm-payment
  * Confirm payment, record in guest_payments, update amount_paid
+ *
+ * B4 FIX: Idempotency is now handled atomically inside the transaction
+ * using INSERT ... ON CONFLICT ... DO NOTHING + checking RETURNING.
+ * The standalone SELECT before the transaction has been removed.
  */
 export const POST = withErrorHandling<unknown, RouteParams>(
   async (request: NextRequest, context) => {
@@ -37,18 +41,6 @@ export const POST = withErrorHandling<unknown, RouteParams>(
 
     if (!guest) throw new NotFoundError('Guest not found');
 
-    // Idempotency: check if this payment already recorded
-    const existing = await queryOne(
-      'SELECT id FROM guest_payments WHERE stripe_payment_intent_id = $1',
-      [payment_intent_id]
-    );
-    if (existing) {
-      return NextResponse.json({
-        success: true,
-        data: { already_processed: true, guest_name: guest.name },
-      });
-    }
-
     // Verify with Stripe
     const stripe = getBrandStripeClient(proposal.brand_id ?? undefined);
     if (!stripe) throw new BadRequestError('Payment service not configured');
@@ -60,16 +52,29 @@ export const POST = withErrorHandling<unknown, RouteParams>(
 
     const amount = paymentIntent.amount / 100;
 
-    // Record in transaction
+    // B4 FIX: Atomic idempotency inside the transaction.
+    // INSERT ... ON CONFLICT DO NOTHING + check if row was actually inserted.
+    // If the UNIQUE index on stripe_payment_intent_id blocks it, the insert
+    // returns no rows, meaning this payment was already processed.
+    let alreadyProcessed = false;
+
     await withTransaction(async (client) => {
-      // Insert guest_payment record (with idempotency)
-      await query(
+      // Atomic idempotency gate — relies on UNIQUE index from migration 093
+      const insertResult = await query(
         `INSERT INTO guest_payments (trip_proposal_id, guest_id, amount, stripe_payment_intent_id, payment_type, status)
          VALUES ($1, $2, $3, $4, 'guest_share', 'succeeded')
-         ON CONFLICT DO NOTHING`,
+         ON CONFLICT (stripe_payment_intent_id) WHERE stripe_payment_intent_id IS NOT NULL
+         DO NOTHING
+         RETURNING id`,
         [proposal.id, guest.id, amount, payment_intent_id],
         client
       );
+
+      if (insertResult.rows.length === 0) {
+        // Payment was already recorded — no further updates needed
+        alreadyProcessed = true;
+        return;
+      }
 
       // Update guest amount_paid and status
       const newPaid = (parseFloat(guest.amount_paid) || 0) + amount;
@@ -86,6 +91,13 @@ export const POST = withErrorHandling<unknown, RouteParams>(
         client
       );
     });
+
+    if (alreadyProcessed) {
+      return NextResponse.json({
+        success: true,
+        data: { already_processed: true, guest_name: guest.name },
+      });
+    }
 
     after(async () => {
       logger.info('[Guest Payment] Payment confirmed', {

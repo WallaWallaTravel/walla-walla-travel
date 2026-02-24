@@ -73,17 +73,21 @@ ${bodyHtml}
 }
 
 function ctaButton(brand: BrandEmailConfig, label: string, url: string): string {
+  // B8 FIX: Escape the URL to prevent XSS in email href attributes
+  const safeUrl = escapeHtml(url);
   return `<div style="text-align: center; margin: 32px 0;">
-        <a href="${url}" style="display: inline-block; background-color: ${brand.primary_color}; color: #ffffff; text-decoration: none; padding: 14px 36px; border-radius: 8px; font-size: 16px; font-weight: 600;">${label}</a>
+        <a href="${safeUrl}" style="display: inline-block; background-color: ${brand.primary_color}; color: #ffffff; text-decoration: none; padding: 14px 36px; border-radius: 8px; font-size: 16px; font-weight: 600;">${label}</a>
       </div>`;
 }
 
 function amountCard(brand: BrandEmailConfig, amountRemaining: number, deadline: string): string {
+  // D fix: Clamp negative values to $0
+  const displayAmount = Math.max(0, amountRemaining);
   return `<div style="background: #f9fafb; border-left: 4px solid ${brand.primary_color}; padding: 20px; margin: 24px 0;">
         <table style="width: 100%; border-collapse: collapse;">
           <tr>
             <td style="padding: 8px 0; font-weight: 600; color: #374151; font-size: 14px; width: 45%;">Amount Due</td>
-            <td style="padding: 8px 0; color: #111827; font-size: 18px; font-weight: 700;">${formatCurrency(amountRemaining)}</td>
+            <td style="padding: 8px 0; color: #111827; font-size: 18px; font-weight: 700;">${formatCurrency(displayAmount)}</td>
           </tr>
           <tr>
             <td style="padding: 8px 0; font-weight: 600; color: #374151; font-size: 14px;">Payment Deadline</td>
