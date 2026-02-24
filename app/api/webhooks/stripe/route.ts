@@ -161,6 +161,12 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
     return;
   }
 
+  // Check if this is a guest share or group payment
+  if ((metadata.payment_type === 'guest_share' || metadata.payment_type === 'group_payment') && metadata.guest_id) {
+    await handleGuestPaymentSuccess(paymentIntent);
+    return;
+  }
+
   // Check if this is a driver tip payment
   if (metadata.type === 'driver_tip' && metadata.tip_code) {
     await handleDriverTipPaymentSuccess(paymentIntent);
@@ -554,6 +560,115 @@ async function handleSharedTourPaymentFailed(paymentIntent: Stripe.PaymentIntent
 
   // Log the failure in the service
   await sharedTourService.handlePaymentFailed(id, last_payment_error?.message);
+}
+
+/**
+ * Handle guest share or group payment success
+ * Idempotent: checks for existing guest_payments record before inserting
+ */
+async function handleGuestPaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
+  const { id, metadata, amount } = paymentIntent;
+  const paymentAmount = amount / 100;
+
+  logger.info('[Stripe Webhook] Processing guest payment', {
+    paymentIntentId: id,
+    paymentType: metadata.payment_type,
+    guestIds: metadata.guest_id || metadata.guest_ids,
+    amount: paymentAmount,
+  });
+
+  // Idempotency: check if already recorded
+  const existing = await queryOne(
+    'SELECT id FROM guest_payments WHERE stripe_payment_intent_id = $1',
+    [id]
+  );
+  if (existing) {
+    logger.info('[Stripe Webhook] Guest payment already processed', { paymentIntentId: id });
+    return;
+  }
+
+  const proposalId = parseInt(metadata.trip_proposal_id);
+
+  if (metadata.payment_type === 'group_payment' && metadata.guest_ids) {
+    // Group payment: distribute across multiple guests
+    const guestIds = metadata.guest_ids.split(',').map((s: string) => parseInt(s)).filter((n: number) => !isNaN(n));
+
+    await withTransaction(async (client) => {
+      for (const guestId of guestIds) {
+        const guest = await queryOne<{ amount_owed: string; amount_paid: string }>(
+          'SELECT amount_owed, amount_paid FROM trip_proposal_guests WHERE id = $1',
+          [guestId],
+          client
+        );
+        if (!guest) continue;
+
+        const remaining = Math.max(0, (parseFloat(guest.amount_owed) || 0) - (parseFloat(guest.amount_paid) || 0));
+        if (remaining <= 0) continue;
+
+        // Record payment for this guest
+        await query(
+          `INSERT INTO guest_payments (trip_proposal_id, guest_id, amount, stripe_payment_intent_id, payment_type, status, paid_by_guest_id)
+           VALUES ($1, $2, $3, $4, 'group_payment', 'succeeded', NULL)
+           ON CONFLICT DO NOTHING`,
+          [proposalId, guestId, remaining, id],
+          client
+        );
+
+        // Update guest
+        const newPaid = (parseFloat(guest.amount_paid) || 0) + remaining;
+        const owed = parseFloat(guest.amount_owed) || 0;
+        const status = newPaid >= owed ? 'paid' : 'partial';
+
+        await query(
+          `UPDATE trip_proposal_guests
+           SET amount_paid = $1, payment_status = $2,
+               payment_paid_at = CASE WHEN $2 = 'paid' THEN NOW() ELSE payment_paid_at END,
+               updated_at = NOW()
+           WHERE id = $3`,
+          [newPaid, status, guestId],
+          client
+        );
+      }
+    });
+  } else {
+    // Individual guest payment
+    const guestId = parseInt(metadata.guest_id);
+
+    await withTransaction(async (client) => {
+      await query(
+        `INSERT INTO guest_payments (trip_proposal_id, guest_id, amount, stripe_payment_intent_id, payment_type, status)
+         VALUES ($1, $2, $3, $4, 'guest_share', 'succeeded')
+         ON CONFLICT DO NOTHING`,
+        [proposalId, guestId, paymentAmount, id],
+        client
+      );
+
+      const guest = await queryOne<{ amount_owed: string; amount_paid: string }>(
+        'SELECT amount_owed, amount_paid FROM trip_proposal_guests WHERE id = $1',
+        [guestId],
+        client
+      );
+      if (guest) {
+        const newPaid = (parseFloat(guest.amount_paid) || 0) + paymentAmount;
+        const owed = parseFloat(guest.amount_owed) || 0;
+        const status = newPaid >= owed ? 'paid' : newPaid > 0 ? 'partial' : 'unpaid';
+
+        await query(
+          `UPDATE trip_proposal_guests
+           SET amount_paid = $1, payment_status = $2,
+               payment_paid_at = CASE WHEN $2 = 'paid' THEN NOW() ELSE payment_paid_at END,
+               updated_at = NOW()
+           WHERE id = $3`,
+          [newPaid, status, guestId],
+          client
+        );
+      }
+    });
+  }
+
+  logger.info('[Stripe Webhook] Guest payment recorded', {
+    paymentIntentId: id, proposalId, amount: paymentAmount,
+  });
 }
 
 /**

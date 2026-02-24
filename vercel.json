@@ -51,6 +51,14 @@
     {
       "path": "/api/cron/sync-campaign-performance",
       "schedule": "0 17 * * *"
+    },
+    {
+      "path": "/api/cron/process-payment-reminders",
+      "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/api/cron/process-admin-reminders",
+      "schedule": "0 14 * * *"
     }
   ],
   "headers": [

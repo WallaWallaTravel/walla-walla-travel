@@ -121,6 +121,10 @@ export interface TripProposal {
   gratuity_amount: number;
   total: number;
 
+  // Planning fee
+  planning_fee_mode: 'flat' | 'percentage';
+  planning_fee_percentage: number;
+
   // Deposit
   deposit_percentage: number;
   deposit_amount: number;
@@ -128,6 +132,12 @@ export interface TripProposal {
   deposit_paid_at: string | null;
   deposit_payment_id: number | null;
   skip_deposit_on_accept: boolean;
+
+  // Per-guest billing
+  individual_billing_enabled: boolean;
+  has_sponsored_guest: boolean;
+  payment_deadline: string | null;
+  reminders_paused: boolean;
 
   // Balance
   balance_due: number;
@@ -240,6 +250,14 @@ export interface TripProposalStop {
   internal_notes: string | null;
   driver_notes: string | null;
 
+  // Vendor tracking
+  vendor_name: string | null;
+  vendor_email: string | null;
+  vendor_phone: string | null;
+  quote_status: 'none' | 'requested' | 'quoted' | 'accepted' | 'confirmed' | 'paid';
+  quoted_amount: number | null;
+  quote_notes: string | null;
+
   created_at: string;
   updated_at: string;
 
@@ -267,6 +285,12 @@ export interface TripProposalStop {
 /**
  * Trip Proposal Guest
  */
+export const GUEST_PAYMENT_STATUS = ['unpaid', 'partial', 'paid', 'refunded'] as const;
+export type GuestPaymentStatus = (typeof GUEST_PAYMENT_STATUS)[number];
+
+export const PAYMENT_TYPES = ['guest_share', 'group_payment', 'admin_adjustment', 'refund'] as const;
+export type PaymentType = (typeof PAYMENT_TYPES)[number];
+
 export interface TripProposalGuest {
   id: number;
   trip_proposal_id: number;
@@ -282,8 +306,59 @@ export interface TripProposalGuest {
   rsvp_responded_at: string | null;
   guest_access_token: string;
   is_registered: boolean;
+  // Billing fields
+  is_sponsored: boolean;
+  amount_owed: number;
+  amount_owed_override: number | null;
+  amount_paid: number;
+  payment_status: GuestPaymentStatus;
+  payment_paid_at: string | null;
+  payment_group_id: string | null;
   created_at: string;
   updated_at: string;
+}
+
+/**
+ * Guest Payment — individual payment transaction record
+ */
+export interface GuestPayment {
+  id: number;
+  trip_proposal_id: number;
+  guest_id: number;
+  amount: number;
+  stripe_payment_intent_id: string | null;
+  payment_type: PaymentType;
+  status: 'pending' | 'succeeded' | 'failed' | 'refunded';
+  paid_by_guest_id: number | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Guest Payment Group — couples/subgroups sharing a payment link
+ */
+export interface GuestPaymentGroup {
+  id: string;
+  trip_proposal_id: number;
+  group_name: string;
+  group_access_token: string;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Vendor Interaction Log Entry
+ */
+export type VendorInteractionType = 'note' | 'email_sent' | 'email_received' | 'phone_call' | 'quote_received';
+
+export interface VendorInteraction {
+  id: number;
+  trip_proposal_stop_id: number;
+  interaction_type: VendorInteractionType;
+  content: string;
+  contacted_by: number | null;
+  created_at: string;
 }
 
 /**
@@ -299,6 +374,8 @@ export interface TripProposalInclusion {
   unit_price: number;
   total_price: number;
   pricing_type: PricingType;
+  is_taxable: boolean;
+  tax_included_in_price: boolean;
   sort_order: number;
   show_on_proposal: boolean;
   notes: string | null;
@@ -380,6 +457,8 @@ export interface UpdateTripProposalInput extends Partial<CreateTripProposalInput
   status?: TripProposalStatus;
   planning_phase?: PlanningPhase;
   skip_deposit_on_accept?: boolean;
+  planning_fee_mode?: 'flat' | 'percentage';
+  planning_fee_percentage?: number;
 }
 
 /**
@@ -444,6 +523,8 @@ export interface AddInclusionInput {
   unit_price?: number;
   total_price?: number;
   pricing_type?: PricingType;
+  is_taxable?: boolean;
+  tax_included_in_price?: boolean;
   sort_order?: number;
   show_on_proposal?: boolean;
   notes?: string;
@@ -479,6 +560,8 @@ export const CreateTripProposalSchema = z.object({
 export const UpdateTripProposalSchema = CreateTripProposalSchema.partial().extend({
   status: z.enum(TRIP_PROPOSAL_STATUS).optional(),
   planning_phase: z.enum(PLANNING_PHASES).optional(),
+  planning_fee_mode: z.enum(['flat', 'percentage']).optional(),
+  planning_fee_percentage: z.number().min(0).max(100).optional(),
 });
 
 export const AddDaySchema = z.object({
@@ -531,6 +614,8 @@ export const AddInclusionSchema = z.object({
   unit_price: z.number().min(0).optional(),
   total_price: z.number().min(0).optional(),
   pricing_type: z.enum(PRICING_TYPES).optional(),
+  is_taxable: z.boolean().optional(),
+  tax_included_in_price: z.boolean().optional(),
   sort_order: z.number().int().min(0).optional(),
   show_on_proposal: z.boolean().optional(),
   notes: z.string().optional(),

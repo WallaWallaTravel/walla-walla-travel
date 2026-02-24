@@ -300,6 +300,8 @@ export class TripProposalService extends BaseService {
       unit_price: validated.unit_price || 0,
       total_price: totalPrice,
       pricing_type: validated.pricing_type || 'flat',
+      is_taxable: validated.is_taxable ?? true,
+      tax_included_in_price: validated.tax_included_in_price ?? false,
       sort_order: sortOrder,
       show_on_proposal: validated.show_on_proposal ?? true,
       notes: validated.notes || null,
@@ -376,6 +378,14 @@ export class TripProposalService extends BaseService {
     await this.logActivity(id, `phase_${phase}`, `Planning phase changed to ${phase}`, {
       actor_type: 'staff',
     });
+
+    // Trigger milestone admin reminders
+    try {
+      const { adminReminderService } = await import('./admin-reminder.service');
+      await adminReminderService.onPlanningPhaseChange(id, phase);
+    } catch {
+      // Non-critical — don't block the phase change
+    }
 
     return updated;
   }
@@ -592,6 +602,20 @@ export class TripProposalService extends BaseService {
     const updated = await this.update<TripProposal>('trip_proposals', id, updateData);
     if (!updated) {
       throw new NotFoundError('TripProposal', id.toString());
+    }
+
+    // Hook: admin reminder for deferred deposits
+    if ('skip_deposit_on_accept' in updateData) {
+      try {
+        const { adminReminderService } = await import('./admin-reminder.service');
+        if (updateData.skip_deposit_on_accept) {
+          await adminReminderService.onSkipDepositEnabled(id);
+        } else {
+          await adminReminderService.onSkipDepositDisabled(id);
+        }
+      } catch {
+        // Non-critical
+      }
     }
 
     return updated;
@@ -822,38 +846,109 @@ export class TripProposalService extends BaseService {
     // Stops subtotal is now 0 — all billing goes through service line items
     const stopsSubtotal = 0;
 
-    // Calculate inclusions (service line items) subtotal with pricing_type support
+    // Calculate inclusions (service line items) subtotal with pricing_type + per-item tax support
     const inclusionsRows = await this.query<{
+      id: string;
       unit_price: string;
       quantity: string;
       total_price: string;
       pricing_type: string;
+      inclusion_type: string;
+      is_taxable: boolean;
+      tax_included_in_price: boolean;
     }>(
-      'SELECT unit_price, quantity, total_price, COALESCE(pricing_type, \'flat\') as pricing_type FROM trip_proposal_inclusions WHERE trip_proposal_id = $1',
+      `SELECT id, unit_price, quantity, total_price,
+              COALESCE(pricing_type, 'flat') as pricing_type,
+              inclusion_type,
+              COALESCE(is_taxable, true) as is_taxable,
+              COALESCE(tax_included_in_price, false) as tax_included_in_price
+       FROM trip_proposal_inclusions WHERE trip_proposal_id = $1`,
       [proposalId]
     );
 
     let inclusionsSubtotal = 0;
+    let taxableAmount = 0;
+
     for (const row of inclusionsRows.rows) {
       const unitPrice = parseFloat(row.unit_price) || 0;
       const quantity = parseFloat(row.quantity) || 1;
       const pricingType = row.pricing_type || 'flat';
 
+      let lineAmount = 0;
       if (pricingType === 'per_person') {
-        inclusionsSubtotal += unitPrice * proposal.party_size;
+        lineAmount = unitPrice * proposal.party_size;
       } else if (pricingType === 'per_day') {
-        inclusionsSubtotal += unitPrice * quantity;
+        lineAmount = unitPrice * quantity;
       } else {
-        // flat rate
-        inclusionsSubtotal += unitPrice * quantity;
+        lineAmount = unitPrice * quantity;
       }
+
+      if (row.is_taxable) {
+        if (row.tax_included_in_price) {
+          // Tax is already baked in — back-calculate pre-tax for the taxable base
+          // The line amount stays the same for subtotal purposes
+          // But we DON'T add extra tax on it
+          const preTax = lineAmount / (1 + proposal.tax_rate);
+          taxableAmount += preTax;
+        } else {
+          // Standard: tax will be applied on top
+          taxableAmount += lineAmount;
+        }
+      }
+      // Non-taxable items: add to subtotal but not to taxable base
+
+      inclusionsSubtotal += lineAmount;
     }
 
-    // Calculate totals
+    // Auto-calculate percentage-based planning fee if enabled
+    if (proposal.planning_fee_mode === 'percentage' && proposal.planning_fee_percentage > 0) {
+      // Calculate services subtotal excluding any existing planning_fee inclusions
+      let servicesBase = 0;
+      for (const row of inclusionsRows.rows) {
+        if (row.inclusion_type === 'planning_fee') continue;
+        const unitPrice = parseFloat(row.unit_price) || 0;
+        const quantity = parseFloat(row.quantity) || 1;
+        const pricingType = row.pricing_type || 'flat';
+        if (pricingType === 'per_person') {
+          servicesBase += unitPrice * proposal.party_size;
+        } else if (pricingType === 'per_day') {
+          servicesBase += unitPrice * quantity;
+        } else {
+          servicesBase += unitPrice * quantity;
+        }
+      }
+
+      const autoPlanningFee = servicesBase * (proposal.planning_fee_percentage / 100);
+
+      // Find existing planning_fee inclusion to update, or note it needs creation
+      const existingPlanningFee = inclusionsRows.rows.find(r => r.inclusion_type === 'planning_fee');
+      if (existingPlanningFee) {
+        const existingAmount = parseFloat(existingPlanningFee.unit_price) * (parseFloat(existingPlanningFee.quantity) || 1);
+        // Update the existing planning fee inclusion with auto-calculated amount
+        await this.query(
+          'UPDATE trip_proposal_inclusions SET unit_price = $1, total_price = $1, updated_at = NOW() WHERE id = $2',
+          [autoPlanningFee, parseInt(existingPlanningFee.id)]
+        );
+        // Adjust subtotal and taxable amounts
+        inclusionsSubtotal = inclusionsSubtotal - existingAmount + autoPlanningFee;
+        if (existingPlanningFee.is_taxable) {
+          taxableAmount = taxableAmount - existingAmount + autoPlanningFee;
+        }
+      }
+      // If no planning_fee inclusion exists, the admin will add one; we don't auto-create
+    }
+
+    // Calculate totals with per-item tax
     const subtotal = stopsSubtotal + inclusionsSubtotal;
     const discountAmount = subtotal * (proposal.discount_percentage / 100);
     const subtotalAfterDiscount = subtotal - discountAmount;
-    const taxes = subtotalAfterDiscount * proposal.tax_rate;
+
+    // Apply discount proportionally to taxable amount
+    const discountRatio = subtotal > 0 ? subtotalAfterDiscount / subtotal : 1;
+    const adjustedTaxableAmount = taxableAmount * discountRatio;
+
+    // Tax only on taxable items (after discount proportion)
+    const taxes = adjustedTaxableAmount * proposal.tax_rate;
     const gratuityAmount = subtotalAfterDiscount * (proposal.gratuity_percentage / 100);
     const total = subtotalAfterDiscount + taxes + gratuityAmount;
     const depositAmount = total * (proposal.deposit_percentage / 100);
@@ -883,6 +978,372 @@ export class TripProposalService extends BaseService {
       deposit_amount: depositAmount,
       balance_due: balanceDue,
     };
+  }
+
+  // ==========================================================================
+  // GUEST BILLING
+  // ==========================================================================
+
+  /**
+   * Calculate and distribute amounts owed per guest.
+   * Safety invariant: sum(amount_owed) === total (within $0.01)
+   */
+  async calculateGuestAmounts(proposalId: number): Promise<{
+    guests: { id: number; name: string; amount_owed: number; is_sponsored: boolean }[];
+    total: number;
+    valid: boolean;
+  }> {
+    this.log('Calculating guest amounts', { proposalId });
+
+    const proposal = await this.getById(proposalId);
+    if (!proposal) {
+      throw new NotFoundError('TripProposal', proposalId.toString());
+    }
+
+    if (!proposal.individual_billing_enabled) {
+      throw new ValidationError('Individual billing is not enabled for this proposal');
+    }
+
+    const guests = await this.query<{
+      id: number;
+      name: string;
+      is_sponsored: boolean;
+      amount_owed_override: string | null;
+    }>(
+      'SELECT id, name, COALESCE(is_sponsored, false) as is_sponsored, amount_owed_override FROM trip_proposal_guests WHERE trip_proposal_id = $1',
+      [proposalId]
+    );
+
+    if (guests.rows.length === 0) {
+      return { guests: [], total: proposal.total, valid: true };
+    }
+
+    const total = proposal.total;
+    const allGuests = guests.rows;
+
+    // Separate sponsored from paying guests
+    const payingGuests = allGuests.filter(g => !g.is_sponsored);
+    const sponsoredGuests = allGuests.filter(g => g.is_sponsored);
+
+    if (payingGuests.length === 0) {
+      throw new ValidationError('Cannot calculate billing: all guests are sponsored. At least one guest must be paying.');
+    }
+
+    // Calculate overridden amounts first
+    let overriddenTotal = 0;
+    const overriddenGuests: typeof payingGuests = [];
+    const autoCalcGuests: typeof payingGuests = [];
+
+    for (const guest of payingGuests) {
+      if (guest.amount_owed_override !== null) {
+        const overrideAmount = parseFloat(guest.amount_owed_override);
+        overriddenTotal += overrideAmount;
+        overriddenGuests.push(guest);
+      } else {
+        autoCalcGuests.push(guest);
+      }
+    }
+
+    // Distribute remainder among auto-calc guests
+    const remainder = total - overriddenTotal;
+    if (remainder < 0) {
+      throw new ValidationError('Override amounts exceed the total. Please adjust overrides.');
+    }
+
+    const results: { id: number; name: string; amount_owed: number; is_sponsored: boolean }[] = [];
+
+    // Set sponsored guests to $0
+    for (const guest of sponsoredGuests) {
+      results.push({ id: guest.id, name: guest.name, amount_owed: 0, is_sponsored: true });
+    }
+
+    // Set overridden guests
+    for (const guest of overriddenGuests) {
+      const amount = parseFloat(guest.amount_owed_override!);
+      results.push({ id: guest.id, name: guest.name, amount_owed: amount, is_sponsored: false });
+    }
+
+    // Distribute remainder with penny correction
+    if (autoCalcGuests.length > 0) {
+      const baseShare = Math.floor((remainder / autoCalcGuests.length) * 100) / 100;
+      const distributed = baseShare * autoCalcGuests.length;
+      const pennyCorrection = Math.round((remainder - distributed) * 100) / 100;
+
+      for (let i = 0; i < autoCalcGuests.length; i++) {
+        const guest = autoCalcGuests[i];
+        let amount = baseShare;
+        // Apply penny correction to last guest
+        if (i === autoCalcGuests.length - 1) {
+          amount = Math.round((amount + pennyCorrection) * 100) / 100;
+        }
+
+        // Safety: non-sponsored guest amount_owed should never be $0 without explicit override
+        if (amount === 0 && guest.amount_owed_override === null) {
+          throw new ValidationError(
+            `Guest "${guest.name}" would be assigned $0 without an explicit override. Please add an override or mark them as sponsored.`
+          );
+        }
+
+        results.push({ id: guest.id, name: guest.name, amount_owed: amount, is_sponsored: false });
+      }
+    }
+
+    // Verify invariant: sum === total (within $0.01)
+    const sumOwed = results.reduce((sum, g) => sum + g.amount_owed, 0);
+    const valid = Math.abs(sumOwed - total) < 0.02;
+
+    // Persist to database
+    await this.withTransaction(async () => {
+      for (const guest of results) {
+        await this.query(
+          `UPDATE trip_proposal_guests
+           SET amount_owed = $1, updated_at = NOW()
+           WHERE id = $2`,
+          [guest.amount_owed, guest.id]
+        );
+      }
+    });
+
+    await this.logActivity(proposalId, 'billing_calculated', `Guest amounts recalculated for ${results.length} guests`, {
+      actor_type: 'system',
+      metadata: { total, guest_count: results.length, sum_owed: sumOwed },
+    });
+
+    return { guests: results, total, valid };
+  }
+
+  /**
+   * Toggle guest sponsored status and recalculate all amounts
+   */
+  async toggleGuestSponsored(guestId: number, sponsored: boolean): Promise<void> {
+    this.log('Toggling guest sponsored', { guestId, sponsored });
+
+    const guest = await this.findById<{ id: number; trip_proposal_id: number; name: string }>('trip_proposal_guests', guestId);
+    if (!guest) {
+      throw new NotFoundError('TripProposalGuest', guestId.toString());
+    }
+
+    await this.query(
+      'UPDATE trip_proposal_guests SET is_sponsored = $1, amount_owed_override = NULL, updated_at = NOW() WHERE id = $2',
+      [sponsored, guestId]
+    );
+
+    // Update proposal flag
+    const sponsoredCount = await this.queryOne<{ count: string }>(
+      'SELECT COUNT(*) as count FROM trip_proposal_guests WHERE trip_proposal_id = $1 AND is_sponsored = true',
+      [guest.trip_proposal_id]
+    );
+    await this.update('trip_proposals', guest.trip_proposal_id, {
+      has_sponsored_guest: parseInt(sponsoredCount?.count || '0') > 0,
+    });
+
+    await this.logActivity(guest.trip_proposal_id, 'guest_sponsor_toggled',
+      `${guest.name} ${sponsored ? 'marked as sponsored' : 'unmarked as sponsored'}`, {
+      actor_type: 'staff',
+      metadata: { guest_id: guestId, sponsored },
+    });
+
+    // Recalculate
+    await this.calculateGuestAmounts(guest.trip_proposal_id);
+  }
+
+  /**
+   * Set a manual override for a guest's amount owed (NULL to clear override)
+   */
+  async overrideGuestAmount(guestId: number, amount: number | null): Promise<void> {
+    this.log('Overriding guest amount', { guestId, amount });
+
+    const guest = await this.findById<{ id: number; trip_proposal_id: number; name: string }>('trip_proposal_guests', guestId);
+    if (!guest) {
+      throw new NotFoundError('TripProposalGuest', guestId.toString());
+    }
+
+    await this.query(
+      'UPDATE trip_proposal_guests SET amount_owed_override = $1, updated_at = NOW() WHERE id = $2',
+      [amount, guestId]
+    );
+
+    await this.logActivity(guest.trip_proposal_id, 'guest_amount_overridden',
+      `${guest.name} amount overridden to ${amount !== null ? '$' + amount.toFixed(2) : 'auto-calculate'}`, {
+      actor_type: 'staff',
+      metadata: { guest_id: guestId, override_amount: amount },
+    });
+
+    // Recalculate
+    await this.calculateGuestAmounts(guest.trip_proposal_id);
+  }
+
+  /**
+   * Create a payment group (couples/subgroups)
+   */
+  async createPaymentGroup(proposalId: number, guestIds: number[], name: string): Promise<{ id: string; group_access_token: string }> {
+    this.log('Creating payment group', { proposalId, guestIds, name });
+
+    const proposal = await this.getById(proposalId);
+    if (!proposal) {
+      throw new NotFoundError('TripProposal', proposalId.toString());
+    }
+
+    return await this.withTransaction(async () => {
+      const group = await this.queryOne<{ id: string; group_access_token: string }>(
+        `INSERT INTO guest_payment_groups (trip_proposal_id, group_name)
+         VALUES ($1, $2)
+         RETURNING id, group_access_token`,
+        [proposalId, name]
+      );
+
+      if (!group) {
+        throw new ValidationError('Failed to create payment group');
+      }
+
+      // Link guests to the group
+      for (const guestId of guestIds) {
+        await this.query(
+          'UPDATE trip_proposal_guests SET payment_group_id = $1, updated_at = NOW() WHERE id = $2 AND trip_proposal_id = $3',
+          [group.id, guestId, proposalId]
+        );
+      }
+
+      await this.logActivity(proposalId, 'payment_group_created',
+        `Payment group "${name}" created with ${guestIds.length} guests`, {
+        actor_type: 'staff',
+        metadata: { group_id: group.id, guest_ids: guestIds },
+      });
+
+      return group;
+    });
+  }
+
+  /**
+   * Remove a payment group and unlink its guests
+   */
+  async removePaymentGroup(groupId: string): Promise<void> {
+    this.log('Removing payment group', { groupId });
+
+    const group = await this.queryOne<{ id: string; trip_proposal_id: number; group_name: string }>(
+      'SELECT id, trip_proposal_id, group_name FROM guest_payment_groups WHERE id = $1',
+      [groupId]
+    );
+
+    if (!group) {
+      throw new NotFoundError('GuestPaymentGroup', groupId);
+    }
+
+    await this.withTransaction(async () => {
+      // Unlink guests
+      await this.query(
+        'UPDATE trip_proposal_guests SET payment_group_id = NULL, updated_at = NOW() WHERE payment_group_id = $1',
+        [groupId]
+      );
+      // Delete group
+      await this.query('DELETE FROM guest_payment_groups WHERE id = $1', [groupId]);
+    });
+
+    await this.logActivity(group.trip_proposal_id, 'payment_group_removed',
+      `Payment group "${group.group_name}" removed`, {
+      actor_type: 'staff',
+      metadata: { group_id: groupId },
+    });
+  }
+
+  /**
+   * Record a manual payment for a guest (cash, check, Venmo, etc.)
+   */
+  async recordManualPayment(guestId: number, amount: number, notes?: string): Promise<void> {
+    this.log('Recording manual payment', { guestId, amount });
+
+    const guest = await this.findById<{ id: number; trip_proposal_id: number; name: string; amount_owed: number; amount_paid: number }>(
+      'trip_proposal_guests', guestId
+    );
+    if (!guest) {
+      throw new NotFoundError('TripProposalGuest', guestId.toString());
+    }
+
+    await this.withTransaction(async () => {
+      // Insert payment record
+      await this.query(
+        `INSERT INTO guest_payments (trip_proposal_id, guest_id, amount, payment_type, status, notes)
+         VALUES ($1, $2, $3, 'admin_adjustment', 'succeeded', $4)`,
+        [guest.trip_proposal_id, guestId, amount, notes || 'Manual payment recorded by admin']
+      );
+
+      // Update guest amount_paid and status
+      const newPaid = (parseFloat(String(guest.amount_paid)) || 0) + amount;
+      const owed = parseFloat(String(guest.amount_owed)) || 0;
+      const status = newPaid >= owed ? 'paid' : newPaid > 0 ? 'partial' : 'unpaid';
+
+      await this.query(
+        `UPDATE trip_proposal_guests
+         SET amount_paid = $1, payment_status = $2, payment_paid_at = CASE WHEN $2 = 'paid' THEN NOW() ELSE payment_paid_at END, updated_at = NOW()
+         WHERE id = $3`,
+        [newPaid, status, guestId]
+      );
+    });
+
+    await this.logActivity(guest.trip_proposal_id, 'manual_payment_recorded',
+      `$${amount.toFixed(2)} manual payment recorded for ${guest.name}`, {
+      actor_type: 'staff',
+      metadata: { guest_id: guestId, amount },
+    });
+  }
+
+  /**
+   * Audit billing integrity for a proposal
+   */
+  async auditProposalBilling(proposalId: number): Promise<{
+    valid: boolean;
+    discrepancies: string[];
+  }> {
+    this.log('Auditing proposal billing', { proposalId });
+
+    const discrepancies: string[] = [];
+
+    // Recalculate total from inclusions
+    const pricing = await this.calculatePricing(proposalId);
+    const proposal = await this.getById(proposalId);
+    if (!proposal) {
+      return { valid: false, discrepancies: ['Proposal not found'] };
+    }
+
+    if (!proposal.individual_billing_enabled) {
+      return { valid: true, discrepancies: [] };
+    }
+
+    // Verify sum(guest amount_owed) === total
+    const guestSum = await this.queryOne<{ total_owed: string; total_paid: string }>(
+      `SELECT COALESCE(SUM(amount_owed), 0) as total_owed, COALESCE(SUM(amount_paid), 0) as total_paid
+       FROM trip_proposal_guests WHERE trip_proposal_id = $1`,
+      [proposalId]
+    );
+
+    const totalOwed = parseFloat(guestSum?.total_owed || '0');
+    if (Math.abs(totalOwed - pricing.total) > 0.02) {
+      discrepancies.push(`Guest amounts (${totalOwed.toFixed(2)}) don't match proposal total (${pricing.total.toFixed(2)})`);
+    }
+
+    // Verify sum(guest_payments succeeded) === sum(amount_paid)
+    const paymentSum = await this.queryOne<{ total: string }>(
+      `SELECT COALESCE(SUM(amount), 0) as total
+       FROM guest_payments WHERE trip_proposal_id = $1 AND status = 'succeeded'`,
+      [proposalId]
+    );
+    const totalPaid = parseFloat(guestSum?.total_paid || '0');
+    const paymentRecordTotal = parseFloat(paymentSum?.total || '0');
+    if (Math.abs(totalPaid - paymentRecordTotal) > 0.02) {
+      discrepancies.push(`Guest amount_paid sums (${totalPaid.toFixed(2)}) don't match payment records (${paymentRecordTotal.toFixed(2)})`);
+    }
+
+    // Verify no non-sponsored guest has amount_owed = 0 without override
+    const zeroOwed = await this.query<{ id: number; name: string }>(
+      `SELECT id, name FROM trip_proposal_guests
+       WHERE trip_proposal_id = $1 AND is_sponsored = false AND amount_owed = 0 AND amount_owed_override IS NULL`,
+      [proposalId]
+    );
+    for (const guest of zeroOwed.rows) {
+      discrepancies.push(`Guest "${guest.name}" (id: ${guest.id}) owes $0 without override or sponsorship`);
+    }
+
+    return { valid: discrepancies.length === 0, discrepancies };
   }
 
   // ==========================================================================
