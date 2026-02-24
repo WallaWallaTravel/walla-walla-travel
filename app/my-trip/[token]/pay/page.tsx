@@ -8,6 +8,7 @@ import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-
 import { getBrandEmailConfig } from '@/lib/email-brands';
 import { logger } from '@/lib/logger';
 import BrandFooter from '@/components/BrandFooter';
+import { formatCurrency, formatDateLong } from '@/lib/utils/format';
 
 // Cache for Stripe instances by publishable key
 const stripePromiseCache: Record<string, Promise<Stripe | null>> = {};
@@ -69,13 +70,6 @@ function PaymentForm({
       setProcessing(false);
     }
     // If successful, Stripe redirects to return_url
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
   };
 
   return (
@@ -238,23 +232,6 @@ export default function MyTripPaymentPage() {
     }
   };
 
-  const formatCurrency = (amount: number | string) => {
-    const num = typeof amount === 'string' ? parseFloat(amount) : amount;
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(num);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
-
   const getTripTypeLabel = (type: string | null) => {
     const labels: Record<string, string> = {
       wine_tour: 'Wine Tour',
@@ -356,10 +333,10 @@ export default function MyTripPaymentPage() {
               <div className="flex justify-between">
                 <span className="text-gray-600">Date</span>
                 <span className="font-medium text-gray-900">
-                  {formatDate(proposal.start_date)}
+                  {formatDateLong(proposal.start_date)}
                   {proposal.end_date &&
                     proposal.end_date !== proposal.start_date &&
-                    ` - ${formatDate(proposal.end_date)}`}
+                    ` - ${formatDateLong(proposal.end_date)}`}
                 </span>
               </div>
               <div className="flex justify-between">

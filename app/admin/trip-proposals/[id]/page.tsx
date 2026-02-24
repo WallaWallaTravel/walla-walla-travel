@@ -4,6 +4,8 @@ import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { logger } from '@/lib/logger';
+import { useToast } from '@/lib/hooks/useToast';
+import { ToastContainer } from '@/components/ui/ToastContainer';
 
 interface Brand {
   id: number;
@@ -165,6 +167,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
   const [newNote, setNewNote] = useState('');
   const [notesLoading, setNotesLoading] = useState(false);
   const [lunchOrders, setLunchOrders] = useState<Array<{ id: number; ordering_mode: string; day?: { day_number: number; title: string | null }; supplier?: { name: string } }>>([]);
+  const { toasts, toast, dismissToast } = useToast();
 
   useEffect(() => {
     loadProposal();
@@ -190,7 +193,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
       if (result.success) {
         setProposal(result.data);
       } else {
-        alert(result.error || 'Failed to load trip proposal');
+        toast(result.error || 'Failed to load trip proposal', 'error');
         router.push('/admin/trip-proposals');
       }
     } catch (error) {
@@ -255,11 +258,11 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
       if (result.success) {
         setProposal({ ...proposal, ...result.data });
       } else {
-        alert(result.error || 'Failed to update proposal');
+        toast(result.error || 'Failed to update proposal', 'error');
       }
     } catch (error) {
       logger.error('Failed to update proposal', { error });
-      alert('Failed to update proposal');
+      toast('Failed to update proposal', 'error');
     } finally {
       setSaving(false);
     }
@@ -276,13 +279,13 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
       const result = await response.json();
       if (result.success) {
         setProposal({ ...proposal!, status: newStatus });
-        alert(`Status updated to ${newStatus}`);
+        toast(`Status updated to ${newStatus}`, 'success');
       } else {
-        alert(result.error || 'Failed to update status');
+        toast(result.error || 'Failed to update status', 'error');
       }
     } catch (error) {
       logger.error('Failed to update status', { error });
-      alert('Failed to update status');
+      toast('Failed to update status', 'error');
     } finally {
       setSaving(false);
     }
@@ -297,13 +300,13 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
       const result = await response.json();
       if (result.success) {
         await loadProposal();
-        alert('Pricing recalculated!');
+        toast('Pricing recalculated!', 'success');
       } else {
-        alert(result.error || 'Failed to recalculate pricing');
+        toast(result.error || 'Failed to recalculate pricing', 'error');
       }
     } catch (error) {
       logger.error('Failed to recalculate pricing', { error });
-      alert('Failed to recalculate pricing');
+      toast('Failed to recalculate pricing', 'error');
     } finally {
       setSaving(false);
     }
@@ -319,14 +322,14 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
       });
       const result = await response.json();
       if (result.success) {
-        alert(`Booking ${result.data.booking_number} created!`);
+        toast(`Booking ${result.data.booking_number} created!`, 'success');
         router.push(`/admin/bookings/${result.data.booking_id}`);
       } else {
-        alert(result.error || 'Failed to convert to booking');
+        toast(result.error || 'Failed to convert to booking', 'error');
       }
     } catch (error) {
       logger.error('Failed to convert to booking', { error });
-      alert('Failed to convert to booking');
+      toast('Failed to convert to booking', 'error');
     } finally {
       setSaving(false);
     }
@@ -340,13 +343,13 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
       });
       const result = await response.json();
       if (result.success) {
-        alert(`Driver itinerary generated! Itinerary ID: ${result.data.itinerary_id}`);
+        toast('Driver itinerary generated!', 'success');
       } else {
-        alert(result.error || 'Failed to generate itinerary');
+        toast(result.error || 'Failed to generate itinerary', 'error');
       }
     } catch (error) {
       logger.error('Failed to generate itinerary', { error });
-      alert('Failed to generate itinerary');
+      toast('Failed to generate itinerary', 'error');
     } finally {
       setSaving(false);
     }
@@ -374,11 +377,11 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
       if (result.success) {
         loadProposal(); // Reload to get updated data
       } else {
-        alert(result.error || 'Failed to add day');
+        toast(result.error || 'Failed to add day', 'error');
       }
     } catch (error) {
       logger.error('Failed to add day', { error });
-      alert('Failed to add day');
+      toast('Failed to add day', 'error');
     } finally {
       setSaving(false);
     }
@@ -403,11 +406,11 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
       if (result.success) {
         loadProposal();
       } else {
-        alert(result.error || 'Failed to add stop');
+        toast(result.error || 'Failed to add stop', 'error');
       }
     } catch (error) {
       logger.error('Failed to add stop', { error });
-      alert('Failed to add stop');
+      toast('Failed to add stop', 'error');
     } finally {
       setSaving(false);
     }
@@ -425,7 +428,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
       if (result.success) {
         loadProposal();
       } else {
-        alert(result.error || 'Failed to update stop');
+        toast(result.error || 'Failed to update stop', 'error');
       }
     } catch (error) {
       logger.error('Failed to update stop', { error });
@@ -446,7 +449,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
       if (result.success) {
         loadProposal();
       } else {
-        alert(result.error || 'Failed to delete stop');
+        toast(result.error || 'Failed to delete stop', 'error');
       }
     } catch (error) {
       logger.error('Failed to delete stop', { error });
@@ -470,7 +473,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
       if (result.success) {
         loadProposal();
       } else {
-        alert(result.error || 'Failed to add guest');
+        toast(result.error || 'Failed to add guest', 'error');
       }
     } catch (error) {
       logger.error('Failed to add guest', { error });
@@ -491,7 +494,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
       if (result.success) {
         loadProposal();
       } else {
-        alert(result.error || 'Failed to remove guest');
+        toast(result.error || 'Failed to remove guest', 'error');
       }
     } catch (error) {
       logger.error('Failed to remove guest', { error });
@@ -546,11 +549,11 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
         setNewNote('');
         loadNotes();
       } else {
-        alert(result.error || 'Failed to send note');
+        toast(result.error || 'Failed to send note', 'error');
       }
     } catch (error) {
       logger.error('Failed to send note', { error });
-      alert('Failed to send note');
+      toast('Failed to send note', 'error');
     }
   };
 
@@ -566,11 +569,11 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
       if (result.success) {
         setProposal({ ...proposal!, ...result.data });
       } else {
-        alert(result.error?.message || result.error || 'Failed to update planning phase');
+        toast(result.error?.message || result.error || 'Failed to update planning phase', 'error');
       }
     } catch (error) {
       logger.error('Failed to update planning phase', { error });
-      alert('Failed to update planning phase');
+      toast('Failed to update planning phase', 'error');
     } finally {
       setSaving(false);
     }
@@ -607,11 +610,11 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
           prev.map((o) => (o.id === orderId ? { ...o, ordering_mode: mode } : o))
         );
       } else {
-        alert(result.error || 'Failed to update ordering mode');
+        toast(result.error || 'Failed to update ordering mode', 'error');
       }
     } catch (error) {
       logger.error('Failed to update lunch ordering mode', { error });
-      alert('Failed to update ordering mode');
+      toast('Failed to update ordering mode', 'error');
     } finally {
       setSaving(false);
     }
@@ -654,12 +657,13 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
           <Link
             href="/admin/trip-proposals"
-            className="inline-flex items-center text-[#8B1538] hover:text-[#7A1230] font-bold mb-4"
+            className="inline-flex items-center text-brand hover:text-brand-hover font-bold mb-4"
           >
             ← Back to Trip Proposals
           </Link>
@@ -730,7 +734,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                     onClick={() => setActiveTab(tab.key as typeof activeTab)}
                     className={`flex-1 px-4 py-3 text-sm font-bold transition-colors ${
                       activeTab === tab.key
-                        ? 'text-[#8B1538] border-b-2 border-[#8B1538] bg-[#FDF2F4]'
+                        ? 'text-brand border-b-2 border-brand bg-brand-light'
                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                     }`}
                   >
@@ -756,7 +760,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                             disabled={saving || proposal.status === status.value}
                             className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                               proposal.status === status.value
-                                ? 'bg-[#8B1538] text-white'
+                                ? 'bg-brand text-white'
                                 : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
                             } disabled:opacity-50`}
                           >
@@ -776,7 +780,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                           type="text"
                           value={proposal.customer_name}
                           onChange={(e) => updateProposal({ customer_name: e.target.value })}
-                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#8B1538]"
+                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand"
                         />
                       </div>
                       <div>
@@ -787,7 +791,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                           type="email"
                           value={proposal.customer_email || ''}
                           onChange={(e) => updateProposal({ customer_email: e.target.value })}
-                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#8B1538]"
+                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand"
                         />
                       </div>
                       <div>
@@ -798,7 +802,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                           type="tel"
                           value={proposal.customer_phone || ''}
                           onChange={(e) => updateProposal({ customer_phone: e.target.value })}
-                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#8B1538]"
+                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand"
                         />
                       </div>
                       <div>
@@ -810,7 +814,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                           min="1"
                           value={proposal.party_size}
                           onChange={(e) => updateProposal({ party_size: parseInt(e.target.value) || 1 })}
-                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#8B1538]"
+                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand"
                         />
                       </div>
                     </div>
@@ -828,7 +832,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                             disabled={saving}
                             className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                               proposal.trip_type === type.value
-                                ? 'bg-[#8B1538] text-white'
+                                ? 'bg-brand text-white'
                                 : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
                             } disabled:opacity-50`}
                           >
@@ -848,7 +852,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                           type="date"
                           value={proposal.start_date}
                           onChange={(e) => updateProposal({ start_date: e.target.value })}
-                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#8B1538]"
+                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand"
                         />
                       </div>
                       <div>
@@ -859,7 +863,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                           type="date"
                           value={proposal.end_date || proposal.start_date}
                           onChange={(e) => updateProposal({ end_date: e.target.value })}
-                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#8B1538]"
+                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand"
                         />
                       </div>
                       <div>
@@ -870,7 +874,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                           type="date"
                           value={proposal.valid_until || ''}
                           onChange={(e) => updateProposal({ valid_until: e.target.value })}
-                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#8B1538]"
+                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand"
                         />
                       </div>
                     </div>
@@ -884,7 +888,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                         value={proposal.introduction || ''}
                         onChange={(e) => updateProposal({ introduction: e.target.value })}
                         rows={3}
-                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#8B1538]"
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand"
                       />
                     </div>
                     <div>
@@ -895,7 +899,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                         value={proposal.internal_notes || ''}
                         onChange={(e) => updateProposal({ internal_notes: e.target.value })}
                         rows={2}
-                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#8B1538]"
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand"
                       />
                     </div>
                   </div>
@@ -906,7 +910,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                   <div className="space-y-6">
                     {proposal.days?.map((day) => (
                       <div key={day.id} className="border-2 border-gray-200 rounded-lg overflow-hidden">
-                        <div className="bg-[#FDF2F4] p-4 flex items-center justify-between">
+                        <div className="bg-brand-light p-4 flex items-center justify-between">
                           <div>
                             <div className="font-bold text-gray-900">{day.title}</div>
                             <div className="text-sm text-gray-600">{formatDate(day.date)}</div>
@@ -1063,7 +1067,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                     <button
                       onClick={addDay}
                       disabled={saving}
-                      className="w-full px-4 py-3 border-2 border-dashed border-gray-300 hover:border-[#8B1538] text-gray-600 hover:text-[#8B1538] rounded-lg font-bold transition-colors disabled:opacity-50"
+                      className="w-full px-4 py-3 border-2 border-dashed border-gray-300 hover:border-brand text-gray-600 hover:text-brand rounded-lg font-bold transition-colors disabled:opacity-50"
                     >
                       + Add Another Day
                     </button>
@@ -1081,7 +1085,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                             <span className="font-bold">
                               {guest.name}
                               {guest.is_primary && (
-                                <span className="ml-2 px-2 py-0.5 bg-[#8B1538] text-white text-xs rounded">
+                                <span className="ml-2 px-2 py-0.5 bg-brand text-white text-xs rounded">
                                   Primary
                                 </span>
                               )}
@@ -1127,7 +1131,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                                 onClick={() => {
                                   const url = `${window.location.origin}/my-trip/${proposal.access_token}?guest=${guest.guest_access_token}`;
                                   navigator.clipboard.writeText(url);
-                                  alert('Guest link copied!');
+                                  toast('Guest link copied!', 'info');
                                 }}
                                 className="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded text-xs font-medium shrink-0 transition-colors"
                               >
@@ -1142,7 +1146,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                     <button
                       onClick={addGuest}
                       disabled={saving}
-                      className="w-full px-4 py-3 border-2 border-dashed border-gray-300 hover:border-[#8B1538] text-gray-600 hover:text-[#8B1538] rounded-lg font-bold transition-colors disabled:opacity-50"
+                      className="w-full px-4 py-3 border-2 border-dashed border-gray-300 hover:border-brand text-gray-600 hover:text-brand rounded-lg font-bold transition-colors disabled:opacity-50"
                     >
                       + Add Guest
                     </button>
@@ -1166,7 +1170,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                           onChange={(e) =>
                             updateProposal({ tax_rate: e.target.value })
                           }
-                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#8B1538]"
+                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand"
                         />
                       </div>
                       <div>
@@ -1181,7 +1185,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                           onChange={(e) =>
                             updateProposal({ gratuity_percentage: parseInt(e.target.value) || 0 })
                           }
-                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#8B1538]"
+                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand"
                         />
                       </div>
                       <div>
@@ -1196,7 +1200,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                           onChange={(e) =>
                             updateProposal({ deposit_percentage: parseInt(e.target.value) || 50 })
                           }
-                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#8B1538]"
+                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand"
                         />
                       </div>
                     </div>
@@ -1216,7 +1220,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                             onChange={(e) =>
                               updateProposal({ discount_amount: e.target.value })
                             }
-                            className="w-full pl-8 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#8B1538]"
+                            className="w-full pl-8 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand"
                           />
                         </div>
                       </div>
@@ -1231,7 +1235,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                             updateProposal({ discount_reason: e.target.value })
                           }
                           placeholder="e.g., Repeat customer"
-                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#8B1538]"
+                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand"
                         />
                       </div>
                     </div>
@@ -1341,7 +1345,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                   onClick={() => {
                     const url = `${window.location.origin}/my-trip/${proposal.access_token || ''}`;
                     navigator.clipboard.writeText(url);
-                    alert('Link copied!');
+                    toast('Link copied!', 'info');
                   }}
                   className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-medium shrink-0"
                 >
@@ -1440,7 +1444,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
             )}
 
             {/* Pricing */}
-            <div className="sticky top-6 bg-white rounded-xl shadow-lg p-6 border-2 border-[#8B1538]">
+            <div className="sticky top-6 bg-white rounded-xl shadow-lg p-6 border-2 border-brand">
               <h2 className="text-2xl font-bold text-gray-900 mb-4">💰 Pricing</h2>
 
               <div className="space-y-3 mb-6">
@@ -1461,14 +1465,14 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                   <span className="font-bold">{formatCurrency(proposal.taxes)}</span>
                 </div>
 
-                <div className="border-t-2 border-[#8B1538] pt-3 flex justify-between">
+                <div className="border-t-2 border-brand pt-3 flex justify-between">
                   <span className="text-xl font-bold text-gray-900">Total</span>
-                  <span className="text-2xl font-bold text-[#8B1538]">
+                  <span className="text-2xl font-bold text-brand">
                     {formatCurrency(proposal.total)}
                   </span>
                 </div>
 
-                <div className="bg-[#FDF2F4] rounded-lg p-3 space-y-2">
+                <div className="bg-brand-light rounded-lg p-3 space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-700">
                       Deposit ({proposal.deposit_percentage}%)

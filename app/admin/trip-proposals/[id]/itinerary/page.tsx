@@ -212,7 +212,7 @@ export default function DriverItineraryPage({
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#8B1538] mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading itinerary...</p>
         </div>
       </div>
@@ -228,7 +228,7 @@ export default function DriverItineraryPage({
           <p className="text-gray-600 mb-4">{error}</p>
           <button
             onClick={() => router.back()}
-            className="bg-[#8B1538] text-white px-4 py-2 rounded-lg hover:bg-[#6B1028]"
+            className="bg-brand text-white px-4 py-2 rounded-lg hover:bg-brand-hover"
           >
             Go Back
           </button>
@@ -270,7 +270,7 @@ export default function DriverItineraryPage({
           <div className="flex items-center gap-3">
             <button
               onClick={handlePrint}
-              className="bg-[#8B1538] text-white px-4 py-2 rounded-lg hover:bg-[#6B1028] flex items-center gap-2"
+              className="bg-brand text-white px-4 py-2 rounded-lg hover:bg-brand-hover flex items-center gap-2"
             >
               🖨️ Print Itinerary
             </button>
@@ -289,7 +289,7 @@ export default function DriverItineraryPage({
             </div>
             <div className="text-right">
               <p className="text-sm text-gray-500">Trip #</p>
-              <p className="text-xl font-bold text-[#8B1538]">{proposal.proposal_number}</p>
+              <p className="text-xl font-bold text-brand">{proposal.proposal_number}</p>
             </div>
           </div>
 
@@ -299,7 +299,7 @@ export default function DriverItineraryPage({
               <p className="text-xs text-gray-500 uppercase tracking-wide">Guest</p>
               <p className="font-bold text-gray-900">{proposal.customer_name}</p>
               {proposal.customer_phone && (
-                <a href={`tel:${proposal.customer_phone}`} className="text-sm text-[#8B1538]">
+                <a href={`tel:${proposal.customer_phone}`} className="text-sm text-brand">
                   {proposal.customer_phone}
                 </a>
               )}
@@ -341,7 +341,7 @@ export default function DriverItineraryPage({
               className={`bg-white rounded-lg shadow-lg overflow-hidden mb-6 print:shadow-none print:border print:border-gray-300 ${dayIndex > 0 ? 'print-break' : ''}`}
             >
               {/* Day Header */}
-              <div className="bg-[#8B1538] text-white px-6 py-4">
+              <div className="bg-brand text-white px-6 py-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="text-lg font-bold">
@@ -422,7 +422,7 @@ export default function DriverItineraryPage({
                                       href={mapsUrl}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="no-print text-[#8B1538] hover:text-[#6B1028]"
+                                      className="no-print text-brand hover:text-brand-hover"
                                       title="Open in Google Maps"
                                     >
                                       📍
@@ -468,13 +468,13 @@ export default function DriverItineraryPage({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-sm text-gray-500">Dispatch</p>
-              <a href={`tel:${brandConfig.phone}`} className="font-bold text-[#8B1538]">
+              <a href={`tel:${brandConfig.phone}`} className="font-bold text-brand">
                 {brandConfig.phone}
               </a>
             </div>
             <div>
               <p className="text-sm text-gray-500">Email</p>
-              <a href={`mailto:${brandConfig.from_email}`} className="text-[#8B1538]">
+              <a href={`mailto:${brandConfig.from_email}`} className="text-brand">
                 {brandConfig.from_email}
               </a>
             </div>

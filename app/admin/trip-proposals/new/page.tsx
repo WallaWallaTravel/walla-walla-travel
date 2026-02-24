@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { logger } from '@/lib/logger';
+import { useToast } from '@/lib/hooks/useToast';
+import { ToastContainer } from '@/components/ui/ToastContainer';
 
 interface Brand {
   id: number;
@@ -158,6 +160,7 @@ export default function NewTripProposalPage() {
   const [hotels, setHotels] = useState<Hotel[]>([]);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'details' | 'days' | 'guests' | 'pricing'>('details');
+  const { toasts, toast, dismissToast } = useToast();
 
   const today = new Date().toISOString().split('T')[0];
   const defaultValidUntil = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
@@ -435,12 +438,12 @@ export default function NewTripProposalPage() {
     e.preventDefault();
 
     if (!formData.customer_name) {
-      alert('Please enter a customer name');
+      toast('Please enter a customer name', 'error');
       return;
     }
 
     if (formData.days.length === 0) {
-      alert('Please add at least one day');
+      toast('Please add at least one day', 'error');
       return;
     }
 
@@ -561,11 +564,11 @@ export default function NewTripProposalPage() {
         method: 'POST',
       });
 
-      alert(`Trip proposal created successfully! Proposal #${result.data.proposal_number}`);
+      toast(`Trip proposal created! Proposal #${result.data.proposal_number}`, 'success');
       router.push('/admin/trip-proposals');
     } catch (error) {
       logger.error('Failed to create trip proposal', { error });
-      alert(error instanceof Error ? error.message : 'Failed to create trip proposal');
+      toast(error instanceof Error ? error.message : 'Failed to create trip proposal', 'error');
     } finally {
       setSaving(false);
     }
@@ -580,12 +583,13 @@ export default function NewTripProposalPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <Link
             href="/admin/trip-proposals"
-            className="inline-flex items-center text-[#8B1538] hover:text-[#7A1230] font-bold mb-4"
+            className="inline-flex items-center text-brand hover:text-brand-hover font-bold mb-4"
           >
             ← Back to Trip Proposals
           </Link>
@@ -612,7 +616,7 @@ export default function NewTripProposalPage() {
                       onClick={() => setActiveTab(tab.key as typeof activeTab)}
                       className={`flex-1 px-4 py-3 text-sm font-bold transition-colors ${
                         activeTab === tab.key
-                          ? 'text-[#8B1538] border-b-2 border-[#8B1538] bg-[#FDF2F4]'
+                          ? 'text-brand border-b-2 border-brand bg-brand-light'
                           : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                       }`}
                     >
@@ -638,7 +642,7 @@ export default function NewTripProposalPage() {
                               onClick={() => setFormData({ ...formData, brand_id: brand.id })}
                               className={`p-3 rounded-lg border-2 text-left transition-all ${
                                 formData.brand_id === brand.id
-                                  ? 'border-[#8B1538] bg-[#FDF2F4]'
+                                  ? 'border-brand bg-brand-light'
                                   : 'border-gray-200 hover:border-gray-300'
                               }`}
                             >
@@ -666,7 +670,7 @@ export default function NewTripProposalPage() {
                             onChange={(e) =>
                               setFormData({ ...formData, customer_name: e.target.value })
                             }
-                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#8B1538] focus:ring-4 focus:ring-[#FDF2F4]"
+                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand focus:ring-4 focus:ring-brand-light"
                             required
                           />
                         </div>
@@ -681,7 +685,7 @@ export default function NewTripProposalPage() {
                             onChange={(e) =>
                               setFormData({ ...formData, customer_email: e.target.value })
                             }
-                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#8B1538] focus:ring-4 focus:ring-[#FDF2F4]"
+                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand focus:ring-4 focus:ring-brand-light"
                           />
                         </div>
 
@@ -695,7 +699,7 @@ export default function NewTripProposalPage() {
                             onChange={(e) =>
                               setFormData({ ...formData, customer_phone: e.target.value })
                             }
-                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#8B1538] focus:ring-4 focus:ring-[#FDF2F4]"
+                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand focus:ring-4 focus:ring-brand-light"
                           />
                         </div>
 
@@ -712,7 +716,7 @@ export default function NewTripProposalPage() {
                             onChange={(e) =>
                               setFormData({ ...formData, party_size: parseInt(e.target.value) || 1 })
                             }
-                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#8B1538] focus:ring-4 focus:ring-[#FDF2F4]"
+                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand focus:ring-4 focus:ring-brand-light"
                             required
                           />
                         </div>
@@ -728,7 +732,7 @@ export default function NewTripProposalPage() {
                               setFormData({ ...formData, customer_company: e.target.value })
                             }
                             placeholder="For corporate or group bookings"
-                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#8B1538] focus:ring-4 focus:ring-[#FDF2F4]"
+                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand focus:ring-4 focus:ring-brand-light"
                           />
                         </div>
                       </div>
@@ -746,7 +750,7 @@ export default function NewTripProposalPage() {
                               onClick={() => setFormData({ ...formData, trip_type: type.value })}
                               className={`p-3 rounded-lg border-2 text-center transition-all ${
                                 formData.trip_type === type.value
-                                  ? 'border-[#8B1538] bg-[#FDF2F4]'
+                                  ? 'border-brand bg-brand-light'
                                   : 'border-gray-200 hover:border-gray-300'
                               }`}
                             >
@@ -769,7 +773,7 @@ export default function NewTripProposalPage() {
                             onChange={(e) =>
                               setFormData({ ...formData, start_date: e.target.value })
                             }
-                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#8B1538] focus:ring-4 focus:ring-[#FDF2F4]"
+                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand focus:ring-4 focus:ring-brand-light"
                             required
                           />
                         </div>
@@ -785,7 +789,7 @@ export default function NewTripProposalPage() {
                             onChange={(e) =>
                               setFormData({ ...formData, end_date: e.target.value })
                             }
-                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#8B1538] focus:ring-4 focus:ring-[#FDF2F4]"
+                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand focus:ring-4 focus:ring-brand-light"
                           />
                         </div>
 
@@ -799,7 +803,7 @@ export default function NewTripProposalPage() {
                             onChange={(e) =>
                               setFormData({ ...formData, valid_until: e.target.value })
                             }
-                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#8B1538] focus:ring-4 focus:ring-[#FDF2F4]"
+                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand focus:ring-4 focus:ring-brand-light"
                           />
                         </div>
                       </div>
@@ -815,7 +819,7 @@ export default function NewTripProposalPage() {
                             setFormData({ ...formData, introduction: e.target.value })
                           }
                           rows={3}
-                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#8B1538] focus:ring-4 focus:ring-[#FDF2F4]"
+                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand focus:ring-4 focus:ring-brand-light"
                         />
                       </div>
 
@@ -831,7 +835,7 @@ export default function NewTripProposalPage() {
                           }
                           rows={2}
                           placeholder="Notes for staff reference..."
-                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#8B1538] focus:ring-4 focus:ring-[#FDF2F4]"
+                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand focus:ring-4 focus:ring-brand-light"
                         />
                       </div>
                     </div>
@@ -854,7 +858,7 @@ export default function NewTripProposalPage() {
                             key={day.id}
                             className="border-2 border-gray-200 rounded-lg overflow-hidden"
                           >
-                            <div className="bg-[#FDF2F4] p-4 flex items-center justify-between">
+                            <div className="bg-brand-light p-4 flex items-center justify-between">
                               <div className="flex items-center gap-3">
                                 <span className="text-2xl">📅</span>
                                 <div>
@@ -920,7 +924,7 @@ export default function NewTripProposalPage() {
                           <button
                             type="button"
                             onClick={addGuest}
-                            className="px-4 py-2 bg-[#8B1538] hover:bg-[#7A1230] text-white rounded-lg font-bold transition-colors"
+                            className="px-4 py-2 bg-brand hover:bg-brand-hover text-white rounded-lg font-bold transition-colors"
                           >
                             + Add Guest
                           </button>
@@ -938,7 +942,7 @@ export default function NewTripProposalPage() {
                                   <span className="font-bold">
                                     Guest {index + 1}
                                     {guest.is_primary && (
-                                      <span className="ml-2 px-2 py-0.5 bg-[#8B1538] text-white text-xs rounded">
+                                      <span className="ml-2 px-2 py-0.5 bg-brand text-white text-xs rounded">
                                         Primary
                                       </span>
                                     )}
@@ -959,21 +963,21 @@ export default function NewTripProposalPage() {
                                   value={guest.name}
                                   onChange={(e) => updateGuest(index, { name: e.target.value })}
                                   placeholder="Name"
-                                  className="px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-[#8B1538]"
+                                  className="px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-brand"
                                 />
                                 <input
                                   type="email"
                                   value={guest.email || ''}
                                   onChange={(e) => updateGuest(index, { email: e.target.value })}
                                   placeholder="Email"
-                                  className="px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-[#8B1538]"
+                                  className="px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-brand"
                                 />
                                 <input
                                   type="tel"
                                   value={guest.phone || ''}
                                   onChange={(e) => updateGuest(index, { phone: e.target.value })}
                                   placeholder="Phone"
-                                  className="px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-[#8B1538]"
+                                  className="px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-brand"
                                 />
                                 <input
                                   type="text"
@@ -982,7 +986,7 @@ export default function NewTripProposalPage() {
                                     updateGuest(index, { dietary_restrictions: e.target.value })
                                   }
                                   placeholder="Dietary restrictions"
-                                  className="px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-[#8B1538]"
+                                  className="px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-brand"
                                 />
                               </div>
                             </div>
@@ -991,7 +995,7 @@ export default function NewTripProposalPage() {
                           <button
                             type="button"
                             onClick={addGuest}
-                            className="w-full px-4 py-3 border-2 border-dashed border-gray-300 hover:border-[#8B1538] text-gray-600 hover:text-[#8B1538] rounded-lg font-bold transition-colors"
+                            className="w-full px-4 py-3 border-2 border-dashed border-gray-300 hover:border-brand text-gray-600 hover:text-brand rounded-lg font-bold transition-colors"
                           >
                             + Add Another Guest
                           </button>
@@ -1014,7 +1018,7 @@ export default function NewTripProposalPage() {
                               key={template.label}
                               type="button"
                               onClick={() => addServiceFromTemplate(template)}
-                              className="px-3 py-2 bg-gray-100 hover:bg-[#FDF2F4] hover:text-[#8B1538] text-gray-700 rounded-lg text-sm font-medium transition-colors border border-gray-200 hover:border-[#8B1538]"
+                              className="px-3 py-2 bg-gray-100 hover:bg-brand-light hover:text-brand text-gray-700 rounded-lg text-sm font-medium transition-colors border border-gray-200 hover:border-brand"
                             >
                               + {template.label}
                             </button>
@@ -1165,7 +1169,7 @@ export default function NewTripProposalPage() {
                                   discount_amount: parseFloat(e.target.value) || 0,
                                 })
                               }
-                              className="w-full pl-8 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#8B1538]"
+                              className="w-full pl-8 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand"
                             />
                           </div>
                         </div>
@@ -1180,7 +1184,7 @@ export default function NewTripProposalPage() {
                               setFormData({ ...formData, discount_reason: e.target.value })
                             }
                             placeholder="e.g., Repeat customer"
-                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#8B1538]"
+                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand"
                           />
                         </div>
                       </div>
@@ -1203,7 +1207,7 @@ export default function NewTripProposalPage() {
                                 tax_rate: parseFloat(e.target.value) || 0,
                               })
                             }
-                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#8B1538]"
+                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand"
                           />
                         </div>
                         <div>
@@ -1221,7 +1225,7 @@ export default function NewTripProposalPage() {
                                 gratuity_percentage: parseInt(e.target.value) || 0,
                               })
                             }
-                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#8B1538]"
+                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand"
                           />
                         </div>
                         <div>
@@ -1239,7 +1243,7 @@ export default function NewTripProposalPage() {
                                 deposit_percentage: parseInt(e.target.value) || 50,
                               })
                             }
-                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#8B1538]"
+                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand"
                           />
                         </div>
                       </div>
@@ -1251,7 +1255,7 @@ export default function NewTripProposalPage() {
 
             {/* Right Column - Pricing Summary */}
             <div className="lg:col-span-1">
-              <div className="sticky top-6 bg-white rounded-xl shadow-lg p-6 border-2 border-[#8B1538]">
+              <div className="sticky top-6 bg-white rounded-xl shadow-lg p-6 border-2 border-brand">
                 <h2 className="text-2xl font-bold text-gray-900 mb-4">💰 Pricing Summary</h2>
 
                 <div className="space-y-3 mb-6">
@@ -1284,14 +1288,14 @@ export default function NewTripProposalPage() {
                     </div>
                   )}
 
-                  <div className="border-t-2 border-[#8B1538] pt-3 flex justify-between">
+                  <div className="border-t-2 border-brand pt-3 flex justify-between">
                     <span className="text-xl font-bold text-gray-900">Total</span>
-                    <span className="text-2xl font-bold text-[#8B1538]">
+                    <span className="text-2xl font-bold text-brand">
                       {formatCurrency(totals.total)}
                     </span>
                   </div>
 
-                  <div className="bg-[#FDF2F4] rounded-lg p-3 space-y-2">
+                  <div className="bg-brand-light rounded-lg p-3 space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-700">
                         Deposit ({formData.deposit_percentage}%)
@@ -1336,7 +1340,7 @@ export default function NewTripProposalPage() {
                 <button
                   type="submit"
                   disabled={saving || !formData.customer_name}
-                  className="w-full px-6 py-4 bg-[#8B1538] hover:bg-[#7A1230] disabled:bg-gray-400 text-white rounded-lg font-bold text-lg transition-colors shadow-lg"
+                  className="w-full px-6 py-4 bg-brand hover:bg-brand-hover disabled:bg-gray-400 text-white rounded-lg font-bold text-lg transition-colors shadow-lg"
                 >
                   {saving ? '⏳ Creating...' : '📝 Create Trip Proposal'}
                 </button>

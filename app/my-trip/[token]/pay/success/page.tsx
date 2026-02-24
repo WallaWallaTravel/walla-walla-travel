@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { getBrandEmailConfig } from '@/lib/email-brands';
 import { logger } from '@/lib/logger';
+import { formatCurrency, formatDateLong } from '@/lib/utils/format';
 
 interface TripProposal {
   proposal_number: string;
@@ -29,7 +30,6 @@ export default function MyTripPaymentSuccessPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
-  const [_confirmed, setConfirmed] = useState(false);
 
   useEffect(() => {
     if (token) {
@@ -67,7 +67,6 @@ export default function MyTripPaymentSuccessPage() {
 
       // If already paid (webhook got there first), just show success
       if (proposalData.data.deposit_paid) {
-        setConfirmed(true);
         setLoading(false);
         return;
       }
@@ -87,14 +86,13 @@ export default function MyTripPaymentSuccessPage() {
         const errorData = await confirmResponse.json();
         // If already paid, that's fine
         if (errorData.data?.already_paid) {
-          setConfirmed(true);
+          // Already paid — treat as success
         } else {
           throw new Error(
             errorData.error || 'Failed to confirm payment. The webhook will process it shortly.'
           );
         }
       } else {
-        setConfirmed(true);
         // Re-fetch proposal to get updated data
         const updatedResponse = await fetch(`/api/my-trip/${token}`);
         if (updatedResponse.ok) {
@@ -113,23 +111,6 @@ export default function MyTripPaymentSuccessPage() {
       setLoading(false);
       setConfirming(false);
     }
-  };
-
-  const formatCurrency = (amount: string | number) => {
-    const num = typeof amount === 'string' ? parseFloat(amount) : amount;
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(num);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
   };
 
   if (loading) {
@@ -256,7 +237,7 @@ export default function MyTripPaymentSuccessPage() {
                 <div className="flex justify-between items-start">
                   <span className="text-gray-600">Date</span>
                   <span className="font-medium text-gray-900 text-right">
-                    {formatDate(proposal.start_date)}
+                    {formatDateLong(proposal.start_date)}
                     {proposal.end_date &&
                       proposal.end_date !== proposal.start_date && (
                         <>
@@ -265,7 +246,7 @@ export default function MyTripPaymentSuccessPage() {
                             through
                           </span>
                           <br />
-                          {formatDate(proposal.end_date)}
+                          {formatDateLong(proposal.end_date)}
                         </>
                       )}
                   </span>

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { logger } from '@/lib/logger';
 import BrandFooter from '@/components/BrandFooter';
 import { getBrandEmailConfig, type BrandEmailConfig } from '@/lib/email-brands';
+import { formatCurrency } from '@/lib/utils/format';
 
 interface Proposal {
   id: number;
@@ -97,13 +98,6 @@ export default function PaymentSuccessPage({ params }: { params: Promise<{ propo
     } finally {
       setLoading(false);
     }
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
   };
 
   // Helper to get proposal total (handles string/number and fallback to final_total)

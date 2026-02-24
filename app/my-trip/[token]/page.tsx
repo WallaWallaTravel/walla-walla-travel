@@ -9,10 +9,12 @@ export default function MyTripPage() {
   const [accepting, setAccepting] = useState(false);
   const [declining, setDeclining] = useState(false);
   const [responded, setResponded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleAccept = async () => {
     if (accepting) return;
     setAccepting(true);
+    setError(null);
 
     try {
       const res = await fetch(`/api/my-trip/${accessToken}/accept`, {
@@ -37,9 +39,11 @@ export default function MyTripPage() {
 
         // Fallback for unexpected action
         setResponded(true);
+      } else {
+        setError('Unable to accept the proposal. Please try again.');
       }
     } catch {
-      // Silently fail - user can retry
+      setError('Something went wrong. Please check your connection and try again.');
     } finally {
       setAccepting(false);
     }
@@ -48,6 +52,7 @@ export default function MyTripPage() {
   const handleDecline = async () => {
     if (declining) return;
     setDeclining(true);
+    setError(null);
 
     try {
       const res = await fetch(`/api/my-trip/${accessToken}/decline`, {
@@ -57,9 +62,11 @@ export default function MyTripPage() {
 
       if (res.ok) {
         setResponded(true);
+      } else {
+        setError('Unable to submit your response. Please try again.');
       }
     } catch {
-      // Silently fail - user can retry
+      setError('Something went wrong. Please check your connection and try again.');
     } finally {
       setDeclining(false);
     }
@@ -68,6 +75,16 @@ export default function MyTripPage() {
   return (
     <div>
       <LiveItinerary proposal={proposal} planningPhase={planningPhase} />
+
+      {/* Error message */}
+      {error && (
+        <div className="mt-6 bg-red-50 rounded-xl border border-red-200 p-4 flex items-start gap-3">
+          <svg className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+          </svg>
+          <p className="text-sm text-red-700">{error}</p>
+        </div>
+      )}
 
       {/* Accept/Decline buttons for proposal phase */}
       {planningPhase === 'proposal' && !responded && (
