@@ -55,6 +55,12 @@ interface StopData {
   client_notes?: string;
   internal_notes?: string;
   driver_notes?: string;
+  vendor_name?: string;
+  vendor_email?: string;
+  vendor_phone?: string;
+  quote_status?: string;
+  quoted_amount?: number;
+  quote_notes?: string;
 }
 
 interface DayData {
@@ -85,6 +91,8 @@ interface InclusionData {
   quantity: number;
   unit_price: string;
   total_price: string;
+  is_taxable: boolean;
+  tax_included_in_price: boolean;
 }
 
 interface TripProposal {
@@ -114,11 +122,28 @@ interface TripProposal {
   total: string;
   deposit_amount: string;
   skip_deposit_on_accept?: boolean;
+  planning_fee_mode?: 'flat' | 'percentage';
+  planning_fee_percentage?: number;
+  individual_billing_enabled?: boolean;
+  payment_deadline?: string | null;
+  reminders_paused?: boolean;
   created_at: string;
   updated_at: string;
   days?: DayData[];
   guests?: GuestData[];
   inclusions?: InclusionData[];
+}
+
+interface ReminderRecord {
+  id: number;
+  guest_name?: string;
+  scheduled_date: string;
+  urgency: string;
+  status: string;
+  paused: boolean;
+  skip_reason: string | null;
+  sent_at: string | null;
+  custom_message: string | null;
 }
 
 const TRIP_TYPES = [
@@ -162,11 +187,12 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
   const [hotels, setHotels] = useState<Hotel[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'days' | 'guests' | 'pricing' | 'notes'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'days' | 'guests' | 'pricing' | 'billing' | 'notes'>('overview');
   const [notes, setNotes] = useState<Array<{ id: number; author_type: string; author_name: string; content: string; context_type: string | null; context_id: number | null; is_read: boolean; created_at: string }>>([]);
   const [newNote, setNewNote] = useState('');
   const [notesLoading, setNotesLoading] = useState(false);
   const [lunchOrders, setLunchOrders] = useState<Array<{ id: number; ordering_mode: string; day?: { day_number: number; title: string | null }; supplier?: { name: string } }>>([]);
+  const [reminderHistory, setReminderHistory] = useState<ReminderRecord[]>([]);
   const { toasts, toast, dismissToast } = useToast();
 
   useEffect(() => {
@@ -517,6 +543,18 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
     });
   };
 
+  const loadReminderHistory = async () => {
+    try {
+      const response = await fetch(`/api/admin/trip-proposals/${id}/reminders`);
+      const result = await response.json();
+      if (result.success) {
+        setReminderHistory(result.data || []);
+      }
+    } catch {
+      // non-critical
+    }
+  };
+
   const loadNotes = async () => {
     if (!proposal) return;
     setNotesLoading(true);
@@ -726,6 +764,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                   { key: 'days', label: '📅 Days & Stops' },
                   { key: 'guests', label: '👥 Guests' },
                   { key: 'pricing', label: '💰 Pricing' },
+                  { key: 'billing', label: '💳 Billing' },
                   { key: 'notes', label: '💬 Notes' },
                 ].map((tab) => (
                   <button
@@ -1042,6 +1081,146 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                                     className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm text-gray-600 italic"
                                   />
                                 </div>
+
+                                {/* Vendor Tracking (collapsible) */}
+                                <details className="mt-2 border-t border-gray-200 pt-2">
+                                  <summary className="text-xs font-bold text-gray-700 cursor-pointer hover:text-gray-900 flex items-center gap-1">
+                                    Vendor
+                                    {stop.quote_status && stop.quote_status !== 'none' && (
+                                      <span className={`ml-1 px-1.5 py-0.5 rounded text-xs font-medium ${
+                                        stop.quote_status === 'paid' ? 'bg-green-100 text-green-800' :
+                                        stop.quote_status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
+                                        stop.quote_status === 'accepted' ? 'bg-indigo-100 text-indigo-800' :
+                                        stop.quote_status === 'quoted' ? 'bg-yellow-100 text-yellow-800' :
+                                        stop.quote_status === 'requested' ? 'bg-orange-100 text-orange-800' :
+                                        'bg-gray-100 text-gray-600'
+                                      }`}>{stop.quote_status}</span>
+                                    )}
+                                  </summary>
+                                  <div className="mt-2 space-y-2">
+                                    <div className="grid grid-cols-3 gap-2">
+                                      <input
+                                        type="text"
+                                        value={stop.vendor_name || ''}
+                                        onBlur={(e) => {
+                                          fetch(`/api/admin/trip-proposals/${id}/stops/${stop.id}/vendor`, {
+                                            method: 'PATCH',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ vendor_name: e.target.value }),
+                                          });
+                                        }}
+                                        onChange={(e) => {
+                                          const newStops = day.stops.map(s => s.id === stop.id ? { ...s, vendor_name: e.target.value } : s);
+                                          const newDays = (proposal.days || []).map(d => d.id === day.id ? { ...d, stops: newStops } : d);
+                                          setProposal({ ...proposal, days: newDays });
+                                        }}
+                                        placeholder="Contact name"
+                                        className="px-2 py-1 border border-gray-300 rounded text-xs"
+                                      />
+                                      <div className="flex gap-1">
+                                        <input
+                                          type="email"
+                                          value={stop.vendor_email || ''}
+                                          onBlur={(e) => {
+                                            fetch(`/api/admin/trip-proposals/${id}/stops/${stop.id}/vendor`, {
+                                              method: 'PATCH',
+                                              headers: { 'Content-Type': 'application/json' },
+                                              body: JSON.stringify({ vendor_email: e.target.value }),
+                                            });
+                                          }}
+                                          onChange={(e) => {
+                                            const newStops = day.stops.map(s => s.id === stop.id ? { ...s, vendor_email: e.target.value } : s);
+                                            const newDays = (proposal.days || []).map(d => d.id === day.id ? { ...d, stops: newStops } : d);
+                                            setProposal({ ...proposal, days: newDays });
+                                          }}
+                                          placeholder="Email"
+                                          className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs"
+                                        />
+                                        {stop.vendor_email && (
+                                          <a
+                                            href={`mailto:${stop.vendor_email}`}
+                                            className="px-1.5 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-xs"
+                                            title="Send email"
+                                          >
+                                            @
+                                          </a>
+                                        )}
+                                      </div>
+                                      <input
+                                        type="tel"
+                                        value={stop.vendor_phone || ''}
+                                        onBlur={(e) => {
+                                          fetch(`/api/admin/trip-proposals/${id}/stops/${stop.id}/vendor`, {
+                                            method: 'PATCH',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ vendor_phone: e.target.value }),
+                                          });
+                                        }}
+                                        onChange={(e) => {
+                                          const newStops = day.stops.map(s => s.id === stop.id ? { ...s, vendor_phone: e.target.value } : s);
+                                          const newDays = (proposal.days || []).map(d => d.id === day.id ? { ...d, stops: newStops } : d);
+                                          setProposal({ ...proposal, days: newDays });
+                                        }}
+                                        placeholder="Phone"
+                                        className="px-2 py-1 border border-gray-300 rounded text-xs"
+                                      />
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-2">
+                                      <select
+                                        value={stop.quote_status || 'none'}
+                                        onChange={(e) => {
+                                          fetch(`/api/admin/trip-proposals/${id}/stops/${stop.id}/vendor`, {
+                                            method: 'PATCH',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ quote_status: e.target.value }),
+                                          }).then(() => loadProposal());
+                                        }}
+                                        className="px-2 py-1 border border-gray-300 rounded text-xs"
+                                      >
+                                        <option value="none">No Quote</option>
+                                        <option value="requested">Requested</option>
+                                        <option value="quoted">Quoted</option>
+                                        <option value="accepted">Accepted</option>
+                                        <option value="confirmed">Confirmed</option>
+                                        <option value="paid">Paid</option>
+                                      </select>
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        value={stop.quoted_amount ?? ''}
+                                        onBlur={(e) => {
+                                          fetch(`/api/admin/trip-proposals/${id}/stops/${stop.id}/vendor`, {
+                                            method: 'PATCH',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ quoted_amount: e.target.value ? parseFloat(e.target.value) : null }),
+                                          });
+                                        }}
+                                        onChange={(e) => {
+                                          const newStops = day.stops.map(s => s.id === stop.id ? { ...s, quoted_amount: e.target.value ? parseFloat(e.target.value) : undefined } : s);
+                                          const newDays = (proposal.days || []).map(d => d.id === day.id ? { ...d, stops: newStops } : d);
+                                          setProposal({ ...proposal, days: newDays });
+                                        }}
+                                        placeholder="Quoted $"
+                                        className="px-2 py-1 border border-gray-300 rounded text-xs"
+                                      />
+                                      <button
+                                        onClick={() => {
+                                          const content = prompt('Log vendor interaction:');
+                                          if (!content) return;
+                                          fetch(`/api/admin/trip-proposals/${id}/stops/${stop.id}/vendor-log`, {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ interaction_type: 'note', content }),
+                                          }).then(() => toast('Interaction logged', 'success'));
+                                        }}
+                                        className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs font-medium"
+                                      >
+                                        + Log
+                                      </button>
+                                    </div>
+                                  </div>
+                                </details>
                               </div>
                             );
                           })}
@@ -1240,6 +1419,113 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                       </div>
                     </div>
 
+                    {/* Planning Fee Mode */}
+                    <div className="border-t border-gray-200 pt-4">
+                      <label className="block text-sm font-bold text-gray-900 mb-2">
+                        Planning Fee Mode
+                      </label>
+                      <div className="flex items-center gap-4">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="planning_fee_mode"
+                            checked={(proposal.planning_fee_mode || 'flat') === 'flat'}
+                            onChange={() => updateProposal({ planning_fee_mode: 'flat' })}
+                            className="h-4 w-4 text-indigo-600 border-gray-300"
+                          />
+                          <span className="text-sm text-gray-700">Flat (manual)</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="planning_fee_mode"
+                            checked={proposal.planning_fee_mode === 'percentage'}
+                            onChange={() => updateProposal({ planning_fee_mode: 'percentage' })}
+                            className="h-4 w-4 text-indigo-600 border-gray-300"
+                          />
+                          <span className="text-sm text-gray-700">Percentage of services</span>
+                        </label>
+                        {proposal.planning_fee_mode === 'percentage' && (
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.5"
+                            value={proposal.planning_fee_percentage || 0}
+                            onChange={(e) =>
+                              updateProposal({ planning_fee_percentage: parseFloat(e.target.value) || 0 })
+                            }
+                            className="w-20 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                            placeholder="%"
+                          />
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Per-Inclusion Tax Settings */}
+                    {proposal.inclusions && proposal.inclusions.length > 0 && (
+                      <div className="border-t border-gray-200 pt-4">
+                        <label className="block text-sm font-bold text-gray-900 mb-3">
+                          Service Line Items — Tax Settings
+                        </label>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b border-gray-200">
+                                <th className="text-left py-2 px-2 text-gray-700 font-semibold">Description</th>
+                                <th className="text-right py-2 px-2 text-gray-700 font-semibold">Amount</th>
+                                <th className="text-center py-2 px-2 text-gray-700 font-semibold">Taxable</th>
+                                <th className="text-center py-2 px-2 text-gray-700 font-semibold">Tax Incl.</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {proposal.inclusions.map((inc) => (
+                                <tr key={inc.id} className="border-b border-gray-100">
+                                  <td className="py-2 px-2 text-gray-900">{inc.description}</td>
+                                  <td className="py-2 px-2 text-right text-gray-700">{formatCurrency(inc.total_price || inc.unit_price)}</td>
+                                  <td className="py-2 px-2 text-center">
+                                    <input
+                                      type="checkbox"
+                                      checked={inc.is_taxable !== false}
+                                      onChange={async () => {
+                                        try {
+                                          const res = await fetch(`/api/admin/trip-proposals/${id}/inclusions/${inc.id}`, {
+                                            method: 'PATCH',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ is_taxable: inc.is_taxable === false }),
+                                          });
+                                          if ((await res.json()).success) loadProposal();
+                                        } catch { /* ignore */ }
+                                      }}
+                                      className="h-4 w-4 rounded border-gray-300 text-indigo-600"
+                                    />
+                                  </td>
+                                  <td className="py-2 px-2 text-center">
+                                    <input
+                                      type="checkbox"
+                                      checked={inc.tax_included_in_price === true}
+                                      disabled={inc.is_taxable === false}
+                                      onChange={async () => {
+                                        try {
+                                          const res = await fetch(`/api/admin/trip-proposals/${id}/inclusions/${inc.id}`, {
+                                            method: 'PATCH',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ tax_included_in_price: !inc.tax_included_in_price }),
+                                          });
+                                          if ((await res.json()).success) loadProposal();
+                                        } catch { /* ignore */ }
+                                      }}
+                                      className="h-4 w-4 rounded border-gray-300 text-indigo-600 disabled:opacity-50"
+                                    />
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+
                     <button
                       onClick={recalculatePricing}
                       disabled={saving}
@@ -1247,6 +1533,475 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                     >
                       🔄 Recalculate Pricing
                     </button>
+                  </div>
+                )}
+
+                {/* Billing Tab */}
+                {activeTab === 'billing' && (
+                  <div className="space-y-6">
+                    {/* Enable Individual Billing Toggle */}
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-sm font-bold text-gray-900">Individual Guest Billing</h3>
+                        <p className="text-xs text-gray-600 mt-0.5">Split the total among individual guests with separate payment links</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={proposal.individual_billing_enabled || false}
+                          onChange={() => updateProposal({ individual_billing_enabled: !proposal.individual_billing_enabled } as Partial<TripProposal>)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                      </label>
+                    </div>
+
+                    {proposal.individual_billing_enabled && (
+                      <>
+                        {/* Payment Deadline */}
+                        <div>
+                          <label className="block text-sm font-bold text-gray-900 mb-2">Payment Deadline</label>
+                          <input
+                            type="date"
+                            value={proposal.payment_deadline || ''}
+                            onChange={(e) => updateProposal({ payment_deadline: e.target.value || null } as Partial<TripProposal>)}
+                            className="w-full max-w-xs px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand"
+                          />
+                        </div>
+
+                        {/* Guest Billing Table */}
+                        <div>
+                          <div className="flex items-center justify-between mb-3">
+                            <h3 className="text-sm font-bold text-gray-900">Guest Amounts</h3>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={async () => {
+                                  setSaving(true);
+                                  try {
+                                    const res = await fetch(`/api/admin/trip-proposals/${id}/billing/calculate`, { method: 'POST' });
+                                    const result = await res.json();
+                                    if (result.success) {
+                                      toast('Guest amounts calculated!', 'success');
+                                      loadProposal();
+                                    } else {
+                                      toast(result.error?.message || result.error || 'Failed to calculate', 'error');
+                                    }
+                                  } catch { toast('Failed to calculate', 'error'); }
+                                  finally { setSaving(false); }
+                                }}
+                                disabled={saving}
+                                className="px-3 py-2 bg-blue-100 hover:bg-blue-200 text-blue-900 rounded-lg text-sm font-medium disabled:opacity-50"
+                              >
+                                🔄 Recalculate All
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  setSaving(true);
+                                  try {
+                                    const res = await fetch(`/api/admin/trip-proposals/${id}/billing/calculate`, { method: 'POST' });
+                                    const result = await res.json();
+                                    if (result.success && result.data.valid) {
+                                      toast('Billing verified — no discrepancies!', 'success');
+                                    } else if (result.success) {
+                                      toast('Warning: billing may have discrepancies', 'error');
+                                    }
+                                  } catch { toast('Failed to verify', 'error'); }
+                                  finally { setSaving(false); }
+                                }}
+                                disabled={saving}
+                                className="px-3 py-2 bg-green-100 hover:bg-green-200 text-green-900 rounded-lg text-sm font-medium disabled:opacity-50"
+                              >
+                                Verify Billing
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="border-b-2 border-gray-200">
+                                  <th className="text-left py-2 px-2 text-gray-700 font-semibold">Guest</th>
+                                  <th className="text-center py-2 px-2 text-gray-700 font-semibold">Sponsored</th>
+                                  <th className="text-right py-2 px-2 text-gray-700 font-semibold">Amount</th>
+                                  <th className="text-right py-2 px-2 text-gray-700 font-semibold">Override</th>
+                                  <th className="text-right py-2 px-2 text-gray-700 font-semibold">Paid</th>
+                                  <th className="text-center py-2 px-2 text-gray-700 font-semibold">Status</th>
+                                  <th className="text-right py-2 px-2 text-gray-700 font-semibold">Actions</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {(proposal.guests || []).map((guest) => {
+                                  const guestData = guest as GuestData & {
+                                    is_sponsored?: boolean;
+                                    amount_owed?: number;
+                                    amount_owed_override?: number | null;
+                                    amount_paid?: number;
+                                    payment_status?: string;
+                                  };
+                                  return (
+                                    <tr key={guest.id} className="border-b border-gray-100">
+                                      <td className="py-2 px-2 text-gray-900 font-medium">
+                                        {guest.name}
+                                        {guest.is_primary && <span className="ml-1 text-xs text-indigo-600">(Primary)</span>}
+                                      </td>
+                                      <td className="py-2 px-2 text-center">
+                                        <input
+                                          type="checkbox"
+                                          checked={guestData.is_sponsored || false}
+                                          onChange={async () => {
+                                            try {
+                                              const res = await fetch(`/api/admin/trip-proposals/${id}/guests/${guest.id}/billing`, {
+                                                method: 'PATCH',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ is_sponsored: !guestData.is_sponsored }),
+                                              });
+                                              if ((await res.json()).success) loadProposal();
+                                            } catch { /* ignore */ }
+                                          }}
+                                          className="h-4 w-4 rounded border-gray-300 text-indigo-600"
+                                        />
+                                      </td>
+                                      <td className="py-2 px-2 text-right text-gray-700">
+                                        {formatCurrency(guestData.amount_owed || 0)}
+                                      </td>
+                                      <td className="py-2 px-2 text-right">
+                                        <input
+                                          type="number"
+                                          min="0"
+                                          step="0.01"
+                                          value={guestData.amount_owed_override ?? ''}
+                                          placeholder="Auto"
+                                          onChange={async (e) => {
+                                            const val = e.target.value === '' ? null : parseFloat(e.target.value);
+                                            try {
+                                              await fetch(`/api/admin/trip-proposals/${id}/guests/${guest.id}/billing`, {
+                                                method: 'PATCH',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ amount_owed_override: val }),
+                                              });
+                                              loadProposal();
+                                            } catch { /* ignore */ }
+                                          }}
+                                          className="w-24 px-2 py-1 border border-gray-300 rounded text-sm text-right"
+                                        />
+                                      </td>
+                                      <td className="py-2 px-2 text-right text-gray-700">
+                                        {formatCurrency(guestData.amount_paid || 0)}
+                                      </td>
+                                      <td className="py-2 px-2 text-center">
+                                        <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
+                                          guestData.payment_status === 'paid' ? 'bg-green-100 text-green-800' :
+                                          guestData.payment_status === 'partial' ? 'bg-yellow-100 text-yellow-800' :
+                                          guestData.payment_status === 'refunded' ? 'bg-red-100 text-red-800' :
+                                          'bg-gray-100 text-gray-800'
+                                        }`}>
+                                          {(guestData.payment_status || 'unpaid').toUpperCase()}
+                                        </span>
+                                      </td>
+                                      <td className="py-2 px-2 text-right">
+                                        <button
+                                          onClick={async () => {
+                                            const amountStr = prompt(`Record manual payment for ${guest.name}. Amount ($):`);
+                                            if (!amountStr) return;
+                                            const amount = parseFloat(amountStr);
+                                            if (isNaN(amount) || amount <= 0) { toast('Invalid amount', 'error'); return; }
+                                            try {
+                                              const res = await fetch(`/api/admin/trip-proposals/${id}/guests/${guest.id}/record-payment`, {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ amount }),
+                                              });
+                                              if ((await res.json()).success) {
+                                                toast('Payment recorded!', 'success');
+                                                loadProposal();
+                                              }
+                                            } catch { toast('Failed to record payment', 'error'); }
+                                          }}
+                                          className="text-indigo-600 hover:text-indigo-800 text-xs font-medium"
+                                        >
+                                          Record Pay
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                              <tfoot>
+                                <tr className="border-t-2 border-gray-300">
+                                  <td className="py-2 px-2 font-bold text-gray-900" colSpan={2}>Total</td>
+                                  <td className="py-2 px-2 text-right font-bold text-gray-900">
+                                    {formatCurrency(
+                                      (proposal.guests || []).reduce((sum, g) => sum + (parseFloat(String((g as unknown as Record<string, unknown>).amount_owed)) || 0), 0)
+                                    )}
+                                  </td>
+                                  <td></td>
+                                  <td className="py-2 px-2 text-right font-bold text-gray-900">
+                                    {formatCurrency(
+                                      (proposal.guests || []).reduce((sum, g) => sum + (parseFloat(String((g as unknown as Record<string, unknown>).amount_paid)) || 0), 0)
+                                    )}
+                                  </td>
+                                  <td colSpan={2}></td>
+                                </tr>
+                              </tfoot>
+                            </table>
+                          </div>
+
+                          {/* Proposal total comparison */}
+                          <div className="mt-3 p-3 bg-gray-50 rounded-lg text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-gray-700">Proposal Total:</span>
+                              <span className="font-bold text-gray-900">{formatCurrency(proposal.total)}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Payment Group Creation */}
+                        <div className="border-t border-gray-200 pt-4">
+                          <h3 className="text-sm font-bold text-gray-900 mb-2">Payment Groups (Couples)</h3>
+                          <p className="text-xs text-gray-600 mb-3">Group guests to share a single payment link</p>
+                          <button
+                            onClick={async () => {
+                              const name = prompt('Group name (e.g., "The Smiths"):');
+                              if (!name) return;
+                              const guestIdStr = prompt('Enter guest IDs to group (comma-separated):');
+                              if (!guestIdStr) return;
+                              const guestIds = guestIdStr.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+                              if (guestIds.length < 1) { toast('Need at least 1 guest ID', 'error'); return; }
+                              try {
+                                const res = await fetch(`/api/admin/trip-proposals/${id}/payment-groups`, {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ guest_ids: guestIds, name }),
+                                });
+                                const result = await res.json();
+                                if (result.success) {
+                                  toast('Payment group created!', 'success');
+                                  loadProposal();
+                                } else {
+                                  toast(result.error || 'Failed to create group', 'error');
+                                }
+                              } catch { toast('Failed to create group', 'error'); }
+                            }}
+                            className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium"
+                          >
+                            + Create Payment Group
+                          </button>
+                        </div>
+
+                        {/* Payment Reminders */}
+                        <div className="border-t border-gray-200 pt-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <div>
+                              <h3 className="text-sm font-bold text-gray-900">Payment Reminders</h3>
+                              <p className="text-xs text-gray-600 mt-0.5">Automated escalating reminders for unpaid guests</p>
+                            </div>
+                            <div className="flex gap-2 items-center">
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    const res = await fetch(`/api/admin/trip-proposals/${id}/reminders`, {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ action: proposal.reminders_paused ? 'resume_proposal' : 'pause_proposal' }),
+                                    });
+                                    if ((await res.json()).success) {
+                                      toast(proposal.reminders_paused ? 'Reminders resumed' : 'Reminders paused', 'success');
+                                      loadProposal();
+                                    }
+                                  } catch { toast('Failed to update', 'error'); }
+                                }}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-medium ${
+                                  proposal.reminders_paused
+                                    ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                }`}
+                              >
+                                {proposal.reminders_paused ? 'Resume All' : 'Pause All'}
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  if (!proposal.payment_deadline) {
+                                    toast('Set a payment deadline first', 'error');
+                                    return;
+                                  }
+                                  setSaving(true);
+                                  try {
+                                    const res = await fetch(`/api/admin/trip-proposals/${id}/reminders`, {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ action: 'generate_schedule' }),
+                                    });
+                                    const result = await res.json();
+                                    if (result.success) {
+                                      toast(`Generated ${result.data.created} reminders`, 'success');
+                                      setReminderHistory([]);
+                                      loadReminderHistory();
+                                    } else {
+                                      toast(result.error?.message || result.error || 'Failed to generate', 'error');
+                                    }
+                                  } catch { toast('Failed to generate schedule', 'error'); }
+                                  finally { setSaving(false); }
+                                }}
+                                disabled={saving}
+                                className="px-3 py-1.5 bg-indigo-100 hover:bg-indigo-200 text-indigo-800 rounded-lg text-xs font-medium disabled:opacity-50"
+                              >
+                                Generate Schedule
+                              </button>
+                            </div>
+                          </div>
+
+                          {proposal.reminders_paused && (
+                            <div className="mb-3 px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-lg text-xs text-yellow-800 font-medium">
+                              All reminders for this proposal are currently paused.
+                            </div>
+                          )}
+
+                          {/* Reminder History Table */}
+                          <div className="mb-3">
+                            <button
+                              onClick={loadReminderHistory}
+                              className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+                            >
+                              {reminderHistory.length > 0 ? 'Refresh Reminder History' : 'Load Reminder History'}
+                            </button>
+                          </div>
+
+                          {reminderHistory.length > 0 && (
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-xs">
+                                <thead>
+                                  <tr className="border-b-2 border-gray-200">
+                                    <th className="text-left py-1.5 px-2 text-gray-700 font-semibold">Guest</th>
+                                    <th className="text-left py-1.5 px-2 text-gray-700 font-semibold">Date</th>
+                                    <th className="text-center py-1.5 px-2 text-gray-700 font-semibold">Urgency</th>
+                                    <th className="text-center py-1.5 px-2 text-gray-700 font-semibold">Status</th>
+                                    <th className="text-left py-1.5 px-2 text-gray-700 font-semibold">Reason</th>
+                                    <th className="text-right py-1.5 px-2 text-gray-700 font-semibold">Actions</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {reminderHistory.map((r: ReminderRecord) => (
+                                    <tr key={r.id} className="border-b border-gray-100">
+                                      <td className="py-1.5 px-2 text-gray-900">{r.guest_name || 'All'}</td>
+                                      <td className="py-1.5 px-2 text-gray-700">{r.scheduled_date}</td>
+                                      <td className="py-1.5 px-2 text-center">
+                                        <span className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium ${
+                                          r.urgency === 'final' ? 'bg-red-100 text-red-800' :
+                                          r.urgency === 'urgent' ? 'bg-orange-100 text-orange-800' :
+                                          r.urgency === 'firm' ? 'bg-yellow-100 text-yellow-800' :
+                                          'bg-blue-100 text-blue-800'
+                                        }`}>
+                                          {r.urgency}
+                                        </span>
+                                      </td>
+                                      <td className="py-1.5 px-2 text-center">
+                                        <span className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium ${
+                                          r.status === 'sent' ? 'bg-green-100 text-green-800' :
+                                          r.status === 'skipped' ? 'bg-gray-100 text-gray-600' :
+                                          r.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                                          r.paused ? 'bg-yellow-100 text-yellow-800' :
+                                          'bg-blue-50 text-blue-700'
+                                        }`}>
+                                          {r.paused && r.status === 'pending' ? 'paused' : r.status}
+                                        </span>
+                                      </td>
+                                      <td className="py-1.5 px-2 text-gray-600 max-w-[150px] truncate" title={r.skip_reason || ''}>
+                                        {r.skip_reason || '—'}
+                                      </td>
+                                      <td className="py-1.5 px-2 text-right">
+                                        {r.status === 'pending' && (
+                                          <button
+                                            onClick={async () => {
+                                              try {
+                                                await fetch(`/api/admin/trip-proposals/${id}/reminders`, {
+                                                  method: 'POST',
+                                                  headers: { 'Content-Type': 'application/json' },
+                                                  body: JSON.stringify({ action: 'cancel', reminder_id: r.id }),
+                                                });
+                                                toast('Reminder cancelled', 'success');
+                                                loadReminderHistory();
+                                              } catch { toast('Failed', 'error'); }
+                                            }}
+                                            className="text-red-600 hover:text-red-800 font-medium"
+                                          >
+                                            Cancel
+                                          </button>
+                                        )}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+
+                          {/* Add Custom Reminder */}
+                          <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                            <h4 className="text-xs font-bold text-gray-900 mb-2">Add Custom Reminder</h4>
+                            <div className="flex gap-2 items-end flex-wrap">
+                              <div>
+                                <label className="block text-xs text-gray-700 mb-1">Date</label>
+                                <input
+                                  type="date"
+                                  id="custom-reminder-date"
+                                  className="px-2 py-1.5 border border-gray-300 rounded text-xs"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-gray-700 mb-1">Urgency</label>
+                                <select
+                                  id="custom-reminder-urgency"
+                                  className="px-2 py-1.5 border border-gray-300 rounded text-xs"
+                                >
+                                  <option value="friendly">Friendly</option>
+                                  <option value="firm">Firm</option>
+                                  <option value="urgent">Urgent</option>
+                                  <option value="final">Final</option>
+                                </select>
+                              </div>
+                              <div className="flex-1 min-w-[200px]">
+                                <label className="block text-xs text-gray-700 mb-1">Custom Message (optional)</label>
+                                <input
+                                  type="text"
+                                  id="custom-reminder-message"
+                                  placeholder="Personal note to include in the email..."
+                                  className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs"
+                                />
+                              </div>
+                              <button
+                                onClick={async () => {
+                                  const dateEl = document.getElementById('custom-reminder-date') as HTMLInputElement;
+                                  const urgencyEl = document.getElementById('custom-reminder-urgency') as HTMLSelectElement;
+                                  const msgEl = document.getElementById('custom-reminder-message') as HTMLInputElement;
+                                  if (!dateEl.value) { toast('Pick a date', 'error'); return; }
+                                  try {
+                                    const res = await fetch(`/api/admin/trip-proposals/${id}/reminders`, {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({
+                                        action: 'add_manual',
+                                        scheduled_date: dateEl.value,
+                                        urgency: urgencyEl.value,
+                                        custom_message: msgEl.value || undefined,
+                                      }),
+                                    });
+                                    if ((await res.json()).success) {
+                                      toast('Custom reminder added', 'success');
+                                      dateEl.value = '';
+                                      msgEl.value = '';
+                                      loadReminderHistory();
+                                    }
+                                  } catch { toast('Failed to add reminder', 'error'); }
+                                }}
+                                className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-medium"
+                              >
+                                Add
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
 
