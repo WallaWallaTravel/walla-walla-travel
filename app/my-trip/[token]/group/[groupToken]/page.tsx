@@ -93,11 +93,12 @@ export default function GroupPaymentPage() {
 
   const loadGroupInfo = async () => {
     try {
-      // Fetch group members via the proposal access token
-      const res = await fetch(`/api/my-trip/${token}/guest/${groupToken}/payment-status`);
+      // B5 FIX: Fetch group members from the dedicated group members endpoint
+      const res = await fetch(`/api/my-trip/${token}/group/${groupToken}/members`);
       const result = await res.json();
       if (!result.success) { setError('Could not load group info'); setLoading(false); return; }
-      // For group view, we show the group data
+      setMembers(result.data.members);
+      setGroupName(result.data.group_name);
       setLoading(false);
     } catch (err) {
       logger.error('Failed to load group info', { error: err });

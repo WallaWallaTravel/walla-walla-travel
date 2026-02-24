@@ -34,7 +34,7 @@ interface PaymentReminder {
   scheduled_date: string;
   days_before_deadline: number | null;
   urgency: 'friendly' | 'firm' | 'urgent' | 'final';
-  status: 'pending' | 'sent' | 'skipped' | 'cancelled';
+  status: 'pending' | 'processing' | 'sent' | 'skipped' | 'cancelled';
   sent_at: string | null;
   skip_reason: string | null;
   paused: boolean;
@@ -43,10 +43,17 @@ interface PaymentReminder {
   updated_at: string;
 }
 
+interface ReminderHistoryRow extends PaymentReminder {
+  guest_name: string | null;
+  guest_email: string | null;
+}
+
 interface ReminderScheduleConfig {
   days_before: number;
   urgency: 'friendly' | 'firm' | 'urgent' | 'final';
 }
+
+const VALID_URGENCIES = ['friendly', 'firm', 'urgent', 'final'] as const;
 
 // Default auto-schedule: 30, 20, 10, 5, 1 days before deadline
 const DEFAULT_SCHEDULE: ReminderScheduleConfig[] = [
@@ -87,22 +94,31 @@ async function generateReminderSchedule(proposalId: number): Promise<{ created: 
 
   const deadline = new Date(proposal.payment_deadline);
 
-  // Get all non-sponsored, unpaid guests
-  const unpaidGuests = await query(
-    `SELECT id FROM trip_proposal_guests
-     WHERE trip_proposal_id = $1
-       AND is_sponsored = FALSE
-       AND payment_status NOT IN ('paid', 'refunded')`,
-    [proposalId]
-  );
-
-  if (unpaidGuests.rows.length === 0) {
-    return { created: 0 };
+  // C9: Reject if deadline is in the past
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  if (deadline <= now) {
+    throw new Error('Cannot generate reminders for a past deadline');
   }
 
   let created = 0;
 
+  // C2 (TOCTOU fix): Move unpaidGuests query inside the transaction
   await withTransaction(async (client) => {
+    // Get all non-sponsored, unpaid guests inside the transaction
+    const unpaidGuests = await query(
+      `SELECT id FROM trip_proposal_guests
+       WHERE trip_proposal_id = $1
+         AND is_sponsored = FALSE
+         AND payment_status NOT IN ('paid', 'refunded')`,
+      [proposalId],
+      client
+    );
+
+    if (unpaidGuests.rows.length === 0) {
+      return;
+    }
+
     // Remove existing pending auto-reminders for this proposal
     await client.query(
       `DELETE FROM payment_reminders
@@ -144,8 +160,8 @@ async function generateReminderSchedule(proposalId: number): Promise<{ created: 
        VALUES ($1, 'reminders_generated', $2, $3)`,
       [
         proposalId,
-        `Generated ${created} payment reminders for ${unpaidGuests.rows.length} guest(s)`,
-        JSON.stringify({ guest_count: unpaidGuests.rows.length, reminder_count: created }),
+        `Generated ${created} payment reminders`,
+        JSON.stringify({ reminder_count: created }),
       ]
     );
   } catch {
@@ -162,11 +178,14 @@ async function generateReminderSchedule(proposalId: number): Promise<{ created: 
 /**
  * THE CRITICAL METHOD — called by daily cron job.
  *
- * For each pending reminder due today or earlier:
+ * Uses an atomic UPDATE ... RETURNING pattern to claim pending reminders,
+ * preventing duplicate sends when two cron runs overlap (B1 fix).
+ *
+ * For each claimed reminder:
  * 1. Re-query guest payment_status from DB (NEVER use cached data)
  * 2. Skip if guest already paid
  * 3. Skip if proposal reminders paused
- * 4. Skip if individual reminder paused
+ * 4. Skip if zero/negative amount remaining (B7 fix)
  * 5. Otherwise, send email and mark sent
  */
 async function processScheduledReminders(): Promise<{
@@ -177,13 +196,21 @@ async function processScheduledReminders(): Promise<{
 }> {
   const today = new Date().toISOString().split('T')[0];
 
-  // Get all pending reminders due today or earlier
+  // B1 FIX: Atomically claim pending reminders — no other process can grab these.
+  // FOR UPDATE SKIP LOCKED ensures concurrent cron runs don't overlap.
   const pendingReminders = await query<PaymentReminder>(
-    `SELECT pr.*
-     FROM payment_reminders pr
-     WHERE pr.status = 'pending'
-       AND pr.scheduled_date <= $1
-     ORDER BY pr.scheduled_date ASC, pr.urgency DESC`,
+    `UPDATE payment_reminders
+     SET status = 'processing', updated_at = NOW()
+     WHERE id IN (
+       SELECT id FROM payment_reminders
+       WHERE status = 'pending'
+         AND scheduled_date <= $1
+         AND paused = FALSE
+       ORDER BY scheduled_date ASC,
+         CASE urgency WHEN 'final' THEN 0 WHEN 'urgent' THEN 1 WHEN 'firm' THEN 2 WHEN 'friendly' THEN 3 END
+       FOR UPDATE SKIP LOCKED
+     )
+     RETURNING *`,
     [today]
   );
 
@@ -194,29 +221,38 @@ async function processScheduledReminders(): Promise<{
     details: [] as Array<{ reminder_id: number; action: string; reason?: string }>,
   };
 
+  // C1 FIX: Cache proposal data to avoid N+1 queries
+  interface CachedProposal {
+    id: number; reminders_paused: boolean; payment_deadline: string;
+    proposal_number: string; brand_id: number; customer_name: string;
+    trip_type: string; start_date: string; access_token: string;
+  }
+  const proposalCache = new Map<number, CachedProposal>();
+
   for (const reminder of pendingReminders.rows) {
     try {
       // ---------------------------------------------------------------
       // SAFETY: Fresh DB reads for every decision — never cached
       // ---------------------------------------------------------------
 
-      // Check 1: Is the proposal's reminders paused?
-      const proposal = await queryOne<{
-        id: number; reminders_paused: boolean; payment_deadline: string;
-        proposal_number: string; brand_id: number; customer_name: string;
-        trip_type: string; start_date: string;
-      }>(
-        `SELECT id, reminders_paused, payment_deadline, proposal_number, brand_id,
-                customer_name, trip_type, start_date
-         FROM trip_proposals WHERE id = $1`,
-        [reminder.trip_proposal_id]
-      );
-
+      // Check 1: Get proposal data (cached per cron run for N+1 fix)
+      let proposal = proposalCache.get(reminder.trip_proposal_id);
       if (!proposal) {
-        await skipReminder(reminder.id, 'Proposal not found');
-        results.skipped++;
-        results.details.push({ reminder_id: reminder.id, action: 'skipped', reason: 'Proposal not found' });
-        continue;
+        const p = await queryOne<CachedProposal>(
+          `SELECT id, reminders_paused, payment_deadline, proposal_number, brand_id,
+                  customer_name, trip_type, start_date, access_token
+           FROM trip_proposals WHERE id = $1`,
+          [reminder.trip_proposal_id]
+        );
+
+        if (!p) {
+          await skipReminder(reminder.id, 'Proposal not found');
+          results.skipped++;
+          results.details.push({ reminder_id: reminder.id, action: 'skipped', reason: 'Proposal not found' });
+          continue;
+        }
+        proposal = p;
+        proposalCache.set(reminder.trip_proposal_id, proposal);
       }
 
       if (proposal.reminders_paused) {
@@ -226,21 +262,14 @@ async function processScheduledReminders(): Promise<{
         continue;
       }
 
-      // Check 2: Is this specific reminder paused?
-      if (reminder.paused) {
-        await skipReminder(reminder.id, 'Reminder individually paused');
-        results.skipped++;
-        results.details.push({ reminder_id: reminder.id, action: 'skipped', reason: 'Reminder paused' });
-        continue;
-      }
-
-      // Check 3: RE-QUERY guest payment status (the most important safety check)
+      // Check 2: RE-QUERY guest payment status (the most important safety check)
       if (reminder.guest_id) {
         const guest = await queryOne<{
           id: number; guest_name: string; guest_email: string;
-          payment_status: string; amount_owed: number; amount_paid: number; is_sponsored: boolean;
+          payment_status: string; amount_owed: number; amount_paid: number;
+          is_sponsored: boolean; guest_token: string;
         }>(
-          `SELECT id, guest_name, guest_email, payment_status, amount_owed, amount_paid, is_sponsored
+          `SELECT id, guest_name, guest_email, payment_status, amount_owed, amount_paid, is_sponsored, guest_access_token as guest_token
            FROM trip_proposal_guests WHERE id = $1`,
           [reminder.guest_id]
         );
@@ -266,6 +295,15 @@ async function processScheduledReminders(): Promise<{
           continue;
         }
 
+        // B7 FIX: Skip if zero/negative amount remaining
+        const amountRemaining = Number(guest.amount_owed) - Number(guest.amount_paid);
+        if (amountRemaining <= 0) {
+          await skipReminder(reminder.id, 'No amount remaining');
+          results.skipped++;
+          results.details.push({ reminder_id: reminder.id, action: 'skipped', reason: 'No amount remaining' });
+          continue;
+        }
+
         if (!guest.guest_email) {
           await skipReminder(reminder.id, 'Guest has no email address');
           results.skipped++;
@@ -274,6 +312,7 @@ async function processScheduledReminders(): Promise<{
         }
 
         // All checks pass — send the reminder email
+        // C1 FIX: Pass cached proposal data + guest token to avoid redundant queries
         const success = await sendReminderEmail(reminder, guest, proposal);
 
         if (success) {
@@ -317,28 +356,15 @@ async function processScheduledReminders(): Promise<{
 
 async function sendReminderEmail(
   reminder: PaymentReminder,
-  guest: { id: number; guest_name: string; guest_email: string; amount_owed: number; amount_paid: number },
-  proposal: { id: number; proposal_number: string; brand_id: number; customer_name: string; trip_type: string; start_date: string; payment_deadline: string }
+  guest: { id: number; guest_name: string; guest_email: string; amount_owed: number; amount_paid: number; guest_token: string },
+  proposal: { id: number; proposal_number: string; brand_id: number; customer_name: string; trip_type: string; start_date: string; payment_deadline: string; access_token: string }
 ): Promise<boolean> {
   const brand = getBrandEmailConfig(proposal.brand_id);
   const amountRemaining = Number(guest.amount_owed) - Number(guest.amount_paid);
   const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://wallawalla.travel';
 
-  // Build guest payment link
-  // We need the proposal access_token and guest token — fetch them
-  const proposalAccess = await queryOne(
-    `SELECT access_token FROM trip_proposals WHERE id = $1`,
-    [proposal.id]
-  );
-
-  const guestAccess = await queryOne(
-    `SELECT guest_token FROM trip_proposal_guests WHERE id = $1`,
-    [guest.id]
-  );
-
-  const paymentLink = proposalAccess && guestAccess
-    ? `${BASE_URL}/my-trip/${proposalAccess.access_token}/guest/${guestAccess.guest_token}/pay`
-    : `${BASE_URL}`;
+  // C1 FIX: Use data already available from the proposal + guest query — no redundant DB calls
+  const paymentLink = `${BASE_URL}/my-trip/${proposal.access_token}/guest/${guest.guest_token}/pay`;
 
   const templateData = {
     guest_name: guest.guest_name,
@@ -378,7 +404,7 @@ async function sendReminderEmail(
       text: template.text,
     });
 
-    // Log to email_logs for idempotency tracking
+    // Audit logging for sent emails
     try {
       await query(
         `INSERT INTO email_logs (
@@ -415,7 +441,7 @@ async function skipReminder(reminderId: number, reason: string): Promise<void> {
   await query(
     `UPDATE payment_reminders
      SET status = 'skipped', skip_reason = $2, updated_at = NOW()
-     WHERE id = $1`,
+     WHERE id = $1 AND status IN ('pending', 'processing')`,
     [reminderId, reason]
   );
 }
@@ -424,19 +450,26 @@ async function markReminderSent(reminderId: number): Promise<void> {
   await query(
     `UPDATE payment_reminders
      SET status = 'sent', sent_at = NOW(), updated_at = NOW()
-     WHERE id = $1`,
+     WHERE id = $1 AND status = 'processing'`,
     [reminderId]
   );
 }
 
+/**
+ * Format a date string for email display.
+ * D fix: Parse with explicit noon UTC to avoid timezone drift.
+ */
 function formatDateForEmail(dateStr: string): string {
   try {
-    const d = new Date(dateStr);
+    // Use noon UTC to prevent date shifting across timezones
+    const isoDate = dateStr.includes('T') ? dateStr : `${dateStr}T12:00:00Z`;
+    const d = new Date(isoDate);
     return d.toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
       day: 'numeric',
+      timeZone: 'UTC',
     });
   } catch {
     return dateStr;
@@ -497,6 +530,7 @@ async function resumeRemindersForProposal(proposalId: number): Promise<void> {
 
 /**
  * Add a manual reminder for a specific guest or all guests
+ * C4 fix: Validates scheduled date and urgency
  */
 async function addManualReminder(
   proposalId: number,
@@ -505,6 +539,27 @@ async function addManualReminder(
   customMessage?: string,
   guestId?: number
 ): Promise<{ id: number }> {
+  // C4: Validate urgency
+  if (!VALID_URGENCIES.includes(urgency)) {
+    throw new Error(`Invalid urgency: ${urgency}. Must be one of: ${VALID_URGENCIES.join(', ')}`);
+  }
+
+  // C4: Validate scheduled date format (YYYY-MM-DD)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(scheduledDate)) {
+    throw new Error('Invalid date format. Expected YYYY-MM-DD');
+  }
+
+  // C4: Validate date is not in the past
+  const dateObj = new Date(`${scheduledDate}T12:00:00Z`);
+  if (isNaN(dateObj.getTime())) {
+    throw new Error('Invalid date');
+  }
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (dateObj < today) {
+    throw new Error('Cannot schedule a reminder in the past');
+  }
+
   const result = await queryOne<{ id: number }>(
     `INSERT INTO payment_reminders (
       trip_proposal_id, guest_id, reminder_type, scheduled_date,
@@ -527,9 +582,10 @@ async function addManualReminder(
 
 /**
  * Get all reminders for a proposal (full history)
+ * D fix: Extended return type with guest_name, guest_email
  */
-async function getReminderHistory(proposalId: number): Promise<PaymentReminder[]> {
-  const result = await query<PaymentReminder>(
+async function getReminderHistory(proposalId: number): Promise<ReminderHistoryRow[]> {
+  const result = await query<ReminderHistoryRow>(
     `SELECT pr.*, tpg.guest_name, tpg.guest_email
      FROM payment_reminders pr
      LEFT JOIN trip_proposal_guests tpg ON tpg.id = pr.guest_id
@@ -542,14 +598,19 @@ async function getReminderHistory(proposalId: number): Promise<PaymentReminder[]
 
 /**
  * Cancel a specific pending reminder
+ * D fix: Check rowCount and throw if no rows affected
  */
 async function cancelReminder(reminderId: number): Promise<void> {
-  await query(
+  const result = await query(
     `UPDATE payment_reminders
      SET status = 'cancelled', updated_at = NOW()
      WHERE id = $1 AND status = 'pending'`,
     [reminderId]
   );
+
+  if (result.rowCount === 0) {
+    throw new Error(`Reminder ${reminderId} not found or not in pending status`);
+  }
 }
 
 // ---------------------------------------------------------------------------

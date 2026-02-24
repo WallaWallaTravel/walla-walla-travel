@@ -1063,19 +1063,17 @@ export class TripProposalService extends BaseService {
       results.push({ id: guest.id, name: guest.name, amount_owed: amount, is_sponsored: false });
     }
 
-    // Distribute remainder with penny correction
+    // C8 FIX: Penny correction with integer cents to avoid floating point drift
     if (autoCalcGuests.length > 0) {
-      const baseShare = Math.floor((remainder / autoCalcGuests.length) * 100) / 100;
-      const distributed = baseShare * autoCalcGuests.length;
-      const pennyCorrection = Math.round((remainder - distributed) * 100) / 100;
+      const remainderCents = Math.round(remainder * 100);
+      const baseCents = Math.floor(remainderCents / autoCalcGuests.length);
+      const extraPennies = remainderCents - (baseCents * autoCalcGuests.length);
 
       for (let i = 0; i < autoCalcGuests.length; i++) {
         const guest = autoCalcGuests[i];
-        let amount = baseShare;
-        // Apply penny correction to last guest
-        if (i === autoCalcGuests.length - 1) {
-          amount = Math.round((amount + pennyCorrection) * 100) / 100;
-        }
+        // First N guests get baseCents + 1 penny; the rest get baseCents
+        const guestCents = i < extraPennies ? baseCents + 1 : baseCents;
+        const amount = guestCents / 100;
 
         // Safety: non-sponsored guest amount_owed should never be $0 without explicit override
         if (amount === 0 && guest.amount_owed_override === null) {
@@ -1088,9 +1086,9 @@ export class TripProposalService extends BaseService {
       }
     }
 
-    // Verify invariant: sum === total (within $0.01)
+    // C7 FIX: Tighter billing invariant tolerance (half a cent)
     const sumOwed = results.reduce((sum, g) => sum + g.amount_owed, 0);
-    const valid = Math.abs(sumOwed - total) < 0.02;
+    const valid = Math.abs(sumOwed - total) < 0.005;
 
     // Persist to database
     await this.withTransaction(async () => {
@@ -1182,6 +1180,18 @@ export class TripProposalService extends BaseService {
     const proposal = await this.getById(proposalId);
     if (!proposal) {
       throw new NotFoundError('TripProposal', proposalId.toString());
+    }
+
+    // C6 FIX: Validate all guestIds exist in this proposal before creating the group
+    const existingGuests = await this.query<{ id: number }>(
+      'SELECT id FROM trip_proposal_guests WHERE id = ANY($1) AND trip_proposal_id = $2',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      [guestIds as any, proposalId]
+    );
+    const foundIds = new Set(existingGuests.rows.map(g => g.id));
+    const missingIds = guestIds.filter(id => !foundIds.has(id));
+    if (missingIds.length > 0) {
+      throw new ValidationError(`Guest IDs not found in proposal: ${missingIds.join(', ')}`);
     }
 
     return await this.withTransaction(async () => {
@@ -1317,7 +1327,8 @@ export class TripProposalService extends BaseService {
     );
 
     const totalOwed = parseFloat(guestSum?.total_owed || '0');
-    if (Math.abs(totalOwed - pricing.total) > 0.02) {
+    // C7 FIX: Tighter tolerance
+    if (Math.abs(totalOwed - pricing.total) > 0.005) {
       discrepancies.push(`Guest amounts (${totalOwed.toFixed(2)}) don't match proposal total (${pricing.total.toFixed(2)})`);
     }
 
@@ -1329,7 +1340,8 @@ export class TripProposalService extends BaseService {
     );
     const totalPaid = parseFloat(guestSum?.total_paid || '0');
     const paymentRecordTotal = parseFloat(paymentSum?.total || '0');
-    if (Math.abs(totalPaid - paymentRecordTotal) > 0.02) {
+    // C7 FIX: Tighter tolerance
+    if (Math.abs(totalPaid - paymentRecordTotal) > 0.005) {
       discrepancies.push(`Guest amount_paid sums (${totalPaid.toFixed(2)}) don't match payment records (${paymentRecordTotal.toFixed(2)})`);
     }
 

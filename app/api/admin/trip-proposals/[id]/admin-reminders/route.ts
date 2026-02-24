@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth, AuthSession, RouteContext } from '@/lib/api/middleware/auth-wrapper';
 import { adminReminderService } from '@/lib/services/admin-reminder.service';
+import { queryOne } from '@/lib/db-helpers';
 
 interface RouteParams { id: string; }
 
@@ -73,6 +74,17 @@ export const POST = withAdminAuth(
             { status: 400 }
           );
         }
+        // C3 FIX: Verify reminder belongs to this proposal
+        const reminder = await queryOne(
+          'SELECT id FROM admin_reminders WHERE id = $1 AND trip_proposal_id = $2',
+          [body.reminder_id, proposalId]
+        );
+        if (!reminder) {
+          return NextResponse.json(
+            { success: false, error: 'Reminder not found in this proposal' },
+            { status: 404 }
+          );
+        }
         await adminReminderService.dismissReminder(body.reminder_id);
         return NextResponse.json({ success: true });
       }
@@ -84,7 +96,26 @@ export const POST = withAdminAuth(
             { status: 400 }
           );
         }
-        await adminReminderService.snoozeReminder(body.reminder_id, body.days);
+        // C4: Validate snooze days
+        const days = parseInt(body.days, 10);
+        if (isNaN(days) || days < 1 || days > 365) {
+          return NextResponse.json(
+            { success: false, error: 'days must be between 1 and 365' },
+            { status: 400 }
+          );
+        }
+        // C3 FIX: Verify reminder belongs to this proposal
+        const snoozedReminder = await queryOne(
+          'SELECT id FROM admin_reminders WHERE id = $1 AND trip_proposal_id = $2',
+          [body.reminder_id, proposalId]
+        );
+        if (!snoozedReminder) {
+          return NextResponse.json(
+            { success: false, error: 'Reminder not found in this proposal' },
+            { status: 404 }
+          );
+        }
+        await adminReminderService.snoozeReminder(body.reminder_id, days);
         return NextResponse.json({ success: true });
       }
 

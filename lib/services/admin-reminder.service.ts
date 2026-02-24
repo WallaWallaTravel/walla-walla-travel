@@ -170,16 +170,12 @@ async function onPlanningPhaseChange(proposalId: number, newPhase: string): Prom
 async function processTimeBased(): Promise<{ triggered: number }> {
   const today = new Date().toISOString().split('T')[0];
 
-  // Also check snoozed reminders whose snooze period has passed
+  // D fix: Simplified WHERE — removed redundant status checks inside OR branches
   const result = await query(
     `UPDATE admin_reminders
      SET status = 'triggered', triggered_at = NOW(), updated_at = NOW()
-     WHERE status IN ('pending', 'snoozed')
-       AND (
-         (status = 'pending' AND reminder_date IS NOT NULL AND reminder_date <= $1)
-         OR
-         (status = 'snoozed' AND snoozed_until IS NOT NULL AND snoozed_until <= $1)
-       )
+     WHERE (status = 'pending' AND reminder_date IS NOT NULL AND reminder_date <= $1)
+        OR (status = 'snoozed' AND snoozed_until IS NOT NULL AND snoozed_until <= $1)
      RETURNING id`,
     [today]
   );
@@ -209,8 +205,13 @@ async function dismissReminder(reminderId: number): Promise<void> {
 
 /**
  * Snooze a reminder for N days
+ * C4 fix: Validates days is between 1-365
  */
 async function snoozeReminder(reminderId: number, days: number): Promise<void> {
+  if (!Number.isInteger(days) || days < 1 || days > 365) {
+    throw new Error('Snooze days must be an integer between 1 and 365');
+  }
+
   const snoozeUntil = new Date();
   snoozeUntil.setDate(snoozeUntil.getDate() + days);
 
