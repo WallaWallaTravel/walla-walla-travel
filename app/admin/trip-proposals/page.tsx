@@ -174,7 +174,7 @@ function TripProposalsPageContent() {
       accepted: 'bg-green-100 text-green-800',
       declined: 'bg-red-100 text-red-800',
       expired: 'bg-orange-100 text-orange-800',
-      converted: 'bg-purple-100 text-purple-800',
+      booked: 'bg-purple-100 text-purple-800',
     };
 
     const icons: Record<string, string> = {
@@ -184,7 +184,7 @@ function TripProposalsPageContent() {
       accepted: '✅',
       declined: '❌',
       expired: '⏰',
-      converted: '🎉',
+      booked: '🎉',
     };
 
     return (
@@ -286,7 +286,7 @@ function TripProposalsPageContent() {
                 <option value="accepted">Accepted</option>
                 <option value="declined">Declined</option>
                 <option value="expired">Expired</option>
-                <option value="converted">Converted</option>
+                <option value="booked">Booked</option>
               </select>
             </div>
 

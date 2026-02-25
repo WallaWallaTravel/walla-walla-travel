@@ -178,7 +178,7 @@ export const POST = withCSRF(
     // Update proposal with booking reference
     await client.query(
       `UPDATE proposals SET
-        status = 'converted',
+        status = 'booked',
         converted_to_booking_id = $1,
         converted_at = NOW(),
         updated_at = NOW()
@@ -192,7 +192,7 @@ export const POST = withCSRF(
        VALUES ($1, $2, $3, $4)`,
       [
         proposal.id,
-        'converted',
+        'booked',
         `Proposal converted to booking ${bookingNumber}`,
         JSON.stringify({
           booking_id: booking.id,

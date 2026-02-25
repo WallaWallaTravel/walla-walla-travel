@@ -1417,11 +1417,11 @@ export class TripProposalService extends BaseService {
       await this.update<TripProposal>('trip_proposals', proposalId, {
         converted_to_booking_id: bookingResult.id,
         converted_at: new Date().toISOString(),
-        status: 'converted',
+        status: 'booked',
       });
 
       // Log activity
-      await this.logActivity(proposalId, 'converted', `Converted to booking ${bookingNumber}`, {
+      await this.logActivity(proposalId, 'booked', `Converted to booking ${bookingNumber}`, {
         actor_type: 'staff',
         actor_user_id: userId,
         metadata: { booking_id: bookingResult.id, booking_number: bookingNumber },
@@ -1437,7 +1437,7 @@ export class TripProposalService extends BaseService {
       crmSyncService.onTripProposalStatusChange(
         proposalId,
         proposal.proposal_number,
-        'converted',
+        'booked',
         { bookingId: bookingResult.id, amount: proposal.total }
       ).catch((err) => {
         this.log('Failed to sync trip proposal conversion to CRM', { error: err, proposalId, bookingId: bookingResult.id });
@@ -1702,10 +1702,10 @@ export class TripProposalService extends BaseService {
       draft: ['sent', 'declined'],
       sent: ['viewed', 'accepted', 'declined', 'expired'],
       viewed: ['accepted', 'declined', 'expired', 'sent'], // Can resend
-      accepted: ['converted'],
+      accepted: ['booked'],
       declined: ['draft'], // Can reopen
       expired: ['draft'], // Can reopen
-      converted: [], // Final state
+      booked: [], // Final state
     };
 
     if (!validTransitions[current]?.includes(next)) {

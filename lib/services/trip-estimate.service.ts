@@ -399,7 +399,7 @@ export class TripEstimateService extends BaseService {
     // Link estimate to proposal and mark as converted
     await this.update('trip_estimates', id, {
       trip_proposal_id: proposal.id,
-      status: 'converted',
+      status: 'proposal_created',
     });
 
     // Mark the proposal's deposit as paid since it was collected via the estimate
@@ -468,8 +468,8 @@ export class TripEstimateService extends BaseService {
       draft: ['sent'],
       sent: ['viewed', 'deposit_paid'],
       viewed: ['deposit_paid', 'sent'], // Can resend
-      deposit_paid: ['converted'],
-      converted: [], // Final state
+      deposit_paid: ['proposal_created'],
+      proposal_created: [], // Final state
     };
 
     if (!validTransitions[current]?.includes(next)) {

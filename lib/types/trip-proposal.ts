@@ -19,7 +19,7 @@ export const TRIP_PROPOSAL_STATUS = [
   'accepted',
   'declined',
   'expired',
-  'converted',
+  'booked',
 ] as const;
 
 export type TripProposalStatus = (typeof TRIP_PROPOSAL_STATUS)[number];

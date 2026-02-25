@@ -111,7 +111,7 @@ export default function TripEstimatesPage() {
       sent: 'bg-blue-100 text-blue-800',
       viewed: 'bg-yellow-100 text-yellow-800',
       deposit_paid: 'bg-green-100 text-green-800',
-      converted: 'bg-purple-100 text-purple-800',
+      proposal_created: 'bg-purple-100 text-purple-800',
     };
 
     const icons: Record<string, string> = {
@@ -119,7 +119,7 @@ export default function TripEstimatesPage() {
       sent: '📧',
       viewed: '👁️',
       deposit_paid: '💰',
-      converted: '🎉',
+      proposal_created: '🎉',
     };
 
     const labels: Record<string, string> = {
@@ -127,7 +127,7 @@ export default function TripEstimatesPage() {
       sent: 'SENT',
       viewed: 'VIEWED',
       deposit_paid: 'DEPOSIT PAID',
-      converted: 'CONVERTED',
+      proposal_created: 'PROPOSAL CREATED',
     };
 
     return (
@@ -218,7 +218,7 @@ export default function TripEstimatesPage() {
                 <option value="sent">📧 Sent</option>
                 <option value="viewed">👁️ Viewed</option>
                 <option value="deposit_paid">💰 Deposit Paid</option>
-                <option value="converted">🎉 Converted</option>
+                <option value="proposal_created">🎉 Proposal Created</option>
               </select>
             </div>
             <div>

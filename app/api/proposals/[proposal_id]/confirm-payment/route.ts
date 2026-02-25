@@ -79,7 +79,7 @@ export const POST = withErrorHandling<unknown, { proposal_id: string }>(async (
          SET payment_status = 'succeeded',
              payment_amount = $1,
              payment_date = NOW(),
-             status = 'converted',
+             status = 'booked',
              updated_at = NOW()
          WHERE id = $2`,
         [paymentIntent.amount / 100, proposal.id],
@@ -90,7 +90,7 @@ export const POST = withErrorHandling<unknown, { proposal_id: string }>(async (
       logger.warn('[Confirm Payment] Could not update payment columns', { error: dbError });
       await query(
         `UPDATE proposals
-         SET status = 'converted',
+         SET status = 'booked',
              updated_at = NOW()
          WHERE id = $1`,
         [proposal.id],

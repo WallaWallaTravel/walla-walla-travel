@@ -153,8 +153,8 @@ export const PATCH = withCSRF(
   const currentProposal = currentResult.rows[0];
 
   // Check if proposal can be edited
-  if (currentProposal.status === 'accepted' || currentProposal.status === 'converted') {
-    throw new ForbiddenError('Cannot edit accepted or converted proposals');
+  if (currentProposal.status === 'accepted' || currentProposal.status === 'booked') {
+    throw new ForbiddenError('Cannot edit accepted or booked proposals');
   }
 
   // Merge current data with updates

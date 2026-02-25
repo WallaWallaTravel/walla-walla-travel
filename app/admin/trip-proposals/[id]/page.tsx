@@ -174,7 +174,7 @@ const STATUS_OPTIONS = [
   { value: 'accepted', label: 'Accepted', icon: '✅' },
   { value: 'declined', label: 'Declined', icon: '❌' },
   { value: 'expired', label: 'Expired', icon: '⏰' },
-  { value: 'converted', label: 'Converted', icon: '🎉' },
+  { value: 'booked', label: 'Booked', icon: '🎉' },
 ];
 
 export default function EditTripProposalPage({ params }: { params: Promise<{ id: string }> }) {
@@ -688,7 +688,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
       accepted: 'bg-green-100 text-green-800',
       declined: 'bg-red-100 text-red-800',
       expired: 'bg-orange-100 text-orange-800',
-      converted: 'bg-purple-100 text-purple-800',
+      booked: 'bg-purple-100 text-purple-800',
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
   };

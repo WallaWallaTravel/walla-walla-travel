@@ -104,7 +104,7 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
         return NextResponse.json({ success: true });
       }
 
-      case 'converted': {
+      case 'booked': {
         const { sessionId, bookingId } = body;
         if (sessionId && bookingId) {
           await bookingTrackingService.markConverted(sessionId, bookingId);

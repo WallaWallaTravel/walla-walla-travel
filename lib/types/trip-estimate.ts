@@ -18,7 +18,7 @@ export const TRIP_ESTIMATE_STATUS = [
   'sent',
   'viewed',
   'deposit_paid',
-  'converted',
+  'proposal_created',
 ] as const;
 
 export type TripEstimateStatus = (typeof TRIP_ESTIMATE_STATUS)[number];

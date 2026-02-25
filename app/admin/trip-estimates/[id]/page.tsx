@@ -301,7 +301,7 @@ export default function EditTripEstimatePage({ params }: { params: Promise<{ id:
       sent: { bg: 'bg-blue-100 text-blue-800', icon: '📧', label: 'SENT' },
       viewed: { bg: 'bg-yellow-100 text-yellow-800', icon: '👁️', label: 'VIEWED' },
       deposit_paid: { bg: 'bg-green-100 text-green-800', icon: '💰', label: 'DEPOSIT PAID' },
-      converted: { bg: 'bg-purple-100 text-purple-800', icon: '🎉', label: 'CONVERTED' },
+      proposal_created: { bg: 'bg-purple-100 text-purple-800', icon: '🎉', label: 'PROPOSAL CREATED' },
     };
     const c = config[status] || config.draft!;
     return (
