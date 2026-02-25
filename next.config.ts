@@ -53,6 +53,9 @@ const nextConfig: NextConfig = {
     return config;
   },
   
+  // Server-only packages that should not be bundled by webpack
+  serverExternalPackages: ['pdf-parse'],
+
   // Experimental optimizations
   experimental: {
     // Optimize package imports
