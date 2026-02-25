@@ -1,11 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { logger } from '@/lib/logger';
 import { useToast } from '@/lib/hooks/useToast';
 import { ToastContainer } from '@/components/ui/ToastContainer';
+import SmartImportUploader from '@/components/admin/smart-import/SmartImportUploader';
+import SmartImportReview from '@/components/admin/smart-import/SmartImportReview';
+import type { SmartImportResult } from '@/lib/import/types';
 
 interface Brand {
   id: number;
@@ -165,6 +168,10 @@ export default function NewTripProposalPage() {
   const today = new Date().toISOString().split('T')[0];
   const defaultValidUntil = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
+  // Smart Import state
+  const [importOpen, setImportOpen] = useState(false);
+  const [importResult, setImportResult] = useState<SmartImportResult | null>(null);
+
   const [formData, setFormData] = useState<FormData>({
     brand_id: null,
     customer_name: '',
@@ -273,6 +280,98 @@ export default function NewTripProposalPage() {
       logger.error('Failed to load hotels', { error });
     }
   };
+
+  // Helper to add days to a date string
+  const addDaysToDate = (dateStr: string, days: number): string => {
+    const d = new Date(dateStr);
+    d.setDate(d.getDate() + days);
+    return d.toISOString().split('T')[0];
+  };
+
+  // Smart Import: apply extracted data to the form
+  const applyImportResult = useCallback(() => {
+    if (!importResult) return;
+
+    const { proposal, days: importDays, guests: importGuests, inclusions: importInclusions } = importResult;
+
+    // Generate stable IDs outside the updater to avoid React strict mode issues
+    const ts = Date.now();
+
+    setFormData(prev => {
+      const updated = { ...prev };
+
+      // Apply proposal fields (only non-empty values)
+      if (proposal.customer_name) updated.customer_name = proposal.customer_name;
+      if (proposal.customer_email) updated.customer_email = proposal.customer_email;
+      if (proposal.customer_phone) updated.customer_phone = proposal.customer_phone;
+      if (proposal.customer_company) updated.customer_company = proposal.customer_company;
+      if (proposal.trip_type) updated.trip_type = proposal.trip_type;
+      if (proposal.party_size) updated.party_size = proposal.party_size;
+      if (proposal.start_date) updated.start_date = proposal.start_date;
+      if (proposal.end_date) updated.end_date = proposal.end_date;
+      if (proposal.introduction) updated.introduction = proposal.introduction;
+      if (proposal.internal_notes) updated.internal_notes = proposal.internal_notes;
+
+      // Apply days with stops
+      if (importDays.length > 0) {
+        updated.days = importDays.map((day, i) => ({
+          id: `day-import-${ts}-${i}`,
+          day_number: i + 1,
+          date: day.date || (proposal.start_date ? addDaysToDate(proposal.start_date, i) : ''),
+          title: day.title || `Day ${i + 1}`,
+          stops: day.stops.map((stop, j) => ({
+            id: `stop-import-${ts}-${i}-${j}`,
+            stop_order: j + 1,
+            stop_type: stop.stop_type || 'custom',
+            winery_id: stop.matched_venue_type === 'winery' ? stop.matched_venue_id : undefined,
+            restaurant_id: stop.matched_venue_type === 'restaurant' ? stop.matched_venue_id : undefined,
+            hotel_id: stop.matched_venue_type === 'hotel' ? stop.matched_venue_id : undefined,
+            custom_name: stop.custom_name || (!stop.matched_venue_id ? stop.venue_name : undefined),
+            custom_address: stop.custom_address,
+            scheduled_time: stop.scheduled_time,
+            duration_minutes: stop.duration_minutes,
+            per_person_cost: 0,
+            flat_cost: 0,
+            cost_note: stop.cost_note,
+            reservation_status: 'pending',
+            client_notes: stop.client_notes,
+          })),
+        }));
+      }
+
+      // Apply guests
+      if (importGuests.length > 0) {
+        updated.guests = importGuests.map((guest, i) => ({
+          id: `guest-import-${ts}-${i}`,
+          name: guest.name,
+          email: guest.email,
+          phone: guest.phone,
+          dietary_restrictions: guest.dietary_restrictions,
+          is_primary: guest.is_primary ?? (i === 0),
+        }));
+      }
+
+      // Apply inclusions
+      if (importInclusions.length > 0) {
+        updated.inclusions = importInclusions.map((incl, i) => ({
+          id: `incl-import-${ts}-${i}`,
+          inclusion_type: incl.inclusion_type || 'custom',
+          description: incl.description,
+          pricing_type: incl.pricing_type || 'flat',
+          quantity: incl.quantity || 1,
+          unit_price: incl.unit_price || 0,
+          total_price: 0, // Will be recalculated
+        }));
+      }
+
+      return updated;
+    });
+
+    // Collapse the import section after applying
+    setImportOpen(false);
+    setImportResult(null);
+    toast('Data applied to form. Review and adjust as needed.', 'success');
+  }, [importResult, toast]);
 
   const addStop = (dayIndex: number, stopType: string) => {
     const newStop: StopData = {
@@ -601,6 +700,53 @@ export default function NewTripProposalPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left Column - Form */}
             <div className="lg:col-span-2 space-y-6">
+
+              {/* Smart Import Section */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => setImportOpen(!importOpen)}
+                  className="w-full flex items-center justify-between px-5 py-3 hover:bg-gray-50 transition-colors rounded-xl"
+                >
+                  <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    <span className="font-medium text-gray-900">Import from files</span>
+                    <span className="text-xs text-gray-500 ml-1">PDF, Word, Excel, CSV, images</span>
+                  </div>
+                  <svg
+                    className={`w-5 h-5 text-gray-500 transition-transform ${importOpen ? 'rotate-180' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {importOpen && (
+                  <div className="px-5 pb-5 border-t border-gray-100">
+                    <p className="text-sm text-gray-600 mt-3 mb-4">
+                      Upload trip details (itineraries, guest lists, screenshots) and AI will extract the data to pre-fill the form. You always review before saving.
+                    </p>
+
+                    {!importResult ? (
+                      <SmartImportUploader
+                        onResult={(result) => setImportResult(result)}
+                        onError={(message) => toast(message, 'error')}
+                      />
+                    ) : (
+                      <SmartImportReview
+                        result={importResult}
+                        onApply={applyImportResult}
+                        onDiscard={() => setImportResult(null)}
+                      />
+                    )}
+                  </div>
+                )}
+              </div>
+
               {/* Tabs */}
               <div className="bg-white rounded-xl shadow-md">
                 <div className="flex border-b border-gray-200">
