@@ -52,7 +52,7 @@ describe('RefundService', () => {
     function futureDateDays(days: number): string {
       const d = new Date();
       d.setDate(d.getDate() + days);
-      return d.toISOString();
+      return d.toISOString().split('T')[0];
     }
 
     it('should give 100% refund for 45+ days before tour', () => {
@@ -102,7 +102,7 @@ describe('RefundService', () => {
     it('should handle 0% for past dates', () => {
       const pastDate = new Date();
       pastDate.setDate(pastDate.getDate() - 5);
-      const result = service.calculateRefund(pastDate.toISOString(), 200);
+      const result = service.calculateRefund(pastDate.toISOString().split('T')[0], 200);
       expect(result.refundPercentage).toBe(0);
       expect(result.refundAmount).toBe(0);
     });
@@ -145,7 +145,7 @@ describe('RefundService', () => {
       mockQuery.mockResolvedValueOnce({
         rows: [{
           id: 1,
-          tour_date: new Date(Date.now() + 86400000 * 60).toISOString(),
+          tour_date: new Date(Date.now() + 86400000 * 60).toISOString().split('T')[0],
           deposit_amount: 0,
           deposit_paid: false,
           status: 'cancelled',
@@ -163,7 +163,7 @@ describe('RefundService', () => {
       mockQuery.mockResolvedValueOnce({
         rows: [{
           id: 1,
-          tour_date: new Date(Date.now() + 86400000 * 60).toISOString(),
+          tour_date: new Date(Date.now() + 86400000 * 60).toISOString().split('T')[0],
           deposit_amount: 200,
           deposit_paid: false,
           status: 'cancelled',
@@ -183,7 +183,7 @@ describe('RefundService', () => {
         .mockResolvedValueOnce({
           rows: [{
             id: 1,
-            tour_date: new Date(Date.now() + 86400000 * 10).toISOString(),
+            tour_date: new Date(Date.now() + 86400000 * 10).toISOString().split('T')[0],
             deposit_amount: 200,
             deposit_paid: true,
             status: 'cancelled',
@@ -201,7 +201,7 @@ describe('RefundService', () => {
     });
 
     it('should return manual refund needed when no Stripe payment', async () => {
-      const futureDate = new Date(Date.now() + 86400000 * 60).toISOString();
+      const futureDate = new Date(Date.now() + 86400000 * 60).toISOString().split('T')[0];
 
       mockQuery
         // Get booking
@@ -223,7 +223,7 @@ describe('RefundService', () => {
     });
 
     it('should process Stripe refund for 100% policy', async () => {
-      const futureDate = new Date(Date.now() + 86400000 * 60).toISOString();
+      const futureDate = new Date(Date.now() + 86400000 * 60).toISOString().split('T')[0];
       const { getBrandStripeClient } = require('@/lib/stripe-brands');
       const mockRefundCreate = jest.fn().mockResolvedValue({ id: 're_test123' });
       getBrandStripeClient.mockReturnValue({ refunds: { create: mockRefundCreate } });
@@ -270,7 +270,7 @@ describe('RefundService', () => {
     });
 
     it('should process 50% Stripe refund', async () => {
-      const futureDate = new Date(Date.now() + 86400000 * 30).toISOString();
+      const futureDate = new Date(Date.now() + 86400000 * 30).toISOString().split('T')[0];
       const { getBrandStripeClient } = require('@/lib/stripe-brands');
       const mockRefundCreate = jest.fn().mockResolvedValue({ id: 're_half' });
       getBrandStripeClient.mockReturnValue({ refunds: { create: mockRefundCreate } });
@@ -303,7 +303,7 @@ describe('RefundService', () => {
     });
 
     it('should handle Stripe refund failure gracefully', async () => {
-      const futureDate = new Date(Date.now() + 86400000 * 60).toISOString();
+      const futureDate = new Date(Date.now() + 86400000 * 60).toISOString().split('T')[0];
       const { getBrandStripeClient } = require('@/lib/stripe-brands');
       const mockRefundCreate = jest.fn().mockRejectedValue(new Error('Stripe error'));
       getBrandStripeClient.mockReturnValue({ refunds: { create: mockRefundCreate } });
