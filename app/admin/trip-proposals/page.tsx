@@ -64,18 +64,25 @@ function TripProposalsPageContent() {
     setLoading(true);
     try {
       const params = new URLSearchParams({
-        status: statusFilter,
         search: searchTerm,
         limit: pagination.limit.toString(),
         offset: pagination.offset.toString(),
       });
+      if (statusFilter !== 'all') {
+        params.set('status', statusFilter);
+      }
 
       const response = await fetch(`/api/admin/trip-proposals?${params}`);
       const result = await response.json();
 
       if (result.success) {
-        setProposals(result.data);
-        setPagination(result.pagination);
+        setProposals(result.data.proposals || []);
+        setPagination({
+          total: result.data.total || 0,
+          limit: result.data.limit || 20,
+          offset: result.data.offset || 0,
+          hasMore: (result.data.offset || 0) + (result.data.limit || 20) < (result.data.total || 0),
+        });
       }
     } catch (error) {
       logger.error('Failed to load trip proposals', { error });
