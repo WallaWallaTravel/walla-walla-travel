@@ -192,7 +192,7 @@ export const GET = withErrorHandling(async (request: NextRequest): Promise<NextR
       c.name as customer_name
     FROM reservations r
     LEFT JOIN customers c ON r.customer_id = c.id
-    WHERE r.status NOT IN ('converted', 'cancelled', 'expired')
+    WHERE r.status NOT IN ('booked', 'cancelled', 'expired')
       AND r.booking_id IS NULL
       AND (
         (r.preferred_date >= $1 AND r.preferred_date <= $2)

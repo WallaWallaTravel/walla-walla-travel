@@ -792,7 +792,7 @@ class CrmSyncService extends BaseService {
           [deal.contact_id]
         );
       }
-    } else if (newStatus === 'converted' && metadata?.bookingId) {
+    } else if (newStatus === 'booked' && metadata?.bookingId) {
       // Link deal to booking
       await this.query(
         `UPDATE crm_deals SET booking_id = $1, updated_at = NOW() WHERE id = $2`,

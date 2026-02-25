@@ -1872,7 +1872,7 @@ describe('CrmSyncService', () => {
       await crmSyncService.onTripProposalStatusChange(
         300,
         'PROP-2026-001',
-        'converted',
+        'booked',
         { bookingId: 600 }
       );
 

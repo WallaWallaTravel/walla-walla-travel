@@ -610,13 +610,13 @@ describe('TripProposalService', () => {
       ).rejects.toThrow('Cannot transition from draft to viewed');
     });
 
-    it('should reject converted → any transition (final state)', async () => {
-      const proposal = makeProposalRow({ status: 'converted' });
+    it('should reject booked → any transition (final state)', async () => {
+      const proposal = makeProposalRow({ status: 'booked' });
       mockQuery.mockResolvedValueOnce({ rows: [proposal], rowCount: 1 });
 
       await expect(
         tripProposalService.updateStatus(1, 'draft')
-      ).rejects.toThrow('Cannot transition from converted to draft');
+      ).rejects.toThrow('Cannot transition from booked to draft');
     });
 
     it('should allow declined → draft (reopen) transition', async () => {
