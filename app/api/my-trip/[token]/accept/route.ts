@@ -4,9 +4,10 @@
  * Allows clients to accept a proposal via their access token
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { withErrorHandling, RouteContext } from '@/lib/api/middleware/error-handler';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
+import { tripProposalEmailService } from '@/lib/services/trip-proposal-email.service';
 
 interface RouteParams {
   token: string;
@@ -40,6 +41,11 @@ export const POST = withErrorHandling<unknown, RouteParams>(
     await tripProposalService.updateStatus(proposal.id, 'accepted', {
       actor_type: 'customer',
       ip_address: ip,
+    });
+
+    // Send accepted confirmation email (non-blocking)
+    after(async () => {
+      await tripProposalEmailService.sendProposalAcceptedEmail(proposal.id);
     });
 
     // Check the per-proposal toggle to determine next action

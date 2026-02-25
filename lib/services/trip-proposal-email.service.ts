@@ -141,6 +141,7 @@ class TripProposalEmailService {
       const template = buildProposalSentEmail({
         customer_name: proposal.customer_name,
         proposal_number: proposal.proposal_number,
+        access_token: proposal.access_token,
         trip_type: getTripTypeLabel(proposal.trip_type),
         start_date: formatDateForEmail(proposal.start_date),
         end_date: formatDateForEmail(proposal.end_date || proposal.start_date),
@@ -215,6 +216,7 @@ class TripProposalEmailService {
         const customerTemplate = buildProposalAcceptedEmail({
           customer_name: proposal.customer_name,
           proposal_number: proposal.proposal_number,
+          access_token: proposal.access_token,
           trip_type: getTripTypeLabel(proposal.trip_type),
           start_date: formatDateForEmail(proposal.start_date),
           end_date: formatDateForEmail(proposal.end_date || proposal.start_date),

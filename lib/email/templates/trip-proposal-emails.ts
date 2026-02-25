@@ -106,6 +106,7 @@ function summaryCard(brand: BrandEmailConfig, title: string, rows: Array<{ label
 interface ProposalSentData {
   customer_name: string;
   proposal_number: string;
+  access_token: string;
   trip_type: string;
   start_date: string;
   end_date: string;
@@ -119,7 +120,7 @@ interface ProposalSentData {
 
 export function buildProposalSentEmail(data: ProposalSentData): { subject: string; html: string; text: string } {
   const brand = getBrandEmailConfig(data.brand_id);
-  const proposalUrl = `${BASE_URL}/trip-proposals/${data.proposal_number}`;
+  const proposalUrl = `${BASE_URL}/my-trip/${data.access_token}`;
 
   const safeName = escapeHtml(data.customer_name);
   const safeProposalNumber = escapeHtml(data.proposal_number);
@@ -207,6 +208,7 @@ ${brand.name} | ${brand.website}`;
 interface ProposalAcceptedData {
   customer_name: string;
   proposal_number: string;
+  access_token: string;
   trip_type: string;
   start_date: string;
   end_date: string;
@@ -218,7 +220,7 @@ interface ProposalAcceptedData {
 
 export function buildProposalAcceptedEmail(data: ProposalAcceptedData): { subject: string; html: string; text: string } {
   const brand = getBrandEmailConfig(data.brand_id);
-  const payUrl = `${BASE_URL}/trip-proposals/${data.proposal_number}/pay`;
+  const payUrl = `${BASE_URL}/my-trip/${data.access_token}/pay`;
 
   const safeName = escapeHtml(data.customer_name);
 
