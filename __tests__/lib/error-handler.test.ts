@@ -274,8 +274,8 @@ describe('Error Handler Middleware', () => {
         { code: '23503', expectedStatus: 400, expectedMsg: 'Related resource not found' },
         { code: '23502', expectedStatus: 400, expectedMsg: 'Required field is missing' },
         { code: '22P02', expectedStatus: 400, expectedMsg: 'Invalid data format' },
-        { code: '42P01', expectedStatus: 503, expectedMsg: 'Database schema error' },
-        { code: '99999', expectedStatus: 500, expectedMsg: 'Database operation failed' },
+        { code: '42P01', expectedStatus: 503, expectedMsg: 'Database schema error: DB error' },
+        { code: '99999', expectedStatus: 500, expectedMsg: 'Database error: DB error' },
       ];
 
       for (const { code, expectedStatus, expectedMsg } of dbErrors) {

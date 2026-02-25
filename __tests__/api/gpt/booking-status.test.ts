@@ -30,7 +30,7 @@ const mockBooking = {
   customer_email: 'john@example.com',
   customer_phone: '509-555-1234',
   tour_date: '2024-06-15',
-  pickup_time: '10:00 AM',
+  start_time: '10:00 AM',
   party_size: 4,
   pickup_location: 'Downtown Hotel',
   status: 'confirmed',
@@ -280,7 +280,7 @@ describe('GET /api/gpt/booking-status', () => {
             ...mockBooking,
             status: 'confirmed',
             pickup_location: 'Hotel Lobby',
-            pickup_time: '10:00 AM',
+            start_time: '10:00 AM',
           }],
         })
         .mockResolvedValueOnce({ rows: [] });

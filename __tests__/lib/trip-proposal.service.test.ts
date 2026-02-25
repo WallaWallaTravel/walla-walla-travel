@@ -102,6 +102,9 @@ function makeInclusionRow(overrides: Record<string, unknown> = {}) {
     quantity: '1',
     total_price: '100',
     pricing_type: 'flat',
+    inclusion_type: 'custom',
+    is_taxable: true,
+    tax_included_in_price: false,
     ...overrides,
   };
 }

@@ -9,7 +9,7 @@ import { logger } from '@/lib/logger';
 import { z } from 'zod';
 
 const ConfirmPaymentSchema = z.object({
-  payment_intent_id: z.string().min(1, 'payment_intent_id is required'),
+  payment_intent_id: z.string({ error: 'payment_intent_id is required' }).min(1, 'payment_intent_id is required'),
 });
 
 /**
