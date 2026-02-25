@@ -193,6 +193,9 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
   const [notesLoading, setNotesLoading] = useState(false);
   const [lunchOrders, setLunchOrders] = useState<Array<{ id: number; ordering_mode: string; day?: { day_number: number; title: string | null }; supplier?: { name: string } }>>([]);
   const [reminderHistory, setReminderHistory] = useState<ReminderRecord[]>([]);
+  const [showSendModal, setShowSendModal] = useState(false);
+  const [sendCustomMessage, setSendCustomMessage] = useState('');
+  const [sending, setSending] = useState(false);
   const { toasts, toast, dismissToast } = useToast();
 
   useEffect(() => {
@@ -378,6 +381,34 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
       toast('Failed to generate itinerary', 'error');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const sendProposal = async () => {
+    if (!proposal) return;
+    setSending(true);
+    try {
+      const response = await fetch(`/api/admin/trip-proposals/${id}/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          custom_message: sendCustomMessage.trim() || undefined,
+        }),
+      });
+      const result = await response.json();
+      if (result.success) {
+        setProposal({ ...proposal, status: 'sent' });
+        toast(`Proposal sent to ${result.email_to}`, 'success');
+        setShowSendModal(false);
+        setSendCustomMessage('');
+      } else {
+        toast(result.error || 'Failed to send proposal', 'error');
+      }
+    } catch (error) {
+      logger.error('Failed to send proposal', { error });
+      toast('Failed to send proposal', 'error');
+    } finally {
+      setSending(false);
     }
   };
 
@@ -696,6 +727,64 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+
+      {/* Send Proposal Modal */}
+      {showSendModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !sending && setShowSendModal(false)} />
+          <div className="relative bg-white rounded-2xl shadow-xl max-w-lg w-full mx-4 p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-1">Send Proposal</h2>
+            <p className="text-sm text-gray-600 mb-5">
+              Send <span className="font-semibold">{proposal.proposal_number}</span> to{' '}
+              <span className="font-semibold">{proposal.customer_email || 'no email set'}</span>
+            </p>
+
+            {!proposal.customer_email && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                <p className="text-sm text-red-700">No customer email address. Please add one before sending.</p>
+              </div>
+            )}
+
+            {Number(proposal.total) <= 0 && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+                <p className="text-sm text-amber-700">Pricing is $0. Please add service line items and recalculate pricing first.</p>
+              </div>
+            )}
+
+            <div className="mb-5">
+              <label className="block text-sm font-semibold text-gray-900 mb-1.5">
+                Custom Message <span className="text-gray-500 font-normal">(optional)</span>
+              </label>
+              <textarea
+                value={sendCustomMessage}
+                onChange={(e) => setSendCustomMessage(e.target.value)}
+                placeholder="Add a personal note that will appear at the top of the email..."
+                rows={3}
+                maxLength={2000}
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-3">
+              <button
+                onClick={() => { setShowSendModal(false); setSendCustomMessage(''); }}
+                disabled={sending}
+                className="px-4 py-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium text-sm disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={sendProposal}
+                disabled={sending || !proposal.customer_email || Number(proposal.total) <= 0}
+                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-sm disabled:opacity-50 transition-colors"
+              >
+                {sending ? 'Sending...' : 'Send Email'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
@@ -723,12 +812,22 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
             </div>
 
             <div className="flex items-center gap-2">
+              {['draft', 'viewed'].includes(proposal.status) && (
+                <button
+                  onClick={() => setShowSendModal(true)}
+                  disabled={saving}
+                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-sm disabled:opacity-50 transition-colors shadow-sm"
+                >
+                  Send Proposal
+                </button>
+              )}
+
               <Link
-                href={`/trip-proposals/${proposal.proposal_number}`}
+                href={`/my-trip/${proposal.access_token}`}
                 target="_blank"
                 className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-lg font-bold text-sm"
               >
-                👁️ Preview
+                Preview
               </Link>
 
               {proposal.status === 'accepted' && (
