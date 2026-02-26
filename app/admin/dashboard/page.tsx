@@ -246,10 +246,10 @@ export default async function AdminDashboardPage() {
         </p>
       </div>
       
-      {/* Action Required Alert - Accepted Proposals */}
+      {/* Action Required Alert - Trips in Planning */}
       {stats.acceptedProposals > 0 && (
         <Link
-          href="/admin/trip-proposals?status=accepted"
+          href="/admin/bookings?tab=planning"
           className="block mb-6 bg-emerald-50 border border-emerald-200 rounded-lg p-4 hover:shadow-soft hover:border-emerald-300 transition-all"
         >
           <div className="flex items-center justify-between">
@@ -260,14 +260,14 @@ export default async function AdminDashboardPage() {
                 </svg>
               </div>
               <div>
-                <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wide">Action Required</p>
+                <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wide">Active Planning</p>
                 <p className="text-base font-semibold text-slate-900">
-                  {stats.acceptedProposals} Accepted Proposal{stats.acceptedProposals !== 1 ? 's' : ''} Awaiting Conversion
+                  {stats.acceptedProposals} Trip{stats.acceptedProposals !== 1 ? 's' : ''} Need Itinerary Planning
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-1 text-emerald-600 font-medium text-sm">
-              <span>Review</span>
+              <span>View Trips</span>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
