@@ -47,7 +47,32 @@ interface TripProposal {
   accepted_at: string | null;
   planning_phase?: string;
   days_count?: number;
+  // Payment tracking fields
+  skip_deposit_on_accept?: boolean;
+  individual_billing_enabled?: boolean;
+  deposit_paid?: boolean;
+  balance_paid?: boolean;
+  // Guest payment summary (from subqueries)
+  billable_guest_count?: number;
+  paid_guest_count?: number;
 }
+
+// Payment status categories
+type PaymentStatus =
+  | 'deferred_deposit'
+  | 'deposit_secured'
+  | 'collecting_deposits'
+  | 'all_deposits_collected'
+  | 'balance_due'
+  | null; // Legacy bookings or no applicable status
+
+const PAYMENT_STATUS_CONFIG: Record<string, { label: string; color: string; icon: string }> = {
+  deferred_deposit: { label: 'Deferred Deposit', color: 'bg-amber-50 text-amber-700 border border-amber-200', icon: '⏳' },
+  deposit_secured: { label: 'Deposit Secured', color: 'bg-emerald-50 text-emerald-700 border border-emerald-200', icon: '✓' },
+  collecting_deposits: { label: 'Collecting Deposits', color: 'bg-orange-50 text-orange-700 border border-orange-200', icon: '💳' },
+  all_deposits_collected: { label: 'All Deposits Collected', color: 'bg-emerald-50 text-emerald-700 border border-emerald-200', icon: '✓' },
+  balance_due: { label: 'Balance Due', color: 'bg-red-50 text-red-700 border border-red-200', icon: '⚠' },
+};
 
 // Unified trip item
 interface TripItem {
@@ -62,10 +87,13 @@ interface TripItem {
   total: number;
   status: string;
   stageBadge: { label: string; color: string };
+  paymentStatus: PaymentStatus;
   editUrl: string;
   createdAt: string;
   driverName?: string | null;
 }
+
+type PaymentFilterKey = 'all' | 'deferred_deposit' | 'deposit_secured' | 'collecting_deposits' | 'all_deposits_collected' | 'balance_due';
 
 type TabKey = 'all' | 'planning' | 'upcoming' | 'completed' | 'cancelled';
 
@@ -122,6 +150,47 @@ function getStageBadge(source: 'proposal' | 'booking', status: string, planningP
   return { label: status, color: 'bg-gray-100 text-gray-700' };
 }
 
+function derivePaymentStatus(prop: TripProposal): PaymentStatus {
+  // Cancelled/declined trips don't get a payment badge
+  if (prop.status === 'declined') return null;
+
+  const tourCompleted = isPastDate(prop.start_date);
+
+  // Balance Due: Tour is done but final balance not collected
+  if (tourCompleted && !prop.balance_paid) {
+    // For individual billing, check if all guests have paid before flagging
+    if (prop.individual_billing_enabled) {
+      const billable = prop.billable_guest_count ?? 0;
+      const paid = prop.paid_guest_count ?? 0;
+      if (billable === 0 || paid < billable) return 'balance_due';
+      // All guests paid — no balance due badge needed
+    } else {
+      return 'balance_due';
+    }
+  }
+
+  // Individual billing trips
+  if (prop.individual_billing_enabled) {
+    const billable = prop.billable_guest_count ?? 0;
+    const paid = prop.paid_guest_count ?? 0;
+    if (billable > 0 && paid >= billable) return 'all_deposits_collected';
+    // Zero guests or some unpaid — show collecting status
+    return 'collecting_deposits';
+  }
+
+  // Deferred deposit: verbally confirmed, deposit not yet collected (single-payer only)
+  if (prop.skip_deposit_on_accept && !prop.deposit_paid) {
+    return 'deferred_deposit';
+  }
+
+  // Standard single-payer deposit secured
+  if (prop.deposit_paid) {
+    return 'deposit_secured';
+  }
+
+  return null;
+}
+
 function normalizeProposal(prop: TripProposal): TripItem {
   const badge = getStageBadge('proposal', prop.status, prop.planning_phase, prop.start_date);
   return {
@@ -136,6 +205,7 @@ function normalizeProposal(prop: TripProposal): TripItem {
     total: typeof prop.total === 'string' ? parseFloat(prop.total) : prop.total,
     status: prop.status,
     stageBadge: badge,
+    paymentStatus: derivePaymentStatus(prop),
     editUrl: `/admin/trip-proposals/${prop.id}`,
     createdAt: prop.created_at,
   };
@@ -155,6 +225,7 @@ function normalizeBooking(booking: Booking): TripItem {
     total: typeof booking.total_price === 'string' ? parseFloat(booking.total_price) : booking.total_price,
     status: booking.status,
     stageBadge: badge,
+    paymentStatus: null, // Legacy bookings don't use new payment tracking
     editUrl: `/admin/bookings/${booking.id}`,
     createdAt: booking.created_at,
     driverName: booking.driver_name,
@@ -171,6 +242,7 @@ function TripsPageContent() {
   const urlTab = searchParams.get('tab') as TabKey | null;
 
   const [activeTab, setActiveTab] = useState<TabKey>(urlTab || 'all');
+  const [paymentFilter, setPaymentFilter] = useState<PaymentFilterKey>('all');
   const [searchTerm, setSearchTerm] = useState('');
 
   // Data
@@ -293,7 +365,28 @@ function TripsPageContent() {
     }
   };
 
-  const tabItems = getTabItems().sort(
+  // Apply payment filter on top of tab filter
+  const applyPaymentFilter = (items: TripItem[]): TripItem[] => {
+    if (paymentFilter === 'all') return items;
+    return items.filter((item) => item.paymentStatus === paymentFilter);
+  };
+
+  // Payment filter counts (based on current tab's items)
+  const tabBaseItems = getTabItems();
+  const paymentFilterCounts: Record<PaymentFilterKey, number> = {
+    all: tabBaseItems.length,
+    deferred_deposit: tabBaseItems.filter((i) => i.paymentStatus === 'deferred_deposit').length,
+    deposit_secured: tabBaseItems.filter((i) => i.paymentStatus === 'deposit_secured').length,
+    collecting_deposits: tabBaseItems.filter((i) => i.paymentStatus === 'collecting_deposits').length,
+    all_deposits_collected: tabBaseItems.filter((i) => i.paymentStatus === 'all_deposits_collected').length,
+    balance_due: tabBaseItems.filter((i) => i.paymentStatus === 'balance_due').length,
+  };
+
+  // Only show payment filters that have items
+  const activePaymentFilters = (Object.entries(paymentFilterCounts) as [PaymentFilterKey, number][])
+    .filter(([key, count]) => key === 'all' || count > 0);
+
+  const tabItems = applyPaymentFilter(tabBaseItems).sort(
     (a, b) => new Date(b.startDate || b.createdAt).getTime() - new Date(a.startDate || a.createdAt).getTime()
   );
 
@@ -330,7 +423,7 @@ function TripsPageContent() {
           {tabs.map(({ key, label, count }) => (
             <button
               key={key}
-              onClick={() => setActiveTab(key)}
+              onClick={() => { setActiveTab(key); setPaymentFilter('all'); }}
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 activeTab === key
                   ? 'bg-[#1E3A5F] text-white'
@@ -338,7 +431,7 @@ function TripsPageContent() {
               }`}
             >
               {label}
-              <span className={`ml-1.5 text-xs ${activeTab === key ? 'text-white/70' : 'text-slate-400'}`}>
+              <span className={`ml-1.5 text-xs ${activeTab === key ? 'text-white/70' : 'text-slate-500'}`}>
                 ({count})
               </span>
             </button>
@@ -346,7 +439,7 @@ function TripsPageContent() {
         </div>
 
         {/* Search */}
-        <div className="bg-white rounded-xl border border-slate-200 p-4 mb-6">
+        <div className="bg-white rounded-xl border border-slate-200 p-4 mb-4">
           <label className="block text-sm font-medium text-slate-700 mb-1.5">
             Search
           </label>
@@ -358,6 +451,32 @@ function TripsPageContent() {
             className="w-full max-w-md px-3 py-2 border border-slate-300 rounded-lg text-sm focus:border-[#1E3A5F] focus:ring-2 focus:ring-[#1E3A5F]/20 outline-none"
           />
         </div>
+
+        {/* Payment status filter chips */}
+        {activePaymentFilters.length > 1 && (
+          <div className="flex items-center gap-2 mb-6 flex-wrap">
+            <span className="text-xs font-medium text-slate-500 uppercase tracking-wide mr-1">Payment:</span>
+            {activePaymentFilters.map(([key, count]) => {
+              const isActive = paymentFilter === key;
+              const config = key !== 'all' ? PAYMENT_STATUS_CONFIG[key] : null;
+              return (
+                <button
+                  key={key}
+                  onClick={() => setPaymentFilter(key)}
+                  className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                    isActive
+                      ? 'bg-[#1E3A5F] text-white'
+                      : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  {config && <span>{config.icon}</span>}
+                  {key === 'all' ? 'All' : config?.label}
+                  <span className={isActive ? 'text-white/70' : 'text-slate-500'}>({count})</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {/* Stats bar */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
@@ -409,9 +528,11 @@ function TripsPageContent() {
             <p className="text-slate-500">
               {searchTerm
                 ? 'Try adjusting your search'
-                : activeTab === 'all'
-                  ? 'Trips appear here when proposals are accepted'
-                  : `No ${activeTab} trips right now`}
+                : paymentFilter !== 'all'
+                  ? 'No trips match this payment status filter'
+                  : activeTab === 'all'
+                    ? 'Trips appear here when proposals are accepted'
+                    : `No ${activeTab} trips right now`}
             </p>
           </div>
         ) : (
@@ -440,6 +561,12 @@ function TripsPageContent() {
                         <span className="text-xs font-mono text-slate-400">
                           {item.source === 'proposal' ? item.number : `#${item.number}`}
                         </span>
+                        {item.paymentStatus && PAYMENT_STATUS_CONFIG[item.paymentStatus] && (
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${PAYMENT_STATUS_CONFIG[item.paymentStatus].color}`}>
+                            <span>{PAYMENT_STATUS_CONFIG[item.paymentStatus].icon}</span>
+                            {PAYMENT_STATUS_CONFIG[item.paymentStatus].label}
+                          </span>
+                        )}
                       </div>
 
                       {/* Customer */}
