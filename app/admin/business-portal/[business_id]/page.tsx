@@ -15,10 +15,9 @@ interface Business {
   name: string;
   business_type: string;
   status: string;
-  completion_percentage: number;
-  contact_email: string;
-  contact_phone?: string;
-  unique_code: string;
+  email: string;
+  phone?: string;
+  invite_token: string;
   submitted_at?: string;
 }
 
@@ -262,14 +261,14 @@ export default function BusinessReviewPage() {
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">{business.name}</h1>
                 <p className="text-sm text-gray-600">
-                  {business.business_type} • {business.contact_email}
+                  {business.business_type} • {business.email}
                 </p>
               </div>
             </div>
             
             <div className="flex items-center gap-3">
               <a
-                href={`/contribute/${business.unique_code}/upload`}
+                href={`/contribute/${business.invite_token}/upload`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition text-sm flex items-center gap-2"
@@ -284,10 +283,9 @@ export default function BusinessReviewPage() {
                 {business.status}
               </span>
               <div className="text-right">
-                <div className="text-2xl font-bold text-blue-600">
-                  {business.completion_percentage}%
+                <div className="text-sm font-medium text-gray-600">
+                  {business.status}
                 </div>
-                <div className="text-xs text-gray-500">Complete</div>
               </div>
             </div>
           </div>

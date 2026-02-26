@@ -23,7 +23,7 @@ export default function BusinessInvitePage() {
   ]);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [results, setResults] = useState<Array<{ success: boolean; business?: { name: string }; unique_code?: string; error?: string }>>([]);
+  const [results, setResults] = useState<Array<{ success: boolean; business?: { name: string }; invite_token?: string; error?: string }>>([]);
 
   const addInviteRow = () => {
     setInvites([...invites, { name: '', business_type: 'winery', contact_email: '', contact_phone: '' }]);
@@ -66,7 +66,7 @@ export default function BusinessInvitePage() {
         throw new Error(data.error || 'Failed to send invites');
       }
 
-      const typedResults = (data.results || []) as Array<{ success: boolean; business?: { name: string }; unique_code?: string; error?: string }>;
+      const typedResults = (data.results || []) as Array<{ success: boolean; business?: { name: string }; invite_token?: string; error?: string }>;
       setResults(typedResults);
       setMessage({
         type: 'success',
@@ -141,9 +141,9 @@ export default function BusinessInvitePage() {
                         {result.success ? (
                           <>
                             ✓ Invited successfully
-                            {result.unique_code && (
+                            {result.invite_token && (
                               <span className="ml-2 font-mono bg-white px-2 py-1 rounded">
-                                {result.unique_code}
+                                {result.invite_token}
                               </span>
                             )}
                           </>
@@ -205,10 +205,10 @@ export default function BusinessInvitePage() {
                       >
                         <option value="winery">Winery</option>
                         <option value="restaurant">Restaurant</option>
-                        <option value="hotel">Hotel</option>
-                        <option value="activity">Activity</option>
-                        <option value="attraction">Attraction</option>
-                        <option value="service">Service</option>
+                        <option value="hotel">Hotel / Lodging</option>
+                        <option value="boutique">Boutique / Shop</option>
+                        <option value="gallery">Gallery</option>
+                        <option value="activity">Activity / Experience</option>
                         <option value="other">Other</option>
                       </select>
                     </div>

@@ -18,7 +18,6 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   const {
     business_type,
     name,
-    contact_name,
     contact_email,
     contact_phone,
     website
@@ -29,7 +28,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     throw new BadRequestError('business_type, name, and contact_email are required');
   }
 
-  if (!['winery', 'restaurant', 'hotel', 'activity', 'other'].includes(business_type)) {
+  if (!['winery', 'restaurant', 'hotel', 'boutique', 'gallery', 'activity', 'other'].includes(business_type)) {
     throw new BadRequestError('Invalid business_type');
   }
 
@@ -43,23 +42,22 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   const business = await createBusiness({
     business_type,
     name,
-    contact_name,
     contact_email,
     contact_phone,
     website,
     invited_by: 1 // TODO: Get from auth session
   });
 
-  // In production: Send invitation email with unique code
+  // In production: Send invitation email with invite token
 
   return NextResponse.json({
     success: true,
     business: {
       id: business.id,
       name: business.name,
-      unique_code: business.unique_code,
-      contact_email: business.contact_email,
-      portal_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/contribute/${business.unique_code}`
+      invite_token: business.invite_token,
+      email: business.email,
+      portal_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/contribute/${business.invite_token}`
     },
     message: 'Business invited successfully!'
   });
