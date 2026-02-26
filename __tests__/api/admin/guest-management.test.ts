@@ -42,12 +42,17 @@ import { NotFoundError } from '@/lib/api/middleware/error-handler';
 
 function createRequest(method: string, body?: Record<string, unknown>): NextRequest {
   const url = 'http://localhost:3000/api/admin/trip-proposals/1/guests/10';
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return new NextRequest(url, {
+  const req = new NextRequest(url, {
     method,
     headers: { 'content-type': 'application/json' },
     body: body ? JSON.stringify(body) : undefined,
-  } as any);
+  });
+  // Override json() to ensure it returns parsed object (Jest env may return string)
+  if (body) {
+    const parsedBody = body;
+    req.json = () => Promise.resolve(parsedBody);
+  }
+  return req;
 }
 
 function createContext(id: string, guestId: string) {
