@@ -524,6 +524,8 @@ export interface AddGuestInput {
   accessibility_needs?: string;
   special_requests?: string;
   room_assignment?: string;
+  is_registered?: boolean;
+  rsvp_status?: string;
 }
 
 /**
@@ -627,6 +629,8 @@ export const AddGuestSchema = z.object({
   accessibility_needs: z.string().optional(),
   special_requests: z.string().optional(),
   room_assignment: z.string().max(100).optional(),
+  is_registered: z.boolean().optional(),
+  rsvp_status: z.enum(['pending', 'confirmed', 'declined']).optional(),
 });
 
 export const AddInclusionSchema = z.object({

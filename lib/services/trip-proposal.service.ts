@@ -245,33 +245,48 @@ export class TripProposalService extends BaseService {
     // Validate
     const validated = AddGuestSchema.parse(data);
 
-    // Check proposal exists and get capacity
+    // Check proposal exists and get capacity limit
     const proposal = await this.getById(proposalId);
     if (!proposal) {
       throw new NotFoundError('TripProposal', proposalId.toString());
     }
 
-    // Check capacity
-    if (proposal.max_guests) {
-      const count = await this.getGuestCount(proposalId);
-      if (count >= proposal.max_guests) {
-        throw new ValidationError(`Trip is at maximum capacity (${proposal.max_guests} guests)`);
-      }
+    // Atomic capacity-checked insert using CTE to prevent race conditions
+    const maxGuests = proposal.max_guests;
+    const result = await this.queryOne<TripProposalGuest>(
+      `WITH capacity AS (
+        SELECT COUNT(*) AS cnt FROM trip_proposal_guests WHERE trip_proposal_id = $1
+      )
+      INSERT INTO trip_proposal_guests (
+        trip_proposal_id, name, email, phone, is_primary,
+        dietary_restrictions, accessibility_needs, special_requests,
+        room_assignment, is_registered, rsvp_status
+      )
+      SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
+      FROM capacity
+      WHERE $12::int IS NULL OR cnt < $12::int
+      RETURNING *`,
+      [
+        proposalId,
+        validated.name,
+        validated.email || null,
+        validated.phone || null,
+        validated.is_primary || false,
+        validated.dietary_restrictions || null,
+        validated.accessibility_needs || null,
+        validated.special_requests || null,
+        validated.room_assignment || null,
+        validated.is_registered || false,
+        validated.rsvp_status || 'pending',
+        maxGuests,
+      ]
+    );
+
+    if (!result) {
+      throw new ValidationError('Trip is at maximum capacity');
     }
 
-    const guest = await this.insert<TripProposalGuest>('trip_proposal_guests', {
-      trip_proposal_id: proposalId,
-      name: validated.name,
-      email: validated.email || null,
-      phone: validated.phone || null,
-      is_primary: validated.is_primary || false,
-      dietary_restrictions: validated.dietary_restrictions || null,
-      accessibility_needs: validated.accessibility_needs || null,
-      special_requests: validated.special_requests || null,
-      room_assignment: validated.room_assignment || null,
-    });
-
-    return guest;
+    return result;
   }
 
   /**
@@ -283,6 +298,17 @@ export class TripProposalService extends BaseService {
       [proposalId]
     );
     return parseInt(result?.count || '0', 10);
+  }
+
+  /**
+   * Check if an email is already registered for a proposal (case-insensitive)
+   */
+  async isEmailRegistered(proposalId: number, email: string): Promise<boolean> {
+    const result = await this.queryOne<{ id: number }>(
+      'SELECT id FROM trip_proposal_guests WHERE trip_proposal_id = $1 AND LOWER(email) = LOWER($2)',
+      [proposalId, email]
+    );
+    return result !== null;
   }
 
   /**
@@ -304,13 +330,17 @@ export class TripProposalService extends BaseService {
 
     const guestCount = await this.getGuestCount(proposalId);
     const total = proposal.total;
-    const minGuests = proposal.min_guests || guestCount || 1;
-    const maxGuests = proposal.max_guests || guestCount || 1;
+    const minGuests = Math.max(1, proposal.min_guests || guestCount || 1);
+    const maxGuests = Math.max(1, proposal.max_guests || guestCount || 1);
+
+    const currentPerPerson = guestCount > 0 ? total / guestCount : total;
+    const ceilingPrice = total / minGuests;
+    const floorPrice = total / maxGuests;
 
     return {
-      current_per_person: guestCount > 0 ? total / guestCount : total,
-      ceiling_price: total / minGuests,
-      floor_price: total / maxGuests,
+      current_per_person: Number.isFinite(currentPerPerson) ? currentPerPerson : 0,
+      ceiling_price: Number.isFinite(ceilingPrice) ? ceilingPrice : 0,
+      floor_price: Number.isFinite(floorPrice) ? floorPrice : 0,
       current_guest_count: guestCount,
       min_guests: proposal.min_guests,
       max_guests: proposal.max_guests,
@@ -869,11 +899,17 @@ export class TripProposalService extends BaseService {
   }
 
   /**
-   * Delete guest
+   * Delete guest (with proposal ownership check to prevent IDOR)
    */
-  async deleteGuest(guestId: number): Promise<void> {
-    this.log('Deleting trip proposal guest', { guestId });
-    await this.query('DELETE FROM trip_proposal_guests WHERE id = $1', [guestId]);
+  async deleteGuest(proposalId: number, guestId: number): Promise<void> {
+    this.log('Deleting trip proposal guest', { proposalId, guestId });
+    const result = await this.query(
+      'DELETE FROM trip_proposal_guests WHERE id = $1 AND trip_proposal_id = $2',
+      [guestId, proposalId]
+    );
+    if (!result.rowCount) {
+      throw new NotFoundError('TripProposalGuest', guestId.toString());
+    }
   }
 
   /**

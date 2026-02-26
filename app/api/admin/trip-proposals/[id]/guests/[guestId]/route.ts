@@ -74,17 +74,18 @@ export const PATCH = withAdminAuth(async (request: NextRequest, session, context
  * Delete a guest
  */
 export const DELETE = withAdminAuth(async (request: NextRequest, session, context) => {
-  const { guestId } = await (context as unknown as RouteParams).params;
+  const { id, guestId } = await (context as unknown as RouteParams).params;
+  const proposalId = parseInt(id, 10);
   const guestIdNum = parseInt(guestId, 10);
 
-  if (isNaN(guestIdNum)) {
+  if (isNaN(proposalId) || isNaN(guestIdNum)) {
     return NextResponse.json(
-      { success: false, error: 'Invalid guest ID' },
+      { success: false, error: 'Invalid ID' },
       { status: 400 }
     );
   }
 
-  await tripProposalService.deleteGuest(guestIdNum);
+  await tripProposalService.deleteGuest(proposalId, guestIdNum);
 
   return NextResponse.json({
     success: true,

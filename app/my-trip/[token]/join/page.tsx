@@ -317,6 +317,7 @@ export default function JoinTripPage({ params }: { params: Promise<{ token: stri
               <button
                 type="submit"
                 disabled={submitting}
+                aria-label={submitting ? 'Registering for trip' : 'Register to join this trip'}
                 className="w-full px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-sm disabled:opacity-50 transition-colors"
               >
                 {submitting ? 'Registering...' : 'Join This Trip'}
