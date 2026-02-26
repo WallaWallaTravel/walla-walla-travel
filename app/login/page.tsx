@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { logger } from '@/lib/logger'
+import { isSafeInternalRedirect } from '@/lib/utils/validation-utils'
 
 // Portal configuration for branding
 const portalConfig = {
@@ -101,22 +102,28 @@ function LoginPageContent() {
           app: ['/book', '/embed', '/payment'],
         }
         
-        // Get custom redirect and validate it against subdomain
+        // Get custom redirect and validate it
         const customRedirect = searchParams.get('redirect')
         let redirectTo: string
-        
-        // Check if customRedirect is allowed on this subdomain
-        const isRedirectAllowed = !currentSubdomain || 
-          !customRedirect ||
-          subdomainAllowedRoutes[currentSubdomain]?.some(
+
+        // All allowed internal routes (subdomain-specific + general safe paths)
+        const generalAllowedRoutes = ['/admin', '/driver-portal', '/partner-portal', '/workflow', '/book', '/embed', '/payment']
+        const allowedRoutes = currentSubdomain
+          ? subdomainAllowedRoutes[currentSubdomain] || []
+          : generalAllowedRoutes
+
+        // Validate: must be a safe internal path AND match an allowed route prefix
+        const isRedirectAllowed = customRedirect &&
+          isSafeInternalRedirect(customRedirect) &&
+          allowedRoutes.some(
             route => customRedirect === route || customRedirect.startsWith(route + '/')
           )
-        
+
         // Use role-based default if redirect is not allowed
         const userRole = data.data?.user?.role
 
         // First, use the server's redirectTo if provided (most reliable)
-        if (data.data?.redirectTo) {
+        if (data.data?.redirectTo && isSafeInternalRedirect(data.data.redirectTo)) {
           redirectTo = data.data.redirectTo
         } else if (isRedirectAllowed && customRedirect) {
           redirectTo = customRedirect

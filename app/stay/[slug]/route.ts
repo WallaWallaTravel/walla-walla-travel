@@ -73,10 +73,26 @@ export async function GET(
       });
     }
 
-    // Ensure destination is a full URL
-    const redirectUrl = property.booking_url.startsWith('http')
-      ? property.booking_url
-      : `https://${property.booking_url}`;
+    // Validate and normalize the URL
+    let redirectUrl: string;
+    try {
+      const normalized = property.booking_url.startsWith('http')
+        ? property.booking_url
+        : `https://${property.booking_url}`;
+      const parsed = new URL(normalized);
+      // Only allow http/https protocols, block localhost and private IPs
+      if (
+        (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') ||
+        /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(parsed.hostname)
+      ) {
+        logger.warn(`[Lodging Redirect] Blocked unsafe URL for ${slug}: ${property.booking_url}`);
+        return NextResponse.redirect(new URL(`/stays/${slug}`, request.url));
+      }
+      redirectUrl = parsed.href;
+    } catch {
+      logger.warn(`[Lodging Redirect] Invalid URL for ${slug}: ${property.booking_url}`);
+      return NextResponse.redirect(new URL(`/stays/${slug}`, request.url));
+    }
 
     // Redirect to property's booking page
     return NextResponse.redirect(redirectUrl, {

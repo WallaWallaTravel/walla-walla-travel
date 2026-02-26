@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ErrorLogger } from '@/lib/error-logger';
 import { logger } from '@/lib/logger';
+import { validateExternalRedirect } from '@/lib/utils/validation-utils';
 
 const errorLogger = ErrorLogger.getInstance();
 
@@ -86,8 +87,14 @@ export default function FinalInvoicePaymentPage() {
       const data = await response.json();
       
       if (data.success) {
-        // Redirect to Stripe checkout or process payment
-        window.location.href = data.payment_url;
+        // Validate payment URL is a trusted Stripe domain before redirecting
+        const safeUrl = validateExternalRedirect(data.payment_url, ['stripe.com']);
+        if (safeUrl) {
+          window.location.href = safeUrl;
+        } else {
+          logger.error('Payment URL failed validation', { url: data.payment_url });
+          alert('Payment could not be processed. Please contact support.');
+        }
       }
     } catch (error) {
       logger.error('Payment error', { error });
