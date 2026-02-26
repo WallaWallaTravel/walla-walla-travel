@@ -562,6 +562,9 @@ export const UpdateTripProposalSchema = CreateTripProposalSchema.partial().exten
   planning_phase: z.enum(PLANNING_PHASES).optional(),
   planning_fee_mode: z.enum(['flat', 'percentage']).optional(),
   planning_fee_percentage: z.number().min(0).max(100).optional(),
+  individual_billing_enabled: z.boolean().optional(),
+  payment_deadline: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  reminders_paused: z.boolean().optional(),
 });
 
 export const AddDaySchema = z.object({
