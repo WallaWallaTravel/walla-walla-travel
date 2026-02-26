@@ -192,35 +192,94 @@ export default async function EventsHomePage({
             )}
           </>
         ) : (
-          <div className="text-center py-16">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="text-center py-16 max-w-lg mx-auto">
+            <div className="w-20 h-20 bg-[#8B1538]/5 rounded-full flex items-center justify-center mx-auto mb-6">
               <svg
-                className="w-8 h-8 text-gray-400"
+                className="w-10 h-10 text-[#8B1538]/40"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                />
+                {search ? (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                ) : (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
+                )}
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No events found</h3>
-            <p className="text-gray-600 mb-6">
-              {search
-                ? 'Try adjusting your search or filters.'
-                : 'Check back soon for upcoming events in Walla Walla.'}
-            </p>
-            {(search || category || free) && (
-              <Link
-                href="/events"
-                className="inline-flex items-center px-4 py-2.5 rounded-lg bg-[#8B1538] text-white font-medium hover:bg-[#722F37] transition-colors"
-              >
-                View All Events
-              </Link>
+
+            {search ? (
+              <>
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                  No results for &ldquo;{search}&rdquo;
+                </h3>
+                <p className="text-gray-600 mb-2">
+                  We couldn&apos;t find any upcoming events matching your search.
+                </p>
+                <p className="text-gray-600 mb-8">
+                  Try a different keyword, browse our categories below, or check back soon
+                  &mdash; new events are added regularly.
+                </p>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                  <Link
+                    href="/events"
+                    className="inline-flex items-center px-5 py-2.5 rounded-lg bg-[#8B1538] text-white font-medium hover:bg-[#722F37] transition-colors"
+                  >
+                    Browse All Events
+                  </Link>
+                  <Link
+                    href="/events#categories"
+                    className="inline-flex items-center px-5 py-2.5 rounded-lg border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                  >
+                    Explore Categories
+                  </Link>
+                </div>
+              </>
+            ) : (
+              <>
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                  Events are on the way!
+                </h3>
+                <p className="text-gray-600 mb-3">
+                  We&apos;re building out our events calendar for Walla Walla.
+                  Wine tastings, festivals, live music, and more will be listed here soon.
+                </p>
+                <p className="text-gray-600 mb-8">
+                  In the meantime, explore our winery directory or start planning your visit.
+                </p>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                  <Link
+                    href="/wineries"
+                    className="inline-flex items-center px-5 py-2.5 rounded-lg bg-[#8B1538] text-white font-medium hover:bg-[#722F37] transition-colors"
+                  >
+                    Explore Wineries
+                  </Link>
+                  <Link
+                    href="/plan-your-visit"
+                    className="inline-flex items-center px-5 py-2.5 rounded-lg border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                  >
+                    Plan Your Visit
+                  </Link>
+                </div>
+              </>
+            )}
+
+            {(category || free) && (
+              <div className="mt-6">
+                <Link href="/events" className="text-sm text-[#8B1538] hover:underline">
+                  Clear all filters
+                </Link>
+              </div>
             )}
           </div>
         )}
