@@ -22,21 +22,21 @@ export const GET = withErrorHandling(async (
       id,
       business_type,
       name,
-      slug,
-      contact_name,
-      contact_email,
-      contact_phone,
-      unique_code,
+      email,
+      phone,
+      invite_token,
       status,
-      completion_percentage,
       website,
+      short_description,
+      address,
+      city,
       invited_at,
-      first_access_at,
-      last_activity_at,
-      submitted_at,
-      approved_at
+      invitation_email_sent,
+      claimed_at,
+      created_at,
+      updated_at
     FROM businesses
-    ORDER BY last_activity_at DESC NULLS LAST, invited_at DESC
+    ORDER BY updated_at DESC NULLS LAST, invited_at DESC
   `);
 
   return NextResponse.json({

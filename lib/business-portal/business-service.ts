@@ -30,22 +30,27 @@ export interface BusinessActivityLogEntry {
 
 export interface Business {
   id: number;
-  business_type: 'winery' | 'restaurant' | 'hotel' | 'activity' | 'other';
+  business_type: 'winery' | 'restaurant' | 'hotel' | 'boutique' | 'gallery' | 'activity' | 'other';
   name: string;
-  slug: string;
-  contact_name?: string;
-  contact_email?: string;
-  contact_phone?: string;
-  unique_code: string;
+  email?: string;
+  phone?: string;
+  invite_token: string;
   status: string;
-  completion_percentage: number;
   website?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  short_description?: string;
+  invited_at?: string;
+  invited_by?: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface CreateBusinessInput {
-  business_type: 'winery' | 'restaurant' | 'hotel' | 'activity' | 'other';
+  business_type: 'winery' | 'restaurant' | 'hotel' | 'boutique' | 'gallery' | 'activity' | 'other';
   name: string;
-  contact_name?: string;
   contact_email: string;
   contact_phone?: string;
   website?: string;
@@ -59,47 +64,40 @@ export async function createBusiness(data: CreateBusinessInput): Promise<Busines
   try {
     logger.debug('createBusiness: Creating business', { name: data.name });
 
-    // Generate slug from name
-    const slug = data.name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '');
-
-    logger.debug('createBusiness: Generated slug', { slug });
-    
-    // Generate unique code
+    // Generate invite token using the DB function (from migration 059)
     const result = await query(`
       INSERT INTO businesses (
         business_type,
         name,
-        slug,
-        contact_name,
-        contact_email,
-        contact_phone,
+        email,
+        phone,
         website,
-        unique_code,
+        invite_token,
         status,
         invited_by,
         invited_at
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, generate_business_code($2), 'invited', $8, NOW())
+      VALUES ($1, $2, $3, $4, $5, generate_business_invite_token(), 'invited', $6, NOW())
       RETURNING *
     `, [
       data.business_type,
       data.name,
-      slug,
-      data.contact_name || null,
       data.contact_email,
       data.contact_phone || null,
       data.website || null,
       data.invited_by || null
     ]);
-    
+
     const business = result.rows[0];
-    logger.info('createBusiness: Business created', { code: business.unique_code, name: data.name });
+    logger.info('createBusiness: Business created', { token: business.invite_token, name: data.name });
 
     // Log activity
-    await logBusinessActivity(business.id, 'business_invited', 'Business invited to contribute content');
+    try {
+      await logBusinessActivity(business.id, 'business_invited', 'Business invited to contribute content');
+    } catch (activityError) {
+      // Don't fail the invite if activity logging fails (table may not exist yet)
+      logger.warn('createBusiness: Failed to log activity', { error: activityError });
+    }
 
     return business;
   } catch (error) {
@@ -116,7 +114,7 @@ export async function getBusinessByCode(code: string): Promise<Business | null> 
     logger.debug('getBusinessByCode: Looking up code', { code });
 
     const result = await query(
-      'SELECT * FROM businesses WHERE unique_code = $1',
+      'SELECT * FROM businesses WHERE invite_token = $1',
       [code]
     );
 
@@ -221,14 +219,14 @@ export async function updateBusiness(
   updates: Partial<Business>
 ): Promise<Business> {
   const allowedFields = [
-    'contact_name',
-    'contact_email', 
-    'contact_phone',
+    'email',
+    'phone',
     'address',
     'city',
     'state',
     'zip',
     'website',
+    'short_description',
     'status'
   ];
   

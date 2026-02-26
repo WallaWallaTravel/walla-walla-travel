@@ -47,37 +47,38 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
         continue;
       }
 
-      // Generate unique code
-      const unique_code = crypto.randomBytes(8).toString('hex').toUpperCase();
+      // Generate unique invite token
+      const invite_token = crypto.randomBytes(16).toString('hex');
 
       // Insert into database
+      // Columns match migration 059: email, phone, invite_token (not contact_email, contact_phone, unique_code)
       const result = await query(
         `INSERT INTO businesses
-          (name, business_type, contact_email, contact_phone, unique_code, status)
-        VALUES ($1, $2, $3, $4, $5, 'invited')
-        RETURNING id, unique_code`,
+          (name, business_type, email, phone, invite_token, status, invited_at)
+        VALUES ($1, $2, $3, $4, $5, 'invited', NOW())
+        RETURNING id, invite_token`,
         [
           business.name,
           business.business_type,
           business.contact_email,
           business.contact_phone || null,
-          unique_code
+          invite_token
         ]
       );
 
       const newBusiness = result.rows[0];
 
-      // TODO: Send email with unique code
-      // await sendInviteEmail(business.contact_email, business.name, unique_code);
+      // TODO: Send email with invite token
+      // await sendInviteEmail(business.contact_email, business.name, invite_token);
 
-      logger.info('Created business invite', { businessName: business.name, code: unique_code });
+      logger.info('Created business invite', { businessName: business.name, token: invite_token });
 
       results.push({
         business,
         success: true,
         id: newBusiness.id,
-        unique_code: newBusiness.unique_code,
-        message: `Invite created! Code: ${newBusiness.unique_code}`
+        invite_token: newBusiness.invite_token,
+        message: `Invite created! Code: ${newBusiness.invite_token}`
       });
 
     } catch (error) {

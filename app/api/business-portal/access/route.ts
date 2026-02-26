@@ -42,9 +42,8 @@ export const POST = withErrorHandling(async (request) => {
       name: business.name,
       business_type: business.business_type,
       status: business.status,
-      completion_percentage: business.completion_percentage,
-      contact_email: business.contact_email,
-      unique_code: business.unique_code
+      email: business.email,
+      invite_token: business.invite_token
     }
   });
 });
