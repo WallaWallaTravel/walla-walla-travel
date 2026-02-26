@@ -160,6 +160,55 @@ export function isValidUrl(url: string): boolean {
 }
 
 /**
+ * Redirect validation — prevents open redirect attacks.
+ *
+ * Internal redirects must be relative paths starting with "/" and must not
+ * contain protocol-relative sequences ("//") that browsers interpret as
+ * external URLs.
+ */
+export function isSafeInternalRedirect(path: string): boolean {
+  // Must start with exactly one slash
+  if (!path.startsWith('/')) return false;
+  // Block protocol-relative URLs (//evil.com) and backslash tricks
+  if (path.startsWith('//') || path.startsWith('/\\')) return false;
+  // Block javascript: or data: schemes injected after path
+  if (/[:\s]/i.test(path.split('?')[0].split('#')[0])) return false;
+  return true;
+}
+
+/**
+ * Validate an external redirect URL against an allowed-domains list.
+ * Returns the normalized URL string if valid, or null if rejected.
+ */
+export function validateExternalRedirect(
+  url: string,
+  allowedDomains: string[]
+): string | null {
+  try {
+    const normalized = url.startsWith('http') ? url : `https://${url}`;
+    const parsed = new URL(normalized);
+
+    // Only allow http/https
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null;
+
+    // Block localhost / private IPs
+    if (/^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(parsed.hostname)) {
+      return null;
+    }
+
+    // Check against allowed domains (exact match or subdomain)
+    const domainAllowed = allowedDomains.some((domain) =>
+      parsed.hostname === domain || parsed.hostname.endsWith(`.${domain}`)
+    );
+    if (!domainAllowed) return null;
+
+    return parsed.href;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Number range validation
  */
 export function isInRange(value: number, min: number, max: number): boolean {

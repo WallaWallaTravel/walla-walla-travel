@@ -68,10 +68,24 @@ export async function GET(
     // Determine destination URL
     const destination = winery.website || `https://wallawalla.travel/wineries/${slug}`;
 
-    // Ensure destination is a full URL
-    const redirectUrl = destination.startsWith('http')
-      ? destination
-      : `https://${destination}`;
+    // Validate and normalize the URL
+    let redirectUrl: string;
+    try {
+      const normalized = destination.startsWith('http') ? destination : `https://${destination}`;
+      const parsed = new URL(normalized);
+      // Only allow http/https protocols, block localhost and private IPs
+      if (
+        (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') ||
+        /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(parsed.hostname)
+      ) {
+        logger.warn(`[Booking Redirect] Blocked unsafe URL for ${slug}: ${destination}`);
+        return NextResponse.redirect(new URL(`/wineries/${slug}`, request.url));
+      }
+      redirectUrl = parsed.href;
+    } catch {
+      logger.warn(`[Booking Redirect] Invalid URL for ${slug}: ${destination}`);
+      return NextResponse.redirect(new URL(`/wineries/${slug}`, request.url));
+    }
 
     // Redirect to winery's website
     return NextResponse.redirect(redirectUrl, {
