@@ -379,14 +379,14 @@ export default async function AdminDashboardPage() {
       
       {/* Stats Grid - Clickable Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {/* Total Bookings */}
-        <Link 
+        {/* Total Trips */}
+        <Link
           href="/admin/bookings"
           className="bg-white rounded-lg border border-slate-200 p-5 hover:shadow-soft hover:border-[#9FB3C8] transition-all"
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-500">Total Bookings</p>
+              <p className="text-sm font-medium text-slate-500">Total Trips</p>
               <p className="text-2xl font-bold text-slate-900 mt-1">
                 {stats.totalBookings}
               </p>
@@ -470,7 +470,7 @@ export default async function AdminDashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-[#BCCCDC]">Manage</p>
-              <p className="text-lg font-semibold mt-0.5">Bookings</p>
+              <p className="text-lg font-semibold mt-0.5">Trips</p>
             </div>
             <svg className="w-6 h-6 text-[#BCCCDC]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -517,7 +517,7 @@ export default async function AdminDashboardPage() {
       {/* Recent Bookings */}
       <div className="bg-white rounded-lg border border-slate-200">
         <div className="px-5 py-4 border-b border-slate-100">
-          <h2 className="text-lg font-semibold text-slate-900">Recent Bookings</h2>
+          <h2 className="text-lg font-semibold text-slate-900">Recent Trips</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -595,7 +595,7 @@ export default async function AdminDashboardPage() {
               href="/admin/bookings"
               className="text-sm text-[#334E68] hover:text-[#1A3354] font-medium"
             >
-              View all bookings →
+              View all trips →
             </Link>
           </div>
         )}

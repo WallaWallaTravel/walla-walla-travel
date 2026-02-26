@@ -1,11 +1,35 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { logger } from '@/lib/logger';
 import { useToast } from '@/lib/hooks/useToast';
 import { ToastContainer } from '@/components/ui/ToastContainer';
+
+// ============================================================================
+// Types
+// ============================================================================
+
+interface TripEstimate {
+  id: number;
+  estimate_number: string;
+  status: string;
+  customer_name: string;
+  customer_email: string | null;
+  customer_phone: string | null;
+  trip_type: string;
+  trip_title: string | null;
+  party_size: number;
+  start_date: string | null;
+  end_date: string | null;
+  subtotal: string | number;
+  deposit_amount: string | number;
+  deposit_paid: boolean;
+  valid_until: string | null;
+  trip_proposal_id: number | null;
+  created_at: string;
+}
 
 interface TripProposal {
   id: number;
@@ -28,178 +52,341 @@ interface TripProposal {
   accepted_at: string | null;
   view_count: number;
   days_count?: number;
+  planning_phase?: string;
 }
 
-function TripProposalsPageContent() {
+// Unified item type for display
+interface UnifiedItem {
+  id: number;
+  type: 'quick_quote' | 'full_proposal';
+  number: string;
+  status: string;
+  customerName: string;
+  customerEmail: string | null;
+  customerPhone: string | null;
+  tripType: string;
+  partySize: number;
+  startDate: string | null;
+  endDate: string | null;
+  total: number;
+  depositAmount: number;
+  validUntil: string | null;
+  createdAt: string;
+  editUrl: string;
+  previewUrl: string | null;
+}
+
+type TabKey = 'all' | 'quick_quotes' | 'full_proposals';
+
+// ============================================================================
+// Helpers
+// ============================================================================
+
+function normalizeEstimate(est: TripEstimate): UnifiedItem {
+  return {
+    id: est.id,
+    type: 'quick_quote',
+    number: est.estimate_number,
+    status: est.status,
+    customerName: est.customer_name,
+    customerEmail: est.customer_email,
+    customerPhone: est.customer_phone,
+    tripType: est.trip_type,
+    partySize: est.party_size,
+    startDate: est.start_date,
+    endDate: est.end_date,
+    total: typeof est.subtotal === 'string' ? parseFloat(est.subtotal) : est.subtotal,
+    depositAmount: typeof est.deposit_amount === 'string' ? parseFloat(est.deposit_amount) : est.deposit_amount,
+    validUntil: est.valid_until,
+    createdAt: est.created_at,
+    editUrl: `/admin/trip-estimates/${est.id}`,
+    previewUrl: ['sent', 'viewed', 'deposit_paid'].includes(est.status)
+      ? `/trip-estimates/${est.estimate_number}`
+      : null,
+  };
+}
+
+function normalizeProposal(prop: TripProposal): UnifiedItem {
+  return {
+    id: prop.id,
+    type: 'full_proposal',
+    number: prop.proposal_number,
+    status: prop.status,
+    customerName: prop.customer_name,
+    customerEmail: prop.customer_email,
+    customerPhone: prop.customer_phone,
+    tripType: prop.trip_type,
+    partySize: prop.party_size,
+    startDate: prop.start_date,
+    endDate: prop.end_date,
+    total: typeof prop.total === 'string' ? parseFloat(prop.total) : prop.total,
+    depositAmount: typeof prop.deposit_amount === 'string' ? parseFloat(prop.deposit_amount) : prop.deposit_amount,
+    validUntil: prop.valid_until,
+    createdAt: prop.created_at,
+    editUrl: `/admin/trip-proposals/${prop.id}`,
+    previewUrl: `/trip-proposals/${prop.proposal_number}`,
+  };
+}
+
+function formatCurrency(amount: number) {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+}
+
+function formatDate(dateString: string) {
+  return new Date(dateString).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
+// ============================================================================
+// Component
+// ============================================================================
+
+function ProposalsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const urlTab = searchParams.get('tab') as TabKey | null;
   const urlStatus = searchParams.get('status');
 
-  const [proposals, setProposals] = useState<TripProposal[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [converting, setConverting] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState<TabKey>(urlTab || 'all');
   const [statusFilter, setStatusFilter] = useState(urlStatus || 'all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [pagination, setPagination] = useState({
-    total: 0,
-    limit: 20,
-    offset: 0,
-    hasMore: false,
-  });
+
+  // Data
+  const [estimates, setEstimates] = useState<TripEstimate[]>([]);
+  const [proposals, setProposals] = useState<TripProposal[]>([]);
+  const [loadingEstimates, setLoadingEstimates] = useState(true);
+  const [loadingProposals, setLoadingProposals] = useState(true);
+
+  // New button dropdown
+  const [showNewMenu, setShowNewMenu] = useState(false);
+
   const { toasts, toast, dismissToast } = useToast();
 
+  // Sync URL params
   useEffect(() => {
-    if (urlStatus && urlStatus !== statusFilter) {
-      setStatusFilter(urlStatus);
-    }
+    if (urlTab && urlTab !== activeTab) setActiveTab(urlTab);
+    if (urlStatus && urlStatus !== statusFilter) setStatusFilter(urlStatus);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [urlStatus]);
+  }, [urlTab, urlStatus]);
 
-  useEffect(() => {
-    loadProposals();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter, searchTerm, pagination.offset]);
-
-  const loadProposals = async () => {
-    setLoading(true);
+  // Fetch estimates (non-converted only)
+  const loadEstimates = useCallback(async () => {
+    setLoadingEstimates(true);
     try {
-      const params = new URLSearchParams({
-        search: searchTerm,
-        limit: pagination.limit.toString(),
-        offset: pagination.offset.toString(),
-      });
-      if (statusFilter !== 'all') {
-        params.set('status', statusFilter);
+      const params = new URLSearchParams({ limit: '100', offset: '0' });
+      if (searchTerm) params.set('search', searchTerm);
+      // We'll filter status client-side to keep logic simple
+
+      const response = await fetch(`/api/admin/trip-estimates?${params}`);
+      const result = await response.json();
+
+      if (result.success) {
+        // Hide converted estimates (status=proposal_created)
+        const filtered = (result.data.estimates || []).filter(
+          (est: TripEstimate) => est.status !== 'proposal_created'
+        );
+        setEstimates(filtered);
       }
+    } catch (error) {
+      logger.error('Failed to load trip estimates', { error });
+    } finally {
+      setLoadingEstimates(false);
+    }
+  }, [searchTerm]);
+
+  // Fetch proposals (pre-acceptance only for this view)
+  const loadProposals = useCallback(async () => {
+    setLoadingProposals(true);
+    try {
+      const params = new URLSearchParams({ limit: '100', offset: '0' });
+      if (searchTerm) params.set('search', searchTerm);
 
       const response = await fetch(`/api/admin/trip-proposals?${params}`);
       const result = await response.json();
 
       if (result.success) {
-        setProposals(result.data.proposals || []);
-        setPagination({
-          total: result.data.total || 0,
-          limit: result.data.limit || 20,
-          offset: result.data.offset || 0,
-          hasMore: (result.data.offset || 0) + (result.data.limit || 20) < (result.data.total || 0),
-        });
+        // Hide accepted/booked/declined proposals — those show in Trips
+        const filtered = (result.data.proposals || []).filter(
+          (prop: TripProposal) => ['draft', 'sent', 'viewed', 'expired'].includes(prop.status)
+        );
+        setProposals(filtered);
       }
     } catch (error) {
       logger.error('Failed to load trip proposals', { error });
     } finally {
-      setLoading(false);
+      setLoadingProposals(false);
+    }
+  }, [searchTerm]);
+
+  useEffect(() => {
+    loadEstimates();
+    loadProposals();
+  }, [loadEstimates, loadProposals]);
+
+  // Build unified items based on active tab
+  const allQuickQuotes = estimates.map(normalizeEstimate);
+  const allFullProposals = proposals.map(normalizeProposal);
+
+  let items: UnifiedItem[] = [];
+  if (activeTab === 'quick_quotes') {
+    items = allQuickQuotes;
+  } else if (activeTab === 'full_proposals') {
+    items = allFullProposals;
+  } else {
+    items = [...allQuickQuotes, ...allFullProposals];
+  }
+
+  // Apply status filter
+  if (statusFilter !== 'all') {
+    items = items.filter((item) => item.status === statusFilter);
+  }
+
+  // Sort by most recent
+  items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  // Get available statuses for the current tab
+  const getStatusOptions = (): { value: string; label: string }[] => {
+    if (activeTab === 'quick_quotes') {
+      return [
+        { value: 'all', label: 'All Statuses' },
+        { value: 'draft', label: 'Draft' },
+        { value: 'sent', label: 'Sent' },
+        { value: 'viewed', label: 'Viewed' },
+        { value: 'deposit_paid', label: 'Deposit Paid' },
+      ];
+    }
+    if (activeTab === 'full_proposals') {
+      return [
+        { value: 'all', label: 'All Statuses' },
+        { value: 'draft', label: 'Draft' },
+        { value: 'sent', label: 'Sent' },
+        { value: 'viewed', label: 'Viewed' },
+        { value: 'expired', label: 'Expired' },
+      ];
+    }
+    // All tab — combined statuses
+    return [
+      { value: 'all', label: 'All Statuses' },
+      { value: 'draft', label: 'Draft' },
+      { value: 'sent', label: 'Sent' },
+      { value: 'viewed', label: 'Viewed' },
+      { value: 'deposit_paid', label: 'Deposit Paid' },
+      { value: 'expired', label: 'Expired' },
+    ];
+  };
+
+  const handleTabChange = (tab: TabKey) => {
+    setActiveTab(tab);
+    setStatusFilter('all');
+  };
+
+  const deleteEstimate = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this estimate? This cannot be undone.')) return;
+    try {
+      const response = await fetch(`/api/admin/trip-estimates/${id}`, { method: 'DELETE' });
+      const result = await response.json();
+      if (result.success) {
+        toast('Estimate deleted', 'success');
+        loadEstimates();
+      } else {
+        toast(result.error?.message || 'Failed to delete', 'error');
+      }
+    } catch (error) {
+      logger.error('Failed to delete estimate', { error });
+      toast('Failed to delete estimate', 'error');
     }
   };
 
   const deleteProposal = async (id: number) => {
-    if (
-      !confirm(
-        'Are you sure you want to delete this trip proposal? This cannot be undone.'
-      )
-    ) {
-      return;
-    }
-
+    if (!confirm('Are you sure you want to delete this proposal? This cannot be undone.')) return;
     try {
-      const response = await fetch(`/api/admin/trip-proposals/${id}`, {
-        method: 'DELETE',
-      });
-
+      const response = await fetch(`/api/admin/trip-proposals/${id}`, { method: 'DELETE' });
       const result = await response.json();
-
       if (result.success) {
-        toast('Trip proposal deleted successfully', 'success');
+        toast('Proposal deleted', 'success');
         loadProposals();
       } else {
-        toast(result.error || 'Failed to delete trip proposal', 'error');
+        toast(result.error || 'Failed to delete', 'error');
       }
     } catch (error) {
-      logger.error('Failed to delete trip proposal', { error });
-      toast('Failed to delete trip proposal', 'error');
+      logger.error('Failed to delete proposal', { error });
+      toast('Failed to delete proposal', 'error');
     }
   };
 
-  const duplicateProposal = async (id: number) => {
+  const convertToProposal = async (estimate: TripEstimate) => {
+    if (!confirm(`Convert estimate ${estimate.estimate_number} to a full trip proposal?`)) return;
     try {
-      const response = await fetch(`/api/admin/trip-proposals/${id}/duplicate`, {
+      const response = await fetch(`/api/admin/trip-estimates/${estimate.id}/convert`, {
         method: 'POST',
       });
-
       const result = await response.json();
-
       if (result.success) {
-        toast(`Trip proposal duplicated! New proposal: ${result.data.proposal_number}`, 'success');
-        loadProposals();
+        toast(`Proposal ${result.data.proposal_number} created!`, 'success');
+        router.push(`/admin/trip-proposals/${result.data.proposal_id}`);
       } else {
-        toast(result.error || 'Failed to duplicate trip proposal', 'error');
+        toast(result.error?.message || 'Failed to convert', 'error');
       }
     } catch (error) {
-      logger.error('Failed to duplicate trip proposal', { error });
-      toast('Failed to duplicate trip proposal', 'error');
+      logger.error('Failed to convert estimate', { error });
+      toast('Failed to convert estimate', 'error');
     }
   };
 
-  const convertToBooking = async (proposal: TripProposal) => {
-    if (
-      !confirm(
-        `Convert trip proposal ${proposal.proposal_number} for ${proposal.customer_name} to a booking?\n\nThis will create a new confirmed booking.`
-      )
-    ) {
-      return;
-    }
-
-    setConverting(proposal.id);
-    try {
-      const response = await fetch(
-        `/api/admin/trip-proposals/${proposal.id}/convert`,
-        {
-          method: 'POST',
-        }
-      );
-
-      const result = await response.json();
-
-      if (result.success) {
-        toast(`Booking ${result.data.booking_number} created!`, 'success');
-        router.push(`/admin/bookings/${result.data.booking_id}`);
-      } else {
-        toast(result.error || 'Failed to convert trip proposal', 'error');
-      }
-    } catch (error) {
-      logger.error('Failed to convert trip proposal', { error });
-      toast('Failed to convert trip proposal to booking', 'error');
-    } finally {
-      setConverting(null);
-    }
-  };
+  const loading = loadingEstimates || loadingProposals;
 
   const getStatusBadge = (status: string) => {
     const badges: Record<string, string> = {
       draft: 'bg-gray-100 text-gray-800',
       sent: 'bg-blue-100 text-blue-800',
       viewed: 'bg-yellow-100 text-yellow-800',
+      deposit_paid: 'bg-green-100 text-green-800',
       accepted: 'bg-green-100 text-green-800',
-      declined: 'bg-red-100 text-red-800',
       expired: 'bg-orange-100 text-orange-800',
-      booked: 'bg-purple-100 text-purple-800',
     };
 
     const icons: Record<string, string> = {
       draft: '📝',
       sent: '📧',
       viewed: '👁️',
+      deposit_paid: '💰',
       accepted: '✅',
-      declined: '❌',
       expired: '⏰',
-      booked: '🎉',
+    };
+
+    const labels: Record<string, string> = {
+      draft: 'DRAFT',
+      sent: 'SENT',
+      viewed: 'VIEWED',
+      deposit_paid: 'DEPOSIT PAID',
+      accepted: 'ACCEPTED',
+      expired: 'EXPIRED',
     };
 
     return (
       <span
-        className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold ${badges[status] || 'bg-gray-100 text-gray-800'}`}
+        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${badges[status] || 'bg-gray-100 text-gray-800'}`}
       >
         <span>{icons[status] || '📋'}</span>
-        <span>{status.toUpperCase()}</span>
+        <span>{labels[status] || status.toUpperCase()}</span>
+      </span>
+    );
+  };
+
+  const getTypeBadge = (itemType: 'quick_quote' | 'full_proposal') => {
+    if (itemType === 'quick_quote') {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-800 border border-amber-200">
+          ⚡ Quick Quote
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-800 border border-indigo-200">
+        🗺️ Full Proposal
       </span>
     );
   };
@@ -207,338 +394,260 @@ function TripProposalsPageContent() {
   const getTripTypeBadge = (tripType: string) => {
     const types: Record<string, { icon: string; label: string; color: string }> = {
       wine_tour: { icon: '🍷', label: 'Wine Tour', color: 'bg-purple-100 text-purple-800' },
+      wine_group: { icon: '🍇', label: 'Wine Group', color: 'bg-violet-100 text-violet-800' },
       celebration: { icon: '🎉', label: 'Celebration', color: 'bg-pink-100 text-pink-800' },
       corporate: { icon: '🏢', label: 'Corporate', color: 'bg-blue-100 text-blue-800' },
       family: { icon: '👨‍👩‍👧‍👦', label: 'Family', color: 'bg-green-100 text-green-800' },
       romantic: { icon: '💕', label: 'Romantic', color: 'bg-red-100 text-red-800' },
       birthday: { icon: '🎂', label: 'Birthday', color: 'bg-yellow-100 text-yellow-800' },
       anniversary: { icon: '💍', label: 'Anniversary', color: 'bg-amber-100 text-amber-800' },
+      wedding: { icon: '💒', label: 'Wedding', color: 'bg-rose-100 text-rose-800' },
       other: { icon: '✨', label: 'Other', color: 'bg-gray-100 text-gray-800' },
+      custom: { icon: '✨', label: 'Custom', color: 'bg-gray-100 text-gray-800' },
     };
-
     const type = types[tripType] || types.other;
-
     return (
-      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${type.color}`}>
-        <span>{type.icon}</span>
-        <span>{type.label}</span>
+      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${type!.color}`}>
+        <span>{type!.icon}</span>
+        <span>{type!.label}</span>
       </span>
     );
   };
 
-  const formatCurrency = (amount: string | number) => {
-    const num = typeof amount === 'string' ? parseFloat(amount) : amount;
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(num);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
-
-  const getDayCount = (startDate: string, endDate: string | null) => {
-    if (!endDate) return 1;
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const diff = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-    return Math.max(1, diff);
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-slate-50 p-6">
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-4xl font-bold text-gray-900">🗺️ Trip Proposals</h1>
-            <Link
-              href="/admin/trip-proposals/new"
-              className="px-6 py-3 bg-brand hover:bg-brand-hover text-white rounded-lg font-bold transition-colors shadow-lg"
-            >
-              + New Trip Proposal
-            </Link>
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <h1 className="text-2xl font-bold text-slate-900">Proposals</h1>
+            <div className="relative">
+              <button
+                onClick={() => setShowNewMenu(!showNewMenu)}
+                className="px-5 py-2.5 bg-[#1E3A5F] hover:bg-[#1A3354] text-white rounded-lg font-medium transition-colors"
+              >
+                + New
+              </button>
+              {showNewMenu && (
+                <>
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setShowNewMenu(false)}
+                  />
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-slate-200 z-20 overflow-hidden">
+                    <Link
+                      href="/admin/trip-estimates/new"
+                      className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors"
+                      onClick={() => setShowNewMenu(false)}
+                    >
+                      <span className="text-lg">⚡</span>
+                      <div>
+                        <div className="text-sm font-medium text-slate-900">Quick Quote</div>
+                        <div className="text-xs text-slate-500">Fast estimate with deposit</div>
+                      </div>
+                    </Link>
+                    <Link
+                      href="/admin/trip-proposals/new"
+                      className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors border-t border-slate-100"
+                      onClick={() => setShowNewMenu(false)}
+                    >
+                      <span className="text-lg">🗺️</span>
+                      <div>
+                        <div className="text-sm font-medium text-slate-900">Full Proposal</div>
+                        <div className="text-xs text-slate-500">Multi-day with itinerary</div>
+                      </div>
+                    </Link>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
-          <p className="text-gray-600">
-            Manage comprehensive multi-day trip proposals with hotels, restaurants, and activities
+          <p className="text-slate-500">
+            Quick quotes and full trip proposals — everything being sold
           </p>
         </div>
 
+        {/* Tabs */}
+        <div className="flex items-center gap-1 mb-6 bg-white rounded-lg border border-slate-200 p-1 w-fit">
+          {([
+            { key: 'all' as TabKey, label: 'All', count: allQuickQuotes.length + allFullProposals.length },
+            { key: 'quick_quotes' as TabKey, label: 'Quick Quotes', count: allQuickQuotes.length },
+            { key: 'full_proposals' as TabKey, label: 'Full Proposals', count: allFullProposals.length },
+          ]).map(({ key, label, count }) => (
+            <button
+              key={key}
+              onClick={() => handleTabChange(key)}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeTab === key
+                  ? 'bg-[#1E3A5F] text-white'
+                  : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              {label}
+              <span className={`ml-2 text-xs ${activeTab === key ? 'text-white/70' : 'text-slate-400'}`}>
+                ({count})
+              </span>
+            </button>
+          ))}
+        </div>
+
         {/* Filters */}
-        <div className="bg-white rounded-xl shadow-md p-6 mb-6">
+        <div className="bg-white rounded-xl border border-slate-200 p-4 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Status Filter */}
             <div>
-              <label className="block text-sm font-bold text-gray-900 mb-2">
-                Filter by Status
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                Status
               </label>
               <select
                 value={statusFilter}
-                onChange={(e) => {
-                  setStatusFilter(e.target.value);
-                  setPagination((prev) => ({ ...prev, offset: 0 }));
-                }}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand focus:ring-4 focus:ring-brand-light"
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:border-[#1E3A5F] focus:ring-2 focus:ring-[#1E3A5F]/20 outline-none"
               >
-                <option value="all">All Proposals</option>
-                <option value="draft">Drafts</option>
-                <option value="sent">Sent</option>
-                <option value="viewed">Viewed</option>
-                <option value="accepted">Accepted</option>
-                <option value="declined">Declined</option>
-                <option value="expired">Expired</option>
-                <option value="booked">Booked</option>
+                {getStatusOptions().map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
               </select>
             </div>
-
-            {/* Search */}
             <div>
-              <label className="block text-sm font-bold text-gray-900 mb-2">
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">
                 Search
               </label>
               <input
                 type="text"
                 value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setPagination((prev) => ({ ...prev, offset: 0 }));
-                }}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Customer name or email..."
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand focus:ring-4 focus:ring-brand-light"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:border-[#1E3A5F] focus:ring-2 focus:ring-[#1E3A5F]/20 outline-none"
               />
             </div>
           </div>
         </div>
 
-        {/* Results Summary */}
-        <div className="mb-4 text-sm text-gray-600">
-          Showing {proposals.length} of {pagination.total} trip proposals
+        {/* Results count */}
+        <div className="mb-4 text-sm text-slate-500">
+          {items.length} {items.length === 1 ? 'proposal' : 'proposals'}
         </div>
 
-        {/* Proposals List */}
+        {/* List */}
         {loading ? (
-          <div className="text-center py-12">
-            <div className="text-4xl mb-4">⏳</div>
-            <p className="text-gray-600">Loading trip proposals...</p>
-          </div>
-        ) : proposals.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-md p-12 text-center">
-            <div className="text-6xl mb-4">🗺️</div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">
-              No Trip Proposals Found
-            </h3>
-            <p className="text-gray-600 mb-6">
-              {searchTerm || statusFilter !== 'all'
-                ? 'Try adjusting your filters'
-                : 'Create your first multi-day trip proposal to get started'}
-            </p>
-            {!searchTerm && statusFilter === 'all' && (
-              <Link
-                href="/admin/trip-proposals/new"
-                className="inline-block px-6 py-3 bg-brand hover:bg-brand-hover text-white rounded-lg font-bold transition-colors"
-              >
-                + Create First Trip Proposal
-              </Link>
-            )}
-          </div>
-        ) : (
           <div className="space-y-4">
-            {proposals.map((proposal) => (
-              <div
-                key={proposal.id}
-                className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow overflow-hidden"
-              >
-                <div className="p-6">
-                  {/* Header Row */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2 flex-wrap">
-                        {getStatusBadge(proposal.status)}
-                        {getTripTypeBadge(proposal.trip_type)}
-                        <span className="text-sm font-mono text-gray-600">
-                          {proposal.proposal_number}
-                        </span>
-                      </div>
-                      <h3 className="text-xl font-bold text-gray-900 mb-1">
-                        {proposal.customer_name}
-                      </h3>
-                      <p className="text-gray-600">
-                        {getDayCount(proposal.start_date, proposal.end_date)}-day trip •{' '}
-                        {proposal.party_size} guest{proposal.party_size !== 1 ? 's' : ''}
-                      </p>
-                    </div>
-
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-brand">
-                        {formatCurrency(proposal.total)}
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        Deposit: {formatCurrency(proposal.deposit_amount)}
-                      </div>
-                    </div>
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="bg-white rounded-xl border border-slate-200 p-6">
+                <div className="animate-pulse space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="h-5 bg-slate-200 rounded-full w-24" />
+                    <div className="h-5 bg-slate-200 rounded-full w-28" />
                   </div>
-
-                  {/* Details Row */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 text-sm">
-                    <div>
-                      <div className="text-gray-500 font-semibold">Trip Dates</div>
-                      <div className="text-gray-900">
-                        {formatDate(proposal.start_date)}
-                        {proposal.end_date && proposal.end_date !== proposal.start_date && (
-                          <> - {formatDate(proposal.end_date)}</>
-                        )}
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="text-gray-500 font-semibold">Created</div>
-                      <div className="text-gray-900">{formatDate(proposal.created_at)}</div>
-                    </div>
-
-                    {proposal.sent_at && (
-                      <div>
-                        <div className="text-gray-500 font-semibold">Sent</div>
-                        <div className="text-gray-900">{formatDate(proposal.sent_at)}</div>
-                      </div>
-                    )}
-
-                    {proposal.valid_until && (
-                      <div>
-                        <div className="text-gray-500 font-semibold">Valid Until</div>
-                        <div
-                          className={`font-bold ${new Date(proposal.valid_until) < new Date() ? 'text-red-600' : 'text-gray-900'}`}
-                        >
-                          {formatDate(proposal.valid_until)}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Contact Info */}
-                  {(proposal.customer_email || proposal.customer_phone) && (
-                    <div className="bg-gray-50 rounded-lg border border-gray-200 p-3 mb-4 text-sm">
-                      <div className="flex flex-wrap gap-4">
-                        {proposal.customer_email && (
-                          <div className="flex items-center gap-2">
-                            <span className="text-gray-500">📧</span>
-                            <a
-                              href={`mailto:${proposal.customer_email}`}
-                              className="text-brand hover:underline"
-                            >
-                              {proposal.customer_email}
-                            </a>
-                          </div>
-                        )}
-                        {proposal.customer_phone && (
-                          <div className="flex items-center gap-2">
-                            <span className="text-gray-500">📱</span>
-                            <a
-                              href={`tel:${proposal.customer_phone}`}
-                              className="text-brand hover:underline"
-                            >
-                              {proposal.customer_phone}
-                            </a>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Actions */}
-                  <div className="flex flex-wrap gap-2">
-                    <Link
-                      href={`/trip-proposals/${proposal.proposal_number}`}
-                      target="_blank"
-                      className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-lg text-sm font-bold transition-colors"
-                    >
-                      👁️ Preview
-                    </Link>
-
-                    <Link
-                      href={`/admin/trip-proposals/${proposal.id}`}
-                      className="px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-900 rounded-lg text-sm font-bold transition-colors"
-                    >
-                      ✏️ Edit
-                    </Link>
-
-                    <button
-                      onClick={() => duplicateProposal(proposal.id)}
-                      className="px-4 py-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-900 rounded-lg text-sm font-bold transition-colors"
-                    >
-                      📋 Duplicate
-                    </button>
-
-                    {proposal.status === 'draft' && (
-                      <button
-                        onClick={() => deleteProposal(proposal.id)}
-                        className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-900 rounded-lg text-sm font-bold transition-colors"
-                      >
-                        🗑️ Delete
-                      </button>
-                    )}
-
-                    {proposal.status === 'accepted' && (
-                      <>
-                        <button
-                          onClick={() => convertToBooking(proposal)}
-                          disabled={converting === proposal.id}
-                          className="px-4 py-2 bg-purple-100 hover:bg-purple-200 text-purple-900 rounded-lg text-sm font-bold transition-colors disabled:opacity-50 disabled:cursor-wait"
-                        >
-                          {converting === proposal.id
-                            ? '⏳ Converting...'
-                            : '🎉 Convert to Booking'}
-                        </button>
-                        <Link
-                          href={`/admin/trip-proposals/${proposal.id}/itinerary`}
-                          className="px-4 py-2 bg-green-100 hover:bg-green-200 text-green-900 rounded-lg text-sm font-bold transition-colors"
-                        >
-                          🚗 Driver Itinerary
-                        </Link>
-                      </>
-                    )}
-                  </div>
+                  <div className="h-5 bg-slate-200 rounded w-48" />
+                  <div className="h-4 bg-slate-200 rounded w-32" />
                 </div>
               </div>
             ))}
           </div>
-        )}
+        ) : items.length === 0 ? (
+          <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+            <div className="text-5xl mb-4">🗺️</div>
+            <h3 className="text-xl font-semibold text-slate-900 mb-2">
+              No proposals found
+            </h3>
+            <p className="text-slate-500 mb-6">
+              {searchTerm || statusFilter !== 'all'
+                ? 'Try adjusting your filters'
+                : 'Create your first quick quote or full proposal to get started'}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {items.map((item) => (
+              <div
+                key={`${item.type}-${item.id}`}
+                className="bg-white rounded-xl border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all cursor-pointer"
+                onClick={() => router.push(item.editUrl)}
+              >
+                <div className="p-5">
+                  {/* Top row: badges + amount */}
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {getTypeBadge(item.type)}
+                      {getStatusBadge(item.status)}
+                      {getTripTypeBadge(item.tripType)}
+                      <span className="text-xs font-mono text-slate-400">{item.number}</span>
+                    </div>
+                    <div className="text-right shrink-0 ml-4">
+                      <div className="text-lg font-bold text-slate-900">
+                        {formatCurrency(item.total)}
+                      </div>
+                      <div className="text-xs text-slate-500">
+                        Deposit: {formatCurrency(item.depositAmount)}
+                      </div>
+                    </div>
+                  </div>
 
-        {/* Pagination */}
-        {pagination.total > pagination.limit && (
-          <div className="mt-6 flex items-center justify-between">
-            <button
-              onClick={() =>
-                setPagination((prev) => ({
-                  ...prev,
-                  offset: Math.max(0, prev.offset - prev.limit),
-                }))
-              }
-              disabled={pagination.offset === 0}
-              className="px-4 py-2 bg-white border-2 border-gray-300 rounded-lg font-bold text-gray-900 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              ← Previous
-            </button>
+                  {/* Customer + details */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-base font-semibold text-slate-900">
+                        {item.customerName}
+                      </h3>
+                      <div className="text-sm text-slate-500 mt-0.5">
+                        {item.startDate ? formatDate(item.startDate) : 'Date TBD'}
+                        {item.endDate && item.endDate !== item.startDate && (
+                          <> – {formatDate(item.endDate)}</>
+                        )}
+                        {' · '}
+                        {item.partySize} guest{item.partySize !== 1 ? 's' : ''}
+                      </div>
+                    </div>
 
-            <div className="text-sm text-gray-600">
-              Page {Math.floor(pagination.offset / pagination.limit) + 1} of{' '}
-              {Math.ceil(pagination.total / pagination.limit)}
-            </div>
-
-            <button
-              onClick={() =>
-                setPagination((prev) => ({ ...prev, offset: prev.offset + prev.limit }))
-              }
-              disabled={!pagination.hasMore}
-              className="px-4 py-2 bg-white border-2 border-gray-300 rounded-lg font-bold text-gray-900 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              Next →
-            </button>
+                    {/* Quick actions */}
+                    <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                      {item.previewUrl && (
+                        <Link
+                          href={item.previewUrl}
+                          target="_blank"
+                          className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                          title="Preview client page"
+                        >
+                          👁️
+                        </Link>
+                      )}
+                      <Link
+                        href={item.editUrl}
+                        className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        title="Edit"
+                      >
+                        ✏️
+                      </Link>
+                      {item.type === 'quick_quote' && item.status === 'deposit_paid' && (
+                        <button
+                          onClick={() => {
+                            const est = estimates.find((e) => e.id === item.id);
+                            if (est && !est.trip_proposal_id) convertToProposal(est);
+                          }}
+                          className="p-2 text-slate-400 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors"
+                          title="Convert to Full Proposal"
+                        >
+                          🗺️
+                        </button>
+                      )}
+                      {item.status === 'draft' && (
+                        <button
+                          onClick={() => {
+                            if (item.type === 'quick_quote') deleteEstimate(item.id);
+                            else deleteProposal(item.id);
+                          }}
+                          className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Delete"
+                        >
+                          🗑️
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
@@ -546,16 +655,19 @@ function TripProposalsPageContent() {
   );
 }
 
-export default function TripProposalsPage() {
+export default function ProposalsPage() {
   return (
     <Suspense
       fallback={
         <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-          Loading trip proposals...
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-10 w-10 border-2 border-[#1E3A5F] border-t-transparent mx-auto" />
+            <p className="mt-4 text-slate-500">Loading proposals...</p>
+          </div>
         </div>
       }
     >
-      <TripProposalsPageContent />
+      <ProposalsPageContent />
     </Suspense>
   );
 }

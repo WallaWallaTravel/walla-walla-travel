@@ -182,11 +182,11 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
     <div className="p-6 max-w-5xl mx-auto">
       {/* Header */}
       <div className="mb-6">
-        <Link 
-          href="/admin/bookings" 
+        <Link
+          href="/admin/bookings"
           className="text-blue-600 hover:text-blue-800 text-sm font-medium mb-4 inline-block"
         >
-          ← Back to Bookings
+          ← Back to Trips
         </Link>
         
         <div className="flex items-start justify-between">

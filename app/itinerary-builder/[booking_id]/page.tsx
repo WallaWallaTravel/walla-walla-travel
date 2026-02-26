@@ -432,7 +432,7 @@ export default function ItineraryBuilder({ params }: { params: Promise<{ booking
               onClick={() => router.push('/admin/bookings')}
               className="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-900 rounded-lg font-semibold transition-colors"
             >
-              ← Back to Bookings
+              ← Back to Trips
             </button>
             <button
               onClick={async () => {
