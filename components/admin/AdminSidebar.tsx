@@ -27,7 +27,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Leads', icon: '🎯', href: '/admin/leads', section: 'Sales Pipeline', dynamicBadge: 'pendingLeads', requiredAccess: 'admin' },
   { label: 'Proposals', icon: '🗺️', href: '/admin/trip-proposals', section: 'Sales Pipeline', requiredAccess: 'admin' },
   { label: 'Trips', icon: '✈️', href: '/admin/bookings', section: 'Sales Pipeline', requiredAccess: 'admin' },
-  { label: 'Shared Tours', icon: '🎫', href: '/admin/shared-tours', section: 'Sales Pipeline', badge: 'Soon', requiredAccess: 'admin' },
+  { label: 'Shared Tours', icon: '🎫', href: '/admin/shared-tours', section: 'Sales Pipeline', requiredAccess: 'admin' },
 
   // CRM (admin only) - unified customer relationship management
   { label: 'CRM', icon: '👤', href: '/admin/crm', section: 'CRM', requiredAccess: 'admin' },

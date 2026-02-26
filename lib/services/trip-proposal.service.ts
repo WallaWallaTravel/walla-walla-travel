@@ -558,9 +558,13 @@ export class TripProposalService extends BaseService {
     const limit = filters.limit || 50;
     const offset = filters.offset || 0;
 
-    const result = await this.query<TripProposal>(
-      `SELECT * FROM trip_proposals ${whereClause}
-       ORDER BY created_at DESC
+    const result = await this.query<TripProposal & { billable_guest_count: number; paid_guest_count: number }>(
+      `SELECT tp.*,
+        (SELECT COUNT(*)::int FROM trip_proposal_guests g WHERE g.trip_proposal_id = tp.id AND g.is_sponsored = false) AS billable_guest_count,
+        (SELECT COUNT(*)::int FROM trip_proposal_guests g WHERE g.trip_proposal_id = tp.id AND g.is_sponsored = false AND g.payment_status = 'paid') AS paid_guest_count
+       FROM trip_proposals tp
+       ${whereClause}
+       ORDER BY tp.created_at DESC
        LIMIT ${limit} OFFSET ${offset}`,
       params
     );
