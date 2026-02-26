@@ -189,9 +189,10 @@ function MyTripLayoutInner({ children }: { children: React.ReactNode }) {
 
   const visibleTabs = tabs.filter((tab) => tab.phases.includes(planningPhase));
 
-  // Payment pages render their own full-page chrome — skip the trip layout
+  // Payment and join pages render their own full-page chrome — skip the trip layout
   const isPaymentPage = pathname.startsWith(`/my-trip/${token}/pay`);
-  if (isPaymentPage) {
+  const isJoinPage = pathname.startsWith(`/my-trip/${token}/join`);
+  if (isPaymentPage || isJoinPage) {
     return <>{children}</>;
   }
 

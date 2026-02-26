@@ -245,10 +245,18 @@ export class TripProposalService extends BaseService {
     // Validate
     const validated = AddGuestSchema.parse(data);
 
-    // Check proposal exists
-    const proposalExists = await this.exists('trip_proposals', 'id = $1', [proposalId]);
-    if (!proposalExists) {
+    // Check proposal exists and get capacity
+    const proposal = await this.getById(proposalId);
+    if (!proposal) {
       throw new NotFoundError('TripProposal', proposalId.toString());
+    }
+
+    // Check capacity
+    if (proposal.max_guests) {
+      const count = await this.getGuestCount(proposalId);
+      if (count >= proposal.max_guests) {
+        throw new ValidationError(`Trip is at maximum capacity (${proposal.max_guests} guests)`);
+      }
     }
 
     const guest = await this.insert<TripProposalGuest>('trip_proposal_guests', {
@@ -264,6 +272,50 @@ export class TripProposalService extends BaseService {
     });
 
     return guest;
+  }
+
+  /**
+   * Get the current guest count for a proposal
+   */
+  async getGuestCount(proposalId: number): Promise<number> {
+    const result = await this.queryOne<{ count: string }>(
+      'SELECT COUNT(*) as count FROM trip_proposal_guests WHERE trip_proposal_id = $1',
+      [proposalId]
+    );
+    return parseInt(result?.count || '0', 10);
+  }
+
+  /**
+   * Get per-person cost estimates for dynamic pricing display
+   */
+  async getPerPersonEstimate(proposalId: number): Promise<{
+    current_per_person: number;
+    ceiling_price: number;
+    floor_price: number;
+    current_guest_count: number;
+    min_guests: number | null;
+    max_guests: number | null;
+    total: number;
+  }> {
+    const proposal = await this.getById(proposalId);
+    if (!proposal) {
+      throw new NotFoundError('TripProposal', proposalId.toString());
+    }
+
+    const guestCount = await this.getGuestCount(proposalId);
+    const total = proposal.total;
+    const minGuests = proposal.min_guests || guestCount || 1;
+    const maxGuests = proposal.max_guests || guestCount || 1;
+
+    return {
+      current_per_person: guestCount > 0 ? total / guestCount : total,
+      ceiling_price: total / minGuests,
+      floor_price: total / maxGuests,
+      current_guest_count: guestCount,
+      min_guests: proposal.min_guests,
+      max_guests: proposal.max_guests,
+      total,
+    };
   }
 
   /**

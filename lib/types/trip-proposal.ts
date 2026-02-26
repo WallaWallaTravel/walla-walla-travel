@@ -139,6 +139,14 @@ export interface TripProposal {
   payment_deadline: string | null;
   reminders_paused: boolean;
 
+  // Guest capacity & self-registration
+  max_guests: number | null;
+  min_guests: number | null;
+  min_guests_deadline: string | null;
+  dynamic_pricing_enabled: boolean;
+  guest_approval_required: boolean;
+  show_guest_count_to_guests: boolean;
+
   // Balance
   balance_due: number;
   balance_paid: boolean;
@@ -459,6 +467,12 @@ export interface UpdateTripProposalInput extends Partial<CreateTripProposalInput
   skip_deposit_on_accept?: boolean;
   planning_fee_mode?: 'flat' | 'percentage';
   planning_fee_percentage?: number;
+  max_guests?: number | null;
+  min_guests?: number | null;
+  min_guests_deadline?: string | null;
+  dynamic_pricing_enabled?: boolean;
+  guest_approval_required?: boolean;
+  show_guest_count_to_guests?: boolean;
 }
 
 /**
@@ -565,6 +579,12 @@ export const UpdateTripProposalSchema = CreateTripProposalSchema.partial().exten
   individual_billing_enabled: z.boolean().optional(),
   payment_deadline: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
   reminders_paused: z.boolean().optional(),
+  max_guests: z.number().int().positive().nullable().optional(),
+  min_guests: z.number().int().positive().nullable().optional(),
+  min_guests_deadline: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  dynamic_pricing_enabled: z.boolean().optional(),
+  guest_approval_required: z.boolean().optional(),
+  show_guest_count_to_guests: z.boolean().optional(),
 });
 
 export const AddDaySchema = z.object({
