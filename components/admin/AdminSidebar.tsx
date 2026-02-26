@@ -25,9 +25,8 @@ const NAV_ITEMS: NavItem[] = [
   // Proposals → replaced by Trip Proposals
   // Tour Offers → renamed to "Shared Tours", marked as coming soon
   { label: 'Leads', icon: '🎯', href: '/admin/leads', section: 'Sales Pipeline', dynamicBadge: 'pendingLeads', requiredAccess: 'admin' },
-  { label: 'Trip Estimates', icon: '💰', href: '/admin/trip-estimates', section: 'Sales Pipeline', requiredAccess: 'admin' },
-  { label: 'Trip Proposals', icon: '🗺️', href: '/admin/trip-proposals', section: 'Sales Pipeline', requiredAccess: 'admin' },
-  { label: 'Bookings', icon: '📅', href: '/admin/bookings', section: 'Sales Pipeline', requiredAccess: 'admin' },
+  { label: 'Proposals', icon: '🗺️', href: '/admin/trip-proposals', section: 'Sales Pipeline', requiredAccess: 'admin' },
+  { label: 'Trips', icon: '✈️', href: '/admin/bookings', section: 'Sales Pipeline', requiredAccess: 'admin' },
   { label: 'Shared Tours', icon: '🎫', href: '/admin/shared-tours', section: 'Sales Pipeline', badge: 'Soon', requiredAccess: 'admin' },
 
   // CRM (admin only) - unified customer relationship management
@@ -307,12 +306,12 @@ export function AdminMobileNav() {
   }, []);
 
   // Show role-appropriate items on mobile
-  // Full admins see Dashboard, Leads, Trip Proposals, Bookings
+  // Full admins see Dashboard, Leads, Proposals, Trips
   // Geology admins see Geology Dashboard only
   const mobileItems = userRole === 'geology_admin'
     ? NAV_ITEMS.filter(item => item.label === 'Geology Dashboard')
     : NAV_ITEMS.filter(item =>
-        ['Dashboard', 'Leads', 'Trip Proposals', 'Bookings'].includes(item.label) &&
+        ['Dashboard', 'Leads', 'Proposals', 'Trips'].includes(item.label) &&
         item.section !== 'Marketing' && // Exclude Marketing Leads
         canAccessItem(item, userRole)
       );

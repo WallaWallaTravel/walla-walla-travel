@@ -40,7 +40,7 @@ export default function BookingsError({
             href="/admin/bookings"
             className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors inline-block"
           >
-            Back to Bookings
+            Back to Trips
           </Link>
         </div>
       </div>

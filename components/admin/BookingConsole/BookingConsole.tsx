@@ -275,7 +275,7 @@ export default function BookingConsole() {
             onClick={() => router.push('/admin/bookings')}
             className="text-white hover:text-blue-200 font-semibold"
           >
-            ← Back to Bookings
+            ← Back to Trips
           </button>
         </div>
       </div>

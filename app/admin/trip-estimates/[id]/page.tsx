@@ -333,10 +333,10 @@ export default function EditTripEstimatePage({ params }: { params: Promise<{ id:
         {/* Header */}
         <div className="mb-8">
           <Link
-            href="/admin/trip-estimates"
+            href="/admin/trip-proposals"
             className="text-sm text-gray-600 hover:text-[#8B1538] mb-2 inline-block"
           >
-            &larr; Back to Trip Estimates
+            &larr; Back to Proposals
           </Link>
           <div className="flex items-center justify-between">
             <div>

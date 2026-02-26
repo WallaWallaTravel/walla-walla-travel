@@ -241,10 +241,10 @@ export default function NewTripEstimatePage() {
         {/* Header */}
         <div className="mb-8">
           <Link
-            href="/admin/trip-estimates"
+            href="/admin/trip-proposals"
             className="text-sm text-gray-600 hover:text-[#8B1538] mb-2 inline-block"
           >
-            &larr; Back to Trip Estimates
+            &larr; Back to Proposals
           </Link>
           <h1 className="text-4xl font-bold text-gray-900">💰 New Trip Estimate</h1>
           <p className="text-gray-600 mt-2">
