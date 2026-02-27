@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useTripPlannerStore } from '@/lib/stores/trip-planner';
 import { TripType, TripPreferences } from '@/lib/types/trip-planner';
 import { getItineraryBySlug, type Itinerary } from '@/lib/data/itineraries';
+import PhoneInput from '@/components/ui/PhoneInput';
 
 // ============================================================================
 // Trip Type Options
@@ -344,10 +345,9 @@ function NewTripForm() {
               <label className="block text-sm font-medium text-stone-700 mb-2">
                 Phone (optional)
               </label>
-              <input
-                type="tel"
+              <PhoneInput
                 value={formData.owner_phone}
-                onChange={(e) => setFormData({ ...formData, owner_phone: e.target.value })}
+                onChange={(value) => setFormData({ ...formData, owner_phone: value })}
                 placeholder="(555) 123-4567"
                 className="w-full px-4 py-3 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#722F37]"
               />

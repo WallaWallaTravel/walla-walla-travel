@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { logger } from '@/lib/logger';
+import PhoneInput from '@/components/ui/PhoneInput';
 
 /**
  * Shared Tour Ticket Booking Page
@@ -643,11 +644,10 @@ export default function BookSharedTourPage({ params }: { params: Promise<{ tour_
                 <label className="block text-sm font-medium text-slate-700 mb-1">
                   Phone
                 </label>
-                <input
-                  type="tel"
+                <PhoneInput
                   name="customerPhone"
                   value={formData.customerPhone}
-                  onChange={handleInputChange}
+                  onChange={(value) => setFormData(prev => ({ ...prev, customerPhone: value }))}
                   className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E07A5F]"
                   placeholder="(509) 555-0123"
                 />

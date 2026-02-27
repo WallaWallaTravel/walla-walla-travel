@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
+import PhoneInput from '@/components/ui/PhoneInput';
 
 interface TripInfo {
   trip_title: string;
@@ -299,10 +300,9 @@ export default function JoinTripPage({ params }: { params: Promise<{ token: stri
                 <label className="block text-sm font-semibold text-gray-900 mb-1">
                   Phone <span className="text-gray-500 font-normal">(optional)</span>
                 </label>
-                <input
-                  type="tel"
+                <PhoneInput
                   value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  onChange={(value) => setForm({ ...form, phone: value })}
                   placeholder="(555) 000-0000"
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 />

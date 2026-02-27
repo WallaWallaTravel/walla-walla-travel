@@ -30,16 +30,41 @@ export type PlanningPhase = (typeof PLANNING_PHASES)[number];
 export const TRIP_TYPES = [
   'wine_tour',
   'wine_group',
+  'multi_day_wine',
   'celebration',
   'corporate',
   'wedding',
   'anniversary',
   'family',
   'romantic',
+  'birthday',
   'custom',
+  'other',
 ] as const;
 
 export type TripType = (typeof TRIP_TYPES)[number];
+
+export interface TripTypeOption {
+  value: TripType;
+  label: string;
+  icon: string;
+  badgeColor: string;
+}
+
+export const TRIP_TYPE_OPTIONS: TripTypeOption[] = [
+  { value: 'wine_tour', label: 'Wine Tour', icon: '🍷', badgeColor: 'bg-purple-100 text-purple-800' },
+  { value: 'wine_group', label: 'Wine Group', icon: '🍇', badgeColor: 'bg-violet-100 text-violet-800' },
+  { value: 'multi_day_wine', label: 'Multi-Day Wine', icon: '🍷', badgeColor: 'bg-indigo-100 text-indigo-800' },
+  { value: 'celebration', label: 'Celebration', icon: '🎉', badgeColor: 'bg-pink-100 text-pink-800' },
+  { value: 'corporate', label: 'Corporate', icon: '🏢', badgeColor: 'bg-blue-100 text-blue-800' },
+  { value: 'wedding', label: 'Wedding', icon: '💒', badgeColor: 'bg-rose-100 text-rose-800' },
+  { value: 'anniversary', label: 'Anniversary', icon: '💍', badgeColor: 'bg-amber-100 text-amber-800' },
+  { value: 'family', label: 'Family', icon: '👨‍👩‍👧‍👦', badgeColor: 'bg-green-100 text-green-800' },
+  { value: 'romantic', label: 'Romantic', icon: '💕', badgeColor: 'bg-red-100 text-red-800' },
+  { value: 'birthday', label: 'Birthday', icon: '🎂', badgeColor: 'bg-yellow-100 text-yellow-800' },
+  { value: 'custom', label: 'Custom', icon: '✨', badgeColor: 'bg-gray-100 text-gray-800' },
+  { value: 'other', label: 'Other', icon: '✨', badgeColor: 'bg-gray-100 text-gray-800' },
+];
 
 export const STOP_TYPES = [
   'pickup',

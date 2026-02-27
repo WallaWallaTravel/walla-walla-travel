@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import type { EventCategory } from '@/lib/types/events';
 import { RecurrenceSection } from '@/components/events/RecurrenceSection';
+import PhoneInput from '@/components/ui/PhoneInput';
 
 export default function AdminCreateEventPage() {
   const router = useRouter();
@@ -536,11 +537,10 @@ export default function AdminCreateEventPage() {
               <label htmlFor="organizer_phone" className="block text-sm font-medium text-gray-900 mb-1">
                 Phone
               </label>
-              <input
+              <PhoneInput
                 id="organizer_phone"
-                type="tel"
                 value={form.organizer_phone}
-                onChange={(e) => updateField('organizer_phone', e.target.value)}
+                onChange={(value) => updateField('organizer_phone', value)}
                 className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/30"
               />
             </div>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import PhoneInput from '@/components/ui/PhoneInput';
 
 /**
  * Embeddable Booking Widget
@@ -265,11 +266,10 @@ function EmbedBookingContent() {
 
             <div>
               <label className="block text-xs font-medium text-slate-700 mb-1">Phone (optional)</label>
-              <input
-                type="tel"
+              <PhoneInput
                 name="phone"
                 value={formData.phone}
-                onChange={handleInputChange}
+                onChange={(value) => setFormData(prev => ({ ...prev, phone: value }))}
                 className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2"
                 placeholder="(509) 555-0123"
               />

@@ -9,6 +9,8 @@ import { ToastContainer } from '@/components/ui/ToastContainer';
 import SmartImportUploader from '@/components/admin/smart-import/SmartImportUploader';
 import SmartImportReview from '@/components/admin/smart-import/SmartImportReview';
 import type { SmartImportResult } from '@/lib/import/types';
+import { TRIP_TYPE_OPTIONS } from '@/lib/types/trip-proposal';
+import PhoneInput from '@/components/ui/PhoneInput';
 
 interface Brand {
   id: number;
@@ -110,17 +112,7 @@ interface FormData {
   inclusions: InclusionData[];
 }
 
-const TRIP_TYPES = [
-  { value: 'wine_tour', label: 'Wine Tour', icon: '🍷' },
-  { value: 'wine_group', label: 'Wine Group', icon: '🍇' },
-  { value: 'celebration', label: 'Celebration', icon: '🎉' },
-  { value: 'corporate', label: 'Corporate', icon: '🏢' },
-  { value: 'family', label: 'Family', icon: '👨‍👩‍👧‍👦' },
-  { value: 'romantic', label: 'Romantic', icon: '💕' },
-  { value: 'birthday', label: 'Birthday', icon: '🎂' },
-  { value: 'anniversary', label: 'Anniversary', icon: '💍' },
-  { value: 'other', label: 'Other', icon: '✨' },
-];
+// Trip types imported from @/lib/types/trip-proposal
 
 const STOP_TYPES = [
   { value: 'pickup', label: 'Pickup', icon: '🚗' },
@@ -839,11 +831,10 @@ export default function NewTripProposalPage() {
                           <label className="block text-sm font-bold text-gray-900 mb-2">
                             Phone
                           </label>
-                          <input
-                            type="tel"
+                          <PhoneInput
                             value={formData.customer_phone}
-                            onChange={(e) =>
-                              setFormData({ ...formData, customer_phone: e.target.value })
+                            onChange={(value) =>
+                              setFormData({ ...formData, customer_phone: value })
                             }
                             className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand focus:ring-4 focus:ring-brand-light"
                           />
@@ -889,7 +880,7 @@ export default function NewTripProposalPage() {
                           Trip Type
                         </label>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                          {TRIP_TYPES.map((type) => (
+                          {TRIP_TYPE_OPTIONS.map((type) => (
                             <button
                               key={type.value}
                               type="button"
@@ -1118,10 +1109,9 @@ export default function NewTripProposalPage() {
                                   placeholder="Email"
                                   className="px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-brand"
                                 />
-                                <input
-                                  type="tel"
+                                <PhoneInput
                                   value={guest.phone || ''}
-                                  onChange={(e) => updateGuest(index, { phone: e.target.value })}
+                                  onChange={(value) => updateGuest(index, { phone: value })}
                                   placeholder="Phone"
                                   className="px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-brand"
                                 />

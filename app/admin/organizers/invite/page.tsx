@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import PhoneInput from '@/components/ui/PhoneInput';
 
 interface InviteForm {
   organization_name: string;
@@ -363,14 +364,18 @@ export default function InviteOrganizerPage() {
             >
               Phone
             </label>
-            <input
+            <PhoneInput
               id="phone"
               name="phone"
-              type="tel"
               value={form.phone}
-              onChange={handleChange}
+              onChange={(value) => {
+                setForm((prev) => ({ ...prev, phone: value }));
+                if (fieldErrors.phone) {
+                  setFieldErrors((prev) => ({ ...prev, phone: '' }));
+                }
+                if (error) setError('');
+              }}
               placeholder="(optional)"
-              aria-label="Phone number"
               className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/30 focus:border-[#1E3A5F] transition-colors"
             />
           </div>

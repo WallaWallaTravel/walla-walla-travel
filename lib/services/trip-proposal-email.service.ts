@@ -48,13 +48,17 @@ function formatDateForEmail(dateStr: string | null | undefined): string {
 function getTripTypeLabel(type: string | null | undefined): string {
   const labels: Record<string, string> = {
     wine_tour: 'Wine Tour',
+    wine_group: 'Wine Group',
+    multi_day_wine: 'Multi-Day Wine Experience',
     celebration: 'Celebration',
     bachelor: 'Bachelor Party',
     corporate: 'Corporate Event',
     birthday: 'Birthday Celebration',
     anniversary: 'Anniversary',
+    wedding: 'Wedding',
     family: 'Family Outing',
     romantic: 'Romantic Getaway',
+    custom: 'Custom Experience',
     other: 'Custom Experience',
   };
   return type ? labels[type] || type : 'Wine Country Experience';

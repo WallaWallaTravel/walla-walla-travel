@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import PhoneInput from '@/components/ui/PhoneInput';
 
 interface ProfileData {
   organization_name: string;
@@ -172,15 +173,16 @@ export default function OrganizerProfilePage() {
 
           <div>
             <Label htmlFor="contact_phone">Contact Phone</Label>
-            <input
-              type="tel"
+            <PhoneInput
               id="contact_phone"
               name="contact_phone"
               value={form.contact_phone}
-              onChange={handleChange}
+              onChange={(value) => {
+                setForm((prev) => ({ ...prev, contact_phone: value }));
+                if (success) setSuccess('');
+              }}
               className={inputCls}
               placeholder="(509) 555-0123"
-              aria-label="Contact phone"
             />
           </div>
 

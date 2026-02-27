@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getBrandEmailConfig } from '@/lib/email-brands';
 import BrandFooter from '@/components/BrandFooter';
+import PhoneInput from '@/components/ui/PhoneInput';
 
 interface Proposal {
   id: number;
@@ -343,10 +344,9 @@ export default function ProposalAcceptance({ params }: { params: Promise<{ propo
                   <label className="block text-sm font-bold text-gray-900 mb-2">
                     Phone Number *
                   </label>
-                  <input
-                    type="tel"
+                  <PhoneInput
                     value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    onChange={(value) => setFormData({ ...formData, phone: value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8B1538] focus:border-transparent"
                     placeholder="(509) 123-4567"
                   />

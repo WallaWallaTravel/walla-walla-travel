@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import PhoneInput from '@/components/ui/PhoneInput';
 
 interface HotelInfo {
   name: string;
@@ -171,11 +172,10 @@ export default function PartnerRegisterPage() {
               <label htmlFor="phone" className="block text-sm font-medium text-slate-700 mb-1">
                 Phone Number (optional)
               </label>
-              <input
-                type="tel"
+              <PhoneInput
                 id="phone"
                 value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                onChange={(value) => setFormData({ ...formData, phone: value })}
                 className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#8B1538] focus:border-transparent"
                 placeholder="(509) 555-0123"
               />

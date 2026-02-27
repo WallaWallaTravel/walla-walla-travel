@@ -14,6 +14,7 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { useBookingTracking } from '@/lib/hooks/useBookingTracking';
 import { logger } from '@/lib/logger';
+import PhoneInput from '@/components/ui/PhoneInput';
 
 const FORM_STORAGE_KEY = 'ww_reserve_form_data';
 const STEP_STORAGE_KEY = 'ww_reserve_form_step';
@@ -374,11 +375,10 @@ export default function ReserveRefinePage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Phone Number *
                 </label>
-                <input
-                  type="tel"
+                <PhoneInput
                   required
                   value={formData.contactPhone}
-                  onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
+                  onChange={(value) => setFormData({ ...formData, contactPhone: value })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   placeholder="(555) 123-4567"
                 />

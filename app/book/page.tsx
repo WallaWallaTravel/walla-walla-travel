@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { useBookingTracking } from '@/lib/hooks/useBookingTracking';
 import { logger } from '@/lib/logger';
 import { generateSecureString } from '@/lib/utils';
+import PhoneInput from '@/components/ui/PhoneInput';
 
 /**
  * Book a Tour - Entry Point
@@ -927,11 +928,10 @@ function BookTourPageContent() {
                 <label className="block text-sm font-medium text-slate-700 mb-2">
                   Phone
                 </label>
-                <input
-                  type="tel"
+                <PhoneInput
                   name="phone"
                   value={formData.phone}
-                  onChange={handleInputChange}
+                  onChange={(value) => setFormData(prev => ({ ...prev, phone: value }))}
                   className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E07A5F]"
                   placeholder="(509) 555-0123"
                 />

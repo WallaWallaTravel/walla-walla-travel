@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic';
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { logger } from '@/lib/logger';
+import PhoneInput from '@/components/ui/PhoneInput';
 
 // Component that uses search params - must be wrapped in Suspense
 function BookingFormContent() {
@@ -225,11 +226,10 @@ function BookingFormContent() {
                 <label className="block text-base font-bold text-gray-900 mb-2">
                   Phone <span className="text-red-600">*</span>
                 </label>
-                <input
-                  type="tel"
+                <PhoneInput
                   name="phone"
                   value={formData.phone}
-                  onChange={handleChange}
+                  onChange={(value) => setFormData({ ...formData, phone: value })}
                   required
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-gray-900 font-semibold focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                   placeholder="(555) 123-4567"
