@@ -34,14 +34,14 @@ export class RefundService extends BaseService {
     refundPercentage: number;
     policyApplied: string;
   } {
-    // Parse as local time (new Date('YYYY-MM-DD') parses as UTC, causing timezone bugs)
+    // Use Date.UTC to count calendar days — avoids DST off-by-one errors
     const tour = typeof tourDate === 'string'
-      ? (() => { const [y, m, d] = tourDate.split('-').map(Number); return new Date(y, m - 1, d); })()
-      : tourDate;
+      ? (() => { const [y, m, d] = tourDate.split('-').map(Number); return { y, m: m - 1, d }; })()
+      : { y: tourDate.getFullYear(), m: tourDate.getMonth(), d: tourDate.getDate() };
     const now = new Date();
-    const daysUntilTour = Math.floor(
-      (tour.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-    );
+    const tourUTC = Date.UTC(tour.y, tour.m, tour.d);
+    const nowUTC = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+    const daysUntilTour = Math.round((tourUTC - nowUTC) / (1000 * 60 * 60 * 24));
 
     if (daysUntilTour >= 45) {
       return {
