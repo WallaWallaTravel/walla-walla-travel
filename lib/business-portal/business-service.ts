@@ -30,7 +30,8 @@ export interface BusinessActivityLogEntry {
 
 export interface Business {
   id: number;
-  business_type: 'winery' | 'restaurant' | 'hotel' | 'boutique' | 'gallery' | 'activity' | 'other';
+  business_type: 'winery' | 'restaurant' | 'hotel' | 'boutique' | 'gallery' | 'activity' | 'catering' | 'service' | 'other';
+  business_types: ('winery' | 'restaurant' | 'hotel' | 'boutique' | 'gallery' | 'activity' | 'catering' | 'service' | 'other')[];
   name: string;
   email?: string;
   phone?: string;
@@ -49,7 +50,8 @@ export interface Business {
 }
 
 export interface CreateBusinessInput {
-  business_type: 'winery' | 'restaurant' | 'hotel' | 'boutique' | 'gallery' | 'activity' | 'other';
+  business_type: 'winery' | 'restaurant' | 'hotel' | 'boutique' | 'gallery' | 'activity' | 'catering' | 'service' | 'other';
+  business_types?: ('winery' | 'restaurant' | 'hotel' | 'boutique' | 'gallery' | 'activity' | 'catering' | 'service' | 'other')[];
   name: string;
   contact_email: string;
   contact_phone?: string;
@@ -65,9 +67,11 @@ export async function createBusiness(data: CreateBusinessInput): Promise<Busines
     logger.debug('createBusiness: Creating business', { name: data.name });
 
     // Generate invite token using the DB function (from migration 059)
+    const businessTypes = data.business_types || [data.business_type];
     const result = await query(`
       INSERT INTO businesses (
         business_type,
+        business_types,
         name,
         email,
         phone,
@@ -77,10 +81,11 @@ export async function createBusiness(data: CreateBusinessInput): Promise<Busines
         invited_by,
         invited_at
       )
-      VALUES ($1, $2, $3, $4, $5, generate_business_invite_token(), 'invited', $6, NOW())
+      VALUES ($1, $2::TEXT[], $3, $4, $5, $6, generate_business_invite_token(), 'invited', $7, NOW())
       RETURNING *
     `, [
       data.business_type,
+      businessTypes,
       data.name,
       data.contact_email,
       data.contact_phone || null,
@@ -174,7 +179,7 @@ export async function getBusinesses(filters: {
 
   if (filters.business_type) {
     params.push(filters.business_type);
-    whereClauses.push(`business_type = $${++paramCount}`);
+    whereClauses.push(`business_types && ARRAY[$${++paramCount}]::TEXT[]`);
   }
 
   if (filters.status) {
@@ -364,9 +369,9 @@ export async function getBusinessStats(businessId: number): Promise<{
 }> {
   const result = await query(`
     SELECT 
-      (SELECT COUNT(*) 
+      (SELECT COUNT(*)
        FROM interview_questions q
-       JOIN businesses b ON (q.business_type = b.business_type OR q.business_type = 'all')
+       JOIN businesses b ON (q.business_type = ANY(b.business_types) OR q.business_type = 'all')
        WHERE b.id = $1 AND q.required = true) as total_questions,
       
       (SELECT COUNT(DISTINCT question_id) 

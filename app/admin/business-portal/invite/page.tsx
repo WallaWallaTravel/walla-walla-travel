@@ -11,22 +11,34 @@ import Link from 'next/link';
 
 interface BusinessInvite {
   name: string;
-  business_type: string;
+  business_types: string[];
   contact_email: string;
   contact_phone?: string;
 }
 
+const BUSINESS_TYPE_OPTIONS = [
+  { value: 'winery', label: 'Winery', icon: '🍷' },
+  { value: 'restaurant', label: 'Restaurant', icon: '🍽️' },
+  { value: 'hotel', label: 'Hotel / Lodging', icon: '🏨' },
+  { value: 'boutique', label: 'Boutique / Shop', icon: '🛍️' },
+  { value: 'gallery', label: 'Gallery', icon: '🎨' },
+  { value: 'activity', label: 'Activity / Experience', icon: '🎯' },
+  { value: 'catering', label: 'Catering', icon: '🍴' },
+  { value: 'service', label: 'Service', icon: '🔧' },
+  { value: 'other', label: 'Other', icon: '📍' },
+];
+
 export default function BusinessInvitePage() {
   const router = useRouter();
   const [invites, setInvites] = useState<BusinessInvite[]>([
-    { name: '', business_type: 'winery', contact_email: '', contact_phone: '' }
+    { name: '', business_types: ['winery'], contact_email: '', contact_phone: '' }
   ]);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [results, setResults] = useState<Array<{ success: boolean; business?: { name: string }; invite_token?: string; error?: string }>>([]);
 
   const addInviteRow = () => {
-    setInvites([...invites, { name: '', business_type: 'winery', contact_email: '', contact_phone: '' }]);
+    setInvites([...invites, { name: '', business_types: ['winery'], contact_email: '', contact_phone: '' }]);
   };
 
   const removeInviteRow = (index: number) => {
@@ -36,6 +48,20 @@ export default function BusinessInvitePage() {
   const updateInvite = (index: number, field: keyof BusinessInvite, value: string) => {
     const updated = [...invites];
     updated[index] = { ...updated[index], [field]: value };
+    setInvites(updated);
+  };
+
+  const toggleBusinessType = (index: number, type: string) => {
+    const updated = [...invites];
+    const current = updated[index].business_types;
+    if (current.includes(type)) {
+      // Don't allow removing the last type
+      if (current.length > 1) {
+        updated[index] = { ...updated[index], business_types: current.filter(t => t !== type) };
+      }
+    } else {
+      updated[index] = { ...updated[index], business_types: [...current, type] };
+    }
     setInvites(updated);
   };
 
@@ -54,10 +80,16 @@ export default function BusinessInvitePage() {
     setResults([]);
 
     try {
+      // Map business_types to include business_type (first element) for backward compat
+      const mappedInvites = validInvites.map(inv => ({
+        ...inv,
+        business_type: inv.business_types[0],
+        business_types: inv.business_types,
+      }));
       const response = await fetch('/api/admin/business-portal/invite', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ businesses: validInvites })
+        body: JSON.stringify({ businesses: mappedInvites })
       });
 
       const data = await response.json();
@@ -74,7 +106,7 @@ export default function BusinessInvitePage() {
       });
       
       // Clear form
-      setInvites([{ name: '', business_type: 'winery', contact_email: '', contact_phone: '' }]);
+      setInvites([{ name: '', business_types: ['winery'], contact_email: '', contact_phone: '' }]);
 
     } catch (error: unknown) {
       setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Failed to send invites' });
@@ -192,25 +224,28 @@ export default function BusinessInvitePage() {
                       />
                     </div>
 
-                    {/* Type */}
-                    <div>
+                    {/* Type (multi-select) */}
+                    <div className="md:col-span-2">
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Type *
+                        Type(s) * <span className="font-normal text-gray-500">(select all that apply)</span>
                       </label>
-                      <select
-                        value={invite.business_type}
-                        onChange={(e) => updateInvite(index, 'business_type', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        required
-                      >
-                        <option value="winery">Winery</option>
-                        <option value="restaurant">Restaurant</option>
-                        <option value="hotel">Hotel / Lodging</option>
-                        <option value="boutique">Boutique / Shop</option>
-                        <option value="gallery">Gallery</option>
-                        <option value="activity">Activity / Experience</option>
-                        <option value="other">Other</option>
-                      </select>
+                      <div className="flex flex-wrap gap-2">
+                        {BUSINESS_TYPE_OPTIONS.map((opt) => (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => toggleBusinessType(index, opt.value)}
+                            className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                              invite.business_types.includes(opt.value)
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
+                          >
+                            <span>{opt.icon}</span>
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
 
                     {/* Email */}

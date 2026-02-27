@@ -13,9 +13,12 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 // Schema for validating import rows
+const BUSINESS_TYPES = ['winery', 'restaurant', 'hotel', 'boutique', 'gallery', 'activity', 'catering', 'service', 'other'] as const;
+
 const ImportRowSchema = z.object({
   name: z.string().min(1, 'Name is required'),
-  business_type: z.enum(['winery', 'restaurant', 'hotel', 'boutique', 'gallery', 'activity', 'other']),
+  business_type: z.enum(BUSINESS_TYPES),
+  business_types: z.array(z.enum(BUSINESS_TYPES)).optional(),
   address: z.string().optional(),
   city: z.string().optional().default('Walla Walla'),
   state: z.string().optional().default('WA'),

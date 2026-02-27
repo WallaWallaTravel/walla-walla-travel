@@ -8,6 +8,7 @@ interface Business {
   id: number;
   name: string;
   business_type: string;
+  business_types: string[];
   address?: string;
   city: string;
   state: string;
@@ -50,6 +51,8 @@ const BUSINESS_TYPE_ICONS: Record<string, string> = {
   boutique: '🛍️',
   gallery: '🎨',
   activity: '🎯',
+  catering: '🍴',
+  service: '🔧',
   other: '📍',
 };
 
@@ -57,6 +60,7 @@ const BUSINESS_TYPE_ICONS: Record<string, string> = {
 interface ImportRow {
   name: string;
   business_type: string;
+  business_types?: string[];
   address?: string;
   city?: string;
   state?: string;
@@ -250,11 +254,14 @@ export default function AdminDirectoryPage() {
         row[h] = values[j] || '';
       });
 
-      // Map to our schema
+      // Map to our schema (support pipe-delimited types, e.g. "restaurant|catering")
       if (row.name || row.business_name) {
+        const rawType = row.business_type || row.type || 'other';
+        const types = rawType.includes('|') ? rawType.split('|').map((t: string) => t.trim()) : [rawType];
         rows.push({
           name: row.name || row.business_name,
-          business_type: row.business_type || row.type || 'other',
+          business_type: types[0],
+          business_types: types,
           address: row.address,
           city: row.city || 'Walla Walla',
           state: row.state || 'WA',
@@ -454,10 +461,14 @@ export default function AdminDirectoryPage() {
                         )}
                       </td>
                       <td className="px-4 py-3">
-                        <span className="inline-flex items-center gap-1">
-                          <span>{BUSINESS_TYPE_ICONS[business.business_type] || '📍'}</span>
-                          <span className="text-slate-600 capitalize text-sm">{business.business_type}</span>
-                        </span>
+                        <div className="flex flex-wrap gap-1">
+                          {(business.business_types || [business.business_type]).map((type) => (
+                            <span key={type} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 text-xs">
+                              <span>{BUSINESS_TYPE_ICONS[type] || '📍'}</span>
+                              <span className="text-slate-600 capitalize">{type}</span>
+                            </span>
+                          ))}
+                        </div>
                       </td>
                       <td className="px-4 py-3 text-sm text-slate-600">
                         <div>{business.city}, {business.state}</div>
@@ -575,7 +586,10 @@ export default function AdminDirectoryPage() {
               Optional: address, city, state, zip, phone, email, website, short_description
             </p>
             <p className="text-xs text-blue-700 mt-1">
-              Business types: winery, restaurant, hotel, boutique, gallery, activity, other
+              Business types: winery, restaurant, hotel, boutique, gallery, activity, catering, service, other
+            </p>
+            <p className="text-xs text-blue-700 mt-1">
+              Multiple types: use pipe separator (e.g. <code className="bg-blue-100 px-1 rounded">restaurant|catering</code>)
             </p>
           </div>
 
@@ -662,10 +676,14 @@ export default function AdminDirectoryPage() {
                     <tr key={i}>
                       <td className="px-4 py-3 font-medium text-slate-900">{row.name}</td>
                       <td className="px-4 py-3">
-                        <span className="inline-flex items-center gap-1">
-                          <span>{BUSINESS_TYPE_ICONS[row.business_type] || '📍'}</span>
-                          <span className="text-slate-600 capitalize text-sm">{row.business_type}</span>
-                        </span>
+                        <div className="flex flex-wrap gap-1">
+                          {(row.business_types || [row.business_type]).map((type) => (
+                            <span key={type} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 text-xs">
+                              <span>{BUSINESS_TYPE_ICONS[type] || '📍'}</span>
+                              <span className="text-slate-600 capitalize">{type}</span>
+                            </span>
+                          ))}
+                        </div>
                       </td>
                       <td className="px-4 py-3 text-sm text-slate-600">
                         {row.city}, {row.state}

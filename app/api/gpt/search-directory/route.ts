@@ -39,7 +39,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization'
 };
 
-const VALID_TYPES = ['restaurant', 'hotel', 'boutique', 'gallery', 'activity', 'other'];
+const VALID_TYPES = ['restaurant', 'hotel', 'boutique', 'gallery', 'activity', 'catering', 'service', 'other'];
 
 const TYPE_LABELS: Record<string, { singular: string; plural: string }> = {
   restaurant: { singular: 'restaurant', plural: 'restaurants' },
@@ -47,6 +47,8 @@ const TYPE_LABELS: Record<string, { singular: string; plural: string }> = {
   boutique: { singular: 'boutique', plural: 'boutiques' },
   gallery: { singular: 'gallery', plural: 'galleries' },
   activity: { singular: 'activity', plural: 'activities' },
+  catering: { singular: 'caterer', plural: 'caterers' },
+  service: { singular: 'service provider', plural: 'service providers' },
   other: { singular: 'business', plural: 'businesses' },
 };
 
@@ -68,9 +70,9 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   const params: (string | number)[] = [];
   let paramIndex = 1;
 
-  // Filter by business type if provided
+  // Filter by business type if provided (uses array overlap)
   if (type && VALID_TYPES.includes(type)) {
-    sql += ` AND business_type = $${paramIndex}`;
+    sql += ` AND $${paramIndex} = ANY(business_types)`;
     params.push(type);
     paramIndex++;
   }

@@ -9,6 +9,7 @@ export interface BusinessKnowledge {
   id: number;
   name: string;
   business_type: string;
+  business_types: string[];
   contact_email: string;
   status: 'approved' | 'pending' | 'draft';
   
@@ -47,11 +48,11 @@ export interface BusinessKnowledge {
 export async function getBusinessKnowledge(businessId: number): Promise<BusinessKnowledge | null> {
   // Get business
   const bizResult = await query(
-    `SELECT id, name, business_type, contact_email, status 
+    `SELECT id, name, business_type, business_types, contact_email, status
      FROM businesses WHERE id = $1 AND status = 'approved'`,
     [businessId]
   );
-  
+
   if (bizResult.rows.length === 0) return null;
   const business = bizResult.rows[0];
   
@@ -149,6 +150,7 @@ export async function getBusinessKnowledge(businessId: number): Promise<Business
     id: business.id,
     name: business.name,
     business_type: business.business_type,
+    business_types: business.business_types || [business.business_type],
     contact_email: business.contact_email,
     status: business.status,
     structured_data,
@@ -182,8 +184,8 @@ export async function searchBusinesses(criteria: {
     const knowledge = await getBusinessKnowledge(row.id);
     if (!knowledge) continue;
     
-    // Filter by business type
-    if (criteria.business_type && knowledge.business_type !== criteria.business_type) {
+    // Filter by business type (check against business_types array)
+    if (criteria.business_type && !knowledge.business_types.includes(criteria.business_type)) {
       continue;
     }
     
@@ -247,7 +249,7 @@ export async function searchBusinesses(criteria: {
 export function formatBusinessForAI(business: BusinessKnowledge): string {
   const sections: string[] = [];
   
-  sections.push(`**${business.name}** (${business.business_type})`);
+  sections.push(`**${business.name}** (${business.business_types.join(', ')})`);
   sections.push('');
   
   // Add insights

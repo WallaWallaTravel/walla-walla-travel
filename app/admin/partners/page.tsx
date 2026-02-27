@@ -27,6 +27,8 @@ const BUSINESS_TYPE_ICONS = {
   hotel: '🏨',
   restaurant: '🍽️',
   activity: '🎯',
+  catering: '🍴',
+  service: '🔧',
   other: '📍',
 };
 

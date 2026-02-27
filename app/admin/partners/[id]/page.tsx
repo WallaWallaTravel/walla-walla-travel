@@ -393,6 +393,8 @@ const BUSINESS_TYPE_ICONS: Record<string, string> = {
   hotel: '🏨',
   restaurant: '🍽️',
   activity: '🎯',
+  catering: '🍴',
+  service: '🔧',
   other: '📍',
 };
 

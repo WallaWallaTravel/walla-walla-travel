@@ -13,9 +13,12 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 // Schema for updating business
+const BUSINESS_TYPES = ['winery', 'restaurant', 'hotel', 'boutique', 'gallery', 'activity', 'catering', 'service', 'other'] as const;
+
 const UpdateBusinessSchema = z.object({
   name: z.string().min(1).optional(),
-  business_type: z.enum(['winery', 'restaurant', 'hotel', 'boutique', 'gallery', 'activity', 'other']).optional(),
+  business_type: z.enum(BUSINESS_TYPES).optional(),
+  business_types: z.array(z.enum(BUSINESS_TYPES)).min(1).optional(),
   address: z.string().optional(),
   city: z.string().optional(),
   state: z.string().optional(),

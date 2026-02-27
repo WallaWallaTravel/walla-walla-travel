@@ -21,6 +21,7 @@ export const GET = withErrorHandling(async (
     SELECT
       id,
       business_type,
+      business_types,
       name,
       email,
       phone,

@@ -16,7 +16,7 @@ export default function InvitePartnerPage() {
   const [formData, setFormData] = useState({
     email: '',
     business_name: '',
-    business_type: 'winery' as 'winery' | 'hotel' | 'restaurant' | 'activity' | 'other',
+    business_type: 'winery' as 'winery' | 'hotel' | 'restaurant' | 'activity' | 'catering' | 'service' | 'other',
     winery_id: '',
     notes: '',
   });
@@ -107,7 +107,7 @@ export default function InvitePartnerPage() {
                 setFormData({
                   email: '',
                   business_name: '',
-                  business_type: 'winery',
+                  business_type: 'winery' as 'winery' | 'hotel' | 'restaurant' | 'activity' | 'catering' | 'service' | 'other',
                   winery_id: '',
                   notes: '',
                 });
@@ -202,6 +202,8 @@ export default function InvitePartnerPage() {
                 <option value="hotel">🏨 Hotel</option>
                 <option value="restaurant">🍽️ Restaurant</option>
                 <option value="activity">🎯 Activity</option>
+                <option value="catering">🍴 Catering</option>
+                <option value="service">🔧 Service</option>
                 <option value="other">📍 Other</option>
               </select>
             </div>

@@ -107,9 +107,18 @@ function EmbedDirectoryContent() {
       case 'restaurant':
         return '🍽️';
       case 'lodging':
+      case 'hotel':
         return '🏨';
       case 'activity':
         return '🎯';
+      case 'catering':
+        return '🍴';
+      case 'service':
+        return '🔧';
+      case 'boutique':
+        return '🛍️';
+      case 'gallery':
+        return '🎨';
       default:
         return '📍';
     }

@@ -51,9 +51,9 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   if (type) {
     const types = type.split(',');
     if (types.length === 1) {
-      filters.business_type = types[0] as 'winery' | 'restaurant' | 'hotel' | 'boutique' | 'gallery' | 'activity' | 'other';
+      filters.business_type = types[0] as 'winery' | 'restaurant' | 'hotel' | 'boutique' | 'gallery' | 'activity' | 'catering' | 'service' | 'other';
     } else {
-      filters.business_type = types as ('winery' | 'restaurant' | 'hotel' | 'boutique' | 'gallery' | 'activity' | 'other')[];
+      filters.business_type = types as ('winery' | 'restaurant' | 'hotel' | 'boutique' | 'gallery' | 'activity' | 'catering' | 'service' | 'other')[];
     }
   }
 
