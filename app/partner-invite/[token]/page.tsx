@@ -19,6 +19,8 @@ const BUSINESS_TYPE_ICONS: Record<string, string> = {
   boutique: '🛍️',
   gallery: '🎨',
   activity: '🎯',
+  catering: '🍴',
+  service: '🔧',
   other: '📍',
 };
 

@@ -26,13 +26,14 @@ import crypto from 'crypto';
 // Types
 // ============================================================================
 
-export type BusinessType = 'winery' | 'restaurant' | 'hotel' | 'boutique' | 'gallery' | 'activity' | 'other';
+export type BusinessType = 'winery' | 'restaurant' | 'hotel' | 'boutique' | 'gallery' | 'activity' | 'catering' | 'service' | 'other';
 export type BusinessStatus = 'imported' | 'approved' | 'invited' | 'active' | 'rejected';
 
 export interface Business {
   id: number;
   name: string;
   business_type: BusinessType;
+  business_types: BusinessType[];
   address?: string;
   city: string;
   state: string;
@@ -152,10 +153,10 @@ class BusinessDirectoryService extends BaseService {
       paramIndex++;
     }
 
-    // Business type filter
+    // Business type filter (uses array overlap on business_types column)
     if (filters?.business_type) {
       const types = Array.isArray(filters.business_type) ? filters.business_type : [filters.business_type];
-      conditions.push(`business_type = ANY($${paramIndex})`);
+      conditions.push(`business_types && $${paramIndex}::TEXT[]`);
       params.push(types);
       paramIndex++;
     }
@@ -247,7 +248,7 @@ class BusinessDirectoryService extends BaseService {
    */
   async getTypeCounts(): Promise<Record<BusinessType, number>> {
     const result = await this.query<{ business_type: BusinessType; count: string }>(
-      `SELECT business_type, COUNT(*) as count FROM businesses WHERE status != 'rejected' GROUP BY business_type`
+      `SELECT unnest(business_types) AS business_type, COUNT(*) as count FROM businesses WHERE status != 'rejected' GROUP BY unnest(business_types)`
     );
 
     const counts: Record<BusinessType, number> = {
@@ -257,6 +258,8 @@ class BusinessDirectoryService extends BaseService {
       boutique: 0,
       gallery: 0,
       activity: 0,
+      catering: 0,
+      service: 0,
       other: 0,
     };
 
@@ -345,15 +348,17 @@ class BusinessDirectoryService extends BaseService {
         }
 
         // Insert business
+        const businessTypes = (row as BusinessImportRow & { business_types?: BusinessType[] }).business_types || [row.business_type];
         await this.query(
           `INSERT INTO businesses (
-            name, business_type, address, city, state, zip,
+            name, business_type, business_types, address, city, state, zip,
             phone, email, website, short_description,
             latitude, longitude, data_source, import_batch_id, status
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'csv_import', $13, 'imported')`,
+          ) VALUES ($1, $2, $3::TEXT[], $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'csv_import', $14, 'imported')`,
           [
             row.name,
             row.business_type,
+            businessTypes,
             row.address || null,
             row.city || 'Walla Walla',
             row.state || 'WA',
@@ -751,17 +756,19 @@ class BusinessDirectoryService extends BaseService {
   /**
    * Create a business manually
    */
-  async create(data: BusinessImportRow, createdBy: number): Promise<Business> {
+  async create(data: BusinessImportRow & { business_types?: BusinessType[] }, createdBy: number): Promise<Business> {
+    const businessTypes = data.business_types || [data.business_type];
     const result = await this.queryOne<Business>(
       `INSERT INTO businesses (
-        name, business_type, address, city, state, zip,
+        name, business_type, business_types, address, city, state, zip,
         phone, email, website, short_description,
         latitude, longitude, data_source, status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'manual', 'imported')
+      ) VALUES ($1, $2, $3::TEXT[], $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'manual', 'imported')
       RETURNING *`,
       [
         data.name,
         data.business_type,
+        businessTypes,
         data.address || null,
         data.city || 'Walla Walla',
         data.state || 'WA',
@@ -797,7 +804,7 @@ class BusinessDirectoryService extends BaseService {
     let paramIndex = 1;
 
     const allowedFields = [
-      'name', 'business_type', 'address', 'city', 'state', 'zip',
+      'name', 'business_type', 'business_types', 'address', 'city', 'state', 'zip',
       'phone', 'email', 'website', 'short_description', 'latitude', 'longitude',
     ];
 

@@ -42,7 +42,7 @@ export interface PartnerProfile {
   id: number;
   user_id: number;
   business_name: string;
-  business_type: 'winery' | 'hotel' | 'restaurant' | 'activity' | 'other';
+  business_type: 'winery' | 'hotel' | 'restaurant' | 'activity' | 'catering' | 'service' | 'other';
   winery_id?: number;
   hotel_id?: number;
   restaurant_id?: number;
@@ -73,7 +73,7 @@ export interface PartnerDashboardData {
 export interface PartnerInvitation {
   email: string;
   business_name: string;
-  business_type: 'winery' | 'hotel' | 'restaurant' | 'activity' | 'other';
+  business_type: 'winery' | 'hotel' | 'restaurant' | 'activity' | 'catering' | 'service' | 'other';
   winery_id?: number;
   notes?: string;
 }

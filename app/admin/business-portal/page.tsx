@@ -13,6 +13,7 @@ interface Business {
   id: number;
   name: string;
   business_type: string;
+  business_types?: string[];
   status: string;
   completion_percentage: number;
   submitted_at?: string;
@@ -246,7 +247,7 @@ export default function BusinessPortalAdminPage() {
                       <div className="text-sm text-gray-500">{business.contact_email}</div>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-700">
-                      {business.business_type}
+                      {(business.business_types || [business.business_type]).join(', ')}
                     </td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(business.status)}`}>

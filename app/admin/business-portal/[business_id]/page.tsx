@@ -14,6 +14,7 @@ interface Business {
   id: number;
   name: string;
   business_type: string;
+  business_types?: string[];
   status: string;
   email: string;
   phone?: string;
@@ -261,7 +262,7 @@ export default function BusinessReviewPage() {
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">{business.name}</h1>
                 <p className="text-sm text-gray-600">
-                  {business.business_type} • {business.email}
+                  {(business.business_types || [business.business_type]).join(', ')} • {business.email}
                 </p>
               </div>
             </div>

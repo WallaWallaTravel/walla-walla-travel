@@ -41,6 +41,7 @@ export const POST = withErrorHandling(async (request) => {
       id: business.id,
       name: business.name,
       business_type: business.business_type,
+      business_types: (business as unknown as { business_types?: string[] }).business_types || [business.business_type],
       status: business.status,
       email: business.email,
       invite_token: business.invite_token

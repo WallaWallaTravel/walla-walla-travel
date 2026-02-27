@@ -15,6 +15,7 @@ export const dynamic = 'force-dynamic';
 interface BusinessInvite {
   name: string;
   business_type: string;
+  business_types?: string[];
   contact_email: string;
   contact_phone?: string;
 }
@@ -52,14 +53,16 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
 
       // Insert into database
       // Columns match migration 059: email, phone, invite_token (not contact_email, contact_phone, unique_code)
+      const businessTypes = business.business_types || [business.business_type];
       const result = await query(
         `INSERT INTO businesses
-          (name, business_type, email, phone, invite_token, status, invited_at)
-        VALUES ($1, $2, $3, $4, $5, 'invited', NOW())
+          (name, business_type, business_types, email, phone, invite_token, status, invited_at)
+        VALUES ($1, $2, $3::TEXT[], $4, $5, $6, 'invited', NOW())
         RETURNING id, invite_token`,
         [
           business.name,
-          business.business_type,
+          businessTypes[0],
+          businessTypes,
           business.contact_email,
           business.contact_phone || null,
           invite_token

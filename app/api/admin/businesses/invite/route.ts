@@ -28,7 +28,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     throw new BadRequestError('business_type, name, and contact_email are required');
   }
 
-  if (!['winery', 'restaurant', 'hotel', 'boutique', 'gallery', 'activity', 'other'].includes(business_type)) {
+  if (!['winery', 'restaurant', 'hotel', 'boutique', 'gallery', 'activity', 'catering', 'service', 'other'].includes(business_type)) {
     throw new BadRequestError('Invalid business_type');
   }
 

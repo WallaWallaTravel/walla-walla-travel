@@ -38,18 +38,19 @@ export interface TextEntry {
 }
 
 /**
- * Get questions for a business type
+ * Get questions for a business type (supports single type or array of types)
  */
 export async function getQuestionsForBusiness(
-  businessType: string
+  businessType: string | string[]
 ): Promise<InterviewQuestion[]> {
+  const types = Array.isArray(businessType) ? businessType : [businessType];
   const result = await query(`
     SELECT * FROM interview_questions
-    WHERE (business_type = $1 OR business_type = 'all')
+    WHERE (business_type = ANY($1) OR business_type = 'all')
     AND active = true
     ORDER BY question_number
-  `, [businessType]);
-  
+  `, [types]);
+
   return result.rows;
 }
 
@@ -63,20 +64,20 @@ export async function getBusinessQuestionProgress(
   voiceAnswers: Map<number, VoiceEntry>;
   textAnswers: Map<number, TextEntry>;
 }> {
-  // Get business type
+  // Get business types (prefer business_types array, fall back to single business_type)
   const bizResult = await query(
-    'SELECT business_type FROM businesses WHERE id = $1',
+    'SELECT business_type, business_types FROM businesses WHERE id = $1',
     [businessId]
   );
-  
+
   if (bizResult.rows.length === 0) {
     throw new Error('Business not found');
   }
-  
-  const businessType = bizResult.rows[0].business_type;
-  
-  // Get questions
-  const questions = await getQuestionsForBusiness(businessType);
+
+  const businessTypes = bizResult.rows[0].business_types || [bizResult.rows[0].business_type];
+
+  // Get questions (union of questions for all business types)
+  const questions = await getQuestionsForBusiness(businessTypes);
   
   // Get voice answers
   const voiceResult = await query(
