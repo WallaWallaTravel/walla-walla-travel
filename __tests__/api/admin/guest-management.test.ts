@@ -6,7 +6,9 @@
 
 // Mock auth wrapper — passthrough
 jest.mock('@/lib/api/middleware/auth-wrapper', () => ({
-  withAdminAuth: (handler: Function) =>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  withAdminAuth: (handler: (...args: any[]) => any) =>
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (request: any, context: any) => handler(request, { user: { id: 1, role: 'admin' } }, context),
 }));
 

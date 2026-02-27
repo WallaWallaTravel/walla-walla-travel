@@ -11,7 +11,7 @@ jest.mock('@/lib/db', () => ({
 }));
 
 jest.mock('@/lib/db/transaction', () => ({
-  withTransaction: jest.fn((cb: Function) => cb()),
+  withTransaction: jest.fn((cb: () => unknown) => cb()),
 }));
 
 jest.mock('@/lib/monitoring/error-logger', () => ({
