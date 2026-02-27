@@ -13,29 +13,22 @@ export function isValidEmail(email: string): boolean {
   return emailRegex.test(email);
 }
 
+import { isValidPhone as _isValidPhone, formatPhoneDisplay } from '@/lib/utils/phone-utils';
+
 /**
  * Phone number validation (US format)
+ * Delegates to phone-utils.ts for consistent validation
  */
 export function isValidPhone(phone: string): boolean {
-  // Remove all non-digit characters
-  const digits = phone.replace(/\D/g, '');
-  // Should have 10 or 11 digits (with or without country code)
-  return digits.length === 10 || digits.length === 11;
+  return _isValidPhone(phone);
 }
 
 /**
  * Format phone number to (XXX) XXX-XXXX
+ * Delegates to phone-utils.ts for consistent formatting
  */
 export function formatPhone(phone: string): string {
-  const digits = phone.replace(/\D/g, '');
-  
-  if (digits.length === 10) {
-    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
-  } else if (digits.length === 11) {
-    return `+${digits[0]} (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
-  }
-  
-  return phone;
+  return formatPhoneDisplay(phone);
 }
 
 /**

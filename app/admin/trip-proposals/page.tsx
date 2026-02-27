@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { logger } from '@/lib/logger';
 import { useToast } from '@/lib/hooks/useToast';
 import { ToastContainer } from '@/components/ui/ToastContainer';
+import { TRIP_TYPE_OPTIONS } from '@/lib/types/trip-proposal';
 
 // ============================================================================
 // Types
@@ -392,24 +393,14 @@ function ProposalsPageContent() {
   };
 
   const getTripTypeBadge = (tripType: string) => {
-    const types: Record<string, { icon: string; label: string; color: string }> = {
-      wine_tour: { icon: '🍷', label: 'Wine Tour', color: 'bg-purple-100 text-purple-800' },
-      wine_group: { icon: '🍇', label: 'Wine Group', color: 'bg-violet-100 text-violet-800' },
-      celebration: { icon: '🎉', label: 'Celebration', color: 'bg-pink-100 text-pink-800' },
-      corporate: { icon: '🏢', label: 'Corporate', color: 'bg-blue-100 text-blue-800' },
-      family: { icon: '👨‍👩‍👧‍👦', label: 'Family', color: 'bg-green-100 text-green-800' },
-      romantic: { icon: '💕', label: 'Romantic', color: 'bg-red-100 text-red-800' },
-      birthday: { icon: '🎂', label: 'Birthday', color: 'bg-yellow-100 text-yellow-800' },
-      anniversary: { icon: '💍', label: 'Anniversary', color: 'bg-amber-100 text-amber-800' },
-      wedding: { icon: '💒', label: 'Wedding', color: 'bg-rose-100 text-rose-800' },
-      other: { icon: '✨', label: 'Other', color: 'bg-gray-100 text-gray-800' },
-      custom: { icon: '✨', label: 'Custom', color: 'bg-gray-100 text-gray-800' },
-    };
-    const type = types[tripType] || types.other;
+    const typeOption = TRIP_TYPE_OPTIONS.find(t => t.value === tripType);
+    const icon = typeOption?.icon || '✨';
+    const label = typeOption?.label || tripType;
+    const color = typeOption?.badgeColor || 'bg-gray-100 text-gray-800';
     return (
-      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${type!.color}`}>
-        <span>{type!.icon}</span>
-        <span>{type!.label}</span>
+      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${color}`}>
+        <span>{icon}</span>
+        <span>{label}</span>
       </span>
     );
   };

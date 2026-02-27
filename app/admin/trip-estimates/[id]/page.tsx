@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { logger } from '@/lib/logger';
+import PhoneInput from '@/components/ui/PhoneInput';
 
 const TRIP_TYPES = [
   { value: 'wine_tour', label: 'Wine Tour', icon: '🍷' },
@@ -469,10 +470,9 @@ export default function EditTripEstimatePage({ params }: { params: Promise<{ id:
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-gray-900 mb-2">Phone</label>
-                  <input
-                    type="tel"
+                  <PhoneInput
                     value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    onChange={(value) => setCustomerPhone(value)}
                     disabled={!isDraft}
                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#8B1538] focus:ring-4 focus:ring-[#FDF2F4] outline-none disabled:bg-gray-100 disabled:text-gray-600"
                   />

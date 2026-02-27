@@ -3,6 +3,7 @@
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import PhoneInput from '@/components/ui/PhoneInput';
 
 /**
  * Partner Portal - Book Guest Form
@@ -280,10 +281,9 @@ export default function PartnerBookGuestPage({ params }: { params: Promise<{ tou
             <label className="block text-sm font-medium text-slate-700 mb-1">
               Guest Phone
             </label>
-            <input
-              type="tel"
+            <PhoneInput
               value={formData.customer_phone}
-              onChange={(e) => setFormData(prev => ({ ...prev, customer_phone: e.target.value }))}
+              onChange={(value) => setFormData(prev => ({ ...prev, customer_phone: value }))}
               className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E07A5F]"
               placeholder="(509) 555-0123"
             />

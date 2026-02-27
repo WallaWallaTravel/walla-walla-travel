@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { logger } from '@/lib/logger';
 import type { CrmContactSummary, LifecycleStage, LeadTemperature } from '@/types/crm';
+import PhoneInput from '@/components/ui/PhoneInput';
 
 interface ContactsResponse {
   contacts: CrmContactSummary[];
@@ -312,10 +313,9 @@ export default function CrmContactsPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Phone</label>
-                <input
-                  type="tel"
+                <PhoneInput
                   value={newContact.phone}
-                  onChange={(e) => setNewContact({ ...newContact, phone: e.target.value })}
+                  onChange={(value) => setNewContact({ ...newContact, phone: value })}
                   className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#8B1538] focus:border-[#8B1538] outline-none"
                 />
               </div>

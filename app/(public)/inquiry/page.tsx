@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { logger } from '@/lib/logger';
+import PhoneInput from '@/components/ui/PhoneInput';
 
 interface FormData {
   // Customer Info
@@ -299,12 +300,11 @@ export default function InquiryPage() {
                 <label htmlFor="phone" className="block text-base font-semibold text-gray-900 mb-2">
                   Phone <span className="text-red-600">*</span>
                 </label>
-                <input
-                  type="tel"
+                <PhoneInput
                   id="phone"
                   name="phone"
                   value={formData.phone}
-                  onChange={handleChange}
+                  onChange={(value) => setFormData({ ...formData, phone: value })}
                   required
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-gray-900 focus:border-[#8B1538] focus:ring-2 focus:ring-[#8B1538]/20 transition-colors"
                   placeholder="(555) 123-4567"

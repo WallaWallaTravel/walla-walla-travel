@@ -4,18 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { logger } from '@/lib/logger';
-
-const TRIP_TYPES = [
-  { value: 'wine_tour', label: 'Wine Tour', icon: '🍷' },
-  { value: 'wine_group', label: 'Wine Group', icon: '🍇' },
-  { value: 'celebration', label: 'Celebration', icon: '🎉' },
-  { value: 'corporate', label: 'Corporate', icon: '🏢' },
-  { value: 'wedding', label: 'Wedding', icon: '💒' },
-  { value: 'anniversary', label: 'Anniversary', icon: '💍' },
-  { value: 'family', label: 'Family', icon: '👨‍👩‍👧‍👦' },
-  { value: 'romantic', label: 'Romantic', icon: '💕' },
-  { value: 'custom', label: 'Custom', icon: '✨' },
-];
+import { TRIP_TYPE_OPTIONS } from '@/lib/types/trip-proposal';
+import PhoneInput from '@/components/ui/PhoneInput';
 
 const CATEGORIES = [
   { value: 'transportation', label: 'Transportation', defaultUnit: 'days', defaultDesc: 'Daily touring' },
@@ -289,10 +279,9 @@ export default function NewTripEstimatePage() {
                 {/* Phone */}
                 <div>
                   <label className="block text-sm font-bold text-gray-900 mb-2">Phone</label>
-                  <input
-                    type="tel"
+                  <PhoneInput
                     value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    onChange={(value) => setCustomerPhone(value)}
                     placeholder="(555) 123-4567"
                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#8B1538] focus:ring-4 focus:ring-[#FDF2F4] outline-none"
                   />
@@ -306,7 +295,7 @@ export default function NewTripEstimatePage() {
                     onChange={(e) => setTripType(e.target.value)}
                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#8B1538] focus:ring-4 focus:ring-[#FDF2F4] outline-none"
                   >
-                    {TRIP_TYPES.map((type) => (
+                    {TRIP_TYPE_OPTIONS.map((type) => (
                       <option key={type.value} value={type.value}>
                         {type.icon} {type.label}
                       </option>

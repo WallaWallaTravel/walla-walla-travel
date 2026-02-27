@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { logger } from '@/lib/logger';
+import PhoneInput from '@/components/ui/PhoneInput';
 
 interface ProfileData {
   business_name: string;
@@ -218,10 +219,9 @@ export default function PartnerProfilePage() {
               <label className="block text-sm font-medium text-slate-700 mb-1">
                 Phone
               </label>
-              <input
-                type="tel"
+              <PhoneInput
                 value={profile.contact_phone}
-                onChange={(e) => setProfile({ ...profile, contact_phone: e.target.value })}
+                onChange={(value) => setProfile({ ...profile, contact_phone: value })}
                 className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 focus:outline-none"
                 placeholder="(509) 555-0100"
               />

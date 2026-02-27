@@ -6,6 +6,7 @@
 
 import { logger } from '@/lib/logger';
 import { crmSyncService } from '@/lib/services/crm-sync.service';
+import { toE164 } from '@/lib/utils/phone-utils';
 
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
 const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
@@ -25,29 +26,10 @@ interface SMSResult {
 
 /**
  * Format phone number to E.164 format
- * Assumes US numbers if no country code provided
+ * Delegates to phone-utils.ts for consistent formatting
  */
 function formatPhoneNumber(phone: string): string {
-  // Remove all non-numeric characters
-  const cleaned = phone.replace(/\D/g, '');
-  
-  // If it's 10 digits, assume US and add +1
-  if (cleaned.length === 10) {
-    return `+1${cleaned}`;
-  }
-  
-  // If it's 11 digits starting with 1, add +
-  if (cleaned.length === 11 && cleaned.startsWith('1')) {
-    return `+${cleaned}`;
-  }
-  
-  // If it already has a +, return as is
-  if (phone.startsWith('+')) {
-    return phone;
-  }
-  
-  // Otherwise, return with + prefix
-  return `+${cleaned}`;
+  return toE164(phone);
 }
 
 // Default timeout for SMS API calls (30 seconds)

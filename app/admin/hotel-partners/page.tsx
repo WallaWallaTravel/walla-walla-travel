@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import PhoneInput from '@/components/ui/PhoneInput';
 
 interface HotelPartner {
   id: string;
@@ -355,10 +356,9 @@ export default function AdminHotelPartnersPage() {
                 <label className="block text-sm font-medium text-slate-700 mb-1">
                   Phone
                 </label>
-                <input
-                  type="tel"
+                <PhoneInput
                   value={newHotel.phone}
-                  onChange={(e) => setNewHotel({ ...newHotel, phone: e.target.value })}
+                  onChange={(value) => setNewHotel({ ...newHotel, phone: value })}
                   className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#8B1538] focus:border-transparent"
                   placeholder="(509) 555-0123"
                 />

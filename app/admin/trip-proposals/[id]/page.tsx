@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { logger } from '@/lib/logger';
 import { useToast } from '@/lib/hooks/useToast';
 import { ToastContainer } from '@/components/ui/ToastContainer';
+import { TRIP_TYPE_OPTIONS } from '@/lib/types/trip-proposal';
+import PhoneInput from '@/components/ui/PhoneInput';
 
 interface Brand {
   id: number;
@@ -154,16 +156,7 @@ interface ReminderRecord {
   custom_message: string | null;
 }
 
-const TRIP_TYPES = [
-  { value: 'wine_tour', label: 'Wine Tour', icon: '🍷' },
-  { value: 'celebration', label: 'Celebration', icon: '🎉' },
-  { value: 'corporate', label: 'Corporate', icon: '🏢' },
-  { value: 'family', label: 'Family', icon: '👨‍👩‍👧‍👦' },
-  { value: 'romantic', label: 'Romantic', icon: '💕' },
-  { value: 'birthday', label: 'Birthday', icon: '🎂' },
-  { value: 'anniversary', label: 'Anniversary', icon: '💍' },
-  { value: 'other', label: 'Other', icon: '✨' },
-];
+// Trip types imported from @/lib/types/trip-proposal
 
 const STOP_TYPES = [
   { value: 'pickup', label: 'Pickup', icon: '🚗' },
@@ -1010,10 +1003,9 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-900 mb-1">Phone</label>
-                <input
-                  type="tel"
+                <PhoneInput
                   value={newGuestData.phone}
-                  onChange={(e) => setNewGuestData({ ...newGuestData, phone: e.target.value })}
+                  onChange={(value) => setNewGuestData({ ...newGuestData, phone: value })}
                   placeholder="(555) 000-0000"
                   className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
                 />
@@ -1261,10 +1253,9 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                         <label className="block text-sm font-bold text-gray-900 mb-2">
                           Phone
                         </label>
-                        <input
-                          type="tel"
+                        <PhoneInput
                           value={proposal.customer_phone || ''}
-                          onChange={(e) => updateProposal({ customer_phone: e.target.value })}
+                          onChange={(value) => updateProposal({ customer_phone: value })}
                           className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand"
                         />
                       </div>
@@ -1288,7 +1279,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                         Trip Type
                       </label>
                       <div className="flex flex-wrap gap-2">
-                        {TRIP_TYPES.map((type) => (
+                        {TRIP_TYPE_OPTIONS.map((type) => (
                           <button
                             key={type.value}
                             onClick={() => updateProposal({ trip_type: type.value })}
@@ -1570,18 +1561,10 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                                           </a>
                                         )}
                                       </div>
-                                      <input
-                                        type="tel"
+                                      <PhoneInput
                                         value={stop.vendor_phone || ''}
-                                        onBlur={(e) => {
-                                          fetch(`/api/admin/trip-proposals/${id}/stops/${stop.id}/vendor`, {
-                                            method: 'PATCH',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ vendor_phone: e.target.value }),
-                                          });
-                                        }}
-                                        onChange={(e) => {
-                                          const newStops = day.stops.map(s => s.id === stop.id ? { ...s, vendor_phone: e.target.value } : s);
+                                        onChange={(value) => {
+                                          const newStops = day.stops.map(s => s.id === stop.id ? { ...s, vendor_phone: value } : s);
                                           const newDays = (proposal.days || []).map(d => d.id === day.id ? { ...d, stops: newStops } : d);
                                           setProposal({ ...proposal, days: newDays });
                                         }}

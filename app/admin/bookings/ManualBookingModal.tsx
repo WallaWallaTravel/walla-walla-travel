@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { logger } from '@/lib/logger';
+import PhoneInput from '@/components/ui/PhoneInput';
 
 interface Props {
   onClose: () => void;
@@ -191,11 +192,10 @@ export default function ManualBookingModal({ onClose, onComplete }: Props) {
                   <label className="block text-sm font-bold text-gray-900 mb-2">
                     Phone <span className="text-red-600">*</span>
                   </label>
-                  <input
-                    type="tel"
+                  <PhoneInput
                     name="customer_phone"
                     value={formData.customer_phone}
-                    onChange={handleChange}
+                    onChange={(value) => setFormData(prev => ({ ...prev, customer_phone: value }))}
                     required
                     className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500"
                   />

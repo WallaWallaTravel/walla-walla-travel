@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { BookingData } from '../page';
+import PhoneInput from '@/components/ui/PhoneInput';
 
 interface Props {
   bookingData: BookingData;
@@ -99,10 +100,9 @@ export default function Step3CustomerInfo({ bookingData, updateBookingData, next
           <label className="block text-lg font-bold text-gray-900 mb-2">
             Phone Number <span className="text-red-600">*</span>
           </label>
-          <input
-            type="tel"
+          <PhoneInput
             value={bookingData.customer_phone}
-            onChange={(e) => updateBookingData({ customer_phone: e.target.value })}
+            onChange={(value) => updateBookingData({ customer_phone: value })}
             placeholder="(555) 123-4567"
             className={`
               w-full px-4 py-3 border-2 rounded-lg text-gray-900 font-semibold text-lg

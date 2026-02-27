@@ -18,6 +18,7 @@ import {
   REFERRAL_OPTIONS,
   TOUR_TYPE_OPTIONS,
 } from './types';
+import PhoneInput from '@/components/ui/PhoneInput';
 
 export default function CustomerPanel({
   customer,
@@ -130,12 +131,11 @@ export default function CustomerPanel({
             <label htmlFor="phone" className="block text-sm font-bold text-gray-900 mb-2">
               Phone <span className="text-red-600">*</span>
             </label>
-            <input
-              type="tel"
+            <PhoneInput
               id="phone"
               name="phone"
               value={customer.phone}
-              onChange={handleCustomerInput}
+              onChange={(value) => onCustomerChange({ phone: value })}
               className={`w-full px-4 py-2 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${
                 errors.phone ? 'border-red-500' : 'border-gray-300'
               }`}

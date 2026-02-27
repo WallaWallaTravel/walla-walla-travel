@@ -3,6 +3,7 @@
 import { useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import PhoneInput from '@/components/ui/PhoneInput';
 
 // ============================================================================
 // Components
@@ -116,11 +117,10 @@ function ContactForm() {
           <label htmlFor="phone" className="block text-sm font-medium text-gray-900 mb-1">
             Phone
           </label>
-          <input
-            type="tel"
+          <PhoneInput
             id="phone"
             value={formData.phone}
-            onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+            onChange={(value) => setFormData(prev => ({ ...prev, phone: value }))}
             className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#8B1538] focus:border-transparent placeholder-gray-500"
             placeholder="(555) 123-4567"
           />
