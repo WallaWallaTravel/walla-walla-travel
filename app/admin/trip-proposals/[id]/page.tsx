@@ -208,6 +208,8 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
   const [newGuestData, setNewGuestData] = useState({ name: '', email: '', phone: '', is_primary: false });
   const [editingGuestField, setEditingGuestField] = useState<{ guestId: number; field: string } | null>(null);
   const [editingGuestValue, setEditingGuestValue] = useState('');
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const { toasts, toast, dismissToast } = useToast();
 
   useEffect(() => {
@@ -421,6 +423,75 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
       toast('Failed to send proposal', 'error');
     } finally {
       setSending(false);
+    }
+  };
+
+  const archiveProposal = async () => {
+    if (!proposal) return;
+    setSaving(true);
+    try {
+      const response = await fetch(`/api/admin/trip-proposals/${id}/archive`, {
+        method: 'POST',
+      });
+      const result = await response.json();
+      if (result.success) {
+        toast('Proposal archived', 'success');
+        router.push('/admin/trip-proposals');
+      } else {
+        toast(result.error || 'Failed to archive proposal', 'error');
+      }
+    } catch (error) {
+      logger.error('Failed to archive proposal', { error });
+      toast('Failed to archive proposal', 'error');
+    } finally {
+      setSaving(false);
+      setShowMoreMenu(false);
+    }
+  };
+
+  const unarchiveProposal = async () => {
+    if (!proposal) return;
+    setSaving(true);
+    try {
+      const response = await fetch(`/api/admin/trip-proposals/${id}/archive`, {
+        method: 'DELETE',
+      });
+      const result = await response.json();
+      if (result.success) {
+        setProposal({ ...proposal, archived_at: undefined } as TripProposal);
+        toast('Proposal unarchived', 'success');
+      } else {
+        toast(result.error || 'Failed to unarchive proposal', 'error');
+      }
+    } catch (error) {
+      logger.error('Failed to unarchive proposal', { error });
+      toast('Failed to unarchive proposal', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deleteProposal = async () => {
+    if (!proposal) return;
+    setSaving(true);
+    try {
+      const response = await fetch(`/api/admin/trip-proposals/${id}`, {
+        method: 'DELETE',
+      });
+      const result = await response.json();
+      if (result.success) {
+        toast('Proposal deleted permanently', 'success');
+        router.push('/admin/trip-proposals');
+      } else {
+        toast(result.error || 'Failed to delete proposal', 'error');
+      }
+    } catch (error) {
+      logger.error('Failed to delete proposal', { error });
+      toast('Failed to delete proposal', 'error');
+    } finally {
+      setSaving(false);
+      setShowDeleteConfirm(false);
+      setShowMoreMenu(false);
     }
   };
 
@@ -879,6 +950,35 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
         </div>
       )}
 
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !saving && setShowDeleteConfirm(false)} />
+          <div className="relative bg-white rounded-2xl shadow-xl max-w-sm w-full mx-4 p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Delete Proposal</h2>
+            <p className="text-sm text-gray-600 mb-5">
+              Permanently delete <span className="font-semibold">{proposal.proposal_number}</span>? This will remove all days, stops, guests, and pricing data. This action cannot be undone.
+            </p>
+            <div className="flex items-center justify-end gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={saving}
+                className="px-4 py-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium text-sm disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={deleteProposal}
+                disabled={saving}
+                className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold text-sm disabled:opacity-50 transition-colors"
+              >
+                {saving ? 'Deleting...' : 'Delete Permanently'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Add Guest Modal */}
       {showAddGuestModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -958,6 +1058,21 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
             ← Back to Trip Proposals
           </Link>
 
+          {(proposal as TripProposal & { archived_at?: string }).archived_at && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-4 flex items-center justify-between">
+              <p className="text-sm text-amber-800 font-medium">
+                This proposal is archived. It won&apos;t appear in the proposals list.
+              </p>
+              <button
+                onClick={unarchiveProposal}
+                disabled={saving}
+                className="text-sm font-bold text-amber-700 hover:text-amber-900 disabled:opacity-50"
+              >
+                Unarchive
+              </button>
+            </div>
+          )}
+
           <div className="flex items-start justify-between">
             <div>
               <div className="flex items-center gap-3 mb-2">
@@ -1011,6 +1126,53 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                   </button>
                 </>
               )}
+
+              {/* More Actions Menu */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowMoreMenu(!showMoreMenu)}
+                  className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                  title="More actions"
+                >
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                  </svg>
+                </button>
+
+                {showMoreMenu && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setShowMoreMenu(false)} />
+                    <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
+                      {(proposal as TripProposal & { archived_at?: string }).archived_at ? (
+                        <button
+                          onClick={unarchiveProposal}
+                          disabled={saving}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                        >
+                          Unarchive Proposal
+                        </button>
+                      ) : (
+                        <button
+                          onClick={archiveProposal}
+                          disabled={saving}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                        >
+                          Archive Proposal
+                        </button>
+                      )}
+                      {proposal.status === 'draft' && (
+                        <button
+                          onClick={() => { setShowMoreMenu(false); setShowDeleteConfirm(true); }}
+                          disabled={saving}
+                          className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
+                        >
+                          Delete Proposal
+                        </button>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>

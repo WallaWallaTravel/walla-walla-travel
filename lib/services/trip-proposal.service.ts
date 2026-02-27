@@ -589,6 +589,7 @@ export class TripProposalService extends BaseService {
     start_date_from?: string;
     start_date_to?: string;
     search?: string;
+    include_archived?: boolean;
     limit?: number;
     offset?: number;
   }): Promise<{ proposals: TripProposal[]; total: number }> {
@@ -596,6 +597,11 @@ export class TripProposalService extends BaseService {
 
     const conditions: string[] = [];
     const params: unknown[] = [];
+
+    // Exclude archived by default
+    if (!filters.include_archived) {
+      conditions.push('archived_at IS NULL');
+    }
 
     if (filters.status) {
       params.push(filters.status);
@@ -702,6 +708,48 @@ export class TripProposalService extends BaseService {
       } catch {
         // Non-critical
       }
+    }
+
+    return updated;
+  }
+
+  /**
+   * Archive a proposal (soft-hide, reversible)
+   */
+  async archiveProposal(id: number): Promise<TripProposal> {
+    this.log('Archiving trip proposal', { id });
+
+    const proposal = await this.getById(id);
+    if (!proposal) {
+      throw new NotFoundError('TripProposal', id.toString());
+    }
+
+    const updated = await this.update<TripProposal>('trip_proposals', id, {
+      archived_at: new Date().toISOString(),
+    });
+    if (!updated) {
+      throw new NotFoundError('TripProposal', id.toString());
+    }
+
+    return updated;
+  }
+
+  /**
+   * Unarchive a proposal
+   */
+  async unarchiveProposal(id: number): Promise<TripProposal> {
+    this.log('Unarchiving trip proposal', { id });
+
+    const proposal = await this.getById(id);
+    if (!proposal) {
+      throw new NotFoundError('TripProposal', id.toString());
+    }
+
+    const updated = await this.update<TripProposal>('trip_proposals', id, {
+      archived_at: null,
+    });
+    if (!updated) {
+      throw new NotFoundError('TripProposal', id.toString());
     }
 
     return updated;
