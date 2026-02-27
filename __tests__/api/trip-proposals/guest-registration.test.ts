@@ -35,7 +35,7 @@ jest.mock('@/lib/api/middleware/error-handler', () => {
   const actual = jest.requireActual('@/lib/api/middleware/error-handler');
   return {
     ...actual,
-    withErrorHandling: (handler: Function) => handler,
+    withErrorHandling: (handler: (...args: unknown[]) => unknown) => handler,
   };
 });
 
