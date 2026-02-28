@@ -153,7 +153,7 @@ function TasksPageContent() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <div className="flex items-center gap-2 text-sm text-slate-600 mb-1">
-            <Link href="/admin/crm" className="hover:text-[#8B1538]">CRM</Link>
+            <Link href="/admin/trip-proposals" className="hover:text-[#8B1538]">Sales Pipeline</Link>
             <span>/</span>
             <span>Tasks</span>
           </div>

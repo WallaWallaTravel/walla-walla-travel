@@ -10,6 +10,7 @@ import { NextRequest, NextResponse, after } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import { tripProposalEmailService } from '@/lib/services/trip-proposal-email.service';
+import { draftReminderService } from '@/lib/services/draft-reminder.service';
 import { z } from 'zod';
 
 interface RouteParams {
@@ -81,6 +82,9 @@ export const POST = withAdminAuth(async (request: NextRequest, session, context)
     actor_type: 'staff',
     actor_user_id: session?.userId ? parseInt(session.userId, 10) : undefined,
   });
+
+  // Disable draft reminders now that proposal is sent
+  await draftReminderService.disableReminders(proposalId);
 
   // Send email (non-blocking)
   after(async () => {

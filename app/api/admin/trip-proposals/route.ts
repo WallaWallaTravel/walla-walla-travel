@@ -9,6 +9,7 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import {
   CreateTripProposalSchema,
+  SaveDraftSchema,
   TRIP_PROPOSAL_STATUS,
 } from '@/lib/types/trip-proposal';
 import { z } from 'zod';
@@ -20,6 +21,7 @@ const ListFiltersSchema = z.object({
   start_date_from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   start_date_to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   search: z.string().max(100).optional(),
+  include_archived: z.coerce.boolean().optional(),
   limit: z.coerce.number().int().min(1).max(500).default(50),
   offset: z.coerce.number().int().min(0).default(0),
 });
@@ -37,6 +39,7 @@ export const GET = withAdminAuth(async (request: NextRequest, session) => {
     start_date_from: searchParams.get('start_date_from') || undefined,
     start_date_to: searchParams.get('start_date_to') || undefined,
     search: searchParams.get('search') || undefined,
+    include_archived: searchParams.get('include_archived') || undefined,
     limit: searchParams.get('limit') || undefined,
     offset: searchParams.get('offset') || undefined,
   };
@@ -73,8 +76,10 @@ export const GET = withAdminAuth(async (request: NextRequest, session) => {
  */
 export const POST = withAdminAuth(async (request: NextRequest, session) => {
   const body = await request.json();
+  const isDraft = request.nextUrl.searchParams.get('draft') === 'true';
 
-  const parseResult = CreateTripProposalSchema.safeParse(body);
+  const schema = isDraft ? SaveDraftSchema : CreateTripProposalSchema;
+  const parseResult = schema.safeParse(body);
   if (!parseResult.success) {
     return NextResponse.json(
       {

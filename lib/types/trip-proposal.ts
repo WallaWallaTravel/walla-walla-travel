@@ -164,6 +164,11 @@ export interface TripProposal {
   payment_deadline: string | null;
   reminders_paused: boolean;
 
+  // Draft reminders
+  draft_reminders_enabled: boolean;
+  draft_reminder_last_sent_at: string | null;
+  draft_reminder_count: number;
+
   // Guest capacity & self-registration
   max_guests: number | null;
   min_guests: number | null;
@@ -498,6 +503,7 @@ export interface UpdateTripProposalInput extends Partial<CreateTripProposalInput
   dynamic_pricing_enabled?: boolean;
   guest_approval_required?: boolean;
   show_guest_count_to_guests?: boolean;
+  draft_reminders_enabled?: boolean;
 }
 
 /**
@@ -598,6 +604,31 @@ export const CreateTripProposalSchema = z.object({
   skip_deposit_on_accept: z.boolean().optional(),
 });
 
+export const SaveDraftSchema = z.object({
+  customer_name: z.string().max(255).optional().default('Untitled Draft'),
+  customer_email: z.string().email().optional().or(z.literal('')),
+  customer_phone: z.string().max(50).optional().or(z.literal('')),
+  customer_company: z.string().max(255).optional().or(z.literal('')),
+  trip_type: z.enum(TRIP_TYPES).optional().default('wine_tour'),
+  trip_title: z.string().max(255).optional(),
+  party_size: z.number().int().min(1).max(100).optional().default(1),
+  start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().default(() => new Date().toISOString().split('T')[0]),
+  end_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  brand_id: z.number().int().positive().optional(),
+  introduction: z.string().optional(),
+  special_notes: z.string().optional(),
+  internal_notes: z.string().optional(),
+  valid_until: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  discount_percentage: z.number().min(0).max(100).optional(),
+  discount_reason: z.string().optional(),
+  gratuity_percentage: z.number().min(0).max(100).optional(),
+  tax_rate: z.number().min(0).max(1).optional(),
+  deposit_percentage: z.number().int().min(0).max(100).optional(),
+  skip_deposit_on_accept: z.boolean().optional(),
+});
+
+export type SaveDraftInput = z.infer<typeof SaveDraftSchema>;
+
 export const UpdateTripProposalSchema = CreateTripProposalSchema.partial().extend({
   status: z.enum(TRIP_PROPOSAL_STATUS).optional(),
   planning_phase: z.enum(PLANNING_PHASES).optional(),
@@ -612,6 +643,7 @@ export const UpdateTripProposalSchema = CreateTripProposalSchema.partial().exten
   dynamic_pricing_enabled: z.boolean().optional(),
   guest_approval_required: z.boolean().optional(),
   show_guest_count_to_guests: z.boolean().optional(),
+  draft_reminders_enabled: z.boolean().optional(),
 });
 
 export const AddDaySchema = z.object({
