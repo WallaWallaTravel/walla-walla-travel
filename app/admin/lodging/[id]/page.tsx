@@ -376,7 +376,7 @@ export default function EditLodgingPage() {
   // Availability calendar handlers
   const handleDateClick = async (day: number) => {
     const dateStr = formatDateForInput(new Date(calendarYear, calendarMonth, day));
-    const existing = availability.find((a) => a.date === dateStr);
+    const _existing = availability.find((a) => a.date === dateStr);
 
     // Cycle through statuses or set to selected status
     const newStatus = selectedAvailStatus;

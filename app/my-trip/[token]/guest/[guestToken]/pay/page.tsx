@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { loadStripe, Stripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
@@ -85,6 +84,7 @@ export default function GuestPayPage() {
 
   useEffect(() => {
     loadPaymentStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, guestToken]);
 
   const loadPaymentStatus = async () => {

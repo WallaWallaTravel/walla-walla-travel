@@ -153,7 +153,7 @@ export class WorkflowService extends BaseService {
     this.log('Listing workflows for driver', { driverId, filters });
 
     const conditions = ['driver_id = $1'];
-    const params: any[] = [driverId];
+    const params: unknown[] = [driverId];
     let paramCount = 1;
 
     if (filters?.startDate) {

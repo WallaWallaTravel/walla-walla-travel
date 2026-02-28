@@ -24,7 +24,7 @@ interface Tour {
 
 export default function PartnerBookGuestPage({ params }: { params: Promise<{ tour_id: string }> }) {
   const { tour_id } = use(params);
-  const router = useRouter();
+  const _router = useRouter();
 
   const [tour, setTour] = useState<Tour | null>(null);
   const [loading, setLoading] = useState(true);

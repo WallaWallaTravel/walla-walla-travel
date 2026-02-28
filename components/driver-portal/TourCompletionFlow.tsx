@@ -44,7 +44,7 @@ export function TourCompletionFlow({
   // Form data
   const [lunchAmount, setLunchAmount] = useState<number | null>(null);
   const [lunchDescription, setLunchDescription] = useState<string | undefined>();
-  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [_receiptFile, setReceiptFile] = useState<File | null>(null);
 
   // Completion result
   const [completionResult, setCompletionResult] = useState<CompletionResult | null>(null);

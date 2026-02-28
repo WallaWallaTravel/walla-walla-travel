@@ -27,7 +27,7 @@ interface Proposal {
 function PaymentForm({ proposalId, amount }: { proposalId: string; amount: number }) {
   const stripe = useStripe();
   const elements = useElements();
-  const router = useRouter();
+  const _router = useRouter();
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

@@ -37,7 +37,7 @@ describe('DriverService', () => {
     jest.clearAllMocks();
     service = new DriverService();
     // Mock the inherited query method
-    jest.spyOn(service as any, 'query').mockImplementation((...args: unknown[]) => mockQuery(...args));
+    jest.spyOn(service as unknown as Record<string, (...args: unknown[]) => unknown>, 'query').mockImplementation((...args: unknown[]) => mockQuery(...args));
   });
 
   describe('listActive', () => {

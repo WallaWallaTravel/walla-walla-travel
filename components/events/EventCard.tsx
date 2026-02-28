@@ -68,6 +68,7 @@ export function EventCard({ event }: EventCardProps) {
         {/* Image */}
         <div className="aspect-[16/9] relative overflow-hidden">
           {event.featured_image_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={event.featured_image_url}
               alt={event.title}

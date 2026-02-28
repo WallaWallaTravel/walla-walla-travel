@@ -563,6 +563,7 @@ export default function PartnerDetailPage() {
 
             <div className="flex gap-6">
               {linkedWinery.cover_photo_url && (
+                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={linkedWinery.cover_photo_url}
                   alt={linkedWinery.name}

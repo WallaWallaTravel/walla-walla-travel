@@ -96,6 +96,7 @@ export default async function EventDetailPage({ params }: PageProps) {
         {/* Hero Image */}
         <div className="relative h-64 sm:h-80 lg:h-96 bg-gradient-to-br from-[#8B1538]/20 to-[#8B1538]/5">
           {event.featured_image_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={event.featured_image_url}
               alt={event.title}

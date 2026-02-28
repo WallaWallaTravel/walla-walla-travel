@@ -62,7 +62,7 @@ async function fetchPage(url: string): Promise<{
 }
 
 // Analyze changes using simple heuristics (AI analysis would be added separately)
-function analyzeChange(oldText: string, newText: string, pageType: string): {
+function analyzeChange(oldText: string, newText: string, _pageType: string): {
   changeType: ChangeType;
   significance: Significance;
   description: string;

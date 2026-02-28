@@ -28,7 +28,7 @@ export function OccasionChip({ value, onChange }: OccasionChipProps) {
     >
       <div className="space-y-2">
         <label className="block text-xs font-medium text-gray-700">
-          What's the occasion?
+          What&apos;s the occasion?
         </label>
         <div className="space-y-1">
           {OCCASION_OPTIONS.map((option) => (

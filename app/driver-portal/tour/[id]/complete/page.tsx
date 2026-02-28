@@ -68,7 +68,7 @@ export default function TourCompletePage() {
         tour_date: tourData.tour_date,
         status: tourData.status,
       });
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to load tour details.');
     } finally {
       setLoading(false);

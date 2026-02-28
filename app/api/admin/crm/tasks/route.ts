@@ -160,12 +160,12 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   // Build insert query
   const fields: string[] = ['title', 'due_date', 'assigned_to', 'created_by'];
   const values: unknown[] = [body.title, body.due_date, body.assigned_to, session.user.id];
-  let paramIndex = 5;
+  let _paramIndex = 5;
 
   if (contactId) {
     fields.push('contact_id');
     values.push(contactId);
-    paramIndex++;
+    _paramIndex++;
   }
 
   const optionalFields: (keyof CreateTaskData)[] = [
@@ -176,7 +176,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     if (body[field] !== undefined) {
       fields.push(field);
       values.push(body[field]);
-      paramIndex++;
+      _paramIndex++;
     }
   }
 

@@ -215,6 +215,7 @@ function MarketingSettingsContent() {
                     {/* Avatar/Platform Icon */}
                     <div className="relative">
                       {account.avatar_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={account.avatar_url}
                           alt={account.account_name}

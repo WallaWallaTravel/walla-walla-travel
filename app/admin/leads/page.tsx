@@ -252,7 +252,7 @@ export default function UnifiedLeadsPage() {
     return lead.party_size;
   };
 
-  const getLeadTourDate = (lead: Lead): string | null => {
+  const _getLeadTourDate = (lead: Lead): string | null => {
     if (lead.type === 'consultation') {
       return lead.start_date;
     }

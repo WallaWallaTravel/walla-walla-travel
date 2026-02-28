@@ -163,7 +163,7 @@ export default function AcceptTripProposalPage({
     }).format(num);
   };
 
-  const formatDate = (dateString: string) => {
+  const _formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',

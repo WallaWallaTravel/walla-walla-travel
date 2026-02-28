@@ -35,7 +35,7 @@ export const POST = withAdminAuth(
  * Remove a payment group
  */
 export const DELETE = withAdminAuth(
-  async (request: NextRequest, _session: AuthSession, context?) => {
+  async (request: NextRequest, _session: AuthSession, _context?) => {
     const url = new URL(request.url);
     const groupId = url.searchParams.get('groupId');
     if (!groupId) {

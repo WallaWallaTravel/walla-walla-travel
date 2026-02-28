@@ -335,7 +335,7 @@ export default async function AdminDashboardPage() {
           </div>
           <div className="p-4">
             <div className="space-y-2 max-h-48 overflow-y-auto">
-              {stats.complianceIssues.slice(0, 5).map((issue, idx) => (
+              {stats.complianceIssues.slice(0, 5).map((issue, _idx) => (
                 <div
                   key={`${issue.type}-${issue.entityId}-${issue.field}`}
                   className="flex items-center justify-between py-2 px-3 rounded-lg bg-slate-50"

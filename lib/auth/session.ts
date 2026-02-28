@@ -26,7 +26,6 @@ function getSessionSecret(): Uint8Array {
       );
     }
     // Development only - use a consistent dev secret
-    // eslint-disable-next-line no-console
     console.warn('[Session] WARNING: Using development session secret. Set SESSION_SECRET in production.');
     return new TextEncoder().encode('dev-only-secret-do-not-use-in-production-32chars');
   }
@@ -85,7 +84,6 @@ export async function verifySession(token: string): Promise<SessionPayload | nul
     const { payload } = await jwtVerify(token, SESSION_SECRET);
     return payload as unknown as SessionPayload;
   } catch (error) {
-    // eslint-disable-next-line no-console
     console.error('[Session] Verification failed', error);
     return null;
   }

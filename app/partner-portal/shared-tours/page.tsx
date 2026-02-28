@@ -103,7 +103,7 @@ export default function PartnerToursPage() {
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-slate-900 mb-2">Book a Tour for Your Guest</h1>
         <p className="text-slate-600">
-          Select a tour below to book for your guests. They'll receive a payment link via email.
+          Select a tour below to book for your guests. They&apos;ll receive a payment link via email.
         </p>
       </div>
 

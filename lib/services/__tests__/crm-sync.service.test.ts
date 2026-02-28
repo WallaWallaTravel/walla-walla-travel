@@ -8,7 +8,7 @@
  */
 
 import { createMockQueryResult } from '../../__tests__/test-utils';
-import { createMockCustomer } from '../../__tests__/factories';
+import { createMockCustomer as _createMockCustomer } from '../../__tests__/factories';
 import type { CrmContact, CrmDeal, CrmActivity } from '@/types/crm';
 
 // Mock the db module
@@ -456,7 +456,7 @@ describe('CrmSyncService', () => {
 
       const dataHerdingCats: SyncCorporateRequestData = {
         ...corporateData,
-        brand: 'nw_touring' as any,
+        brand: 'nw_touring' as unknown as SyncCorporateRequestData['brand'],
       };
 
       mockQuery.mockResolvedValueOnce(createMockQueryResult([]));
@@ -1570,7 +1570,7 @@ describe('CrmSyncService', () => {
         contactEmail: 'unknown-brand@example.com',
         eventType: 'test',
         partySize: 5,
-        brand: 'some_unknown_brand' as any,
+        brand: 'some_unknown_brand' as unknown as SyncCorporateRequestData['brand'],
       };
 
       const contact = createMockCrmContact({ id: 153 });

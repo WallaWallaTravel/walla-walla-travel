@@ -4,7 +4,6 @@ import { query } from '@/lib/db';
 import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 import { sendEmailAfterResponse } from '@/lib/email-async';
-import { COMPANY_INFO } from '@/lib/config/company';
 import { getBrandEmailConfig } from '@/lib/email-brands';
 import { getBrandStripeClient } from '@/lib/stripe-brands';
 import { logger } from '@/lib/logger';

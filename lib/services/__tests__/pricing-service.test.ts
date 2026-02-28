@@ -5,7 +5,7 @@
  * Coverage target: 90%+
  */
 
-import { PricingService, PricingDetails, PricingInput } from '../pricing.service';
+import { PricingService } from '../pricing.service';
 import { createMockQueryResult } from '../../__tests__/test-utils';
 import { createMockPricingRule } from '../../__tests__/factories';
 

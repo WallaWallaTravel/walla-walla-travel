@@ -19,7 +19,7 @@ export default function PaymentSuccessPage({ params }: { params: Promise<{ ticke
 
   useEffect(() => {
     const verifyPayment = async () => {
-      const paymentIntent = searchParams.get('payment_intent');
+      const _paymentIntent = searchParams.get('payment_intent');
       const redirectStatus = searchParams.get('redirect_status');
 
       if (redirectStatus !== 'succeeded') {
@@ -90,7 +90,7 @@ export default function PaymentSuccessPage({ params }: { params: Promise<{ ticke
 
         <h1 className="text-3xl font-bold text-slate-900 mb-2">Payment Successful!</h1>
         <p className="text-slate-600 mb-6">
-          Your wine tour is confirmed. We've sent a confirmation email with all the details.
+          Your wine tour is confirmed. We&apos;ve sent a confirmation email with all the details.
         </p>
 
         {ticketNumber && (
@@ -101,7 +101,7 @@ export default function PaymentSuccessPage({ params }: { params: Promise<{ ticke
         )}
 
         <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 text-left">
-          <h3 className="font-semibold text-green-800 mb-2">What's next?</h3>
+          <h3 className="font-semibold text-green-800 mb-2">What&apos;s next?</h3>
           <ul className="text-sm text-green-700 space-y-2">
             <li className="flex items-start gap-2">
               <span className="text-green-500 mt-0.5">✓</span>

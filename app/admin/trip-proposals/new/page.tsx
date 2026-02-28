@@ -219,7 +219,7 @@ export default function NewTripProposalPage() {
         setFormData(prev => ({ ...prev, days: newDays }));
       }
     }
-  }, [formData.start_date, formData.end_date, formData.days.length]);
+  }, [formData.start_date, formData.end_date, formData.days]);
 
   const loadBrands = async () => {
     try {
@@ -452,7 +452,7 @@ export default function NewTripProposalPage() {
     setFormData(prev => ({ ...prev, inclusions: [...prev.inclusions, newInclusion] }));
   };
 
-  const addInclusion = () => {
+  const _addInclusion = () => {
     const newInclusion: InclusionData = {
       id: `incl-${Date.now()}`,
       inclusion_type: 'custom',

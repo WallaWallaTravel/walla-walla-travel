@@ -87,6 +87,7 @@ export function LodgingPicker({ selectedId, onSelect }: LodgingPickerProps) {
     return (
       <div className="flex items-center gap-3 p-3 bg-stone-50 rounded-xl border border-stone-200">
         {selected.cover_image_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
           <img src={selected.cover_image_url} alt="" className="w-12 h-12 rounded-lg object-cover" />
         ) : (
           <div className="w-12 h-12 rounded-lg bg-stone-200 flex items-center justify-center text-xl">
@@ -130,6 +131,7 @@ export function LodgingPicker({ selectedId, onSelect }: LodgingPickerProps) {
               className="w-full flex items-center gap-3 p-3 hover:bg-stone-50 transition-colors text-left"
             >
               {property.cover_image_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
                 <img src={property.cover_image_url} alt="" className="w-10 h-10 rounded-lg object-cover" />
               ) : (
                 <div className="w-10 h-10 rounded-lg bg-stone-200 flex items-center justify-center">

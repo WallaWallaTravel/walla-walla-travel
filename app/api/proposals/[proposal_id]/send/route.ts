@@ -4,7 +4,6 @@ import { query } from '@/lib/db';
 import { withErrorHandling, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { sendEmail } from '@/lib/email';
 import { sendSMS } from '@/lib/sms';
-import { COMPANY_INFO } from '@/lib/config/company';
 import { getBrandEmailConfig } from '@/lib/email-brands';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';

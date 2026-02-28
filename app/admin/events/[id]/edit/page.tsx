@@ -15,7 +15,14 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
   const [error, setError] = useState<string | null>(null);
   const [isRecurring, setIsRecurring] = useState(false);
   const [parentEventId, setParentEventId] = useState<number | null>(null);
-  const [recurrenceRule, setRecurrenceRule] = useState<any>(null);
+  const [recurrenceRule, setRecurrenceRule] = useState<{
+    frequency: 'weekly' | 'biweekly' | 'monthly';
+    days_of_week?: number[];
+    day_of_month?: number;
+    end_type: 'count' | 'until_date';
+    count?: number;
+    until_date?: string;
+  } | null>(null);
 
   const [form, setForm] = useState({
     title: '',

@@ -8,7 +8,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
 import { getSessionFromRequest } from '@/lib/auth/session'
-import { logger } from '@/lib/logger'
 import { withErrorHandling } from '@/lib/api/middleware/error-handler'
 
 async function verifyAdmin(request: NextRequest) {

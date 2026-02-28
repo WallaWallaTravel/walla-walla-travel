@@ -163,7 +163,7 @@ describe('InspectionService', () => {
         }],
       });
 
-      const result = await service.createPreTrip(1, mockPreTripData);
+      const _result = await service.createPreTrip(1, mockPreTripData);
 
       // Check that insert was called with start_mileage
       expect(mockQuery).toHaveBeenCalledWith(
@@ -216,7 +216,7 @@ describe('InspectionService', () => {
       // Mock vehicle update (mark out of service)
       mockQuery.mockResolvedValueOnce({ rows: [{ id: 1 }] });
 
-      const result = await service.createPostTrip(1, criticalDefectData);
+      const _result = await service.createPostTrip(1, criticalDefectData);
 
       // Should have called update on vehicles table
       expect(mockQuery).toHaveBeenCalledWith(

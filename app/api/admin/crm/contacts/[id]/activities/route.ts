@@ -88,7 +88,7 @@ export const POST = withErrorHandling(async (
   // Build insert query
   const fields: string[] = ['contact_id', 'activity_type', 'performed_by', 'source_type'];
   const values: unknown[] = [contactId, body.activity_type, session.user.id, 'manual'];
-  let paramIndex = 5;
+  let _paramIndex = 5;
 
   const optionalFields: (keyof CreateActivityData)[] = [
     'deal_id', 'subject', 'body', 'call_duration_minutes', 'call_outcome',
@@ -99,7 +99,7 @@ export const POST = withErrorHandling(async (
     if (body[field] !== undefined) {
       fields.push(field);
       values.push(body[field]);
-      paramIndex++;
+      _paramIndex++;
     }
   }
 

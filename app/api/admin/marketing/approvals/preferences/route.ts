@@ -7,7 +7,6 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
-import { logger } from '@/lib/logger'
 import { withErrorHandling } from '@/lib/api/middleware/error-handler'
 
 export const GET = withErrorHandling(async (request: NextRequest) => {

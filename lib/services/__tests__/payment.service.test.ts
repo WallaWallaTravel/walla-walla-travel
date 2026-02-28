@@ -5,7 +5,7 @@
  * Coverage target: 85%+
  */
 
-import { PaymentService, Payment, CreatePaymentSchema } from '../payment.service';
+import { PaymentService, CreatePaymentSchema } from '../payment.service';
 import { createMockQueryResult } from '../../__tests__/test-utils';
 import { createMockPayment } from '../../__tests__/factories';
 

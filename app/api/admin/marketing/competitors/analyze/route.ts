@@ -3,8 +3,6 @@ import { getSessionFromRequest } from '@/lib/auth/session';
 import { withErrorHandling, UnauthorizedError, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { competitorAIService } from '@/lib/services/competitor-ai.service';
 import { competitorMonitoringService } from '@/lib/services/competitor-monitoring.service';
-import { logger } from '@/lib/logger';
-
 async function verifyAdmin(request: NextRequest) {
   const session = await getSessionFromRequest(request);
   if (!session || session.user.role !== 'admin') {

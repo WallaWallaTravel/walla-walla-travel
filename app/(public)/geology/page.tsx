@@ -167,6 +167,7 @@ function TopicCard({ topic }: { topic: Topic }) {
     >
       {topic.hero_image_url ? (
         <div className="aspect-video bg-gray-100 relative overflow-hidden">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={topic.hero_image_url}
             alt={topic.title}

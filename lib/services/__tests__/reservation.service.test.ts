@@ -13,7 +13,7 @@
 
 import { ReservationService, CreateReservationSchema } from '../reservation.service';
 import { createMockQueryResult } from '../../__tests__/test-utils';
-import { createMockReservation, createMockCustomer } from '../../__tests__/factories';
+import { createMockReservation, createMockCustomer as _createMockCustomer } from '../../__tests__/factories';
 
 // Mock the db module
 const mockQuery = jest.fn();

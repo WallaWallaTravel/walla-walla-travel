@@ -50,12 +50,12 @@ export const GET = withErrorHandling(async (request: NextRequest): Promise<NextR
   // Today for compliance checks
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const todayStr = today.toISOString().split('T')[0];
+  const _todayStr = today.toISOString().split('T')[0];
 
   // Date 30 days from now for warning threshold
   const warningDate = new Date(today);
   warningDate.setDate(warningDate.getDate() + COMPLIANCE_WARNING_DAYS);
-  const warningDateStr = warningDate.toISOString().split('T')[0];
+  const _warningDateStr = warningDate.toISOString().split('T')[0];
 
   // Fetch bookings with driver and vehicle compliance data
   const bookingsResult = await query(
@@ -200,7 +200,7 @@ export const GET = withErrorHandling(async (request: NextRequest): Promise<NextR
       if (booking.driver_id && booking.driver_license_expiry) {
         const info = getComplianceInfo(booking.driver_license_expiry);
         if (info) {
-          const key = `driver-${booking.driver_id}-license`;
+          const _key = `driver-${booking.driver_id}-license`;
           if (!driverIssuesMap.has(booking.driver_id)) {
             driverIssuesMap.set(booking.driver_id, {
               type: 'driver',
@@ -222,7 +222,7 @@ export const GET = withErrorHandling(async (request: NextRequest): Promise<NextR
       if (booking.driver_id && booking.driver_medical_expiry) {
         const info = getComplianceInfo(booking.driver_medical_expiry);
         if (info) {
-          const key = `driver-${booking.driver_id}-medical`;
+          const _key = `driver-${booking.driver_id}-medical`;
           const existing = Array.from(driverIssuesMap.values()).find(
             i => i.entityId === booking.driver_id && i.field === 'medical_cert_expiry'
           );

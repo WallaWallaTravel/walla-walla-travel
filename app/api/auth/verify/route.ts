@@ -27,7 +27,7 @@ export const GET = withErrorHandling(async () => {
   }, 'Session is valid');
 });
 
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withErrorHandling(async (_request: NextRequest) => {
   // Alternative POST endpoint for session verification
   logApiRequest('POST', '/api/auth/verify');
 

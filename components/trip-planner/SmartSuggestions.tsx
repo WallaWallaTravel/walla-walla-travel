@@ -157,7 +157,7 @@ interface SmartSuggestionsProps {
 
 export function SmartSuggestions({
   shareCode,
-  tripId,
+  tripId: _tripId,
   focusDay,
   className = '',
 }: SmartSuggestionsProps) {

@@ -182,7 +182,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
   const { id } = use(params);
   const router = useRouter();
   const [proposal, setProposal] = useState<TripProposal | null>(null);
-  const [brands, setBrands] = useState<Brand[]>([]);
+  const [_brands, setBrands] = useState<Brand[]>([]);
   const [wineries, setWineries] = useState<Winery[]>([]);
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [hotels, setHotels] = useState<Hotel[]>([]);

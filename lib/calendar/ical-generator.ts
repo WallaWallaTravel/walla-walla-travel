@@ -69,7 +69,7 @@ function formatDateTime(date: Date): string {
 /**
  * Format a Date as iCalendar date (YYYYMMDD)
  */
-function formatDate(date: Date): string {
+function _formatDate(date: Date): string {
   const pad = (n: number) => n.toString().padStart(2, '0');
   return (
     date.getUTCFullYear().toString() +
@@ -254,7 +254,7 @@ export function createDriverAssignmentEvent(booking: {
   vehicle_name?: string;
   pickup_location?: string;
   dropoff_location?: string;
-}, driverName: string, baseUrl: string): ICalEvent {
+}, driverName: string, _baseUrl: string): ICalEvent {
   // Parse tour date and times
   const [year, month, day] = booking.tour_date.split('-').map(Number);
   const [startHour, startMinute] = (booking.pickup_time || '09:00').split(':').map(Number);

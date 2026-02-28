@@ -243,7 +243,7 @@ export default function CalendarView() {
     }
   };
 
-  const getSeverityColor = (severity: 'expired' | 'critical' | 'urgent' | 'warning'): string => {
+  const _getSeverityColor = (severity: 'expired' | 'critical' | 'urgent' | 'warning'): string => {
     switch (severity) {
       case 'expired': return 'bg-red-600 text-white';
       case 'critical': return 'bg-red-500 text-white';
