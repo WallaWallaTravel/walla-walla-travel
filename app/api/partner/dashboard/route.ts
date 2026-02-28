@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, UnauthorizedError } from '@/lib/api/middleware/error-handler';
 import { getSessionFromRequest } from '@/lib/auth/session';
+import { getHotelSessionFromRequest } from '@/lib/auth/hotel-session';
 import { partnerService } from '@/lib/services/partner.service';
 import { hotelPartnerService } from '@/lib/services/hotel-partner.service';
 
@@ -14,7 +15,7 @@ interface DashboardResponse {
 /**
  * GET /api/partner/dashboard
  * Get partner dashboard data
- * Supports both JWT session (business partners) and hotel ID header (hotel partners)
+ * Supports both JWT session (business partners) and hotel session cookie (hotel partners)
  */
 export const GET = withErrorHandling(async (request: NextRequest): Promise<NextResponse<DashboardResponse>> => {
   // 1. Try JWT session first (business partners)
@@ -25,7 +26,6 @@ export const GET = withErrorHandling(async (request: NextRequest): Promise<NextR
     if (role === 'partner' || role === 'admin') {
       const dashboard = await partnerService.getDashboardData(session.user.id);
 
-      // Return profile and stats at root level (matches what dashboard page expects)
       return NextResponse.json({
         success: true,
         profile: dashboard.profile,
@@ -34,8 +34,9 @@ export const GET = withErrorHandling(async (request: NextRequest): Promise<NextR
     }
   }
 
-  // 2. Fall back to hotel ID header (hotel partners)
-  const hotelId = request.headers.get('x-hotel-id');
+  // 2. Try hotel session cookie (hotel partners)
+  const hotelSession = await getHotelSessionFromRequest(request);
+  const hotelId = hotelSession?.hotelId || request.headers.get('x-hotel-id');
 
   if (!hotelId) {
     throw new UnauthorizedError('Authentication required');

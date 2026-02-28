@@ -1025,17 +1025,15 @@ export class TripProposalService extends BaseService {
 
       if (row.is_taxable) {
         if (row.tax_included_in_price) {
-          // Tax is already baked in — back-calculate pre-tax for the taxable base
-          // The line amount stays the same for subtotal purposes
-          // But we DON'T add extra tax on it
-          const preTax = lineAmount / (1 + proposal.tax_rate);
-          taxableAmount += preTax;
+          // Tax is already baked into the line amount — do NOT add to taxableAmount.
+          // The customer already pays the embedded tax as part of the line item price.
+          // No additional tax calculation needed for this item.
         } else {
           // Standard: tax will be applied on top
           taxableAmount += lineAmount;
         }
       }
-      // Non-taxable items: add to subtotal but not to taxable base
+      // Non-taxable items and tax-included items: add to subtotal but not to taxable base
 
       inclusionsSubtotal += lineAmount;
     }
