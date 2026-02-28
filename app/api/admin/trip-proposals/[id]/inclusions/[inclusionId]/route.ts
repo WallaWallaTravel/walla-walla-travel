@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth, AuthSession, RouteContext } from '@/lib/api/middleware/auth-wrapper';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import { query, type QueryParamValue } from '@/lib/db-helpers';
+import { logger } from '@/lib/logger';
 
 interface RouteParams {
   id: string;
@@ -65,5 +66,38 @@ export const PATCH = withAdminAuth(
     }
 
     return NextResponse.json({ success: true, data: result.rows[0] });
+  }
+);
+
+/**
+ * DELETE /api/admin/trip-proposals/[id]/inclusions/[inclusionId]
+ * Remove a service line item from a proposal
+ */
+export const DELETE = withAdminAuth(
+  async (_request: NextRequest, _session: AuthSession, context?) => {
+    const { id, inclusionId } = await (context as RouteContext<RouteParams>).params;
+    const proposalId = parseInt(id);
+    const inclId = parseInt(inclusionId);
+
+    // Validate proposal exists
+    const proposal = await tripProposalService.getById(proposalId);
+    if (!proposal) {
+      return NextResponse.json({ success: false, error: 'Proposal not found' }, { status: 404 });
+    }
+
+    // Verify inclusion belongs to this proposal before deleting
+    const existing = await query(
+      `SELECT id FROM trip_proposal_inclusions WHERE id = $1 AND trip_proposal_id = $2`,
+      [inclId, proposalId]
+    );
+
+    if (existing.rowCount === 0) {
+      return NextResponse.json({ success: false, error: 'Inclusion not found for this proposal' }, { status: 404 });
+    }
+
+    await tripProposalService.deleteInclusion(inclId);
+    logger.info('[TripProposal] Inclusion deleted', { proposalId, inclusionId: inclId });
+
+    return NextResponse.json({ success: true, message: 'Inclusion deleted successfully' });
   }
 );
