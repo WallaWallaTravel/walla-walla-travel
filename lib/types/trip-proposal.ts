@@ -705,6 +705,21 @@ export const AddInclusionSchema = z.object({
   notes: z.string().optional(),
 });
 
+export const UpdateInclusionSchema = z.object({
+  inclusion_type: z.enum(INCLUSION_TYPES).optional(),
+  description: z.string().min(1).optional(),
+  quantity: z.number().min(0).optional(),
+  unit: z.string().max(50).optional(),
+  unit_price: z.number().min(0).optional(),
+  total_price: z.number().min(0).optional(),
+  pricing_type: z.enum(PRICING_TYPES).optional(),
+  is_taxable: z.boolean().optional(),
+  tax_included_in_price: z.boolean().optional(),
+  sort_order: z.number().int().min(0).optional(),
+  show_on_proposal: z.boolean().optional(),
+  notes: z.string().optional(),
+}).strict();
+
 // ============================================================================
 // API Response Types
 // ============================================================================

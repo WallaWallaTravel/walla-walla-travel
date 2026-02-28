@@ -160,7 +160,7 @@ export const GET = withErrorHandling(async (request: NextRequest): Promise<NextR
       // Count vehicles with bookings
       const bookedVehicleIds = new Set(dayBookings.map(b => b.vehicle_id).filter(Boolean));
 
-      // Available = total - blocked - booked (rough estimate)
+      // Available = total - (blocked ∪ booked) for the day
       const unavailableCount = new Set([...blockedVehicleIds, ...bookedVehicleIds]).size;
 
       dailySummaries[dateStr] = {
