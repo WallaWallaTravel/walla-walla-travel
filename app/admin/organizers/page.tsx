@@ -33,7 +33,8 @@ export default function OrganizersListPage() {
       const res = await fetch('/api/admin/organizers');
       if (!res.ok) throw new Error('Failed to load organizers');
       const data = await res.json();
-      setOrganizers(data.organizers || data || []);
+      const items = data.data ?? data.organizers ?? data;
+      setOrganizers(Array.isArray(items) ? items : []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load organizers');
     } finally {
