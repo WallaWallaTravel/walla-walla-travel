@@ -64,7 +64,7 @@ class DailyDigestService extends BaseService {
 
       // Triggered admin reminders
       this.queryMany<{ id: number; reminder_type: string; message: string }>(`
-        SELECT id, reminder_type, message
+        SELECT id, trigger_type as reminder_type, title as message
         FROM admin_reminders
         WHERE status = 'triggered'
         ORDER BY created_at DESC
