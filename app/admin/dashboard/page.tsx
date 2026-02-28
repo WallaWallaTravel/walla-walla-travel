@@ -79,7 +79,7 @@ async function getDashboardStats(): Promise<DashboardStats> {
     ).catch(() => ({ rows: [{ count: 0 }] }));
 
     const acceptedProposalsCount = await query(
-      `SELECT COUNT(*) as count FROM trip_proposals WHERE status = 'accepted' AND planning_phase = 'active_planning'`
+      `SELECT COUNT(*) as count FROM trip_proposals WHERE status = 'accepted' AND planning_phase = 'active_planning' AND archived_at IS NULL`
     ).catch(() => ({ rows: [{ count: 0 }] }));
     
     const businessCount = await query(
