@@ -6,9 +6,11 @@
  * Tabs: All | Planning | Upcoming | Completed | Cancelled
  */
 
-import { useState, useEffect, Suspense, useCallback } from 'react';
+import { useState, useEffect, useRef, Suspense, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { logger } from '@/lib/logger';
+import { useToast } from '@/lib/hooks/useToast';
+import { ToastContainer } from '@/components/ui/ToastContainer';
 
 // ============================================================================
 // Types
@@ -47,6 +49,7 @@ interface TripProposal {
   accepted_at: string | null;
   planning_phase?: string;
   days_count?: number;
+  archived_at: string | null;
   // Payment tracking fields
   skip_deposit_on_accept?: boolean;
   individual_billing_enabled?: boolean;
@@ -91,6 +94,7 @@ interface TripItem {
   editUrl: string;
   createdAt: string;
   driverName?: string | null;
+  archivedAt: string | null;
 }
 
 type PaymentFilterKey = 'all' | 'deferred_deposit' | 'deposit_secured' | 'collecting_deposits' | 'all_deposits_collected' | 'balance_due';
@@ -208,6 +212,7 @@ function normalizeProposal(prop: TripProposal): TripItem {
     paymentStatus: derivePaymentStatus(prop),
     editUrl: `/admin/trip-proposals/${prop.id}`,
     createdAt: prop.created_at,
+    archivedAt: prop.archived_at,
   };
 }
 
@@ -229,6 +234,7 @@ function normalizeBooking(booking: Booking): TripItem {
     editUrl: `/admin/bookings/${booking.id}`,
     createdAt: booking.created_at,
     driverName: booking.driver_name,
+    archivedAt: null,
   };
 }
 
@@ -244,6 +250,11 @@ function TripsPageContent() {
   const [activeTab, setActiveTab] = useState<TabKey>(urlTab || 'all');
   const [paymentFilter, setPaymentFilter] = useState<PaymentFilterKey>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [showArchived, setShowArchived] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  const { toasts, toast, dismissToast } = useToast();
 
   // Data
   const [proposals, setProposals] = useState<TripProposal[]>([]);
@@ -260,8 +271,8 @@ function TripsPageContent() {
   const loadProposals = useCallback(async () => {
     setLoadingProposals(true);
     try {
-      // Fetch all proposals and filter client-side for accepted/booked/declined
-      const response = await fetch('/api/admin/trip-proposals?limit=200&offset=0');
+      // Fetch all proposals (including archived) and filter client-side for accepted/booked/declined
+      const response = await fetch('/api/admin/trip-proposals?limit=200&offset=0&include_archived=true');
       const result = await response.json();
 
       if (result.success) {
@@ -298,14 +309,66 @@ function TripsPageContent() {
     loadBookings();
   }, [loadProposals, loadBookings]);
 
+  // Close three-dot menu on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpenMenuId(null);
+      }
+    };
+    if (openMenuId) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [openMenuId]);
+
+  const archiveTrip = async (id: number) => {
+    try {
+      const response = await fetch(`/api/admin/trip-proposals/${id}/archive`, { method: 'POST' });
+      const result = await response.json();
+      if (result.success) {
+        toast('Trip archived', 'success');
+        loadProposals();
+      } else {
+        toast(result.error || 'Failed to archive', 'error');
+      }
+    } catch (error) {
+      logger.error('Failed to archive trip', { error });
+      toast('Failed to archive trip', 'error');
+    }
+    setOpenMenuId(null);
+  };
+
+  const unarchiveTrip = async (id: number) => {
+    try {
+      const response = await fetch(`/api/admin/trip-proposals/${id}/archive`, { method: 'DELETE' });
+      const result = await response.json();
+      if (result.success) {
+        toast('Trip unarchived', 'success');
+        loadProposals();
+      } else {
+        toast(result.error || 'Failed to unarchive', 'error');
+      }
+    } catch (error) {
+      logger.error('Failed to unarchive trip', { error });
+      toast('Failed to unarchive trip', 'error');
+    }
+    setOpenMenuId(null);
+  };
+
   // Build unified items
   const allItems: TripItem[] = [
     ...proposals.map(normalizeProposal),
     ...bookings.map(normalizeBooking),
   ];
 
+  // Count archived items before filtering
+  const archivedCount = allItems.filter((item) => item.archivedAt).length;
+
+  // Filter archived items unless toggle is on
+  let filtered = showArchived ? allItems : allItems.filter((item) => !item.archivedAt);
+
   // Apply search filter
-  let filtered = allItems;
   if (searchTerm) {
     const term = searchTerm.toLowerCase();
     filtered = filtered.filter(
@@ -409,6 +472,7 @@ function TripsPageContent() {
 
   return (
     <div className="min-h-screen bg-slate-50 p-6">
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
@@ -498,9 +562,24 @@ function TripsPageContent() {
           </div>
         </div>
 
-        {/* Results count */}
-        <div className="mb-4 text-sm text-slate-500">
-          {tabItems.length} {tabItems.length === 1 ? 'trip' : 'trips'}
+        {/* Archived toggle + Results count */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="text-sm text-slate-500">
+            {tabItems.length} {tabItems.length === 1 ? 'trip' : 'trips'}
+          </div>
+          {archivedCount > 0 && (
+            <button
+              onClick={() => setShowArchived(!showArchived)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                showArchived
+                  ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                  : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'
+              }`}
+            >
+              {showArchived ? 'Hide Archived' : 'Show Archived'}
+              <span className={showArchived ? 'text-amber-600' : 'text-slate-400'}>({archivedCount})</span>
+            </button>
+          )}
         </div>
 
         {/* List */}
@@ -537,67 +616,115 @@ function TripsPageContent() {
           </div>
         ) : (
           <div className="space-y-3">
-            {tabItems.map((item) => (
-              <div
-                key={`${item.source}-${item.id}`}
-                className="bg-white rounded-xl border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all cursor-pointer"
-                onClick={() => router.push(item.editUrl)}
-              >
-                <div className="p-5">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      {/* Badges */}
-                      <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${item.stageBadge.color}`}>
-                          {item.stageBadge.label}
-                        </span>
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                          item.source === 'proposal'
-                            ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
-                            : 'bg-slate-50 text-slate-600 border border-slate-200'
-                        }`}>
-                          {item.source === 'proposal' ? '🗺️ Proposal' : '📅 Booking'}
-                        </span>
-                        <span className="text-xs font-mono text-slate-400">
-                          {item.source === 'proposal' ? item.number : `#${item.number}`}
-                        </span>
-                        {item.paymentStatus && PAYMENT_STATUS_CONFIG[item.paymentStatus] && (
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${PAYMENT_STATUS_CONFIG[item.paymentStatus].color}`}>
-                            <span>{PAYMENT_STATUS_CONFIG[item.paymentStatus].icon}</span>
-                            {PAYMENT_STATUS_CONFIG[item.paymentStatus].label}
+            {tabItems.map((item) => {
+              const menuId = `${item.source}-${item.id}`;
+              return (
+                <div
+                  key={menuId}
+                  className={`bg-white rounded-xl border hover:shadow-sm transition-all cursor-pointer ${
+                    item.archivedAt
+                      ? 'border-amber-200 bg-amber-50/30'
+                      : 'border-slate-200 hover:border-slate-300'
+                  }`}
+                  onClick={() => router.push(item.editUrl)}
+                >
+                  <div className="p-5">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        {/* Badges */}
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${item.stageBadge.color}`}>
+                            {item.stageBadge.label}
                           </span>
-                        )}
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                            item.source === 'proposal'
+                              ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                              : 'bg-slate-50 text-slate-600 border border-slate-200'
+                          }`}>
+                            {item.source === 'proposal' ? '🗺️ Proposal' : '📅 Booking'}
+                          </span>
+                          {item.archivedAt && (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800">
+                              ARCHIVED
+                            </span>
+                          )}
+                          <span className="text-xs font-mono text-slate-400">
+                            {item.source === 'proposal' ? item.number : `#${item.number}`}
+                          </span>
+                          {item.paymentStatus && PAYMENT_STATUS_CONFIG[item.paymentStatus] && (
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${PAYMENT_STATUS_CONFIG[item.paymentStatus].color}`}>
+                              <span>{PAYMENT_STATUS_CONFIG[item.paymentStatus].icon}</span>
+                              {PAYMENT_STATUS_CONFIG[item.paymentStatus].label}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Customer */}
+                        <h3 className="text-base font-semibold text-slate-900">
+                          {item.customerName}
+                        </h3>
+
+                        {/* Details */}
+                        <div className="text-sm text-slate-500 mt-0.5">
+                          {formatDate(item.startDate)}
+                          {item.endDate && item.endDate !== item.startDate && (
+                            <> – {formatDate(item.endDate)}</>
+                          )}
+                          {' · '}
+                          {item.partySize} guest{item.partySize !== 1 ? 's' : ''}
+                          {item.driverName && (
+                            <> · Driver: {item.driverName}</>
+                          )}
+                        </div>
                       </div>
 
-                      {/* Customer */}
-                      <h3 className="text-base font-semibold text-slate-900">
-                        {item.customerName}
-                      </h3>
+                      {/* Amount + three-dot menu */}
+                      <div className="flex items-start gap-2 shrink-0 ml-4">
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-slate-900">
+                            {formatCurrency(item.total)}
+                          </div>
+                        </div>
 
-                      {/* Details */}
-                      <div className="text-sm text-slate-500 mt-0.5">
-                        {formatDate(item.startDate)}
-                        {item.endDate && item.endDate !== item.startDate && (
-                          <> – {formatDate(item.endDate)}</>
+                        {/* Three-dot menu — proposal-sourced items only */}
+                        {item.source === 'proposal' && (
+                          <div className="relative" ref={openMenuId === menuId ? menuRef : undefined} onClick={(e) => e.stopPropagation()}>
+                            <button
+                              onClick={() => setOpenMenuId(openMenuId === menuId ? null : menuId)}
+                              className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                              title="More actions"
+                            >
+                              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                              </svg>
+                            </button>
+                            {openMenuId === menuId && (
+                              <div className="absolute right-0 mt-1 w-44 bg-white rounded-lg shadow-lg border border-slate-200 z-20 py-1">
+                                {item.archivedAt ? (
+                                  <button
+                                    onClick={() => unarchiveTrip(item.id)}
+                                    className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                                  >
+                                    📤 Unarchive
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={() => archiveTrip(item.id)}
+                                    className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                                  >
+                                    📦 Archive
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         )}
-                        {' · '}
-                        {item.partySize} guest{item.partySize !== 1 ? 's' : ''}
-                        {item.driverName && (
-                          <> · Driver: {item.driverName}</>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Amount */}
-                    <div className="text-right shrink-0 ml-4">
-                      <div className="text-lg font-bold text-slate-900">
-                        {formatCurrency(item.total)}
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

@@ -54,6 +54,7 @@ interface TripProposal {
   view_count: number;
   days_count?: number;
   planning_phase?: string;
+  archived_at: string | null;
 }
 
 // Unified item type for display
@@ -75,6 +76,7 @@ interface UnifiedItem {
   createdAt: string;
   editUrl: string;
   previewUrl: string | null;
+  archivedAt: string | null;
 }
 
 type TabKey = 'all' | 'quick_quotes' | 'full_proposals';
@@ -104,6 +106,7 @@ function normalizeEstimate(est: TripEstimate): UnifiedItem {
     previewUrl: ['sent', 'viewed', 'deposit_paid'].includes(est.status)
       ? `/trip-estimates/${est.estimate_number}`
       : null,
+    archivedAt: null,
   };
 }
 
@@ -126,6 +129,7 @@ function normalizeProposal(prop: TripProposal): UnifiedItem {
     createdAt: prop.created_at,
     editUrl: `/admin/trip-proposals/${prop.id}`,
     previewUrl: `/trip-proposals/${prop.proposal_number}`,
+    archivedAt: prop.archived_at,
   };
 }
 
@@ -154,6 +158,7 @@ function ProposalsPageContent() {
   const [activeTab, setActiveTab] = useState<TabKey>(urlTab || 'all');
   const [statusFilter, setStatusFilter] = useState(urlStatus || 'all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [showArchived, setShowArchived] = useState(false);
 
   // Data
   const [estimates, setEstimates] = useState<TripEstimate[]>([]);
@@ -202,7 +207,7 @@ function ProposalsPageContent() {
   const loadProposals = useCallback(async () => {
     setLoadingProposals(true);
     try {
-      const params = new URLSearchParams({ limit: '100', offset: '0' });
+      const params = new URLSearchParams({ limit: '100', offset: '0', include_archived: 'true' });
       if (searchTerm) params.set('search', searchTerm);
 
       const response = await fetch(`/api/admin/trip-proposals?${params}`);
@@ -238,6 +243,14 @@ function ProposalsPageContent() {
     items = allFullProposals;
   } else {
     items = [...allQuickQuotes, ...allFullProposals];
+  }
+
+  // Count archived items before filtering
+  const archivedCount = items.filter((item) => item.archivedAt).length;
+
+  // Filter archived items unless toggle is on
+  if (!showArchived) {
+    items = items.filter((item) => !item.archivedAt);
   }
 
   // Apply status filter
@@ -334,6 +347,38 @@ function ProposalsPageContent() {
     } catch (error) {
       logger.error('Failed to convert estimate', { error });
       toast('Failed to convert estimate', 'error');
+    }
+  };
+
+  const archiveProposal = async (id: number) => {
+    try {
+      const response = await fetch(`/api/admin/trip-proposals/${id}/archive`, { method: 'POST' });
+      const result = await response.json();
+      if (result.success) {
+        toast('Proposal archived', 'success');
+        loadProposals();
+      } else {
+        toast(result.error || 'Failed to archive', 'error');
+      }
+    } catch (error) {
+      logger.error('Failed to archive proposal', { error });
+      toast('Failed to archive proposal', 'error');
+    }
+  };
+
+  const unarchiveProposal = async (id: number) => {
+    try {
+      const response = await fetch(`/api/admin/trip-proposals/${id}/archive`, { method: 'DELETE' });
+      const result = await response.json();
+      if (result.success) {
+        toast('Proposal unarchived', 'success');
+        loadProposals();
+      } else {
+        toast(result.error || 'Failed to unarchive', 'error');
+      }
+    } catch (error) {
+      logger.error('Failed to unarchive proposal', { error });
+      toast('Failed to unarchive proposal', 'error');
     }
   };
 
@@ -515,9 +560,24 @@ function ProposalsPageContent() {
           </div>
         </div>
 
-        {/* Results count */}
-        <div className="mb-4 text-sm text-slate-500">
-          {items.length} {items.length === 1 ? 'proposal' : 'proposals'}
+        {/* Archived toggle + Results count */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="text-sm text-slate-500">
+            {items.length} {items.length === 1 ? 'proposal' : 'proposals'}
+          </div>
+          {archivedCount > 0 && (
+            <button
+              onClick={() => setShowArchived(!showArchived)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                showArchived
+                  ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                  : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'
+              }`}
+            >
+              {showArchived ? '📦 Hide Archived' : '📦 Show Archived'}
+              <span className={showArchived ? 'text-amber-600' : 'text-slate-400'}>({archivedCount})</span>
+            </button>
+          )}
         </div>
 
         {/* List */}
@@ -562,6 +622,11 @@ function ProposalsPageContent() {
                     <div className="flex items-center gap-2 flex-wrap">
                       {getTypeBadge(item.type)}
                       {getStatusBadge(item.status)}
+                      {item.archivedAt && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800">
+                          📦 ARCHIVED
+                        </span>
+                      )}
                       {getTripTypeBadge(item.tripType)}
                       <span className="text-xs font-mono text-slate-400">{item.number}</span>
                     </div>
@@ -621,6 +686,25 @@ function ProposalsPageContent() {
                         >
                           🗺️
                         </button>
+                      )}
+                      {item.type === 'full_proposal' && (
+                        item.archivedAt ? (
+                          <button
+                            onClick={() => unarchiveProposal(item.id)}
+                            className="p-2 text-amber-500 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors"
+                            title="Unarchive"
+                          >
+                            📤
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => archiveProposal(item.id)}
+                            className="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                            title="Archive"
+                          >
+                            📦
+                          </button>
+                        )
                       )}
                       {item.status === 'draft' && (
                         <button
