@@ -30,19 +30,35 @@ export default function DriverDashboard() {
   const router = useRouter();
   const [tours, setTours] = useState<Tour[]>([]);
   const [loading, setLoading] = useState(true);
+  const [driverId, setDriverId] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('upcoming');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
 
+  // Fetch current driver's user ID from session
   useEffect(() => {
-    loadTours();
+    const fetchUser = async () => {
+      try {
+        const res = await fetch('/api/auth/me');
+        if (!res.ok) { router.push('/login'); return; }
+        const data = await res.json();
+        if (data.user?.role !== 'driver') { router.push('/login?error=forbidden'); return; }
+        setDriverId(data.user.id);
+      } catch {
+        router.push('/login');
+      }
+    };
+    fetchUser();
+  }, [router]);
+
+  useEffect(() => {
+    if (driverId) loadTours();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewMode, selectedDate]);
+  }, [viewMode, selectedDate, driverId]);
 
   const loadTours = async () => {
+    if (!driverId) return;
     setLoading(true);
     try {
-      // TODO: Get actual driver ID from auth
-      const driverId = 1;
 
       let url: string;
       if (viewMode === 'upcoming') {

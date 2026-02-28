@@ -43,7 +43,7 @@ interface DashboardStats {
 async function getDashboardStats(): Promise<DashboardStats> {
   try {
     const bookingsCount = await query(
-      `SELECT COUNT(*) as count FROM bookings`
+      `SELECT COUNT(*) as count FROM bookings WHERE status NOT IN ('cancelled', 'abandoned')`
     );
     
     const pendingCount = await query(
@@ -70,21 +70,22 @@ async function getDashboardStats(): Promise<DashboardStats> {
     }>(
       `SELECT id, booking_number, customer_name, tour_date, status, total_price
        FROM bookings
+       WHERE status NOT IN ('cancelled', 'abandoned')
        ORDER BY created_at DESC
        LIMIT 5`
     );
     
     const proposalsCount = await query(
-      `SELECT COUNT(*) as count FROM trip_proposals WHERE status IN ('draft', 'sent')`
-    ).catch(() => ({ rows: [{ count: 0 }] }));
+      `SELECT COUNT(*) as count FROM trip_proposals WHERE status IN ('draft', 'sent', 'viewed') AND archived_at IS NULL`
+    ).catch((err) => { logger.error('[Dashboard] Failed to fetch proposals count', { error: err }); return { rows: [{ count: 0 }] }; });
 
     const acceptedProposalsCount = await query(
-      `SELECT COUNT(*) as count FROM trip_proposals WHERE status = 'accepted' AND planning_phase = 'active_planning' AND archived_at IS NULL`
-    ).catch(() => ({ rows: [{ count: 0 }] }));
+      `SELECT COUNT(*) as count FROM trip_proposals WHERE status = 'accepted' AND planning_phase IN ('proposal', 'active_planning') AND archived_at IS NULL`
+    ).catch((err) => { logger.error('[Dashboard] Failed to fetch accepted proposals count', { error: err }); return { rows: [{ count: 0 }] }; });
     
     const businessCount = await query(
-      `SELECT COUNT(*) as count FROM business_portal WHERE status = 'pending'`
-    ).catch(() => ({ rows: [{ count: 0 }] }));
+      `SELECT COUNT(*) as count FROM businesses WHERE status = 'imported'`
+    ).catch((err) => { logger.error('[Dashboard] Failed to fetch business count', { error: err }); return { rows: [{ count: 0 }] }; });
 
     // Fetch compliance issues (40 days warning window)
     const today = new Date();
@@ -360,7 +361,7 @@ export default async function AdminDashboardPage() {
                     </div>
                   </div>
                   <Link
-                    href={issue.type === 'driver' ? `/admin/users/${issue.entityId}` : `/admin/vehicles/${issue.entityId}`}
+                    href={issue.type === 'driver' ? `/admin/users/${issue.entityId}` : `/admin/vehicles`}
                     className="text-xs text-slate-500 hover:text-slate-700"
                   >
                     View →

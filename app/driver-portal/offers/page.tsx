@@ -25,23 +25,40 @@ interface TourOffer {
 }
 
 export default function DriverOffersPage() {
-  const _router = useRouter();
+  const router = useRouter();
   const [offers, setOffers] = useState<TourOffer[]>([]);
   const [loading, setLoading] = useState(true);
   const [responding, setResponding] = useState<number | null>(null);
+  const [driverId, setDriverId] = useState<number | null>(null);
+
+  // Fetch current driver's user ID from session
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await fetch('/api/auth/me');
+        if (!res.ok) { router.push('/login'); return; }
+        const data = await res.json();
+        if (data.user?.role !== 'driver') { router.push('/login?error=forbidden'); return; }
+        setDriverId(data.user.id);
+      } catch {
+        router.push('/login');
+      }
+    };
+    fetchUser();
+  }, [router]);
 
   useEffect(() => {
+    if (!driverId) return;
     loadOffers();
     // Poll for new offers every 30 seconds
     const interval = setInterval(loadOffers, 30000);
     return () => clearInterval(interval);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [driverId]);
 
   const loadOffers = async () => {
+    if (!driverId) return;
     try {
-      // TODO: Get actual driver ID from session
-      const driverId = 1; // Placeholder
-      
       const response = await fetch(`/api/driver/offers?driver_id=${driverId}`);
       const data = await response.json();
       setOffers(data.offers || []);

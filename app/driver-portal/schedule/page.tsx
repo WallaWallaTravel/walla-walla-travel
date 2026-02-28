@@ -21,16 +21,32 @@ export default function DriverSchedulePage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [tours, setTours] = useState<Tour[]>([]);
   const [loading, setLoading] = useState(true);
+  const [driverId, setDriverId] = useState<number | null>(null);
+
+  // Fetch current driver's user ID from session
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await fetch('/api/auth/me');
+        if (!res.ok) { router.push('/login'); return; }
+        const data = await res.json();
+        if (data.user?.role !== 'driver') { router.push('/login?error=forbidden'); return; }
+        setDriverId(data.user.id);
+      } catch {
+        router.push('/login');
+      }
+    };
+    fetchUser();
+  }, [router]);
 
   useEffect(() => {
-    loadTours();
+    if (driverId) loadTours();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentDate]);
+  }, [currentDate, driverId]);
 
   const loadTours = async () => {
+    if (!driverId) return;
     try {
-      // TODO: Get actual driver ID from session/auth
-      const driverId = 1;
       const year = currentDate.getFullYear();
       const month = currentDate.getMonth() + 1;
 
