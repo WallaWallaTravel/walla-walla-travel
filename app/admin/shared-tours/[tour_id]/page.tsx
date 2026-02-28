@@ -338,7 +338,7 @@ export default function AdminTourDetailPage({ params }: { params: Promise<{ tour
 
         // Add additional guests
         if (ticket.guest_names) {
-          ticket.guest_names.forEach((name, idx) => {
+          ticket.guest_names.forEach((name, _idx) => {
             if (name.trim()) {
               // Try to find lunch selection for this guest
               const guestSelection = ticket.guest_lunch_selections?.find(

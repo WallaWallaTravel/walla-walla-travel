@@ -60,6 +60,7 @@ export default function ClientNotesClient({ driver }: Props) {
     }
     
     loadItinerary()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [driver.id])
 
   const handleQuickSubmit = () => {

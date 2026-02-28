@@ -170,7 +170,7 @@ export function WineryFinderDrawer({ isOpen, onClose, onApplyFilters }: WineryFi
             <span className="text-xl">🍷</span>
             <div>
               <h2 className="font-semibold">AI Winery Finder</h2>
-              <p className="text-xs text-white/80">Describe what you're looking for</p>
+              <p className="text-xs text-white/80">Describe what you&apos;re looking for</p>
             </div>
           </div>
           <button
@@ -189,7 +189,7 @@ export function WineryFinderDrawer({ isOpen, onClose, onApplyFilters }: WineryFi
           {messages.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-stone-600 mb-4">
-                Tell me what you're looking for in a winery experience.
+                Tell me what you&apos;re looking for in a winery experience.
               </p>
               <div className="space-y-2">
                 {SUGGESTED_QUERIES.map((suggestion, idx) => (
@@ -198,7 +198,7 @@ export function WineryFinderDrawer({ isOpen, onClose, onApplyFilters }: WineryFi
                     onClick={() => handleSubmit(suggestion)}
                     className="block w-full px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 text-sm rounded-lg transition-colors text-left"
                   >
-                    "{suggestion}"
+                    &quot;{suggestion}&quot;
                   </button>
                 ))}
               </div>

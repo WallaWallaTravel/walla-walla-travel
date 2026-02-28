@@ -55,7 +55,7 @@ export default function TipPage() {
 
       setPageData(data.data);
       setPageState('select');
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to load tip page');
       setPageState('error');
     }
@@ -176,6 +176,7 @@ export default function TipPage() {
       {/* Header */}
       <div className="p-6 text-center">
         {pageData.brand_logo_url ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
           <img
             src={pageData.brand_logo_url}
             alt={pageData.brand_name}

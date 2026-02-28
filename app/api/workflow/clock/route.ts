@@ -6,7 +6,7 @@ import {
   formatDateForDB
 } from '@/app/api/utils';
 import { query } from '@/lib/db';
-import { logger, logApiRequest, logError } from '@/lib/logger';
+import { logger, logApiRequest } from '@/lib/logger';
 import { z } from 'zod';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 
@@ -24,7 +24,7 @@ const ClockRequestSchema = z.object({
   forceClockOut: z.boolean().optional(), // For admin override
 });
 
-type ClockRequest = z.infer<typeof ClockRequestSchema>;
+type _ClockRequest = z.infer<typeof ClockRequestSchema>;
 
 interface _TimeCard {
   id: number;

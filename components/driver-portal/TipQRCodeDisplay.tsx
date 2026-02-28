@@ -32,7 +32,7 @@ export function TipQRCodeDisplay({
   qrCodeUrl,
   onDone,
 }: TipQRCodeDisplayProps) {
-  const [tipStats, setTipStats] = useState<TipStats>({ count: 0, total: 0 });
+  const [tipStats, _setTipStats] = useState<TipStats>({ count: 0, total: 0 });
   const [copied, setCopied] = useState(false);
   const [shareError, setShareError] = useState<string>('');
   const [showNfcInfo, setShowNfcInfo] = useState(false);
@@ -117,6 +117,7 @@ export function TipQRCodeDisplay({
       <MobileCard variant="elevated" className="p-4">
         <div className="flex flex-col items-center">
           <div className="bg-white p-4 rounded-lg shadow-inner">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={qrCodeUrl}
               alt="Tip QR Code"
@@ -215,7 +216,7 @@ export function TipQRCodeDisplay({
                 Where to Get NFC Tags
               </h4>
               <p className="text-sm text-gray-700">
-                Search "NFC tags" on Amazon - look for NTAG215 or NTAG216 tags. A pack of 10-50
+                Search &quot;NFC tags&quot; on Amazon - look for NTAG215 or NTAG216 tags. A pack of 10-50
                 costs around $10-20. Get waterproof ones for durability!
               </p>
             </div>
@@ -226,11 +227,11 @@ export function TipQRCodeDisplay({
                 How to Program
               </h4>
               <ol className="text-sm text-gray-700 space-y-2 list-decimal list-inside">
-                <li>Download "NFC Tools" app (free, iOS/Android)</li>
+                <li>Download &quot;NFC Tools&quot; app (free, iOS/Android)</li>
                 <li>Copy your tip link using the button below</li>
                 <li>Open NFC Tools → Write → Add record → URL</li>
-                <li>Paste your link and tap "Write"</li>
-                <li>Hold the NFC tag to your phone's back</li>
+                <li>Paste your link and tap &quot;Write&quot;</li>
+                <li>Hold the NFC tag to your phone&apos;s back</li>
               </ol>
             </div>
 
@@ -240,8 +241,8 @@ export function TipQRCodeDisplay({
                 Pro Tips
               </h4>
               <ul className="text-sm text-gray-700 space-y-1">
-                <li>• Put a tag in your vehicle's cup holder area</li>
-                <li>• Attach one to a small "Tap to Tip" card you hand out</li>
+                <li>• Put a tag in your vehicle&apos;s cup holder area</li>
+                <li>• Attach one to a small &quot;Tap to Tip&quot; card you hand out</li>
                 <li>• The same link works for QR codes AND NFC tags</li>
                 <li>• Tags work even when your phone is locked</li>
               </ul>

@@ -29,7 +29,7 @@ interface ConversionResult {
 export default function PaymentSuccessPage({ params }: { params: Promise<{ proposal_id: string }> }) {
   const searchParams = useSearchParams();
   const paymentIntent = searchParams.get('payment_intent');
-  const paymentIntentClientSecret = searchParams.get('payment_intent_client_secret');
+  const _paymentIntentClientSecret = searchParams.get('payment_intent_client_secret');
   const redirectStatus = searchParams.get('redirect_status');
 
   const [proposalId, setProposalId] = useState<string | null>(null);

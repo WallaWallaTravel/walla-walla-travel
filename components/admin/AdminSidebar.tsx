@@ -97,7 +97,7 @@ export function AdminSidebar() {
   const router = useRouter();
   const [badgeCounts, setBadgeCounts] = useState<Record<string, number>>({});
   const [userRole, setUserRole] = useState<string | undefined>(undefined);
-  const [isLoading, setIsLoading] = useState(true);
+  const [_isLoading, setIsLoading] = useState(true);
 
   // Fetch user role on mount
   useEffect(() => {

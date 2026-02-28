@@ -35,7 +35,7 @@ interface PaymentIntentData {
 
 function PaymentForm({
   ticketInfo,
-  onSuccess,
+  onSuccess: _onSuccess,
 }: {
   ticketInfo: TicketInfo;
   onSuccess: () => void;

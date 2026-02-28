@@ -296,7 +296,7 @@ export default function AdminHotelPartnersPage() {
             {hotels.length === 0 && (
               <tr>
                 <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
-                  No hotel partners yet. Click "Add Hotel" to get started.
+                  No hotel partners yet. Click &quot;Add Hotel&quot; to get started.
                 </td>
               </tr>
             )}

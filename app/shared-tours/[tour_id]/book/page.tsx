@@ -69,7 +69,7 @@ interface PaymentFormProps {
   onError: (error: string) => void;
 }
 
-function PaymentForm({ clientSecret, totalAmount, onSuccess, onError }: PaymentFormProps) {
+function PaymentForm({ clientSecret: _clientSecret, totalAmount, onSuccess: _onSuccess, onError }: PaymentFormProps) {
   const stripe = useStripe();
   const elements = useElements();
   const [processing, setProcessing] = useState(false);
@@ -145,7 +145,7 @@ export default function BookSharedTourPage({ params }: { params: Promise<{ tour_
   });
 
   // Payment state
-  const [ticketId, setTicketId] = useState<string | null>(null);
+  const [_ticketId, setTicketId] = useState<string | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [publishableKey, setPublishableKey] = useState<string | null>(null);
 
@@ -222,7 +222,7 @@ export default function BookSharedTourPage({ params }: { params: Promise<{ tour_
     }));
   };
 
-  const handleLunchSelectionChange = (index: number, selection: string) => {
+  const _handleLunchSelectionChange = (index: number, selection: string) => {
     const newSelections = [...formData.guestLunchSelections];
     newSelections[index] = {
       guestName: formData.guestNames[index] || `Guest ${index + 2}`,

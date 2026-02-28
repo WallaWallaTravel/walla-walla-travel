@@ -16,7 +16,7 @@ interface GroupMember {
   payment_status: string;
 }
 
-function GroupPaymentForm({ token, groupToken, amount, selectedIds }: {
+function GroupPaymentForm({ token, groupToken: _groupToken, amount, selectedIds: _selectedIds }: {
   token: string; groupToken: string; amount: number; selectedIds: number[];
 }) {
   const stripe = useStripe();
@@ -89,6 +89,7 @@ export default function GroupPaymentPage() {
 
   useEffect(() => {
     loadGroupInfo();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, groupToken]);
 
   const loadGroupInfo = async () => {

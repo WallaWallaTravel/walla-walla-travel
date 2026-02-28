@@ -12,11 +12,11 @@ import { useEffect, useState } from 'react';
 export default function TipSuccessPage() {
   const params = useParams();
   const searchParams = useSearchParams();
-  const tipCode = params.code as string;
+  const _tipCode = params.code as string;
   const paymentIntent = searchParams.get('payment_intent');
 
   const [loading, setLoading] = useState(true);
-  const [amount, setAmount] = useState<number | null>(null);
+  const [amount, _setAmount] = useState<number | null>(null);
 
   useEffect(() => {
     // Optionally verify the payment intent

@@ -15,7 +15,6 @@ import { partnerContextService, TripContext } from './partner-context.service';
 import {
   Trip,
   TripStop,
-  TripGuest,
   StopType,
   TripChatMessage,
   TripAIAction,

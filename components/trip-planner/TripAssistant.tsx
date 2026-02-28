@@ -92,7 +92,7 @@ interface TripAssistantProps {
   className?: string;
 }
 
-export function TripAssistant({ shareCode, tripTitle, className = '' }: TripAssistantProps) {
+export function TripAssistant({ shareCode, tripTitle: _tripTitle, className = '' }: TripAssistantProps) {
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -101,7 +101,7 @@ export function TripAssistant({ shareCode, tripTitle, className = '' }: TripAssi
   const isSending = useIsSendingMessage();
   const proactiveTip = useProactiveTip();
   const sendChatMessage = useTripPlannerStore((state) => state.sendChatMessage);
-  const applySuggestion = useTripPlannerStore((state) => state.applySuggestion);
+  const _applySuggestion = useTripPlannerStore((state) => state.applySuggestion);
   const addStop = useTripPlannerStore((state) => state.addStop);
   const currentTrip = useTripPlannerStore((state) => state.currentTrip);
 
@@ -200,7 +200,7 @@ export function TripAssistant({ shareCode, tripTitle, className = '' }: TripAssi
             <div className="text-center mb-6">
               <div className="text-4xl mb-3">🍷</div>
               <h4 className="font-semibold text-stone-900 mb-1">
-                Hi! I'm here to help plan your trip
+                Hi! I&apos;m here to help plan your trip
               </h4>
               <p className="text-sm text-stone-600">
                 Ask me about wineries, restaurants, or timing.

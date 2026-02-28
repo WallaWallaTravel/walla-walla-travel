@@ -30,7 +30,7 @@ const ListFiltersSchema = z.object({
  * GET /api/admin/trip-proposals
  * List trip proposals with filters
  */
-export const GET = withAdminAuth(async (request: NextRequest, session) => {
+export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const searchParams = request.nextUrl.searchParams;
 
   const rawFilters: Record<string, string | undefined> = {

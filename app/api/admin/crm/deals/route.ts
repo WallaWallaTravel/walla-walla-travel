@@ -186,7 +186,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   // Build insert query
   const fields: string[] = ['contact_id', 'stage_id', 'title'];
   const values: unknown[] = [body.contact_id, body.stage_id, body.title];
-  let paramIndex = 4;
+  let _paramIndex = 4;
 
   const optionalFields: (keyof CreateDealData)[] = [
     'deal_type_id', 'brand', 'brand_id', 'description', 'party_size',
@@ -198,7 +198,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     if (body[field] !== undefined) {
       fields.push(field);
       values.push(body[field]);
-      paramIndex++;
+      _paramIndex++;
     }
   }
 

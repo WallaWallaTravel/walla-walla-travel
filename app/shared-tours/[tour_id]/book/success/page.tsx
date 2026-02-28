@@ -109,7 +109,7 @@ export default function BookingSuccessPage({ params }: { params: Promise<{ tour_
           </svg>
         </div>
 
-        <h1 className="text-3xl font-bold text-slate-900 mb-2">You're Booked!</h1>
+        <h1 className="text-3xl font-bold text-slate-900 mb-2">You&apos;re Booked!</h1>
         <p className="text-slate-600 mb-6">
           Your payment was successful and your wine tour is confirmed.
         </p>
@@ -130,12 +130,12 @@ export default function BookingSuccessPage({ params }: { params: Promise<{ tour_
         <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 text-left">
           <h3 className="font-semibold text-green-800 mb-2">Check your email!</h3>
           <p className="text-sm text-green-700">
-            We've sent a confirmation email with your ticket number, meeting location, and everything you need to know for your tour.
+            We&apos;ve sent a confirmation email with your ticket number, meeting location, and everything you need to know for your tour.
           </p>
         </div>
 
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 text-left">
-          <h3 className="font-semibold text-amber-800 mb-2">Don't forget:</h3>
+          <h3 className="font-semibold text-amber-800 mb-2">Don&apos;t forget:</h3>
           <ul className="text-sm text-amber-700 space-y-1">
             <li>✓ Bring valid ID (21+ for tastings)</li>
             <li>✓ Arrive 10 minutes early</li>

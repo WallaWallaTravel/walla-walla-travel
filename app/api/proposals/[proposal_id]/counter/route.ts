@@ -7,7 +7,6 @@ import { getDbConfig } from '@/lib/config/database';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 import { sendEmail } from '@/lib/email';
-import { COMPANY_INFO } from '@/lib/config/company';
 import { getBrandEmailConfig } from '@/lib/email-brands';
 import { logger } from '@/lib/logger';
 

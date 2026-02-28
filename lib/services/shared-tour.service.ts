@@ -21,7 +21,7 @@
  */
 
 import { query } from '@/lib/db';
-import { withTransaction, queryOne } from '@/lib/db-helpers';
+import { withTransaction } from '@/lib/db-helpers';
 import { SHARED_TOUR_RATES } from '@/lib/types/pricing-models';
 import { logger } from '@/lib/logger';
 import { vehicleAvailabilityService } from './vehicle-availability.service';

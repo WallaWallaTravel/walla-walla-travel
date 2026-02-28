@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, useCallback, use } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface Organizer {
@@ -48,11 +48,7 @@ export default function OrganizerDetailPage({
     text: string;
   } | null>(null);
 
-  useEffect(() => {
-    fetchOrganizer();
-  }, [id]);
-
-  async function fetchOrganizer() {
+  const fetchOrganizer = useCallback(async () => {
     try {
       setLoading(true);
       const res = await fetch(`/api/admin/organizers/${id}`);
@@ -68,7 +64,11 @@ export default function OrganizerDetailPage({
     } finally {
       setLoading(false);
     }
-  }
+  }, [id]);
+
+  useEffect(() => {
+    fetchOrganizer();
+  }, [fetchOrganizer]);
 
   async function handleStatusChange(newStatus: 'active' | 'suspended') {
     if (!organizer) return;

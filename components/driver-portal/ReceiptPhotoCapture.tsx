@@ -88,6 +88,7 @@ export function ReceiptPhotoCapture({
         </div>
 
         <div className="relative rounded-lg overflow-hidden bg-gray-100 aspect-[3/4] max-h-96">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={previewUrl}
             alt="Receipt preview"

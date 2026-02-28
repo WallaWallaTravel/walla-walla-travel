@@ -218,7 +218,7 @@ export const hotelPartnerService = {
     }
 
     // Return without password_hash
-    const { password_hash, ...hotelData } = hotel;
+    const { password_hash: _password_hash, ...hotelData } = hotel;
     return hotelData;
   },
 

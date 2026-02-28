@@ -10,7 +10,7 @@ import {
   TripAIAction,
   StopSuggestion,
 } from '@/lib/types/trip-planner';
-import { apiGet, apiPost, apiDelete, apiPatch, type ApiResponse } from '@/lib/utils/fetch-utils';
+import { apiGet, apiPost, apiDelete, apiPatch } from '@/lib/utils/fetch-utils';
 
 // Default timeout for trip operations (30 seconds)
 const TRIP_API_TIMEOUT = 30000;

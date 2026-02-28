@@ -572,6 +572,7 @@ export function TopicEditor({ initialData, isEditing = false }: TopicEditorProps
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
           <div className="max-w-3xl mx-auto">
             {formData.hero_image_url && (
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={formData.hero_image_url}
                 alt={formData.title}

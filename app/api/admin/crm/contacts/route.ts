@@ -146,7 +146,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   // Build insert query
   const fields: string[] = ['email', 'name'];
   const values: unknown[] = [body.email.toLowerCase(), body.name];
-  let paramIndex = 3;
+  let _paramIndex = 3;
 
   const optionalFields: (keyof CreateContactData)[] = [
     'phone', 'company', 'contact_type', 'lifecycle_stage', 'lead_temperature',
@@ -159,7 +159,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     if (body[field] !== undefined) {
       fields.push(field);
       values.push(body[field]);
-      paramIndex++;
+      _paramIndex++;
     }
   }
 

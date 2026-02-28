@@ -101,7 +101,7 @@ import { crmTaskAutomationService } from '../../crm-task-automation.service';
 import { googleCalendarSyncService } from '../../google-calendar-sync.service';
 import { withTransaction as withClientTransaction } from '../../../db-helpers';
 import { NotFoundError, ConflictError, ValidationError } from '@/lib/api/middleware/error-handler';
-import { VALID_STATUS_TRANSITIONS, BookingStatus } from '../types';
+import { VALID_STATUS_TRANSITIONS as _VALID_STATUS_TRANSITIONS, BookingStatus } from '../types';
 
 // ============================================================================
 // Utility: flush pending microtasks (for async .catch handlers)

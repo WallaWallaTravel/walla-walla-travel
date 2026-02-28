@@ -373,6 +373,7 @@ export default async function GeologyTopicPage({ params }: PageProps) {
       <section className="relative bg-gradient-to-br from-[#1a1a2e] to-[#16213e] text-white">
         {topic.hero_image_url && (
           <div className="absolute inset-0 opacity-30">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={topic.hero_image_url}
               alt=""

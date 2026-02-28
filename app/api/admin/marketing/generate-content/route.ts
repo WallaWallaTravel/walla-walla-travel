@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { query } from '@/lib/db'
-import { logger } from '@/lib/logger'
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit'
 import { withErrorHandling } from '@/lib/api/middleware/error-handler'
 import { socialIntelligenceService } from '@/lib/services/social-intelligence.service'
