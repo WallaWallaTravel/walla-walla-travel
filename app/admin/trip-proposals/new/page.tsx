@@ -525,6 +525,45 @@ export default function NewTripProposalPage() {
 
   const totals = calculateTotals();
 
+  const saveDraft = async () => {
+    setSaving(true);
+    try {
+      // Collect whatever data is filled in — no validation needed
+      const draftData: Record<string, unknown> = {};
+      if (formData.customer_name) draftData.customer_name = formData.customer_name;
+      if (formData.customer_email) draftData.customer_email = formData.customer_email;
+      if (formData.customer_phone) draftData.customer_phone = formData.customer_phone;
+      if (formData.customer_company) draftData.customer_company = formData.customer_company;
+      if (formData.trip_type) draftData.trip_type = formData.trip_type;
+      if (formData.party_size) draftData.party_size = formData.party_size;
+      if (formData.start_date) draftData.start_date = formData.start_date;
+      if (formData.end_date) draftData.end_date = formData.end_date;
+      if (formData.brand_id) draftData.brand_id = formData.brand_id;
+      if (formData.introduction) draftData.introduction = formData.introduction;
+      if (formData.internal_notes) draftData.internal_notes = formData.internal_notes;
+
+      const response = await fetch('/api/admin/trip-proposals?draft=true', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(draftData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save draft');
+      }
+
+      const data = await response.json();
+      toast('Draft saved successfully', 'success');
+      // Redirect to the edit page
+      router.push(`/admin/trip-proposals/${data.data.id}`);
+    } catch (error) {
+      toast(error instanceof Error ? error.message : 'Failed to save draft', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -1473,13 +1512,23 @@ export default function NewTripProposalPage() {
                   </div>
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={saving || !formData.customer_name}
-                  className="w-full px-6 py-4 bg-brand hover:bg-brand-hover disabled:bg-gray-400 text-white rounded-lg font-bold text-lg transition-colors shadow-lg"
-                >
-                  {saving ? '⏳ Creating...' : '📝 Create Trip Proposal'}
-                </button>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={saveDraft}
+                    disabled={saving}
+                    className="px-4 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 transition-colors"
+                  >
+                    {saving ? 'Saving...' : 'Save Draft'}
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={saving || !formData.customer_name}
+                    className="flex-1 px-6 py-4 bg-brand hover:bg-brand-hover disabled:bg-gray-400 text-white rounded-lg font-bold text-lg transition-colors shadow-lg"
+                  >
+                    {saving ? 'Creating...' : 'Create Trip Proposal'}
+                  </button>
+                </div>
 
                 {!formData.customer_name && (
                   <p className="text-sm text-center text-gray-600 mt-3">

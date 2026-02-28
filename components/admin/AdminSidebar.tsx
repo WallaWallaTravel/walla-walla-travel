@@ -16,16 +16,16 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  // Overview (admin only) - reduced from 3 to 2 items
+  // Overview (admin only)
   { label: 'Dashboard', icon: '📊', href: '/admin/dashboard', section: 'Overview', requiredAccess: 'admin' },
+  { label: "Today's Priorities", icon: '☀️', href: '/admin/today', section: 'Overview', requiredAccess: 'admin' },
   { label: 'Calendar', icon: '📆', href: '/admin/calendar', section: 'Overview', requiredAccess: 'admin' },
 
-  // Sales Pipeline (formerly Operations) - consolidated from 7 to 4 items
-  // Consultations, Corporate Requests, Reservations → merged into "Leads"
-  // Proposals → replaced by Trip Proposals
-  // Tour Offers → renamed to "Shared Tours", marked as coming soon
+  // Sales Pipeline
   { label: 'Leads', icon: '🎯', href: '/admin/leads', section: 'Sales Pipeline', dynamicBadge: 'pendingLeads', requiredAccess: 'admin' },
   { label: 'Proposals', icon: '🗺️', href: '/admin/trip-proposals', section: 'Sales Pipeline', requiredAccess: 'admin' },
+  { label: 'Pending/Drafts', icon: '📄', href: '/admin/drafts', section: 'Sales Pipeline', dynamicBadge: 'draftProposals', requiredAccess: 'admin' },
+  { label: 'Tasks', icon: '✅', href: '/admin/crm/tasks', section: 'Sales Pipeline', dynamicBadge: 'overdueTasks', requiredAccess: 'admin' },
   { label: 'Trips', icon: '✈️', href: '/admin/bookings', section: 'Sales Pipeline', requiredAccess: 'admin' },
   { label: 'Shared Tours', icon: '🎫', href: '/admin/shared-tours', section: 'Sales Pipeline', requiredAccess: 'admin' },
 
@@ -33,7 +33,6 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'CRM', icon: '👤', href: '/admin/crm', section: 'CRM', requiredAccess: 'admin' },
   { label: 'Contacts', icon: '📇', href: '/admin/crm/contacts', section: 'CRM', requiredAccess: 'admin' },
   { label: 'Pipeline', icon: '📊', href: '/admin/crm/pipeline', section: 'CRM', requiredAccess: 'admin' },
-  { label: 'Tasks', icon: '✅', href: '/admin/crm/tasks', section: 'CRM', dynamicBadge: 'overdueTasks', requiredAccess: 'admin' },
 
   // Financial (admin only) - reduced from 4 to 2 items
   // Rate Configuration, Payment Settings → moved to System > Settings
@@ -140,6 +139,16 @@ export function AdminSidebar() {
           setBadgeCounts(prev => ({
             ...prev,
             overdueTasks: crmData.overdue || 0,
+          }));
+        }
+
+        // Fetch draft proposal counts
+        const draftsResponse = await fetch('/api/admin/drafts/summary');
+        if (draftsResponse.ok) {
+          const draftsData = await draftsResponse.json();
+          setBadgeCounts(prev => ({
+            ...prev,
+            draftProposals: draftsData.data?.total || 0,
           }));
         }
       } catch (error) {
