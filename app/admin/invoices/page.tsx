@@ -25,6 +25,8 @@ export default function AdminInvoicesPage() {
   const [invoices, setInvoices] = useState<PendingInvoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [approving, setApproving] = useState<number | null>(null);
+  const [editingHours, setEditingHours] = useState<Record<number, string>>({});
+  const [reviewingId, setReviewingId] = useState<number | null>(null);
 
   useEffect(() => {
     loadPendingInvoices();
@@ -45,22 +47,46 @@ export default function AdminInvoicesPage() {
     }
   };
 
+  const handleReview = (invoice: PendingInvoice) => {
+    const hours = invoice.actual_hours || invoice.estimated_hours;
+    setEditingHours(prev => ({ ...prev, [invoice.booking_id]: String(hours) }));
+    setReviewingId(invoice.booking_id);
+  };
+
+  const handleCancelReview = () => {
+    setReviewingId(null);
+  };
+
+  const getReviewedAmount = (invoice: PendingInvoice) => {
+    const hours = parseFloat(editingHours[invoice.booking_id] || String(invoice.actual_hours || invoice.estimated_hours));
+    return hours * invoice.hourly_rate;
+  };
+
   const handleApprove = async (bookingId: number) => {
-    if (!confirm('Send final invoice to customer?')) return;
+    const invoice = invoices.find(i => i.booking_id === bookingId);
+    if (!invoice) return;
+
+    const reviewedHours = parseFloat(editingHours[bookingId] || String(invoice.actual_hours || invoice.estimated_hours));
+    const reviewedAmount = reviewedHours * invoice.hourly_rate;
+
+    if (!confirm(`Send invoice for ${formatCurrency(reviewedAmount)} (${reviewedHours} hours) to ${invoice.customer_name}?`)) return;
 
     setApproving(bookingId);
     try {
       const response = await fetch(`/api/admin/approve-invoice/${bookingId}`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reviewed_hours: reviewedHours }),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        alert('✅ Invoice sent successfully!');
-        loadPendingInvoices(); // Refresh list
+        alert('Invoice sent successfully!');
+        setReviewingId(null);
+        loadPendingInvoices();
       } else {
-        alert(`❌ Error: ${data.error}`);
+        alert(`Error: ${data.error}`);
       }
     } catch (error) {
       logger.error('Error approving invoice', { error });
@@ -224,33 +250,64 @@ export default function AdminInvoicesPage() {
 
                   {/* Right: Actions */}
                   <div className="lg:col-span-3 flex flex-col justify-center">
-                    <button
-                      onClick={() => handleApprove(invoice.booking_id)}
-                      disabled={approving === invoice.booking_id}
-                      className={`w-full py-4 rounded-lg font-bold text-lg transition-all ${
-                        approving === invoice.booking_id
-                          ? 'bg-gray-400 cursor-not-allowed'
-                          : 'bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl'
-                      }`}
-                    >
-                      {approving === invoice.booking_id ? (
-                        '⏳ Sending...'
-                      ) : (
-                        <>
-                          ✅ Approve & Send
+                    {reviewingId === invoice.booking_id ? (
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Final Hours
+                          </label>
+                          <input
+                            type="number"
+                            step="0.5"
+                            min="0.5"
+                            value={editingHours[invoice.booking_id] || ''}
+                            onChange={(e) => setEditingHours(prev => ({
+                              ...prev,
+                              [invoice.booking_id]: e.target.value,
+                            }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-lg font-bold text-center focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        </div>
+                        <div className="text-center text-sm text-gray-600">
+                          Final: <span className="font-bold text-blue-600">{formatCurrency(getReviewedAmount(invoice))}</span>
+                        </div>
+                        <button
+                          onClick={() => handleApprove(invoice.booking_id)}
+                          disabled={approving === invoice.booking_id}
+                          className={`w-full py-3 rounded-lg font-bold transition-all ${
+                            approving === invoice.booking_id
+                              ? 'bg-gray-400 cursor-not-allowed'
+                              : 'bg-green-600 hover:bg-green-700 text-white'
+                          }`}
+                        >
+                          {approving === invoice.booking_id ? 'Sending...' : 'Confirm & Send'}
+                        </button>
+                        <button
+                          onClick={handleCancelReview}
+                          className="w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => handleReview(invoice)}
+                          className="w-full py-4 rounded-lg font-bold text-lg transition-all bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl"
+                        >
+                          Review & Send
                           <div className="text-sm font-normal mt-1">
-                            Final invoice to customer
+                            Verify hours before sending
                           </div>
-                        </>
-                      )}
-                    </button>
-
-                    <button
-                      onClick={() => router.push(`/bookings/${invoice.booking_id}`)}
-                      className="w-full mt-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-semibold transition-colors"
-                    >
-                      View Booking Details
-                    </button>
+                        </button>
+                        <button
+                          onClick={() => router.push(`/admin/bookings/${invoice.booking_id}`)}
+                          className="w-full mt-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-semibold transition-colors"
+                        >
+                          View Booking Details
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
 

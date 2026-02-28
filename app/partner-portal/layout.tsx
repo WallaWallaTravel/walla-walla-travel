@@ -48,7 +48,23 @@ export default function PartnerPortalLayout({ children }: { children: ReactNode 
         // JWT check failed, try hotel auth
       }
 
-      // 2. Fall back to localStorage hotel auth
+      // 2. Check server-side hotel session cookie
+      try {
+        const hotelRes = await fetch('/api/partner/auth/me');
+        if (hotelRes.ok) {
+          const hotelData = await hotelRes.json();
+          if (hotelData.success && hotelData.data) {
+            setHotel(hotelData.data);
+            setAuthType('hotel');
+            setLoading(false);
+            return;
+          }
+        }
+      } catch {
+        // Hotel session check failed
+      }
+
+      // 3. Legacy fallback: localStorage (for existing sessions before migration)
       const storedHotel = localStorage.getItem('hotelPartner');
       if (storedHotel) {
         try {
@@ -77,6 +93,7 @@ export default function PartnerPortalLayout({ children }: { children: ReactNode 
       if (data.success) {
         setHotel(data.data);
         setAuthType('hotel');
+        // Store for UI display only — auth is handled by HttpOnly cookie
         localStorage.setItem('hotelPartner', JSON.stringify(data.data));
         return true;
       }
@@ -95,10 +112,13 @@ export default function PartnerPortalLayout({ children }: { children: ReactNode 
         window.location.href = '/login?portal=partners';
       });
     } else {
-      setHotel(null);
-      setAuthType(null);
-      localStorage.removeItem('hotelPartner');
-      router.push('/partner-portal/login');
+      // Clear server-side session cookie + local state
+      fetch('/api/partner/auth/logout', { method: 'POST' }).finally(() => {
+        setHotel(null);
+        setAuthType(null);
+        localStorage.removeItem('hotelPartner');
+        router.push('/partner-portal/login');
+      });
     }
   };
 

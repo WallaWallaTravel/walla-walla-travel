@@ -2,14 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, UnauthorizedError } from '@/lib/api/middleware/error-handler';
 import { hotelPartnerService } from '@/lib/services/hotel-partner.service';
 import { sharedTourService } from '@/lib/services/shared-tour.service';
+import { getHotelSessionFromRequest } from '@/lib/auth/hotel-session';
 
 /**
  * GET /api/partner/shared-tours
  * List upcoming tours available for booking (hotel partner view)
  */
 export const GET = withErrorHandling(async (request: NextRequest) => {
-  // Get hotel ID from auth header/session
-  const hotelId = request.headers.get('x-hotel-id');
+  // Get hotel ID from server-side session cookie (preferred) or legacy header
+  const session = await getHotelSessionFromRequest(request);
+  const hotelId = session?.hotelId || request.headers.get('x-hotel-id');
 
   if (!hotelId) {
     throw new UnauthorizedError('Hotel authentication required');

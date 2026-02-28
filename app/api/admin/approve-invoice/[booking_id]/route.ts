@@ -47,9 +47,20 @@ export const POST = withErrorHandling(async (
     throw new BadRequestError('Invalid booking ID');
   }
 
+  // Parse optional reviewed hours from request body
+  let reviewedHours: number | null = null;
+  try {
+    const body = await request.json();
+    if (body.reviewed_hours && !isNaN(parseFloat(body.reviewed_hours))) {
+      reviewedHours = parseFloat(body.reviewed_hours);
+    }
+  } catch {
+    // No body or invalid JSON — use default hours
+  }
+
   // 1. Get booking details
   const booking = await queryOne<BookingWithDriver>(`
-    SELECT 
+    SELECT
       b.*,
       u.name as driver_name,
       u.email as driver_email
@@ -62,8 +73,8 @@ export const POST = withErrorHandling(async (
     throw new NotFoundError('Booking');
   }
 
-  // 2. Calculate final amount
-  const hours = parseFloat(booking.actual_hours || booking.estimated_hours || '6.0');
+  // 2. Calculate final amount — use reviewed hours if provided, then actual, then estimated
+  const hours = reviewedHours || parseFloat(booking.actual_hours || booking.estimated_hours || '6.0');
   const hourlyRate = parseFloat(booking.hourly_rate || '150.00');
   const subtotal = hours * hourlyRate;
   const taxAmount = 0; // Add tax calculation if needed
