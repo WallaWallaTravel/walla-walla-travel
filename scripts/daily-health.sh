@@ -34,7 +34,7 @@ print_header "A. Routes Missing Auth Wrappers"
 
 MISSING_AUTH=""
 while IFS= read -r f; do
-  if ! grep -qE 'withAdminAuth|withAuth|withOptionalAuth|withErrorHandling|withCronAuth' "$f"; then
+  if ! grep -qE 'withAdminAuth|withAuth|withOptionalAuth|withDriverAuth|withErrorHandling|withCronAuth' "$f"; then
     MISSING_AUTH="${MISSING_AUTH}    ${f}"$'\n'
   fi
 done < <(find app/api -name "route.ts" \
