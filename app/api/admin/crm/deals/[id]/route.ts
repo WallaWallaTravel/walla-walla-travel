@@ -4,10 +4,6 @@ import { NotFoundError, BadRequestError } from '@/lib/api/middleware/error-handl
 import { query } from '@/lib/db';
 import type { CrmDealWithRelations, UpdateDealData } from '@/types/crm';
 
-interface RouteParams {
-  id: string;
-}
-
 /**
  * GET /api/admin/crm/deals/[id]
  * Get a single deal with full details

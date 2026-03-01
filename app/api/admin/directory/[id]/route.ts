@@ -31,10 +31,6 @@ const UpdateBusinessSchema = z.object({
   longitude: z.number().optional(),
 });
 
-interface RouteParams {
-  params: Promise<{ id: string }>;
-}
-
 /**
  * GET /api/admin/directory/[id]
  * Get a specific business

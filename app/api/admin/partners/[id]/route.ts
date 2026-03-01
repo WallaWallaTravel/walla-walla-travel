@@ -3,10 +3,6 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { NotFoundError } from '@/lib/api/middleware/error-handler';
 import { query } from '@/lib/db';
 
-interface RouteParams {
-  id: string;
-}
-
 // ============================================================================
 // GET /api/admin/partners/[id] - Get single partner with linked business data
 // ============================================================================

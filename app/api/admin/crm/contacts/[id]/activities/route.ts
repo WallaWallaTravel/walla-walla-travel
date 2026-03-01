@@ -4,10 +4,6 @@ import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { query } from '@/lib/db';
 import type { CrmActivityWithUser, CreateActivityData } from '@/types/crm';
 
-interface RouteParams {
-  id: string;
-}
-
 /**
  * GET /api/admin/crm/contacts/[id]/activities
  * Get all activities for a contact

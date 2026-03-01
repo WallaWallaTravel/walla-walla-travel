@@ -4,10 +4,6 @@ import { NotFoundError, BadRequestError } from '@/lib/api/middleware/error-handl
 import { query } from '@/lib/db';
 import type { CrmTaskWithRelations, UpdateTaskData } from '@/types/crm';
 
-interface RouteParams {
-  id: string;
-}
-
 /**
  * GET /api/admin/crm/tasks/[id]
  * Get a single task with details
