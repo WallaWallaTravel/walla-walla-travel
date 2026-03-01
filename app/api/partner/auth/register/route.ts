@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
+import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 import { hotelPartnerService } from '@/lib/services/hotel-partner.service';
 
 /**
  * POST /api/partner/auth/register
  * Complete hotel partner registration via invite token
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withRateLimit(rateLimiters.auth)(
+  withErrorHandling(async (request: NextRequest) => {
   const body = await request.json();
 
   // Validate required fields
@@ -43,13 +45,14 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     },
     message: 'Registration complete. You can now log in.',
   });
-});
+}));
 
 /**
  * GET /api/partner/auth/register?token=xxx
  * Validate invite token and get hotel info for registration form
  */
-export const GET = withErrorHandling(async (request: NextRequest) => {
+export const GET = withRateLimit(rateLimiters.auth)(
+  withErrorHandling(async (request: NextRequest) => {
   const token = request.nextUrl.searchParams.get('token');
 
   if (!token) {
@@ -74,4 +77,4 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
       email: hotel.email,
     },
   });
-});
+}));
