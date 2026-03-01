@@ -1,0 +1,44 @@
+name: Weekly Storage Backup
+
+on:
+  schedule:
+    # Sunday 3am Pacific (11:00 UTC)
+    - cron: '0 11 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    name: Backup Supabase Storage
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run storage backup
+        run: npx tsx scripts/backup-storage.ts
+
+      - name: Upload backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: storage-backup-${{ github.run_id }}
+          path: backups/storage-backup-*.tar.gz
+          retention-days: 90
+          if-no-files-found: error
