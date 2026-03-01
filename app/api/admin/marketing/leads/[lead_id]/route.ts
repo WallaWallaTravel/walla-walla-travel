@@ -3,6 +3,7 @@ import { query } from '@/lib/db'
 import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler'
 import { withCSRF } from '@/lib/api/middleware/csrf'
+import { auditService } from '@/lib/services/audit.service'
 import { z } from 'zod'
 
 const PatchBodySchema = z.object({
@@ -292,13 +293,18 @@ async function patchHandler(
 // DELETE - Delete lead (now deletes from crm_contacts)
 async function deleteHandler(
   request: NextRequest,
-  _session: AuthSession,
+  session: AuthSession,
   context?: { params: Promise<Record<string, string>> }
 ) {
   const { lead_id } = await context!.params;
   const id = parseInt(lead_id)
 
   await query('DELETE FROM crm_contacts WHERE id = $1', [id])
+
+  await auditService.logFromRequest(request, parseInt(session.userId), 'resource_deleted', {
+    entityType: 'lead',
+    entityId: id,
+  });
 
   return NextResponse.json({
     success: true,

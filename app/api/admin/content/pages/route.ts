@@ -4,6 +4,7 @@ import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { ContentService } from '@/lib/services/content.service';
 import { z } from 'zod';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { auditService } from '@/lib/services/audit.service';
 
 // GET - Fetch page content
 // ?page=homepage - Get all content for a page
@@ -104,7 +105,7 @@ const putHandler = withAdminAuth(async (request: NextRequest, session) => {
 });
 
 // DELETE - Remove content section
-const deleteHandler = withAdminAuth(async (request: NextRequest, _session) => {
+const deleteHandler = withAdminAuth(async (request: NextRequest, session) => {
   const { searchParams } = new URL(request.url);
   const pageSlug = searchParams.get('page');
   const sectionKey = searchParams.get('section');
@@ -114,6 +115,13 @@ const deleteHandler = withAdminAuth(async (request: NextRequest, _session) => {
   }
 
   const deleted = await ContentService.deleteContentSection(pageSlug, sectionKey);
+
+  if (deleted) {
+    await auditService.logFromRequest(request, parseInt(session.userId), 'resource_deleted', {
+      entityType: 'content_section',
+      entityId: `${pageSlug}/${sectionKey}`,
+    });
+  }
 
   return NextResponse.json({
     success: deleted,

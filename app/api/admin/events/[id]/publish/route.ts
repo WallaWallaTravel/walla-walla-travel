@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { eventsService } from '@/lib/services/events.service';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { auditService } from '@/lib/services/audit.service';
 
 // ============================================================================
 // POST /api/admin/events/[id]/publish - Publish an event
@@ -9,7 +10,7 @@ import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const POST = withCSRF(
   withAdminAuth(
-  async (_request: NextRequest, _session, context) => {
+  async (request: NextRequest, session, context) => {
     const { id } = await context!.params;
 
     // Check if event is recurring — publish entire series if so
@@ -20,6 +21,13 @@ export const POST = withCSRF(
     } else {
       event = await eventsService.publish(Number(id));
     }
+
+    await auditService.logFromRequest(request, parseInt(session.userId), 'resource_updated', {
+      entityType: 'event',
+      entityId: Number(id),
+      action: 'publish',
+      isRecurring: existing?.is_recurring ?? false,
+    });
 
     return NextResponse.json({
       success: true,

@@ -4,6 +4,7 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { NotFoundError, ConflictError, BadRequestError } from '@/lib/api-errors';
 import { queryOne, query } from '@/lib/db-helpers';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { auditService } from '@/lib/services/audit.service';
 import { z } from 'zod';
 
 const BodySchema = z.object({
@@ -46,7 +47,7 @@ interface Invoice {
 export const POST = withCSRF(
   withAdminAuth(async (
   request: NextRequest,
-  _session,
+  session,
   context
 ) => {
   const { booking_id } = await context!.params;
@@ -155,7 +156,19 @@ export const POST = withCSRF(
     logger.warn('Email not configured', { to: booking.customer_email, paymentUrl });
   }
 
-  // 7. Return success
+  // 7. Audit log
+  await auditService.logFromRequest(request, parseInt(session.userId), 'booking_status_changed', {
+    entityType: 'booking',
+    entityId: bookingId,
+    bookingNumber: booking.booking_number,
+    action: 'invoice_approved',
+    invoiceId: invoice.id,
+    invoiceNumber: invoice.invoice_number,
+    totalAmount: totalAmount,
+    hours,
+  });
+
+  // 8. Return success
   return NextResponse.json({
     success: true,
     message: 'Invoice approved and sent successfully',

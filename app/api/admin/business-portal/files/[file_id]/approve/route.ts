@@ -10,6 +10,7 @@ import { z } from 'zod';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { auditService } from '@/lib/services/audit.service';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -25,7 +26,7 @@ const BodySchema = z.object({
 
 export const POST = withCSRF(
   withAdminAuth(async (
-  request: NextRequest, _session, context
+  request: NextRequest, session, context
 ) => {
   const { file_id } = await context!.params;
   const fileId = parseInt(file_id);
@@ -72,6 +73,15 @@ export const POST = withCSRF(
   );
 
   logger.info('File approval updated successfully', { fileId });
+
+  await auditService.logFromRequest(request, parseInt(session.userId), 'resource_updated', {
+    entityType: 'business_file',
+    entityId: fileId,
+    businessId: file.business_id,
+    approved,
+    filename: file.original_filename,
+    notes,
+  });
 
   return NextResponse.json({
     success: true,

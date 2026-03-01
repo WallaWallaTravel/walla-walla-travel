@@ -4,6 +4,7 @@ import { logger } from '@/lib/logger'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import type { AuthSession } from '@/lib/api/middleware/auth-wrapper'
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { auditService } from '@/lib/services/audit.service';
 
 // POST - Approve campaign: creates scheduled_posts from social items, marks items as scheduled
 export const POST = withCSRF(
@@ -100,6 +101,13 @@ export const POST = withCSRF(
     campaignId,
     scheduledPosts: scheduledCount,
   })
+
+  await auditService.logFromRequest(request, parseInt(session.userId), 'resource_updated', {
+    entityType: 'campaign',
+    entityId: campaignId,
+    action: 'approved',
+    scheduledPosts: scheduledCount,
+  });
 
   return NextResponse.json({
     success: true,

@@ -6,6 +6,7 @@ import { partnerService } from '@/lib/services/partner.service';
 import { sendEmail } from '@/lib/email';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { auditService } from '@/lib/services/audit.service';
 
 const InviteSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -130,6 +131,15 @@ Questions? Reply to this email and we'll help you get started.
 Welcome to the team!
 Walla Walla Travel
     `,
+  });
+
+  await auditService.logFromRequest(request, parseInt(session.userId), 'resource_created', {
+    entityType: 'partner_invite',
+    userId: result.user_id,
+    businessName: data.business_name,
+    businessType: data.business_type,
+    email: data.email,
+    emailSent: emailSent,
   });
 
   return NextResponse.json({

@@ -4,6 +4,7 @@ import { query } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { auditService } from '@/lib/services/audit.service';
 
 const PutBodySchema = z.object({
   status: z.enum(['draft', 'scheduled', 'active', 'paused', 'completed', 'cancelled']).optional(),
@@ -154,7 +155,7 @@ export const PUT = withCSRF(
 export const DELETE = withCSRF(
   withAdminAuth(async (
   request: NextRequest,
-  _session,
+  session,
   context
 ) => {
   const { id } = await context!.params
@@ -185,6 +186,12 @@ export const DELETE = withCSRF(
   `, [campaignId])
 
   logger.info('Campaign cancelled', { campaignId })
+
+  await auditService.logFromRequest(request, parseInt(session.userId), 'resource_deleted', {
+    entityType: 'campaign',
+    entityId: campaignId,
+    previousStatus: result.rows[0].status,
+  });
 
   return NextResponse.json({
     success: true,

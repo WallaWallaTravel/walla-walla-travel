@@ -4,6 +4,7 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { eventsService } from '@/lib/services/events.service';
 import { updateEventSchema } from '@/lib/validation/schemas/events';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { auditService } from '@/lib/services/audit.service';
 
 // ============================================================================
 // GET /api/admin/events/[id] - Get a single event
@@ -31,7 +32,7 @@ export const GET = withAdminAuth(
 
 export const PUT = withCSRF(
   withAdminAuth(
-  async (request: NextRequest, _session, context) => {
+  async (request: NextRequest, session, context) => {
     const { id } = await context!.params;
     const body = await request.json();
     const data = updateEventSchema.parse(body);
@@ -57,6 +58,14 @@ export const PUT = withCSRF(
       event = await eventsService.updateEvent(Number(id), data);
     }
 
+    await auditService.logFromRequest(request, parseInt(session.userId), 'resource_updated', {
+      entityType: 'event',
+      entityId: Number(id),
+      action: 'update',
+      scope: scope || 'single',
+      isRecurring: existing.is_recurring,
+    });
+
     return NextResponse.json({
       success: true,
       data: event,
@@ -71,9 +80,14 @@ export const PUT = withCSRF(
 
 export const DELETE = withCSRF(
   withAdminAuth(
-  async (_request: NextRequest, _session, context) => {
+  async (request: NextRequest, session, context) => {
     const { id } = await context!.params;
     await eventsService.deleteEvent(Number(id));
+
+    await auditService.logFromRequest(request, parseInt(session.userId), 'resource_deleted', {
+      entityType: 'event',
+      entityId: Number(id),
+    });
 
     return NextResponse.json({
       success: true,

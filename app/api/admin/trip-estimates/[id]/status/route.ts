@@ -9,6 +9,7 @@ import { tripEstimateService } from '@/lib/services/trip-estimate.service';
 import { TRIP_ESTIMATE_STATUS } from '@/lib/types/trip-estimate';
 import { z } from 'zod';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { auditService } from '@/lib/services/audit.service';
 
 const StatusUpdateSchema = z.object({
   status: z.enum(TRIP_ESTIMATE_STATUS),
@@ -24,7 +25,7 @@ interface RouteContext {
  * Update estimate status
  */
 export const POST = withCSRF(
-  withAdminAuth(async (request: NextRequest, _session, context) => {
+  withAdminAuth(async (request: NextRequest, session, context) => {
   const { id } = await (context as RouteContext).params;
   const estimateId = parseInt(id, 10);
 
@@ -59,6 +60,12 @@ export const POST = withCSRF(
     parseResult.data.status,
     Object.keys(metadata).length > 0 ? metadata : undefined
   );
+
+  await auditService.logFromRequest(request, parseInt(session.userId), 'resource_updated', {
+    entityType: 'trip_estimate',
+    entityId: estimateId,
+    newStatus: parseResult.data.status,
+  });
 
   return NextResponse.json({
     success: true,

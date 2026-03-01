@@ -6,6 +6,7 @@ import { query } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { auditService } from '@/lib/services/audit.service';
 
 // Request body schema
 const AssignVehicleSchema = z.object({
@@ -192,6 +193,16 @@ export const POST = withCSRF(
     clientName: body.clientName,
     hourlyRate: body.hourlyRate,
     assignedBy: session.email,
+  });
+
+  await auditService.logFromRequest(request, parseInt(session.userId), 'booking_assigned', {
+    entityType: 'vehicle_assignment',
+    entityId: clientService.id,
+    timeCardId: body.timeCardId,
+    vehicleId: body.vehicleId,
+    vehicleNumber: vehicle.vehicle_number,
+    clientName: body.clientName,
+    driverId: timeCard.driver_id,
   });
 
   return NextResponse.json({

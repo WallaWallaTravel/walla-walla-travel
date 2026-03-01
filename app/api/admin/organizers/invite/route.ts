@@ -4,6 +4,7 @@ import { eventOrganizerService } from '@/lib/services/event-organizer.service';
 import { inviteOrganizerSchema } from '@/lib/validation/schemas/events';
 import { sendEmail } from '@/lib/email';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { auditService } from '@/lib/services/audit.service';
 
 export const POST = withCSRF(
   withAdminAuth(async (request: NextRequest, session: AuthSession) => {
@@ -48,6 +49,14 @@ export const POST = withCSRF(
   } catch {
     emailSent = false;
   }
+
+  await auditService.logFromRequest(request, parseInt(session.userId), 'resource_created', {
+    entityType: 'organizer_invite',
+    organizationName: validated.organization_name,
+    contactEmail: validated.contact_email,
+    contactName: validated.contact_name,
+    emailSent: emailSent,
+  });
 
   return NextResponse.json({
     success: true,

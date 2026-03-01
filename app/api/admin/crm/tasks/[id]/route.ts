@@ -5,6 +5,7 @@ import { query } from '@/lib/db';
 import { z } from 'zod';
 import type { CrmTaskWithRelations, UpdateTaskData } from '@/types/crm';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { auditService } from '@/lib/services/audit.service';
 
 /**
  * GET /api/admin/crm/tasks/[id]
@@ -162,7 +163,7 @@ export const PATCH = withCSRF(
  */
 export const DELETE = withCSRF(
   withAdminAuth(async (
-  _request: NextRequest, _session, context
+  request: NextRequest, session, context
 ) => {
   const { id } = await context!.params;
   const taskId = parseInt(id);
@@ -202,6 +203,11 @@ export const DELETE = withCSRF(
       [contactId]
     );
   }
+
+  await auditService.logFromRequest(request, parseInt(session.userId), 'resource_deleted', {
+    entityType: 'task',
+    entityId: taskId,
+  });
 
   return NextResponse.json({
     success: true,

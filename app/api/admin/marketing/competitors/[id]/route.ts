@@ -5,6 +5,7 @@ import { NotFoundError, BadRequestError } from '@/lib/api/middleware/error-handl
 import { competitorMonitoringService } from '@/lib/services/competitor-monitoring.service';
 import type { UpdateCompetitorInput } from '@/types/competitors';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { auditService } from '@/lib/services/audit.service';
 
 const BodySchema = z.object({
   name: z.string().min(1).max(255).optional(),
@@ -68,13 +69,18 @@ async function putHandler(request: NextRequest) {
 }
 
 // DELETE - Deactivate competitor (soft delete)
-async function deleteHandler(request: NextRequest) {
+async function deleteHandler(request: NextRequest, userId: number) {
   const id = getIdFromUrl(request);
   const success = await competitorMonitoringService.deactivateCompetitor(id);
 
   if (!success) {
     throw new NotFoundError('Competitor not found');
   }
+
+  await auditService.logFromRequest(request, userId, 'resource_deleted', {
+    entityType: 'competitor',
+    entityId: id,
+  });
 
   return NextResponse.json({
     success: true,
@@ -87,5 +93,5 @@ export const PUT = withCSRF(
   withAdminAuth(async (request, _session) => putHandler(request))
 );
 export const DELETE = withCSRF(
-  withAdminAuth(async (request, _session) => deleteHandler(request))
+  withAdminAuth(async (request, session) => deleteHandler(request, parseInt(session.userId)))
 );

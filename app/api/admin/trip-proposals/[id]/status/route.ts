@@ -11,6 +11,7 @@ import { tripProposalEmailService } from '@/lib/services/trip-proposal-email.ser
 import { TRIP_PROPOSAL_STATUS } from '@/lib/types/trip-proposal';
 import { z } from 'zod';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { auditService } from '@/lib/services/audit.service';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -66,6 +67,12 @@ export const PATCH = withCSRF(
       ip_address: ip,
     }
   );
+
+  await auditService.logFromRequest(request, parseInt(session!.userId), 'resource_updated', {
+    entityType: 'trip_proposal',
+    entityId: proposalId,
+    newStatus: parseResult.data.status,
+  });
 
   // Trigger "proposal sent" email when status changes to 'sent' (non-blocking)
   if (parseResult.data.status === 'sent') {
