@@ -34,7 +34,7 @@ interface ItemWithMetrics {
   post_status: string | null
 }
 
-export const GET = withCronAuth(async (_request: NextRequest) => {
+export const GET = withCronAuth('sync-campaign-performance', async (_request: NextRequest) => {
   logger.info('Starting campaign performance sync')
 
   try {

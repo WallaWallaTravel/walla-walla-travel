@@ -492,7 +492,7 @@ async function runSeasonalContentRefresh(): Promise<{
   }
 }
 
-export const GET = withCronAuth(async (_request: NextRequest) => {
+export const GET = withCronAuth('seasonal-content-refresh', async (_request: NextRequest) => {
   const startTime = Date.now()
 
   try {

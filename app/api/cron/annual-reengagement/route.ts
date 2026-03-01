@@ -12,7 +12,7 @@ import { crmTaskAutomationService } from '@/lib/services/crm-task-automation.ser
 import { logger } from '@/lib/logger';
 import { withCronAuth } from '@/lib/api/middleware/cron-auth';
 
-export const POST = withCronAuth(async (_request: NextRequest) => {
+export const POST = withCronAuth('annual-reengagement', async (_request: NextRequest) => {
   logger.info('Processing annual re-engagement tasks');
 
   const result = await crmTaskAutomationService.processAnnualReengagement();

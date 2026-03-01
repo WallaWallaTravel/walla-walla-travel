@@ -341,7 +341,7 @@ function buildReportEmail(data: WeeklyData, aiSummary: string): string {
 
 // ---------- Route Handler ----------
 
-export const GET = withCronAuth(async (_request: NextRequest) => {
+export const GET = withCronAuth('weekly-marketing-report', async (_request: NextRequest) => {
   logger.info('Starting weekly marketing report generation')
 
   try {

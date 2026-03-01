@@ -12,7 +12,7 @@ import { retryFailedEmails } from '@/lib/services/email-automation.service';
 import { withCronAuth } from '@/lib/api/middleware/cron-auth';
 import { logger } from '@/lib/logger';
 
-export const GET = withCronAuth(async (_request: NextRequest) => {
+export const GET = withCronAuth('retry-emails', async (_request: NextRequest) => {
   const result = await retryFailedEmails();
 
   if (result.retried > 0) {

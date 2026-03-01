@@ -591,7 +591,7 @@ async function createSuggestionsFromStrategy(
 
 // ---------- Route Handlers ----------
 
-export const GET = withCronAuth(async (_request: NextRequest) => {
+export const GET = withCronAuth('weekly-strategy', async (_request: NextRequest) => {
   logger.info('Starting weekly strategy generation')
 
   try {

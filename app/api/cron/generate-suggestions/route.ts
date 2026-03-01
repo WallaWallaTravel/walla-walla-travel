@@ -14,7 +14,7 @@ import { socialIntelligenceService } from '@/lib/services/social-intelligence.se
 import { logger } from '@/lib/logger'
 import { withCronAuth } from '@/lib/api/middleware/cron-auth'
 
-export const GET = withCronAuth(async (_request: NextRequest) => {
+export const GET = withCronAuth('generate-suggestions', async (_request: NextRequest) => {
   logger.info('Starting daily content suggestion generation')
 
   try {

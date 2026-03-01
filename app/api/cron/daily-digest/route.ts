@@ -12,7 +12,7 @@ import { withCronAuth } from '@/lib/api/middleware/cron-auth';
  *
  * Protected by CRON_SECRET (fail-closed).
  */
-export const POST = withCronAuth(async (_request: NextRequest) => {
+export const POST = withCronAuth('daily-digest', async (_request: NextRequest) => {
   logger.info('Starting daily digest');
 
   const result = await dailyDigestService.sendDigest();
@@ -28,7 +28,7 @@ export const POST = withCronAuth(async (_request: NextRequest) => {
   });
 });
 
-export const GET = withCronAuth(async (_request: NextRequest) => {
+export const GET = withCronAuth('daily-digest', async (_request: NextRequest) => {
   return NextResponse.json({
     endpoint: '/api/cron/daily-digest',
     method: 'POST',

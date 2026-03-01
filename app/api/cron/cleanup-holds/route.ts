@@ -10,7 +10,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { vehicleAvailabilityService } from '@/lib/services/vehicle-availability.service';
 import { withCronAuth } from '@/lib/api/middleware/cron-auth';
 
-export const GET = withCronAuth(async (_request: NextRequest) => {
+export const GET = withCronAuth('cleanup-holds', async (_request: NextRequest) => {
   const deletedCount = await vehicleAvailabilityService.cleanupExpiredHolds();
 
   return NextResponse.json({
