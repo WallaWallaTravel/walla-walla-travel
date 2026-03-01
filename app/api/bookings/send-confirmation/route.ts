@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { emailService } from '@/lib/services/email.service';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * POST /api/bookings/send-confirmation
@@ -14,7 +15,8 @@ import { emailService } from '@/lib/services/email.service';
  * 
  * ✅ REFACTORED: Reduced from 98 lines to 25 lines
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   const body = await request.json();
   const { booking_number } = body;
 
@@ -32,4 +34,5 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       : 'Booking confirmed (email not configured)',
     timestamp: new Date().toISOString(),
   });
-});
+})
+);

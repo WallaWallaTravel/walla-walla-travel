@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth, type AuthSession, type RouteContext } from '@/lib/api/middleware/auth-wrapper';
 import { eventOrganizerService } from '@/lib/services/event-organizer.service';
 import { updateOrganizerStatusSchema } from '@/lib/validation/schemas/events';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const GET = withAdminAuth(
   async (_request: NextRequest, _session: AuthSession, context?: RouteContext) => {
@@ -33,7 +34,8 @@ export const GET = withAdminAuth(
   }
 );
 
-export const PUT = withAdminAuth(
+export const PUT = withCSRF(
+  withAdminAuth(
   async (request: NextRequest, _session: AuthSession, context?: RouteContext) => {
     const { id } = await context!.params;
     const body = await request.json();
@@ -43,4 +45,5 @@ export const PUT = withAdminAuth(
 
     return NextResponse.json({ success: true, data: organizer });
   }
+)
 );

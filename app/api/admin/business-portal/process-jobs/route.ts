@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import { processJobs } from '@/lib/business-portal/processing-worker';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -16,7 +17,8 @@ export const maxDuration = 300; // 5 minutes for processing
  * POST /api/admin/business-portal/process-jobs
  * Trigger processing of pending jobs
  */
-export const POST = withAdminAuth(async (_request: NextRequest, _session) => {
+export const POST = withCSRF(
+  withAdminAuth(async (_request: NextRequest, _session) => {
   logger.info('Starting job processing');
 
   const result = await processJobs(50); // Process up to 50 jobs
@@ -26,7 +28,8 @@ export const POST = withAdminAuth(async (_request: NextRequest, _session) => {
     ...result,
     message: `Processed ${result.processed} jobs: ${result.succeeded} succeeded, ${result.failed} failed`
   });
-});
+})
+);
 
 /**
  * GET /api/admin/business-portal/process-jobs

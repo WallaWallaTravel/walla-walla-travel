@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 import { sendSMS, SMSTemplates, sendTourReminder, sendScheduleChangeAlert } from '@/lib/sms';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * SMS Send Request Schema
@@ -54,7 +55,8 @@ const ScheduleChangeSchema = z.object({
  * - template: Optional template name
  * - template_data: Data for the template
  */
-export const POST = withRateLimit(rateLimiters.sms)(withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
+export const POST = withCSRF(
+  withRateLimit(rateLimiters.sms)(withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
   const body = await request.json();
   
   // Handle template-based messages
@@ -126,7 +128,8 @@ export const POST = withRateLimit(rateLimiters.sms)(withErrorHandling(async (req
     message_id: result.messageId,
     timestamp: new Date().toISOString(),
   });
-}));
+}))
+);
 
 /**
  * GET /api/sms/send

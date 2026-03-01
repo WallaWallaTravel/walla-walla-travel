@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth, AuthSession, RouteContext } from '@/lib/api/middleware/auth-wrapper';
 import { query, queryOne } from '@/lib/db-helpers';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface RouteParams { id: string; stopId: string; }
 
@@ -45,7 +46,8 @@ export const GET = withAdminAuth(
  *
  * Body: { interaction_type, content }
  */
-export const POST = withAdminAuth(
+export const POST = withCSRF(
+  withAdminAuth(
   async (request: NextRequest, _session: AuthSession, context?) => {
     const { id, stopId } = await (context as RouteContext<RouteParams>).params;
     const proposalId = parseInt(id, 10);
@@ -89,4 +91,5 @@ export const POST = withAdminAuth(
 
     return NextResponse.json({ success: true, data: interaction });
   }
+)
 );

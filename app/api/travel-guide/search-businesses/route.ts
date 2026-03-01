@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 import { logger } from '@/lib/logger';
 import { searchBusinesses, formatBusinessForAI } from '@/lib/business-portal/business-knowledge';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -15,7 +16,8 @@ export const dynamic = 'force-dynamic';
  * POST /api/travel-guide/search-businesses
  * Search businesses by criteria
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   const body = await request.json();
   const { business_type, tags, amenities, best_for, query } = body;
 
@@ -47,5 +49,6 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     count: businesses.length,
     businesses: formattedBusinesses
   });
-});
+})
+);
 

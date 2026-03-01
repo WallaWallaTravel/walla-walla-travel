@@ -7,6 +7,7 @@ import { getOrCreateVisitor, setVisitorCookie } from '@/lib/visitor/visitor-trac
 import { logQuery, classifyQueryIntent } from '@/lib/analytics/query-logger'
 import { query as dbQuery } from '@/lib/db'
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler'
+import { withCSRF } from '@/lib/api/middleware/csrf'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -20,7 +21,8 @@ export const dynamic = 'force-dynamic'
  * - Caches response for future requests
  * - Tracks session for conversion attribution
  */
-export const POST = withErrorHandling<unknown>(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling<unknown>(async (request: NextRequest) => {
   const startTime = Date.now()
 
   const { query } = await request.json()
@@ -168,6 +170,7 @@ export const POST = withErrorHandling<unknown>(async (request: NextRequest) => {
   setVisitorCookie(response, visitor)
   return response
 })
+)
 
 function getDefaultPrompt(): string {
   return `You are the Walla Walla Valley Travel Guide, an intelligent assistant for Walla Walla Travel, a premier wine country tour company in the Walla Walla Valley.

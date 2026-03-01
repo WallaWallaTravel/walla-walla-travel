@@ -7,6 +7,7 @@ import { NextResponse } from 'next/server';
 import { getBusinessByCode } from '@/lib/business-portal/business-service';
 import { logger } from '@/lib/logger';
 import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -15,7 +16,8 @@ export const dynamic = 'force-dynamic';
  * POST /api/business-portal/access
  * Validate business code and get portal access
  */
-export const POST = withErrorHandling(async (request) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request) => {
   const { code } = await request.json();
 
   if (!code || typeof code !== 'string') {
@@ -47,5 +49,6 @@ export const POST = withErrorHandling(async (request) => {
       invite_token: business.invite_token
     }
   });
-});
+})
+);
 

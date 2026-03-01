@@ -7,12 +7,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, NotFoundError, RouteContext } from '@/lib/api/middleware/error-handler';
 import { eventsService } from '@/lib/services/events.service';
 import { trackEventSchema } from '@/lib/validation/schemas/events';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface RouteParams {
   slug: string;
 }
 
-export const POST = withErrorHandling<unknown, RouteParams>(
+export const POST = withCSRF(
+  withErrorHandling<unknown, RouteParams>(
   async (request: NextRequest, context: RouteContext<RouteParams>) => {
     const { slug } = await context.params;
     const body = await request.json();
@@ -34,4 +36,5 @@ export const POST = withErrorHandling<unknown, RouteParams>(
       success: true,
     });
   }
+)
 );

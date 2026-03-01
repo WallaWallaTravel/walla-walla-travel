@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { updatePricingTier } from '@/lib/pricing/pricing-service';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -14,7 +15,8 @@ export const dynamic = 'force-dynamic';
  * PATCH /api/admin/pricing/tiers/[id]
  * Update a pricing tier
  */
-export const PATCH = withAdminAuth(async (
+export const PATCH = withCSRF(
+  withAdminAuth(async (
   request: NextRequest,
   _session,
   context
@@ -35,4 +37,5 @@ export const PATCH = withAdminAuth(async (
     success: true,
     message: 'Pricing tier updated'
   });
-});
+})
+);

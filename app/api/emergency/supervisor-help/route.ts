@@ -5,6 +5,7 @@ import { logger } from '@/lib/logger';
 import { z } from 'zod';
 import { COMPANY_INFO } from '@/lib/config/company';
 import { withErrorHandling, BadRequestError, ValidationError } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // Request body schema
 const SupervisorHelpSchema = z.object({
@@ -18,7 +19,8 @@ const SupervisorHelpSchema = z.object({
  *
  * Refactored: Zod validation + structured logging + withErrorHandling
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   const session = await requireAuth();
 
   // Parse and validate request body
@@ -130,4 +132,5 @@ Driver ID: ${driverId}
     },
     timestamp
   }, 'Notification sent successfully');
-});
+})
+);

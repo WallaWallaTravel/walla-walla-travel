@@ -3,6 +3,7 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { NotFoundError, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { competitorMonitoringService } from '@/lib/services/competitor-monitoring.service';
 import type { UpdateCompetitorInput } from '@/types/competitors';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 function getIdFromUrl(request: NextRequest): number {
   const url = new URL(request.url);
@@ -59,5 +60,9 @@ async function deleteHandler(request: NextRequest) {
 }
 
 export const GET = withAdminAuth(async (request, _session) => getHandler(request));
-export const PUT = withAdminAuth(async (request, _session) => putHandler(request));
-export const DELETE = withAdminAuth(async (request, _session) => deleteHandler(request));
+export const PUT = withCSRF(
+  withAdminAuth(async (request, _session) => putHandler(request))
+);
+export const DELETE = withCSRF(
+  withAdminAuth(async (request, _session) => deleteHandler(request))
+);

@@ -14,6 +14,7 @@ import { rateLimiters } from '@/lib/api/middleware';
 import { bookingService } from '@/lib/services/booking.service';
 import { withErrorHandling, BadRequestError, RouteContext } from '@/lib/api/middleware/error-handler';
 import { z } from 'zod';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // ============================================================================
 // GET /api/v1/bookings/:id - Get booking details
@@ -71,7 +72,8 @@ const UpdateBookingSchema = z.object({
  *
  * Body: Any subset of booking fields
  */
-export const PATCH = withErrorHandling<unknown, { id: string }>(async (
+export const PATCH = withCSRF(
+  withErrorHandling<unknown, { id: string }>(async (
   request: NextRequest,
   context: RouteContext<{ id: string }>
 ): Promise<NextResponse> => {
@@ -96,7 +98,8 @@ export const PATCH = withErrorHandling<unknown, { id: string }>(async (
   return APIResponse.success(updatedBooking, {
     message: 'Booking updated successfully',
   });
-});
+})
+);
 
 // ============================================================================
 // DELETE /api/v1/bookings/:id - Cancel booking
@@ -113,7 +116,8 @@ const CancelBookingSchema = z.object({
  *   reason: string
  * }
  */
-export const DELETE = withErrorHandling<unknown, { id: string }>(async (
+export const DELETE = withCSRF(
+  withErrorHandling<unknown, { id: string }>(async (
   request: NextRequest,
   context: RouteContext<{ id: string }>
 ): Promise<NextResponse> => {
@@ -145,4 +149,5 @@ export const DELETE = withErrorHandling<unknown, { id: string }>(async (
   return APIResponse.success(cancelledBooking, {
     message: 'Booking cancelled successfully',
   });
-});
+})
+);

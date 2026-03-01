@@ -8,6 +8,7 @@ import { logger } from '@/lib/logger';
 import { query } from '@/lib/db';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -16,7 +17,8 @@ export const dynamic = 'force-dynamic';
  * POST /api/admin/reservations/[id]/contact
  * Mark reservation as contacted
  */
-export const POST = withAdminAuth(async (
+export const POST = withCSRF(
+  withAdminAuth(async (
   _request: NextRequest,
   _session,
   context
@@ -48,4 +50,5 @@ export const POST = withAdminAuth(async (
     success: true,
     message: 'Reservation marked as contacted'
   });
-});
+})
+);

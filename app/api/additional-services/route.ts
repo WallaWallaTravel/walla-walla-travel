@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * GET /api/additional-services
@@ -33,7 +34,8 @@ export const GET = withErrorHandling(async (request: NextRequest): Promise<NextR
  * POST /api/additional-services
  * Create a new additional service
  */
-export const POST = withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
   const body = await request.json();
   const { name, description, price, icon = '✨' } = body;
 
@@ -65,4 +67,5 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
     data: result.rows[0],
     message: 'Additional service created successfully'
   }, { status: 201 });
-});
+})
+);

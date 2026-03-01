@@ -10,6 +10,7 @@ import { z } from 'zod';
 import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { validateBody, validateQuery } from '@/lib/api/middleware/validation';
 import { kbService } from '@/lib/services/kb.service';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // ============================================================================
 // Request Schemas
@@ -41,7 +42,8 @@ const GetDraftBookingSchema = z.object({
 // POST Handler - Create draft booking
 // ============================================================================
 
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   const data = await validateBody(request, CreateDraftBookingSchema);
 
   // Get chat session
@@ -152,7 +154,8 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     },
     message: 'Draft booking created. Ready for deposit collection.',
   });
-});
+})
+);
 
 // ============================================================================
 // GET Handler - Get draft booking details

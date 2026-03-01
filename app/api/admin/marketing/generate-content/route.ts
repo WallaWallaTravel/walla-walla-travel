@@ -4,6 +4,7 @@ import { query } from '@/lib/db'
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { socialIntelligenceService } from '@/lib/services/social-intelligence.service'
+import { withCSRF } from '@/lib/api/middleware/csrf'
 
 function getAnthropicClient() {
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -57,7 +58,8 @@ const TONE_DESCRIPTIONS: Record<string, string> = {
   educational: 'Informative, teaching-focused, accessible',
 }
 
-export const POST = withRateLimit(rateLimiters.aiGeneration)(withAdminAuth(async (request: NextRequest, _session) => {
+export const POST = withCSRF(
+  withRateLimit(rateLimiters.aiGeneration)(withAdminAuth(async (request: NextRequest, _session) => {
     const body: GenerateRequest = await request.json()
     const { wineryId, platform, contentType, tone, customPrompt } = body
 
@@ -257,4 +259,4 @@ Respond in this exact JSON format:
       bestTimeToPost: platformGuideline.bestTimes,
       imagePrompt: parsedResponse.imagePrompt,
     })
-}));
+})));

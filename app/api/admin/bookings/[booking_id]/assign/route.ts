@@ -7,6 +7,7 @@ import { sendDriverAssignmentToCustomer } from '@/lib/services/email-automation.
 import { sendEmail, EmailTemplates } from '@/lib/email';
 import { auditService } from '@/lib/services/audit.service';
 import { withComplianceCheck } from '@/lib/api/middleware/compliance-check';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 
 /**
@@ -195,7 +196,9 @@ const complianceHandler = withComplianceCheck(handleAssignment, {
 });
 
 // Wrap with admin auth (which includes error handling), then delegate to compliance handler
-export const PUT = withAdminAuth(async (request, _session, context) => {
+export const PUT = withCSRF(
+  withAdminAuth(async (request, _session, context) => {
   return complianceHandler(request, context as { params: Promise<{ booking_id: string }> });
-});
+})
+);
 

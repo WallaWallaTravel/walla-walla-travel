@@ -3,6 +3,7 @@ import { withAdminAuth, AuthSession, RouteContext } from '@/lib/api/middleware/a
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import { queryOne } from '@/lib/db-helpers';
 import { z } from 'zod';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface RouteParams { id: string; guestId: string; }
 
@@ -15,7 +16,8 @@ const RecordPaymentSchema = z.object({
  * POST /api/admin/trip-proposals/[id]/guests/[guestId]/record-payment
  * Record a manual payment for a guest
  */
-export const POST = withAdminAuth(
+export const POST = withCSRF(
+  withAdminAuth(
   async (request: NextRequest, _session: AuthSession, context?) => {
     const { id, guestId } = await (context as RouteContext<RouteParams>).params;
     const proposalId = parseInt(id);
@@ -35,4 +37,5 @@ export const POST = withAdminAuth(
     await tripProposalService.recordManualPayment(gId, validated.amount, validated.notes);
     return NextResponse.json({ success: true });
   }
+)
 );

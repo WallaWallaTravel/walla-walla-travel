@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, BadRequestError } from '@/lib/api-errors';
 import { queryOne, query } from '@/lib/db-helpers';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface Restaurant {
   name: string;
@@ -38,7 +39,8 @@ interface LunchOrderResult {
   id: number;
 }
 
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   const body: LunchOrderRequest = await request.json();
   const {
     booking_id,
@@ -142,7 +144,8 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     order_id: result.id,
     message: 'Lunch order submitted for admin approval',
   });
-});
+})
+);
 
 function generateOrderEmail(data: {
   booking: Booking;

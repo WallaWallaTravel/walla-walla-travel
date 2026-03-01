@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db-helpers';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface WineryRow {
   id: number;
@@ -78,7 +79,8 @@ const ATMOSPHERE_KEYWORDS: Record<string, string[]> = {
   modern: ['contemporary', 'sleek', 'urban', 'downtown', 'tasting room']
 };
 
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   let body = await request.json();
 
   // Handle case where body is a string (can happen in test environments)
@@ -256,7 +258,8 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     },
     { headers: corsHeaders }
   );
-});
+})
+);
 
 export async function OPTIONS() {
   return new NextResponse(null, {

@@ -23,6 +23,7 @@ import { vehicleAvailabilityService } from '@/lib/services/vehicle-availability.
 import { bookingCoreService } from '@/lib/services/booking/core.service';
 import { sendBookingConfirmationEmail } from '@/lib/services/email-automation.service';
 import { logger } from '@/lib/logger';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 const CreateConsoleBookingSchema = z.object({
   saveMode: z.enum(['draft', 'create', 'create_and_invoice']),
@@ -62,7 +63,8 @@ const CreateConsoleBookingSchema = z.object({
   }),
 });
 
-export const POST = withAdminAuth(async (request: NextRequest, _session) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest, _session) => {
   const holdBlockIds: number[] = [];
 
   try {
@@ -312,4 +314,5 @@ export const POST = withAdminAuth(async (request: NextRequest, _session) => {
       { status: 500 }
     );
   }
-});
+})
+);

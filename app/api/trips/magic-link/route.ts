@@ -3,12 +3,14 @@ import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/mid
 import { query } from '@/lib/db';
 import { sendMagicLinkSchema } from '@/lib/validation/schemas/trip';
 import { sendTripMagicLink } from '@/lib/email';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // ============================================================================
 // POST /api/trips/magic-link - Send magic link email to access trips
 // ============================================================================
 
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   const body = await request.json();
   const validated = sendMagicLinkSchema.parse(body);
 
@@ -52,4 +54,5 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     success: true,
     message: 'Magic link sent! Check your email.',
   });
-});
+})
+);

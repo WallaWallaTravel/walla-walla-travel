@@ -7,6 +7,7 @@ import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import { queryOne, queryMany } from '@/lib/db-helpers';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface RouteParams { token: string; groupToken: string; }
 
@@ -18,7 +19,8 @@ const GroupPaySchema = z.object({
  * POST /api/my-trip/[token]/group/[groupToken]/create-payment
  * Group payment — pay for one or multiple members in the group
  */
-export const POST = withErrorHandling<unknown, RouteParams>(
+export const POST = withCSRF(
+  withErrorHandling<unknown, RouteParams>(
   async (request: NextRequest, context) => {
     const { token, groupToken } = await (context as RouteContext<RouteParams>).params;
     const body = await request.json();
@@ -108,4 +110,5 @@ export const POST = withErrorHandling<unknown, RouteParams>(
       },
     });
   }
+)
 );

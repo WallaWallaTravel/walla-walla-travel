@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, NotFoundError, RouteContext } from '@/lib/api/middleware/error-handler';
 import { query } from '@/lib/db';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface RouteParams {
   shareCode: string;
@@ -11,7 +12,8 @@ interface RouteParams {
 // DELETE /api/trips/[shareCode]/stops/[stopId] - Remove a stop from the trip
 // ============================================================================
 
-export const DELETE = withErrorHandling<unknown, RouteParams>(
+export const DELETE = withCSRF(
+  withErrorHandling<unknown, RouteParams>(
   async (request: NextRequest, context: RouteContext<RouteParams>) => {
     const { shareCode, stopId } = await context.params;
     const stopIdNum = parseInt(stopId, 10);
@@ -68,4 +70,5 @@ export const DELETE = withErrorHandling<unknown, RouteParams>(
       message: 'Stop removed successfully',
     });
   }
+)
 );

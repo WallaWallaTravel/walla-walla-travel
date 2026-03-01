@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler'
+import { withCSRF } from '@/lib/api/middleware/csrf'
 
 // GET - Fetch connected social accounts
 async function getHandler(_request: NextRequest) {
@@ -88,5 +89,9 @@ async function patchHandler(request: NextRequest) {
 }
 
 export const GET = withAdminAuth(getHandler)
-export const DELETE = withAdminAuth(deleteHandler)
-export const PATCH = withAdminAuth(patchHandler)
+export const DELETE = withCSRF(
+  withAdminAuth(deleteHandler)
+)
+export const PATCH = withCSRF(
+  withAdminAuth(patchHandler)
+)

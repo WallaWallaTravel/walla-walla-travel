@@ -11,6 +11,7 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { experienceRequestService, UpdateExperienceRequestSchema } from '@/lib/services/experience-request.service';
 import { logger } from '@/lib/logger';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // Query params schema for GET
 const QuerySchema = z.object({
@@ -69,7 +70,8 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
 });
 
 // PATCH - Update a single experience request
-export const PATCH = withAdminAuth(async (request: NextRequest, _session) => {
+export const PATCH = withCSRF(
+  withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json();
 
   // Validate ID is provided
@@ -105,4 +107,5 @@ export const PATCH = withAdminAuth(async (request: NextRequest, _session) => {
     success: true,
     data: updated,
   });
-});
+})
+);

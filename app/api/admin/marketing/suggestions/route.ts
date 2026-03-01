@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler'
+import { withCSRF } from '@/lib/api/middleware/csrf'
 
 // GET - Fetch pending content suggestions
 const getHandler = withAdminAuth(async (request: NextRequest, _session) => {
@@ -119,4 +120,4 @@ const patchHandler = withAdminAuth(async (request: NextRequest, _session) => {
 })
 
 export const GET = getHandler
-export const PATCH = patchHandler
+export const PATCH = withCSRF(patchHandler)

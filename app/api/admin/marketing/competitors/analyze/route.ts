@@ -3,6 +3,7 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { competitorAIService } from '@/lib/services/competitor-ai.service';
 import { competitorMonitoringService } from '@/lib/services/competitor-monitoring.service';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface AnalyzeRequest {
   type: 'change' | 'competitor' | 'market' | 'swot_suggestions';
@@ -11,7 +12,8 @@ interface AnalyzeRequest {
 }
 
 // POST - Trigger AI analysis
-export const POST = withAdminAuth(async (request: NextRequest, _session) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json() as AnalyzeRequest;
 
   if (!body.type) {
@@ -87,4 +89,5 @@ export const POST = withAdminAuth(async (request: NextRequest, _session) => {
     default:
       throw new BadRequestError('Invalid analysis type. Use: change, competitor, market, or swot_suggestions');
   }
-});
+})
+);

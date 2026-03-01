@@ -8,6 +8,7 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { businessDirectoryService } from '@/lib/services/business-directory.service';
 import { z } from 'zod';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -28,7 +29,8 @@ const BulkActionSchema = z.object({
  *   notes?: string
  * }
  */
-export const POST = withAdminAuth(async (request: NextRequest, session) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest, session) => {
   const body = await request.json();
   const parsed = BulkActionSchema.safeParse(body);
 
@@ -54,4 +56,5 @@ export const POST = withAdminAuth(async (request: NextRequest, session) => {
     message: `${updatedCount} businesses ${action === 'approve' ? 'approved' : 'rejected'}`,
     timestamp: new Date().toISOString(),
   });
-});
+})
+);

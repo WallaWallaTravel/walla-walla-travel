@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler'
+import { withCSRF } from '@/lib/api/middleware/csrf'
 
 // GET - Fetch single winery with full details
 export const GET = withAdminAuth(async (
@@ -39,7 +40,8 @@ export const GET = withAdminAuth(async (
 })
 
 // PATCH - Update winery
-export const PATCH = withAdminAuth(async (
+export const PATCH = withCSRF(
+  withAdminAuth(async (
   request: NextRequest,
   _session,
   context
@@ -101,9 +103,11 @@ export const PATCH = withAdminAuth(async (
     winery: result.rows[0]
   })
 })
+)
 
 // DELETE - Delete winery
-export const DELETE = withAdminAuth(async (
+export const DELETE = withCSRF(
+  withAdminAuth(async (
   _request: NextRequest,
   _session,
   context
@@ -119,3 +123,4 @@ export const DELETE = withAdminAuth(async (
     message: 'Winery deleted successfully'
   })
 })
+)

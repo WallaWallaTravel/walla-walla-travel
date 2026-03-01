@@ -8,6 +8,7 @@ import { crmSyncService } from '@/lib/services/crm-sync.service';
 import { crmTaskAutomationService } from '@/lib/services/crm-task-automation.service';
 import { sendEmail } from '@/lib/email';
 import { COMPANY_INFO } from '@/lib/config/company';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // ============================================================================
 // Validation Schema
@@ -31,7 +32,8 @@ const ContactFormSchema = z.object({
  * POST /api/contact
  * Handle contact form submissions and create CRM leads
  */
-export const POST = withRateLimit(rateLimiters.api)(
+export const POST = withCSRF(
+  withRateLimit(rateLimiters.api)(
   withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
     const body = await request.json();
 
@@ -144,6 +146,7 @@ export const POST = withRateLimit(rateLimiters.api)(
       message: 'Thank you for your inquiry! We will be in touch within 24 hours.',
     });
   })
+)
 );
 
 // ============================================================================

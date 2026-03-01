@@ -15,8 +15,10 @@ import { requireAuth, requireDriver } from '@/lib/api/middleware/auth';
 import { validateBody } from '@/lib/api/middleware/validation';
 import { tipService } from '@/lib/services/tip.service';
 import { CompleteTourSchema } from '@/lib/validation/schemas/tip.schemas';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
-export const POST = withErrorHandling(
+export const POST = withCSRF(
+  withErrorHandling(
   async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     // Authenticate and authorize
     const session = await requireAuth(request);
@@ -75,4 +77,5 @@ export const POST = withErrorHandling(
       { status: 201 }
     );
   }
+)
 );

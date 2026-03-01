@@ -4,6 +4,7 @@ import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import { query, type QueryParamValue } from '@/lib/db-helpers';
 import { logger } from '@/lib/logger';
 import { UpdateInclusionSchema } from '@/lib/types/trip-proposal';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface RouteParams {
   id: string;
@@ -14,7 +15,8 @@ interface RouteParams {
  * PATCH /api/admin/trip-proposals/[id]/inclusions/[inclusionId]
  * Update an inclusion's fields (including tax settings)
  */
-export const PATCH = withAdminAuth(
+export const PATCH = withCSRF(
+  withAdminAuth(
   async (request: NextRequest, _session: AuthSession, context?) => {
     const { id, inclusionId } = await (context as RouteContext<RouteParams>).params;
     const body = await request.json();
@@ -69,13 +71,15 @@ export const PATCH = withAdminAuth(
 
     return NextResponse.json({ success: true, data: result.rows[0] });
   }
+)
 );
 
 /**
  * DELETE /api/admin/trip-proposals/[id]/inclusions/[inclusionId]
  * Remove a service line item from a proposal
  */
-export const DELETE = withAdminAuth(
+export const DELETE = withCSRF(
+  withAdminAuth(
   async (_request: NextRequest, _session: AuthSession, context?) => {
     const { id, inclusionId } = await (context as RouteContext<RouteParams>).params;
     const proposalId = parseInt(id);
@@ -102,4 +106,5 @@ export const DELETE = withAdminAuth(
 
     return NextResponse.json({ success: true, message: 'Inclusion deleted successfully' });
   }
+)
 );

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError } from '@/lib/api/middleware/error-handler'
+import { withCSRF } from '@/lib/api/middleware/csrf'
 
 // GET - Fetch email campaigns
 async function getHandler(request: NextRequest) {
@@ -117,4 +118,6 @@ async function postHandler(request: NextRequest) {
 }
 
 export const GET = withAdminAuth(async (request, _session) => getHandler(request))
-export const POST = withAdminAuth(async (request, _session) => postHandler(request))
+export const POST = withCSRF(
+  withAdminAuth(async (request, _session) => postHandler(request))
+)

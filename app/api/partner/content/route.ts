@@ -5,6 +5,7 @@ import { partnerService } from '@/lib/services/partner.service';
 import { query } from '@/lib/db';
 import { WINERY_CONTENT_TYPES } from '@/lib/config/content-types';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // Get client IP from request headers
 function getClientIp(request: NextRequest): string {
@@ -80,7 +81,8 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
  * POST /api/partner/content
  * Create or update partner's narrative content
  */
-export const POST = withRateLimit(rateLimiters.api)(
+export const POST = withCSRF(
+  withRateLimit(rateLimiters.api)(
   withErrorHandling(async (request: NextRequest) => {
   const session = await getSessionFromRequest(request);
 
@@ -166,4 +168,5 @@ export const POST = withRateLimit(rateLimiters.api)(
     message: 'Content saved and submitted for review',
     timestamp: new Date().toISOString(),
   });
-}));
+}))
+);

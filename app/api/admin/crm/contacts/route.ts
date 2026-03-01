@@ -3,6 +3,7 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { query } from '@/lib/db';
 import type { CrmContactSummary, CreateContactData } from '@/types/crm';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * GET /api/admin/crm/contacts
@@ -113,7 +114,8 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
  * POST /api/admin/crm/contacts
  * Create a new CRM contact
  */
-export const POST = withAdminAuth(async (request: NextRequest, session) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest, session) => {
   const body = await request.json() as CreateContactData;
 
   // Validate required fields
@@ -172,4 +174,5 @@ export const POST = withAdminAuth(async (request: NextRequest, session) => {
     contact: result.rows[0],
     timestamp: new Date().toISOString(),
   });
-});
+})
+);

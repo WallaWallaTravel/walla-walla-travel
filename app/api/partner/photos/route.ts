@@ -10,6 +10,7 @@ import { partnerService } from '@/lib/services/partner.service';
 import { query } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // Lazy import supabase admin to avoid initialization errors when key is missing
 async function getSupabaseAdmin() {
@@ -120,7 +121,8 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
  * POST /api/partner/photos
  * Upload a new photo
  */
-export const POST = withRateLimit(rateLimiters.api)(
+export const POST = withCSRF(
+  withRateLimit(rateLimiters.api)(
   withErrorHandling(async (request: NextRequest) => {
   const session = await getSessionFromRequest(request);
 
@@ -309,13 +311,15 @@ export const POST = withRateLimit(rateLimiters.api)(
     message: 'Photo uploaded successfully',
     timestamp: new Date().toISOString(),
   });
-}));
+}))
+);
 
 /**
  * DELETE /api/partner/photos
  * Delete a photo
  */
-export const DELETE = withRateLimit(rateLimiters.api)(
+export const DELETE = withCSRF(
+  withRateLimit(rateLimiters.api)(
   withErrorHandling(async (request: NextRequest) => {
   const session = await getSessionFromRequest(request);
 
@@ -384,4 +388,5 @@ export const DELETE = withRateLimit(rateLimiters.api)(
     message: 'Photo deleted successfully',
     timestamp: new Date().toISOString(),
   });
-}));
+}))
+);

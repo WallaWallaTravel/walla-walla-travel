@@ -8,6 +8,7 @@ import { withErrorHandling, RouteContext } from '@/lib/api/middleware/error-hand
 import { tripEstimateService } from '@/lib/services/trip-estimate.service';
 import { getBrandStripeClient, getBrandStripePublishableKey } from '@/lib/stripe-brands';
 import { z } from 'zod';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface RouteParams {
   estimateNumber: string;
@@ -22,7 +23,8 @@ const PaymentRequestSchema = z.object({
  * POST /api/trip-estimates/[estimateNumber]/pay
  * Create a Stripe payment intent for the deposit amount
  */
-export const POST = withErrorHandling<unknown, RouteParams>(
+export const POST = withCSRF(
+  withErrorHandling<unknown, RouteParams>(
   async (request: NextRequest, context: RouteContext<RouteParams>) => {
     const { estimateNumber } = await context.params;
 
@@ -106,4 +108,5 @@ export const POST = withErrorHandling<unknown, RouteParams>(
       },
     });
   }
+)
 );

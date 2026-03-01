@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper';
 import { query } from '@/lib/db';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface SharedTourPreset {
   id: number;
@@ -67,7 +68,8 @@ export const GET = withAdminAuth(async (_request: NextRequest, _session: AuthSes
  * PUT /api/admin/shared-tours/presets/[id]
  * Update a preset
  */
-export const PUT = withAdminAuth(async (request: NextRequest, _session: AuthSession, context) => {
+export const PUT = withCSRF(
+  withAdminAuth(async (request: NextRequest, _session: AuthSession, context) => {
   const { id } = await (context as RouteParams).params;
   const body = await request.json();
 
@@ -161,13 +163,15 @@ export const PUT = withAdminAuth(async (request: NextRequest, _session: AuthSess
     data: result.rows[0],
     message: 'Preset updated successfully',
   });
-});
+})
+);
 
 /**
  * DELETE /api/admin/shared-tours/presets/[id]
  * Delete a preset
  */
-export const DELETE = withAdminAuth(async (_request: NextRequest, _session: AuthSession, context) => {
+export const DELETE = withCSRF(
+  withAdminAuth(async (_request: NextRequest, _session: AuthSession, context) => {
   const { id } = await (context as RouteParams).params;
 
   // Check preset exists
@@ -211,4 +215,5 @@ export const DELETE = withAdminAuth(async (_request: NextRequest, _session: Auth
     success: true,
     message: 'Preset deleted successfully',
   });
-});
+})
+);

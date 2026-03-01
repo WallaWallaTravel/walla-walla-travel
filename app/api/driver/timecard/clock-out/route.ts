@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/api/middleware/auth-wrapper';
 import { timeCardService } from '@/lib/services/timecard.service';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * POST /api/driver/timecard/clock-out
@@ -9,7 +10,8 @@ import { timeCardService } from '@/lib/services/timecard.service';
  * ✅ REFACTORED: Service layer
  */
 
-export const POST = withAuth(async (request: NextRequest, session) => {
+export const POST = withCSRF(
+  withAuth(async (request: NextRequest, session) => {
   // ✅ Use service layer
   const timeCard = await timeCardService.clockOut(parseInt(session.userId));
 
@@ -19,7 +21,8 @@ export const POST = withAuth(async (request: NextRequest, session) => {
     message: 'Clocked out successfully',
     timestamp: new Date().toISOString(),
   });
-});
+})
+);
 
 
 

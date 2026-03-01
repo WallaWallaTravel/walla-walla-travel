@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, NotFoundError, RouteContext } from '@/lib/api/middleware/error-handler';
 import { query } from '@/lib/db';
 import { updateTripSchema } from '@/lib/validation/schemas/trip';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface RouteParams {
   shareCode: string;
@@ -129,7 +130,8 @@ export const GET = withErrorHandling<unknown, RouteParams>(
 // PATCH /api/trips/[shareCode] - Update trip
 // ============================================================================
 
-export const PATCH = withErrorHandling<unknown, RouteParams>(
+export const PATCH = withCSRF(
+  withErrorHandling<unknown, RouteParams>(
   async (request: NextRequest, context: RouteContext<RouteParams>) => {
     const { shareCode } = await context.params;
     const body = await request.json();
@@ -253,4 +255,5 @@ export const PATCH = withErrorHandling<unknown, RouteParams>(
       },
     });
   }
+)
 );

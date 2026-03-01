@@ -3,6 +3,7 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { NotFoundError, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { query } from '@/lib/db';
 import type { CrmTaskWithRelations, UpdateTaskData } from '@/types/crm';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * GET /api/admin/crm/tasks/[id]
@@ -50,7 +51,8 @@ export const GET = withAdminAuth(async (
  * PATCH /api/admin/crm/tasks/[id]
  * Update a task
  */
-export const PATCH = withAdminAuth(async (
+export const PATCH = withCSRF(
+  withAdminAuth(async (
   request: NextRequest, session, context
 ) => {
   const { id } = await context!.params;
@@ -138,13 +140,15 @@ export const PATCH = withAdminAuth(async (
     task,
     timestamp: new Date().toISOString(),
   });
-});
+})
+);
 
 /**
  * DELETE /api/admin/crm/tasks/[id]
  * Delete a task
  */
-export const DELETE = withAdminAuth(async (
+export const DELETE = withCSRF(
+  withAdminAuth(async (
   _request: NextRequest, _session, context
 ) => {
   const { id } = await context!.params;
@@ -191,4 +195,5 @@ export const DELETE = withAdminAuth(async (
     message: 'Task deleted',
     timestamp: new Date().toISOString(),
   });
-});
+})
+);

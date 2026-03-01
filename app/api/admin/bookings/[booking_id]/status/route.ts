@@ -5,6 +5,7 @@ import { query, queryOne } from '@/lib/db-helpers';
 import { auditService } from '@/lib/services/audit.service';
 import { z } from 'zod';
 import { logger } from '@/lib/logger';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 const UpdateStatusSchema = z.object({
   status: z.enum(['pending', 'confirmed', 'assigned', 'in_progress', 'completed', 'cancelled']),
@@ -15,7 +16,8 @@ const UpdateStatusSchema = z.object({
  * PATCH /api/admin/bookings/[booking_id]/status
  * Update booking status (confirm, complete, etc.)
  */
-export const PATCH = withAdminAuth(async (
+export const PATCH = withCSRF(
+  withAdminAuth(async (
   request: NextRequest,
   session: AuthSession,
   context
@@ -112,4 +114,5 @@ export const PATCH = withAdminAuth(async (
     data: result.rows[0],
     timestamp: new Date().toISOString(),
   });
-});
+})
+);

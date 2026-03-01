@@ -4,6 +4,7 @@ import { geologyAIService } from '@/lib/services/geology-ai.service';
 import { GeologyChatMessage } from '@/lib/types/geology';
 import { z } from 'zod';
 import crypto from 'crypto';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // ============================================================================
 // Validation
@@ -48,7 +49,8 @@ function hashIP(ip: string | null): string | undefined {
 // POST /api/geology/chat - Send a geology question
 // ============================================================================
 
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   const body = await request.json();
 
   // Validate request
@@ -96,7 +98,8 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       suggestedTours: response.suggestedTours,
     },
   });
-});
+})
+);
 
 // ============================================================================
 // GET /api/geology/chat - Get conversation starters

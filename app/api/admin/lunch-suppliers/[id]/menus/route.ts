@@ -12,6 +12,7 @@ import {
   CreateLunchMenuSchema,
   CreateLunchMenuItemSchema,
 } from '@/lib/types/lunch-supplier';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface RouteParams {
   id: string;
@@ -52,7 +53,8 @@ export const GET = withAdminAuth(
  * Body with `menu_name` creates a new menu.
  * Body with `menu_id` + item data adds an item to an existing menu.
  */
-export const POST = withAdminAuth(
+export const POST = withCSRF(
+  withAdminAuth(
   async (
     request: NextRequest,
     _session,
@@ -134,4 +136,5 @@ export const POST = withAdminAuth(
       { status: 201 }
     );
   }
+)
 );

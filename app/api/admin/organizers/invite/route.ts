@@ -3,8 +3,10 @@ import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper';
 import { eventOrganizerService } from '@/lib/services/event-organizer.service';
 import { inviteOrganizerSchema } from '@/lib/validation/schemas/events';
 import { sendEmail } from '@/lib/email';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
-export const POST = withAdminAuth(async (request: NextRequest, session: AuthSession) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest, session: AuthSession) => {
   const body = await request.json();
   const validated = inviteOrganizerSchema.parse(body);
 
@@ -54,4 +56,5 @@ export const POST = withAdminAuth(async (request: NextRequest, session: AuthSess
       email_sent: emailSent,
     },
   });
-});
+})
+);

@@ -3,6 +3,7 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { NotFoundError, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { query } from '@/lib/db';
 import type { CrmDealWithRelations, UpdateDealData } from '@/types/crm';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * GET /api/admin/crm/deals/[id]
@@ -98,7 +99,8 @@ export const GET = withAdminAuth(async (
  * PATCH /api/admin/crm/deals/[id]
  * Update a deal
  */
-export const PATCH = withAdminAuth(async (
+export const PATCH = withCSRF(
+  withAdminAuth(async (
   request: NextRequest, _session, context
 ) => {
   const { id } = await context!.params;
@@ -152,13 +154,15 @@ export const PATCH = withAdminAuth(async (
     deal: result.rows[0],
     timestamp: new Date().toISOString(),
   });
-});
+})
+);
 
 /**
  * POST /api/admin/crm/deals/[id]/win
  * Mark a deal as won
  */
-export const POST = withAdminAuth(async (
+export const POST = withCSRF(
+  withAdminAuth(async (
   request: NextRequest, session, context
 ) => {
   const { id } = await context!.params;
@@ -268,4 +272,5 @@ export const POST = withAdminAuth(async (
   }
 
   throw new BadRequestError('Invalid action. Use "win" or "lose"');
-});
+})
+);

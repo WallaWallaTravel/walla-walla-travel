@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth, AuthSession, RouteContext } from '@/lib/api/middleware/auth-wrapper';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import { queryOne } from '@/lib/db-helpers';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface RouteParams { id: string; guestId: string; }
 
@@ -9,7 +10,8 @@ interface RouteParams { id: string; guestId: string; }
  * PATCH /api/admin/trip-proposals/[id]/guests/[guestId]/billing
  * Update guest billing: sponsor toggle, amount override, group assignment
  */
-export const PATCH = withAdminAuth(
+export const PATCH = withCSRF(
+  withAdminAuth(
   async (request: NextRequest, _session: AuthSession, context?) => {
     const { id, guestId } = await (context as RouteContext<RouteParams>).params;
     const body = await request.json();
@@ -40,4 +42,5 @@ export const PATCH = withAdminAuth(
 
     return NextResponse.json({ success: false, error: 'No valid billing action specified' }, { status: 400 });
   }
+)
 );

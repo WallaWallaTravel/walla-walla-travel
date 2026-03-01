@@ -12,6 +12,7 @@ import { z } from 'zod';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { aiConfigService, AIConfigType } from '@/lib/services/ai-config.service';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // ============================================================================
 // Request Schemas
@@ -70,7 +71,8 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
 // POST Handler - Create new config
 // ============================================================================
 
-export const POST = withAdminAuth(async (request: NextRequest, _session) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json();
 
   const parseResult = CreateConfigSchema.safeParse(body);
@@ -84,13 +86,15 @@ export const POST = withAdminAuth(async (request: NextRequest, _session) => {
     success: true,
     data: { config },
   });
-});
+})
+);
 
 // ============================================================================
 // PUT Handler - Update config
 // ============================================================================
 
-export const PUT = withAdminAuth(async (request: NextRequest, _session) => {
+export const PUT = withCSRF(
+  withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json();
 
   // Handle toggle active action
@@ -122,13 +126,15 @@ export const PUT = withAdminAuth(async (request: NextRequest, _session) => {
     success: true,
     data: { config },
   });
-});
+})
+);
 
 // ============================================================================
 // DELETE Handler - Delete config
 // ============================================================================
 
-export const DELETE = withAdminAuth(async (request: NextRequest, _session) => {
+export const DELETE = withCSRF(
+  withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json();
 
   const parseResult = DeleteConfigSchema.safeParse(body);
@@ -146,4 +152,5 @@ export const DELETE = withAdminAuth(async (request: NextRequest, _session) => {
     success: true,
     data: { deleted: true },
   });
-});
+})
+);

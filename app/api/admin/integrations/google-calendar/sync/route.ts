@@ -9,6 +9,7 @@ import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { googleCalendarSyncService } from '@/lib/services/google-calendar-sync.service';
 import { BaseService } from '@/lib/services/base.service';
 import { auditService } from '@/lib/services/audit.service';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -53,7 +54,8 @@ const syncService = new SyncService();
  * POST /api/admin/integrations/google-calendar/sync
  * Trigger manual sync of bookings to Google Calendar
  */
-export const POST = withAdminAuth(async (request: NextRequest, session) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest, session) => {
   // Check if configured
   const isConfigured = await googleCalendarSyncService.isConfigured();
   if (!isConfigured) {
@@ -133,4 +135,5 @@ export const POST = withAdminAuth(async (request: NextRequest, session) => {
     message: `Sync complete: ${results.synced.length} new, ${results.updated.length} updated, ${results.failed.length} failed`,
     results,
   });
-});
+})
+);

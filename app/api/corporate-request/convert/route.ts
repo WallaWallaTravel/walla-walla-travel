@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import { convertCorporateRequestToProposal, ensureProposalColumns } from '@/lib/corporate/proposal-converter';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -15,7 +16,8 @@ export const dynamic = 'force-dynamic';
  * POST /api/corporate-request/convert
  * Convert a corporate request to a proposal
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   const { requestId } = await request.json();
 
   if (!requestId) {
@@ -36,4 +38,5 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     ...result,
     message: 'Corporate request converted to proposal successfully'
   });
-});
+})
+);

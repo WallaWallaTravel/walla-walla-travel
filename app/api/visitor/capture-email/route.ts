@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import { captureVisitorEmail, logEmailCaptureAttempt, getVisitorByUUID } from '@/lib/visitor/visitor-tracking';
 import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -10,7 +11,8 @@ export const dynamic = 'force-dynamic';
  * POST /api/visitor/capture-email
  * Capture visitor email for progressive identification
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   const { visitor_uuid, email, name, phone, trigger_type, query_count } = await request.json();
 
   if (!visitor_uuid || !email) {
@@ -51,4 +53,5 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       name: updatedVisitor.name,
     },
   });
-});
+})
+);

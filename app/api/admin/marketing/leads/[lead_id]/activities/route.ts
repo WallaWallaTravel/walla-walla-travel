@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
 import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError } from '@/lib/api/middleware/error-handler'
+import { withCSRF } from '@/lib/api/middleware/csrf'
 
 // GET - Fetch activities for a lead (now from crm_activities)
 async function getHandler(
@@ -98,4 +99,6 @@ async function postHandler(
 }
 
 export const GET = withAdminAuth(getHandler)
-export const POST = withAdminAuth(postHandler)
+export const POST = withCSRF(
+  withAdminAuth(postHandler)
+)

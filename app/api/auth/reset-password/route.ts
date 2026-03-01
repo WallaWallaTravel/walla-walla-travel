@@ -6,6 +6,7 @@ import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 import { query } from '@/lib/db';
 import { sendEmail } from '@/lib/email';
 import crypto from 'crypto';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 const ResetRequestSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -16,7 +17,8 @@ const ResetRequestSchema = z.object({
  * Request a password reset email
  * Always returns success to prevent email enumeration
  */
-export const POST = withRateLimit(rateLimiters.passwordReset)(
+export const POST = withCSRF(
+  withRateLimit(rateLimiters.passwordReset)(
   withErrorHandling(async (request: NextRequest) => {
     const { email } = await validateBody(request, ResetRequestSchema);
 
@@ -107,4 +109,5 @@ export const POST = withRateLimit(rateLimiters.passwordReset)(
       timestamp: new Date().toISOString(),
     });
   })
+)
 );

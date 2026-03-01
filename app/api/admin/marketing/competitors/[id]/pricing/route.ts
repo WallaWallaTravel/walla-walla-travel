@@ -3,6 +3,7 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { competitorMonitoringService } from '@/lib/services/competitor-monitoring.service';
 import type { CreatePricingInput } from '@/types/competitors';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 function getCompetitorIdFromUrl(request: NextRequest): number {
   const url = new URL(request.url);
@@ -51,4 +52,6 @@ async function postHandler(request: NextRequest) {
 }
 
 export const GET = withAdminAuth(async (request, _session) => getHandler(request));
-export const POST = withAdminAuth(async (request, _session) => postHandler(request));
+export const POST = withCSRF(
+  withAdminAuth(async (request, _session) => postHandler(request))
+);

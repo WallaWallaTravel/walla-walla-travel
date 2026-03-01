@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { query } from '@/lib/db';
 import { z } from 'zod';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // ============================================================================
 // Validation
@@ -54,7 +55,8 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
 // POST /api/admin/geology/guidance - Create new AI guidance
 // ============================================================================
 
-export const POST = withAdminAuth(async (request: NextRequest, _session) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json();
   const validated = createGuidanceSchema.parse(body);
 
@@ -75,4 +77,5 @@ export const POST = withAdminAuth(async (request: NextRequest, _session) => {
     success: true,
     data: result.rows[0],
   });
-});
+})
+);

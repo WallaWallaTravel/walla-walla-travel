@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * PATCH /api/additional-services/[service_id]
  * Update an additional service
  */
-export const PATCH = withErrorHandling(async (
+export const PATCH = withCSRF(
+  withErrorHandling(async (
   request: NextRequest,
   { params }: { params: Promise<{ service_id: string }> }
 ): Promise<NextResponse> => {
@@ -83,13 +85,15 @@ export const PATCH = withErrorHandling(async (
     data: result.rows[0],
     message: 'Additional service updated successfully'
   });
-});
+})
+);
 
 /**
  * DELETE /api/additional-services/[service_id]
  * Delete an additional service
  */
-export const DELETE = withErrorHandling(async (
+export const DELETE = withCSRF(
+  withErrorHandling(async (
   request: NextRequest,
   { params }: { params: Promise<{ service_id: string }> }
 ): Promise<NextResponse> => {
@@ -108,4 +112,5 @@ export const DELETE = withErrorHandling(async (
     success: true,
     message: 'Additional service deleted successfully'
   });
-});
+})
+);

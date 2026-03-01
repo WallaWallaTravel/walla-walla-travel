@@ -4,6 +4,7 @@ import { sharedTourService } from '@/lib/services/shared-tour.service';
 import { query } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { getBrandStripeClient } from '@/lib/stripe-brands';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface RouteParams {
   params: Promise<{ tour_id: string }>;
@@ -46,7 +47,8 @@ interface DiscountPreview {
  *
  * Also handles confirmation when `confirmed: true` is passed
  */
-export const POST = withAdminAuth(async (request: NextRequest, session: AuthSession, context) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest, session: AuthSession, context) => {
   const { tour_id } = await (context as RouteParams).params;
   const body: DiscountRequest = await request.json();
 
@@ -379,4 +381,5 @@ export const POST = withAdminAuth(async (request: NextRequest, session: AuthSess
       { status: 500 }
     );
   }
-});
+})
+);

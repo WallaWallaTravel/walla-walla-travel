@@ -18,8 +18,10 @@ import {
   TipCodeSchema,
   CreateTipPaymentIntentSchema,
 } from '@/lib/validation/schemas/tip.schemas';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
-export const POST = withRateLimit(rateLimiters.payment)(
+export const POST = withCSRF(
+  withRateLimit(rateLimiters.payment)(
   withErrorHandling(
     async (request: NextRequest, { params }: { params: Promise<{ code: string }> }) => {
       const resolvedParams = await params;
@@ -72,4 +74,5 @@ export const POST = withRateLimit(rateLimiters.payment)(
       });
     }
   )
+)
 );

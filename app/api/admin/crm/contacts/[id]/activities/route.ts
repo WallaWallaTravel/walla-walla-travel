@@ -3,6 +3,7 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { query } from '@/lib/db';
 import type { CrmActivityWithUser, CreateActivityData } from '@/types/crm';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * GET /api/admin/crm/contacts/[id]/activities
@@ -51,7 +52,8 @@ export const GET = withAdminAuth(async (
  * POST /api/admin/crm/contacts/[id]/activities
  * Log a new activity for a contact
  */
-export const POST = withAdminAuth(async (
+export const POST = withCSRF(
+  withAdminAuth(async (
   request: NextRequest, session, context
 ) => {
   const { id } = await context!.params;
@@ -99,4 +101,5 @@ export const POST = withAdminAuth(async (
     activity: result.rows[0],
     timestamp: new Date().toISOString(),
   });
-});
+})
+);

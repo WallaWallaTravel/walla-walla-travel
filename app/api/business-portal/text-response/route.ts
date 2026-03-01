@@ -7,6 +7,7 @@ import { NextResponse } from 'next/server';
 import { saveTextResponse } from '@/lib/business-portal/question-service';
 import { logBusinessActivity } from '@/lib/business-portal/business-service';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -15,7 +16,8 @@ export const dynamic = 'force-dynamic';
  * POST /api/business-portal/text-response
  * Save text answer for a question
  */
-export const POST = withErrorHandling(async (request) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request) => {
   const {
     businessId,
     questionId,
@@ -57,5 +59,6 @@ export const POST = withErrorHandling(async (request) => {
     entryId,
     message: 'Text response saved. Data extraction queued.'
   });
-});
+})
+);
 

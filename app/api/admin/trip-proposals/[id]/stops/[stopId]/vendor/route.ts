@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth, AuthSession, RouteContext } from '@/lib/api/middleware/auth-wrapper';
 import { query, queryOne, type QueryParamValue } from '@/lib/db-helpers';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface RouteParams { id: string; stopId: string; }
 
@@ -15,7 +16,8 @@ const VALID_QUOTE_STATUSES = ['none', 'requested', 'quoted', 'accepted', 'confir
  * PATCH /api/admin/trip-proposals/[id]/stops/[stopId]/vendor
  * Update vendor info and quote status for a stop
  */
-export const PATCH = withAdminAuth(
+export const PATCH = withCSRF(
+  withAdminAuth(
   async (request: NextRequest, _session: AuthSession, context?) => {
     const { id, stopId } = await (context as RouteContext<RouteParams>).params;
     const proposalId = parseInt(id, 10);
@@ -87,4 +89,5 @@ export const PATCH = withAdminAuth(
 
     return NextResponse.json({ success: true, data: updated });
   }
+)
 );

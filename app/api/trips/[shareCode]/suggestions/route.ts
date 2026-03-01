@@ -4,6 +4,7 @@ import { query } from '@/lib/db';
 import { tripAIService } from '@/lib/services/trip-ai.service';
 import { Trip, TripStop, TripGuest } from '@/lib/types/trip-planner';
 import { z } from 'zod';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface RouteParams {
   shareCode: string;
@@ -115,7 +116,8 @@ async function loadTripWithRelations(shareCode: string): Promise<Trip | null> {
 // POST /api/trips/[shareCode]/suggestions - Get AI stop suggestions
 // ============================================================================
 
-export const POST = withErrorHandling<unknown, RouteParams>(
+export const POST = withCSRF(
+  withErrorHandling<unknown, RouteParams>(
   async (request: NextRequest, context: RouteContext<RouteParams>) => {
     const { shareCode } = await context.params;
     const body = await request.json();
@@ -145,4 +147,5 @@ export const POST = withErrorHandling<unknown, RouteParams>(
       },
     });
   }
+)
 );

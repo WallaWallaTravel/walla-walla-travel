@@ -6,6 +6,7 @@ import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 import { query } from '@/lib/db';
 import { hashPassword, validatePasswordStrength } from '@/lib/auth/passwords';
 import crypto from 'crypto';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 const ResetConfirmSchema = z.object({
   token: z.string().min(1, 'Reset token is required'),
@@ -16,7 +17,8 @@ const ResetConfirmSchema = z.object({
  * POST /api/auth/reset-password/confirm
  * Validates token and sets new password
  */
-export const POST = withRateLimit(rateLimiters.passwordReset)(
+export const POST = withCSRF(
+  withRateLimit(rateLimiters.passwordReset)(
   withErrorHandling(async (request: NextRequest) => {
     const { token, password } = await validateBody(request, ResetConfirmSchema);
 
@@ -70,4 +72,5 @@ export const POST = withRateLimit(rateLimiters.passwordReset)(
       timestamp: new Date().toISOString(),
     });
   })
+)
 );

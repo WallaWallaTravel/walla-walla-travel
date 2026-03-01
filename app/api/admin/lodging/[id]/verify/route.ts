@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import type { RouteContext } from '@/lib/api/middleware/auth-wrapper';
 import { lodgingService } from '@/lib/services/lodging.service';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -10,7 +11,8 @@ export const dynamic = 'force-dynamic';
  * POST /api/admin/lodging/[id]/verify
  * Mark a lodging property as verified by the current admin user
  */
-export const POST = withAdminAuth(async (request: NextRequest, session, context) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest, session, context) => {
   const { id } = await (context as RouteContext<{ id: string }>).params;
   const numId = parseInt(id, 10);
 
@@ -37,4 +39,5 @@ export const POST = withAdminAuth(async (request: NextRequest, session, context)
     },
     timestamp: new Date().toISOString(),
   });
-});
+})
+);

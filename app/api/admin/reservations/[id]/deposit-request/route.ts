@@ -9,6 +9,7 @@ import { query } from '@/lib/db';
 import { Resend } from 'resend';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -24,7 +25,8 @@ interface DepositRequestBody {
   sendSms: boolean;
 }
 
-export const POST = withAdminAuth(async (
+export const POST = withCSRF(
+  withAdminAuth(async (
   request: NextRequest,
   _session,
   context
@@ -174,4 +176,5 @@ export const POST = withAdminAuth(async (
     message: `Deposit request sent successfully${results.errors.length > 0 ? ` (with warnings: ${results.errors.join('; ')})` : ''}`,
     results,
   });
-});
+})
+);

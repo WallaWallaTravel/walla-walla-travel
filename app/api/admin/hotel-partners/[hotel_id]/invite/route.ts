@@ -2,12 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { NotFoundError } from '@/lib/api/middleware/error-handler';
 import { hotelPartnerService } from '@/lib/services/hotel-partner.service';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * POST /api/admin/hotel-partners/[hotel_id]/invite
  * Send or resend invitation email to hotel partner
  */
-export const POST = withAdminAuth(async (
+export const POST = withCSRF(
+  withAdminAuth(async (
   request: NextRequest, _session, context
 ) => {
   const { hotel_id } = await context!.params;
@@ -29,4 +31,5 @@ export const POST = withAdminAuth(async (
       ? 'Invitation email sent successfully'
       : 'Failed to send invitation email',
   });
-});
+})
+);

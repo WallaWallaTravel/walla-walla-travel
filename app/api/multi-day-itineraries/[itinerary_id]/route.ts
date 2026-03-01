@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { withErrorHandling, NotFoundError } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // GET /api/multi-day-itineraries/[itinerary_id] - Get itinerary with all days and activities
 export const GET = withErrorHandling(async (
@@ -66,7 +67,8 @@ export const GET = withErrorHandling(async (
 });
 
 // PUT /api/multi-day-itineraries/[itinerary_id] - Update itinerary
-export const PUT = withErrorHandling(async (
+export const PUT = withCSRF(
+  withErrorHandling(async (
   request: NextRequest,
   { params }: { params: Promise<{ itinerary_id: string }> }
 ) => {
@@ -179,10 +181,12 @@ export const PUT = withErrorHandling(async (
   await query('COMMIT');
 
   return NextResponse.json({ success: true });
-});
+})
+);
 
 // DELETE /api/multi-day-itineraries/[itinerary_id] - Delete itinerary
-export const DELETE = withErrorHandling(async (
+export const DELETE = withCSRF(
+  withErrorHandling(async (
   request: NextRequest,
   { params }: { params: Promise<{ itinerary_id: string }> }
 ) => {
@@ -190,4 +194,5 @@ export const DELETE = withErrorHandling(async (
 
   await query('DELETE FROM itineraries WHERE id = $1', [itinerary_id]);
   return NextResponse.json({ success: true });
-});
+})
+);

@@ -3,6 +3,7 @@ import { logger } from '@/lib/logger';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { NotFoundError, ConflictError, BadRequestError } from '@/lib/api-errors';
 import { queryOne, query } from '@/lib/db-helpers';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface BookingWithDriver {
   id: number;
@@ -37,7 +38,8 @@ interface Invoice {
  * 4. Send email to customer with payment link
  * 5. Mark booking as final_invoice_sent
  */
-export const POST = withAdminAuth(async (
+export const POST = withCSRF(
+  withAdminAuth(async (
   request: NextRequest,
   _session,
   context
@@ -165,4 +167,5 @@ export const POST = withAdminAuth(async (
       customer_email: booking.customer_email
     }
   });
-});
+})
+);

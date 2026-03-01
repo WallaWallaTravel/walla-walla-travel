@@ -3,6 +3,7 @@ import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { competitorMonitoringService } from '@/lib/services/competitor-monitoring.service';
 import type { PriorityLevel, CreateCompetitorInput } from '@/types/competitors';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // GET - Fetch competitors with change counts
 async function getHandler(request: NextRequest) {
@@ -43,4 +44,6 @@ async function postHandler(request: NextRequest, session: AuthSession) {
 }
 
 export const GET = withAdminAuth(async (request, _session) => getHandler(request));
-export const POST = withAdminAuth(async (request, session) => postHandler(request, session));
+export const POST = withCSRF(
+  withAdminAuth(async (request, session) => postHandler(request, session))
+);

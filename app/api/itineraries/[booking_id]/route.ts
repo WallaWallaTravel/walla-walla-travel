@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 import { itineraryService } from '@/lib/services/itinerary.service';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * GET /api/itineraries/[booking_id]
@@ -36,7 +37,8 @@ export const GET = withErrorHandling(async (
  * 
  * ✅ REFACTORED: Service layer handles conflict checking
  */
-export const POST = withErrorHandling(async (
+export const POST = withCSRF(
+  withErrorHandling(async (
   request: NextRequest,
   context: { params: Promise<{ booking_id: string }> }
 ) => {
@@ -54,7 +56,8 @@ export const POST = withErrorHandling(async (
     data: itinerary,
     timestamp: new Date().toISOString(),
   });
-});
+})
+);
 
 /**
  * PUT /api/itineraries/[booking_id]
@@ -62,7 +65,8 @@ export const POST = withErrorHandling(async (
  * 
  * ✅ REFACTORED: Service layer
  */
-export const PUT = withErrorHandling(async (
+export const PUT = withCSRF(
+  withErrorHandling(async (
   request: NextRequest,
   context: { params: Promise<{ booking_id: string }> }
 ) => {
@@ -77,7 +81,8 @@ export const PUT = withErrorHandling(async (
     data: itinerary,
     timestamp: new Date().toISOString(),
   });
-});
+})
+);
 
 /**
  * DELETE /api/itineraries/[booking_id]
@@ -85,7 +90,8 @@ export const PUT = withErrorHandling(async (
  * 
  * ✅ REFACTORED: Service layer
  */
-export const DELETE = withErrorHandling(async (
+export const DELETE = withCSRF(
+  withErrorHandling(async (
   request: NextRequest,
   context: { params: Promise<{ booking_id: string }> }
 ) => {
@@ -99,4 +105,5 @@ export const DELETE = withErrorHandling(async (
     message: 'Itinerary deleted',
     timestamp: new Date().toISOString(),
   });
-});
+})
+);

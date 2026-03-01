@@ -12,6 +12,7 @@ import {
 import { logBusinessActivity } from '@/lib/business-portal/business-service';
 import { logger } from '@/lib/logger';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -20,7 +21,8 @@ export const dynamic = 'force-dynamic';
  * POST /api/business-portal/upload-file
  * Upload a file for a business
  */
-export const POST = withErrorHandling(async (request) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request) => {
   logger.debug('File upload starting');
   const formData = await request.formData();
 
@@ -80,5 +82,6 @@ export const POST = withErrorHandling(async (request) => {
     fileType,
     message: 'File uploaded successfully. Processing queued.'
   });
-});
+})
+);
 

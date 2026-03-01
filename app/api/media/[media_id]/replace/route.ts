@@ -7,6 +7,7 @@ import {
   ALLOWED_TYPES,
   ALLOWED_IMAGE_TYPES,
 } from '@/lib/storage/supabase-storage';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * POST /api/media/[media_id]/replace
@@ -19,7 +20,8 @@ import {
  * - mime_type
  * - file_type (if changed between image/video)
  */
-export const POST = withErrorHandling(async (
+export const POST = withCSRF(
+  withErrorHandling(async (
   request: Request,
   { params }: { params: Promise<{ media_id: string }> }
 ) => {
@@ -91,4 +93,5 @@ export const POST = withErrorHandling(async (
     data: result.rows[0],
     message: 'File replaced successfully',
   });
-});
+})
+);

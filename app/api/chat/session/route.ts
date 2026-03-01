@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { chatSessionService } from '@/lib/services/chat-session.service';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // ============================================================================
 // Request Schemas
@@ -91,7 +92,8 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 // POST Handler - Add message to session
 // ============================================================================
 
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   const body = await request.json();
 
   const parseResult = AddMessageSchema.safeParse(body);
@@ -126,13 +128,15 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       },
     },
   });
-});
+})
+);
 
 // ============================================================================
 // PUT Handler - Update trip state
 // ============================================================================
 
-export const PUT = withErrorHandling(async (request: NextRequest) => {
+export const PUT = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   const body = await request.json();
 
   const parseResult = UpdateTripStateSchema.safeParse(body);
@@ -161,4 +165,5 @@ export const PUT = withErrorHandling(async (request: NextRequest) => {
       } : null,
     },
   });
-});
+})
+);

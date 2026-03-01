@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { logger } from '@/lib/logger'
 import { updateQueryRating } from '@/lib/analytics/query-logger'
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler'
+import { withCSRF } from '@/lib/api/middleware/csrf'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -11,7 +12,8 @@ export const dynamic = 'force-dynamic'
  *
  * Submit user feedback for an AI query
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   const { queryId, rating, feedback } = await request.json()
 
   if (!queryId || typeof queryId !== 'number') {
@@ -31,3 +33,4 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     message: 'Feedback submitted'
   })
 })
+)

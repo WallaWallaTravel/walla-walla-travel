@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { ContentService } from '@/lib/services/content.service';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // GET - Fetch page content
 // ?page=homepage - Get all content for a page
@@ -104,6 +105,12 @@ const deleteHandler = withAdminAuth(async (request: NextRequest, _session) => {
 });
 
 export const GET = getHandler;
-export const POST = postHandler;
-export const PUT = putHandler;
-export const DELETE = deleteHandler;
+export const POST = withCSRF(
+  postHandler
+);
+export const PUT = withCSRF(
+  putHandler
+);
+export const DELETE = withCSRF(
+  deleteHandler
+);

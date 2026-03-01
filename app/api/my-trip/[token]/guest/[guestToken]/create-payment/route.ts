@@ -6,6 +6,7 @@ import { getBrandEmailConfig } from '@/lib/email-brands';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import { queryOne } from '@/lib/db-helpers';
 import { logger } from '@/lib/logger';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface RouteParams { token: string; guestToken: string; }
 
@@ -13,7 +14,8 @@ interface RouteParams { token: string; guestToken: string; }
  * POST /api/my-trip/[token]/guest/[guestToken]/create-payment
  * Create Stripe PaymentIntent for one guest's share
  */
-export const POST = withErrorHandling<unknown, RouteParams>(
+export const POST = withCSRF(
+  withErrorHandling<unknown, RouteParams>(
   async (request: NextRequest, context) => {
     const { token, guestToken } = await (context as RouteContext<RouteParams>).params;
 
@@ -90,4 +92,5 @@ export const POST = withErrorHandling<unknown, RouteParams>(
       },
     });
   }
+)
 );

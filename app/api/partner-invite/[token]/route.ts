@@ -9,6 +9,7 @@ import { businessDirectoryService } from '@/lib/services/business-directory.serv
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import { query } from '@/lib/db';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -71,7 +72,8 @@ const AcceptInvitationSchema = z.object({
  *   password: string
  * }
  */
-export const POST = withErrorHandling(async (request: NextRequest, { params }: RouteParams) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest, { params }: RouteParams) => {
   const { token } = await params;
 
   if (!token) {
@@ -153,4 +155,5 @@ export const POST = withErrorHandling(async (request: NextRequest, { params }: R
     partnerProfileId,
     businessId: business.id,
   });
-});
+})
+);

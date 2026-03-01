@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { query } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * POST /api/admin/migrate-inspections
@@ -9,7 +10,8 @@ import { logger } from '@/lib/logger';
  *
  * SECURITY: Protected by admin auth
  */
-export const POST = withAdminAuth(async (_request: NextRequest) => {
+export const POST = withCSRF(
+  withAdminAuth(async (_request: NextRequest) => {
   logger.info('Starting migration: Add time_card_id to inspections');
 
   // Add time_card_id column (nullable for existing records)
@@ -45,4 +47,5 @@ export const POST = withAdminAuth(async (_request: NextRequest) => {
       'Created composite index on (time_card_id, type)'
     ]
   });
-});
+})
+);

@@ -10,6 +10,7 @@ import {
 import { query } from '@/lib/db';
 import { withTransaction } from '@/lib/db-helpers';
 import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface OdometerUpdate {
   mileage: number;
@@ -21,7 +22,8 @@ interface OdometerUpdate {
  * PUT /api/vehicles/:id/odometer
  * Updates the vehicle's odometer reading
  */
-export const PUT = withErrorHandling(async (
+export const PUT = withCSRF(
+  withErrorHandling(async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) => {
@@ -205,7 +207,8 @@ export const PUT = withErrorHandling(async (
   }
 
   return successResponse(responseData, message);
-});
+})
+);
 
 /**
  * GET /api/vehicles/:id/odometer

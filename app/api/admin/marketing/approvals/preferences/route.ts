@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const { searchParams } = new URL(request.url)
@@ -70,7 +71,8 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   })
 });
 
-export const PUT = withAdminAuth(async (request: NextRequest, _session) => {
+export const PUT = withCSRF(
+  withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json()
   const { id, isActive } = body
 
@@ -88,9 +90,11 @@ export const PUT = withAdminAuth(async (request: NextRequest, _session) => {
   `, [isActive, id])
 
   return NextResponse.json({ success: true })
-});
+})
+);
 
-export const DELETE = withAdminAuth(async (request: NextRequest, _session) => {
+export const DELETE = withCSRF(
+  withAdminAuth(async (request: NextRequest, _session) => {
   const { searchParams } = new URL(request.url)
   const id = searchParams.get('id')
 
@@ -104,4 +108,5 @@ export const DELETE = withAdminAuth(async (request: NextRequest, _session) => {
   await query('DELETE FROM ai_learning_preferences WHERE id = $1', [parseInt(id)])
 
   return NextResponse.json({ success: true })
-});
+})
+);

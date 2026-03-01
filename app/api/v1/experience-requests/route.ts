@@ -15,6 +15,7 @@ import {
   CreateExperienceRequestSchema,
 } from '@/lib/services/experience-request.service';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // ============================================================================
 // POST /api/v1/experience-requests - Create new experience request
@@ -52,7 +53,8 @@ import { withErrorHandling } from '@/lib/api/middleware/error-handler';
  *   }
  * }
  */
-export const POST = withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
   // Apply rate limiting (public endpoint)
   const rateLimitResult = await rateLimiters.public(request);
   if (rateLimitResult) return rateLimitResult;
@@ -77,7 +79,8 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
   return APIResponse.success(responseData, {
     request_number: experienceRequest.request_number,
   });
-});
+})
+);
 
 // ============================================================================
 // GET /api/v1/experience-requests - List requests (admin)

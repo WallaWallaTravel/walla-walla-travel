@@ -14,6 +14,7 @@ import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-h
 import { bookingTrackingService } from '@/lib/services/booking-tracking.service';
 import { z } from 'zod';
 import { logger } from '@/lib/logger';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // ============================================================================
 // Schemas
@@ -63,7 +64,8 @@ const TrackSessionSchema = z.object({
 // POST Handler
 // ============================================================================
 
-export const POST = withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
   const body = await request.json();
   const action = body.action || 'booking';
 
@@ -127,4 +129,5 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
     logger.warn('Tracking error', { error: message });
     return NextResponse.json({ success: false, error: 'Tracking failed' });
   }
-});
+})
+);

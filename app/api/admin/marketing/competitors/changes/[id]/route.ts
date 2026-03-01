@@ -3,6 +3,7 @@ import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper';
 import { NotFoundError, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { competitorMonitoringService } from '@/lib/services/competitor-monitoring.service';
 import type { UpdateChangeStatusInput } from '@/types/competitors';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 function getIdFromUrl(request: NextRequest): number {
   const url = new URL(request.url);
@@ -39,4 +40,6 @@ async function putHandler(request: NextRequest, session: AuthSession) {
   });
 }
 
-export const PUT = withAdminAuth(async (request, session) => putHandler(request, session));
+export const PUT = withCSRF(
+  withAdminAuth(async (request, session) => putHandler(request, session))
+);

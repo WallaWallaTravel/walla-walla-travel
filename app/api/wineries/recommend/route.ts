@@ -3,6 +3,7 @@ import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-h
 import { logger } from '@/lib/logger';
 import { wineryAIService, WineryFilters } from '@/lib/services/winery-ai.service';
 import { wineryService, WinerySummary } from '@/lib/services/winery.service';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -15,7 +16,8 @@ export const dynamic = 'force-dynamic';
  * - Applies filters to winery database
  * - Returns matching wineries with explanations
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   const startTime = Date.now();
 
   const { query, includeExplanations = true } = await request.json();
@@ -85,7 +87,8 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     },
     duration,
   });
-});
+})
+);
 
 /**
  * Apply extracted filters to winery list

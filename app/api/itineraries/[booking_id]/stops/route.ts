@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, NotFoundError, RouteContext } from '@/lib/api/middleware/error-handler';
 import { query } from '@/lib/db';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * PUT /api/itineraries/[booking_id]/stops
@@ -8,7 +9,8 @@ import { query } from '@/lib/db';
  *
  * Uses withErrorHandling middleware for consistent error handling
  */
-export const PUT = withErrorHandling<unknown, { booking_id: string }>(
+export const PUT = withCSRF(
+  withErrorHandling<unknown, { booking_id: string }>(
   async (request: NextRequest, context: RouteContext<{ booking_id: string }>) => {
     const { booking_id: bookingId } = await context.params;
     const { stops } = await request.json();
@@ -86,4 +88,5 @@ export const PUT = withErrorHandling<unknown, { booking_id: string }>(
       throw error;
     }
   }
+)
 );

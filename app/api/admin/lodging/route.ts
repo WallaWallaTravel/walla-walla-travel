@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { lodgingService, CreateLodgingSchema } from '@/lib/services/lodging.service';
 import { z } from 'zod';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -75,7 +76,8 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
  * POST /api/admin/lodging
  * Create a new lodging property
  */
-export const POST = withAdminAuth(async (request: NextRequest, _session) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json();
 
   const parseResult = CreateLodgingSchema.safeParse(body);
@@ -96,4 +98,5 @@ export const POST = withAdminAuth(async (request: NextRequest, _session) => {
     },
     timestamp: new Date().toISOString(),
   }, { status: 201 });
-});
+})
+);

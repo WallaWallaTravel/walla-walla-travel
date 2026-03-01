@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { withErrorHandling, NotFoundError } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * GET /api/media/[media_id]
@@ -78,7 +79,8 @@ export const GET = withErrorHandling(async (
  * PUT /api/media/[media_id]
  * Update media metadata
  */
-export const PUT = withErrorHandling(async (
+export const PUT = withCSRF(
+  withErrorHandling(async (
   request: NextRequest,
   { params }: { params: Promise<{ media_id: string }> }
 ) => {
@@ -131,13 +133,15 @@ export const PUT = withErrorHandling(async (
     success: true,
     data: result.rows[0]
   });
-});
+})
+);
 
 /**
  * PATCH /api/media/[media_id]
  * Partial update of media metadata
  */
-export const PATCH = withErrorHandling(async (
+export const PATCH = withCSRF(
+  withErrorHandling(async (
   request: NextRequest,
   { params }: { params: Promise<{ media_id: string }> }
 ) => {
@@ -187,13 +191,15 @@ export const PATCH = withErrorHandling(async (
     success: true,
     data: result.rows[0]
   });
-});
+})
+);
 
 /**
  * DELETE /api/media/[media_id]
  * Soft delete media (set is_active = false)
  */
-export const DELETE = withErrorHandling(async (
+export const DELETE = withCSRF(
+  withErrorHandling(async (
   request: NextRequest,
   { params }: { params: Promise<{ media_id: string }> }
 ) => {
@@ -215,4 +221,5 @@ export const DELETE = withErrorHandling(async (
     success: true,
     message: 'Media deleted successfully'
   });
-});
+})
+);

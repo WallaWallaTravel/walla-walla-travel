@@ -18,6 +18,7 @@ import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-h
 import { validateBody } from '@/lib/api/middleware/validation';
 import { kbService } from '@/lib/services/kb.service';
 import { geminiService } from '@/lib/services/gemini.service';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // ============================================================================
 // Request Schema
@@ -56,7 +57,8 @@ type _IngestRequest = z.infer<typeof IngestRequestSchema>;
 // POST Handler
 // ============================================================================
 
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   const data = await validateBody(request, IngestRequestSchema);
 
   // Validate business exists
@@ -189,7 +191,8 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     },
     message: `Content ingested successfully. Status: ${updatedContribution?.status}`,
   });
-});
+})
+);
 
 // ============================================================================
 // GET Handler - List contributions for a business

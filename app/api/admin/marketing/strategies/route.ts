@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // GET - List strategies with optional status filter
 export const GET = withAdminAuth(async (request: NextRequest, _session) => {
@@ -39,7 +40,8 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
 });
 
 // POST - Manually trigger strategy generation
-export const POST = withAdminAuth(async (_request: NextRequest, _session) => {
+export const POST = withCSRF(
+  withAdminAuth(async (_request: NextRequest, _session) => {
   logger.info('Manual strategy generation triggered via admin API')
 
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL
@@ -62,10 +64,12 @@ export const POST = withAdminAuth(async (_request: NextRequest, _session) => {
   }
 
   return NextResponse.json(cronData)
-});
+})
+);
 
 // PATCH - Update strategy status (activate, archive, etc.)
-export const PATCH = withAdminAuth(async (request: NextRequest, _session) => {
+export const PATCH = withCSRF(
+  withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json()
   const { id, status } = body
 
@@ -102,4 +106,5 @@ export const PATCH = withAdminAuth(async (request: NextRequest, _session) => {
     success: true,
     strategy: result.rows[0],
   })
-});
+})
+);

@@ -4,6 +4,7 @@ import { validateBody, validateQuery } from '@/lib/api/middleware/validation';
 import { CheckAvailabilitySchema, z } from '@/lib/validation/schemas';
 import { checkAvailability, getAvailableDates } from '@/lib/availability-engine';
 import { calculatePrice } from '@/lib/pricing-engine';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * POST /api/bookings/check-availability
@@ -11,7 +12,8 @@ import { calculatePrice } from '@/lib/pricing-engine';
  * 
  * ✅ REFACTORED: Now using Zod validation for type-safe inputs
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   // ✅ Validate with Zod schema (auto type-safe!)
   const { date, duration_hours, party_size, start_time } = await validateBody(
     request,
@@ -52,7 +54,8 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       }
     }
   });
-});
+})
+);
 
 /**
  * GET /api/bookings/check-availability?year=2025&month=11

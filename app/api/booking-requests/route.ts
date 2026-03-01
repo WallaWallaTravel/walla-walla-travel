@@ -14,6 +14,7 @@ import { z } from 'zod';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { crmSyncService } from '@/lib/services/crm-sync.service';
 import { crmTaskAutomationService } from '@/lib/services/crm-task-automation.service';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -50,7 +51,8 @@ const BookingRequestSchema = z.object({
  * POST /api/booking-requests
  * Create a new booking request (reservation) for admin review
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   // Parse and validate request body
   let rawBody: unknown;
   try {
@@ -393,7 +395,8 @@ info@nwtouring.com | (509) 540-3600
     await query('ROLLBACK');
     throw error;
   }
-});
+})
+);
 
 /**
  * GET /api/booking-requests

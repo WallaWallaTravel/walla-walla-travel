@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * Development-only endpoint for viewing application logs
@@ -27,7 +28,8 @@ export const GET = withAdminAuth(async (_request: NextRequest) => {
   });
 });
 
-export const DELETE = withAdminAuth(async (_request: NextRequest) => {
+export const DELETE = withCSRF(
+  withAdminAuth(async (_request: NextRequest) => {
   // Only allow in development
   if (process.env.NODE_ENV !== 'development') {
     return NextResponse.json(
@@ -39,4 +41,5 @@ export const DELETE = withAdminAuth(async (_request: NextRequest) => {
   return NextResponse.json({
     message: 'Log buffering not implemented. Nothing to clear.',
   });
-});
+})
+);

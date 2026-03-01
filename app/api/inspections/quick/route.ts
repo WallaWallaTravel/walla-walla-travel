@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, UnauthorizedError } from '@/lib/api/middleware/error-handler';
 import { withAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper';
 import { query } from '@/lib/db';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * POST /api/inspections/quick
@@ -9,7 +10,8 @@ import { query } from '@/lib/db';
  *
  * Uses withErrorHandling middleware for consistent error handling
  */
-export const POST = withErrorHandling(
+export const POST = withCSRF(
+  withErrorHandling(
   withAuth(async (request: NextRequest, session: AuthSession) => {
     const body = await request.json();
     const { vehicleId, startMileage, type, inspectionData } = body;
@@ -60,4 +62,5 @@ export const POST = withErrorHandling(
       message: 'Inspection saved successfully'
     });
   })
+)
 );

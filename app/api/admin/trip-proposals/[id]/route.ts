@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import { UpdateTripProposalSchema } from '@/lib/types/trip-proposal';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -48,7 +49,8 @@ export const GET = withAdminAuth(async (request: NextRequest, session, context) 
  * PATCH /api/admin/trip-proposals/[id]
  * Update trip proposal
  */
-export const PATCH = withAdminAuth(async (request: NextRequest, session, context) => {
+export const PATCH = withCSRF(
+  withAdminAuth(async (request: NextRequest, session, context) => {
   const { id } = await (context as unknown as RouteParams).params;
   const proposalId = parseInt(id, 10);
 
@@ -83,13 +85,15 @@ export const PATCH = withAdminAuth(async (request: NextRequest, session, context
     data: proposal,
     message: 'Trip proposal updated successfully',
   });
-});
+})
+);
 
 /**
  * DELETE /api/admin/trip-proposals/[id]
  * Delete trip proposal (only drafts can be deleted)
  */
-export const DELETE = withAdminAuth(async (request: NextRequest, session, context) => {
+export const DELETE = withCSRF(
+  withAdminAuth(async (request: NextRequest, session, context) => {
   const { id } = await (context as unknown as RouteParams).params;
   const proposalId = parseInt(id, 10);
 
@@ -128,4 +132,5 @@ export const DELETE = withAdminAuth(async (request: NextRequest, session, contex
     success: true,
     message: 'Trip proposal deleted successfully',
   });
-});
+})
+);

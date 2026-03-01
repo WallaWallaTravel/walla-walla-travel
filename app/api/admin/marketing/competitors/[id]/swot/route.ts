@@ -4,6 +4,7 @@ import type { AuthSession } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { competitorMonitoringService } from '@/lib/services/competitor-monitoring.service';
 import type { CreateSwotInput } from '@/types/competitors';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 function getCompetitorIdFromUrl(request: NextRequest): number {
   const url = new URL(request.url);
@@ -60,4 +61,6 @@ async function postHandler(request: NextRequest, session: AuthSession) {
 }
 
 export const GET = withAdminAuth(async (request, _session) => getHandler(request));
-export const POST = withAdminAuth(async (request, session) => postHandler(request, session));
+export const POST = withCSRF(
+  withAdminAuth(async (request, session) => postHandler(request, session))
+);

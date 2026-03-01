@@ -9,6 +9,7 @@ import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper';
 import { validateBody } from '@/lib/api/middleware/validation';
 import { tenantService } from '@/lib/services/tenant.service';
 import { z } from 'zod';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // Schema for updating a tenant
 const UpdateTenantSchema = z.object({
@@ -55,7 +56,8 @@ export const GET = withAdminAuth(async (
  * PATCH /api/admin/tenants/[tenant_id]
  * Update a tenant
  */
-export const PATCH = withAdminAuth(async (
+export const PATCH = withCSRF(
+  withAdminAuth(async (
   request: NextRequest,
   _session: AuthSession,
   context?: { params: Promise<Record<string, string>> }
@@ -72,4 +74,5 @@ export const PATCH = withAdminAuth(async (
     data: tenant,
     message: 'Tenant updated successfully',
   });
-});
+})
+);

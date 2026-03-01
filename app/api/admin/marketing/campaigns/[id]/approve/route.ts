@@ -3,9 +3,11 @@ import { query } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import type { AuthSession } from '@/lib/api/middleware/auth-wrapper'
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // POST - Approve campaign: creates scheduled_posts from social items, marks items as scheduled
-export const POST = withAdminAuth(async (
+export const POST = withCSRF(
+  withAdminAuth(async (
   request: NextRequest,
   session: AuthSession,
   context
@@ -104,4 +106,5 @@ export const POST = withAdminAuth(async (
     scheduledPosts: scheduledCount,
     message: `Campaign approved. ${scheduledCount} social posts scheduled.`,
   })
-});
+})
+);

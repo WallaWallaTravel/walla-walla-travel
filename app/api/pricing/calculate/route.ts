@@ -10,6 +10,7 @@ import {
   calculateTransferPrice,
   calculateWaitTimePrice
 } from '@/lib/pricing/pricing-service';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -18,7 +19,8 @@ export const dynamic = 'force-dynamic';
  * POST /api/pricing/calculate
  * Calculate price for a service
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   const body = await request.json();
   const { serviceType, ...params } = body;
 
@@ -61,5 +63,6 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     success: true,
     ...result
   });
-});
+})
+);
 

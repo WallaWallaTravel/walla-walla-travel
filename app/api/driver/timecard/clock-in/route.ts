@@ -3,6 +3,7 @@ import { withAuth } from '@/lib/api/middleware/auth-wrapper';
 import { validateBody } from '@/lib/api/middleware/validation';
 import { timeCardService } from '@/lib/services/timecard.service';
 import { z } from 'zod';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * POST /api/driver/timecard/clock-in
@@ -16,7 +17,8 @@ const ClockInSchema = z.object({
   work_reporting_location: z.string().optional(),
 });
 
-export const POST = withAuth(async (request: NextRequest, session) => {
+export const POST = withCSRF(
+  withAuth(async (request: NextRequest, session) => {
   // ✅ Validate
   const data = await validateBody(request, ClockInSchema);
 
@@ -33,7 +35,8 @@ export const POST = withAuth(async (request: NextRequest, session) => {
     message: 'Clocked in successfully',
     timestamp: new Date().toISOString(),
   });
-});
+})
+);
 
 
 

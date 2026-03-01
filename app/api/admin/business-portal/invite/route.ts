@@ -9,6 +9,7 @@ import crypto from 'crypto';
 import { logger } from '@/lib/logger';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -25,7 +26,8 @@ interface BusinessInvite {
  * POST /api/admin/business-portal/invite
  * Send batch invites to businesses
  */
-export const POST = withAdminAuth(async (request: NextRequest, _session) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json();
   const { businesses } = body as { businesses: BusinessInvite[] };
 
@@ -122,4 +124,5 @@ export const POST = withAdminAuth(async (request: NextRequest, _session) => {
       failed: failCount
     }
   });
-});
+})
+);

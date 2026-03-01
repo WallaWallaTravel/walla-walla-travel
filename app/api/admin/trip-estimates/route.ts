@@ -12,6 +12,7 @@ import {
   TRIP_ESTIMATE_STATUS,
 } from '@/lib/types/trip-estimate';
 import { z } from 'zod';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // Query parameter schema for listing
 const ListFiltersSchema = z.object({
@@ -65,7 +66,8 @@ export const GET = withAdminAuth(async (request: NextRequest) => {
  * POST /api/admin/trip-estimates
  * Create a new trip estimate
  */
-export const POST = withAdminAuth(async (request: NextRequest, session) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest, session) => {
   const body = await request.json();
 
   const parseResult = CreateTripEstimateSchema.safeParse(body);
@@ -93,4 +95,5 @@ export const POST = withAdminAuth(async (request: NextRequest, session) => {
     },
     { status: 201 }
   );
-});
+})
+);

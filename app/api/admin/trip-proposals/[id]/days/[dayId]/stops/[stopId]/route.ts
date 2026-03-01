@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import { AddStopSchema } from '@/lib/types/trip-proposal';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface RouteParams {
   params: Promise<{ id: string; dayId: string; stopId: string }>;
@@ -17,7 +18,8 @@ interface RouteParams {
  * PATCH /api/admin/trip-proposals/[id]/days/[dayId]/stops/[stopId]
  * Update a stop
  */
-export const PATCH = withAdminAuth(async (request: NextRequest, session, context) => {
+export const PATCH = withCSRF(
+  withAdminAuth(async (request: NextRequest, session, context) => {
   const { stopId } = await (context as unknown as RouteParams).params;
   const stopIdNum = parseInt(stopId, 10);
 
@@ -49,13 +51,15 @@ export const PATCH = withAdminAuth(async (request: NextRequest, session, context
     data: stop,
     message: 'Stop updated successfully',
   });
-});
+})
+);
 
 /**
  * DELETE /api/admin/trip-proposals/[id]/days/[dayId]/stops/[stopId]
  * Delete a stop
  */
-export const DELETE = withAdminAuth(async (request: NextRequest, session, context) => {
+export const DELETE = withCSRF(
+  withAdminAuth(async (request: NextRequest, session, context) => {
   const { stopId } = await (context as unknown as RouteParams).params;
   const stopIdNum = parseInt(stopId, 10);
 
@@ -72,4 +76,5 @@ export const DELETE = withAdminAuth(async (request: NextRequest, session, contex
     success: true,
     message: 'Stop deleted successfully',
   });
-});
+})
+);

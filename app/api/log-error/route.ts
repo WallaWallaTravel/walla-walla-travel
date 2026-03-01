@@ -3,12 +3,14 @@ import { logger } from '@/lib/logger';
 import { appendFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * POST /api/log-error
  * Logs client-side errors to a file for debugging
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   const error = await request.json();
 
   // Log to file
@@ -34,6 +36,7 @@ ${error.stack ? `Stack: ${error.stack}` : ''}
   logger.error('Client error', { clientError: error });
 
   return NextResponse.json({ success: true });
-});
+})
+);
 
 

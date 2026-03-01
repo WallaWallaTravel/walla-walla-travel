@@ -13,6 +13,7 @@ import {
   getComplianceSummary,
   runComplianceNotifications,
 } from '@/lib/services/compliance-notification.service';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * GET /api/admin/compliance
@@ -41,7 +42,8 @@ export const GET = withAdminAuth(async (_request: NextRequest, _session) => {
  * Trigger compliance notification run
  * Can be called by admin or by cron with secret
  */
-export const POST = withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
   // Check for cron secret or admin session
   const cronSecret = request.headers.get('x-cron-secret');
   const expectedSecret = process.env.CRON_SECRET;
@@ -62,4 +64,5 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
     success: true,
     result,
   });
-});
+})
+);

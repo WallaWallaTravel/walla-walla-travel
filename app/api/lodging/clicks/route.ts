@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 import { lodgingClickService } from '@/lib/services/lodging-click.service';
 import { z } from 'zod';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -19,7 +20,8 @@ const RecordClickSchema = z.object({
  * Record a click when a user is redirected to a booking platform.
  * No authentication required -- called from the redirect route.
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   const body = await request.json();
 
   const parseResult = RecordClickSchema.safeParse(body);
@@ -54,4 +56,5 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     },
     timestamp: new Date().toISOString(),
   });
-});
+})
+);

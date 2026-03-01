@@ -9,6 +9,7 @@ import {
 } from '@/app/api/utils';
 import { query } from '@/lib/db';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface BreakRequest {
   action: 'start' | 'end';
@@ -16,7 +17,8 @@ interface BreakRequest {
   notes?: string;
 }
 
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   // Check authentication
   const session = await requireAuth();
 
@@ -143,7 +145,8 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
 
     return successResponse(result.rows[0], 'Break ended successfully');
   }
-});
+})
+);
 
 export const GET = withErrorHandling(async (request: NextRequest) => {
   // Check authentication

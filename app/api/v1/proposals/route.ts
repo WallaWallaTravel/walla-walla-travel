@@ -11,6 +11,7 @@ import { validateRequest } from '@/lib/api/validate';
 import { rateLimiters } from '@/lib/api/middleware';
 import { proposalService, CreateProposalSchema } from '@/lib/services/proposal-service';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // ============================================================================
 // GET /api/v1/proposals - List proposals with filters
@@ -76,7 +77,8 @@ export const GET = withErrorHandling(async (request: NextRequest): Promise<NextR
 /**
  * Create a new proposal
  */
-export const POST = withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
   // Apply rate limiting
   const rateLimitResult = await rateLimiters.authenticated(request);
   if (rateLimitResult) return rateLimitResult;
@@ -91,4 +93,5 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
     proposalNumber: proposal.proposal_number,
     message: 'Proposal created successfully',
   });
-});
+})
+);

@@ -8,6 +8,7 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { businessDirectoryService } from '@/lib/services/business-directory.service';
 import { z } from 'zod';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -29,7 +30,8 @@ const InviteRequestSchema = z.object({
  *   expirationDays?: number (default 30)
  * }
  */
-export const POST = withAdminAuth(async (request: NextRequest, session, context) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest, session, context) => {
   const { id } = await context!.params;
   const businessId = parseInt(id);
 
@@ -82,7 +84,8 @@ export const POST = withAdminAuth(async (request: NextRequest, session, context)
       timestamp: new Date().toISOString(),
     });
   }
-});
+})
+);
 
 /**
  * GET /api/admin/directory/[id]/invite

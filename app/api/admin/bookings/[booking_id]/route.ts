@@ -10,6 +10,7 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { query } from '@/lib/db';
 import { auditService } from '@/lib/services/audit.service';
 import { logger } from '@/lib/logger';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // GET - Get booking details
 export const GET = withAdminAuth(
@@ -52,7 +53,8 @@ export const GET = withAdminAuth(
 );
 
 // DELETE - Permanently delete booking
-export const DELETE = withAdminAuth(
+export const DELETE = withCSRF(
+  withAdminAuth(
   async (request: NextRequest, session, context): Promise<NextResponse> => {
     const { booking_id } = await context!.params;
     const bookingId = parseInt(booking_id, 10);
@@ -140,4 +142,5 @@ export const DELETE = withAdminAuth(
       },
     });
   }
+)
 );
