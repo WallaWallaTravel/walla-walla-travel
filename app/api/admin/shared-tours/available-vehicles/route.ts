@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { sharedTourService } from '@/lib/services/shared-tour.service';
 
 /**
@@ -11,7 +12,7 @@ import { sharedTourService } from '@/lib/services/shared-tour.service';
  * - start_time: HH:MM:SS (optional, defaults to 10:00:00)
  * - duration_hours: number (optional, defaults to 6)
  */
-export const GET = withErrorHandling(async (request: NextRequest) => {
+export const GET = withAdminAuth(async (request: NextRequest) => {
   const searchParams = request.nextUrl.searchParams;
   const date = searchParams.get('date');
   const startTime = searchParams.get('start_time') || '10:00:00';

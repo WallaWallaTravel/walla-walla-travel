@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { googleCalendarSyncService } from '@/lib/services/google-calendar-sync.service';
 import { BaseService } from '@/lib/services/base.service';
 
@@ -61,7 +61,7 @@ const statusService = new IntegrationStatusService();
  * GET /api/admin/integrations/google-calendar/status
  * Check Google Calendar integration status
  */
-export const GET = withErrorHandling(async (_request: NextRequest) => {
+export const GET = withAdminAuth(async (_request: NextRequest, _session) => {
   // Check if Google Calendar is configured
   const isConfigured = await googleCalendarSyncService.isConfigured();
 

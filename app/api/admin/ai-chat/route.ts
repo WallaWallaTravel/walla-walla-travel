@@ -9,7 +9,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { aiConfigService, AIConfigType } from '@/lib/services/ai-config.service';
 
 // ============================================================================
@@ -40,7 +41,7 @@ const DeleteConfigSchema = z.object({
 // GET Handler - Get all config entries
 // ============================================================================
 
-export const GET = withErrorHandling(async (request: NextRequest) => {
+export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const { searchParams } = new URL(request.url);
   const type = searchParams.get('type') as AIConfigType | null;
 
@@ -69,7 +70,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 // POST Handler - Create new config
 // ============================================================================
 
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json();
 
   const parseResult = CreateConfigSchema.safeParse(body);
@@ -89,7 +90,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
 // PUT Handler - Update config
 // ============================================================================
 
-export const PUT = withErrorHandling(async (request: NextRequest) => {
+export const PUT = withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json();
 
   // Handle toggle active action
@@ -127,7 +128,7 @@ export const PUT = withErrorHandling(async (request: NextRequest) => {
 // DELETE Handler - Delete config
 // ============================================================================
 
-export const DELETE = withErrorHandling(async (request: NextRequest) => {
+export const DELETE = withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json();
 
   const parseResult = DeleteConfigSchema.safeParse(body);

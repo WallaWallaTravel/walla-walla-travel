@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling, UnauthorizedError, BadRequestError } from '@/lib/api/middleware/error-handler';
-import { getSessionFromRequest } from '@/lib/auth/session';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { sendEmail } from '@/lib/email';
 import { logger } from '@/lib/logger';
 
@@ -10,13 +10,7 @@ import { logger } from '@/lib/logger';
  *
  * Body: { to?: string } - defaults to STAFF_NOTIFICATION_EMAIL
  */
-export const POST = withErrorHandling<unknown>(async (request: NextRequest) => {
-  const session = await getSessionFromRequest(request);
-
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-
+export const POST = withAdminAuth(async (request: NextRequest) => {
   const body = await request.json().catch(() => ({}));
   const toEmail = body.to || process.env.STAFF_NOTIFICATION_EMAIL || 'info@wallawalla.travel';
 
@@ -143,13 +137,7 @@ info@wallawalla.travel
  * GET /api/admin/test-email
  * Check email configuration status
  */
-export const GET = withErrorHandling(async (request: NextRequest) => {
-  const session = await getSessionFromRequest(request);
-
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-
+export const GET = withAdminAuth(async () => {
   const hasApiKey = !!process.env.RESEND_API_KEY;
   const fromEmail = process.env.FROM_EMAIL || 'bookings@wallawalla.travel';
   const staffEmail = process.env.STAFF_NOTIFICATION_EMAIL || 'info@wallawalla.travel';

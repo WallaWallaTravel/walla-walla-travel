@@ -4,10 +4,10 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { googleCalendarSyncService } from '@/lib/services/google-calendar-sync.service';
 import { BaseService } from '@/lib/services/base.service';
-import { getSessionFromRequest } from '@/lib/auth/session';
 import { auditService } from '@/lib/services/audit.service';
 
 export const runtime = 'nodejs';
@@ -53,7 +53,7 @@ const syncService = new SyncService();
  * POST /api/admin/integrations/google-calendar/sync
  * Trigger manual sync of bookings to Google Calendar
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withAdminAuth(async (request: NextRequest, session) => {
   // Check if configured
   const isConfigured = await googleCalendarSyncService.isConfigured();
   if (!isConfigured) {
@@ -119,8 +119,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   }
 
   // Audit log
-  const session = await getSessionFromRequest(request);
-  const userId = session?.user?.id || 1;
+  const userId = parseInt(session.userId) || 1;
   await auditService.logFromRequest(request, userId, 'calendar_sync_triggered', {
     syncType,
     bookingId,

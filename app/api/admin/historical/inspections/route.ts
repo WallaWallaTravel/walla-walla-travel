@@ -7,9 +7,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { withErrorHandling, UnauthorizedError } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { validateBody } from '@/lib/api/middleware/validation';
-import { getSessionFromRequest } from '@/lib/auth/session';
 import { inspectionService } from '@/lib/services/inspection.service';
 
 // =============================================================================
@@ -51,13 +50,7 @@ const ListHistoricalInspectionsSchema = z.object({
 // POST - Create historical inspection
 // =============================================================================
 
-export const POST = withErrorHandling(async (request: NextRequest) => {
-  // Verify admin authentication
-  const session = await getSessionFromRequest(request);
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-
+export const POST = withAdminAuth(async (request: NextRequest, session) => {
   // Validate request body
   const body = await validateBody(request, CreateHistoricalInspectionSchema);
 
@@ -78,7 +71,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       defectSeverity: body.inspectionData.defectSeverity,
       defectDescription: body.inspectionData.defectDescription,
     },
-    enteredBy: session.user.id,
+    enteredBy: parseInt(session.userId),
     historicalSource: body.historicalSource,
     entryNotes: body.entryNotes,
     documentUrl: body.documentUrl,
@@ -98,13 +91,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
 // GET - List historical inspections
 // =============================================================================
 
-export const GET = withErrorHandling(async (request: NextRequest) => {
-  // Verify admin authentication
-  const session = await getSessionFromRequest(request);
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-
+export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   // Parse query parameters
   const { searchParams } = new URL(request.url);
   const queryParams = Object.fromEntries(searchParams.entries());

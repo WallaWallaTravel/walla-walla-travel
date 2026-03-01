@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { query } from '@/lib/db';
 import { logger } from '@/lib/logger';
 
@@ -7,9 +7,9 @@ import { logger } from '@/lib/logger';
  * POST /api/admin/migrate-inspections
  * Adds time_card_id column to inspections table for per-shift tracking
  *
- * SECURITY: This should be password-protected in production
+ * SECURITY: Protected by admin auth
  */
-export const POST = withErrorHandling(async (_request: NextRequest) => {
+export const POST = withAdminAuth(async (_request: NextRequest) => {
   logger.info('Starting migration: Add time_card_id to inspections');
 
   // Add time_card_id column (nullable for existing records)

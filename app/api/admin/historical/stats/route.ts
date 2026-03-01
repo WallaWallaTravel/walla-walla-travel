@@ -6,8 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { withErrorHandling, UnauthorizedError, RouteContext } from '@/lib/api/middleware/error-handler';
-import { getSessionFromRequest } from '@/lib/auth/session';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { inspectionService } from '@/lib/services/inspection.service';
 import { timeCardService } from '@/lib/services/timecard.service';
 import { query } from '@/lib/db';
@@ -26,13 +25,7 @@ const StatsQuerySchema = z.object({
 // GET - Get historical import statistics
 // =============================================================================
 
-export const GET = withErrorHandling(async (request: NextRequest, _context: RouteContext) => {
-  // Verify admin authentication
-  const session = await getSessionFromRequest(request);
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-
+export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   // Parse query parameters
   const { searchParams } = new URL(request.url);
   const queryParams = Object.fromEntries(searchParams.entries());
