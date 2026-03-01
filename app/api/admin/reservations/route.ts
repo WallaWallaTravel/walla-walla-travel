@@ -5,9 +5,9 @@
  * REFACTORED: Uses withErrorHandling for consistent error management
  */
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
-import { withErrorHandling } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic';
  * GET /api/admin/reservations
  * Get all reservations
  */
-export const GET = withErrorHandling(async () => {
+export const GET = withAdminAuth(async (_request: NextRequest, _session) => {
   const result = await query(
     `SELECT
       r.*,

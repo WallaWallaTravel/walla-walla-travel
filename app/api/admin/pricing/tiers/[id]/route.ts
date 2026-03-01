@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling, RouteContext } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { updatePricingTier } from '@/lib/pricing/pricing-service';
 
 export const runtime = 'nodejs';
@@ -14,11 +14,12 @@ export const dynamic = 'force-dynamic';
  * PATCH /api/admin/pricing/tiers/[id]
  * Update a pricing tier
  */
-export const PATCH = withErrorHandling(async (
+export const PATCH = withAdminAuth(async (
   request: NextRequest,
-  context: RouteContext<{ id: string }>
+  _session,
+  context
 ) => {
-  const { id: idStr } = await context.params;
+  const { id: idStr } = await context!.params;
   const id = parseInt(idStr);
   const body = await request.json();
   const { changeReason, ...updates } = body;

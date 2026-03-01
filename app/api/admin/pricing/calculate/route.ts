@@ -8,7 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { z } from 'zod';
 import { calculatePrice } from '@/lib/pricing-engine';
 import { getRates } from '@/lib/rate-config';
@@ -21,7 +21,7 @@ const CalculatePricingSchema = z.object({
   custom_discount: z.number().min(0).max(100).optional(),
 });
 
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json();
   const parsed = CalculatePricingSchema.safeParse(body);
 

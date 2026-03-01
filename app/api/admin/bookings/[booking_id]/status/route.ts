@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling, BadRequestError, NotFoundError, UnauthorizedError } from '@/lib/api/middleware/error-handler';
-import { getSessionFromRequest } from '@/lib/auth/session';
+import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper';
+import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { query, queryOne } from '@/lib/db-helpers';
 import { auditService } from '@/lib/services/audit.service';
 import { z } from 'zod';
@@ -15,16 +15,12 @@ const UpdateStatusSchema = z.object({
  * PATCH /api/admin/bookings/[booking_id]/status
  * Update booking status (confirm, complete, etc.)
  */
-export const PATCH = withErrorHandling(async (
+export const PATCH = withAdminAuth(async (
   request: NextRequest,
-  context: { params: Promise<{ booking_id: string }> }
+  session: AuthSession,
+  context
 ) => {
-  const session = await getSessionFromRequest(request);
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-
-  const { booking_id } = await context.params;
+  const { booking_id } = await context!.params;
   const bookingId = parseInt(booking_id);
 
   if (isNaN(bookingId)) {
@@ -84,11 +80,11 @@ export const PATCH = withErrorHandling(async (
     oldStatus: booking.status,
     newStatus: status,
     reason,
-    updatedBy: session.user.id,
+    updatedBy: parseInt(session.userId),
   });
 
   // Audit log: booking status change
-  auditService.logFromRequest(request, session.user.id, 'booking_status_changed', {
+  auditService.logFromRequest(request, parseInt(session.userId), 'booking_status_changed', {
     bookingId,
     bookingNumber: booking.booking_number,
     oldStatus: booking.status,

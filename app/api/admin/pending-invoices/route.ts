@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
-import { withErrorHandling } from '@/lib/api-errors';
+import { NextRequest, NextResponse } from 'next/server';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { queryMany } from '@/lib/db-helpers';
 
 interface PendingInvoice {
@@ -18,7 +18,7 @@ interface PendingInvoice {
  * Returns list of bookings ready for final invoice
  * (48+ hours after tour completion, hours synced)
  */
-export const GET = withErrorHandling(async () => {
+export const GET = withAdminAuth(async (_request: NextRequest, _session) => {
   // Use the view we created in migration
   const invoices = await queryMany<PendingInvoice>(`
     SELECT * FROM pending_final_invoices

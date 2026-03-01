@@ -16,7 +16,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { z } from 'zod';
 import { pool } from '@/lib/db';
 import { vehicleAvailabilityService } from '@/lib/services/vehicle-availability.service';
@@ -62,7 +62,7 @@ const CreateConsoleBookingSchema = z.object({
   }),
 });
 
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withAdminAuth(async (request: NextRequest, _session) => {
   const holdBlockIds: number[] = [];
 
   try {

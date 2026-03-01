@@ -6,7 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import { query } from '@/lib/db';
-import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -15,11 +16,12 @@ export const dynamic = 'force-dynamic';
  * POST /api/admin/reservations/[id]/contact
  * Mark reservation as contacted
  */
-export const POST = withErrorHandling(async (
+export const POST = withAdminAuth(async (
   _request: NextRequest,
+  _session,
   context
 ) => {
-  const { id } = await context.params;
+  const { id } = await context!.params;
   const reservationId = parseInt(id);
 
   if (isNaN(reservationId)) {

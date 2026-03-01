@@ -1,24 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
-import { getSessionFromRequest } from '@/lib/auth/session';
-import { withErrorHandling, UnauthorizedError, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
-
-async function verifyAdmin(request: NextRequest) {
-  const session = await getSessionFromRequest(request);
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-  return session;
-}
 
 /**
  * GET /api/admin/rates
  * Fetch all rate configurations
  */
-export const GET = withErrorHandling(async (request: NextRequest) => {
-  await verifyAdmin(request);
+export const GET = withAdminAuth(async (request: NextRequest, _session) => {
 
   const result = await query(
     `SELECT
@@ -53,8 +44,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
  */
 export const PATCH = withCSRF(
   withRateLimit(rateLimiters.api)(
-    withErrorHandling(async (request: NextRequest) => {
-  await verifyAdmin(request);
+    withAdminAuth(async (request: NextRequest, _session) => {
 
   const body = await request.json();
   const { config_key, config_value, changed_by, change_reason } = body;

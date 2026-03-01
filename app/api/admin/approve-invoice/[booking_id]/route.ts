@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
-import { withErrorHandling, NotFoundError, ConflictError, BadRequestError } from '@/lib/api-errors';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { NotFoundError, ConflictError, BadRequestError } from '@/lib/api-errors';
 import { queryOne, query } from '@/lib/db-helpers';
 
 interface BookingWithDriver {
@@ -36,11 +37,12 @@ interface Invoice {
  * 4. Send email to customer with payment link
  * 5. Mark booking as final_invoice_sent
  */
-export const POST = withErrorHandling(async (
+export const POST = withAdminAuth(async (
   request: NextRequest,
-  { params }: { params: Promise<{ booking_id: string }> }
+  _session,
+  context
 ) => {
-  const { booking_id } = await params;
+  const { booking_id } = await context!.params;
   const bookingId = parseInt(booking_id);
 
   if (isNaN(bookingId)) {

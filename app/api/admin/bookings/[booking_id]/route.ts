@@ -6,28 +6,15 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling, RouteContext as ErrorRouteContext } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { query } from '@/lib/db';
-import { getServerSession } from '@/lib/auth';
 import { auditService } from '@/lib/services/audit.service';
 import { logger } from '@/lib/logger';
 
-interface BookingRouteParams {
-  booking_id: string;
-}
-
 // GET - Get booking details
-export const GET = withErrorHandling<unknown, BookingRouteParams>(
-  async (request: NextRequest, context: ErrorRouteContext<BookingRouteParams>): Promise<NextResponse> => {
-    const session = await getServerSession();
-    if (!session?.role || !['admin', 'staff'].includes(session.role)) {
-      return NextResponse.json(
-        { success: false, error: { message: 'Admin access required', statusCode: 401 } },
-        { status: 401 }
-      );
-    }
-
-    const { booking_id } = await context.params;
+export const GET = withAdminAuth(
+  async (request: NextRequest, _session, context): Promise<NextResponse> => {
+    const { booking_id } = await context!.params;
     const bookingId = parseInt(booking_id, 10);
 
     if (isNaN(bookingId)) {
@@ -65,17 +52,9 @@ export const GET = withErrorHandling<unknown, BookingRouteParams>(
 );
 
 // DELETE - Permanently delete booking
-export const DELETE = withErrorHandling<unknown, BookingRouteParams>(
-  async (request: NextRequest, context: ErrorRouteContext<BookingRouteParams>): Promise<NextResponse> => {
-    const session = await getServerSession();
-    if (!session?.role || !['admin', 'staff'].includes(session.role)) {
-      return NextResponse.json(
-        { success: false, error: { message: 'Admin access required', statusCode: 401 } },
-        { status: 401 }
-      );
-    }
-
-    const { booking_id } = await context.params;
+export const DELETE = withAdminAuth(
+  async (request: NextRequest, session, context): Promise<NextResponse> => {
+    const { booking_id } = await context!.params;
     const bookingId = parseInt(booking_id, 10);
 
     if (isNaN(bookingId)) {
