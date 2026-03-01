@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { query } from '@/lib/db'
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit'
-import { withErrorHandling } from '@/lib/api/middleware/error-handler'
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { socialIntelligenceService } from '@/lib/services/social-intelligence.service'
 
 function getAnthropicClient() {
@@ -57,7 +57,7 @@ const TONE_DESCRIPTIONS: Record<string, string> = {
   educational: 'Informative, teaching-focused, accessible',
 }
 
-export const POST = withRateLimit(rateLimiters.aiGeneration)(withErrorHandling(async (request: NextRequest) => {
+export const POST = withRateLimit(rateLimiters.aiGeneration)(withAdminAuth(async (request: NextRequest, _session) => {
     const body: GenerateRequest = await request.json()
     const { wineryId, platform, contentType, tone, customPrompt } = body
 

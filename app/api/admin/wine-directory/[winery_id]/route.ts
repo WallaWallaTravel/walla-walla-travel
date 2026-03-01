@@ -1,24 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
-import { getSessionFromRequest } from '@/lib/auth/session'
-import { withErrorHandling, UnauthorizedError, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler'
-
-async function verifyAdmin(request: NextRequest) {
-  const session = await getSessionFromRequest(request)
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required')
-  }
-  return session
-}
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
+import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler'
 
 // GET - Fetch single winery with full details
-export const GET = withErrorHandling(async (
-  request: NextRequest,
-  { params }: { params: Promise<{ winery_id: string }> }
+export const GET = withAdminAuth(async (
+  _request: NextRequest,
+  _session,
+  context
 ) => {
-  await verifyAdmin(request)
+  const { winery_id } = await context!.params
 
-  const { winery_id } = await params
   const id = parseInt(winery_id)
 
   const result = await query(`
@@ -47,13 +39,13 @@ export const GET = withErrorHandling(async (
 })
 
 // PATCH - Update winery
-export const PATCH = withErrorHandling(async (
+export const PATCH = withAdminAuth(async (
   request: NextRequest,
-  { params }: { params: Promise<{ winery_id: string }> }
+  _session,
+  context
 ) => {
-  await verifyAdmin(request)
+  const { winery_id } = await context!.params
 
-  const { winery_id } = await params
   const id = parseInt(winery_id)
   const body = await request.json()
 
@@ -111,13 +103,13 @@ export const PATCH = withErrorHandling(async (
 })
 
 // DELETE - Delete winery
-export const DELETE = withErrorHandling(async (
-  request: NextRequest,
-  { params }: { params: Promise<{ winery_id: string }> }
+export const DELETE = withAdminAuth(async (
+  _request: NextRequest,
+  _session,
+  context
 ) => {
-  await verifyAdmin(request)
+  const { winery_id } = await context!.params
 
-  const { winery_id } = await params
   const id = parseInt(winery_id)
 
   await query('DELETE FROM wineries WHERE id = $1', [id])

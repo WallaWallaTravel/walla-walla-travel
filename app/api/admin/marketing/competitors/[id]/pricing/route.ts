@@ -1,16 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionFromRequest } from '@/lib/auth/session';
-import { withErrorHandling, UnauthorizedError, BadRequestError } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { competitorMonitoringService } from '@/lib/services/competitor-monitoring.service';
 import type { CreatePricingInput } from '@/types/competitors';
-
-async function verifyAdmin(request: NextRequest) {
-  const session = await getSessionFromRequest(request);
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-  return session;
-}
 
 function getCompetitorIdFromUrl(request: NextRequest): number {
   const url = new URL(request.url);
@@ -26,8 +18,6 @@ function getCompetitorIdFromUrl(request: NextRequest): number {
 
 // GET - Get pricing for a competitor
 async function getHandler(request: NextRequest) {
-  await verifyAdmin(request);
-
   const competitorId = getCompetitorIdFromUrl(request);
   const { searchParams } = new URL(request.url);
   const currentOnly = searchParams.get('current_only') !== 'false';
@@ -42,8 +32,6 @@ async function getHandler(request: NextRequest) {
 
 // POST - Add new pricing entry
 async function postHandler(request: NextRequest) {
-  await verifyAdmin(request);
-
   const competitorId = getCompetitorIdFromUrl(request);
   const body = await request.json() as Omit<CreatePricingInput, 'competitor_id'>;
 
@@ -62,5 +50,5 @@ async function postHandler(request: NextRequest) {
   });
 }
 
-export const GET = withErrorHandling(getHandler);
-export const POST = withErrorHandling(postHandler);
+export const GET = withAdminAuth(async (request, _session) => getHandler(request));
+export const POST = withAdminAuth(async (request, _session) => postHandler(request));

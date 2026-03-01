@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
 import { logger } from '@/lib/logger'
-import { withErrorHandling } from '@/lib/api/middleware/error-handler'
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 
 interface ApprovalRequest {
   contentType: 'social_post' | 'email' | 'blog' | 'page_update' | 'campaign'
@@ -22,7 +22,7 @@ interface ApprovalRequest {
   notes?: string
 }
 
-export const GET = withErrorHandling(async (request: NextRequest) => {
+export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const { searchParams } = new URL(request.url)
   const contentType = searchParams.get('contentType')
   const action = searchParams.get('action')
@@ -75,7 +75,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   })
 });
 
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withAdminAuth(async (request: NextRequest, _session) => {
   const body: ApprovalRequest = await request.json()
   const {
     contentType,

@@ -1,21 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionFromRequest } from '@/lib/auth/session';
-import { withErrorHandling, UnauthorizedError, BadRequestError } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper';
+import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { competitorMonitoringService } from '@/lib/services/competitor-monitoring.service';
 import type { PriorityLevel, CreateCompetitorInput } from '@/types/competitors';
 
-async function verifyAdmin(request: NextRequest) {
-  const session = await getSessionFromRequest(request);
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-  return session;
-}
-
 // GET - Fetch competitors with change counts
 async function getHandler(request: NextRequest) {
-  await verifyAdmin(request);
-
   const { searchParams } = new URL(request.url);
   const priority = searchParams.get('priority') as PriorityLevel | null;
   const activeOnly = searchParams.get('active_only') !== 'false';
@@ -33,9 +23,7 @@ async function getHandler(request: NextRequest) {
 }
 
 // POST - Add new competitor
-async function postHandler(request: NextRequest) {
-  const session = await verifyAdmin(request);
-
+async function postHandler(request: NextRequest, session: AuthSession) {
   const body = await request.json() as CreateCompetitorInput;
 
   // Validation
@@ -45,7 +33,7 @@ async function postHandler(request: NextRequest) {
 
   const competitor = await competitorMonitoringService.createCompetitor(
     body,
-    session.user.id
+    parseInt(session.userId)
   );
 
   return NextResponse.json({
@@ -54,5 +42,5 @@ async function postHandler(request: NextRequest) {
   });
 }
 
-export const GET = withErrorHandling(getHandler);
-export const POST = withErrorHandling(postHandler);
+export const GET = withAdminAuth(async (request, _session) => getHandler(request));
+export const POST = withAdminAuth(async (request, session) => postHandler(request, session));

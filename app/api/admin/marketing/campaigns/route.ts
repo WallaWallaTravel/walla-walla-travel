@@ -1,18 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
 import { logger } from '@/lib/logger'
-import { getSessionFromRequest } from '@/lib/auth/session'
 import { socialIntelligenceService } from '@/lib/services/social-intelligence.service'
 import Anthropic from '@anthropic-ai/sdk'
-import { withErrorHandling } from '@/lib/api/middleware/error-handler'
-
-async function verifyAdmin(request: NextRequest) {
-  const session = await getSessionFromRequest(request)
-  if (!session || session.user.role !== 'admin') {
-    return null
-  }
-  return session
-}
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
+import type { AuthSession } from '@/lib/api/middleware/auth-wrapper'
 
 function getAnthropicClient() {
   const apiKey = process.env.ANTHROPIC_API_KEY
@@ -23,12 +15,7 @@ function getAnthropicClient() {
 }
 
 // GET - List campaigns with filters
-export const GET = withErrorHandling(async (request: NextRequest) => {
-  const session = await verifyAdmin(request)
-  if (!session) {
-    return NextResponse.json({ error: 'Admin access required' }, { status: 401 })
-  }
-
+export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const { searchParams } = new URL(request.url)
   const status = searchParams.get('status')
   const startDate = searchParams.get('start_date')
@@ -73,12 +60,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 });
 
 // POST - Create campaign with AI-generated content items
-export const POST = withErrorHandling(async (request: NextRequest) => {
-  const session = await verifyAdmin(request)
-  if (!session) {
-    return NextResponse.json({ error: 'Admin access required' }, { status: 401 })
-  }
-
+export const POST = withAdminAuth(async (request: NextRequest, session: AuthSession) => {
   const body = await request.json()
   const { name, theme, channels, startDate, endDate, targetAudience } = body
 
@@ -130,7 +112,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     endDate,
     channels,
     targetAudience || null,
-    session.user.id || null,
+    parseInt(session.userId) || null,
   ])
 
   const campaign = campaignResult.rows[0]

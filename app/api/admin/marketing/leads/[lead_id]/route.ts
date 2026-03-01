@@ -1,15 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
-import { getSessionFromRequest } from '@/lib/auth/session'
-import { withErrorHandling, UnauthorizedError, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler'
-
-async function verifyAdmin(request: NextRequest) {
-  const session = await getSessionFromRequest(request)
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required')
-  }
-  return session
-}
+import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper'
+import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler'
 
 /**
  * Map CRM lifecycle_stage to legacy lead status
@@ -45,11 +37,10 @@ function mapStatusToLifecycle(status: string): string {
 // GET - Fetch single lead with activities (now from crm_contacts + crm_activities)
 async function getHandler(
   request: NextRequest,
-  { params }: { params: Promise<{ lead_id: string }> }
+  _session: AuthSession,
+  context?: { params: Promise<Record<string, string>> }
 ) {
-  await verifyAdmin(request)
-
-  const { lead_id } = await params
+  const { lead_id } = await context!.params;
   const id = parseInt(lead_id)
 
   // Get lead details from crm_contacts
@@ -148,11 +139,10 @@ async function getHandler(
 // PATCH - Update lead (now updates crm_contacts)
 async function patchHandler(
   request: NextRequest,
-  { params }: { params: Promise<{ lead_id: string }> }
+  _session: AuthSession,
+  context?: { params: Promise<Record<string, string>> }
 ) {
-  await verifyAdmin(request)
-
-  const { lead_id } = await params
+  const { lead_id } = await context!.params;
   const id = parseInt(lead_id)
   const body = await request.json()
 
@@ -281,11 +271,10 @@ async function patchHandler(
 // DELETE - Delete lead (now deletes from crm_contacts)
 async function deleteHandler(
   request: NextRequest,
-  { params }: { params: Promise<{ lead_id: string }> }
+  _session: AuthSession,
+  context?: { params: Promise<Record<string, string>> }
 ) {
-  await verifyAdmin(request)
-
-  const { lead_id } = await params
+  const { lead_id } = await context!.params;
   const id = parseInt(lead_id)
 
   await query('DELETE FROM crm_contacts WHERE id = $1', [id])
@@ -296,6 +285,6 @@ async function deleteHandler(
   })
 }
 
-export const GET = withErrorHandling(getHandler)
-export const PATCH = withErrorHandling(patchHandler)
-export const DELETE = withErrorHandling(deleteHandler)
+export const GET = withAdminAuth(getHandler)
+export const PATCH = withAdminAuth(patchHandler)
+export const DELETE = withAdminAuth(deleteHandler)

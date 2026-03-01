@@ -1,24 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
-import { getSessionFromRequest } from '@/lib/auth/session'
-import { withErrorHandling, UnauthorizedError, BadRequestError } from '@/lib/api/middleware/error-handler'
-
-async function verifyAdmin(request: NextRequest) {
-  const session = await getSessionFromRequest(request)
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required')
-  }
-  return session
-}
+import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper'
+import { BadRequestError } from '@/lib/api/middleware/error-handler'
 
 // GET - Fetch activities for a lead (now from crm_activities)
 async function getHandler(
   request: NextRequest,
-  { params }: { params: Promise<{ lead_id: string }> }
+  _session: AuthSession,
+  context?: { params: Promise<Record<string, string>> }
 ) {
-  await verifyAdmin(request)
-
-  const { lead_id } = await params
+  const { lead_id } = await context!.params;
   const id = parseInt(lead_id)
   const { searchParams } = new URL(request.url)
   const limit = parseInt(searchParams.get('limit') || '50')
@@ -51,11 +42,10 @@ async function getHandler(
 // POST - Log new activity (now inserts into crm_activities)
 async function postHandler(
   request: NextRequest,
-  { params }: { params: Promise<{ lead_id: string }> }
+  _session: AuthSession,
+  context?: { params: Promise<Record<string, string>> }
 ) {
-  await verifyAdmin(request)
-
-  const { lead_id } = await params
+  const { lead_id } = await context!.params;
   const id = parseInt(lead_id)
   const body = await request.json()
 
@@ -107,5 +97,5 @@ async function postHandler(
   })
 }
 
-export const GET = withErrorHandling(getHandler)
-export const POST = withErrorHandling(postHandler)
+export const GET = withAdminAuth(getHandler)
+export const POST = withAdminAuth(postHandler)

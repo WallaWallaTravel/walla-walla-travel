@@ -1,21 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionFromRequest } from '@/lib/auth/session';
-import { withErrorHandling, UnauthorizedError } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { competitorMonitoringService } from '@/lib/services/competitor-monitoring.service';
 import type { ChangeStatus } from '@/types/competitors';
 
-async function verifyAdmin(request: NextRequest) {
-  const session = await getSessionFromRequest(request);
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-  return session;
-}
-
 // GET - Get all recent changes
 async function getHandler(request: NextRequest) {
-  await verifyAdmin(request);
-
   const { searchParams } = new URL(request.url);
   const status = searchParams.get('status') as ChangeStatus | null;
   const limit = parseInt(searchParams.get('limit') || '50');
@@ -39,4 +28,4 @@ async function getHandler(request: NextRequest) {
   });
 }
 
-export const GET = withErrorHandling(getHandler);
+export const GET = withAdminAuth(async (request, _session) => getHandler(request));

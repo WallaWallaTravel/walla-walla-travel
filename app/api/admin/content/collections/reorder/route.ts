@@ -1,20 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionFromRequest } from '@/lib/auth/session';
-import { withErrorHandling, UnauthorizedError, BadRequestError } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { ContentService } from '@/lib/services/content.service';
 
-async function verifyAdmin(request: NextRequest) {
-  const session = await getSessionFromRequest(request);
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-  return session;
-}
-
 // POST - Reorder collection items
-async function postHandler(request: NextRequest) {
-  await verifyAdmin(request);
-
+const postHandler = withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json();
 
   if (!body.collection_type || !Array.isArray(body.ordered_ids)) {
@@ -27,6 +17,6 @@ async function postHandler(request: NextRequest) {
     success: true,
     message: 'Collection reordered',
   });
-}
+});
 
-export const POST = withErrorHandling(postHandler);
+export const POST = postHandler;

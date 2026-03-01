@@ -1,15 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionFromRequest } from '@/lib/auth/session';
-import { withErrorHandling, UnauthorizedError, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { competitorAIService } from '@/lib/services/competitor-ai.service';
 import { competitorMonitoringService } from '@/lib/services/competitor-monitoring.service';
-async function verifyAdmin(request: NextRequest) {
-  const session = await getSessionFromRequest(request);
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-  return session;
-}
 
 interface AnalyzeRequest {
   type: 'change' | 'competitor' | 'market' | 'swot_suggestions';
@@ -18,9 +11,7 @@ interface AnalyzeRequest {
 }
 
 // POST - Trigger AI analysis
-export const POST = withErrorHandling(async (request: NextRequest) => {
-  await verifyAdmin(request);
-
+export const POST = withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json() as AnalyzeRequest;
 
   if (!body.type) {

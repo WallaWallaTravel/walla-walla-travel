@@ -1,20 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
-import { getSessionFromRequest } from '@/lib/auth/session'
-import { withErrorHandling, UnauthorizedError, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler'
-
-async function verifyAdmin(request: NextRequest) {
-  const session = await getSessionFromRequest(request)
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required')
-  }
-  return session
-}
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
+import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler'
 
 // GET - Fetch scheduled posts
-async function getHandler(request: NextRequest) {
-  await verifyAdmin(request)
-
+const getHandler = withAdminAuth(async (request: NextRequest, _session) => {
   const { searchParams } = new URL(request.url)
   const status = searchParams.get('status')
   const platform = searchParams.get('platform')
@@ -62,12 +52,10 @@ async function getHandler(request: NextRequest) {
     posts: result.rows,
     total: result.rows.length
   })
-}
+})
 
 // POST - Create new scheduled post
-async function postHandler(request: NextRequest) {
-  await verifyAdmin(request)
-
+const postHandler = withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json()
 
   const {
@@ -121,12 +109,10 @@ async function postHandler(request: NextRequest) {
     success: true,
     post: result.rows[0]
   })
-}
+})
 
 // PATCH - Update post (status, reschedule, etc.)
-async function patchHandler(request: NextRequest) {
-  await verifyAdmin(request)
-
+const patchHandler = withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json()
   const { id, ...updates } = body
 
@@ -171,8 +157,8 @@ async function patchHandler(request: NextRequest) {
     success: true,
     post: result.rows[0]
   })
-}
+})
 
-export const GET = withErrorHandling(getHandler)
-export const POST = withErrorHandling(postHandler)
-export const PATCH = withErrorHandling(patchHandler)
+export const GET = getHandler
+export const POST = postHandler
+export const PATCH = patchHandler

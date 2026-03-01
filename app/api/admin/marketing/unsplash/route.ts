@@ -1,20 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSessionFromRequest } from '@/lib/auth/session'
 import { unsplashService, UnsplashPhoto } from '@/lib/services/unsplash.service'
-import { withErrorHandling, UnauthorizedError, BadRequestError } from '@/lib/api/middleware/error-handler'
-
-async function verifyAdmin(request: NextRequest) {
-  const session = await getSessionFromRequest(request)
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required')
-  }
-  return session
-}
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
+import { BadRequestError } from '@/lib/api/middleware/error-handler'
 
 // GET - Search Unsplash photos
-async function getHandler(request: NextRequest) {
-  await verifyAdmin(request)
-
+const getHandler = withAdminAuth(async (request: NextRequest, _session) => {
   const { searchParams } = new URL(request.url)
   const query = searchParams.get('q') || searchParams.get('query')
   const orientation = searchParams.get('orientation') as 'landscape' | 'portrait' | 'squarish' | undefined
@@ -58,12 +48,10 @@ async function getHandler(request: NextRequest) {
     }
     throw error
   }
-}
+})
 
 // POST - Track photo download (for Unsplash API compliance)
-async function postHandler(request: NextRequest) {
-  await verifyAdmin(request)
-
+const postHandler = withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json()
   const { photo_id } = body
 
@@ -86,7 +74,7 @@ async function postHandler(request: NextRequest) {
       message: 'Tracking skipped',
     })
   }
-}
+})
 
-export const GET = withErrorHandling(getHandler)
-export const POST = withErrorHandling(postHandler)
+export const GET = getHandler
+export const POST = postHandler

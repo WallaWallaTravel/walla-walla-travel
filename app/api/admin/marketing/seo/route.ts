@@ -1,25 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
 import { logger } from '@/lib/logger'
-import { getSessionFromRequest } from '@/lib/auth/session'
 import { generateAuthUrl, getIntegration } from '@/lib/services/search-console.service'
-import { withErrorHandling } from '@/lib/api/middleware/error-handler'
-
-async function verifyAdmin(request: NextRequest) {
-  const session = await getSessionFromRequest(request)
-  if (!session || session.user.role !== 'admin') {
-    return null
-  }
-  return session
-}
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 
 // GET - Fetch SEO dashboard data
-export const GET = withErrorHandling(async (request: NextRequest) => {
-  const session = await verifyAdmin(request)
-  if (!session) {
-    return NextResponse.json({ error: 'Admin access required' }, { status: 401 })
-  }
-
+export const GET = withAdminAuth(async (_request: NextRequest, _session) => {
   // Always fetch integration status
   const integration = await getIntegration()
   const connectionStatus = {

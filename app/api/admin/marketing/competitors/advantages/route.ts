@@ -1,21 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionFromRequest } from '@/lib/auth/session';
-import { withErrorHandling, UnauthorizedError, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper';
+import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { competitorMonitoringService } from '@/lib/services/competitor-monitoring.service';
 import type { CreateAdvantageInput } from '@/types/competitors';
 
-async function verifyAdmin(request: NextRequest) {
-  const session = await getSessionFromRequest(request);
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-  return session;
-}
-
 // GET - Get all competitive advantages
 async function getHandler(request: NextRequest) {
-  await verifyAdmin(request);
-
   const { searchParams } = new URL(request.url);
   const competitorId = searchParams.get('competitor_id');
 
@@ -33,9 +23,7 @@ async function getHandler(request: NextRequest) {
 }
 
 // POST - Create new competitive advantage
-async function postHandler(request: NextRequest) {
-  const session = await verifyAdmin(request);
-
+async function postHandler(request: NextRequest, session: AuthSession) {
   const body = await request.json() as CreateAdvantageInput;
 
   if (!body.title || !body.description || !body.category) {
@@ -44,7 +32,7 @@ async function postHandler(request: NextRequest) {
 
   const advantage = await competitorMonitoringService.createAdvantage(
     body,
-    session.user.id
+    parseInt(session.userId)
   );
 
   return NextResponse.json({
@@ -55,8 +43,6 @@ async function postHandler(request: NextRequest) {
 
 // PUT - Update competitive advantage
 async function putHandler(request: NextRequest) {
-  await verifyAdmin(request);
-
   const { searchParams } = new URL(request.url);
   const id = searchParams.get('id');
 
@@ -81,6 +67,6 @@ async function putHandler(request: NextRequest) {
   });
 }
 
-export const GET = withErrorHandling(getHandler);
-export const POST = withErrorHandling(postHandler);
-export const PUT = withErrorHandling(putHandler);
+export const GET = withAdminAuth(async (request, _session) => getHandler(request));
+export const POST = withAdminAuth(async (request, session) => postHandler(request, session));
+export const PUT = withAdminAuth(async (request, _session) => putHandler(request));

@@ -1,18 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import {
-  withErrorHandling,
-  UnauthorizedError,
   NotFoundError,
-  RouteContext,
 } from '@/lib/api/middleware/error-handler';
-import { getSession } from '@/lib/auth/session';
-import { canAccessGeology } from '@/lib/auth/roles';
 import { query } from '@/lib/db';
 import { z } from 'zod';
-
-interface RouteParams {
-  id: string;
-}
 
 // ============================================================================
 // Validation
@@ -40,14 +32,9 @@ const updateGuidanceSchema = z.object({
 // GET /api/admin/geology/guidance/[id] - Get single guidance
 // ============================================================================
 
-export const GET = withErrorHandling<unknown, RouteParams>(
-  async (_request: NextRequest, context: RouteContext<RouteParams>) => {
-    const session = await getSession();
-    if (!session || !canAccessGeology(session.user.role)) {
-      throw new UnauthorizedError('Admin access required');
-    }
-
-    const { id } = await context.params;
+export const GET = withAdminAuth(
+  async (_request: NextRequest, _session, context) => {
+    const { id } = await context!.params;
     const guidanceId = parseInt(id);
 
     if (isNaN(guidanceId)) {
@@ -71,14 +58,9 @@ export const GET = withErrorHandling<unknown, RouteParams>(
 // PUT /api/admin/geology/guidance/[id] - Update guidance
 // ============================================================================
 
-export const PUT = withErrorHandling<unknown, RouteParams>(
-  async (request: NextRequest, context: RouteContext<RouteParams>) => {
-    const session = await getSession();
-    if (!session || !canAccessGeology(session.user.role)) {
-      throw new UnauthorizedError('Admin access required');
-    }
-
-    const { id } = await context.params;
+export const PUT = withAdminAuth(
+  async (request: NextRequest, _session, context) => {
+    const { id } = await context!.params;
     const guidanceId = parseInt(id);
 
     if (isNaN(guidanceId)) {
@@ -129,14 +111,9 @@ export const PUT = withErrorHandling<unknown, RouteParams>(
 // DELETE /api/admin/geology/guidance/[id] - Delete guidance
 // ============================================================================
 
-export const DELETE = withErrorHandling<unknown, RouteParams>(
-  async (_request: NextRequest, context: RouteContext<RouteParams>) => {
-    const session = await getSession();
-    if (!session || !canAccessGeology(session.user.role)) {
-      throw new UnauthorizedError('Admin access required');
-    }
-
-    const { id } = await context.params;
+export const DELETE = withAdminAuth(
+  async (_request: NextRequest, _session, context) => {
+    const { id } = await context!.params;
     const guidanceId = parseInt(id);
 
     if (isNaN(guidanceId)) {

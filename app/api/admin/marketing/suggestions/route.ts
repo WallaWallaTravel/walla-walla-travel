@@ -1,20 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
-import { getSessionFromRequest } from '@/lib/auth/session'
-import { withErrorHandling, UnauthorizedError, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler'
-
-async function verifyAdmin(request: NextRequest) {
-  const session = await getSessionFromRequest(request)
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required')
-  }
-  return session
-}
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
+import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler'
 
 // GET - Fetch pending content suggestions
-async function getHandler(request: NextRequest) {
-  await verifyAdmin(request)
-
+const getHandler = withAdminAuth(async (request: NextRequest, _session) => {
   const { searchParams } = new URL(request.url)
   const status = searchParams.get('status') || 'pending'
   const platform = searchParams.get('platform')
@@ -68,12 +58,10 @@ async function getHandler(request: NextRequest) {
     suggestions: result.rows,
     total: result.rows.length
   })
-}
+})
 
 // PATCH - Update suggestion status
-async function patchHandler(request: NextRequest) {
-  await verifyAdmin(request)
-
+const patchHandler = withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json()
   const { id, status, scheduled_post_id, suggested_media_urls, media_source } = body
 
@@ -128,7 +116,7 @@ async function patchHandler(request: NextRequest) {
     success: true,
     suggestion: result.rows[0]
   })
-}
+})
 
-export const GET = withErrorHandling(getHandler)
-export const PATCH = withErrorHandling(patchHandler)
+export const GET = getHandler
+export const PATCH = patchHandler
