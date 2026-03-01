@@ -6,22 +6,23 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { query } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { withCSRF } from '@/lib/api/middleware/csrf';
 
-interface ApprovalRequest {
-  contentType: 'social_post' | 'email' | 'blog' | 'page_update' | 'campaign'
-  contentId: number
-  action: 'approved' | 'edited' | 'rejected'
-  originalContent: string
-  finalContent?: string
-  platform?: string
-  contentCategory?: string
-  tone?: string
-  notes?: string
-}
+const BodySchema = z.object({
+  contentType: z.enum(['social_post', 'email', 'blog', 'page_update', 'campaign']),
+  contentId: z.number().int().positive(),
+  action: z.enum(['approved', 'edited', 'rejected']),
+  originalContent: z.string().min(1).max(5000),
+  finalContent: z.string().max(5000).optional(),
+  platform: z.string().max(255).optional(),
+  contentCategory: z.string().max(255).optional(),
+  tone: z.string().max(255).optional(),
+  notes: z.string().max(5000).optional(),
+})
 
 export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const { searchParams } = new URL(request.url)
@@ -78,7 +79,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
 
 export const POST = withCSRF(
   withAdminAuth(async (request: NextRequest, _session) => {
-  const body: ApprovalRequest = await request.json()
+  const body = BodySchema.parse(await request.json())
   const {
     contentType,
     contentId,

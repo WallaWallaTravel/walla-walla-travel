@@ -1,8 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { withErrorHandling, UnauthorizedError } from '@/lib/api/middleware/error-handler';
 import { withAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper';
 import { query } from '@/lib/db';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+
+const BodySchema = z.object({
+  vehicleId: z.number().int().positive(),
+  startMileage: z.number().min(0).optional(),
+  type: z.enum(['pre_trip', 'post_trip']).optional(),
+  inspectionData: z.object({
+    items: z.record(z.string(), z.unknown()).optional(),
+    notes: z.string().max(5000).optional(),
+    signature: z.string().optional(),
+  }).optional(),
+});
 
 /**
  * POST /api/inspections/quick
@@ -13,7 +25,7 @@ import { withCSRF } from '@/lib/api/middleware/csrf';
 export const POST = withCSRF(
   withErrorHandling(
   withAuth(async (request: NextRequest, session: AuthSession) => {
-    const body = await request.json();
+    const body = BodySchema.parse(await request.json());
     const { vehicleId, startMileage, type, inspectionData } = body;
 
     // Get user ID from session (AuthSession provides userId directly)

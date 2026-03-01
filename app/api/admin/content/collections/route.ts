@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { ContentService } from '@/lib/services/content.service';
+import { z } from 'zod';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // GET - Fetch collections
@@ -36,9 +37,36 @@ const getHandler = withAdminAuth(async (request: NextRequest, _session) => {
   });
 });
 
+const PostBodySchema = z.object({
+  collection_type: z.string().min(1).max(100),
+  slug: z.string().min(1).max(255),
+  title: z.string().min(1).max(255),
+  subtitle: z.string().max(500).optional(),
+  description: z.string().max(5000).optional(),
+  content: z.record(z.string(), z.unknown()).optional(),
+  image_url: z.string().max(2000).optional(),
+  icon: z.string().max(100).optional(),
+  sort_order: z.number().int().nonnegative().optional(),
+  is_active: z.boolean().optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+});
+
+const PutBodySchema = z.object({
+  id: z.number().int().positive(),
+  title: z.string().min(1).max(255).optional(),
+  subtitle: z.string().max(500).optional(),
+  description: z.string().max(5000).optional(),
+  content: z.record(z.string(), z.unknown()).optional(),
+  image_url: z.string().max(2000).optional(),
+  icon: z.string().max(100).optional(),
+  sort_order: z.number().int().nonnegative().optional(),
+  is_active: z.boolean().optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+});
+
 // POST - Create new collection item
 const postHandler = withAdminAuth(async (request: NextRequest, session) => {
-  const body = await request.json();
+  const body = PostBodySchema.parse(await request.json());
 
   if (!body.collection_type || !body.slug || !body.title) {
     throw new BadRequestError('collection_type, slug, and title are required');
@@ -73,7 +101,7 @@ const postHandler = withAdminAuth(async (request: NextRequest, session) => {
 
 // PUT - Update collection item
 const putHandler = withAdminAuth(async (request: NextRequest, session) => {
-  const body = await request.json();
+  const body = PutBodySchema.parse(await request.json());
 
   if (!body.id) {
     throw new BadRequestError('id is required');

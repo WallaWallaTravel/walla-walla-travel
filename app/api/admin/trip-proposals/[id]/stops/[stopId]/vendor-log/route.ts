@@ -2,8 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth, AuthSession, RouteContext } from '@/lib/api/middleware/auth-wrapper';
 import { query, queryOne } from '@/lib/db-helpers';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { z } from 'zod';
 
 interface RouteParams { id: string; stopId: string; }
+
+const BodySchema = z.object({
+  interaction_type: z.enum(['note', 'email_sent', 'email_received', 'phone_call', 'quote_received']),
+  content: z.string().min(1).max(5000),
+});
 
 /**
  * GET /api/admin/trip-proposals/[id]/stops/[stopId]/vendor-log
@@ -52,7 +58,7 @@ export const POST = withCSRF(
     const { id, stopId } = await (context as RouteContext<RouteParams>).params;
     const proposalId = parseInt(id, 10);
     const stopIdNum = parseInt(stopId, 10);
-    const body = await request.json();
+    const body = BodySchema.parse(await request.json());
 
     const validTypes = ['note', 'email_sent', 'email_received', 'phone_call', 'quote_received'];
     if (!body.interaction_type || !validTypes.includes(body.interaction_type)) {

@@ -3,6 +3,26 @@ import { query } from '@/lib/db'
 import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler'
 import { withCSRF } from '@/lib/api/middleware/csrf'
+import { z } from 'zod'
+
+const PatchBodySchema = z.object({
+  first_name: z.string().min(1).max(255).optional(),
+  last_name: z.string().max(255).optional(),
+  email: z.string().email().max(255).optional(),
+  phone: z.string().max(50).optional(),
+  company: z.string().max(255).optional(),
+  status: z.enum(['new', 'contacted', 'qualified', 'proposal_sent', 'negotiating', 'won', 'lost']).optional(),
+  temperature: z.enum(['hot', 'warm', 'cold']).optional(),
+  score: z.number().int().optional(),
+  assigned_to: z.number().int().positive().optional().nullable(),
+  interested_services: z.array(z.string()).optional(),
+  party_size_estimate: z.number().int().positive().optional(),
+  estimated_date: z.string().max(255).optional(),
+  budget_range: z.string().max(255).optional(),
+  next_followup_at: z.string().max(255).optional().nullable(),
+  notes: z.string().max(5000).optional(),
+  tags: z.array(z.string()).optional(),
+})
 
 /**
  * Map CRM lifecycle_stage to legacy lead status
@@ -145,7 +165,7 @@ async function patchHandler(
 ) {
   const { lead_id } = await context!.params;
   const id = parseInt(lead_id)
-  const body = await request.json()
+  const body = PatchBodySchema.parse(await request.json())
 
   // Map incoming legacy field names to CRM column names
   const fieldMapping: Record<string, string> = {

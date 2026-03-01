@@ -1,7 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { query } from '@/lib/db';
 import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+
+const PatchBodySchema = z.object({
+  name: z.string().min(1).max(255).optional(),
+  description: z.string().max(5000).optional(),
+  price: z.number().min(0).optional(),
+  is_active: z.boolean().optional(),
+  display_order: z.number().int().optional(),
+  icon: z.string().max(100).optional(),
+});
 
 /**
  * PATCH /api/additional-services/[service_id]
@@ -13,7 +23,7 @@ export const PATCH = withCSRF(
   { params }: { params: Promise<{ service_id: string }> }
 ): Promise<NextResponse> => {
   const { service_id } = await params;
-  const body = await request.json();
+  const body = PatchBodySchema.parse(await request.json());
   const { name, description, price, is_active, display_order, icon } = body;
 
   // Build update query dynamically

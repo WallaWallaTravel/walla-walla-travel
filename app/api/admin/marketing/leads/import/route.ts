@@ -3,6 +3,25 @@ import { query } from '@/lib/db'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError } from '@/lib/api/middleware/error-handler'
 import { withCSRF } from '@/lib/api/middleware/csrf'
+import { z } from 'zod'
+
+const ImportedLeadSchema = z.object({
+  first_name: z.string().min(1).max(255),
+  last_name: z.string().max(255).optional(),
+  email: z.string().email().max(255),
+  phone: z.string().max(50).optional(),
+  company: z.string().max(255).optional(),
+  source: z.string().max(255).optional(),
+  interested_services: z.union([z.string(), z.array(z.string())]).optional(),
+  party_size_estimate: z.union([z.number(), z.string()]).optional(),
+  estimated_date: z.string().max(255).optional(),
+  budget_range: z.string().max(255).optional(),
+  notes: z.string().max(5000).optional(),
+})
+
+const BodySchema = z.object({
+  leads: z.array(ImportedLeadSchema),
+})
 
 interface ImportedLead {
   first_name: string
@@ -26,7 +45,7 @@ async function postHandler(request: NextRequest) {
   const errors: string[] = []
 
   if (contentType.includes('application/json')) {
-    const body = await request.json()
+    const body = BodySchema.parse(await request.json())
     leads = body.leads || []
   } else if (contentType.includes('text/csv') || contentType.includes('multipart/form-data')) {
     const text = await request.text()

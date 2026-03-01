@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { query } from '@/lib/db';
+import { z } from 'zod';
 import type { CrmDealWithRelations, CreateDealData } from '@/types/crm';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 
@@ -140,13 +141,31 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   });
 });
 
+const BodySchema = z.object({
+  contact_id: z.number().int().positive(),
+  stage_id: z.number().int().positive(),
+  title: z.string().min(1).max(255),
+  deal_type_id: z.number().int().positive().optional(),
+  brand: z.string().max(255).optional(),
+  brand_id: z.number().int().positive().optional(),
+  description: z.string().max(5000).optional(),
+  party_size: z.number().int().positive().optional(),
+  expected_tour_date: z.string().optional(),
+  expected_close_date: z.string().optional(),
+  estimated_value: z.number().nonnegative().optional(),
+  assigned_to: z.number().int().positive().optional(),
+  consultation_id: z.number().int().positive().optional(),
+  corporate_request_id: z.number().int().positive().optional(),
+  trip_proposal_id: z.number().int().positive().optional(),
+});
+
 /**
  * POST /api/admin/crm/deals
  * Create a new CRM deal
  */
 export const POST = withCSRF(
   withAdminAuth(async (request: NextRequest, session) => {
-  const body = await request.json() as CreateDealData;
+  const body = BodySchema.parse(await request.json()) as CreateDealData;
 
   // Validate required fields
   if (!body.contact_id || !body.stage_id || !body.title) {

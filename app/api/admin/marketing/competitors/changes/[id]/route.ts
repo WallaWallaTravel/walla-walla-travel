@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper';
 import { NotFoundError, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { competitorMonitoringService } from '@/lib/services/competitor-monitoring.service';
 import type { UpdateChangeStatusInput } from '@/types/competitors';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+
+const BodySchema = z.object({
+  status: z.enum(['new', 'reviewed', 'actioned', 'dismissed', 'archived']),
+  action_taken: z.string().max(5000).optional(),
+});
 
 function getIdFromUrl(request: NextRequest): number {
   const url = new URL(request.url);
@@ -18,7 +24,7 @@ function getIdFromUrl(request: NextRequest): number {
 // PUT - Update change status (review, action, dismiss)
 async function putHandler(request: NextRequest, session: AuthSession) {
   const id = getIdFromUrl(request);
-  const body = await request.json() as UpdateChangeStatusInput;
+  const body = BodySchema.parse(await request.json()) as UpdateChangeStatusInput;
 
   if (!body.status) {
     throw new BadRequestError('Status is required');

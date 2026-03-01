@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 import { hotelPartnerService } from '@/lib/services/hotel-partner.service';
+import { z } from 'zod';
+
+const BodySchema = z.object({
+  token: z.string().min(1).max(500),
+  password: z.string().min(8).max(255),
+  contact_name: z.string().min(1).max(255),
+  phone: z.string().max(50).optional(),
+});
 
 /**
  * POST /api/partner/auth/register
@@ -9,10 +17,10 @@ import { hotelPartnerService } from '@/lib/services/hotel-partner.service';
  */
 export const POST = withRateLimit(rateLimiters.auth)(
   withErrorHandling(async (request: NextRequest) => {
-  const body = await request.json();
+  const body = BodySchema.parse(await request.json());
 
-  // Validate required fields
-  const required = ['token', 'password', 'contact_name'];
+  // Validate required fields (Zod handles this now, but keeping as defense in depth)
+  const required = ['token', 'password', 'contact_name'] as const;
   for (const field of required) {
     if (!body[field]) {
       throw new BadRequestError(`Missing required field: ${field}`);

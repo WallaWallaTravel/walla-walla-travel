@@ -8,6 +8,14 @@ import { NextResponse } from 'next/server';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { calculatePrice, validatePricingRequest } from '@/lib/pricing-engine';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { z } from 'zod';
+
+const BodySchema = z.object({
+  date: z.string().min(1),
+  duration_hours: z.number().positive(),
+  party_size: z.number().int().positive(),
+  vehicle_type: z.string().optional(),
+});
 
 /**
  * POST /api/bookings/calculate-price
@@ -17,7 +25,7 @@ import { withCSRF } from '@/lib/api/middleware/csrf';
  */
 export const POST = withCSRF(
   withErrorHandling(async (request: Request) => {
-  const body = await request.json();
+  const body = BodySchema.parse(await request.json());
   const { date, duration_hours, party_size, vehicle_type } = body;
 
   // Validate required fields

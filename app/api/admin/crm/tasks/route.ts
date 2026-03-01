@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { query } from '@/lib/db';
+import { z } from 'zod';
 import type { CrmTaskWithRelations, CreateTaskData } from '@/types/crm';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 
@@ -117,13 +118,40 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   });
 });
 
+const PostBodySchema = z.object({
+  title: z.string().min(1).max(255),
+  due_date: z.string().min(1),
+  assigned_to: z.number().int().positive(),
+  contact_id: z.number().int().positive().optional(),
+  deal_id: z.number().int().positive().optional(),
+  description: z.string().max(5000).optional(),
+  task_type: z.string().max(100).optional(),
+  priority: z.string().max(50).optional(),
+  due_time: z.string().optional(),
+  reminder_at: z.string().optional(),
+});
+
+const PatchBodySchema = z.object({
+  taskId: z.number().int().positive(),
+  status: z.string().max(50).optional(),
+  completion_notes: z.string().max(5000).optional(),
+  title: z.string().min(1).max(255).optional(),
+  description: z.string().max(5000).optional(),
+  task_type: z.string().max(100).optional(),
+  priority: z.string().max(50).optional(),
+  due_date: z.string().optional(),
+  due_time: z.string().optional(),
+  reminder_at: z.string().optional(),
+  assigned_to: z.number().int().positive().optional(),
+});
+
 /**
  * POST /api/admin/crm/tasks
  * Create a new CRM task
  */
 export const POST = withCSRF(
   withAdminAuth(async (request: NextRequest, session) => {
-  const body = await request.json() as CreateTaskData;
+  const body = PostBodySchema.parse(await request.json()) as CreateTaskData;
 
   // Validate required fields
   if (!body.title || !body.due_date || !body.assigned_to) {
@@ -209,7 +237,7 @@ export const POST = withCSRF(
  */
 export const PATCH = withCSRF(
   withAdminAuth(async (request: NextRequest, session) => {
-  const body = await request.json();
+  const body = PatchBodySchema.parse(await request.json());
   const { taskId, status, completion_notes, ...updates } = body;
 
   if (!taskId) {
@@ -241,7 +269,7 @@ export const PATCH = withCSRF(
   }
 
   // Handle other updates
-  const allowedFields = ['title', 'description', 'task_type', 'priority', 'due_date', 'due_time', 'reminder_at', 'assigned_to'];
+  const allowedFields = ['title', 'description', 'task_type', 'priority', 'due_date', 'due_time', 'reminder_at', 'assigned_to'] as const;
   for (const field of allowedFields) {
     if (updates[field] !== undefined) {
       updateFields.push(`${field} = $${paramIndex}`);

@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import crypto from 'crypto';
 import { logger } from '@/lib/logger';
+import { z } from 'zod';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { withCSRF } from '@/lib/api/middleware/csrf';
@@ -22,13 +23,23 @@ interface BusinessInvite {
   contact_phone?: string;
 }
 
+const BodySchema = z.object({
+  businesses: z.array(z.object({
+    name: z.string().min(1).max(255),
+    business_type: z.string().min(1).max(100),
+    business_types: z.array(z.string().max(100)).optional(),
+    contact_email: z.string().email().max(255),
+    contact_phone: z.string().max(50).optional(),
+  })).min(1),
+});
+
 /**
  * POST /api/admin/business-portal/invite
  * Send batch invites to businesses
  */
 export const POST = withCSRF(
   withAdminAuth(async (request: NextRequest, _session) => {
-  const body = await request.json();
+  const body = BodySchema.parse(await request.json());
   const { businesses } = body as { businesses: BusinessInvite[] };
 
   if (!businesses || !Array.isArray(businesses) || businesses.length === 0) {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import { z } from 'zod';
 import { query } from '@/lib/db';
 import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
@@ -8,6 +9,17 @@ import { getBrandEmailConfig } from '@/lib/email-brands';
 import { getBrandStripeClient } from '@/lib/stripe-brands';
 import { logger } from '@/lib/logger';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+
+const BodySchema = z.object({
+  name: z.string().min(1).max(255),
+  email: z.string().email(),
+  phone: z.string().min(1).max(50),
+  gratuity_amount: z.number().min(0).optional(),
+  terms_accepted: z.boolean(),
+  cancellation_policy_accepted: z.boolean(),
+  signature: z.string().min(1),
+  signature_date: z.string(),
+});
 
 // Lazy-load healthService to avoid circular imports in serverless bundle
 async function getHealthService() {
@@ -27,7 +39,7 @@ export const POST = withCSRF(
   { params }: { params: Promise<{ proposal_id: string }> }
 ): Promise<NextResponse> => {
   const { proposal_id } = await params;
-  const body = await request.json();
+  const body = BodySchema.parse(await request.json());
   const {
     name,
     email,

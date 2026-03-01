@@ -10,6 +10,16 @@ import { Resend } from 'resend';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { z } from 'zod';
+
+const BodySchema = z.object({
+  depositAmount: z.number().positive(),
+  emailSubject: z.string().min(1).max(255),
+  emailBody: z.string().min(1).max(5000),
+  smsMessage: z.string().min(1).max(500),
+  sendEmail: z.boolean(),
+  sendSms: z.boolean(),
+});
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -38,7 +48,7 @@ export const POST = withCSRF(
     throw new BadRequestError('Invalid reservation ID');
   }
 
-  const body: DepositRequestBody = await request.json();
+  const body: DepositRequestBody = BodySchema.parse(await request.json());
 
   // Get reservation with customer info
   const result = await query(

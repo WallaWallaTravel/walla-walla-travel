@@ -9,12 +9,25 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import { queryOne, QueryParamValue } from '@/lib/db-helpers';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { z } from 'zod';
 
 interface RouteParams {
   params: Promise<{ id: string; guestId: string }>;
 }
 
 const ALLOWED_FIELDS = ['name', 'email', 'phone', 'is_primary', 'dietary_restrictions', 'accessibility_needs', 'special_requests', 'room_assignment', 'rsvp_status'] as const;
+
+const PatchBodySchema = z.object({
+  name: z.string().min(1).max(255).optional(),
+  email: z.string().email().max(255).optional(),
+  phone: z.string().max(50).optional(),
+  is_primary: z.boolean().optional(),
+  dietary_restrictions: z.string().max(500).optional(),
+  accessibility_needs: z.string().max(500).optional(),
+  special_requests: z.string().max(5000).optional(),
+  room_assignment: z.string().max(255).optional(),
+  rsvp_status: z.string().max(50).optional(),
+});
 
 /**
  * PATCH /api/admin/trip-proposals/[id]/guests/[guestId]
@@ -33,7 +46,7 @@ export const PATCH = withCSRF(
     );
   }
 
-  const body = await request.json();
+  const body = PatchBodySchema.parse(await request.json());
 
   // Build SET clauses from allowed fields
   const setClauses: string[] = [];

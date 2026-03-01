@@ -3,6 +3,16 @@ import { query } from '@/lib/db'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler'
 import { withCSRF } from '@/lib/api/middleware/csrf'
+import { z } from 'zod'
+
+const DeleteBodySchema = z.object({
+  id: z.number().int().positive(),
+})
+
+const PatchBodySchema = z.object({
+  id: z.number().int().positive(),
+  is_active: z.boolean().optional(),
+})
 
 // GET - Fetch connected social accounts
 async function getHandler(_request: NextRequest) {
@@ -32,7 +42,7 @@ async function getHandler(_request: NextRequest) {
 
 // DELETE - Disconnect a social account
 async function deleteHandler(request: NextRequest) {
-  const body = await request.json()
+  const body = DeleteBodySchema.parse(await request.json())
   const { id } = body
 
   if (!id) {
@@ -63,7 +73,7 @@ async function deleteHandler(request: NextRequest) {
 
 // PATCH - Update account settings
 async function patchHandler(request: NextRequest) {
-  const body = await request.json()
+  const body = PatchBodySchema.parse(await request.json())
   const { id, is_active } = body
 
   if (!id) {

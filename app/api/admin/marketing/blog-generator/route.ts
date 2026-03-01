@@ -7,11 +7,25 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import Anthropic from '@anthropic-ai/sdk'
 import { query } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { withCSRF } from '@/lib/api/middleware/csrf';
+
+const PostBodySchema = z.object({
+  title: z.string().min(1).max(255),
+  targetKeywords: z.array(z.string().min(1).max(255)).min(1),
+  category: z.string().min(1).max(255),
+  tone: z.string().max(255).optional(),
+  wordCountTarget: z.number().int().positive().optional(),
+})
+
+const PatchBodySchema = z.object({
+  id: z.number().int().positive(),
+  status: z.enum(['draft', 'review', 'approved', 'published', 'archived']),
+})
 
 function getAnthropicClient() {
   const apiKey = process.env.ANTHROPIC_API_KEY
@@ -97,7 +111,7 @@ function estimateReadTime(wordCount: number): number {
 
 export const POST = withCSRF(
   withAdminAuth(async (request: NextRequest, _session) => {
-  const body = await request.json()
+  const body = PostBodySchema.parse(await request.json())
   const { title, targetKeywords, category, tone, wordCountTarget } = body
 
   if (!title || typeof title !== 'string' || title.trim().length === 0) {
@@ -307,7 +321,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
 
 export const PATCH = withCSRF(
   withAdminAuth(async (request: NextRequest, _session) => {
-  const body = await request.json()
+  const body = PatchBodySchema.parse(await request.json())
   const { id, status } = body
 
   if (!id) {

@@ -2,6 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper';
 import { query } from '@/lib/db';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { z } from 'zod';
+
+const PostBodySchema = z.object({
+  name: z.string().min(1).max(255),
+  start_time: z.string().max(20).optional(),
+  duration_hours: z.number().positive().optional(),
+  base_price_per_person: z.number().positive().optional(),
+  lunch_price_per_person: z.number().positive().optional(),
+  title: z.string().max(255).optional(),
+  description: z.string().max(5000).optional(),
+  max_guests: z.number().int().positive().optional(),
+  min_guests: z.number().int().positive().optional(),
+  is_default: z.boolean().optional(),
+});
 
 interface SharedTourPreset {
   id: number;
@@ -58,7 +72,7 @@ export const GET = withAdminAuth(async (_request: NextRequest, _session: AuthSes
  */
 export const POST = withCSRF(
   withAdminAuth(async (request: NextRequest, _session: AuthSession) => {
-  const body = await request.json();
+  const body = PostBodySchema.parse(await request.json());
 
   // Validate required fields
   if (!body.name) {

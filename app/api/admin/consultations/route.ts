@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { query } from '@/lib/db';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { z } from 'zod';
+
+const PatchBodySchema = z.object({
+  tripId: z.number().int().positive(),
+  assignedStaffId: z.number().int().positive().optional(),
+  status: z.string().min(1).max(255).optional(),
+  notes: z.string().max(5000).optional(),
+});
 
 /**
  * GET /api/admin/consultations
@@ -87,7 +95,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
  */
 export const PATCH = withCSRF(
   withAdminAuth(async (request: NextRequest, _session) => {
-  const body = await request.json();
+  const body = PatchBodySchema.parse(await request.json());
   const { tripId, assignedStaffId, status, notes } = body;
 
   if (!tripId) {

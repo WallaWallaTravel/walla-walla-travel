@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createBusiness } from '@/lib/business-portal/business-service';
+import { z } from 'zod';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { withCSRF } from '@/lib/api/middleware/csrf';
@@ -16,6 +17,14 @@ export const dynamic = 'force-dynamic';
  * POST /api/admin/businesses/invite
  * Invite a new business to the portal
  */
+const BodySchema = z.object({
+  business_type: z.enum(['winery', 'restaurant', 'hotel', 'boutique', 'gallery', 'activity', 'catering', 'service', 'other']),
+  name: z.string().min(1).max(255),
+  contact_email: z.string().email().max(255),
+  contact_phone: z.string().max(50).optional(),
+  website: z.string().max(500).optional(),
+});
+
 export const POST = withCSRF(
   withAdminAuth(async (request: NextRequest, _session) => {
   const {
@@ -24,7 +33,7 @@ export const POST = withCSRF(
     contact_email,
     contact_phone,
     website
-  } = await request.json();
+  } = BodySchema.parse(await request.json());
 
   // Validation
   if (!business_type || !name || !contact_email) {

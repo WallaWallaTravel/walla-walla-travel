@@ -2,10 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { z } from 'zod';
+
+const BodySchema = z.object({
+  booking_id: z.number().int().positive(),
+  driver_id: z.number().int().positive().optional(),
+});
 
 export const POST = withCSRF(
   withErrorHandling(async (request: NextRequest) => {
-  const { booking_id, driver_id } = await request.json();
+  const { booking_id, driver_id } = BodySchema.parse(await request.json());
 
   if (!booking_id) {
     throw new BadRequestError('Missing booking_id');

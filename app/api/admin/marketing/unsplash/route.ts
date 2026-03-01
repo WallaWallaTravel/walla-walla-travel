@@ -3,6 +3,11 @@ import { unsplashService, UnsplashPhoto } from '@/lib/services/unsplash.service'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError } from '@/lib/api/middleware/error-handler'
 import { withCSRF } from '@/lib/api/middleware/csrf'
+import { z } from 'zod'
+
+const PostBodySchema = z.object({
+  photo_id: z.string().min(1).max(255),
+})
 
 // GET - Search Unsplash photos
 const getHandler = withAdminAuth(async (request: NextRequest, _session) => {
@@ -53,7 +58,7 @@ const getHandler = withAdminAuth(async (request: NextRequest, _session) => {
 
 // POST - Track photo download (for Unsplash API compliance)
 const postHandler = withAdminAuth(async (request: NextRequest, _session) => {
-  const body = await request.json()
+  const body = PostBodySchema.parse(await request.json())
   const { photo_id } = body
 
   if (!photo_id) {

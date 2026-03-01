@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { query } from '@/lib/db';
+import { z } from 'zod';
 import type { CrmContactSummary, CreateContactData } from '@/types/crm';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 
@@ -110,13 +111,33 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   });
 });
 
+const BodySchema = z.object({
+  email: z.string().email().max(255),
+  name: z.string().min(1).max(255),
+  phone: z.string().max(50).optional(),
+  company: z.string().max(255).optional(),
+  contact_type: z.string().max(50).optional(),
+  lifecycle_stage: z.string().max(50).optional(),
+  lead_temperature: z.string().max(50).optional(),
+  source: z.string().max(255).optional(),
+  source_detail: z.string().max(500).optional(),
+  preferred_wineries: z.string().max(5000).optional(),
+  dietary_restrictions: z.string().max(500).optional(),
+  accessibility_needs: z.string().max(500).optional(),
+  notes: z.string().max(5000).optional(),
+  email_marketing_consent: z.boolean().optional(),
+  sms_marketing_consent: z.boolean().optional(),
+  assigned_to: z.number().int().positive().optional(),
+  brand_id: z.number().int().positive().optional(),
+});
+
 /**
  * POST /api/admin/crm/contacts
  * Create a new CRM contact
  */
 export const POST = withCSRF(
   withAdminAuth(async (request: NextRequest, session) => {
-  const body = await request.json() as CreateContactData;
+  const body = BodySchema.parse(await request.json()) as CreateContactData;
 
   // Validate required fields
   if (!body.email || !body.name) {

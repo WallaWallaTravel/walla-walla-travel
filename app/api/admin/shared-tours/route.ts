@@ -3,6 +3,29 @@ import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper';
 import { sharedTourService } from '@/lib/services/shared-tour.service';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { z } from 'zod';
+
+const PostBodySchema = z.object({
+  tour_date: z.string().min(1),
+  start_time: z.string().max(20).optional(),
+  duration_hours: z.number().positive().optional(),
+  max_guests: z.number().int().positive().optional(),
+  min_guests: z.number().int().positive().optional(),
+  base_price_per_person: z.number().positive().optional(),
+  lunch_price_per_person: z.number().positive().optional(),
+  lunch_included_default: z.boolean().optional(),
+  title: z.string().max(255).optional(),
+  description: z.string().max(5000).optional(),
+  meeting_location: z.string().max(500).optional(),
+  wineries_preview: z.array(z.string().max(255)).optional(),
+  booking_cutoff_hours: z.number().int().optional(),
+  is_published: z.boolean().optional(),
+  notes: z.string().max(5000).optional(),
+  vehicle_id: z.number().int().positive().optional(),
+  driver_id: z.number().int().positive().optional(),
+  auto_assign_vehicle: z.boolean().optional(),
+  require_vehicle: z.boolean().optional(),
+});
 
 /**
  * GET /api/admin/shared-tours
@@ -44,7 +67,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
 export const POST = withCSRF(
   withRateLimit(rateLimiters.api)(
   withAdminAuth(async (request: NextRequest, _session: AuthSession) => {
-  const body = await request.json();
+  const body = PostBodySchema.parse(await request.json());
 
   // Validate required fields
   if (!body.tour_date) {

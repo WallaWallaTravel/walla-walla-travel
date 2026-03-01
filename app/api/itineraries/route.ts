@@ -1,7 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { query } from '@/lib/db';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+
+const BodySchema = z.object({
+  booking_id: z.number().int().positive().optional(),
+  proposal_id: z.number().int().positive().optional(),
+  title: z.string().min(1).max(255),
+  client_name: z.string().max(255).optional(),
+  client_email: z.string().email().max(255).optional(),
+  party_size: z.number().int().positive().optional(),
+  start_date: z.string().min(1).max(50),
+  end_date: z.string().min(1).max(50),
+  internal_notes: z.string().max(5000).optional(),
+  client_notes: z.string().max(5000).optional(),
+});
 
 // GET /api/itineraries - List all itineraries
 export const GET = withErrorHandling(async (_request: NextRequest) => {
@@ -23,7 +37,7 @@ export const GET = withErrorHandling(async (_request: NextRequest) => {
 // POST /api/itineraries - Create new itinerary
 export const POST = withCSRF(
   withErrorHandling(async (request: NextRequest) => {
-  const body = await request.json();
+  const body = BodySchema.parse(await request.json());
   const {
     booking_id,
     proposal_id,

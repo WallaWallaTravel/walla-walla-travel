@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { getBrandStripeClient } from '@/lib/stripe-brands';
 import { query, queryOne, withTransaction } from '@/lib/db-helpers';
@@ -6,6 +7,10 @@ import { logger } from '@/lib/logger';
 import { sendBookingConfirmationEmail } from '@/lib/services/email-automation.service';
 import { crmSyncService } from '@/lib/services/crm-sync.service';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+
+const BodySchema = z.object({
+  payment_intent_id: z.string().min(1).max(255),
+});
 
 /**
  * POST /api/proposals/[proposal_id]/confirm-payment
@@ -17,7 +22,7 @@ export const POST = withCSRF(
   { params }: { params: Promise<{ proposal_id: string }> }
 ) => {
   const { proposal_id } = await params;
-  const body = await request.json();
+  const body = BodySchema.parse(await request.json());
   const { payment_intent_id } = body;
 
   if (!payment_intent_id) {

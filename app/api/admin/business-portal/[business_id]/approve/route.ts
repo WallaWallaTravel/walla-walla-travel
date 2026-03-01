@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import { query } from '@/lib/db';
+import { z } from 'zod';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { withCSRF } from '@/lib/api/middleware/csrf';
@@ -17,13 +18,18 @@ export const dynamic = 'force-dynamic';
  * POST /api/admin/business-portal/[business_id]/approve
  * Approve business submission
  */
+const BodySchema = z.object({
+  status: z.enum(['approved', 'rejected']),
+  notes: z.string().max(5000).optional(),
+});
+
 export const POST = withCSRF(
   withAdminAuth(async (
   request: NextRequest, _session, context
 ) => {
   const { business_id } = await context!.params;
   const businessId = parseInt(business_id);
-  const { status, notes } = await request.json();
+  const { status, notes } = BodySchema.parse(await request.json());
 
   if (isNaN(businessId)) {
     throw new BadRequestError('Invalid business ID');

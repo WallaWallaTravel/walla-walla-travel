@@ -5,6 +5,12 @@ import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/mid
 import { sendEmail, EmailTemplates } from '@/lib/email';
 import { sendDriverAssignmentToCustomer } from '@/lib/services/email-automation.service';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { z } from 'zod';
+
+const BodySchema = z.object({
+  action: z.enum(['accept', 'decline']),
+  notes: z.string().max(5000).optional().nullable(),
+});
 
 export const POST = withCSRF(
   withErrorHandling(async (
@@ -13,7 +19,7 @@ export const POST = withCSRF(
 ) => {
   const { offer_id: offerId } = await params;
   const offer_id = parseInt(offerId);
-  const body = await request.json();
+  const body = BodySchema.parse(await request.json());
   const { action, notes } = body;
 
   if (!['accept', 'decline'].includes(action)) {

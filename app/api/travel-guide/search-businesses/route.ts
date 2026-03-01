@@ -4,10 +4,19 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 import { logger } from '@/lib/logger';
 import { searchBusinesses, formatBusinessForAI } from '@/lib/business-portal/business-knowledge';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+
+const BodySchema = z.object({
+  business_type: z.string().max(100).optional(),
+  tags: z.array(z.string().max(100)).optional(),
+  amenities: z.array(z.string().max(100)).optional(),
+  best_for: z.array(z.string().max(100)).optional(),
+  query: z.string().max(500).optional(),
+});
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -18,7 +27,7 @@ export const dynamic = 'force-dynamic';
  */
 export const POST = withCSRF(
   withErrorHandling(async (request: NextRequest) => {
-  const body = await request.json();
+  const body = BodySchema.parse(await request.json());
   const { business_type, tags, amenities, best_for, query } = body;
 
   logger.debug('Business search query', { business_type, tags, amenities, best_for, query });

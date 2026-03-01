@@ -4,6 +4,15 @@ import { appendFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { z } from 'zod';
+
+const BodySchema = z.object({
+  timestamp: z.string().max(100).optional(),
+  type: z.string().max(100).optional(),
+  url: z.string().max(2000).optional(),
+  message: z.string().max(5000).optional(),
+  stack: z.string().max(10000).optional(),
+});
 
 /**
  * POST /api/log-error
@@ -11,7 +20,7 @@ import { withCSRF } from '@/lib/api/middleware/csrf';
  */
 export const POST = withCSRF(
   withErrorHandling(async (request: NextRequest) => {
-  const error = await request.json();
+  const error = BodySchema.parse(await request.json());
 
   // Log to file
   const logPath = join(process.cwd(), 'logs', 'client-errors.log');

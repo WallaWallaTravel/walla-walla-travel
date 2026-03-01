@@ -8,6 +8,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { emailService } from '@/lib/services/email.service';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { z } from 'zod';
+
+const BodySchema = z.object({
+  booking_number: z.string().min(1).max(50),
+});
 
 /**
  * POST /api/bookings/send-confirmation
@@ -17,7 +22,7 @@ import { withCSRF } from '@/lib/api/middleware/csrf';
  */
 export const POST = withCSRF(
   withErrorHandling(async (request: NextRequest) => {
-  const body = await request.json();
+  const body = BodySchema.parse(await request.json());
   const { booking_number } = body;
 
   if (!booking_number) {

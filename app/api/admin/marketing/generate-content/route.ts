@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import Anthropic from '@anthropic-ai/sdk'
 import { query } from '@/lib/db'
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { socialIntelligenceService } from '@/lib/services/social-intelligence.service'
 import { withCSRF } from '@/lib/api/middleware/csrf'
+
+const BodySchema = z.object({
+  wineryId: z.number().int().positive().optional(),
+  platform: z.enum(['instagram', 'facebook', 'linkedin']),
+  contentType: z.string().min(1).max(255),
+  tone: z.string().min(1).max(255),
+  customPrompt: z.string().max(5000).optional(),
+})
 
 function getAnthropicClient() {
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -60,7 +69,7 @@ const TONE_DESCRIPTIONS: Record<string, string> = {
 
 export const POST = withCSRF(
   withRateLimit(rateLimiters.aiGeneration)(withAdminAuth(async (request: NextRequest, _session) => {
-    const body: GenerateRequest = await request.json()
+    const body = BodySchema.parse(await request.json()) as GenerateRequest
     const { wineryId, platform, contentType, tone, customPrompt } = body
 
     let winery = null

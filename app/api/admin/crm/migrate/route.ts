@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import { query } from '@/lib/db';
 import { queryOne } from '@/lib/db-helpers';
+import { z } from 'zod';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
@@ -63,6 +64,11 @@ export const GET = withAdminAuth(async (_request: NextRequest, _session): Promis
   });
 });
 
+const BodySchema = z.object({
+  dryRun: z.boolean().optional(),
+  batchSize: z.number().int().positive().max(1000).optional(),
+});
+
 /**
  * POST /api/admin/crm/migrate
  * Migrate all existing customers to CRM contacts
@@ -70,7 +76,7 @@ export const GET = withAdminAuth(async (_request: NextRequest, _session): Promis
 export const POST = withCSRF(
   withRateLimit(rateLimiters.api)(
     withAdminAuth(async (request: NextRequest, _session): Promise<NextResponse> => {
-      const body = await request.json().catch(() => ({}));
+      const body = BodySchema.parse(await request.json().catch(() => ({})));
       const { dryRun = false, batchSize = 100 } = body;
 
       logger.info('[CRM Migration] Starting customer migration', { dryRun, batchSize });

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { query } from '@/lib/db';
 import { withErrorHandling, BadRequestError, NotFoundError, UnauthorizedError } from '@/lib/api/middleware/error-handler';
 import { getSession } from '@/lib/auth/session';
@@ -9,6 +10,21 @@ import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 import { sendEmail } from '@/lib/email';
 import { getBrandEmailConfig } from '@/lib/email-brands';
 import { logger } from '@/lib/logger';
+
+const BodySchema = z.object({
+  counter_notes: z.string().max(5000).optional(),
+  service_items: z.array(z.object({
+    name: z.string().min(1).max(255),
+    description: z.string().max(5000).optional(),
+    price: z.number().optional(),
+    quantity: z.number().int().positive().optional(),
+  })).optional(),
+  discount_percentage: z.number().min(0).max(100).optional(),
+  discount_amount: z.number().min(0).optional(),
+  discount_reason: z.string().max(500).optional(),
+  valid_days: z.number().int().positive().optional(),
+  send_immediately: z.boolean().optional(),
+});
 
 /**
  * POST /api/proposals/[proposal_id]/counter
@@ -28,7 +44,7 @@ export const POST = withCSRF(
     throw new UnauthorizedError('Unauthorized');
   }
 
-  const body = await request.json();
+  const body = BodySchema.parse(await request.json());
   const {
     counter_notes,      // Admin explanation of changes made
     service_items,      // Updated service items (optional - keep original if not provided)

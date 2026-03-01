@@ -12,6 +12,11 @@ import {
   getBusinessStats
 } from '@/lib/business-portal/business-service';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { z } from 'zod';
+
+const BodySchema = z.object({
+  businessId: z.coerce.number().int().positive(),
+});
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -25,7 +30,7 @@ export const POST = withCSRF(
   withRateLimit(rateLimiters.publicSubmit)(
   withErrorHandling(async (request: NextRequest) => {
   try {
-    const { businessId } = await request.json();
+    const { businessId } = BodySchema.parse(await request.json());
     
     if (!businessId) {
       return NextResponse.json(

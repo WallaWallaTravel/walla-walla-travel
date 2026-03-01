@@ -14,6 +14,26 @@ import { BadRequestError, NotFoundError, ConflictError, ForbiddenError } from '@
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
+import { z } from 'zod';
+
+const PostBodySchema = z.object({
+  vehicle_id: z.number().int().positive(),
+  block_date: z.string().min(1).max(255),
+  start_time: z.string().max(255).optional(),
+  end_time: z.string().max(255).optional(),
+  block_type: z.enum(['maintenance', 'blackout', 'hold']),
+  reason: z.string().max(500).optional(),
+});
+
+const PutBodySchema = z.object({
+  id: z.number().int().positive(),
+  vehicle_id: z.number().int().positive().optional(),
+  block_date: z.string().min(1).max(255).optional(),
+  start_time: z.string().max(255).optional(),
+  end_time: z.string().max(255).optional(),
+  block_type: z.enum(['maintenance', 'blackout', 'hold']).optional(),
+  reason: z.string().max(500).optional(),
+});
 
 // GET - List availability blocks
 export const GET = withAdminAuth(async (request: NextRequest, _session) => {
@@ -86,7 +106,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
 export const POST = withCSRF(
   withRateLimit(rateLimiters.api)(
     withAdminAuth(async (request: NextRequest, _session) => {
-  const body = await request.json();
+  const body = PostBodySchema.parse(await request.json());
   const { vehicle_id, block_date, start_time, end_time, block_type, reason } = body;
 
   // Validation
@@ -134,7 +154,7 @@ export const POST = withCSRF(
 export const PUT = withCSRF(
   withRateLimit(rateLimiters.api)(
     withAdminAuth(async (request: NextRequest, _session) => {
-  const body = await request.json();
+  const body = PutBodySchema.parse(await request.json());
   const { id, vehicle_id, block_date, start_time, end_time, block_type, reason } = body;
 
   if (!id) {

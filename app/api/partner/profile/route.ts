@@ -5,6 +5,18 @@ import { partnerService } from '@/lib/services/partner.service';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 import { pool } from '@/lib/db';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { z } from 'zod';
+
+const BodySchema = z.object({
+  business_name: z.string().min(1).max(255).optional(),
+  notes: z.string().max(5000).optional(),
+  contact_name: z.string().min(1).max(255).optional(),
+  contact_phone: z.string().max(50).optional(),
+  contact_email: z.string().email().max(255).optional(),
+  address: z.string().max(500).optional(),
+  city: z.string().max(255).optional(),
+  website: z.string().max(500).optional(),
+});
 
 /**
  * GET /api/partner/profile
@@ -77,9 +89,10 @@ export const PUT = withCSRF(
     throw new UnauthorizedError('Partner access required');
   }
 
-  const body = await request.json();
+  const body = BodySchema.parse(await request.json());
 
-  const updatedProfile = await partnerService.updateProfile(session.user.id, body);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const updatedProfile = await partnerService.updateProfile(session.user.id, body as any);
 
   return NextResponse.json({
     success: true,

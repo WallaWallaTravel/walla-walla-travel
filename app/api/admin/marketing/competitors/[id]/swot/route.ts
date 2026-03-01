@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import type { AuthSession } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { competitorMonitoringService } from '@/lib/services/competitor-monitoring.service';
 import type { CreateSwotInput } from '@/types/competitors';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+
+const BodySchema = z.object({
+  category: z.enum(['strength', 'weakness', 'opportunity', 'threat']),
+  title: z.string().min(1).max(255),
+  description: z.string().max(5000).optional(),
+  impact_level: z.enum(['high', 'medium', 'low']).optional(),
+  source: z.string().max(500).optional(),
+});
 
 function getCompetitorIdFromUrl(request: NextRequest): number {
   const url = new URL(request.url);
@@ -40,7 +49,7 @@ async function getHandler(request: NextRequest) {
 // POST - Add new SWOT item
 async function postHandler(request: NextRequest, session: AuthSession) {
   const competitorId = getCompetitorIdFromUrl(request);
-  const body = await request.json() as Omit<CreateSwotInput, 'competitor_id'>;
+  const body = BodySchema.parse(await request.json()) as Omit<CreateSwotInput, 'competitor_id'>;
 
   if (!body.category || !body.title) {
     throw new BadRequestError('Category and title are required');

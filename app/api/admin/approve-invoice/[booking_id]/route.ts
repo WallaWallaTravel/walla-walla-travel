@@ -4,6 +4,11 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { NotFoundError, ConflictError, BadRequestError } from '@/lib/api-errors';
 import { queryOne, query } from '@/lib/db-helpers';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { z } from 'zod';
+
+const BodySchema = z.object({
+  reviewed_hours: z.union([z.number().positive(), z.string().min(1)]).optional(),
+});
 
 interface BookingWithDriver {
   id: number;
@@ -54,9 +59,9 @@ export const POST = withCSRF(
   // Parse optional reviewed hours from request body
   let reviewedHours: number | null = null;
   try {
-    const body = await request.json();
-    if (body.reviewed_hours && !isNaN(parseFloat(body.reviewed_hours))) {
-      reviewedHours = parseFloat(body.reviewed_hours);
+    const body = BodySchema.parse(await request.json());
+    if (body.reviewed_hours && !isNaN(parseFloat(String(body.reviewed_hours)))) {
+      reviewedHours = parseFloat(String(body.reviewed_hours));
     }
   } catch {
     // No body or invalid JSON — use default hours

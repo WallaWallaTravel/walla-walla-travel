@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { NotFoundError, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { query } from '@/lib/db';
+import { z } from 'zod';
 import type { CrmTaskWithRelations, UpdateTaskData } from '@/types/crm';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 
@@ -47,6 +48,18 @@ export const GET = withAdminAuth(async (
   });
 });
 
+const BodySchema = z.object({
+  status: z.string().max(50).optional(),
+  completion_notes: z.string().max(5000).optional(),
+  title: z.string().min(1).max(255).optional(),
+  description: z.string().max(5000).optional(),
+  task_type: z.string().max(100).optional(),
+  priority: z.string().max(50).optional(),
+  due_date: z.string().optional(),
+  due_time: z.string().optional(),
+  reminder_at: z.string().optional(),
+});
+
 /**
  * PATCH /api/admin/crm/tasks/[id]
  * Update a task
@@ -62,7 +75,7 @@ export const PATCH = withCSRF(
     throw new BadRequestError('Invalid task ID');
   }
 
-  const body = await request.json() as UpdateTaskData;
+  const body = BodySchema.parse(await request.json()) as UpdateTaskData;
 
   // Build update query
   const updates: string[] = [];

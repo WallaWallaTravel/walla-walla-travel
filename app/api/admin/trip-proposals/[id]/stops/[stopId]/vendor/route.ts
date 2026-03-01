@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth, AuthSession, RouteContext } from '@/lib/api/middleware/auth-wrapper';
 import { query, queryOne, type QueryParamValue } from '@/lib/db-helpers';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { z } from 'zod';
 
 interface RouteParams { id: string; stopId: string; }
 
@@ -11,6 +12,15 @@ const ALLOWED_FIELDS = [
 ];
 
 const VALID_QUOTE_STATUSES = ['none', 'requested', 'quoted', 'accepted', 'confirmed', 'paid'];
+
+const BodySchema = z.object({
+  vendor_name: z.string().max(255).optional(),
+  vendor_email: z.string().email().max(255).optional(),
+  vendor_phone: z.string().max(50).optional(),
+  quote_status: z.enum(['none', 'requested', 'quoted', 'accepted', 'confirmed', 'paid']).optional(),
+  quoted_amount: z.number().optional(),
+  quote_notes: z.string().max(5000).optional(),
+});
 
 /**
  * PATCH /api/admin/trip-proposals/[id]/stops/[stopId]/vendor
@@ -22,7 +32,7 @@ export const PATCH = withCSRF(
     const { id, stopId } = await (context as RouteContext<RouteParams>).params;
     const proposalId = parseInt(id, 10);
     const stopIdNum = parseInt(stopId, 10);
-    const body = await request.json();
+    const body = BodySchema.parse(await request.json());
 
     // Verify stop belongs to proposal
     const stop = await queryOne(
@@ -52,7 +62,8 @@ export const PATCH = withCSRF(
     for (const field of ALLOWED_FIELDS) {
       if (field in body) {
         setClauses.push(`${field} = $${paramIdx}`);
-        values.push((body[field] === '' ? null : body[field]) as QueryParamValue);
+        const val = (body as Record<string, unknown>)[field];
+        values.push((val === '' ? null : val) as QueryParamValue);
         paramIdx++;
       }
     }

@@ -6,9 +6,15 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { query } from '@/lib/db'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { withCSRF } from '@/lib/api/middleware/csrf';
+
+const PutBodySchema = z.object({
+  id: z.number().int().positive(),
+  isActive: z.boolean(),
+})
 
 export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const { searchParams } = new URL(request.url)
@@ -73,7 +79,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
 
 export const PUT = withCSRF(
   withAdminAuth(async (request: NextRequest, _session) => {
-  const body = await request.json()
+  const body = PutBodySchema.parse(await request.json())
   const { id, isActive } = body
 
   if (!id || typeof isActive !== 'boolean') {

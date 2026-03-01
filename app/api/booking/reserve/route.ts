@@ -11,9 +11,29 @@ import { getSetting } from '@/lib/settings/settings-service';
 import { sendReservationConfirmation } from '@/lib/email';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { z } from 'zod';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+const BodySchema = z.object({
+  // Contact Info
+  contactName: z.string().min(1).max(255),
+  contactEmail: z.string().email(),
+  contactPhone: z.string().min(1).max(20),
+
+  // Event Details
+  partySize: z.number().int().positive(),
+  preferredDate: z.string().min(1),
+  alternateDate: z.string().optional(),
+  eventType: z.string().min(1).max(255),
+  specialRequests: z.string().max(5000).optional(),
+  brandId: z.number().int().positive().optional(),
+
+  // Payment
+  paymentMethod: z.enum(['check', 'card']),
+  depositAmount: z.number().positive(),
+});
 
 interface ReserveRequest {
   // Contact Info
@@ -40,7 +60,7 @@ interface ReserveRequest {
  */
 export const POST = withCSRF(
   withErrorHandling(async (request: NextRequest) => {
-  const data: ReserveRequest = await request.json();
+  const data: ReserveRequest = BodySchema.parse(await request.json());
 
   // Validate required fields
   if (!data.contactName || !data.contactEmail || !data.contactPhone) {

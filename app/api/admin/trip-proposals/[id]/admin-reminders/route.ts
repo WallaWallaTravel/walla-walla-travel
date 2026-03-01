@@ -3,8 +3,33 @@ import { withAdminAuth, AuthSession, RouteContext } from '@/lib/api/middleware/a
 import { adminReminderService } from '@/lib/services/admin-reminder.service';
 import { queryOne } from '@/lib/db-helpers';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { z } from 'zod';
 
 interface RouteParams { id: string; }
+
+const BodySchema = z.discriminatedUnion('action', [
+  z.object({
+    action: z.literal('create_manual'),
+    title: z.string().min(1).max(255),
+    description: z.string().max(5000).optional(),
+    reminder_date: z.string().min(1),
+  }),
+  z.object({
+    action: z.literal('create_milestone'),
+    milestone: z.string().min(1).max(255),
+    title: z.string().min(1).max(255),
+    description: z.string().max(5000).optional(),
+  }),
+  z.object({
+    action: z.literal('dismiss'),
+    reminder_id: z.number().int().positive(),
+  }),
+  z.object({
+    action: z.literal('snooze'),
+    reminder_id: z.number().int().positive(),
+    days: z.number().int().min(1).max(365),
+  }),
+]);
 
 /**
  * GET /api/admin/trip-proposals/[id]/admin-reminders
@@ -34,7 +59,7 @@ export const POST = withCSRF(
   async (request: NextRequest, _session: AuthSession, context?) => {
     const { id } = await (context as RouteContext<RouteParams>).params;
     const proposalId = parseInt(id, 10);
-    const body = await request.json();
+    const body = BodySchema.parse(await request.json());
 
     switch (body.action) {
       case 'create_manual': {
@@ -98,14 +123,8 @@ export const POST = withCSRF(
             { status: 400 }
           );
         }
-        // C4: Validate snooze days
-        const days = parseInt(body.days, 10);
-        if (isNaN(days) || days < 1 || days > 365) {
-          return NextResponse.json(
-            { success: false, error: 'days must be between 1 and 365' },
-            { status: 400 }
-          );
-        }
+        // C4: Validate snooze days (already validated by Zod: 1-365)
+        const days = body.days;
         // C3 FIX: Verify reminder belongs to this proposal
         const snoozedReminder = await queryOne(
           'SELECT id FROM admin_reminders WHERE id = $1 AND trip_proposal_id = $2',
@@ -121,11 +140,13 @@ export const POST = withCSRF(
         return NextResponse.json({ success: true });
       }
 
-      default:
+      default: {
+        const _exhaustive: never = body;
         return NextResponse.json(
-          { success: false, error: `Unknown action: ${body.action}` },
+          { success: false, error: `Unknown action` },
           { status: 400 }
         );
+      }
     }
   }
 )

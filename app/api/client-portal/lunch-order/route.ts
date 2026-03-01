@@ -2,6 +2,26 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, BadRequestError } from '@/lib/api-errors';
 import { queryOne, query } from '@/lib/db-helpers';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { z } from 'zod';
+
+const OrderItemSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1).max(255),
+  quantity: z.number().int().positive(),
+  price: z.number().nonnegative(),
+  modifications: z.string().max(500).optional(),
+  for_person: z.string().max(255).optional(),
+});
+
+const BodySchema = z.object({
+  booking_id: z.number().int().positive(),
+  restaurant_id: z.number().int().positive(),
+  party_size: z.number().int().positive(),
+  items: z.array(OrderItemSchema).min(1),
+  special_requests: z.string().max(2000).optional(),
+  dietary_restrictions: z.string().max(1000).optional(),
+  estimated_arrival_time: z.string().min(1).max(50),
+});
 
 interface Restaurant {
   name: string;
@@ -41,7 +61,7 @@ interface LunchOrderResult {
 
 export const POST = withCSRF(
   withErrorHandling(async (request: NextRequest) => {
-  const body: LunchOrderRequest = await request.json();
+  const body: LunchOrderRequest = BodySchema.parse(await request.json());
   const {
     booking_id,
     restaurant_id,

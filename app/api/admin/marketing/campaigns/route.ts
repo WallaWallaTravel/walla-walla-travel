@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { query } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { socialIntelligenceService } from '@/lib/services/social-intelligence.service'
@@ -6,6 +7,15 @@ import Anthropic from '@anthropic-ai/sdk'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import type { AuthSession } from '@/lib/api/middleware/auth-wrapper'
 import { withCSRF } from '@/lib/api/middleware/csrf';
+
+const BodySchema = z.object({
+  name: z.string().min(1).max(255),
+  theme: z.string().min(1).max(500),
+  channels: z.array(z.string().min(1).max(255)).min(1),
+  startDate: z.string().min(1).max(255),
+  endDate: z.string().min(1).max(255),
+  targetAudience: z.string().max(500).optional(),
+})
 
 function getAnthropicClient() {
   const apiKey = process.env.ANTHROPIC_API_KEY
@@ -63,7 +73,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
 // POST - Create campaign with AI-generated content items
 export const POST = withCSRF(
   withAdminAuth(async (request: NextRequest, session: AuthSession) => {
-  const body = await request.json()
+  const body = BodySchema.parse(await request.json())
   const { name, theme, channels, startDate, endDate, targetAudience } = body
 
   if (!name || !theme || !channels || !Array.isArray(channels) || channels.length === 0) {

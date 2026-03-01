@@ -1,7 +1,52 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { query } from '@/lib/db';
 import { withErrorHandling, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+
+const ActivitySchema = z.object({
+  activity_type: z.string().min(1).max(100),
+  start_time: z.string().max(50).nullable().optional(),
+  end_time: z.string().max(50).nullable().optional(),
+  duration_minutes: z.number().int().positive().nullable().optional(),
+  location_name: z.string().max(255).nullable().optional(),
+  location_address: z.string().max(500).nullable().optional(),
+  location_type: z.string().max(100).nullable().optional(),
+  pickup_location: z.string().max(500).nullable().optional(),
+  dropoff_location: z.string().max(500).nullable().optional(),
+  winery_id: z.number().int().positive().nullable().optional(),
+  tasting_included: z.boolean().nullable().optional(),
+  tasting_fee: z.number().nonnegative().nullable().optional(),
+  title: z.string().max(255).nullable().optional(),
+  description: z.string().max(5000).nullable().optional(),
+  notes: z.string().max(5000).nullable().optional(),
+  display_order: z.number().int().nonnegative().optional(),
+});
+
+const DaySchema = z.object({
+  id: z.number().int().optional(),
+  day_number: z.number().int().positive(),
+  date: z.string().max(50).nullable().optional(),
+  title: z.string().max(255).nullable().optional(),
+  description: z.string().max(5000).nullable().optional(),
+  display_order: z.number().int().nonnegative(),
+  activities: z.array(ActivitySchema).optional(),
+});
+
+const PutBodySchema = z.object({
+  itinerary: z.object({
+    title: z.string().min(1).max(255),
+    client_name: z.string().max(255).nullable().optional(),
+    client_email: z.string().email().max(255).nullable().optional(),
+    party_size: z.number().int().positive().nullable().optional(),
+    start_date: z.string().max(50).nullable().optional(),
+    end_date: z.string().max(50).nullable().optional(),
+    status: z.string().max(50).optional(),
+    internal_notes: z.string().max(5000).nullable().optional(),
+    client_notes: z.string().max(5000).nullable().optional(),
+  }).optional(),
+  days: z.array(DaySchema).optional(),
+});
 
 // GET /api/multi-day-itineraries/[itinerary_id] - Get itinerary with all days and activities
 export const GET = withErrorHandling(async (
@@ -74,7 +119,7 @@ export const PUT = withCSRF(
 ) => {
   const { itinerary_id } = await params;
 
-  const body = await request.json();
+  const body = PutBodySchema.parse(await request.json());
   const { itinerary, days } = body;
 
   await query('BEGIN');
@@ -126,7 +171,7 @@ export const PUT = withCSRF(
            updated_at = NOW()
          RETURNING id`,
         [
-          day.id > 1000000000000 ? null : day.id, // Temp IDs are timestamps
+          (day.id && day.id > 1000000000000) ? null : (day.id ?? null), // Temp IDs are timestamps
           itinerary_id,
           day.day_number,
           day.date,

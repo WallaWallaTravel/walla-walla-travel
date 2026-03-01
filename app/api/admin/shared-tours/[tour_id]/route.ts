@@ -3,10 +3,32 @@ import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper';
 import { sharedTourService } from '@/lib/services/shared-tour.service';
 import { query } from '@/lib/db';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { z } from 'zod';
 
 interface RouteParams {
   params: Promise<{ tour_id: string }>;
 }
+
+const PatchBodySchema = z.object({
+  tour_date: z.string().optional(),
+  start_time: z.string().max(20).optional(),
+  duration_hours: z.number().positive().optional(),
+  max_guests: z.number().int().positive().optional(),
+  min_guests: z.number().int().positive().optional(),
+  base_price_per_person: z.number().positive().optional(),
+  lunch_price_per_person: z.number().positive().optional(),
+  lunch_included_default: z.boolean().optional(),
+  title: z.string().max(255).optional(),
+  description: z.string().max(5000).optional(),
+  meeting_location: z.string().max(500).optional(),
+  wineries_preview: z.array(z.string().max(255)).optional(),
+  booking_cutoff_hours: z.number().int().optional(),
+  is_published: z.boolean().optional(),
+  notes: z.string().max(5000).optional(),
+  vehicle_id: z.number().int().positive().optional(),
+  driver_id: z.number().int().positive().optional(),
+  reassign_vehicle: z.boolean().optional(),
+});
 
 /**
  * GET /api/admin/shared-tours/[tour_id]
@@ -80,7 +102,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session: AuthSess
 export const PATCH = withCSRF(
   withAdminAuth(async (request: NextRequest, _session: AuthSession, context) => {
   const { tour_id } = await (context as RouteParams).params;
-  const body = await request.json();
+  const body = PatchBodySchema.parse(await request.json());
 
   // Note: Day-of-week validation removed - any day is now allowed
   // Sun-Wed is still recommended (peak days), but Thu-Sat tours are permitted

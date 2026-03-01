@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { logger } from '@/lib/logger';
 import { wineryAIService, WineryFilters } from '@/lib/services/winery-ai.service';
 import { wineryService, WinerySummary } from '@/lib/services/winery.service';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+
+const BodySchema = z.object({
+  query: z.string().min(1).max(500),
+  includeExplanations: z.boolean().optional(),
+});
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -20,7 +26,7 @@ export const POST = withCSRF(
   withErrorHandling(async (request: NextRequest) => {
   const startTime = Date.now();
 
-  const { query, includeExplanations = true } = await request.json();
+  const { query, includeExplanations = true } = BodySchema.parse(await request.json());
 
   if (!query || typeof query !== 'string') {
     throw new BadRequestError('Query is required');

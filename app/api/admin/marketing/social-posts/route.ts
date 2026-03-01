@@ -3,6 +3,33 @@ import { query } from '@/lib/db'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler'
 import { withCSRF } from '@/lib/api/middleware/csrf'
+import { z } from 'zod'
+
+const PostBodySchema = z.object({
+  content: z.string().min(1).max(5000),
+  media_urls: z.array(z.string()).optional(),
+  hashtags: z.array(z.string()).optional(),
+  link_url: z.string().max(2000).optional(),
+  platform: z.string().min(1).max(255),
+  account_id: z.number().int().positive().optional(),
+  scheduled_for: z.string().min(1),
+  timezone: z.string().max(255).optional(),
+  ab_test_id: z.number().int().positive().optional(),
+  variant_letter: z.string().max(10).optional(),
+  created_by: z.number().int().positive().optional(),
+  strategy_id: z.number().int().positive().optional(),
+  content_type: z.string().max(255).optional(),
+})
+
+const PatchBodySchema = z.object({
+  id: z.number().int().positive(),
+  content: z.string().min(1).max(5000).optional(),
+  media_urls: z.array(z.string()).optional(),
+  hashtags: z.array(z.string()).optional(),
+  link_url: z.string().max(2000).optional(),
+  scheduled_for: z.string().optional(),
+  status: z.string().max(255).optional(),
+})
 
 // GET - Fetch scheduled posts
 const getHandler = withAdminAuth(async (request: NextRequest, _session) => {
@@ -57,7 +84,7 @@ const getHandler = withAdminAuth(async (request: NextRequest, _session) => {
 
 // POST - Create new scheduled post
 const postHandler = withAdminAuth(async (request: NextRequest, _session) => {
-  const body = await request.json()
+  const body = PostBodySchema.parse(await request.json())
 
   const {
     content,
@@ -114,7 +141,7 @@ const postHandler = withAdminAuth(async (request: NextRequest, _session) => {
 
 // PATCH - Update post (status, reschedule, etc.)
 const patchHandler = withAdminAuth(async (request: NextRequest, _session) => {
-  const body = await request.json()
+  const body = PatchBodySchema.parse(await request.json())
   const { id, ...updates } = body
 
   if (!id) {
