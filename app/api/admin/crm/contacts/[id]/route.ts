@@ -4,10 +4,6 @@ import { NotFoundError, BadRequestError } from '@/lib/api/middleware/error-handl
 import { query } from '@/lib/db';
 import type { CrmContactSummary, UpdateContactData } from '@/types/crm';
 
-interface RouteParams {
-  id: string;
-}
-
 /**
  * GET /api/admin/crm/contacts/[id]
  * Get a single contact with full details

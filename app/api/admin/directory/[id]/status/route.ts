@@ -17,10 +17,6 @@ const StatusUpdateSchema = z.object({
   notes: z.string().optional(),
 });
 
-interface RouteParams {
-  params: Promise<{ id: string }>;
-}
-
 /**
  * PATCH /api/admin/directory/[id]/status
  * Update business status

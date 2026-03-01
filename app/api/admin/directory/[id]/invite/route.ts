@@ -19,10 +19,6 @@ const InviteRequestSchema = z.object({
   expirationDays: z.number().min(1).max(90).optional().default(30),
 });
 
-interface RouteParams {
-  params: Promise<{ id: string }>;
-}
-
 /**
  * POST /api/admin/directory/[id]/invite
  * Generate invitation link or send invitation email
