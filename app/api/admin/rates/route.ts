@@ -9,7 +9,7 @@ import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
  * GET /api/admin/rates
  * Fetch all rate configurations
  */
-export const GET = withAdminAuth(async (request: NextRequest, _session) => {
+export const GET = withAdminAuth(async (_request: NextRequest, _session) => {
 
   const result = await query(
     `SELECT
