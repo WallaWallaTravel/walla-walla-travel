@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
 import { logger } from '@/lib/logger'
-import { withErrorHandling } from '@/lib/api/middleware/error-handler'
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 
 // GET - List strategies with optional status filter
-export const GET = withErrorHandling(async (request: NextRequest) => {
+export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const { searchParams } = new URL(request.url)
   const status = searchParams.get('status')
   const limit = parseInt(searchParams.get('limit') || '10')
@@ -39,7 +39,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 });
 
 // POST - Manually trigger strategy generation
-export const POST = withErrorHandling(async (_request: NextRequest) => {
+export const POST = withAdminAuth(async (_request: NextRequest, _session) => {
   logger.info('Manual strategy generation triggered via admin API')
 
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL
@@ -65,7 +65,7 @@ export const POST = withErrorHandling(async (_request: NextRequest) => {
 });
 
 // PATCH - Update strategy status (activate, archive, etc.)
-export const PATCH = withErrorHandling(async (request: NextRequest) => {
+export const PATCH = withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json()
   const { id, status } = body
 

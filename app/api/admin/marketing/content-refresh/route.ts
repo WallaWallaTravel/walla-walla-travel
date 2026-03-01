@@ -7,24 +7,10 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
-import { getSessionFromRequest } from '@/lib/auth/session'
-import { withErrorHandling } from '@/lib/api/middleware/error-handler'
-
-async function verifyAdmin(request: NextRequest) {
-  const session = await getSessionFromRequest(request)
-  if (!session || session.user.role !== 'admin') {
-    return null
-  }
-  return session
-}
+import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper'
 
 // GET - List content refresh suggestions
-export const GET = withErrorHandling(async (request: NextRequest) => {
-  const session = await verifyAdmin(request)
-  if (!session) {
-    return NextResponse.json({ error: 'Admin access required' }, { status: 401 })
-  }
-
+export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const { searchParams } = new URL(request.url)
   const status = searchParams.get('status') || 'pending'
   const urgency = searchParams.get('urgency')
@@ -128,12 +114,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 });
 
 // PUT - Update suggestion status
-export const PUT = withErrorHandling(async (request: NextRequest) => {
-  const session = await verifyAdmin(request)
-  if (!session) {
-    return NextResponse.json({ error: 'Admin access required' }, { status: 401 })
-  }
-
+export const PUT = withAdminAuth(async (request: NextRequest, session: AuthSession) => {
   const body = await request.json()
   const { id, status } = body
 
@@ -159,7 +140,7 @@ export const PUT = withErrorHandling(async (request: NextRequest) => {
   if (status === 'applied') {
     setClauses.push('applied_at = NOW()')
     setClauses.push(`applied_by = $${params.length + 1}`)
-    params.push(session.user.id)
+    params.push(parseInt(session.userId))
   }
 
   if (status === 'dismissed' || status === 'pending') {

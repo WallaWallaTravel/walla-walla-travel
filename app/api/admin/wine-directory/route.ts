@@ -1,20 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
-import { getSessionFromRequest } from '@/lib/auth/session'
-import { withErrorHandling, UnauthorizedError, BadRequestError } from '@/lib/api/middleware/error-handler'
-
-async function verifyAdmin(request: NextRequest) {
-  const session = await getSessionFromRequest(request)
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required')
-  }
-  return session
-}
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
+import { BadRequestError } from '@/lib/api/middleware/error-handler'
 
 // GET - Fetch wineries with filtering
-export const GET = withErrorHandling(async (request: NextRequest) => {
-  await verifyAdmin(request)
-
+export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const { searchParams } = new URL(request.url)
   const search = searchParams.get('search')
   const ava = searchParams.get('ava')
@@ -82,9 +72,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 })
 
 // POST - Create new winery
-export const POST = withErrorHandling(async (request: NextRequest) => {
-  await verifyAdmin(request)
-
+export const POST = withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json()
 
   const {

@@ -1,16 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionFromRequest } from '@/lib/auth/session';
-import { withErrorHandling, UnauthorizedError, NotFoundError, BadRequestError } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper';
+import { NotFoundError, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { competitorMonitoringService } from '@/lib/services/competitor-monitoring.service';
 import type { UpdateChangeStatusInput } from '@/types/competitors';
-
-async function verifyAdmin(request: NextRequest) {
-  const session = await getSessionFromRequest(request);
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-  return session;
-}
 
 function getIdFromUrl(request: NextRequest): number {
   const url = new URL(request.url);
@@ -23,9 +15,7 @@ function getIdFromUrl(request: NextRequest): number {
 }
 
 // PUT - Update change status (review, action, dismiss)
-async function putHandler(request: NextRequest) {
-  const session = await verifyAdmin(request);
-
+async function putHandler(request: NextRequest, session: AuthSession) {
   const id = getIdFromUrl(request);
   const body = await request.json() as UpdateChangeStatusInput;
 
@@ -36,7 +26,7 @@ async function putHandler(request: NextRequest) {
   const change = await competitorMonitoringService.updateChangeStatus(
     id,
     body,
-    session.user.id
+    parseInt(session.userId)
   );
 
   if (!change) {
@@ -49,4 +39,4 @@ async function putHandler(request: NextRequest) {
   });
 }
 
-export const PUT = withErrorHandling(putHandler);
+export const PUT = withAdminAuth(async (request, session) => putHandler(request, session));

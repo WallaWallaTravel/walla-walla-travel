@@ -1,24 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionFromRequest } from '@/lib/auth/session';
-import { withErrorHandling, UnauthorizedError, BadRequestError } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { ContentService } from '@/lib/services/content.service';
-
-async function verifyAdmin(request: NextRequest) {
-  const session = await getSessionFromRequest(request);
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-  return session;
-}
 
 // GET - Fetch collections
 // ?type=neighborhoods - Get all items in a collection type
 // ?type=neighborhoods&slug=downtown - Get specific item
 // ?type=neighborhoods&includeInactive=true - Include inactive items
 // (no params) - Get list of collection types
-async function getHandler(request: NextRequest) {
-  await verifyAdmin(request);
-
+const getHandler = withAdminAuth(async (request: NextRequest, _session) => {
   const { searchParams } = new URL(request.url);
   const collectionType = searchParams.get('type');
   const slug = searchParams.get('slug');
@@ -43,12 +33,10 @@ async function getHandler(request: NextRequest) {
     items,
     count: items.length,
   });
-}
+});
 
 // POST - Create new collection item
-async function postHandler(request: NextRequest) {
-  const session = await verifyAdmin(request);
-
+const postHandler = withAdminAuth(async (request: NextRequest, session) => {
   const body = await request.json();
 
   if (!body.collection_type || !body.slug || !body.title) {
@@ -73,19 +61,17 @@ async function postHandler(request: NextRequest) {
     sort_order: body.sort_order,
     is_active: body.is_active,
     metadata: body.metadata,
-    updated_by: session.user.id,
+    updated_by: parseInt(session.userId),
   });
 
   return NextResponse.json({
     success: true,
     item,
   });
-}
+});
 
 // PUT - Update collection item
-async function putHandler(request: NextRequest) {
-  const session = await verifyAdmin(request);
-
+const putHandler = withAdminAuth(async (request: NextRequest, session) => {
   const body = await request.json();
 
   if (!body.id) {
@@ -102,7 +88,7 @@ async function putHandler(request: NextRequest) {
     sort_order: body.sort_order,
     is_active: body.is_active,
     metadata: body.metadata,
-    updated_by: session.user.id,
+    updated_by: parseInt(session.userId),
   });
 
   if (!item) {
@@ -113,12 +99,10 @@ async function putHandler(request: NextRequest) {
     success: true,
     item,
   });
-}
+});
 
 // DELETE - Remove collection item
-async function deleteHandler(request: NextRequest) {
-  await verifyAdmin(request);
-
+const deleteHandler = withAdminAuth(async (request: NextRequest, _session) => {
   const { searchParams } = new URL(request.url);
   const id = searchParams.get('id');
   const soft = searchParams.get('soft') === 'true';
@@ -145,13 +129,9 @@ async function deleteHandler(request: NextRequest) {
       ? soft ? 'Collection item deactivated' : 'Collection item deleted'
       : 'Collection item not found',
   });
-}
+});
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const GET = withErrorHandling(getHandler as any);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const POST = withErrorHandling(postHandler as any);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const PUT = withErrorHandling(putHandler as any);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const DELETE = withErrorHandling(deleteHandler as any);
+export const GET = getHandler;
+export const POST = postHandler;
+export const PUT = putHandler;
+export const DELETE = deleteHandler;

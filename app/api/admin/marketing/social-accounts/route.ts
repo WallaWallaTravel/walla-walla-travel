@@ -1,20 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
-import { getSessionFromRequest } from '@/lib/auth/session'
-import { withErrorHandling, UnauthorizedError, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler'
-
-async function verifyAdmin(request: NextRequest) {
-  const session = await getSessionFromRequest(request)
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required')
-  }
-  return session
-}
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
+import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler'
 
 // GET - Fetch connected social accounts
-async function getHandler(request: NextRequest) {
-  await verifyAdmin(request)
-
+async function getHandler(_request: NextRequest) {
   const result = await query(`
     SELECT
       id,
@@ -41,8 +31,6 @@ async function getHandler(request: NextRequest) {
 
 // DELETE - Disconnect a social account
 async function deleteHandler(request: NextRequest) {
-  await verifyAdmin(request)
-
   const body = await request.json()
   const { id } = body
 
@@ -74,8 +62,6 @@ async function deleteHandler(request: NextRequest) {
 
 // PATCH - Update account settings
 async function patchHandler(request: NextRequest) {
-  await verifyAdmin(request)
-
   const body = await request.json()
   const { id, is_active } = body
 
@@ -101,6 +87,6 @@ async function patchHandler(request: NextRequest) {
   })
 }
 
-export const GET = withErrorHandling(getHandler)
-export const DELETE = withErrorHandling(deleteHandler)
-export const PATCH = withErrorHandling(patchHandler)
+export const GET = withAdminAuth(getHandler)
+export const DELETE = withAdminAuth(deleteHandler)
+export const PATCH = withAdminAuth(patchHandler)

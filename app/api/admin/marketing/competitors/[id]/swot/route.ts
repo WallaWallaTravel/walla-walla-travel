@@ -1,16 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionFromRequest } from '@/lib/auth/session';
-import { withErrorHandling, UnauthorizedError, BadRequestError } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import type { AuthSession } from '@/lib/api/middleware/auth-wrapper';
+import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { competitorMonitoringService } from '@/lib/services/competitor-monitoring.service';
 import type { CreateSwotInput } from '@/types/competitors';
-
-async function verifyAdmin(request: NextRequest) {
-  const session = await getSessionFromRequest(request);
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-  return session;
-}
 
 function getCompetitorIdFromUrl(request: NextRequest): number {
   const url = new URL(request.url);
@@ -25,9 +18,7 @@ function getCompetitorIdFromUrl(request: NextRequest): number {
 }
 
 // GET - Get SWOT items for a competitor
-async function getHandler(request: NextRequest): Promise<NextResponse> {
-  await verifyAdmin(request);
-
+async function getHandler(request: NextRequest) {
   const competitorId = getCompetitorIdFromUrl(request);
   const { searchParams } = new URL(request.url);
   const grouped = searchParams.get('grouped') === 'true';
@@ -46,9 +37,7 @@ async function getHandler(request: NextRequest): Promise<NextResponse> {
 }
 
 // POST - Add new SWOT item
-async function postHandler(request: NextRequest) {
-  const session = await verifyAdmin(request);
-
+async function postHandler(request: NextRequest, session: AuthSession) {
   const competitorId = getCompetitorIdFromUrl(request);
   const body = await request.json() as Omit<CreateSwotInput, 'competitor_id'>;
 
@@ -61,7 +50,7 @@ async function postHandler(request: NextRequest) {
       ...body,
       competitor_id: competitorId,
     },
-    session.user.id
+    parseInt(session.userId)
   );
 
   return NextResponse.json({
@@ -70,5 +59,5 @@ async function postHandler(request: NextRequest) {
   });
 }
 
-export const GET = withErrorHandling(getHandler);
-export const POST = withErrorHandling(postHandler);
+export const GET = withAdminAuth(async (request, _session) => getHandler(request));
+export const POST = withAdminAuth(async (request, session) => postHandler(request, session));

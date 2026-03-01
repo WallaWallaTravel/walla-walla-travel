@@ -1,28 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
 import { logger } from '@/lib/logger'
-import { getSessionFromRequest } from '@/lib/auth/session'
-import { withErrorHandling } from '@/lib/api/middleware/error-handler'
-
-async function verifyAdmin(request: NextRequest) {
-  const session = await getSessionFromRequest(request)
-  if (!session || session.user.role !== 'admin') {
-    return null
-  }
-  return session
-}
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
+import type { AuthSession } from '@/lib/api/middleware/auth-wrapper'
 
 // POST - Approve campaign: creates scheduled_posts from social items, marks items as scheduled
-export const POST = withErrorHandling(async (
+export const POST = withAdminAuth(async (
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  session: AuthSession,
+  context
 ) => {
-  const session = await verifyAdmin(request)
-  if (!session) {
-    return NextResponse.json({ error: 'Admin access required' }, { status: 401 })
-  }
-
-  const { id } = await params
+  const { id } = await context!.params
   const campaignId = parseInt(id, 10)
   if (isNaN(campaignId)) {
     return NextResponse.json({ error: 'Invalid campaign ID' }, { status: 400 })
@@ -75,7 +63,7 @@ export const POST = withErrorHandling(async (
       [],
       item.channel,
       item.scheduled_for,
-      session.user.id || null,
+      parseInt(session.userId) || null,
     ])
 
     const scheduledPostId = postResult.rows[0].id

@@ -1,28 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
 import { logger } from '@/lib/logger'
-import { getSessionFromRequest } from '@/lib/auth/session'
-import { withErrorHandling } from '@/lib/api/middleware/error-handler'
-
-async function verifyAdmin(request: NextRequest) {
-  const session = await getSessionFromRequest(request)
-  if (!session || session.user.role !== 'admin') {
-    return null
-  }
-  return session
-}
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 
 // GET - Get campaign with all items
-export const GET = withErrorHandling(async (
+export const GET = withAdminAuth(async (
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  _session,
+  context
 ) => {
-  const session = await verifyAdmin(request)
-  if (!session) {
-    return NextResponse.json({ error: 'Admin access required' }, { status: 401 })
-  }
-
-  const { id } = await params
+  const { id } = await context!.params
   const campaignId = parseInt(id, 10)
   if (isNaN(campaignId)) {
     return NextResponse.json({ error: 'Invalid campaign ID' }, { status: 400 })
@@ -56,16 +43,12 @@ export const GET = withErrorHandling(async (
 });
 
 // PUT - Update campaign status
-export const PUT = withErrorHandling(async (
+export const PUT = withAdminAuth(async (
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  _session,
+  context
 ) => {
-  const session = await verifyAdmin(request)
-  if (!session) {
-    return NextResponse.json({ error: 'Admin access required' }, { status: 401 })
-  }
-
-  const { id } = await params
+  const { id } = await context!.params
   const campaignId = parseInt(id, 10)
   if (isNaN(campaignId)) {
     return NextResponse.json({ error: 'Invalid campaign ID' }, { status: 400 })
@@ -155,16 +138,12 @@ export const PUT = withErrorHandling(async (
 });
 
 // DELETE - Cancel campaign
-export const DELETE = withErrorHandling(async (
+export const DELETE = withAdminAuth(async (
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  _session,
+  context
 ) => {
-  const session = await verifyAdmin(request)
-  if (!session) {
-    return NextResponse.json({ error: 'Admin access required' }, { status: 401 })
-  }
-
-  const { id } = await params
+  const { id } = await context!.params
   const campaignId = parseInt(id, 10)
   if (isNaN(campaignId)) {
     return NextResponse.json({ error: 'Invalid campaign ID' }, { status: 400 })

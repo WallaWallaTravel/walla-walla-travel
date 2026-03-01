@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling, UnauthorizedError } from '@/lib/api/middleware/error-handler';
-import { getSession } from '@/lib/auth/session';
-import { canAccessGeology } from '@/lib/auth/roles';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { query } from '@/lib/db';
 import { z } from 'zod';
 
@@ -25,12 +23,7 @@ const createFactSchema = z.object({
 // GET /api/admin/geology/facts - List all facts
 // ============================================================================
 
-export const GET = withErrorHandling(async (request: NextRequest) => {
-  const session = await getSession();
-  if (!session || !canAccessGeology(session.user.role)) {
-    throw new UnauthorizedError('Admin access required');
-  }
-
+export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const { searchParams } = new URL(request.url);
   const topicId = searchParams.get('topic_id');
   const featuredOnly = searchParams.get('featured') === 'true';
@@ -71,12 +64,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 // POST /api/admin/geology/facts - Create a new fact
 // ============================================================================
 
-export const POST = withErrorHandling(async (request: NextRequest) => {
-  const session = await getSession();
-  if (!session || !canAccessGeology(session.user.role)) {
-    throw new UnauthorizedError('Admin access required');
-  }
-
+export const POST = withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json();
   const validated = createFactSchema.parse(body);
 

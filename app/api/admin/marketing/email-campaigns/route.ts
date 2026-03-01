@@ -1,20 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
-import { getSessionFromRequest } from '@/lib/auth/session'
-import { withErrorHandling, UnauthorizedError, BadRequestError } from '@/lib/api/middleware/error-handler'
-
-async function verifyAdmin(request: NextRequest) {
-  const session = await getSessionFromRequest(request)
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required')
-  }
-  return session
-}
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
+import { BadRequestError } from '@/lib/api/middleware/error-handler'
 
 // GET - Fetch email campaigns
 async function getHandler(request: NextRequest) {
-  await verifyAdmin(request)
-
   const { searchParams } = new URL(request.url)
   const status = searchParams.get('status')
   const campaign_type = searchParams.get('campaign_type')
@@ -75,8 +65,6 @@ async function getHandler(request: NextRequest) {
 
 // POST - Create new email campaign
 async function postHandler(request: NextRequest) {
-  await verifyAdmin(request)
-
   const body = await request.json()
 
   const {
@@ -128,5 +116,5 @@ async function postHandler(request: NextRequest) {
   })
 }
 
-export const GET = withErrorHandling(getHandler)
-export const POST = withErrorHandling(postHandler)
+export const GET = withAdminAuth(async (request, _session) => getHandler(request))
+export const POST = withAdminAuth(async (request, _session) => postHandler(request))

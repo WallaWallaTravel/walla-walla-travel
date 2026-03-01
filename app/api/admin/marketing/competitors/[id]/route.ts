@@ -1,16 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionFromRequest } from '@/lib/auth/session';
-import { withErrorHandling, UnauthorizedError, NotFoundError, BadRequestError } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { NotFoundError, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { competitorMonitoringService } from '@/lib/services/competitor-monitoring.service';
 import type { UpdateCompetitorInput } from '@/types/competitors';
-
-async function verifyAdmin(request: NextRequest) {
-  const session = await getSessionFromRequest(request);
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-  return session;
-}
 
 function getIdFromUrl(request: NextRequest): number {
   const url = new URL(request.url);
@@ -24,8 +16,6 @@ function getIdFromUrl(request: NextRequest): number {
 
 // GET - Get single competitor with details
 async function getHandler(request: NextRequest) {
-  await verifyAdmin(request);
-
   const id = getIdFromUrl(request);
   const result = await competitorMonitoringService.getCompetitorDetail(id);
 
@@ -38,8 +28,6 @@ async function getHandler(request: NextRequest) {
 
 // PUT - Update competitor
 async function putHandler(request: NextRequest) {
-  await verifyAdmin(request);
-
   const id = getIdFromUrl(request);
   const body = await request.json() as UpdateCompetitorInput;
 
@@ -57,8 +45,6 @@ async function putHandler(request: NextRequest) {
 
 // DELETE - Deactivate competitor (soft delete)
 async function deleteHandler(request: NextRequest) {
-  await verifyAdmin(request);
-
   const id = getIdFromUrl(request);
   const success = await competitorMonitoringService.deactivateCompetitor(id);
 
@@ -72,6 +58,6 @@ async function deleteHandler(request: NextRequest) {
   });
 }
 
-export const GET = withErrorHandling(getHandler);
-export const PUT = withErrorHandling(putHandler);
-export const DELETE = withErrorHandling(deleteHandler);
+export const GET = withAdminAuth(async (request, _session) => getHandler(request));
+export const PUT = withAdminAuth(async (request, _session) => putHandler(request));
+export const DELETE = withAdminAuth(async (request, _session) => deleteHandler(request));

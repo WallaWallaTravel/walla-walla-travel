@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling, UnauthorizedError } from '@/lib/api/middleware/error-handler';
-import { getSession } from '@/lib/auth/session';
-import { canAccessGeology } from '@/lib/auth/roles';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { query } from '@/lib/db';
 import { z } from 'zod';
 
@@ -29,12 +27,7 @@ const createGuidanceSchema = z.object({
 // GET /api/admin/geology/guidance - List all AI guidance
 // ============================================================================
 
-export const GET = withErrorHandling(async (request: NextRequest) => {
-  const session = await getSession();
-  if (!session || !canAccessGeology(session.user.role)) {
-    throw new UnauthorizedError('Admin access required');
-  }
-
+export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const { searchParams } = new URL(request.url);
   const activeOnly = searchParams.get('active') === 'true';
 
@@ -61,12 +54,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 // POST /api/admin/geology/guidance - Create new AI guidance
 // ============================================================================
 
-export const POST = withErrorHandling(async (request: NextRequest) => {
-  const session = await getSession();
-  if (!session || !canAccessGeology(session.user.role)) {
-    throw new UnauthorizedError('Admin access required');
-  }
-
+export const POST = withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json();
   const validated = createGuidanceSchema.parse(body);
 

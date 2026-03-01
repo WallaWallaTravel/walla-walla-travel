@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling, UnauthorizedError } from '@/lib/api/middleware/error-handler';
-import { getSession } from '@/lib/auth/session';
-import { canAccessGeology } from '@/lib/auth/roles';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { query } from '@/lib/db';
 import { z } from 'zod';
 
@@ -34,12 +32,7 @@ const createSiteSchema = z.object({
 // GET /api/admin/geology/sites - List all sites
 // ============================================================================
 
-export const GET = withErrorHandling(async () => {
-  const session = await getSession();
-  if (!session || !canAccessGeology(session.user.role)) {
-    throw new UnauthorizedError('Admin access required');
-  }
-
+export const GET = withAdminAuth(async (_request: NextRequest, _session) => {
   const result = await query(`
     SELECT id, name, slug, description, site_type, latitude, longitude,
            address, is_public_access, requires_appointment, is_published, created_at
@@ -60,12 +53,7 @@ export const GET = withErrorHandling(async () => {
 // POST /api/admin/geology/sites - Create new site
 // ============================================================================
 
-export const POST = withErrorHandling(async (request: NextRequest) => {
-  const session = await getSession();
-  if (!session || !canAccessGeology(session.user.role)) {
-    throw new UnauthorizedError('Admin access required');
-  }
-
+export const POST = withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json();
   const validated = createSiteSchema.parse(body);
 

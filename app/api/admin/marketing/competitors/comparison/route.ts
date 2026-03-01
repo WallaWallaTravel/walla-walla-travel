@@ -1,20 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getSessionFromRequest } from '@/lib/auth/session';
-import { withErrorHandling, UnauthorizedError } from '@/lib/api/middleware/error-handler';
+import { NextResponse } from 'next/server';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { competitorMonitoringService } from '@/lib/services/competitor-monitoring.service';
 
-async function verifyAdmin(request: NextRequest) {
-  const session = await getSessionFromRequest(request);
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-  return session;
-}
-
 // GET - Get price comparison matrix
-async function getHandler(request: NextRequest) {
-  await verifyAdmin(request);
-
+export const GET = withAdminAuth(async (_request, _session) => {
   const competitors = await competitorMonitoringService.getPriceComparison();
 
   // NW Touring pricing (our pricing for comparison)
@@ -60,6 +49,4 @@ async function getHandler(request: NextRequest) {
     competitors,
     last_updated: new Date().toISOString(),
   });
-}
-
-export const GET = withErrorHandling(getHandler);
+});

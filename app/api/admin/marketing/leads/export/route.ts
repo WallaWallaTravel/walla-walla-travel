@@ -1,15 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
-import { getSessionFromRequest } from '@/lib/auth/session'
-import { withErrorHandling, UnauthorizedError } from '@/lib/api/middleware/error-handler'
-
-async function verifyAdmin(request: NextRequest) {
-  const session = await getSessionFromRequest(request)
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required')
-  }
-  return session
-}
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 
 /**
  * Map CRM lifecycle_stage to legacy lead status
@@ -28,8 +19,6 @@ function mapLifecycleToStatus(lifecycle: string): string {
 
 // GET - Export leads as CSV (now from crm_contacts)
 async function getHandler(request: NextRequest) {
-  await verifyAdmin(request)
-
   const { searchParams } = new URL(request.url)
   const status = searchParams.get('status')
   const temperature = searchParams.get('temperature')
@@ -178,4 +167,4 @@ async function getHandler(request: NextRequest) {
   })
 }
 
-export const GET = withErrorHandling(getHandler)
+export const GET = withAdminAuth(getHandler)

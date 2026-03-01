@@ -7,9 +7,9 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
-import { withErrorHandling } from '@/lib/api/middleware/error-handler'
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 
-export const GET = withErrorHandling(async (request: NextRequest) => {
+export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const { searchParams } = new URL(request.url)
   const activeOnly = searchParams.get('active') !== 'false'
   const platform = searchParams.get('platform')
@@ -70,7 +70,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   })
 });
 
-export const PUT = withErrorHandling(async (request: NextRequest) => {
+export const PUT = withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json()
   const { id, isActive } = body
 
@@ -90,7 +90,7 @@ export const PUT = withErrorHandling(async (request: NextRequest) => {
   return NextResponse.json({ success: true })
 });
 
-export const DELETE = withErrorHandling(async (request: NextRequest) => {
+export const DELETE = withAdminAuth(async (request: NextRequest, _session) => {
   const { searchParams } = new URL(request.url)
   const id = searchParams.get('id')
 

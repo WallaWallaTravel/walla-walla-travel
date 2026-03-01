@@ -1,20 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
-import { getSessionFromRequest } from '@/lib/auth/session'
-import { withErrorHandling, UnauthorizedError, BadRequestError } from '@/lib/api/middleware/error-handler'
-
-async function verifyAdmin(request: NextRequest) {
-  const session = await getSessionFromRequest(request)
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required')
-  }
-  return session
-}
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
+import { BadRequestError } from '@/lib/api/middleware/error-handler'
 
 // GET - Fetch A/B tests with variants
-async function getHandler(request: NextRequest) {
-  await verifyAdmin(request)
-
+export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const { searchParams } = new URL(request.url)
   const status = searchParams.get('status')
   const platform = searchParams.get('platform')
@@ -68,12 +58,10 @@ async function getHandler(request: NextRequest) {
     tests,
     total: tests.length
   })
-}
+})
 
 // POST - Create new A/B test
-async function postHandler(request: NextRequest) {
-  await verifyAdmin(request)
-
+export const POST = withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json()
 
   const {
@@ -168,7 +156,4 @@ async function postHandler(request: NextRequest) {
     success: true,
     test: testResult.rows[0]
   })
-}
-
-export const GET = withErrorHandling(getHandler)
-export const POST = withErrorHandling(postHandler)
+})

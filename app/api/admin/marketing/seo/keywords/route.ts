@@ -5,25 +5,11 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getSessionFromRequest } from '@/lib/auth/session'
 import { socialIntelligenceService } from '@/lib/services/social-intelligence.service'
 import { logger } from '@/lib/logger'
-import { withErrorHandling } from '@/lib/api/middleware/error-handler'
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 
-async function verifyAdmin(request: NextRequest) {
-  const session = await getSessionFromRequest(request)
-  if (!session || session.user.role !== 'admin') {
-    return null
-  }
-  return session
-}
-
-export const GET = withErrorHandling(async (request: NextRequest) => {
-  const session = await verifyAdmin(request)
-  if (!session) {
-    return NextResponse.json({ error: 'Admin access required' }, { status: 401 })
-  }
-
+export const GET = withAdminAuth(async (_request: NextRequest, _session) => {
   const [opportunities, trends] = await Promise.all([
     socialIntelligenceService.getKeywordOpportunities(),
     socialIntelligenceService.getSeasonalKeywordTrends(),

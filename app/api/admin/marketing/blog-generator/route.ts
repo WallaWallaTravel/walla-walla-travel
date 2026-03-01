@@ -10,7 +10,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { query } from '@/lib/db'
 import { logger } from '@/lib/logger'
-import { withErrorHandling } from '@/lib/api/middleware/error-handler'
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 
 function getAnthropicClient() {
   const apiKey = process.env.ANTHROPIC_API_KEY
@@ -94,7 +94,7 @@ function estimateReadTime(wordCount: number): number {
   return Math.max(1, Math.ceil(wordCount / 250))
 }
 
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json()
   const { title, targetKeywords, category, tone, wordCountTarget } = body
 
@@ -243,7 +243,7 @@ The article should be well-structured, informative, and optimized for the target
   })
 });
 
-export const GET = withErrorHandling(async (request: NextRequest) => {
+export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const { searchParams } = new URL(request.url)
   const status = searchParams.get('status')
   const category = searchParams.get('category')
@@ -302,7 +302,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   })
 });
 
-export const PATCH = withErrorHandling(async (request: NextRequest) => {
+export const PATCH = withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json()
   const { id, status } = body
 

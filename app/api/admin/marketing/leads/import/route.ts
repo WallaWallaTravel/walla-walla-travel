@@ -1,15 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
-import { getSessionFromRequest } from '@/lib/auth/session'
-import { withErrorHandling, UnauthorizedError, BadRequestError } from '@/lib/api/middleware/error-handler'
-
-async function verifyAdmin(request: NextRequest) {
-  const session = await getSessionFromRequest(request)
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required')
-  }
-  return session
-}
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
+import { BadRequestError } from '@/lib/api/middleware/error-handler'
 
 interface ImportedLead {
   first_name: string
@@ -27,8 +19,6 @@ interface ImportedLead {
 
 // POST - Import leads from CSV/JSON (now inserts into crm_contacts)
 async function postHandler(request: NextRequest) {
-  await verifyAdmin(request)
-
   const contentType = request.headers.get('content-type') || ''
   let leads: ImportedLead[] = []
   let skipped = 0
@@ -237,4 +227,4 @@ function parseCSVLine(line: string): string[] {
   return result
 }
 
-export const POST = withErrorHandling(postHandler)
+export const POST = withAdminAuth(postHandler)
