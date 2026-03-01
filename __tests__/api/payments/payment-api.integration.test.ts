@@ -73,6 +73,12 @@ jest.mock('@/lib/api/middleware/rate-limit', () => ({
   },
 }));
 
+// Mock auth wrappers to pass through in tests
+jest.mock('@/lib/api/middleware/auth-wrapper', () => ({
+  withAuth: jest.fn((handler: unknown) => handler),
+  withOptionalAuth: jest.fn((handler: unknown) => handler),
+}));
+
 import Stripe from 'stripe';
 import { queryOne, query, withTransaction } from '@/lib/db-helpers';
 import { healthService } from '@/lib/services/health.service';
@@ -109,7 +115,8 @@ describe('Payment API Integration', () => {
 
   describe('POST /api/payments/create-intent', () => {
     // Import route handler (after mocks are set up)
-    let POST: (request: NextRequest) => Promise<Response>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let POST: (...args: any[]) => Promise<Response>;
 
     beforeAll(async () => {
       // Dynamic import to ensure mocks are in place
