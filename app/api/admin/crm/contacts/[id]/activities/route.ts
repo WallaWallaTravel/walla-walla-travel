@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { query } from '@/lib/db';
+import { z } from 'zod';
 import type { CrmActivityWithUser, CreateActivityData } from '@/types/crm';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 
@@ -48,6 +49,18 @@ export const GET = withAdminAuth(async (
   });
 });
 
+const BodySchema = z.object({
+  activity_type: z.string().min(1).max(100),
+  deal_id: z.number().int().positive().optional(),
+  subject: z.string().max(255).optional(),
+  body: z.string().max(5000).optional(),
+  call_duration_minutes: z.number().int().nonnegative().optional(),
+  call_outcome: z.string().max(100).optional(),
+  email_direction: z.string().max(50).optional(),
+  email_status: z.string().max(50).optional(),
+  source_id: z.string().max(255).optional(),
+});
+
 /**
  * POST /api/admin/crm/contacts/[id]/activities
  * Log a new activity for a contact
@@ -63,7 +76,7 @@ export const POST = withCSRF(
     throw new BadRequestError('Invalid contact ID');
   }
 
-  const body = await request.json() as CreateActivityData;
+  const body = BodySchema.parse(await request.json()) as CreateActivityData;
 
   if (!body.activity_type) {
     throw new BadRequestError('activity_type is required');

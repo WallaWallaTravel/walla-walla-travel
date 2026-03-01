@@ -1,8 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { query } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { withCSRF } from '@/lib/api/middleware/csrf';
+
+const PutBodySchema = z.object({
+  status: z.enum(['draft', 'scheduled', 'active', 'paused', 'completed', 'cancelled']).optional(),
+  name: z.string().min(1).max(255).optional(),
+  theme: z.string().min(1).max(500).optional(),
+  startDate: z.string().max(255).optional(),
+  endDate: z.string().max(255).optional(),
+  targetAudience: z.string().max(500).optional(),
+})
 
 // GET - Get campaign with all items
 export const GET = withAdminAuth(async (
@@ -56,7 +66,7 @@ export const PUT = withCSRF(
     return NextResponse.json({ error: 'Invalid campaign ID' }, { status: 400 })
   }
 
-  const body = await request.json()
+  const body = PutBodySchema.parse(await request.json())
   const { status, name, theme, startDate, endDate, targetAudience } = body
 
   // Validate status transition if status is being updated

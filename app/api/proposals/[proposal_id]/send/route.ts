@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { logger } from '@/lib/logger';
 import { query } from '@/lib/db';
 import { withErrorHandling, NotFoundError } from '@/lib/api/middleware/error-handler';
@@ -9,6 +10,11 @@ import { withCSRF } from '@/lib/api/middleware/csrf';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 import { crmSyncService } from '@/lib/services/crm-sync.service';
 import { crmTaskAutomationService } from '@/lib/services/crm-task-automation.service';
+
+const BodySchema = z.object({
+  method: z.enum(['email', 'sms', 'both']).optional(),
+  customMessage: z.string().max(5000).optional(),
+});
 
 /**
  * POST /api/proposals/[proposal_id]/send
@@ -21,7 +27,7 @@ export const POST = withCSRF(
   { params }: { params: Promise<{ proposal_id: string }> }
 ): Promise<NextResponse> => {
   const { proposal_id } = await params;
-  const body = await request.json();
+  const body = BodySchema.parse(await request.json());
   const { method = 'email', customMessage } = body; // 'email', 'sms', or 'both'
 
   // Fetch proposal

@@ -3,10 +3,36 @@ import { withAdminAuth, AuthSession, RouteContext } from '@/lib/api/middleware/a
 import { paymentReminderService } from '@/lib/services/payment-reminder.service';
 import { queryOne } from '@/lib/db-helpers';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { z } from 'zod';
 
 interface RouteParams { id: string; }
 
 const VALID_URGENCIES = ['friendly', 'firm', 'urgent', 'final'];
+
+const BodySchema = z.discriminatedUnion('action', [
+  z.object({ action: z.literal('generate_schedule') }),
+  z.object({
+    action: z.literal('add_manual'),
+    scheduled_date: z.string().min(1),
+    urgency: z.enum(['friendly', 'firm', 'urgent', 'final']),
+    custom_message: z.string().max(5000).optional(),
+    guest_id: z.number().int().positive().optional(),
+  }),
+  z.object({
+    action: z.literal('cancel'),
+    reminder_id: z.number().int().positive(),
+  }),
+  z.object({
+    action: z.literal('pause_guest'),
+    guest_id: z.number().int().positive(),
+  }),
+  z.object({
+    action: z.literal('resume_guest'),
+    guest_id: z.number().int().positive(),
+  }),
+  z.object({ action: z.literal('pause_proposal') }),
+  z.object({ action: z.literal('resume_proposal') }),
+]);
 
 /**
  * GET /api/admin/trip-proposals/[id]/reminders
@@ -40,7 +66,7 @@ export const POST = withCSRF(
   async (request: NextRequest, _session: AuthSession, context?) => {
     const { id } = await (context as RouteContext<RouteParams>).params;
     const proposalId = parseInt(id, 10);
-    const body = await request.json();
+    const body = BodySchema.parse(await request.json());
 
     switch (body.action) {
       case 'generate_schedule': {
@@ -126,11 +152,13 @@ export const POST = withCSRF(
         return NextResponse.json({ success: true });
       }
 
-      default:
+      default: {
+        const _exhaustive: never = body;
         return NextResponse.json(
-          { success: false, error: `Unknown action: ${body.action}` },
+          { success: false, error: `Unknown action` },
           { status: 400 }
         );
+      }
     }
   }
 )

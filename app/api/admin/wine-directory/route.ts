@@ -3,6 +3,36 @@ import { query } from '@/lib/db'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError } from '@/lib/api/middleware/error-handler'
 import { withCSRF } from '@/lib/api/middleware/csrf'
+import { z } from 'zod'
+
+const PostBodySchema = z.object({
+  name: z.string().min(1).max(255),
+  slug: z.string().max(255).optional(),
+  city: z.string().max(255).optional(),
+  state: z.string().max(50).optional(),
+  ava: z.string().max(255).optional(),
+  address_line1: z.string().max(500).optional(),
+  address_line2: z.string().max(500).optional(),
+  zip: z.string().max(20).optional(),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
+  phone: z.string().max(50).optional(),
+  email: z.string().email().max(255).optional(),
+  website: z.string().max(500).optional(),
+  tasting_room_fee: z.string().max(255).optional().nullable(),
+  reservation_required: z.boolean().optional(),
+  walk_ins_welcome: z.boolean().optional(),
+  hours: z.record(z.string(), z.unknown()).optional(),
+  amenities: z.array(z.string()).optional(),
+  is_verified: z.boolean().optional(),
+  is_featured: z.boolean().optional(),
+  is_active: z.boolean().optional(),
+  logo_url: z.string().max(2000).optional(),
+  hero_image_url: z.string().max(2000).optional(),
+  founded_year: z.number().int().optional(),
+  annual_production_cases: z.number().int().optional(),
+  vineyard_acres: z.number().optional(),
+})
 
 // GET - Fetch wineries with filtering
 export const GET = withAdminAuth(async (request: NextRequest, _session) => {
@@ -75,7 +105,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
 // POST - Create new winery
 export const POST = withCSRF(
   withAdminAuth(async (request: NextRequest, _session) => {
-  const body = await request.json()
+  const body = PostBodySchema.parse(await request.json())
 
   const {
     name,

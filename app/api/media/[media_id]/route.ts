@@ -1,7 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { query } from '@/lib/db';
 import { withErrorHandling, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+
+const PutBodySchema = z.object({
+  title: z.string().max(255).optional(),
+  description: z.string().max(5000).optional(),
+  alt_text: z.string().max(500).optional(),
+  tags: z.array(z.string().max(100)).optional(),
+  category: z.string().max(100).optional(),
+  subcategory: z.string().max(100).optional(),
+  is_hero: z.boolean().optional(),
+  display_order: z.number().int().nonnegative().optional(),
+});
+
+const PatchBodySchema = z.object({
+  title: z.string().max(255).optional(),
+  description: z.string().max(5000).optional(),
+  alt_text: z.string().max(500).optional(),
+  tags: z.array(z.string().max(100)).optional(),
+  category: z.string().max(100).optional(),
+  subcategory: z.string().max(100).optional(),
+  is_hero: z.boolean().optional(),
+});
 
 /**
  * GET /api/media/[media_id]
@@ -85,7 +107,7 @@ export const PUT = withCSRF(
   { params }: { params: Promise<{ media_id: string }> }
 ) => {
   const { media_id } = await params;
-  const body = await request.json();
+  const body = PutBodySchema.parse(await request.json());
 
   const {
     title,
@@ -146,7 +168,7 @@ export const PATCH = withCSRF(
   { params }: { params: Promise<{ media_id: string }> }
 ) => {
   const { media_id } = await params;
-  const body = await request.json();
+  const body = PatchBodySchema.parse(await request.json());
 
   const {
     title,

@@ -3,6 +3,15 @@ import { query } from '@/lib/db'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler'
 import { withCSRF } from '@/lib/api/middleware/csrf'
+import { z } from 'zod'
+
+const PatchBodySchema = z.object({
+  id: z.number().int().positive(),
+  status: z.enum(['pending', 'accepted', 'modified', 'dismissed', 'expired']).optional(),
+  scheduled_post_id: z.number().int().positive().optional(),
+  suggested_media_urls: z.array(z.string()).optional(),
+  media_source: z.string().max(255).optional(),
+})
 
 // GET - Fetch pending content suggestions
 const getHandler = withAdminAuth(async (request: NextRequest, _session) => {
@@ -63,7 +72,7 @@ const getHandler = withAdminAuth(async (request: NextRequest, _session) => {
 
 // PATCH - Update suggestion status
 const patchHandler = withAdminAuth(async (request: NextRequest, _session) => {
-  const body = await request.json()
+  const body = PatchBodySchema.parse(await request.json())
   const { id, status, scheduled_post_id, suggested_media_urls, media_source } = body
 
   if (!id) {

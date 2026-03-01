@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { ContentService } from '@/lib/services/content.service';
+import { z } from 'zod';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // GET - Fetch page content
@@ -34,9 +35,25 @@ const getHandler = withAdminAuth(async (request: NextRequest, _session) => {
   });
 });
 
+const PostBodySchema = z.object({
+  page_slug: z.string().min(1).max(255),
+  section_key: z.string().min(1).max(255),
+  content_type: z.enum(['text', 'html', 'json', 'number']).optional(),
+  content: z.string().max(50000),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+});
+
+const PutBodySchema = z.object({
+  page_slug: z.string().min(1).max(255),
+  section_key: z.string().min(1).max(255),
+  content_type: z.enum(['text', 'html', 'json', 'number']).optional(),
+  content: z.string().max(50000).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+});
+
 // POST - Create new content section
 const postHandler = withAdminAuth(async (request: NextRequest, session) => {
-  const body = await request.json();
+  const body = PostBodySchema.parse(await request.json());
 
   if (!body.page_slug || !body.section_key || body.content === undefined) {
     throw new BadRequestError('page_slug, section_key, and content are required');
@@ -59,7 +76,7 @@ const postHandler = withAdminAuth(async (request: NextRequest, session) => {
 
 // PUT - Update content section
 const putHandler = withAdminAuth(async (request: NextRequest, session) => {
-  const body = await request.json();
+  const body = PutBodySchema.parse(await request.json());
 
   if (!body.page_slug || !body.section_key) {
     throw new BadRequestError('page_slug and section_key are required');

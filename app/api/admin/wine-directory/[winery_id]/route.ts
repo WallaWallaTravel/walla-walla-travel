@@ -3,6 +3,40 @@ import { query } from '@/lib/db'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler'
 import { withCSRF } from '@/lib/api/middleware/csrf'
+import { z } from 'zod'
+
+const PatchBodySchema = z.object({
+  name: z.string().min(1).max(255).optional(),
+  slug: z.string().max(255).optional(),
+  city: z.string().max(255).optional(),
+  state: z.string().max(50).optional(),
+  ava: z.string().max(255).optional(),
+  address_line1: z.string().max(500).optional(),
+  address_line2: z.string().max(500).optional(),
+  zip: z.string().max(20).optional(),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
+  phone: z.string().max(50).optional(),
+  email: z.string().email().max(255).optional(),
+  website: z.string().max(500).optional(),
+  tasting_room_fee: z.string().max(255).optional().nullable(),
+  tasting_room_waived_with_purchase: z.boolean().optional(),
+  reservation_required: z.boolean().optional(),
+  walk_ins_welcome: z.boolean().optional(),
+  hours: z.record(z.string(), z.unknown()).optional(),
+  seasonal_hours_notes: z.string().max(500).optional(),
+  amenities: z.array(z.string()).optional(),
+  is_verified: z.boolean().optional(),
+  is_featured: z.boolean().optional(),
+  is_active: z.boolean().optional(),
+  logo_url: z.string().max(2000).optional(),
+  hero_image_url: z.string().max(2000).optional(),
+  gallery_urls: z.array(z.string()).optional(),
+  founded_year: z.number().int().optional(),
+  annual_production_cases: z.number().int().optional(),
+  vineyard_acres: z.number().optional(),
+  featured_photo_override_id: z.number().int().optional().nullable(),
+})
 
 // GET - Fetch single winery with full details
 export const GET = withAdminAuth(async (
@@ -49,7 +83,7 @@ export const PATCH = withCSRF(
   const { winery_id } = await context!.params
 
   const id = parseInt(winery_id)
-  const body = await request.json()
+  const body = PatchBodySchema.parse(await request.json())
 
   const allowedFields = [
     'name', 'slug', 'city', 'state', 'ava',

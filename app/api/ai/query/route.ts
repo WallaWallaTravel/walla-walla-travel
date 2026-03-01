@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { logger } from '@/lib/logger'
 import { getActiveModelConfig, createProviderFromSettings } from '@/lib/ai/model-manager'
 import { getCachedQuery, cacheQueryResponse, generateSystemPromptHash, generateQueryHash } from '@/lib/ai/query-cache'
@@ -8,6 +9,10 @@ import { logQuery, classifyQueryIntent } from '@/lib/analytics/query-logger'
 import { query as dbQuery } from '@/lib/db'
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler'
 import { withCSRF } from '@/lib/api/middleware/csrf'
+
+const BodySchema = z.object({
+  query: z.string().min(1).max(1000),
+})
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -25,7 +30,7 @@ export const POST = withCSRF(
   withErrorHandling<unknown>(async (request: NextRequest) => {
   const startTime = Date.now()
 
-  const { query } = await request.json()
+  const { query } = BodySchema.parse(await request.json())
 
   if (!query || typeof query !== 'string') {
     throw new BadRequestError('Query is required')

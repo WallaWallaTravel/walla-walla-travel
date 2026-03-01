@@ -8,6 +8,15 @@ import { saveTextResponse } from '@/lib/business-portal/question-service';
 import { logBusinessActivity } from '@/lib/business-portal/business-service';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { z } from 'zod';
+
+const BodySchema = z.object({
+  businessId: z.coerce.number().int().positive(),
+  questionId: z.coerce.number().int().positive(),
+  questionNumber: z.coerce.number().int().nonnegative(),
+  questionText: z.string().max(1000),
+  responseText: z.string().min(1).max(5000),
+});
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -24,7 +33,7 @@ export const POST = withCSRF(
     questionNumber,
     questionText,
     responseText
-  } = await request.json();
+  } = BodySchema.parse(await request.json());
 
   if (!businessId || !questionId || !responseText) {
     throw new BadRequestError('Missing required fields');

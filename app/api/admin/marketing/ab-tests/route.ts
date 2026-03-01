@@ -1,8 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { query } from '@/lib/db'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError } from '@/lib/api/middleware/error-handler'
 import { withCSRF } from '@/lib/api/middleware/csrf'
+
+const VariantSchema = z.object({
+  name: z.string().max(255).optional(),
+  description: z.string().max(5000).optional(),
+  caption: z.string().max(5000).optional(),
+  image_url: z.string().max(500).optional(),
+  video_url: z.string().max(500).optional(),
+  hashtags: z.array(z.string().max(255)).optional(),
+  cta: z.string().max(500).optional(),
+  post_time: z.string().max(255).optional(),
+  post_days: z.array(z.string().max(50)).optional(),
+})
+
+const BodySchema = z.object({
+  name: z.string().min(1).max(255),
+  description: z.string().max(5000).optional(),
+  hypothesis: z.string().max(5000).optional(),
+  test_type: z.string().min(1).max(255),
+  variable_tested: z.string().max(255).optional(),
+  platform: z.string().max(255).optional(),
+  sample_size_target: z.number().int().positive().optional(),
+  variant_a: VariantSchema.optional(),
+  variant_b: VariantSchema.optional(),
+  created_by: z.string().max(255).optional(),
+})
 
 // GET - Fetch A/B tests with variants
 export const GET = withAdminAuth(async (request: NextRequest, _session) => {
@@ -64,7 +90,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
 // POST - Create new A/B test
 export const POST = withCSRF(
   withAdminAuth(async (request: NextRequest, _session) => {
-  const body = await request.json()
+  const body = BodySchema.parse(await request.json())
 
   const {
     name,

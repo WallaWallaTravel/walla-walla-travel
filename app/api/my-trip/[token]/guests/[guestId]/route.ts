@@ -5,10 +5,17 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { withErrorHandling, RouteContext } from '@/lib/api/middleware/error-handler';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import { query } from '@/lib/db';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+
+const BodySchema = z.object({
+  dietary_restrictions: z.string().max(1000).nullable().optional(),
+  accessibility_needs: z.string().max(1000).nullable().optional(),
+  special_requests: z.string().max(2000).nullable().optional(),
+});
 
 interface RouteParams {
   token: string;
@@ -37,10 +44,10 @@ export const PATCH = withCSRF(
       );
     }
 
-    const body = await request.json();
+    const body = BodySchema.parse(await request.json());
 
     // Only allow updating specific fields (dietary, accessibility, special requests)
-    const allowedFields = ['dietary_restrictions', 'accessibility_needs', 'special_requests'];
+    const allowedFields = ['dietary_restrictions', 'accessibility_needs', 'special_requests'] as const;
     const updates: Record<string, unknown> = {};
     for (const field of allowedFields) {
       if (field in body) {

@@ -8,6 +8,11 @@ import { getBusinessByCode } from '@/lib/business-portal/business-service';
 import { logger } from '@/lib/logger';
 import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { z } from 'zod';
+
+const BodySchema = z.object({
+  code: z.string().min(1).max(50),
+});
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -18,7 +23,7 @@ export const dynamic = 'force-dynamic';
  */
 export const POST = withCSRF(
   withErrorHandling(async (request) => {
-  const { code } = await request.json();
+  const { code } = BodySchema.parse(await request.json());
 
   if (!code || typeof code !== 'string') {
     logger.warn('Business portal access: invalid code type');

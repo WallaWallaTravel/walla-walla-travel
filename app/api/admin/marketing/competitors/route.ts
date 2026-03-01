@@ -1,9 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { competitorMonitoringService } from '@/lib/services/competitor-monitoring.service';
 import type { PriorityLevel, CreateCompetitorInput } from '@/types/competitors';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+
+const BodySchema = z.object({
+  name: z.string().min(1).max(255),
+  website_url: z.string().min(1).max(500),
+  description: z.string().max(5000).optional(),
+  competitor_type: z.enum(['tour_operator', 'content_benchmark', 'indirect', 'aggregator']).optional(),
+  priority_level: z.enum(['high', 'medium', 'low']).optional(),
+  check_frequency: z.enum(['every_6_hours', 'daily', 'weekly', 'monthly']).optional(),
+  monitor_pricing: z.boolean().optional(),
+  monitor_promotions: z.boolean().optional(),
+  monitor_packages: z.boolean().optional(),
+  monitor_content: z.boolean().optional(),
+  monitored_pages: z.array(z.string().max(500)).optional(),
+  email_recipients: z.array(z.string().email()).optional(),
+  alert_on_high_threat: z.boolean().optional(),
+  notes: z.string().max(5000).optional(),
+  logo_url: z.string().max(500).optional(),
+  pricing_model: z.string().max(255).optional(),
+  min_booking: z.string().max(255).optional(),
+  vehicle_types: z.array(z.string().max(255)).optional(),
+});
 
 // GET - Fetch competitors with change counts
 async function getHandler(request: NextRequest) {
@@ -25,7 +47,7 @@ async function getHandler(request: NextRequest) {
 
 // POST - Add new competitor
 async function postHandler(request: NextRequest, session: AuthSession) {
-  const body = await request.json() as CreateCompetitorInput;
+  const body = BodySchema.parse(await request.json()) as CreateCompetitorInput;
 
   // Validation
   if (!body.name || !body.website_url) {

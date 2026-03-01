@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { z } from 'zod';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { withCSRF } from '@/lib/api/middleware/csrf';
@@ -40,6 +41,17 @@ export const GET = withAdminAuth(async (
   });
 });
 
+const BodySchema = z.object({
+  insight_type: z.string().max(100).optional(),
+  title: z.string().min(1).max(255),
+  content: z.string().min(1).max(5000),
+  priority: z.number().int().min(1).max(10).optional(),
+  is_public: z.boolean().optional(),
+  tags: z.array(z.string().max(100)).optional(),
+  best_for: z.array(z.string().max(255)).optional(),
+  recommended_for: z.array(z.string().max(255)).optional(),
+});
+
 /**
  * POST /api/admin/business-portal/[business_id]/insights
  * Add or update insight
@@ -50,7 +62,7 @@ export const POST = withCSRF(
 ) => {
   const { business_id } = await context!.params;
   const businessId = parseInt(business_id);
-  const data = await request.json();
+  const data = BodySchema.parse(await request.json());
 
   if (isNaN(businessId)) {
     throw new BadRequestError('Invalid business ID');

@@ -4,6 +4,11 @@ import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { sendEmail } from '@/lib/email';
 import { logger } from '@/lib/logger';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { z } from 'zod';
+
+const BodySchema = z.object({
+  to: z.string().email().max(255).optional(),
+});
 
 /**
  * POST /api/admin/test-email
@@ -13,7 +18,7 @@ import { withCSRF } from '@/lib/api/middleware/csrf';
  */
 export const POST = withCSRF(
   withAdminAuth(async (request: NextRequest) => {
-  const body = await request.json().catch(() => ({}));
+  const body = BodySchema.parse(await request.json().catch(() => ({})));
   const toEmail = body.to || process.env.STAFF_NOTIFICATION_EMAIL || 'info@wallawalla.travel';
 
   // Validate email format

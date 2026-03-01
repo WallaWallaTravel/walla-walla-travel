@@ -8,6 +8,16 @@ import { sendEmail, EmailTemplates } from '@/lib/email';
 import { auditService } from '@/lib/services/audit.service';
 import { withComplianceCheck } from '@/lib/api/middleware/compliance-check';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { z } from 'zod';
+
+const BodySchema = z.object({
+  driver_id: z.number().int().positive(),
+  vehicle_id: z.number().int().positive(),
+  notify_driver: z.boolean().optional(),
+  notify_customer: z.boolean().optional(),
+  compliance_override: z.boolean().optional(),
+  compliance_override_reason: z.string().max(500).optional(),
+});
 
 
 /**
@@ -44,7 +54,7 @@ async function handleAssignment(
     throw new BadRequestError('Invalid booking ID');
   }
 
-  const body = await request.json();
+  const body = BodySchema.parse(await request.json());
   const { driver_id, vehicle_id, notify_driver, notify_customer, compliance_override: _compliance_override, compliance_override_reason: _compliance_override_reason } = body;
 
   if (!driver_id || !vehicle_id) {

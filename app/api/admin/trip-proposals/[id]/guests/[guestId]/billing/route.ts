@@ -3,8 +3,14 @@ import { withAdminAuth, AuthSession, RouteContext } from '@/lib/api/middleware/a
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import { queryOne } from '@/lib/db-helpers';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { z } from 'zod';
 
 interface RouteParams { id: string; guestId: string; }
+
+const BodySchema = z.object({
+  is_sponsored: z.boolean().optional(),
+  amount_owed_override: z.union([z.number(), z.null()]).optional(),
+});
 
 /**
  * PATCH /api/admin/trip-proposals/[id]/guests/[guestId]/billing
@@ -14,7 +20,7 @@ export const PATCH = withCSRF(
   withAdminAuth(
   async (request: NextRequest, _session: AuthSession, context?) => {
     const { id, guestId } = await (context as RouteContext<RouteParams>).params;
-    const body = await request.json();
+    const body = BodySchema.parse(await request.json());
     const gId = parseInt(guestId);
     const proposalId = parseInt(id);
 
@@ -35,7 +41,7 @@ export const PATCH = withCSRF(
 
     // Handle amount override
     if (body.amount_owed_override !== undefined) {
-      const amount = body.amount_owed_override === null ? null : parseFloat(body.amount_owed_override);
+      const amount = body.amount_owed_override === null ? null : body.amount_owed_override;
       await tripProposalService.overrideGuestAmount(gId, amount);
       return NextResponse.json({ success: true });
     }

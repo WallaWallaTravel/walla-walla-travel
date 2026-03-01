@@ -10,6 +10,12 @@ import { query } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { z } from 'zod'
+
+const PutBodySchema = z.object({
+  id: z.number().int().positive(),
+  status: z.enum(['new', 'actioned', 'dismissed', 'expired']),
+})
 
 export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const { searchParams } = new URL(request.url)
@@ -47,7 +53,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
 
 export const PUT = withCSRF(
   withAdminAuth(async (request: NextRequest, _session) => {
-  const body = await request.json()
+  const body = PutBodySchema.parse(await request.json())
   const { id, status } = body
 
   if (!id) {

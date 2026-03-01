@@ -3,6 +3,22 @@ import { query } from '@/lib/db'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError } from '@/lib/api/middleware/error-handler'
 import { withCSRF } from '@/lib/api/middleware/csrf'
+import { z } from 'zod'
+
+const PostBodySchema = z.object({
+  first_name: z.string().min(1).max(255),
+  last_name: z.string().max(255).optional(),
+  email: z.string().email().max(255),
+  phone: z.string().max(50).optional(),
+  company: z.string().max(255).optional(),
+  source: z.string().max(255).optional(),
+  interested_services: z.array(z.string()).optional(),
+  party_size_estimate: z.number().int().positive().optional(),
+  estimated_date: z.string().max(255).optional(),
+  budget_range: z.string().max(255).optional(),
+  notes: z.string().max(5000).optional(),
+  assigned_to: z.number().int().positive().optional(),
+})
 
 /**
  * Map CRM lifecycle_stage to legacy lead status
@@ -148,7 +164,7 @@ async function getHandler(request: NextRequest) {
 
 // POST - Create new lead (now creates CRM contact)
 async function postHandler(request: NextRequest) {
-  const body = await request.json()
+  const body = PostBodySchema.parse(await request.json())
 
   const {
     first_name,
@@ -174,7 +190,7 @@ async function postHandler(request: NextRequest) {
   let score = 20 // base score
   if (phone) score += 10
   if (company) score += 10
-  if (interested_services?.length > 0) score += 15
+  if ((interested_services?.length ?? 0) > 0) score += 15
   if (party_size_estimate) score += 10
   if (estimated_date) score += 15
   if (budget_range) score += 10

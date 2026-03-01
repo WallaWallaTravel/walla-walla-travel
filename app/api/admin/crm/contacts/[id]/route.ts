@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { NotFoundError, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { query } from '@/lib/db';
+import { z } from 'zod';
 import type { CrmContactSummary, UpdateContactData } from '@/types/crm';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 
@@ -94,6 +95,27 @@ export const GET = withAdminAuth(async (
   });
 });
 
+const BodySchema = z.object({
+  email: z.string().email().max(255).optional(),
+  name: z.string().min(1).max(255).optional(),
+  phone: z.string().max(50).optional(),
+  company: z.string().max(255).optional(),
+  contact_type: z.string().max(50).optional(),
+  lifecycle_stage: z.string().max(50).optional(),
+  lead_score: z.number().int().optional(),
+  lead_temperature: z.string().max(50).optional(),
+  source: z.string().max(255).optional(),
+  source_detail: z.string().max(500).optional(),
+  preferred_wineries: z.string().max(5000).optional(),
+  dietary_restrictions: z.string().max(500).optional(),
+  accessibility_needs: z.string().max(500).optional(),
+  notes: z.string().max(5000).optional(),
+  email_marketing_consent: z.boolean().optional(),
+  sms_marketing_consent: z.boolean().optional(),
+  assigned_to: z.number().int().positive().nullable().optional(),
+  next_follow_up_at: z.string().optional(),
+});
+
 /**
  * PATCH /api/admin/crm/contacts/[id]
  * Update a contact
@@ -109,7 +131,7 @@ export const PATCH = withCSRF(
     throw new BadRequestError('Invalid contact ID');
   }
 
-  const body = await request.json() as UpdateContactData;
+  const body = BodySchema.parse(await request.json()) as UpdateContactData;
 
   // Build update query
   const updates: string[] = [];

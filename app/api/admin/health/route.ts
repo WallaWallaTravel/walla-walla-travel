@@ -11,6 +11,12 @@ import { redis } from '@/lib/redis';
 import { query as dbQuery } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { z } from 'zod';
+
+const PostBodySchema = z.object({
+  action: z.enum(['reset_circuit_breaker']),
+  service: z.string().min(1).max(255),
+});
 
 /**
  * GET /api/admin/health
@@ -191,24 +197,17 @@ export const GET = withOptionalAuth(async (_request: NextRequest, session: AuthS
 export const POST = withCSRF(
   withOptionalAuth(async (request: NextRequest, session: AuthSession | null) => {
   const requestId = getRequestId();
-  const body = await request.json();
+  const body = PostBodySchema.parse(await request.json());
 
-  if (body.action === 'reset_circuit_breaker' && body.service) {
-    await resetCircuitBreaker(body.service);
-    logger.info('Circuit breaker reset', {
-      requestId,
-      service: body.service,
-      authenticatedUser: session?.email || 'anonymous',
-    });
-    return NextResponse.json({
-      success: true,
-      message: `Circuit breaker reset for ${body.service}`,
-    });
-  }
-
+  await resetCircuitBreaker(body.service);
+  logger.info('Circuit breaker reset', {
+    requestId,
+    service: body.service,
+    authenticatedUser: session?.email || 'anonymous',
+  });
   return NextResponse.json({
-    success: false,
-    message: 'Invalid action',
-  }, { status: 400 });
+    success: true,
+    message: `Circuit breaker reset for ${body.service}`,
+  });
 })
 );

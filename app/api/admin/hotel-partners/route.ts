@@ -3,6 +3,16 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { hotelPartnerService } from '@/lib/services/hotel-partner.service';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { z } from 'zod';
+
+const PostBodySchema = z.object({
+  name: z.string().min(1).max(255),
+  email: z.string().email().max(255),
+  contact_name: z.string().max(255).optional(),
+  phone: z.string().max(255).optional(),
+  address: z.string().max(500).optional(),
+  notes: z.string().max(5000).optional(),
+});
 
 /**
  * GET /api/admin/hotel-partners
@@ -27,7 +37,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
  */
 export const POST = withCSRF(
   withAdminAuth(async (request: NextRequest, _session) => {
-  const body = await request.json();
+  const body = PostBodySchema.parse(await request.json());
 
   // Validate required fields
   if (!body.name) {

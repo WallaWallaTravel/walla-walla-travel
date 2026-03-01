@@ -1,8 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { logger } from '@/lib/logger';
 import { captureVisitorEmail, logEmailCaptureAttempt, getVisitorByUUID } from '@/lib/visitor/visitor-tracking';
 import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+
+const BodySchema = z.object({
+  visitor_uuid: z.string().min(1).max(255),
+  email: z.string().email().max(255),
+  name: z.string().max(255).optional(),
+  phone: z.string().max(50).optional(),
+  trigger_type: z.string().max(100).optional(),
+  query_count: z.number().int().nonnegative().optional(),
+});
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -13,7 +23,7 @@ export const dynamic = 'force-dynamic';
  */
 export const POST = withCSRF(
   withErrorHandling(async (request: NextRequest) => {
-  const { visitor_uuid, email, name, phone, trigger_type, query_count } = await request.json();
+  const { visitor_uuid, email, name, phone, trigger_type, query_count } = BodySchema.parse(await request.json());
 
   if (!visitor_uuid || !email) {
     throw new BadRequestError('visitor_uuid and email are required');

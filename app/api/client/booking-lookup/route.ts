@@ -2,10 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { z } from 'zod';
+
+const BodySchema = z.object({
+  booking_number: z.string().max(50).optional(),
+  email: z.string().email().optional(),
+  phone: z.string().max(20).optional(),
+  last_name: z.string().min(1).max(255),
+  lookup_method: z.enum(['email', 'phone', 'booking_number']).optional(),
+});
 
 export const POST = withCSRF(
   withErrorHandling(async (request: NextRequest) => {
-  const body = await request.json();
+  const body = BodySchema.parse(await request.json());
   const { booking_number, email, phone, last_name, lookup_method } = body;
 
   if (!last_name) {

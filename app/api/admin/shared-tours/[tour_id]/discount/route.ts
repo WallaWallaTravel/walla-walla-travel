@@ -5,10 +5,18 @@ import { query } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { getBrandStripeClient } from '@/lib/stripe-brands';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { z } from 'zod';
 
 interface RouteParams {
   params: Promise<{ tour_id: string }>;
 }
+
+const BodySchema = z.object({
+  discount_type: z.enum(['flat', 'percentage']),
+  discount_amount: z.number().positive(),
+  reason: z.string().max(500).optional(),
+  confirmed: z.boolean().optional(),
+});
 
 interface DiscountRequest {
   discount_type: 'flat' | 'percentage';
@@ -50,7 +58,7 @@ interface DiscountPreview {
 export const POST = withCSRF(
   withAdminAuth(async (request: NextRequest, session: AuthSession, context) => {
   const { tour_id } = await (context as RouteParams).params;
-  const body: DiscountRequest = await request.json();
+  const body: DiscountRequest = BodySchema.parse(await request.json());
 
   // Validate request
   if (!body.discount_type || !['flat', 'percentage'].includes(body.discount_type)) {

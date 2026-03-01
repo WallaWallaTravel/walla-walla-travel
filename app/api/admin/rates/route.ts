@@ -4,6 +4,14 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
+import { z } from 'zod';
+
+const PatchBodySchema = z.object({
+  config_key: z.string().min(1).max(255),
+  config_value: z.unknown(),
+  changed_by: z.string().max(255).optional(),
+  change_reason: z.string().max(500).optional(),
+});
 
 /**
  * GET /api/admin/rates
@@ -46,7 +54,7 @@ export const PATCH = withCSRF(
   withRateLimit(rateLimiters.api)(
     withAdminAuth(async (request: NextRequest, _session) => {
 
-  const body = await request.json();
+  const body = PatchBodySchema.parse(await request.json());
   const { config_key, config_value, changed_by, change_reason } = body;
 
   if (!config_key || !config_value) {

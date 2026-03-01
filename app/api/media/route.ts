@@ -1,7 +1,27 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { query } from '@/lib/db';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+
+const PostBodySchema = z.object({
+  file_name: z.string().min(1).max(255),
+  file_path: z.string().min(1).max(1000),
+  file_type: z.string().min(1).max(50),
+  file_size: z.number().int().nonnegative().optional(),
+  mime_type: z.string().max(100).optional(),
+  category: z.string().min(1).max(100),
+  subcategory: z.string().max(100).optional(),
+  title: z.string().max(255).optional(),
+  description: z.string().max(5000).optional(),
+  alt_text: z.string().max(500).optional(),
+  tags: z.array(z.string().max(100)).optional(),
+  is_hero: z.boolean().optional(),
+  display_order: z.number().int().nonnegative().optional(),
+  thumbnail_path: z.string().max(1000).optional(),
+  medium_path: z.string().max(1000).optional(),
+  large_path: z.string().max(1000).optional(),
+});
 
 /**
  * GET /api/media
@@ -104,7 +124,7 @@ export const GET = withErrorHandling(async (request: Request) => {
  */
 export const POST = withCSRF(
   withErrorHandling(async (request: Request) => {
-  const body = await request.json();
+  const body = PostBodySchema.parse(await request.json());
   const {
     file_name,
     file_path,

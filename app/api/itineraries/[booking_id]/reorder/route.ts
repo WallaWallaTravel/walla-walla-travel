@@ -2,6 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, NotFoundError, RouteContext } from '@/lib/api/middleware/error-handler';
 import { query } from '@/lib/db';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { z } from 'zod';
+
+const ReorderStopSchema = z.object({
+  id: z.number().int().positive(),
+  stop_order: z.number().int().nonnegative(),
+});
+
+const BodySchema = z.object({
+  stops: z.array(ReorderStopSchema),
+});
 
 /**
  * PUT /api/itineraries/[booking_id]/reorder
@@ -13,7 +23,7 @@ export const PUT = withCSRF(
   withErrorHandling<unknown, { booking_id: string }>(
   async (request: NextRequest, context: RouteContext<{ booking_id: string }>) => {
     const { booking_id: bookingId } = await context.params;
-    const { stops } = await request.json();
+    const { stops } = BodySchema.parse(await request.json());
 
     // Get itinerary ID for this booking
     const itineraryResult = await query(

@@ -5,6 +5,24 @@ import { partnerService } from '@/lib/services/partner.service';
 import { query } from '@/lib/db';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { z } from 'zod';
+
+const BodySchema = z.object({
+  description: z.string().max(5000).optional().nullable(),
+  short_description: z.string().max(500).optional().nullable(),
+  tasting_fee: z.string().max(255).optional().nullable(),
+  reservation_required: z.boolean().optional().nullable(),
+  hours: z.record(z.string(), z.unknown()).optional().nullable(),
+  specialties: z.array(z.string().max(255)).optional().nullable(),
+  features: z.array(z.string().max(255)).optional().nullable(),
+  experience_tags: z.array(z.string().max(255)).optional().nullable(),
+  min_group_size: z.number().int().positive().optional().nullable(),
+  max_group_size: z.number().int().positive().optional().nullable(),
+  booking_advance_days_min: z.number().int().nonnegative().optional().nullable(),
+  booking_advance_days_max: z.number().int().nonnegative().optional().nullable(),
+  cancellation_policy: z.string().max(5000).optional().nullable(),
+  pet_policy: z.string().max(5000).optional().nullable(),
+});
 
 // Get client IP from request headers (Next.js 15 removed request.ip)
 function getClientIp(request: NextRequest): string {
@@ -92,7 +110,7 @@ export const PUT = withCSRF(
     throw new NotFoundError('Partner profile not found');
   }
 
-  const body = await request.json();
+  const body = BodySchema.parse(await request.json());
 
   // Update the linked entity
   if (profile.winery_id) {

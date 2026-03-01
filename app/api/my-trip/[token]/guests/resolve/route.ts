@@ -5,10 +5,15 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { withErrorHandling, RouteContext, NotFoundError, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import { queryOne } from '@/lib/db-helpers';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+
+const BodySchema = z.object({
+  guest_token: z.string().min(1).max(255),
+});
 
 interface RouteParams {
   token: string;
@@ -24,7 +29,7 @@ export const POST = withCSRF(
       throw new NotFoundError('Trip not found');
     }
 
-    const body = await request.json();
+    const body = BodySchema.parse(await request.json());
     const guestToken = body.guest_token;
 
     if (!guestToken || typeof guestToken !== 'string') {

@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import { query } from '@/lib/db';
+import { z } from 'zod';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { withCSRF } from '@/lib/api/middleware/csrf';
@@ -17,13 +18,18 @@ export const dynamic = 'force-dynamic';
  * POST /api/admin/business-portal/files/[file_id]/approve
  * Approve or reject a file
  */
+const BodySchema = z.object({
+  approved: z.boolean(),
+  notes: z.string().max(5000).optional(),
+});
+
 export const POST = withCSRF(
   withAdminAuth(async (
   request: NextRequest, _session, context
 ) => {
   const { file_id } = await context!.params;
   const fileId = parseInt(file_id);
-  const { approved, notes } = await request.json();
+  const { approved, notes } = BodySchema.parse(await request.json());
 
   if (isNaN(fileId)) {
     throw new BadRequestError('Invalid file ID');

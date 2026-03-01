@@ -6,9 +6,22 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { query } from '@/lib/db-helpers';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+
+const BodySchema = z.object({
+  preferences: z.object({
+    wine_styles: z.array(z.string().max(100)).optional(),
+    atmosphere: z.enum(['intimate', 'lively', 'rustic', 'modern', 'any']).optional(),
+    features: z.array(z.string().max(100)).optional(),
+    price_range: z.enum(['budget', 'moderate', 'premium', 'luxury']).optional(),
+  }).optional(),
+  party_size: z.number().int().positive().max(100).optional(),
+  tour_date: z.string().optional(),
+  number_of_stops: z.number().int().min(2).max(5).optional(),
+});
 
 interface WineryRow {
   id: number;
@@ -81,12 +94,14 @@ const ATMOSPHERE_KEYWORDS: Record<string, string[]> = {
 
 export const POST = withCSRF(
   withErrorHandling(async (request: NextRequest) => {
-  let body = await request.json();
+  let rawBody = await request.json();
 
   // Handle case where body is a string (can happen in test environments)
-  if (typeof body === 'string') {
-    body = JSON.parse(body);
+  if (typeof rawBody === 'string') {
+    rawBody = JSON.parse(rawBody);
   }
+
+  const body = BodySchema.parse(rawBody);
 
   const {
     preferences = {} as Preferences,

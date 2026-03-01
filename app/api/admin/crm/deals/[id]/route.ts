@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { NotFoundError, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { query } from '@/lib/db';
+import { z } from 'zod';
 import type { CrmDealWithRelations, UpdateDealData } from '@/types/crm';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 
@@ -95,6 +96,27 @@ export const GET = withAdminAuth(async (
   });
 });
 
+const PatchBodySchema = z.object({
+  stage_id: z.number().int().positive().optional(),
+  deal_type_id: z.number().int().positive().nullable().optional(),
+  brand: z.string().max(255).optional(),
+  title: z.string().min(1).max(255).optional(),
+  description: z.string().max(5000).optional(),
+  party_size: z.number().int().positive().optional(),
+  expected_tour_date: z.string().optional(),
+  expected_close_date: z.string().optional(),
+  estimated_value: z.number().nonnegative().optional(),
+  actual_value: z.number().nonnegative().optional(),
+  assigned_to: z.number().int().positive().nullable().optional(),
+  lost_reason: z.string().max(500).optional(),
+});
+
+const PostBodySchema = z.object({
+  action: z.enum(['win', 'lose']),
+  actual_value: z.number().nonnegative().optional(),
+  lost_reason: z.string().max(500).optional(),
+});
+
 /**
  * PATCH /api/admin/crm/deals/[id]
  * Update a deal
@@ -110,7 +132,7 @@ export const PATCH = withCSRF(
     throw new BadRequestError('Invalid deal ID');
   }
 
-  const body = await request.json() as UpdateDealData & { stage_id?: number };
+  const body = PatchBodySchema.parse(await request.json()) as UpdateDealData & { stage_id?: number };
 
   // Build update query
   const updates: string[] = [];
@@ -172,7 +194,7 @@ export const POST = withCSRF(
     throw new BadRequestError('Invalid deal ID');
   }
 
-  const body = await request.json();
+  const body = PostBodySchema.parse(await request.json());
   const { action, actual_value, lost_reason } = body;
 
   if (action === 'win') {

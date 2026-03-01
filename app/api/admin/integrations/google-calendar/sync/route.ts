@@ -10,6 +10,12 @@ import { googleCalendarSyncService } from '@/lib/services/google-calendar-sync.s
 import { BaseService } from '@/lib/services/base.service';
 import { auditService } from '@/lib/services/audit.service';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { z } from 'zod';
+
+const BodySchema = z.object({
+  type: z.enum(['all', 'new', 'updated']).optional(),
+  bookingId: z.number().int().positive().optional(),
+});
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -69,7 +75,7 @@ export const POST = withCSRF(
   let bookingId: number | undefined;
 
   try {
-    const body = await request.json();
+    const body = BodySchema.parse(await request.json());
     syncType = body.type || 'all';
     bookingId = body.bookingId;
   } catch {

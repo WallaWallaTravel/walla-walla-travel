@@ -1,10 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { logger } from '@/lib/logger';
 import { query } from '@/lib/db';
 import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { sendProposalDeclineNotification } from '@/lib/email';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
+
+const BodySchema = z.object({
+  reason: z.string().min(10).max(5000),
+  category: z.enum(['price', 'dates', 'services', 'timing', 'other']).optional(),
+  desired_changes: z.string().max(5000).optional(),
+  contact_name: z.string().max(255).optional(),
+  contact_email: z.string().email().optional(),
+  open_to_counter: z.boolean().optional(),
+});
 
 /**
  * POST /api/proposals/[proposal_id]/decline
@@ -17,7 +27,7 @@ export const POST = withCSRF(
   { params }: { params: Promise<{ proposal_id: string }> }
 ): Promise<NextResponse> => {
   const { proposal_id } = await params;
-  const body = await request.json();
+  const body = BodySchema.parse(await request.json());
   const {
     reason,           // Main reason for declining
     category,         // Category: 'price', 'dates', 'services', 'timing', 'other'

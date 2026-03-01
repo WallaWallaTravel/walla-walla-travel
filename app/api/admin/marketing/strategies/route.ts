@@ -3,6 +3,12 @@ import { query } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { z } from 'zod'
+
+const PatchBodySchema = z.object({
+  id: z.number().int().positive(),
+  status: z.enum(['draft', 'active', 'completed', 'archived']),
+})
 
 // GET - List strategies with optional status filter
 export const GET = withAdminAuth(async (request: NextRequest, _session) => {
@@ -70,7 +76,7 @@ export const POST = withCSRF(
 // PATCH - Update strategy status (activate, archive, etc.)
 export const PATCH = withCSRF(
   withAdminAuth(async (request: NextRequest, _session) => {
-  const body = await request.json()
+  const body = PatchBodySchema.parse(await request.json())
   const { id, status } = body
 
   if (!id || !status) {

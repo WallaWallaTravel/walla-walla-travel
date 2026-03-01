@@ -6,6 +6,12 @@ import { query } from '@/lib/db';
 import { WINERY_CONTENT_TYPES } from '@/lib/config/content-types';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { z } from 'zod';
+
+const BodySchema = z.object({
+  content_type: z.string().min(1).max(255),
+  content: z.string().min(1).max(5000),
+});
 
 // Get client IP from request headers
 function getClientIp(request: NextRequest): string {
@@ -100,11 +106,11 @@ export const POST = withCSRF(
     throw new ValidationError('No winery linked to this partner profile');
   }
 
-  const body = await request.json();
+  const body = BodySchema.parse(await request.json());
   const { content_type, content } = body;
 
   // Validate content type
-  if (!STORY_CONTENT_TYPES.includes(content_type)) {
+  if (!STORY_CONTENT_TYPES.includes(content_type as typeof STORY_CONTENT_TYPES[number])) {
     throw new ValidationError(`Invalid content type: ${content_type}`);
   }
 

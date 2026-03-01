@@ -6,6 +6,24 @@ import { query } from '@/lib/db';
 import { INSIDER_TIP_TYPES } from '@/lib/config/content-types';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { z } from 'zod';
+
+const tipTypeValues = ['locals_know', 'best_time', 'what_to_ask', 'pairing', 'photo_spot', 'hidden_gem', 'practical'] as const;
+
+const PostBodySchema = z.object({
+  tip_type: z.enum(tipTypeValues),
+  title: z.string().max(255).optional().nullable(),
+  content: z.string().min(1).max(500),
+  is_featured: z.boolean().optional(),
+});
+
+const PutBodySchema = z.object({
+  id: z.number().int().positive(),
+  tip_type: z.enum(tipTypeValues),
+  title: z.string().max(255).optional().nullable(),
+  content: z.string().min(1).max(500),
+  is_featured: z.boolean().optional(),
+});
 
 // Get client IP from request headers
 function getClientIp(request: NextRequest): string {
@@ -85,7 +103,7 @@ export const POST = withCSRF(
     throw new ValidationError('No winery linked to this partner profile');
   }
 
-  const body = await request.json();
+  const body = PostBodySchema.parse(await request.json());
   const { tip_type, title, content, is_featured } = body;
 
   // Validate tip type
@@ -162,7 +180,7 @@ export const PUT = withCSRF(
     throw new ValidationError('No winery linked to this partner profile');
   }
 
-  const body = await request.json();
+  const body = PutBodySchema.parse(await request.json());
   const { id, tip_type, title, content, is_featured } = body;
 
   if (!id) {

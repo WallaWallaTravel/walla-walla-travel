@@ -8,6 +8,11 @@ import { logger } from '@/lib/logger';
 import { convertCorporateRequestToProposal, ensureProposalColumns } from '@/lib/corporate/proposal-converter';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { z } from 'zod';
+
+const BodySchema = z.object({
+  requestId: z.coerce.number().int().positive(),
+});
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -18,7 +23,7 @@ export const dynamic = 'force-dynamic';
  */
 export const POST = withCSRF(
   withErrorHandling(async (request: NextRequest) => {
-  const { requestId } = await request.json();
+  const { requestId } = BodySchema.parse(await request.json());
 
   if (!requestId) {
     throw new BadRequestError('requestId is required');

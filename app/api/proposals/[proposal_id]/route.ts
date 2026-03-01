@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { query } from '@/lib/db';
 import { withErrorHandling, BadRequestError, NotFoundError, ForbiddenError } from '@/lib/api/middleware/error-handler';
 import {
@@ -10,6 +11,42 @@ import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 import { logger } from '@/lib/logger';
 import { crmSyncService } from '@/lib/services/crm-sync.service';
 import { crmTaskAutomationService } from '@/lib/services/crm-task-automation.service';
+
+const PatchBodySchema = z.object({
+  client_name: z.string().min(1).max(255).optional(),
+  client_email: z.string().email().optional(),
+  client_phone: z.string().min(1).max(50).optional(),
+  client_company: z.string().max(255).optional(),
+  proposal_title: z.string().min(1).max(255).optional(),
+  introduction: z.string().max(5000).optional(),
+  wine_tour_description: z.string().max(5000).optional(),
+  transfer_description: z.string().max(5000).optional(),
+  wait_time_description: z.string().max(5000).optional(),
+  special_notes: z.string().max(5000).optional(),
+  cancellation_policy: z.string().max(5000).optional(),
+  footer_notes: z.string().max(5000).optional(),
+  service_items: z.array(z.object({
+    name: z.string().min(1).max(255),
+  }).passthrough()).optional(),
+  lunch_coordination: z.boolean().optional(),
+  lunch_coordination_count: z.number().int().optional(),
+  photography_package: z.boolean().optional(),
+  discount_percentage: z.number().min(0).max(100).optional(),
+  discount_reason: z.string().max(500).optional(),
+  include_gratuity_request: z.boolean().optional(),
+  suggested_gratuity_percentage: z.number().min(0).max(100).optional(),
+  gratuity_optional: z.boolean().optional(),
+  valid_until: z.string().optional(),
+  modules: z.object({
+    corporate: z.boolean().optional(),
+    multi_day: z.boolean().optional(),
+    b2b: z.boolean().optional(),
+    special_event: z.boolean().optional(),
+    group_coordination: z.boolean().optional(),
+  }).optional(),
+  corporate_details: z.any().optional(),
+  multi_day_itinerary: z.any().optional(),
+}).passthrough();
 
 /**
  * GET /api/proposals/[proposal_id]
@@ -138,7 +175,7 @@ export const PATCH = withCSRF(
   { params }: { params: Promise<{ proposal_id: string }> }
 ): Promise<NextResponse> => {
   const { proposal_id } = await params;
-  const updates: Partial<ProposalData> = await request.json();
+  const updates = PatchBodySchema.parse(await request.json()) as Partial<ProposalData>;
 
   // Fetch current proposal
   const currentResult = await query(

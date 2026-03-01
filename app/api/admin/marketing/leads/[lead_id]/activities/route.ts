@@ -3,6 +3,19 @@ import { query } from '@/lib/db'
 import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError } from '@/lib/api/middleware/error-handler'
 import { withCSRF } from '@/lib/api/middleware/csrf'
+import { z } from 'zod'
+
+const PostBodySchema = z.object({
+  activity_type: z.enum([
+    'email_sent', 'email_opened', 'email_clicked',
+    'call_made', 'call_received', 'meeting',
+    'note_added', 'status_changed', 'proposal_sent',
+    'website_visit', 'form_submitted',
+  ]),
+  description: z.string().max(5000).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+  performed_by: z.number().int().positive().optional(),
+})
 
 // GET - Fetch activities for a lead (now from crm_activities)
 async function getHandler(
@@ -48,7 +61,7 @@ async function postHandler(
 ) {
   const { lead_id } = await context!.params;
   const id = parseInt(lead_id)
-  const body = await request.json()
+  const body = PostBodySchema.parse(await request.json())
 
   const {
     activity_type,

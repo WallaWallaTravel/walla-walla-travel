@@ -2,6 +2,23 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, NotFoundError, RouteContext } from '@/lib/api/middleware/error-handler';
 import { query } from '@/lib/db';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { z } from 'zod';
+
+const StopSchema = z.object({
+  winery_id: z.number().int().positive(),
+  stop_order: z.number().int().nonnegative(),
+  arrival_time: z.string().optional().nullable(),
+  departure_time: z.string().optional().nullable(),
+  duration_minutes: z.number().int().nonnegative().optional().nullable(),
+  drive_time_to_next_minutes: z.number().int().nonnegative().optional().nullable(),
+  stop_type: z.string().max(255).optional(),
+  reservation_confirmed: z.boolean().optional(),
+  special_notes: z.string().max(5000).optional(),
+});
+
+const BodySchema = z.object({
+  stops: z.array(StopSchema),
+});
 
 /**
  * PUT /api/itineraries/[booking_id]/stops
@@ -13,7 +30,7 @@ export const PUT = withCSRF(
   withErrorHandling<unknown, { booking_id: string }>(
   async (request: NextRequest, context: RouteContext<{ booking_id: string }>) => {
     const { booking_id: bookingId } = await context.params;
-    const { stops } = await request.json();
+    const { stops } = BodySchema.parse(await request.json());
 
     // Get itinerary ID for this booking
     const itineraryResult = await query(
@@ -64,8 +81,8 @@ export const PUT = withCSRF(
       }
 
       // Calculate and update total drive time
-      const totalDriveTime = stops.reduce((sum: number, stop: { drive_time_to_next_minutes?: number }) =>
-        sum + (stop.drive_time_to_next_minutes || 0), 0
+      const totalDriveTime = stops.reduce((sum: number, stop) =>
+        sum + (stop.drive_time_to_next_minutes ?? 0), 0
       );
 
       await query(`

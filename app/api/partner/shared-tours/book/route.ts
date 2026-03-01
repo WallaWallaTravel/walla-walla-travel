@@ -2,6 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, UnauthorizedError, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { hotelPartnerService } from '@/lib/services/hotel-partner.service';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { z } from 'zod';
+
+const BodySchema = z.object({
+  tour_id: z.string().min(1).max(50),
+  customer_name: z.string().min(1).max(255),
+  customer_email: z.string().email().max(255),
+  customer_phone: z.string().max(50).optional(),
+  ticket_count: z.number().int().min(1).max(14),
+  guest_names: z.array(z.string().max(255)).optional(),
+  includes_lunch: z.boolean().optional(),
+  lunch_selection: z.string().max(500).optional(),
+  dietary_restrictions: z.string().max(500).optional(),
+  special_requests: z.string().max(5000).optional(),
+});
 
 /**
  * POST /api/partner/shared-tours/book
@@ -16,10 +30,10 @@ export const POST = withCSRF(
     throw new UnauthorizedError('Hotel authentication required');
   }
 
-  const body = await request.json();
+  const body = BodySchema.parse(await request.json());
 
-  // Validate required fields
-  const required = ['tour_id', 'customer_name', 'customer_email', 'ticket_count'];
+  // Validate required fields (Zod handles this now, but keeping as defense in depth)
+  const required = ['tour_id', 'customer_name', 'customer_email', 'ticket_count'] as const;
   for (const field of required) {
     if (!body[field]) {
       throw new BadRequestError(`Missing required field: ${field}`);

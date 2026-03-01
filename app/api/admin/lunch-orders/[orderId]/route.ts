@@ -10,6 +10,11 @@ import { NotFoundError, BadRequestError } from '@/lib/api/middleware/error-handl
 import { lunchSupplierService } from '@/lib/services/lunch-supplier.service';
 import { query } from '@/lib/db';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { z } from 'zod';
+
+const PatchBodySchema = z.object({
+  ordering_mode: z.enum(['coordinator', 'individual']).optional(),
+});
 
 export const PATCH = withCSRF(
   withAdminAuth(
@@ -26,17 +31,11 @@ export const PATCH = withCSRF(
       throw new NotFoundError('Lunch order not found');
     }
 
-    const body = await request.json();
-    const allowedFields = ['ordering_mode'];
+    const body = PatchBodySchema.parse(await request.json());
     const updates: Record<string, unknown> = {};
 
-    for (const field of allowedFields) {
-      if (field in body) {
-        if (field === 'ordering_mode' && !['coordinator', 'individual'].includes(body[field])) {
-          throw new BadRequestError('ordering_mode must be "coordinator" or "individual"');
-        }
-        updates[field] = body[field];
-      }
+    if (body.ordering_mode) {
+      updates.ordering_mode = body.ordering_mode;
     }
 
     if (Object.keys(updates).length === 0) {

@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { z } from 'zod';
+
+const BodySchema = z.object({
+  name: z.string().min(1).max(255),
+  description: z.string().max(1000).optional(),
+  price: z.number().nonnegative(),
+  icon: z.string().max(10).optional(),
+});
 
 /**
  * GET /api/additional-services
@@ -36,7 +44,7 @@ export const GET = withErrorHandling(async (request: NextRequest): Promise<NextR
  */
 export const POST = withCSRF(
   withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
-  const body = await request.json();
+  const body = BodySchema.parse(await request.json());
   const { name, description, price, icon = '✨' } = body;
 
   // Validation

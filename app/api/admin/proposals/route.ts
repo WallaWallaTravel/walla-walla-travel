@@ -3,6 +3,35 @@ import { BadRequestError } from '@/lib/api-errors';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { query, queryMany } from '@/lib/db-helpers';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { z } from 'zod';
+
+const AdditionalServiceSchema = z.object({
+  name: z.string().min(1).max(255),
+  included: z.boolean(),
+  price: z.number(),
+});
+
+const PostBodySchema = z.object({
+  client_name: z.string().min(1).max(255),
+  client_email: z.string().email().max(255),
+  client_phone: z.string().max(50).optional(),
+  client_company: z.string().max(255).optional(),
+  tour_date: z.string().min(1),
+  flexible_dates: z.boolean().optional(),
+  duration_hours: z.number().positive(),
+  party_size: z.number().int().positive(),
+  pickup_location: z.string().max(500).optional(),
+  selected_wineries: z.array(z.string().max(255)),
+  base_price: z.number().positive(),
+  additional_services: z.array(AdditionalServiceSchema),
+  discount_percentage: z.number().min(0).max(100),
+  discount_reason: z.string().max(500).optional(),
+  proposal_title: z.string().max(255).optional(),
+  introduction: z.string().max(5000).optional(),
+  special_notes: z.string().max(5000).optional(),
+  terms_and_conditions: z.string().max(5000).optional(),
+  valid_until: z.string().optional(),
+});
 
 /**
  * POST /api/admin/proposals
@@ -10,7 +39,7 @@ import { withCSRF } from '@/lib/api/middleware/csrf';
  */
 export const POST = withCSRF(
   withAdminAuth(async (request: NextRequest, _session) => {
-  const body = await request.json();
+  const body = PostBodySchema.parse(await request.json());
   
   const {
     client_name,

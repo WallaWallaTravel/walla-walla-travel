@@ -1,8 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { query } from '@/lib/db'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError } from '@/lib/api/middleware/error-handler'
 import { withCSRF } from '@/lib/api/middleware/csrf'
+
+const BodySchema = z.object({
+  name: z.string().min(1).max(255),
+  subject: z.string().min(1).max(500),
+  preview_text: z.string().max(500).optional(),
+  campaign_type: z.string().max(255).optional(),
+  template_id: z.number().int().positive().optional(),
+  content_html: z.string().max(50000).optional(),
+  content_json: z.record(z.string(), z.unknown()).optional(),
+  scheduled_for: z.string().max(255).optional(),
+  recipient_list_ids: z.array(z.number().int().positive()).optional(),
+  created_by: z.string().max(255).optional(),
+})
 
 // GET - Fetch email campaigns
 async function getHandler(request: NextRequest) {
@@ -66,7 +80,7 @@ async function getHandler(request: NextRequest) {
 
 // POST - Create new email campaign
 async function postHandler(request: NextRequest) {
-  const body = await request.json()
+  const body = BodySchema.parse(await request.json())
 
   const {
     name,

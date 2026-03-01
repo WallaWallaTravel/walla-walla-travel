@@ -4,6 +4,12 @@ import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 import { hotelPartnerService } from '@/lib/services/hotel-partner.service';
 import { SignJWT } from 'jose';
 import { cookies } from 'next/headers';
+import { z } from 'zod';
+
+const BodySchema = z.object({
+  email: z.string().email().max(255),
+  password: z.string().min(1).max(255),
+});
 
 const HOTEL_SESSION_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || process.env.SESSION_SECRET || 'fallback-secret-change-me'
@@ -15,7 +21,7 @@ const HOTEL_SESSION_SECRET = new TextEncoder().encode(
  */
 export const POST = withRateLimit(rateLimiters.auth)(
   withErrorHandling(async (request: NextRequest) => {
-  const body = await request.json();
+  const body = BodySchema.parse(await request.json());
 
   if (!body.email || !body.password) {
     throw new BadRequestError('Email and password are required');
