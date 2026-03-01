@@ -1,0 +1,341 @@
+name: Daily Health Check
+
+on:
+  schedule:
+    # 6am Pacific (14:00 UTC), 12pm Pacific (20:00 UTC), 6pm Pacific (02:00 UTC next day)
+    - cron: '0 14,20 * * *'
+    - cron: '0 2 * * *'
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  health-check:
+    name: Health Check
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://mock:mock@localhost:5432/mock
+      STRIPE_SECRET_KEY: sk_test_mock
+      RESEND_API_KEY: re_mock
+      OPENAI_API_KEY: sk-mock
+      SESSION_SECRET: mock-session-secret-for-ci
+      ANTHROPIC_API_KEY: sk-ant-mock
+      NEXT_PUBLIC_SUPABASE_URL: https://mock.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: mock-anon-key
+      SUPABASE_URL: https://mock.supabase.co
+      SUPABASE_ANON_KEY: mock-anon-key
+      SUPABASE_SERVICE_KEY: mock-service-key
+      SUPABASE_SERVICE_ROLE_KEY: mock-service-role-key
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma@6 generate
+
+      - name: Check A — Routes missing auth wrappers
+        id: check_auth
+        run: |
+          echo "## A. Routes Missing Auth Wrappers" >> $GITHUB_STEP_SUMMARY
+
+          MISSING=$(find app/api -name "route.ts" \
+            -not -path "*/webhooks/*" \
+            -not -path "*/cron/*" \
+            -not -path "*/auth/*" \
+            -not -path "*/.well-known/*" \
+            -not -path "*/health*" \
+            | while read f; do
+              if ! grep -qE 'withAdminAuth|withAuth|withOptionalAuth|withErrorHandling|withCronAuth' "$f"; then
+                echo "$f"
+              fi
+            done)
+
+          if [ -z "$MISSING" ]; then
+            echo "✅ All routes have auth/error-handling wrappers" >> $GITHUB_STEP_SUMMARY
+            echo "found=false" >> $GITHUB_OUTPUT
+          else
+            COUNT=$(echo "$MISSING" | wc -l | tr -d ' ')
+            echo "❌ **$COUNT routes missing auth wrappers:**" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "$MISSING" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "found=true" >> $GITHUB_OUTPUT
+            echo "MISSING_AUTH<<EOF" >> $GITHUB_ENV
+            echo "$MISSING" >> $GITHUB_ENV
+            echo "EOF" >> $GITHUB_ENV
+          fi
+
+      - name: Check B — Routes missing Zod validation
+        id: check_zod
+        run: |
+          echo "## B. Routes Missing Zod Validation" >> $GITHUB_STEP_SUMMARY
+
+          MISSING=$(grep -rl 'request\.json()' app/api/ --include="*.ts" \
+            | while read f; do
+              if ! grep -qE "from 'zod'|from \"zod\"|validateBody|safeParse|\.parse\(" "$f"; then
+                echo "$f"
+              fi
+            done)
+
+          if [ -z "$MISSING" ]; then
+            echo "✅ All routes using request.json() have Zod validation" >> $GITHUB_STEP_SUMMARY
+            echo "found=false" >> $GITHUB_OUTPUT
+          else
+            COUNT=$(echo "$MISSING" | wc -l | tr -d ' ')
+            echo "❌ **$COUNT routes with request.json() but no Zod validation:**" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "$MISSING" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "found=true" >> $GITHUB_OUTPUT
+            echo "MISSING_ZOD<<EOF" >> $GITHUB_ENV
+            echo "$MISSING" >> $GITHUB_ENV
+            echo "EOF" >> $GITHUB_ENV
+          fi
+
+      - name: Check C — Mutations missing CSRF
+        id: check_csrf
+        run: |
+          echo "## C. Mutations Missing CSRF" >> $GITHUB_STEP_SUMMARY
+
+          MISSING=$(find app/api -name "route.ts" \
+            -not -path "*/webhooks/*" \
+            -not -path "*/cron/*" \
+            -not -path "*/auth/*" \
+            | while read f; do
+              if grep -qE 'export (const|async function) (POST|PUT|PATCH|DELETE)' "$f"; then
+                if ! grep -q 'withCSRF' "$f"; then
+                  echo "$f"
+                fi
+              fi
+            done)
+
+          if [ -z "$MISSING" ]; then
+            echo "✅ All mutation routes have CSRF protection" >> $GITHUB_STEP_SUMMARY
+            echo "found=false" >> $GITHUB_OUTPUT
+          else
+            COUNT=$(echo "$MISSING" | wc -l | tr -d ' ')
+            echo "❌ **$COUNT mutation routes missing withCSRF:**" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "$MISSING" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "found=true" >> $GITHUB_OUTPUT
+            echo "MISSING_CSRF<<EOF" >> $GITHUB_ENV
+            echo "$MISSING" >> $GITHUB_ENV
+            echo "EOF" >> $GITHUB_ENV
+          fi
+
+      - name: Check D — Oversized files (>500 lines)
+        id: check_size
+        run: |
+          echo "## D. Oversized Files (>500 lines)" >> $GITHUB_STEP_SUMMARY
+
+          OVERSIZED=$(find app/ lib/ -name "*.ts" -o -name "*.tsx" \
+            | xargs wc -l 2>/dev/null \
+            | awk '$1 > 500 && !/total$/' \
+            | sort -rn \
+            | head -20)
+
+          if [ -z "$OVERSIZED" ]; then
+            echo "✅ No files exceed 500 lines" >> $GITHUB_STEP_SUMMARY
+            echo "found=false" >> $GITHUB_OUTPUT
+          else
+            COUNT=$(echo "$OVERSIZED" | wc -l | tr -d ' ')
+            echo "⚠️ **$COUNT files exceed 500 lines:**" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "$OVERSIZED" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "found=true" >> $GITHUB_OUTPUT
+            echo "OVERSIZED<<EOF" >> $GITHUB_ENV
+            echo "$OVERSIZED" >> $GITHUB_ENV
+            echo "EOF" >> $GITHUB_ENV
+          fi
+
+      - name: Check E — Dependency vulnerabilities
+        id: check_vuln
+        run: |
+          echo "## E. Dependency Vulnerabilities" >> $GITHUB_STEP_SUMMARY
+          AUDIT_OUTPUT=$(npm audit --audit-level=high 2>&1 || true)
+          if echo "$AUDIT_OUTPUT" | grep -q "found 0 vulnerabilities"; then
+            echo "✅ No high/critical vulnerabilities found" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ npm audit output:" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "$AUDIT_OUTPUT" | tail -20 >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Check F — Test coverage ratio
+        id: check_coverage
+        run: |
+          echo "## F. Test Coverage Ratio" >> $GITHUB_STEP_SUMMARY
+
+          TEST_COUNT=$(find __tests__ lib/ -name "*.test.ts" -o -name "*.test.tsx" 2>/dev/null | wc -l | tr -d ' ')
+          ROUTE_COUNT=$(find app/api -name "route.ts" | wc -l | tr -d ' ')
+
+          if [ "$ROUTE_COUNT" -gt 0 ]; then
+            RATIO=$(awk "BEGIN {printf \"%.0f\", ($TEST_COUNT / $ROUTE_COUNT) * 100}")
+          else
+            RATIO=0
+          fi
+
+          echo "- **Test files:** $TEST_COUNT" >> $GITHUB_STEP_SUMMARY
+          echo "- **Route files:** $ROUTE_COUNT" >> $GITHUB_STEP_SUMMARY
+          echo "- **Coverage ratio:** ${RATIO}%" >> $GITHUB_STEP_SUMMARY
+
+          if [ "$RATIO" -lt 10 ]; then
+            echo "- ⚠️ Low coverage — consider adding tests" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ✅ Coverage ratio acceptable" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Check G — Build check
+        id: check_build
+        run: |
+          echo "## G. Build Check" >> $GITHUB_STEP_SUMMARY
+          if npx next build --no-lint 2>&1; then
+            echo "✅ Build succeeded" >> $GITHUB_STEP_SUMMARY
+            echo "passed=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Build failed" >> $GITHUB_STEP_SUMMARY
+            echo "passed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Determine overall result
+        id: result
+        run: |
+          ISSUES_FOUND="false"
+          if [ "${{ steps.check_auth.outputs.found }}" = "true" ] || \
+             [ "${{ steps.check_zod.outputs.found }}" = "true" ] || \
+             [ "${{ steps.check_csrf.outputs.found }}" = "true" ] || \
+             [ "${{ steps.check_size.outputs.found }}" = "true" ]; then
+            ISSUES_FOUND="true"
+          fi
+          echo "issues_found=$ISSUES_FOUND" >> $GITHUB_OUTPUT
+
+      - name: Create issue if problems found
+        if: steps.result.outputs.issues_found == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const date = new Date().toISOString().split('T')[0];
+            const time = new Date().toISOString().split('T')[1].slice(0, 5);
+
+            let body = `## Health Check Results — ${date} ${time} UTC\n\n`;
+            body += `**Trigger:** ${context.eventName === 'schedule' ? 'Scheduled' : 'Push to main'}\n`;
+            body += `**Run:** [View workflow run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})\n\n`;
+
+            const missingAuth = process.env.MISSING_AUTH || '';
+            const missingZod = process.env.MISSING_ZOD || '';
+            const missingCsrf = process.env.MISSING_CSRF || '';
+            const oversized = process.env.OVERSIZED || '';
+
+            if (missingAuth) {
+              const files = missingAuth.trim().split('\n');
+              body += `### A. Routes Missing Auth Wrappers (${files.length})\n\n`;
+              body += '```\n' + missingAuth.trim() + '\n```\n\n';
+              body += '**Claude Code fix prompt:**\n';
+              body += '> Add withErrorHandling and appropriate auth wrappers (withAdminAuth for admin/, withAuth for authenticated routes) to these route files: ' + files.join(', ') + '\n\n';
+            }
+
+            if (missingZod) {
+              const files = missingZod.trim().split('\n');
+              body += `### B. Routes Missing Zod Validation (${files.length})\n\n`;
+              body += '```\n' + missingZod.trim() + '\n```\n\n';
+              body += '**Claude Code fix prompt:**\n';
+              body += '> Add Zod schema validation to all request.json() calls in these route files: ' + files.join(', ') + '\n\n';
+            }
+
+            if (missingCsrf) {
+              const files = missingCsrf.trim().split('\n');
+              body += `### C. Mutations Missing CSRF (${files.length})\n\n`;
+              body += '```\n' + missingCsrf.trim() + '\n```\n\n';
+              body += '**Claude Code fix prompt:**\n';
+              body += '> Add withCSRF wrapper to all POST/PUT/PATCH/DELETE exports in these route files: ' + files.join(', ') + '\n\n';
+            }
+
+            if (oversized) {
+              body += `### D. Oversized Files (>500 lines)\n\n`;
+              body += '```\n' + oversized.trim() + '\n```\n\n';
+              body += '**Claude Code fix prompt:**\n';
+              body += '> These files exceed 500 lines. Refactor by extracting business logic into lib/services/ and keeping routes as thin wrappers.\n\n';
+            }
+
+            // Ensure label exists
+            try {
+              await github.rest.issues.getLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: 'health-check'
+              });
+            } catch {
+              await github.rest.issues.createLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: 'health-check',
+                color: 'fbca04',
+                description: 'Automated health check findings'
+              });
+            }
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `\uD83D\uDD0D Health Check — ${date} ${time} — Action Needed`,
+              body: body,
+              labels: ['health-check']
+            });
+
+      - name: Create all-clear issue (scheduled runs only)
+        if: steps.result.outputs.issues_found == 'false' && github.event_name == 'schedule'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const date = new Date().toISOString().split('T')[0];
+            const time = new Date().toISOString().split('T')[1].slice(0, 5);
+
+            // Ensure label exists
+            try {
+              await github.rest.issues.getLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: 'health-check'
+              });
+            } catch {
+              await github.rest.issues.createLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: 'health-check',
+                color: 'fbca04',
+                description: 'Automated health check findings'
+              });
+            }
+
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `\u2705 All Clear — ${date} ${time}`,
+              body: `Health check passed with no issues.\n\n**Run:** [View workflow run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`,
+              labels: ['health-check']
+            });
+
+            // Auto-close after creation
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.data.number,
+              state: 'closed'
+            });

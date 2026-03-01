@@ -698,6 +698,7 @@ When adding tests, follow existing patterns in `__tests__/`.
 - **Never** rely on `tsc --noEmit` alone — `next build` catches route type constraints that `tsc` misses
 - After pushing, verify CI status: `gh run list --limit 1`
 - Pin dependency versions in CI workflows — unpinned `npx` commands will pull latest majors that break builds (e.g., Prisma 7 broke `datasource.url` syntax)
+- Developers can run `./scripts/daily-health.sh` anytime for a quick health check (checks auth wrappers, Zod, CSRF, file sizes, vulnerabilities, test coverage)
 
 ---
 
