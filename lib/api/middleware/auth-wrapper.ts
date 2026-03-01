@@ -208,6 +208,7 @@ interface InternalSession {
   email: string;
   role: 'admin' | 'driver' | 'customer' | 'business';
   brandId?: number;
+  sid?: string;
   isLoggedIn?: boolean;
 }
 
@@ -216,10 +217,37 @@ async function getSessionFromRequest(): Promise<InternalSession | null> {
     const { getSession: getAuthSession } = await import('@/lib/auth/session');
     const authSession = await getAuthSession();
     if (authSession?.user?.id) {
+      const role = authSession.user.role as InternalSession['role'];
+
+      // Server-side session validation (when sid is present in JWT)
+      if (authSession.sid) {
+        try {
+          const { sessionStoreService } = await import('@/lib/services/session-store.service');
+          const sessionRecord = await sessionStoreService.validateSession(authSession.sid, role);
+
+          if (!sessionRecord) {
+            // Session revoked or idle-timed-out
+            logger.warn('[Auth Wrapper] Server-side session invalid', { sid: authSession.sid });
+            return null;
+          }
+
+          // Touch session to keep it alive (non-blocking, throttled by last_active_at comparison)
+          sessionStoreService.touchSession(authSession.sid, sessionRecord.last_active_at).catch((err: unknown) => {
+            logger.warn('[Auth Wrapper] Failed to touch session', { error: err });
+          });
+        } catch (dbError: unknown) {
+          // DB failure: fall back to JWT-only validation (don't lock everyone out)
+          const msg = dbError instanceof Error ? dbError.message : 'Unknown error';
+          logger.error('[Auth Wrapper] Session store unavailable, falling back to JWT-only', { error: msg });
+        }
+      }
+      // If no sid (old JWT): skip DB check — backward compatible
+
       return {
         userId: String(authSession.user.id),
         email: authSession.user.email,
-        role: authSession.user.role as InternalSession['role'],
+        role,
+        sid: authSession.sid,
         isLoggedIn: true,
       };
     }

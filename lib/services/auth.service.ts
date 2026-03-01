@@ -64,13 +64,13 @@ export class AuthService extends BaseService {
   /**
    * Authenticate user and create session
    */
-  async login(credentials: LoginCredentials, ip?: string): Promise<LoginResult> {
+  async login(credentials: LoginCredentials, ip?: string, userAgent?: string): Promise<LoginResult> {
     this.log('Login attempt', { email: credentials.email });
 
     // Find user by email
     const user = await this.queryOne<UserRow>(
-      `SELECT id, email, name, password_hash, role, is_active 
-       FROM users 
+      `SELECT id, email, name, password_hash, role, is_active
+       FROM users
        WHERE email = $1`,
       [credentials.email.toLowerCase()]
     );
@@ -93,7 +93,11 @@ export class AuthService extends BaseService {
       throw new UnauthorizedError('Invalid email or password');
     }
 
-    // Create session
+    // Create server-side session (revokes previous sessions)
+    const { sessionStoreService } = await import('./session-store.service');
+    const sid = await sessionStoreService.createSession(user.id, ip, userAgent);
+
+    // Create JWT with embedded session ID
     const sessionUser: SessionUser = {
       id: user.id,
       email: user.email,
@@ -101,7 +105,7 @@ export class AuthService extends BaseService {
       role: user.role,
     };
 
-    const token = await createSession(sessionUser);
+    const token = await createSession(sessionUser, sid);
 
     // Log successful login (non-blocking)
     this.logActivity(user.id, 'login', { ip: ip || 'unknown' }).catch((err) => {

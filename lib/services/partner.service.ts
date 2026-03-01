@@ -301,6 +301,10 @@ export class PartnerService extends BaseService {
       [passwordHash, profile.user_id]
     );
 
+    // Revoke any existing sessions (defensive — password changed)
+    const { sessionStoreService } = await import('./session-store.service');
+    await sessionStoreService.revokeAllUserSessions(profile.user_id);
+
     // Mark setup as complete
     await this.query(
       `UPDATE partner_profiles 

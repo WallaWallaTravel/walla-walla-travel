@@ -46,6 +46,17 @@ jest.mock('../../auth/session', () => ({
   createSession: jest.fn().mockResolvedValue('mock-session-token-123'),
 }));
 
+// Mock session store service
+jest.mock('../session-store.service', () => ({
+  sessionStoreService: {
+    createSession: jest.fn().mockResolvedValue('mock-sid-uuid'),
+    revokeAllUserSessions: jest.fn().mockResolvedValue(undefined),
+    validateSession: jest.fn().mockResolvedValue({ session_id: 'mock-sid-uuid', last_active_at: new Date().toISOString() }),
+    touchSession: jest.fn().mockResolvedValue(undefined),
+    revokeSession: jest.fn().mockResolvedValue(undefined),
+  },
+}));
+
 import { verifyPassword } from '../../auth/passwords';
 import { createSession } from '../../auth/session';
 
@@ -195,12 +206,15 @@ describe('AuthService', () => {
           password: 'password',
         });
 
-        expect(mockCreateSession).toHaveBeenCalledWith({
-          id: 42,
-          email: 'test@example.com',
-          name: 'Test User',
-          role: 'admin',
-        });
+        expect(mockCreateSession).toHaveBeenCalledWith(
+          {
+            id: 42,
+            email: 'test@example.com',
+            name: 'Test User',
+            role: 'admin',
+          },
+          'mock-sid-uuid'
+        );
       });
     });
   });

@@ -66,6 +66,10 @@ export const POST = withCSRF(
       [passwordHash, user.id]
     );
 
+    // Revoke all sessions — forces re-login with new password
+    const { sessionStoreService } = await import('@/lib/services/session-store.service');
+    await sessionStoreService.revokeAllUserSessions(user.id);
+
     return NextResponse.json({
       success: true,
       message: 'Password has been reset. You can now sign in with your new password.',

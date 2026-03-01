@@ -124,6 +124,10 @@ export const POST = withCSRF(
 
   const userId = userResult.rows[0].id;
 
+  // Revoke any existing sessions (defensive — new user unlikely to have sessions)
+  const { sessionStoreService } = await import('@/lib/services/session-store.service');
+  await sessionStoreService.revokeAllUserSessions(userId);
+
   // Create partner profile linked to the business
   const profileResult = await query<{ id: number }>(
     `INSERT INTO partner_profiles (

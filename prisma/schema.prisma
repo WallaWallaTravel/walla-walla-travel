@@ -4866,3 +4866,18 @@ model winery_insider_tips {
   @@index([tip_type], map: "idx_winery_insider_tips_type")
   @@index([winery_id], map: "idx_winery_insider_tips_winery")
 }
+
+/// Server-side session tracking for JWT hardening (revocation, idle timeout, session fixation prevention).
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model user_sessions {
+  id             Int       @id @default(autoincrement())
+  session_id     String    @unique @db.Uuid
+  user_id        Int
+  created_at     DateTime  @default(now()) @db.Timestamptz(6)
+  last_active_at DateTime  @default(now()) @db.Timestamptz(6)
+  revoked_at     DateTime? @db.Timestamptz(6)
+  ip_address     String?   @db.VarChar(45)
+  user_agent     String?
+
+  @@ignore
+}

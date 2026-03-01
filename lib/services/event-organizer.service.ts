@@ -279,6 +279,10 @@ export class EventOrganizerService extends BaseService {
       [passwordHash, profile.user_id]
     );
 
+    // Revoke any existing sessions (defensive — password changed)
+    const { sessionStoreService } = await import('./session-store.service');
+    await sessionStoreService.revokeAllUserSessions(profile.user_id);
+
     // Activate organizer
     await this.query(
       `UPDATE event_organizers

@@ -59,6 +59,7 @@ export interface SessionUser {
 
 export interface SessionPayload {
   user: SessionUser;
+  sid?: string;
   iat: number;
   exp: number;
 }
@@ -66,13 +67,18 @@ export interface SessionPayload {
 /**
  * Create a new session token
  */
-export async function createSession(user: SessionUser): Promise<string> {
-  const token = await new SignJWT({ user })
+export async function createSession(user: SessionUser, sid?: string): Promise<string> {
+  const payload: Record<string, unknown> = { user };
+  if (sid) {
+    payload.sid = sid;
+  }
+
+  const token = await new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('7d')
     .sign(SESSION_SECRET);
-  
+
   return token;
 }
 
@@ -224,6 +230,6 @@ export async function refreshSessionOnResponse(
   session: SessionPayload,
   response: NextResponse
 ): Promise<NextResponse> {
-  const newToken = await createSession(session.user);
+  const newToken = await createSession(session.user, session.sid);
   return setSessionCookie(response, newToken);
 }
