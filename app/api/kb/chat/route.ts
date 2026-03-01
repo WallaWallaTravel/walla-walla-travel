@@ -13,6 +13,7 @@ import { kbService } from '@/lib/services/kb.service';
 import { geminiService, ChatMessage } from '@/lib/services/gemini.service';
 import { partnerContextService } from '@/lib/services/partner-context.service';
 import type { TripContext } from '@/lib/services/partner-context.service';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // ============================================================================
 // Request Schemas
@@ -38,7 +39,8 @@ const GetChatQuerySchema = z.object({
 // POST Handler - Send message
 // ============================================================================
 
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   const data = await validateBody(request, ChatRequestSchema);
 
   // Get or create session
@@ -160,7 +162,8 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       booking_intent: bookingIntent,
     },
   });
-});
+})
+);
 
 // ============================================================================
 // GET Handler - Get chat history

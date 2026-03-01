@@ -13,6 +13,7 @@ import { rateLimiters } from '@/lib/api/middleware';
 import { proposalService } from '@/lib/services/proposal-service';
 import { withErrorHandling, BadRequestError, RouteContext } from '@/lib/api/middleware/error-handler';
 import { z } from 'zod';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // ============================================================================
 // GET /api/v1/proposals/:id - Get proposal details
@@ -53,7 +54,8 @@ const UpdateProposalSchema = z.object({
   notes: z.string().optional(),
 });
 
-export const PATCH = withErrorHandling<unknown, { id: string }>(async (
+export const PATCH = withCSRF(
+  withErrorHandling<unknown, { id: string }>(async (
   request: NextRequest,
   context: RouteContext<{ id: string }>
 ): Promise<NextResponse> => {
@@ -78,13 +80,15 @@ export const PATCH = withErrorHandling<unknown, { id: string }>(async (
   return APIResponse.success(updatedProposal, {
     message: 'Proposal updated successfully',
   });
-});
+})
+);
 
 // ============================================================================
 // DELETE /api/v1/proposals/:id - Decline proposal
 // ============================================================================
 
-export const DELETE = withErrorHandling<unknown, { id: string }>(async (
+export const DELETE = withCSRF(
+  withErrorHandling<unknown, { id: string }>(async (
   request: NextRequest,
   context: RouteContext<{ id: string }>
 ): Promise<NextResponse> => {
@@ -106,4 +110,5 @@ export const DELETE = withErrorHandling<unknown, { id: string }>(async (
   return APIResponse.success(declinedProposal, {
     message: 'Proposal declined successfully',
   });
-});
+})
+);

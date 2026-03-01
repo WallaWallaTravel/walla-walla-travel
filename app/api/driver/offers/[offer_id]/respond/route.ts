@@ -4,8 +4,10 @@ import { query } from '@/lib/db';
 import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { sendEmail, EmailTemplates } from '@/lib/email';
 import { sendDriverAssignmentToCustomer } from '@/lib/services/email-automation.service';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
-export const POST = withErrorHandling(async (
+export const POST = withCSRF(
+  withErrorHandling(async (
   request: NextRequest,
   { params }: { params: Promise<{ offer_id: string }> }
 ) => {
@@ -201,4 +203,5 @@ export const POST = withErrorHandling(async (
       message: 'Tour declined.',
     });
   }
-});
+})
+);

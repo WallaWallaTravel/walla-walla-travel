@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper';
 import { sharedTourService } from '@/lib/services/shared-tour.service';
 import { query } from '@/lib/db';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface RouteParams {
   params: Promise<{ tour_id: string }>;
@@ -76,7 +77,8 @@ export const GET = withAdminAuth(async (request: NextRequest, _session: AuthSess
  * - If max_guests exceeds new vehicle capacity, caps it
  * - Use reassign_vehicle: true to trigger auto-reassignment
  */
-export const PATCH = withAdminAuth(async (request: NextRequest, _session: AuthSession, context) => {
+export const PATCH = withCSRF(
+  withAdminAuth(async (request: NextRequest, _session: AuthSession, context) => {
   const { tour_id } = await (context as RouteParams).params;
   const body = await request.json();
 
@@ -156,13 +158,15 @@ export const PATCH = withAdminAuth(async (request: NextRequest, _session: AuthSe
     data: tour,
     message: 'Tour updated successfully',
   });
-});
+})
+);
 
 /**
  * DELETE /api/admin/shared-tours/[tour_id]
  * Cancel a tour
  */
-export const DELETE = withAdminAuth(async (request: NextRequest, _session: AuthSession, context) => {
+export const DELETE = withCSRF(
+  withAdminAuth(async (request: NextRequest, _session: AuthSession, context) => {
   const { tour_id } = await (context as RouteParams).params;
 
   const tour = await sharedTourService.cancelTour(tour_id);
@@ -178,4 +182,5 @@ export const DELETE = withAdminAuth(async (request: NextRequest, _session: AuthS
     data: tour,
     message: 'Tour cancelled successfully',
   });
-});
+})
+);

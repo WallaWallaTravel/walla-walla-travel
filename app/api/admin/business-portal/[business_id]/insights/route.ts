@@ -8,6 +8,7 @@ import { query } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -43,7 +44,8 @@ export const GET = withAdminAuth(async (
  * POST /api/admin/business-portal/[business_id]/insights
  * Add or update insight
  */
-export const POST = withAdminAuth(async (
+export const POST = withCSRF(
+  withAdminAuth(async (
   request: NextRequest, _session, context
 ) => {
   const { business_id } = await context!.params;
@@ -118,13 +120,15 @@ export const POST = withAdminAuth(async (
     success: true,
     insight
   });
-});
+})
+);
 
 /**
  * DELETE /api/admin/business-portal/[business_id]/insights
  * Delete an insight
  */
-export const DELETE = withAdminAuth(async (
+export const DELETE = withCSRF(
+  withAdminAuth(async (
   request: NextRequest, _session
 ) => {
   const { searchParams } = new URL(request.url);
@@ -140,4 +144,5 @@ export const DELETE = withAdminAuth(async (
     success: true,
     message: 'Insight deleted'
   });
-});
+})
+);

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { hotelPartnerService } from '@/lib/services/hotel-partner.service';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * GET /api/admin/hotel-partners
@@ -24,7 +25,8 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
  * POST /api/admin/hotel-partners
  * Create a new hotel partner (admin only)
  */
-export const POST = withAdminAuth(async (request: NextRequest, _session) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json();
 
   // Validate required fields
@@ -61,4 +63,5 @@ export const POST = withAdminAuth(async (request: NextRequest, _session) => {
     data: hotel,
     message: 'Hotel partner created. Send invitation to complete registration.',
   }, { status: 201 });
-});
+})
+);

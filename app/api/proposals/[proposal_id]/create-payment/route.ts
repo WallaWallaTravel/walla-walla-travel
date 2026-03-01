@@ -4,12 +4,14 @@ import { getBrandStripeClient, getBrandStripePublishableKey } from '@/lib/stripe
 import { getBrandEmailConfig } from '@/lib/email-brands';
 import { query, queryOne } from '@/lib/db-helpers';
 import { logger } from '@/lib/logger';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * POST /api/proposals/[proposal_id]/create-payment
  * Create a Stripe PaymentIntent for a proposal deposit
  */
-export const POST = withErrorHandling(async (
+export const POST = withCSRF(
+  withErrorHandling(async (
   request: NextRequest,
   { params }: { params: Promise<{ proposal_id: string }> }
 ) => {
@@ -149,4 +151,5 @@ export const POST = withErrorHandling(async (
       publishable_key: publishableKey,
     },
   });
-});
+})
+);

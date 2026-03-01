@@ -4,6 +4,7 @@ import { getSessionFromRequest } from '@/lib/auth/session';
 import { partnerService } from '@/lib/services/partner.service';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 import { pool } from '@/lib/db';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * GET /api/partner/profile
@@ -66,7 +67,8 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
  * PUT /api/partner/profile
  * Update partner profile
  */
-export const PUT = withRateLimit(rateLimiters.api)(
+export const PUT = withCSRF(
+  withRateLimit(rateLimiters.api)(
   withErrorHandling(async (request: NextRequest) => {
   const session = await getSessionFromRequest(request);
 
@@ -84,5 +86,6 @@ export const PUT = withRateLimit(rateLimiters.api)(
     profile: updatedProfile,
     timestamp: new Date().toISOString(),
   });
-}));
+}))
+);
 

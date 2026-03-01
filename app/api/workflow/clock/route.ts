@@ -9,6 +9,7 @@ import { query } from '@/lib/db';
 import { logger, logApiRequest } from '@/lib/logger';
 import { z } from 'zod';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // Request body schema
 const ClockRequestSchema = z.object({
@@ -60,7 +61,8 @@ function formatDate(date: Date): string {
   });
 }
 
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   // Check authentication
   const session = await requireAuth();
 
@@ -523,7 +525,8 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       ]
     }, 'Successfully clocked out');
   }
-});
+})
+);
 
 // GET endpoint to check current clock status
 export const GET = withErrorHandling(async (_request: NextRequest) => {

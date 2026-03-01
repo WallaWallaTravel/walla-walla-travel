@@ -5,6 +5,7 @@ import { validateBody } from '@/lib/api/middleware/validation';
 import { partnerService } from '@/lib/services/partner.service';
 import { sendEmail } from '@/lib/email';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 const InviteSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -18,7 +19,8 @@ const InviteSchema = z.object({
  * POST /api/admin/partners/invite
  * Invite a new partner
  */
-export const POST = withRateLimit(rateLimiters.api)(
+export const POST = withCSRF(
+  withRateLimit(rateLimiters.api)(
   withAdminAuth(async (request: NextRequest, session) => {
   const data = await validateBody(request, InviteSchema);
 
@@ -140,7 +142,8 @@ Walla Walla Travel
       : 'Partner created but email failed to send. Share the setup link manually.',
     timestamp: new Date().toISOString(),
   });
-}));
+}))
+);
 
 
 

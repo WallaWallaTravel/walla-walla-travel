@@ -13,6 +13,7 @@ import {
   BadRequestError,
   ValidationError
 } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * User profile API
@@ -42,7 +43,8 @@ export const GET = withErrorHandling(async () => {
   });
 });
 
-export const PUT = withErrorHandling(async (request: NextRequest) => {
+export const PUT = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   // Check authentication
   const session = await requireAuth();
 
@@ -124,7 +126,8 @@ export const PUT = withErrorHandling(async (request: NextRequest) => {
     emergency_contact_name: updatedUser.emergency_contact_name,
     emergency_contact_phone: updatedUser.emergency_contact_phone,
   }, 'Profile updated successfully');
-});
+})
+);
 
 export async function OPTIONS() {
   return new Response(null, {

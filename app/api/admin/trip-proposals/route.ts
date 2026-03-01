@@ -13,6 +13,7 @@ import {
   TRIP_PROPOSAL_STATUS,
 } from '@/lib/types/trip-proposal';
 import { z } from 'zod';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // Query parameter schema for listing
 const ListFiltersSchema = z.object({
@@ -74,7 +75,8 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
  * POST /api/admin/trip-proposals
  * Create a new trip proposal
  */
-export const POST = withAdminAuth(async (request: NextRequest, session) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest, session) => {
   const body = await request.json();
   const isDraft = request.nextUrl.searchParams.get('draft') === 'true';
 
@@ -104,4 +106,5 @@ export const POST = withAdminAuth(async (request: NextRequest, session) => {
     },
     { status: 201 }
   );
-});
+})
+);

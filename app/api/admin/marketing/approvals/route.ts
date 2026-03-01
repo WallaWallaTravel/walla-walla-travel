@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface ApprovalRequest {
   contentType: 'social_post' | 'email' | 'blog' | 'page_update' | 'campaign'
@@ -75,7 +76,8 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   })
 });
 
-export const POST = withAdminAuth(async (request: NextRequest, _session) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest, _session) => {
   const body: ApprovalRequest = await request.json()
   const {
     contentType,
@@ -139,7 +141,8 @@ export const POST = withAdminAuth(async (request: NextRequest, _session) => {
     id: result.rows[0].id,
     message: `Content ${action} recorded`,
   })
-});
+})
+);
 
 function computeSimpleDiff(original: string, final: string): string {
   const originalLines = original.split('\n')

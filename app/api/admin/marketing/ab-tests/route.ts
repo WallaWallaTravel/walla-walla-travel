@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError } from '@/lib/api/middleware/error-handler'
+import { withCSRF } from '@/lib/api/middleware/csrf'
 
 // GET - Fetch A/B tests with variants
 export const GET = withAdminAuth(async (request: NextRequest, _session) => {
@@ -61,7 +62,8 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
 })
 
 // POST - Create new A/B test
-export const POST = withAdminAuth(async (request: NextRequest, _session) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json()
 
   const {
@@ -157,3 +159,4 @@ export const POST = withAdminAuth(async (request: NextRequest, _session) => {
     test: testResult.rows[0]
   })
 })
+)

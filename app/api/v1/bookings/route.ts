@@ -12,6 +12,7 @@ import { validateRequest } from '@/lib/api/validate';
 import { rateLimiters } from '@/lib/api/middleware';
 import { bookingService, CreateBookingSchema } from '@/lib/services/booking.service';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // ============================================================================
 // GET /api/v1/bookings - List bookings with filters
@@ -96,7 +97,8 @@ export const GET = withErrorHandling(async (request: NextRequest): Promise<NextR
  *   brandId?: number
  * }
  */
-export const POST = withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
   // Apply rate limiting
   const rateLimitResult = await rateLimiters.public(request);
   if (rateLimitResult) return rateLimitResult;
@@ -111,4 +113,5 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
     bookingNumber: booking.booking_number,
     message: 'Booking created successfully',
   });
-});
+})
+);

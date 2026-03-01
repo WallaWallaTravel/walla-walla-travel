@@ -10,6 +10,7 @@ import { z } from 'zod';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { validateBody } from '@/lib/api/middleware/validation';
 import { timeCardService } from '@/lib/services/timecard.service';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // =============================================================================
 // Validation Schemas
@@ -46,7 +47,8 @@ const ListHistoricalTimeCardsSchema = z.object({
 // POST - Create historical time card
 // =============================================================================
 
-export const POST = withAdminAuth(async (request: NextRequest, session) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest, session) => {
   // Validate request body
   const body = await validateBody(request, CreateHistoricalTimeCardSchema);
 
@@ -74,7 +76,8 @@ export const POST = withAdminAuth(async (request: NextRequest, session) => {
     },
     { status: 201 }
   );
-});
+})
+);
 
 // =============================================================================
 // GET - List historical time cards

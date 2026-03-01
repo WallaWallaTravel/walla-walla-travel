@@ -7,6 +7,7 @@
 import { NextResponse } from 'next/server';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { calculatePrice, validatePricingRequest } from '@/lib/pricing-engine';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * POST /api/bookings/calculate-price
@@ -14,7 +15,8 @@ import { calculatePrice, validatePricingRequest } from '@/lib/pricing-engine';
  * 
  * ✅ REFACTORED: Standardized error handling
  */
-export const POST = withErrorHandling(async (request: Request) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: Request) => {
   const body = await request.json();
   const { date, duration_hours, party_size, vehicle_type } = body;
 
@@ -96,4 +98,5 @@ export const POST = withErrorHandling(async (request: Request) => {
     },
     timestamp: new Date().toISOString(),
   });
-});
+})
+);

@@ -8,6 +8,7 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { businessDirectoryService, BusinessImportRow } from '@/lib/services/business-directory.service';
 import { z } from 'zod';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -47,7 +48,8 @@ const ImportRequestSchema = z.object({
  *   notes?: string
  * }
  */
-export const POST = withAdminAuth(async (request: NextRequest, session) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest, session) => {
   const body = await request.json();
 
   // Validate request
@@ -82,7 +84,8 @@ export const POST = withAdminAuth(async (request: NextRequest, session) => {
     errors: result.errors,
     timestamp: new Date().toISOString(),
   });
-});
+})
+);
 
 /**
  * GET /api/admin/directory/import

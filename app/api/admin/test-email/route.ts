@@ -3,6 +3,7 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { sendEmail } from '@/lib/email';
 import { logger } from '@/lib/logger';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * POST /api/admin/test-email
@@ -10,7 +11,8 @@ import { logger } from '@/lib/logger';
  *
  * Body: { to?: string } - defaults to STAFF_NOTIFICATION_EMAIL
  */
-export const POST = withAdminAuth(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest) => {
   const body = await request.json().catch(() => ({}));
   const toEmail = body.to || process.env.STAFF_NOTIFICATION_EMAIL || 'info@wallawalla.travel';
 
@@ -131,7 +133,8 @@ info@wallawalla.travel
       timestamp: new Date().toISOString(),
     },
   });
-});
+})
+);
 
 /**
  * GET /api/admin/test-email

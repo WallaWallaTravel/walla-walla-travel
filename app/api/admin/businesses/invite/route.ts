@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createBusiness } from '@/lib/business-portal/business-service';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -15,7 +16,8 @@ export const dynamic = 'force-dynamic';
  * POST /api/admin/businesses/invite
  * Invite a new business to the portal
  */
-export const POST = withAdminAuth(async (request: NextRequest, _session) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest, _session) => {
   const {
     business_type,
     name,
@@ -62,4 +64,5 @@ export const POST = withAdminAuth(async (request: NextRequest, _session) => {
     },
     message: 'Business invited successfully!'
   });
-});
+})
+);

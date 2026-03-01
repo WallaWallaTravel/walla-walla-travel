@@ -4,6 +4,7 @@ import { getSession } from '@/lib/auth/session';
 import { eventOrganizerService } from '@/lib/services/event-organizer.service';
 import { eventsService } from '@/lib/services/events.service';
 import { updateEventSchema } from '@/lib/validation/schemas/events';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 type RouteParams = { id: string };
 
@@ -41,7 +42,8 @@ export const GET = withErrorHandling(
   }
 );
 
-export const PUT = withErrorHandling(
+export const PUT = withCSRF(
+  withErrorHandling(
   async (request: NextRequest, context: RouteContext<RouteParams>) => {
     const session = await getSession();
     if (!session || (session.user.role !== 'organizer' && session.user.role !== 'admin')) {
@@ -84,9 +86,11 @@ export const PUT = withErrorHandling(
 
     return NextResponse.json({ success: true, data: updated });
   }
+)
 );
 
-export const DELETE = withErrorHandling(
+export const DELETE = withCSRF(
+  withErrorHandling(
   async (_request: NextRequest, context: RouteContext<RouteParams>) => {
     const session = await getSession();
     if (!session || (session.user.role !== 'organizer' && session.user.role !== 'admin')) {
@@ -126,4 +130,5 @@ export const DELETE = withErrorHandling(
 
     return NextResponse.json({ success: true, data: { deleted: true } });
   }
+)
 );

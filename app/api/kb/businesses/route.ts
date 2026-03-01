@@ -10,6 +10,7 @@ import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 import { validateBody, validateQuery } from '@/lib/api/middleware/validation';
 import { kbService, CreateBusinessSchema } from '@/lib/services/kb.service';
 import { z } from 'zod';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // ============================================================================
 // Query Schema
@@ -43,7 +44,8 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 // POST Handler - Create business
 // ============================================================================
 
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   const data = await validateBody(request, CreateBusinessSchema);
 
   const business = await kbService.createBusiness(data);
@@ -53,5 +55,6 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     data: business,
     message: 'Business created successfully',
   });
-});
+})
+);
 

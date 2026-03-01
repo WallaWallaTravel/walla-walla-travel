@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { unsplashService, UnsplashPhoto } from '@/lib/services/unsplash.service'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError } from '@/lib/api/middleware/error-handler'
+import { withCSRF } from '@/lib/api/middleware/csrf'
 
 // GET - Search Unsplash photos
 const getHandler = withAdminAuth(async (request: NextRequest, _session) => {
@@ -77,4 +78,4 @@ const postHandler = withAdminAuth(async (request: NextRequest, _session) => {
 })
 
 export const GET = getHandler
-export const POST = postHandler
+export const POST = withCSRF(postHandler)

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { eventsService } from '@/lib/services/events.service';
 import { createEventSchema, eventFiltersSchema } from '@/lib/validation/schemas/events';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // ============================================================================
 // GET /api/admin/events - List all events (admin)
@@ -33,7 +34,8 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
 // POST /api/admin/events - Create a new event
 // ============================================================================
 
-export const POST = withAdminAuth(async (request: NextRequest, session) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest, session) => {
   const body = await request.json();
   const data = createEventSchema.parse(body);
 
@@ -52,4 +54,5 @@ export const POST = withAdminAuth(async (request: NextRequest, session) => {
     { success: true, data: event },
     { status: 201 }
   );
-});
+})
+);

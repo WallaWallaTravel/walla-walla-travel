@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * GET /api/media
@@ -101,7 +102,8 @@ export const GET = withErrorHandling(async (request: Request) => {
  * POST /api/media
  * Create new media entry (after file upload)
  */
-export const POST = withErrorHandling(async (request: Request) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: Request) => {
   const body = await request.json();
   const {
     file_name,
@@ -159,4 +161,5 @@ export const POST = withErrorHandling(async (request: Request) => {
     success: true,
     data: result.rows[0]
   });
-});
+})
+);

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
 import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler'
+import { withCSRF } from '@/lib/api/middleware/csrf'
 
 /**
  * Map CRM lifecycle_stage to legacy lead status
@@ -286,5 +287,9 @@ async function deleteHandler(
 }
 
 export const GET = withAdminAuth(getHandler)
-export const PATCH = withAdminAuth(patchHandler)
-export const DELETE = withAdminAuth(deleteHandler)
+export const PATCH = withCSRF(
+  withAdminAuth(patchHandler)
+)
+export const DELETE = withCSRF(
+  withAdminAuth(deleteHandler)
+)

@@ -9,6 +9,7 @@ import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 import { validateBody } from '@/lib/api/middleware/validation';
 import { wineDirectoryService, CreateWineData } from '@/lib/services/wine-directory.service';
 import { z } from 'zod';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // Schema for creating a wine
 const CreateWineSchema = z.object({
@@ -61,7 +62,8 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
  * POST /api/wine-directory/wines
  * Create a new wine
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   const data = await validateBody<CreateWineData>(request, CreateWineSchema);
 
   const wine = await wineDirectoryService.createWine(data);
@@ -71,7 +73,8 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     data: wine,
     message: `Wine '${wine.name}' created successfully`,
   }, { status: 201 });
-});
+})
+);
 
 
 

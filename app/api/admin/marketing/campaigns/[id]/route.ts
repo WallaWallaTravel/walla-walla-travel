@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // GET - Get campaign with all items
 export const GET = withAdminAuth(async (
@@ -43,7 +44,8 @@ export const GET = withAdminAuth(async (
 });
 
 // PUT - Update campaign status
-export const PUT = withAdminAuth(async (
+export const PUT = withCSRF(
+  withAdminAuth(async (
   request: NextRequest,
   _session,
   context
@@ -135,10 +137,12 @@ export const PUT = withAdminAuth(async (
     success: true,
     campaign: result.rows[0],
   })
-});
+})
+);
 
 // DELETE - Cancel campaign
-export const DELETE = withAdminAuth(async (
+export const DELETE = withCSRF(
+  withAdminAuth(async (
   request: NextRequest,
   _session,
   context
@@ -176,4 +180,5 @@ export const DELETE = withAdminAuth(async (
     success: true,
     campaign: result.rows[0],
   })
-});
+})
+);

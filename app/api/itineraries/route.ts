@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // GET /api/itineraries - List all itineraries
 export const GET = withErrorHandling(async (_request: NextRequest) => {
@@ -20,7 +21,8 @@ export const GET = withErrorHandling(async (_request: NextRequest) => {
 });
 
 // POST /api/itineraries - Create new itinerary
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   const body = await request.json();
   const {
     booking_id,
@@ -91,4 +93,5 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   await query('COMMIT');
 
   return NextResponse.json({ itinerary });
-});
+})
+);

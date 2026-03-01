@@ -10,6 +10,7 @@ import { z } from 'zod';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { validateBody } from '@/lib/api/middleware/validation';
 import { inspectionService } from '@/lib/services/inspection.service';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // =============================================================================
 // Validation Schemas
@@ -50,7 +51,8 @@ const ListHistoricalInspectionsSchema = z.object({
 // POST - Create historical inspection
 // =============================================================================
 
-export const POST = withAdminAuth(async (request: NextRequest, session) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest, session) => {
   // Validate request body
   const body = await validateBody(request, CreateHistoricalInspectionSchema);
 
@@ -85,7 +87,8 @@ export const POST = withAdminAuth(async (request: NextRequest, session) => {
     },
     { status: 201 }
   );
-});
+})
+);
 
 // =============================================================================
 // GET - List historical inspections

@@ -11,6 +11,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { query } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 function getAnthropicClient() {
   const apiKey = process.env.ANTHROPIC_API_KEY
@@ -94,7 +95,8 @@ function estimateReadTime(wordCount: number): number {
   return Math.max(1, Math.ceil(wordCount / 250))
 }
 
-export const POST = withAdminAuth(async (request: NextRequest, _session) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json()
   const { title, targetKeywords, category, tone, wordCountTarget } = body
 
@@ -241,7 +243,8 @@ The article should be well-structured, informative, and optimized for the target
     success: true,
     draft: result.rows[0],
   })
-});
+})
+);
 
 export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const { searchParams } = new URL(request.url)
@@ -302,7 +305,8 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   })
 });
 
-export const PATCH = withAdminAuth(async (request: NextRequest, _session) => {
+export const PATCH = withCSRF(
+  withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json()
   const { id, status } = body
 
@@ -342,4 +346,5 @@ export const PATCH = withAdminAuth(async (request: NextRequest, _session) => {
     success: true,
     draft: result.rows[0],
   })
-});
+})
+);

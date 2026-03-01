@@ -8,6 +8,7 @@ import {
 } from '@/app/api/utils';
 import { query } from '@/lib/db';
 import { z } from 'zod';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // Request body schema
 const DVIRSchema = z.object({
@@ -29,7 +30,8 @@ const DVIRSchema = z.object({
  *
  * Uses withErrorHandling middleware for consistent error handling
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   // Check authentication
   const session = await requireAuth();
 
@@ -122,7 +124,8 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     data: result.rows[0],
     message: 'DVIR created successfully'
   });
-});
+})
+);
 
 /**
  * GET /api/inspections/dvir

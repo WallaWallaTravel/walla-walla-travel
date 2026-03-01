@@ -8,6 +8,7 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { businessDirectoryService } from '@/lib/services/business-directory.service';
 import { z } from 'zod';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -28,7 +29,8 @@ const StatusUpdateSchema = z.object({
  * - 'rejected': Mark business as rejected (hidden but tracked)
  * - 'imported': Restore from rejected back to imported
  */
-export const PATCH = withAdminAuth(async (request: NextRequest, session, context) => {
+export const PATCH = withCSRF(
+  withAdminAuth(async (request: NextRequest, session, context) => {
   const { id } = await context!.params;
   const businessId = parseInt(id);
 
@@ -68,4 +70,5 @@ export const PATCH = withAdminAuth(async (request: NextRequest, session, context
     message: `Business status updated to ${status}`,
     timestamp: new Date().toISOString(),
   });
-});
+})
+);

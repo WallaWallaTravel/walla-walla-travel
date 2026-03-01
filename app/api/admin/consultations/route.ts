@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { query } from '@/lib/db';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * GET /api/admin/consultations
@@ -84,7 +85,8 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
  * PATCH /api/admin/consultations
  * Update consultation (assign staff, change status)
  */
-export const PATCH = withAdminAuth(async (request: NextRequest, _session) => {
+export const PATCH = withCSRF(
+  withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json();
   const { tripId, assignedStaffId, status, notes } = body;
 
@@ -136,4 +138,5 @@ export const PATCH = withAdminAuth(async (request: NextRequest, _session) => {
     trip: result.rows[0],
     timestamp: new Date().toISOString(),
   });
-});
+})
+);

@@ -14,8 +14,10 @@ import {
 import { requireAuth, requireDriver } from '@/lib/api/middleware/auth';
 import { tipService } from '@/lib/services/tip.service';
 import { uploadFile, ALLOWED_IMAGE_TYPES } from '@/lib/storage/supabase-storage';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   // Authenticate and authorize
   const session = await requireAuth(request);
   await requireDriver(session);
@@ -108,4 +110,5 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     },
     { status: 201 }
   );
-});
+})
+);

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, NotFoundError, RouteContext } from '@/lib/api/middleware/error-handler';
 import { query } from '@/lib/db';
 import { addStopSchema } from '@/lib/validation/schemas/trip';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface RouteParams {
   shareCode: string;
@@ -11,7 +12,8 @@ interface RouteParams {
 // POST /api/trips/[shareCode]/stops - Add a stop to the trip
 // ============================================================================
 
-export const POST = withErrorHandling<unknown, RouteParams>(
+export const POST = withCSRF(
+  withErrorHandling<unknown, RouteParams>(
   async (request: NextRequest, context: RouteContext<RouteParams>) => {
     const { shareCode } = await context.params;
     const body = await request.json();
@@ -115,4 +117,5 @@ export const POST = withErrorHandling<unknown, RouteParams>(
       },
     }, { status: 201 });
   }
+)
 );

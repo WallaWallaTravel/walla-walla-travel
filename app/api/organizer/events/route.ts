@@ -3,6 +3,7 @@ import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 import { getSession } from '@/lib/auth/session';
 import { eventOrganizerService } from '@/lib/services/event-organizer.service';
 import { createEventSchema } from '@/lib/validation/schemas/events';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const GET = withErrorHandling(async (request: NextRequest) => {
   const session = await getSession();
@@ -24,7 +25,8 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   return NextResponse.json({ success: true, data: events });
 });
 
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   const session = await getSession();
   if (!session || (session.user.role !== 'organizer' && session.user.role !== 'admin')) {
     return NextResponse.json(
@@ -42,4 +44,5 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   );
 
   return NextResponse.json({ success: true, data: result }, { status: 201 });
-});
+})
+);

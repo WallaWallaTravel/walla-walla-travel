@@ -5,6 +5,7 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { query } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // Request body schema
 const AssignVehicleSchema = z.object({
@@ -23,7 +24,8 @@ const AssignVehicleSchema = z.object({
  *
  * ✅ REFACTORED: Zod validation + structured logging + withErrorHandling
  */
-export const POST = withAdminAuth(async (request: NextRequest, session) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest, session) => {
   logApiRequest('POST', '/api/admin/assign-vehicle', session.userId);
 
   // Parse and validate request body
@@ -205,4 +207,5 @@ export const POST = withAdminAuth(async (request: NextRequest, session) => {
     },
     timestamp: new Date().toISOString()
   });
-});
+})
+);

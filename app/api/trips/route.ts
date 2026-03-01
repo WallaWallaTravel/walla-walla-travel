@@ -3,12 +3,14 @@ import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 import { query } from '@/lib/db';
 import { createTripSchema } from '@/lib/validation/schemas/trip';
 import { nanoid } from 'nanoid';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // ============================================================================
 // POST /api/trips - Create a new trip
 // ============================================================================
 
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   const body = await request.json();
   const validated = createTripSchema.parse(body);
 
@@ -85,4 +87,5 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       },
     },
   }, { status: 201 });
-});
+})
+);

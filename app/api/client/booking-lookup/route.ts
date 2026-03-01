@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   const body = await request.json();
   const { booking_number, email, phone, last_name, lookup_method } = body;
 
@@ -70,7 +72,8 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       status: booking.status
     }
   });
-});
+})
+);
 
 
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import type { RouteContext } from '@/lib/api/middleware/auth-wrapper';
 import { lodgingService, UpdateLodgingSchema } from '@/lib/services/lodging.service';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -43,7 +44,8 @@ export const GET = withAdminAuth(async (request: NextRequest, _session, context)
  * PATCH /api/admin/lodging/[id]
  * Update a lodging property
  */
-export const PATCH = withAdminAuth(async (request: NextRequest, _session, context) => {
+export const PATCH = withCSRF(
+  withAdminAuth(async (request: NextRequest, _session, context) => {
   const { id } = await (context as RouteContext<{ id: string }>).params;
   const numId = parseInt(id, 10);
 
@@ -81,13 +83,15 @@ export const PATCH = withAdminAuth(async (request: NextRequest, _session, contex
     },
     timestamp: new Date().toISOString(),
   });
-});
+})
+);
 
 /**
  * DELETE /api/admin/lodging/[id]
  * Soft-delete (deactivate) a lodging property
  */
-export const DELETE = withAdminAuth(async (request: NextRequest, _session, context) => {
+export const DELETE = withCSRF(
+  withAdminAuth(async (request: NextRequest, _session, context) => {
   const { id } = await (context as RouteContext<{ id: string }>).params;
   const numId = parseInt(id, 10);
 
@@ -114,4 +118,5 @@ export const DELETE = withAdminAuth(async (request: NextRequest, _session, conte
     },
     timestamp: new Date().toISOString(),
   });
-});
+})
+);

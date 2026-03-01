@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { withErrorHandling, NotFoundError, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { z } from 'zod';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // Schema for client feedback/suggestions
 const feedbackSchema = z.object({
@@ -16,7 +17,8 @@ const feedbackSchema = z.object({
  * POST /api/proposals/[proposal_id]/feedback
  * Submit client feedback or suggestions on a proposal
  */
-export const POST = withErrorHandling(async (
+export const POST = withCSRF(
+  withErrorHandling(async (
   request: NextRequest,
   { params }: { params: Promise<{ proposal_id: string }> }
 ): Promise<NextResponse> => {
@@ -82,7 +84,8 @@ export const POST = withErrorHandling(async (
     success: true,
     message: 'Thank you for your feedback! Our team will review and respond shortly.',
   });
-});
+})
+);
 
 /**
  * GET /api/proposals/[proposal_id]/feedback

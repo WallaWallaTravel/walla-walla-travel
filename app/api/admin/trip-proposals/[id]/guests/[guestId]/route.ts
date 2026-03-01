@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import { queryOne, QueryParamValue } from '@/lib/db-helpers';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface RouteParams {
   params: Promise<{ id: string; guestId: string }>;
@@ -19,7 +20,8 @@ const ALLOWED_FIELDS = ['name', 'email', 'phone', 'is_primary', 'dietary_restric
  * PATCH /api/admin/trip-proposals/[id]/guests/[guestId]
  * Update a guest's fields
  */
-export const PATCH = withAdminAuth(async (request: NextRequest, session, context) => {
+export const PATCH = withCSRF(
+  withAdminAuth(async (request: NextRequest, session, context) => {
   const { id, guestId } = await (context as unknown as RouteParams).params;
   const proposalId = parseInt(id, 10);
   const guestIdNum = parseInt(guestId, 10);
@@ -67,13 +69,15 @@ export const PATCH = withAdminAuth(async (request: NextRequest, session, context
   }
 
   return NextResponse.json({ success: true, data: result });
-});
+})
+);
 
 /**
  * DELETE /api/admin/trip-proposals/[id]/guests/[guestId]
  * Delete a guest
  */
-export const DELETE = withAdminAuth(async (request: NextRequest, session, context) => {
+export const DELETE = withCSRF(
+  withAdminAuth(async (request: NextRequest, session, context) => {
   const { id, guestId } = await (context as unknown as RouteParams).params;
   const proposalId = parseInt(id, 10);
   const guestIdNum = parseInt(guestId, 10);
@@ -91,4 +95,5 @@ export const DELETE = withAdminAuth(async (request: NextRequest, session, contex
     success: true,
     message: 'Guest deleted successfully',
   });
-});
+})
+);

@@ -11,6 +11,7 @@ import { logger } from '@/lib/logger';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 import { generateSecureString } from '@/lib/utils';
 import { crmSyncService } from '@/lib/services/crm-sync.service';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -19,7 +20,8 @@ export const dynamic = 'force-dynamic';
  * POST /api/corporate-request
  * Submit a new corporate quote request
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   const formData = await request.formData();
 
   const companyName = formData.get('companyName') as string;
@@ -154,7 +156,8 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     confidence: aiConfidenceScore,
     message: 'Corporate request submitted successfully. We\'ll respond within 48 hours.'
   });
-});
+})
+);
 
 /**
  * GET /api/corporate-request

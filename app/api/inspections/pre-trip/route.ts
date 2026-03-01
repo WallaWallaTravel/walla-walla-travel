@@ -3,6 +3,7 @@ import { withAuth } from '@/lib/api/middleware/auth-wrapper';
 import { validateBody } from '@/lib/api/middleware/validation';
 import { PreTripInspectionSchema } from '@/lib/validation/schemas/vehicle.schemas';
 import { inspectionService } from '@/lib/services/inspection.service';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * POST /api/inspections/pre-trip
@@ -10,7 +11,8 @@ import { inspectionService } from '@/lib/services/inspection.service';
  * 
  * ✅ REFACTORED: Service layer + Zod validation
  */
-export const POST = withAuth(async (request: NextRequest, session) => {
+export const POST = withCSRF(
+  withAuth(async (request: NextRequest, session) => {
   // ✅ Validate with Zod
   const data = await validateBody(request, PreTripInspectionSchema);
 
@@ -26,7 +28,8 @@ export const POST = withAuth(async (request: NextRequest, session) => {
     message: 'Pre-trip inspection created successfully',
     timestamp: new Date().toISOString(),
   });
-});
+})
+);
 
 /**
  * GET /api/inspections/pre-trip

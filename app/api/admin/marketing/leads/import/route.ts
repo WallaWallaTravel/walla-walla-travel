@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError } from '@/lib/api/middleware/error-handler'
+import { withCSRF } from '@/lib/api/middleware/csrf'
 
 interface ImportedLead {
   first_name: string
@@ -227,4 +228,6 @@ function parseCSVLine(line: string): string[] {
   return result
 }
 
-export const POST = withAdminAuth(postHandler)
+export const POST = withCSRF(
+  withAdminAuth(postHandler)
+)

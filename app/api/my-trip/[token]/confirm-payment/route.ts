@@ -7,6 +7,7 @@ import { tripProposalEmailService } from '@/lib/services/trip-proposal-email.ser
 import { query, withTransaction } from '@/lib/db-helpers';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 const ConfirmPaymentSchema = z.object({
   payment_intent_id: z.string().min(1, 'payment_intent_id is required'),
@@ -21,7 +22,8 @@ interface RouteParams {
   token: string;
 }
 
-export const POST = withErrorHandling<unknown, RouteParams>(
+export const POST = withCSRF(
+  withErrorHandling<unknown, RouteParams>(
   async (request: NextRequest, context) => {
     const { token } = await (context as RouteContext<RouteParams>).params;
     const body = await request.json();
@@ -152,4 +154,5 @@ export const POST = withErrorHandling<unknown, RouteParams>(
       },
     });
   }
+)
 );

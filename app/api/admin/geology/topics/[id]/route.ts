@@ -5,6 +5,7 @@ import {
 } from '@/lib/api/middleware/error-handler';
 import { query } from '@/lib/db';
 import { z } from 'zod';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // ============================================================================
 // Validation
@@ -84,7 +85,8 @@ export const GET = withAdminAuth(
 // PUT /api/admin/geology/topics/[id] - Update a topic
 // ============================================================================
 
-export const PUT = withAdminAuth(
+export const PUT = withCSRF(
+  withAdminAuth(
   async (request: NextRequest, _session, context) => {
     const { id } = await context!.params;
     const topicId = parseInt(id);
@@ -153,13 +155,15 @@ export const PUT = withAdminAuth(
       data: result.rows[0],
     });
   }
+)
 );
 
 // ============================================================================
 // DELETE /api/admin/geology/topics/[id] - Delete a topic
 // ============================================================================
 
-export const DELETE = withAdminAuth(
+export const DELETE = withCSRF(
+  withAdminAuth(
   async (_request: NextRequest, _session, context) => {
     const { id } = await context!.params;
     const topicId = parseInt(id);
@@ -179,4 +183,5 @@ export const DELETE = withAdminAuth(
       message: 'Topic deleted',
     });
   }
+)
 );

@@ -8,6 +8,7 @@ import {
 } from '@/app/api/utils';
 import { query } from '@/lib/db';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const GET = withErrorHandling(async (_request: NextRequest) => {
   // Check authentication
@@ -127,7 +128,8 @@ export const GET = withErrorHandling(async (_request: NextRequest) => {
   return successResponse(response, 'Current status retrieved');
 });
 
-export const PUT = withErrorHandling(async (request: NextRequest) => {
+export const PUT = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   // Check authentication
   const session = await requireAuth();
 
@@ -182,7 +184,8 @@ export const PUT = withErrorHandling(async (request: NextRequest) => {
   `, [driverId, timeCard.id, body.status, body.notes || null]);
 
   return successResponse(result.rows[0], 'Status updated successfully');
-});
+})
+);
 
 // Helper function to get route count by status
 async function getRoutesCount(driverId: number, status: string): Promise<number> {

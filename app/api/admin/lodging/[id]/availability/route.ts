@@ -3,6 +3,7 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import type { RouteContext } from '@/lib/api/middleware/auth-wrapper';
 import { lodgingService } from '@/lib/services/lodging.service';
 import { z } from 'zod';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -74,7 +75,8 @@ export const GET = withAdminAuth(async (request: NextRequest, _session, context)
  * PUT /api/admin/lodging/[id]/availability
  * Set availability entries for a property
  */
-export const PUT = withAdminAuth(async (request: NextRequest, _session, context) => {
+export const PUT = withCSRF(
+  withAdminAuth(async (request: NextRequest, _session, context) => {
   const { id } = await (context as RouteContext<{ id: string }>).params;
   const numId = parseInt(id, 10);
 
@@ -106,4 +108,5 @@ export const PUT = withAdminAuth(async (request: NextRequest, _session, context)
     },
     timestamp: new Date().toISOString(),
   });
-});
+})
+);

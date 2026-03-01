@@ -8,6 +8,7 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { NotFoundError, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { businessDirectoryService, BusinessImportRow } from '@/lib/services/business-directory.service';
 import { z } from 'zod';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -60,7 +61,8 @@ export const GET = withAdminAuth(async (_request: NextRequest, _session, context
  * PATCH /api/admin/directory/[id]
  * Update a business
  */
-export const PATCH = withAdminAuth(async (request: NextRequest, session, context) => {
+export const PATCH = withCSRF(
+  withAdminAuth(async (request: NextRequest, session, context) => {
   const { id } = await context!.params;
   const businessId = parseInt(id);
 
@@ -86,13 +88,15 @@ export const PATCH = withAdminAuth(async (request: NextRequest, session, context
     business,
     timestamp: new Date().toISOString(),
   });
-});
+})
+);
 
 /**
  * DELETE /api/admin/directory/[id]
  * Hard delete a business
  */
-export const DELETE = withAdminAuth(async (_request: NextRequest, session, context) => {
+export const DELETE = withCSRF(
+  withAdminAuth(async (_request: NextRequest, session, context) => {
   const { id } = await context!.params;
   const businessId = parseInt(id);
 
@@ -107,4 +111,5 @@ export const DELETE = withAdminAuth(async (_request: NextRequest, session, conte
     message: 'Business deleted',
     timestamp: new Date().toISOString(),
   });
-});
+})
+);

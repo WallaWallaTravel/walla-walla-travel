@@ -3,6 +3,7 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { query } from '@/lib/db';
 import type { CrmDealWithRelations, CreateDealData } from '@/types/crm';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * GET /api/admin/crm/deals
@@ -143,7 +144,8 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
  * POST /api/admin/crm/deals
  * Create a new CRM deal
  */
-export const POST = withAdminAuth(async (request: NextRequest, session) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest, session) => {
   const body = await request.json() as CreateDealData;
 
   // Validate required fields
@@ -221,4 +223,5 @@ export const POST = withAdminAuth(async (request: NextRequest, session) => {
     deal,
     timestamp: new Date().toISOString(),
   });
-});
+})
+);

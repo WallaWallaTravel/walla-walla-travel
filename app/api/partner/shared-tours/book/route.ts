@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, UnauthorizedError, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { hotelPartnerService } from '@/lib/services/hotel-partner.service';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * POST /api/partner/shared-tours/book
  * Book a guest on behalf of the hotel
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   // Get hotel ID from auth header/session
   const hotelId = request.headers.get('x-hotel-id');
 
@@ -57,4 +59,5 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     },
     message: 'Guest booked successfully. Payment request email sent.',
   });
-});
+})
+);

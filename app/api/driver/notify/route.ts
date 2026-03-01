@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   const { booking_id, driver_id } = await request.json();
 
   if (!booking_id) {
@@ -31,4 +33,5 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     success: true,
     message: 'Driver notified successfully'
   });
-});
+})
+);

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { z } from 'zod';
 import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // Request body schema
 const ClockOutSchema = z.object({
@@ -21,7 +22,8 @@ const ClockOutSchema = z.object({
  *
  * ✅ REFACTORED: Zod validation + withErrorHandling middleware
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   // Parse and validate request body
   let rawBody: unknown;
   try {
@@ -140,4 +142,5 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     violations,
     hoursWorked: Math.round(hoursWorked * 10) / 10 // Round to 1 decimal
   });
-});
+})
+);

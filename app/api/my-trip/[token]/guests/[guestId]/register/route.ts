@@ -14,6 +14,7 @@ import {
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import { query } from '@/lib/db';
 import { z } from 'zod';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface RouteParams {
   token: string;
@@ -26,7 +27,8 @@ const RegisterGuestSchema = z.object({
   phone: z.string().max(50).optional().or(z.literal('')),
 });
 
-export const POST = withErrorHandling<unknown, RouteParams>(
+export const POST = withCSRF(
+  withErrorHandling<unknown, RouteParams>(
   async (request: NextRequest, context: RouteContext<RouteParams>) => {
     const { token, guestId } = await context.params;
 
@@ -66,4 +68,5 @@ export const POST = withErrorHandling<unknown, RouteParams>(
       data: result.rows[0],
     });
   }
+)
 );

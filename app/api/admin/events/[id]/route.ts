@@ -3,6 +3,7 @@ import { NotFoundError } from '@/lib/api/middleware/error-handler';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { eventsService } from '@/lib/services/events.service';
 import { updateEventSchema } from '@/lib/validation/schemas/events';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // ============================================================================
 // GET /api/admin/events/[id] - Get a single event
@@ -28,7 +29,8 @@ export const GET = withAdminAuth(
 // PUT /api/admin/events/[id] - Update an event
 // ============================================================================
 
-export const PUT = withAdminAuth(
+export const PUT = withCSRF(
+  withAdminAuth(
   async (request: NextRequest, _session, context) => {
     const { id } = await context!.params;
     const body = await request.json();
@@ -60,13 +62,15 @@ export const PUT = withAdminAuth(
       data: event,
     });
   }
+)
 );
 
 // ============================================================================
 // DELETE /api/admin/events/[id] - Delete an event
 // ============================================================================
 
-export const DELETE = withAdminAuth(
+export const DELETE = withCSRF(
+  withAdminAuth(
   async (_request: NextRequest, _session, context) => {
     const { id } = await context!.params;
     await eventsService.deleteEvent(Number(id));
@@ -76,4 +80,5 @@ export const DELETE = withAdminAuth(
       message: 'Event deleted',
     });
   }
+)
 );

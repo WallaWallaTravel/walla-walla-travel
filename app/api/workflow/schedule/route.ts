@@ -12,6 +12,7 @@ import {
 } from '@/app/api/utils';
 import { query } from '@/lib/db';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const GET = withErrorHandling(async (request: NextRequest) => {
   // Check authentication
@@ -165,7 +166,8 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   return successResponse(scheduleData, 'Schedule retrieved successfully');
 });
 
-export const PUT = withErrorHandling(async (request: NextRequest) => {
+export const PUT = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   // Check authentication
   const session = await requireAuth();
 
@@ -237,4 +239,5 @@ export const PUT = withErrorHandling(async (request: NextRequest) => {
   }
 
   return successResponse(result.rows[0], 'Route status updated successfully');
-});
+})
+);

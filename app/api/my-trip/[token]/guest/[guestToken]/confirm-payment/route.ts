@@ -6,6 +6,7 @@ import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import { query, queryOne, withTransaction } from '@/lib/db-helpers';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface RouteParams { token: string; guestToken: string; }
 
@@ -21,7 +22,8 @@ const ConfirmSchema = z.object({
  * using INSERT ... ON CONFLICT ... DO NOTHING + checking RETURNING.
  * The standalone SELECT before the transaction has been removed.
  */
-export const POST = withErrorHandling<unknown, RouteParams>(
+export const POST = withCSRF(
+  withErrorHandling<unknown, RouteParams>(
   async (request: NextRequest, context) => {
     const { token, guestToken } = await (context as RouteContext<RouteParams>).params;
     const body = await request.json();
@@ -115,4 +117,5 @@ export const POST = withErrorHandling<unknown, RouteParams>(
       },
     });
   }
+)
 );

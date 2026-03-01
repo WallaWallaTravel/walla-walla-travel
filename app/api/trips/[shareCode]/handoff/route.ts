@@ -5,6 +5,7 @@ import { requestHandoffSchema } from '@/lib/validation/schemas/trip';
 import { sendConsultationRequestNotification, sendConsultationConfirmationToCustomer } from '@/lib/email';
 import { logger } from '@/lib/logger';
 import { crmSyncService } from '@/lib/services/crm-sync.service';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface RouteParams {
   shareCode: string;
@@ -14,7 +15,8 @@ interface RouteParams {
 // POST /api/trips/[shareCode]/handoff - Request handoff to planning team
 // ============================================================================
 
-export const POST = withErrorHandling<unknown, RouteParams>(
+export const POST = withCSRF(
+  withErrorHandling<unknown, RouteParams>(
   async (request: NextRequest, context: RouteContext<RouteParams>) => {
     const { shareCode } = await context.params;
     const body = await request.json();
@@ -137,4 +139,5 @@ export const POST = withErrorHandling<unknown, RouteParams>(
       },
     });
   }
+)
 );

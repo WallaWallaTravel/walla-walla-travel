@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { NotFoundError } from '@/lib/api/middleware/error-handler';
 import { hotelPartnerService } from '@/lib/services/hotel-partner.service';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * GET /api/admin/hotel-partners/[hotel_id]
@@ -38,7 +39,8 @@ export const GET = withAdminAuth(async (
  * PATCH /api/admin/hotel-partners/[hotel_id]
  * Update a hotel partner
  */
-export const PATCH = withAdminAuth(async (
+export const PATCH = withCSRF(
+  withAdminAuth(async (
   request: NextRequest, _session, context
 ) => {
   const { hotel_id } = await context!.params;
@@ -53,13 +55,15 @@ export const PATCH = withAdminAuth(async (
     success: true,
     data: hotel,
   });
-});
+})
+);
 
 /**
  * DELETE /api/admin/hotel-partners/[hotel_id]
  * Deactivate a hotel partner (soft delete)
  */
-export const DELETE = withAdminAuth(async (
+export const DELETE = withCSRF(
+  withAdminAuth(async (
   request: NextRequest, _session, context
 ) => {
   const { hotel_id } = await context!.params;
@@ -73,4 +77,5 @@ export const DELETE = withAdminAuth(async (
     success: true,
     message: 'Hotel partner deactivated',
   });
-});
+})
+);

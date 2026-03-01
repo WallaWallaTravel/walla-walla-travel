@@ -11,6 +11,7 @@ import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { getAllSettings, updateSetting } from '@/lib/settings/settings-service';
 import { auditService } from '@/lib/services/audit.service';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -33,7 +34,8 @@ export const GET = withAdminAuth(async (_request: NextRequest) => {
  * PUT /api/admin/settings
  * Update a specific setting
  */
-export const PUT = withAdminAuth(async (request: NextRequest, session: AuthSession) => {
+export const PUT = withCSRF(
+  withAdminAuth(async (request: NextRequest, session: AuthSession) => {
   const { setting_key, setting_value } = await request.json();
 
   if (!setting_key || setting_value === undefined) {
@@ -56,4 +58,5 @@ export const PUT = withAdminAuth(async (request: NextRequest, session: AuthSessi
     success: true,
     message: 'Setting updated successfully'
   });
-});
+})
+);

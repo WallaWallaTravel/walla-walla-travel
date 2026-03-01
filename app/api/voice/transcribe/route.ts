@@ -3,6 +3,7 @@ import { logger } from '@/lib/logger'
 import { transcribeAudio } from '@/lib/services/deepgram.service'
 import { withAuth } from '@/lib/api/middleware/auth-wrapper'
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit'
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -16,7 +17,8 @@ export const dynamic = 'force-dynamic'
  * Accepts: multipart/form-data with 'audio' file
  * Returns: { transcript, confidence, duration, cost }
  */
-export const POST = withRateLimit(rateLimiters.transcription)(
+export const POST = withCSRF(
+  withRateLimit(rateLimiters.transcription)(
   withAuth(async (request: NextRequest, _session) => {
   try {
     const formData = await request.formData()
@@ -73,5 +75,6 @@ export const POST = withRateLimit(rateLimiters.transcription)(
       { status: 500 }
     )
   }
-}));
+}))
+);
 

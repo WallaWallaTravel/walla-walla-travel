@@ -7,6 +7,7 @@ import { sendEmailAfterResponse } from '@/lib/email-async';
 import { getBrandEmailConfig } from '@/lib/email-brands';
 import { getBrandStripeClient } from '@/lib/stripe-brands';
 import { logger } from '@/lib/logger';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // Lazy-load healthService to avoid circular imports in serverless bundle
 async function getHealthService() {
@@ -19,7 +20,8 @@ async function getHealthService() {
  * Accept a proposal and create a booking
  * Note: No CSRF required - this is a public client-facing endpoint
  */
-export const POST = withRateLimit(rateLimiters.api)(
+export const POST = withCSRF(
+  withRateLimit(rateLimiters.api)(
   withErrorHandling(async (
   request: NextRequest,
   { params }: { params: Promise<{ proposal_id: string }> }
@@ -297,4 +299,5 @@ export const POST = withRateLimit(rateLimiters.api)(
       message: 'Proposal accepted! Complete payment to confirm your booking.'
     }
   });
-}));
+}))
+);

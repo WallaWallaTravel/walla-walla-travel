@@ -8,6 +8,7 @@ import { logger } from '@/lib/logger';
 import { query } from '@/lib/db';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -16,7 +17,8 @@ export const dynamic = 'force-dynamic';
  * POST /api/admin/business-portal/[business_id]/approve
  * Approve business submission
  */
-export const POST = withAdminAuth(async (
+export const POST = withCSRF(
+  withAdminAuth(async (
   request: NextRequest, _session, context
 ) => {
   const { business_id } = await context!.params;
@@ -74,4 +76,5 @@ export const POST = withAdminAuth(async (
     business,
     message: `Business ${status === 'approved' ? 'approved' : 'rejected'} successfully`
   });
-});
+})
+);

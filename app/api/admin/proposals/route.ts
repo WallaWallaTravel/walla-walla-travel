@@ -2,12 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { BadRequestError } from '@/lib/api-errors';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { query, queryMany } from '@/lib/db-helpers';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * POST /api/admin/proposals
  * Create a new proposal
  */
-export const POST = withAdminAuth(async (request: NextRequest, _session) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json();
   
   const {
@@ -121,7 +123,8 @@ export const POST = withAdminAuth(async (request: NextRequest, _session) => {
       proposal_number: proposal.proposal_number,
     },
   });
-});
+})
+);
 
 /**
  * GET /api/admin/proposals

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper';
 import { query } from '@/lib/db';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface SharedTourPreset {
   id: number;
@@ -55,7 +56,8 @@ export const GET = withAdminAuth(async (_request: NextRequest, _session: AuthSes
  * POST /api/admin/shared-tours/presets
  * Create a new preset
  */
-export const POST = withAdminAuth(async (request: NextRequest, _session: AuthSession) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest, _session: AuthSession) => {
   const body = await request.json();
 
   // Validate required fields
@@ -133,4 +135,5 @@ export const POST = withAdminAuth(async (request: NextRequest, _session: AuthSes
     data: result.rows[0],
     message: 'Preset created successfully',
   });
-});
+})
+);

@@ -3,6 +3,7 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { NotFoundError, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { query } from '@/lib/db';
 import type { CrmContactSummary, UpdateContactData } from '@/types/crm';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * GET /api/admin/crm/contacts/[id]
@@ -97,7 +98,8 @@ export const GET = withAdminAuth(async (
  * PATCH /api/admin/crm/contacts/[id]
  * Update a contact
  */
-export const PATCH = withAdminAuth(async (
+export const PATCH = withCSRF(
+  withAdminAuth(async (
   request: NextRequest, _session, context
 ) => {
   const { id } = await context!.params;
@@ -152,13 +154,15 @@ export const PATCH = withAdminAuth(async (
     contact: result.rows[0],
     timestamp: new Date().toISOString(),
   });
-});
+})
+);
 
 /**
  * DELETE /api/admin/crm/contacts/[id]
  * Delete a contact (soft delete by setting lifecycle_stage to 'lost')
  */
-export const DELETE = withAdminAuth(async (
+export const DELETE = withCSRF(
+  withAdminAuth(async (
   _request: NextRequest, _session, context
 ) => {
   const { id } = await context!.params;
@@ -196,4 +200,5 @@ export const DELETE = withAdminAuth(async (
     message: 'Contact marked as lost',
     timestamp: new Date().toISOString(),
   });
-});
+})
+);

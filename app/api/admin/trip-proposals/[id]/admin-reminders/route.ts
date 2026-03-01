@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth, AuthSession, RouteContext } from '@/lib/api/middleware/auth-wrapper';
 import { adminReminderService } from '@/lib/services/admin-reminder.service';
 import { queryOne } from '@/lib/db-helpers';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface RouteParams { id: string; }
 
@@ -28,7 +29,8 @@ export const GET = withAdminAuth(
  *   OR  { action: 'dismiss', reminder_id }
  *   OR  { action: 'snooze', reminder_id, days }
  */
-export const POST = withAdminAuth(
+export const POST = withCSRF(
+  withAdminAuth(
   async (request: NextRequest, _session: AuthSession, context?) => {
     const { id } = await (context as RouteContext<RouteParams>).params;
     const proposalId = parseInt(id, 10);
@@ -126,4 +128,5 @@ export const POST = withAdminAuth(
         );
     }
   }
+)
 );

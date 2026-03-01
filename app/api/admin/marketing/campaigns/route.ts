@@ -5,6 +5,7 @@ import { socialIntelligenceService } from '@/lib/services/social-intelligence.se
 import Anthropic from '@anthropic-ai/sdk'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import type { AuthSession } from '@/lib/api/middleware/auth-wrapper'
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 function getAnthropicClient() {
   const apiKey = process.env.ANTHROPIC_API_KEY
@@ -60,7 +61,8 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
 });
 
 // POST - Create campaign with AI-generated content items
-export const POST = withAdminAuth(async (request: NextRequest, session: AuthSession) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest, session: AuthSession) => {
   const body = await request.json()
   const { name, theme, channels, startDate, endDate, targetAudience } = body
 
@@ -342,4 +344,5 @@ Return ONLY JSON object, no other text.`
     campaign: finalResult.rows[0],
     itemsGenerated: contentItems.length,
   })
-});
+})
+);

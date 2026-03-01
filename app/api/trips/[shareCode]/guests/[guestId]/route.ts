@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, NotFoundError, RouteContext } from '@/lib/api/middleware/error-handler';
 import { query } from '@/lib/db';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface RouteParams {
   shareCode: string;
@@ -11,7 +12,8 @@ interface RouteParams {
 // DELETE /api/trips/[shareCode]/guests/[guestId] - Remove a guest from the trip
 // ============================================================================
 
-export const DELETE = withErrorHandling<unknown, RouteParams>(
+export const DELETE = withCSRF(
+  withErrorHandling<unknown, RouteParams>(
   async (request: NextRequest, context: RouteContext<RouteParams>) => {
     const { shareCode, guestId } = await context.params;
     const guestIdNum = parseInt(guestId, 10);
@@ -73,4 +75,5 @@ export const DELETE = withErrorHandling<unknown, RouteParams>(
       message: 'Guest removed successfully',
     });
   }
+)
 );

@@ -11,6 +11,7 @@ import {
   submitBusiness,
   getBusinessStats
 } from '@/lib/business-portal/business-service';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -20,7 +21,8 @@ export const dynamic = 'force-dynamic';
  * Submit business profile for review
  * Rate limited to 10 per hour to prevent spam
  */
-export const POST = withRateLimit(rateLimiters.publicSubmit)(
+export const POST = withCSRF(
+  withRateLimit(rateLimiters.publicSubmit)(
   withErrorHandling(async (request: NextRequest) => {
   try {
     const { businessId } = await request.json();
@@ -64,5 +66,6 @@ export const POST = withRateLimit(rateLimiters.publicSubmit)(
       { status: 500 }
     );
   }
-}));
+}))
+);
 

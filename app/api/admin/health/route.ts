@@ -10,6 +10,7 @@ import {
 import { redis } from '@/lib/redis';
 import { query as dbQuery } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * GET /api/admin/health
@@ -187,7 +188,8 @@ export const GET = withOptionalAuth(async (_request: NextRequest, session: AuthS
  * Admin actions for health management
  * - Reset circuit breakers
  */
-export const POST = withOptionalAuth(async (request: NextRequest, session: AuthSession | null) => {
+export const POST = withCSRF(
+  withOptionalAuth(async (request: NextRequest, session: AuthSession | null) => {
   const requestId = getRequestId();
   const body = await request.json();
 
@@ -208,4 +210,5 @@ export const POST = withOptionalAuth(async (request: NextRequest, session: AuthS
     success: false,
     message: 'Invalid action',
   }, { status: 400 });
-});
+})
+);

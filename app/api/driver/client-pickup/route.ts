@@ -8,6 +8,7 @@ import { query } from '@/lib/db';
 import { logger, logApiRequest } from '@/lib/logger';
 import { z } from 'zod';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // Request body schema
 const ClientPickupSchema = z.object({
@@ -23,7 +24,8 @@ const ClientPickupSchema = z.object({
  *
  * Wrapped with withErrorHandling for consistent error handling
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   // Check authentication
   const authResult = await requireAuth();
 
@@ -125,7 +127,8 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       vehicle_number: service.vehicle_number
     } : null
   }, 'Client pickup logged successfully');
-});
+})
+);
 
 /**
  * GET /api/driver/client-pickup

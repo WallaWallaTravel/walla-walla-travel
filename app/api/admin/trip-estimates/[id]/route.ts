@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { tripEstimateService } from '@/lib/services/trip-estimate.service';
 import { UpdateTripEstimateSchema } from '@/lib/types/trip-estimate';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -48,7 +49,8 @@ export const GET = withAdminAuth(async (_request: NextRequest, _session, context
  * PATCH /api/admin/trip-estimates/[id]
  * Update estimate
  */
-export const PATCH = withAdminAuth(async (request: NextRequest, _session, context) => {
+export const PATCH = withCSRF(
+  withAdminAuth(async (request: NextRequest, _session, context) => {
   const { id } = await (context as RouteContext).params;
   const estimateId = parseInt(id, 10);
 
@@ -80,13 +82,15 @@ export const PATCH = withAdminAuth(async (request: NextRequest, _session, contex
     data: updated,
     message: 'Trip estimate updated successfully',
   });
-});
+})
+);
 
 /**
  * DELETE /api/admin/trip-estimates/[id]
  * Delete a draft estimate
  */
-export const DELETE = withAdminAuth(async (_request: NextRequest, _session, context) => {
+export const DELETE = withCSRF(
+  withAdminAuth(async (_request: NextRequest, _session, context) => {
   const { id } = await (context as RouteContext).params;
   const estimateId = parseInt(id, 10);
 
@@ -103,4 +107,5 @@ export const DELETE = withAdminAuth(async (_request: NextRequest, _session, cont
     success: true,
     message: 'Trip estimate deleted successfully',
   });
-});
+})
+);

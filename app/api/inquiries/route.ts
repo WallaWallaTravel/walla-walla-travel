@@ -11,6 +11,7 @@ import { withErrorHandling, BadRequestError, ValidationError } from '@/lib/api/m
 import { experienceRequestService } from '@/lib/services/experience-request.service';
 import { sendEmail } from '@/lib/email';
 import { logger } from '@/lib/logger';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // Validation schema for public inquiry form
 const InquirySchema = z.object({
@@ -44,7 +45,8 @@ const InquirySchema = z.object({
   website: z.string().optional(),
 });
 
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   const body = await request.json();
 
   // Validate input
@@ -361,4 +363,5 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     request_number: experienceRequest.request_number,
     message: `Thank you, ${data.first_name}! We'll call you within 24 hours to discuss your wine tour.`,
   }, { status: 201 });
-});
+})
+);

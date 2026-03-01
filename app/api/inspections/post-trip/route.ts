@@ -4,6 +4,7 @@ import { validateBody } from '@/lib/api/middleware/validation';
 import { PostTripInspectionSchema } from '@/lib/validation/schemas/vehicle.schemas';
 import { inspectionService } from '@/lib/services/inspection.service';
 import { notificationService } from '@/lib/services/notification.service';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * POST /api/inspections/post-trip
@@ -11,7 +12,8 @@ import { notificationService } from '@/lib/services/notification.service';
  * 
  * ✅ REFACTORED: Service layer + notifications
  */
-export const POST = withAuth(async (request: NextRequest, session) => {
+export const POST = withCSRF(
+  withAuth(async (request: NextRequest, session) => {
   const driverId = parseInt(session.userId);
 
   // ✅ Validate with Zod
@@ -41,7 +43,8 @@ export const POST = withAuth(async (request: NextRequest, session) => {
       : 'Post-trip inspection saved successfully',
     timestamp: new Date().toISOString(),
   });
-});
+})
+);
 
 /**
  * GET /api/inspections/post-trip

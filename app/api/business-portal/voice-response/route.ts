@@ -9,6 +9,7 @@ import {
 } from '@/lib/business-portal/question-service';
 import { logBusinessActivity } from '@/lib/business-portal/business-service';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -20,7 +21,8 @@ export const dynamic = 'force-dynamic';
  * For now, we'll use a simple file storage approach.
  * In production, this would upload to S3/R2 and trigger async processing.
  */
-export const POST = withErrorHandling(async (request) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request) => {
   const formData = await request.formData();
 
   const businessId = parseInt(formData.get('businessId') as string);
@@ -67,5 +69,6 @@ export const POST = withErrorHandling(async (request) => {
     entryId,
     message: 'Voice response saved. Transcription queued.'
   });
-});
+})
+);
 

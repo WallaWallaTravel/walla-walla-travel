@@ -9,8 +9,10 @@ import { withAdminAuth, type AuthSession, type RouteContext } from '@/lib/api/mi
 import { NotFoundError, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { lunchSupplierService } from '@/lib/services/lunch-supplier.service';
 import { query } from '@/lib/db';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
-export const PATCH = withAdminAuth(
+export const PATCH = withCSRF(
+  withAdminAuth(
   async (request: NextRequest, _session: AuthSession, context?: RouteContext) => {
     const { orderId } = await context!.params;
     const orderIdNum = parseInt(orderId, 10);
@@ -71,4 +73,5 @@ export const PATCH = withAdminAuth(
       data: result.rows[0],
     });
   }
+)
 );

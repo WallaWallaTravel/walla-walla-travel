@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { eventsService } from '@/lib/services/events.service';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // ============================================================================
 // POST /api/admin/events/[id]/publish - Publish an event
 // ============================================================================
 
-export const POST = withAdminAuth(
+export const POST = withCSRF(
+  withAdminAuth(
   async (_request: NextRequest, _session, context) => {
     const { id } = await context!.params;
 
@@ -24,4 +26,5 @@ export const POST = withAdminAuth(
       data: event,
     });
   }
+)
 );

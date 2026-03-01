@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { lunchSupplierService } from '@/lib/services/lunch-supplier.service';
 import { CreateLunchSupplierSchema } from '@/lib/types/lunch-supplier';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * GET /api/admin/lunch-suppliers
@@ -30,7 +31,8 @@ export const GET = withAdminAuth(async (request: NextRequest) => {
  * POST /api/admin/lunch-suppliers
  * Create a new lunch supplier
  */
-export const POST = withAdminAuth(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest) => {
   const body = await request.json();
 
   const parseResult = CreateLunchSupplierSchema.safeParse(body);
@@ -55,4 +57,5 @@ export const POST = withAdminAuth(async (request: NextRequest) => {
     },
     { status: 201 }
   );
-});
+})
+);

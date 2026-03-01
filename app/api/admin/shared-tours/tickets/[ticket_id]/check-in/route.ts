@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper';
 import { sharedTourService } from '@/lib/services/shared-tour.service';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface RouteParams {
   params: Promise<{ ticket_id: string }>;
@@ -10,7 +11,8 @@ interface RouteParams {
  * POST /api/admin/shared-tours/tickets/[ticket_id]/check-in
  * Check in a ticket on tour day
  */
-export const POST = withAdminAuth(async (request: NextRequest, _session: AuthSession, context) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest, _session: AuthSession, context) => {
   const { ticket_id } = await (context as RouteParams).params;
 
   const ticket = await sharedTourService.checkInTicket(ticket_id);
@@ -26,4 +28,5 @@ export const POST = withAdminAuth(async (request: NextRequest, _session: AuthSes
     data: ticket,
     message: 'Ticket checked in successfully',
   });
-});
+})
+);

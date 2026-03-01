@@ -12,6 +12,7 @@ import { z } from 'zod';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { anthropicChatService, ChatMessage, TripTags } from '@/lib/services/anthropic-chat.service';
 import { partnerContextService } from '@/lib/services/partner-context.service';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // ============================================================================
 // Request Schema
@@ -37,7 +38,8 @@ const ChatRequestSchema = z.object({
 // POST Handler
 // ============================================================================
 
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   const body = await request.json();
 
   // Validate request
@@ -84,4 +86,5 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       tags,
     },
   });
-});
+})
+);

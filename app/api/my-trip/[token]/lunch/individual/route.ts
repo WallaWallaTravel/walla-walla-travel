@@ -16,6 +16,7 @@ import { lunchSupplierService } from '@/lib/services/lunch-supplier.service';
 import { withTransaction } from '@/lib/db-helpers';
 import { z } from 'zod';
 import type { GuestOrder, GuestOrderItem } from '@/lib/types/lunch-supplier';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface RouteParams {
   token: string;
@@ -34,7 +35,8 @@ const IndividualOrderSchema = z.object({
   notes: z.string().max(500).optional(),
 });
 
-export const POST = withErrorHandling<unknown, RouteParams>(
+export const POST = withCSRF(
+  withErrorHandling<unknown, RouteParams>(
   async (request: NextRequest, context: RouteContext<RouteParams>) => {
     const { token } = await context.params;
 
@@ -166,4 +168,5 @@ export const POST = withErrorHandling<unknown, RouteParams>(
       message: 'Your lunch order has been submitted',
     });
   }
+)
 );

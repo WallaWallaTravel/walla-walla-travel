@@ -3,6 +3,7 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { query } from '@/lib/db';
 import type { CrmTaskWithRelations, CreateTaskData } from '@/types/crm';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * GET /api/admin/crm/tasks
@@ -120,7 +121,8 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
  * POST /api/admin/crm/tasks
  * Create a new CRM task
  */
-export const POST = withAdminAuth(async (request: NextRequest, session) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest, session) => {
   const body = await request.json() as CreateTaskData;
 
   // Validate required fields
@@ -198,13 +200,15 @@ export const POST = withAdminAuth(async (request: NextRequest, session) => {
     task,
     timestamp: new Date().toISOString(),
   });
-});
+})
+);
 
 /**
  * PATCH /api/admin/crm/tasks
  * Update a task (complete, reschedule, etc.)
  */
-export const PATCH = withAdminAuth(async (request: NextRequest, session) => {
+export const PATCH = withCSRF(
+  withAdminAuth(async (request: NextRequest, session) => {
   const body = await request.json();
   const { taskId, status, completion_notes, ...updates } = body;
 
@@ -285,4 +289,5 @@ export const PATCH = withAdminAuth(async (request: NextRequest, session) => {
     task,
     timestamp: new Date().toISOString(),
   });
-});
+})
+);

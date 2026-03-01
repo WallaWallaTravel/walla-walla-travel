@@ -10,6 +10,7 @@ import { query } from '@/lib/db';
 import { getSetting } from '@/lib/settings/settings-service';
 import { sendReservationConfirmation } from '@/lib/email';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -37,7 +38,8 @@ interface ReserveRequest {
  * POST /api/booking/reserve
  * Create a reservation with deposit
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   const data: ReserveRequest = await request.json();
 
   // Validate required fields
@@ -223,4 +225,5 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     await query('ROLLBACK');
     throw error;
   }
-});
+})
+);

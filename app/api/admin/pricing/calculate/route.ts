@@ -12,6 +12,7 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { z } from 'zod';
 import { calculatePrice } from '@/lib/pricing-engine';
 import { getRates } from '@/lib/rate-config';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 const CalculatePricingSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -21,7 +22,8 @@ const CalculatePricingSchema = z.object({
   custom_discount: z.number().min(0).max(100).optional(),
 });
 
-export const POST = withAdminAuth(async (request: NextRequest, _session) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json();
   const parsed = CalculatePricingSchema.safeParse(body);
 
@@ -106,4 +108,5 @@ export const POST = withAdminAuth(async (request: NextRequest, _session) => {
         minimum_hours: pricing.minimum_hours,
       },
     });
-});
+})
+);
