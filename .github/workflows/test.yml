@@ -30,7 +30,7 @@ jobs:
         run: npm ci
 
       - name: Generate Prisma Client
-        run: npx prisma generate
+        run: npx prisma@6 generate
         env:
           DATABASE_URL: postgresql://mock:mock@localhost:5432/mock
 
@@ -117,7 +117,7 @@ jobs:
         run: npm ci
 
       - name: Generate Prisma Client
-        run: npx prisma generate
+        run: npx prisma@6 generate
         env:
           DATABASE_URL: postgresql://mock:mock@localhost:5432/mock
 
