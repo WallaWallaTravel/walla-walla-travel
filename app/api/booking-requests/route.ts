@@ -210,7 +210,7 @@ export const POST = withCSRF(
       logger.error('Failed to sync booking request to CRM', { error: err, reservationNumber });
     });
 
-    // Send confirmation email via Postmark
+    // Send confirmation email via Resend
     try {
       // Format dates for email
       const formatDate = (dateStr: string) => {

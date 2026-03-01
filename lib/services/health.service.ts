@@ -111,11 +111,11 @@ export async function isDatabaseAvailable(): Promise<boolean> {
 }
 
 /**
- * Check if email service (Postmark) is available
+ * Check if email service (Resend) is available
  */
 export async function isEmailAvailable(): Promise<boolean> {
-  if (!process.env.POSTMARK_API_KEY) {
-    updateStatus('email', false, 'POSTMARK_API_KEY not configured');
+  if (!process.env.RESEND_API_KEY) {
+    updateStatus('email', false, 'RESEND_API_KEY not configured');
     return false;
   }
 
@@ -436,7 +436,7 @@ export async function probeDatabaseHealth(): Promise<{
 }
 
 /**
- * Probe email service (Postmark) with API call
+ * Probe email service (Resend) with API call
  */
 export async function probeEmailHealth(): Promise<{
   available: boolean;
@@ -445,17 +445,17 @@ export async function probeEmailHealth(): Promise<{
 }> {
   const startTime = Date.now();
 
-  if (!process.env.POSTMARK_API_KEY) {
-    return { available: false, latencyMs: 0, error: 'POSTMARK_API_KEY not configured' };
+  if (!process.env.RESEND_API_KEY) {
+    return { available: false, latencyMs: 0, error: 'RESEND_API_KEY not configured' };
   }
 
   try {
-    // Check Postmark server status via their API
-    const response = await fetch('https://api.postmarkapp.com/server', {
+    // Check Resend API availability via their domains endpoint
+    const response = await fetch('https://api.resend.com/domains', {
       method: 'GET',
       headers: {
-        Accept: 'application/json',
-        'X-Postmark-Server-Token': process.env.POSTMARK_API_KEY,
+        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
       },
       signal: AbortSignal.timeout(5000), // 5 second timeout
     });
