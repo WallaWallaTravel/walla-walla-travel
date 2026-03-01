@@ -509,7 +509,7 @@ export class BookingCoreService extends BaseService {
     const perPersonRate = 50;
 
     // Weekend multiplier
-    const isWeekend = [0, 5, 6].includes(new Date(date).getDay());
+    const isWeekend = [0, 5, 6].includes(new Date(date).getUTCDay());
     const weekendMultiplier = isWeekend ? 1.2 : 1.0;
 
     const total = (
