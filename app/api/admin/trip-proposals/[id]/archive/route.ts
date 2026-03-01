@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { auditService } from '@/lib/services/audit.service';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -30,6 +31,12 @@ export const POST = withCSRF(
   }
 
   const proposal = await tripProposalService.archiveProposal(proposalId);
+
+  await auditService.logFromRequest(request, parseInt(session.userId), 'resource_updated', {
+    entityType: 'trip_proposal',
+    entityId: proposalId,
+    action: 'archived',
+  });
 
   return NextResponse.json({
     success: true,
@@ -56,6 +63,12 @@ export const DELETE = withCSRF(
   }
 
   const proposal = await tripProposalService.unarchiveProposal(proposalId);
+
+  await auditService.logFromRequest(request, parseInt(session.userId), 'resource_updated', {
+    entityType: 'trip_proposal',
+    entityId: proposalId,
+    action: 'unarchived',
+  });
 
   return NextResponse.json({
     success: true,

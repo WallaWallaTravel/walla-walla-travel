@@ -10,6 +10,7 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import { UpdateTripProposalSchema } from '@/lib/types/trip-proposal';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { auditService } from '@/lib/services/audit.service';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -127,6 +128,11 @@ export const DELETE = withCSRF(
   // Cascade delete will handle days, stops, guests, inclusions, activity
   const { query } = await import('@/lib/db');
   await query('DELETE FROM trip_proposals WHERE id = $1', [proposalId]);
+
+  await auditService.logFromRequest(request, parseInt(session.userId), 'resource_deleted', {
+    entityType: 'trip_proposal',
+    entityId: proposalId,
+  });
 
   return NextResponse.json({
     success: true,

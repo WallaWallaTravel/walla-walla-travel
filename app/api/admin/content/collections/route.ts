@@ -4,6 +4,7 @@ import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { ContentService } from '@/lib/services/content.service';
 import { z } from 'zod';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { auditService } from '@/lib/services/audit.service';
 
 // GET - Fetch collections
 // ?type=neighborhoods - Get all items in a collection type
@@ -131,7 +132,7 @@ const putHandler = withAdminAuth(async (request: NextRequest, session) => {
 });
 
 // DELETE - Remove collection item
-const deleteHandler = withAdminAuth(async (request: NextRequest, _session) => {
+const deleteHandler = withAdminAuth(async (request: NextRequest, session) => {
   const { searchParams } = new URL(request.url);
   const id = searchParams.get('id');
   const soft = searchParams.get('soft') === 'true';
@@ -150,6 +151,14 @@ const deleteHandler = withAdminAuth(async (request: NextRequest, _session) => {
     deleted = await ContentService.deactivateCollectionItem(itemId);
   } else {
     deleted = await ContentService.deleteCollectionItem(itemId);
+  }
+
+  if (deleted) {
+    await auditService.logFromRequest(request, parseInt(session.userId), 'resource_deleted', {
+      entityType: 'collection_item',
+      entityId: itemId,
+      softDelete: soft,
+    });
   }
 
   return NextResponse.json({

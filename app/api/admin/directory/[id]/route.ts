@@ -9,6 +9,7 @@ import { NotFoundError, BadRequestError } from '@/lib/api/middleware/error-handl
 import { businessDirectoryService, BusinessImportRow } from '@/lib/services/business-directory.service';
 import { z } from 'zod';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { auditService } from '@/lib/services/audit.service';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -83,6 +84,12 @@ export const PATCH = withCSRF(
     parseInt(session.userId)
   );
 
+  await auditService.logFromRequest(request, parseInt(session.userId), 'resource_updated', {
+    entityType: 'business',
+    entityId: businessId,
+    updatedFields: Object.keys(parsed.data),
+  });
+
   return NextResponse.json({
     success: true,
     business,
@@ -96,7 +103,7 @@ export const PATCH = withCSRF(
  * Hard delete a business
  */
 export const DELETE = withCSRF(
-  withAdminAuth(async (_request: NextRequest, session, context) => {
+  withAdminAuth(async (request: NextRequest, session, context) => {
   const { id } = await context!.params;
   const businessId = parseInt(id);
 
@@ -105,6 +112,11 @@ export const DELETE = withCSRF(
   }
 
   await businessDirectoryService.deleteBusiness(businessId, parseInt(session.userId));
+
+  await auditService.logFromRequest(request, parseInt(session.userId), 'resource_deleted', {
+    entityType: 'business',
+    entityId: businessId,
+  });
 
   return NextResponse.json({
     success: true,

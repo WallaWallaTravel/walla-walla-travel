@@ -10,6 +10,7 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { tripEstimateService } from '@/lib/services/trip-estimate.service';
 import { UpdateTripEstimateSchema } from '@/lib/types/trip-estimate';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { auditService } from '@/lib/services/audit.service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -90,7 +91,7 @@ export const PATCH = withCSRF(
  * Delete a draft estimate
  */
 export const DELETE = withCSRF(
-  withAdminAuth(async (_request: NextRequest, _session, context) => {
+  withAdminAuth(async (request: NextRequest, session, context) => {
   const { id } = await (context as RouteContext).params;
   const estimateId = parseInt(id, 10);
 
@@ -102,6 +103,11 @@ export const DELETE = withCSRF(
   }
 
   await tripEstimateService.deleteEstimate(estimateId);
+
+  await auditService.logFromRequest(request, parseInt(session.userId), 'resource_deleted', {
+    entityType: 'trip_estimate',
+    entityId: estimateId,
+  });
 
   return NextResponse.json({
     success: true,

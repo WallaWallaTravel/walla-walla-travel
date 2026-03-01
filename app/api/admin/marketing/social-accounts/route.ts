@@ -3,6 +3,7 @@ import { query } from '@/lib/db'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler'
 import { withCSRF } from '@/lib/api/middleware/csrf'
+import { auditService } from '@/lib/services/audit.service'
 import { z } from 'zod'
 
 const DeleteBodySchema = z.object({
@@ -41,7 +42,7 @@ async function getHandler(_request: NextRequest) {
 }
 
 // DELETE - Disconnect a social account
-async function deleteHandler(request: NextRequest) {
+async function deleteHandler(request: NextRequest, userId: number) {
   const body = DeleteBodySchema.parse(await request.json())
   const { id } = body
 
@@ -65,6 +66,11 @@ async function deleteHandler(request: NextRequest) {
     throw new NotFoundError('Account not found')
   }
 
+  await auditService.logFromRequest(request, userId, 'resource_deleted', {
+    entityType: 'social_account',
+    entityId: id,
+  });
+
   return NextResponse.json({
     success: true,
     message: 'Account disconnected'
@@ -72,7 +78,7 @@ async function deleteHandler(request: NextRequest) {
 }
 
 // PATCH - Update account settings
-async function patchHandler(request: NextRequest) {
+async function patchHandler(request: NextRequest, userId: number) {
   const body = PatchBodySchema.parse(await request.json())
   const { id, is_active } = body
 
@@ -92,6 +98,12 @@ async function patchHandler(request: NextRequest) {
     throw new NotFoundError('Account not found')
   }
 
+  await auditService.logFromRequest(request, userId, 'resource_updated', {
+    entityType: 'social_account',
+    entityId: id,
+    changes: { is_active },
+  });
+
   return NextResponse.json({
     success: true,
     account: result.rows[0]
@@ -100,8 +112,8 @@ async function patchHandler(request: NextRequest) {
 
 export const GET = withAdminAuth(getHandler)
 export const DELETE = withCSRF(
-  withAdminAuth(deleteHandler)
+  withAdminAuth(async (request, session) => deleteHandler(request, parseInt(session.userId)))
 )
 export const PATCH = withCSRF(
-  withAdminAuth(patchHandler)
+  withAdminAuth(async (request, session) => patchHandler(request, parseInt(session.userId)))
 )

@@ -11,6 +11,7 @@ import { z } from 'zod';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { auditService } from '@/lib/services/audit.service';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -38,7 +39,7 @@ const BodySchema = z.object({
  * Send batch invites to businesses
  */
 export const POST = withCSRF(
-  withAdminAuth(async (request: NextRequest, _session) => {
+  withAdminAuth(async (request: NextRequest, session) => {
   const body = BodySchema.parse(await request.json());
   const { businesses } = body as { businesses: BusinessInvite[] };
 
@@ -124,6 +125,14 @@ export const POST = withCSRF(
   const failCount = results.filter(r => !r.success).length;
 
   logger.info('Batch invite complete', { succeeded: successCount, failed: failCount });
+
+  await auditService.logFromRequest(request, parseInt(session.userId), 'bulk_action', {
+    entityType: 'business_invite',
+    action: 'batch_invite',
+    totalInvites: businesses.length,
+    succeeded: successCount,
+    failed: failCount,
+  });
 
   return NextResponse.json({
     success: true,

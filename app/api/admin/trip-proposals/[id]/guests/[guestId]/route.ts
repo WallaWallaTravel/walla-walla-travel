@@ -10,6 +10,7 @@ import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import { queryOne, QueryParamValue } from '@/lib/db-helpers';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { z } from 'zod';
+import { auditService } from '@/lib/services/audit.service';
 
 interface RouteParams {
   params: Promise<{ id: string; guestId: string }>;
@@ -103,6 +104,12 @@ export const DELETE = withCSRF(
   }
 
   await tripProposalService.deleteGuest(proposalId, guestIdNum);
+
+  await auditService.logFromRequest(request, parseInt(session.userId), 'resource_deleted', {
+    entityType: 'trip_proposal_guest',
+    entityId: guestIdNum,
+    proposalId,
+  });
 
   return NextResponse.json({
     success: true,

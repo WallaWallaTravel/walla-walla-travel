@@ -10,6 +10,7 @@ import { z } from 'zod';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { auditService } from '@/lib/services/audit.service';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -25,7 +26,7 @@ const BodySchema = z.object({
 
 export const POST = withCSRF(
   withAdminAuth(async (
-  request: NextRequest, _session, context
+  request: NextRequest, session, context
 ) => {
   const { business_id } = await context!.params;
   const businessId = parseInt(business_id);
@@ -76,6 +77,14 @@ export const POST = withCSRF(
   );
 
   logger.info('Business status updated successfully', { businessId });
+
+  await auditService.logFromRequest(request, parseInt(session.userId), status === 'approved' ? 'business_approved' : 'business_rejected', {
+    entityType: 'business',
+    entityId: businessId,
+    businessName: business.name,
+    status,
+    notes,
+  });
 
   return NextResponse.json({
     success: true,

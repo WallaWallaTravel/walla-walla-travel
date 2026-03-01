@@ -9,6 +9,7 @@ import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { businessDirectoryService } from '@/lib/services/business-directory.service';
 import { z } from 'zod';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { auditService } from '@/lib/services/audit.service';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -56,6 +57,15 @@ export const POST = withCSRF(
       email
     );
 
+    await auditService.logFromRequest(request, parseInt(session.userId), 'resource_created', {
+      entityType: 'business_invite',
+      entityId: businessId,
+      action: 'send_invite_email',
+      email,
+      inviteToken: result.invite_token,
+      expiresAt: result.expires_at,
+    });
+
     return NextResponse.json({
       success: true,
       action: 'email',
@@ -73,6 +83,15 @@ export const POST = withCSRF(
       parseInt(session.userId),
       expirationDays
     );
+
+    await auditService.logFromRequest(request, parseInt(session.userId), 'resource_created', {
+      entityType: 'business_invite',
+      entityId: businessId,
+      action: 'generate_invite_link',
+      inviteToken: result.invite_token,
+      expiresAt: result.expires_at,
+      expirationDays,
+    });
 
     return NextResponse.json({
       success: true,

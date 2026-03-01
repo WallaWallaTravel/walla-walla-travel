@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { auditService } from '@/lib/services/audit.service';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -26,7 +27,7 @@ const BodySchema = z.object({
 });
 
 export const POST = withCSRF(
-  withAdminAuth(async (request: NextRequest, _session) => {
+  withAdminAuth(async (request: NextRequest, session) => {
   const {
     business_type,
     name,
@@ -61,6 +62,14 @@ export const POST = withCSRF(
   });
 
   // In production: Send invitation email with invite token
+
+  await auditService.logFromRequest(request, parseInt(session.userId), 'resource_created', {
+    entityType: 'business_invite',
+    entityId: business.id,
+    businessName: name,
+    businessType: business_type,
+    contactEmail: contact_email,
+  });
 
   return NextResponse.json({
     success: true,

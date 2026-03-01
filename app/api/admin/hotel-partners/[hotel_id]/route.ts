@@ -3,6 +3,7 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { NotFoundError } from '@/lib/api/middleware/error-handler';
 import { hotelPartnerService } from '@/lib/services/hotel-partner.service';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { auditService } from '@/lib/services/audit.service';
 import { z } from 'zod';
 
 const PatchBodySchema = z.object({
@@ -52,7 +53,7 @@ export const GET = withAdminAuth(async (
  */
 export const PATCH = withCSRF(
   withAdminAuth(async (
-  request: NextRequest, _session, context
+  request: NextRequest, session, context
 ) => {
   const { hotel_id } = await context!.params;
   const body = PatchBodySchema.parse(await request.json());
@@ -61,6 +62,12 @@ export const PATCH = withCSRF(
   if (!hotel) {
     throw new NotFoundError('Hotel partner not found');
   }
+
+  await auditService.logFromRequest(request, parseInt(session.userId), 'resource_updated', {
+    entityType: 'hotel_partner',
+    entityId: hotel_id,
+    updatedFields: Object.keys(body),
+  });
 
   return NextResponse.json({
     success: true,
@@ -75,7 +82,7 @@ export const PATCH = withCSRF(
  */
 export const DELETE = withCSRF(
   withAdminAuth(async (
-  request: NextRequest, _session, context
+  request: NextRequest, session, context
 ) => {
   const { hotel_id } = await context!.params;
 
@@ -83,6 +90,12 @@ export const DELETE = withCSRF(
   if (!hotel) {
     throw new NotFoundError('Hotel partner not found');
   }
+
+  await auditService.logFromRequest(request, parseInt(session.userId), 'resource_deleted', {
+    entityType: 'hotel_partner',
+    entityId: hotel_id,
+    action: 'deactivated',
+  });
 
   return NextResponse.json({
     success: true,

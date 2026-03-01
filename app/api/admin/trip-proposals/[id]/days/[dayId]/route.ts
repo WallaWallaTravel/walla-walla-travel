@@ -9,6 +9,7 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import { AddDaySchema } from '@/lib/types/trip-proposal';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { auditService } from '@/lib/services/audit.service';
 
 interface RouteParams {
   params: Promise<{ id: string; dayId: string }>;
@@ -60,7 +61,7 @@ export const PATCH = withCSRF(
  */
 export const DELETE = withCSRF(
   withAdminAuth(async (request: NextRequest, session, context) => {
-  const { dayId } = await (context as unknown as RouteParams).params;
+  const { id, dayId } = await (context as unknown as RouteParams).params;
   const dayIdNum = parseInt(dayId, 10);
 
   if (isNaN(dayIdNum)) {
@@ -71,6 +72,12 @@ export const DELETE = withCSRF(
   }
 
   await tripProposalService.deleteDay(dayIdNum);
+
+  await auditService.logFromRequest(request, parseInt(session.userId), 'resource_deleted', {
+    entityType: 'trip_proposal_day',
+    entityId: dayIdNum,
+    proposalId: parseInt(id, 10),
+  });
 
   return NextResponse.json({
     success: true,

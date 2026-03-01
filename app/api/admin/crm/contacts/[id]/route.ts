@@ -5,6 +5,7 @@ import { query } from '@/lib/db';
 import { z } from 'zod';
 import type { CrmContactSummary, UpdateContactData } from '@/types/crm';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { auditService } from '@/lib/services/audit.service';
 
 /**
  * GET /api/admin/crm/contacts/[id]
@@ -185,7 +186,7 @@ export const PATCH = withCSRF(
  */
 export const DELETE = withCSRF(
   withAdminAuth(async (
-  _request: NextRequest, _session, context
+  request: NextRequest, session, context
 ) => {
   const { id } = await context!.params;
   const contactId = parseInt(id);
@@ -216,6 +217,11 @@ export const DELETE = withCSRF(
   if (result.rows.length === 0) {
     throw new NotFoundError('Contact not found');
   }
+
+  await auditService.logFromRequest(request, parseInt(session.userId), 'resource_deleted', {
+    entityType: 'contact',
+    entityId: contactId,
+  });
 
   return NextResponse.json({
     success: true,

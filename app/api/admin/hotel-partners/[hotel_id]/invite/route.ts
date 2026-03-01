@@ -3,6 +3,7 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { NotFoundError } from '@/lib/api/middleware/error-handler';
 import { hotelPartnerService } from '@/lib/services/hotel-partner.service';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { auditService } from '@/lib/services/audit.service';
 
 /**
  * POST /api/admin/hotel-partners/[hotel_id]/invite
@@ -10,7 +11,7 @@ import { withCSRF } from '@/lib/api/middleware/csrf';
  */
 export const POST = withCSRF(
   withAdminAuth(async (
-  request: NextRequest, _session, context
+  request: NextRequest, session, context
 ) => {
   const { hotel_id } = await context!.params;
 
@@ -20,6 +21,13 @@ export const POST = withCSRF(
   }
 
   const sent = await hotelPartnerService.inviteHotel(hotel_id);
+
+  await auditService.logFromRequest(request, parseInt(session.userId), 'resource_created', {
+    entityType: 'hotel_invite',
+    entityId: hotel_id,
+    hotelEmail: hotel.email,
+    emailSent: sent,
+  });
 
   return NextResponse.json({
     success: true,

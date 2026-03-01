@@ -5,6 +5,7 @@ import { query, type QueryParamValue } from '@/lib/db-helpers';
 import { logger } from '@/lib/logger';
 import { UpdateInclusionSchema } from '@/lib/types/trip-proposal';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { auditService } from '@/lib/services/audit.service';
 
 interface RouteParams {
   id: string;
@@ -80,7 +81,7 @@ export const PATCH = withCSRF(
  */
 export const DELETE = withCSRF(
   withAdminAuth(
-  async (_request: NextRequest, _session: AuthSession, context?) => {
+  async (request: NextRequest, session: AuthSession, context?) => {
     const { id, inclusionId } = await (context as RouteContext<RouteParams>).params;
     const proposalId = parseInt(id);
     const inclId = parseInt(inclusionId);
@@ -103,6 +104,12 @@ export const DELETE = withCSRF(
 
     await tripProposalService.deleteInclusion(inclId);
     logger.info('[TripProposal] Inclusion deleted', { proposalId, inclusionId: inclId });
+
+    await auditService.logFromRequest(request, parseInt(session.userId), 'resource_deleted', {
+      entityType: 'trip_proposal_inclusion',
+      entityId: inclId,
+      proposalId,
+    });
 
     return NextResponse.json({ success: true, message: 'Inclusion deleted successfully' });
   }

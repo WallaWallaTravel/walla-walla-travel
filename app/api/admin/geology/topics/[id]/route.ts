@@ -6,6 +6,7 @@ import {
 import { query } from '@/lib/db';
 import { z } from 'zod';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { auditService } from '@/lib/services/audit.service';
 
 // ============================================================================
 // Validation
@@ -164,7 +165,7 @@ export const PUT = withCSRF(
 
 export const DELETE = withCSRF(
   withAdminAuth(
-  async (_request: NextRequest, _session, context) => {
+  async (request: NextRequest, session, context) => {
     const { id } = await context!.params;
     const topicId = parseInt(id);
 
@@ -177,6 +178,11 @@ export const DELETE = withCSRF(
     if (result.rows.length === 0) {
       throw new NotFoundError('Topic not found');
     }
+
+    await auditService.logFromRequest(request, parseInt(session.userId), 'resource_deleted', {
+      entityType: 'geology_topic',
+      entityId: topicId,
+    });
 
     return NextResponse.json({
       success: true,

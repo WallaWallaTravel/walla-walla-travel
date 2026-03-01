@@ -10,6 +10,7 @@ import { z } from 'zod'
 import { query } from '@/lib/db'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { auditService } from '@/lib/services/audit.service';
 
 const PutBodySchema = z.object({
   id: z.number().int().positive(),
@@ -100,7 +101,7 @@ export const PUT = withCSRF(
 );
 
 export const DELETE = withCSRF(
-  withAdminAuth(async (request: NextRequest, _session) => {
+  withAdminAuth(async (request: NextRequest, session) => {
   const { searchParams } = new URL(request.url)
   const id = searchParams.get('id')
 
@@ -112,6 +113,11 @@ export const DELETE = withCSRF(
   }
 
   await query('DELETE FROM ai_learning_preferences WHERE id = $1', [parseInt(id)])
+
+  await auditService.logFromRequest(request, parseInt(session.userId), 'resource_deleted', {
+    entityType: 'ai_learning_preference',
+    entityId: parseInt(id),
+  });
 
   return NextResponse.json({ success: true })
 })

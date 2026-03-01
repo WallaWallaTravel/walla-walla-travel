@@ -3,6 +3,7 @@ import { query } from '@/lib/db'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler'
 import { withCSRF } from '@/lib/api/middleware/csrf'
+import { auditService } from '@/lib/services/audit.service'
 import { z } from 'zod'
 
 const PatchBodySchema = z.object({
@@ -142,8 +143,8 @@ export const PATCH = withCSRF(
 // DELETE - Delete winery
 export const DELETE = withCSRF(
   withAdminAuth(async (
-  _request: NextRequest,
-  _session,
+  request: NextRequest,
+  session,
   context
 ) => {
   const { winery_id } = await context!.params
@@ -151,6 +152,11 @@ export const DELETE = withCSRF(
   const id = parseInt(winery_id)
 
   await query('DELETE FROM wineries WHERE id = $1', [id])
+
+  await auditService.logFromRequest(request, parseInt(session.userId), 'resource_deleted', {
+    entityType: 'winery',
+    entityId: id,
+  });
 
   return NextResponse.json({
     success: true,

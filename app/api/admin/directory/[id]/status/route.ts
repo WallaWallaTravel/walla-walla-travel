@@ -9,6 +9,7 @@ import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { businessDirectoryService } from '@/lib/services/business-directory.service';
 import { z } from 'zod';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { auditService } from '@/lib/services/audit.service';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -63,6 +64,17 @@ export const PATCH = withCSRF(
     default:
       throw new BadRequestError(`Invalid status: ${status}`);
   }
+
+  const auditAction = status === 'approved' ? 'business_approved' as const
+    : status === 'rejected' ? 'business_rejected' as const
+    : 'resource_updated' as const;
+
+  await auditService.logFromRequest(request, parseInt(session.userId), auditAction, {
+    entityType: 'business',
+    entityId: businessId,
+    status,
+    notes,
+  });
 
   return NextResponse.json({
     success: true,

@@ -3,6 +3,7 @@ import { withAdminAuth, AuthSession, RouteContext } from '@/lib/api/middleware/a
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import { z } from 'zod';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { auditService } from '@/lib/services/audit.service';
 
 interface RouteParams { id: string; }
 
@@ -39,7 +40,7 @@ export const POST = withCSRF(
  */
 export const DELETE = withCSRF(
   withAdminAuth(
-  async (request: NextRequest, _session: AuthSession, _context?) => {
+  async (request: NextRequest, session: AuthSession, _context?) => {
     const url = new URL(request.url);
     const groupId = url.searchParams.get('groupId');
     if (!groupId) {
@@ -47,6 +48,12 @@ export const DELETE = withCSRF(
     }
 
     await tripProposalService.removePaymentGroup(groupId);
+
+    await auditService.logFromRequest(request, parseInt(session.userId), 'resource_deleted', {
+      entityType: 'trip_proposal_payment_group',
+      entityId: groupId,
+    });
+
     return NextResponse.json({ success: true });
   }
 )
