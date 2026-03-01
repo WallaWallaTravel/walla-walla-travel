@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
-import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { queryOne, query, withTransaction } from '@/lib/db-helpers';
 import { sendDriverAssignmentToCustomer } from '@/lib/services/email-automation.service';
 import { sendEmail, EmailTemplates } from '@/lib/email';
@@ -168,30 +169,33 @@ async function handleAssignment(
   });
 }
 
-// Wrap with compliance check middleware, then error handling
-export const PUT = withErrorHandling(
-  withComplianceCheck(handleAssignment, {
-    checkType: 'assignment',
-    extractEntities: async (request, context) => {
-      // Clone request to read body without consuming it
-      const clonedRequest = request.clone();
-      const body = await clonedRequest.json();
+// Compliance-checked handler (accepts request + route context)
+const complianceHandler = withComplianceCheck(handleAssignment, {
+  checkType: 'assignment',
+  extractEntities: async (request, context) => {
+    // Clone request to read body without consuming it
+    const clonedRequest = request.clone();
+    const body = await clonedRequest.json();
 
-      // Get booking to determine tour date
-      const { booking_id } = await context.params;
-      const booking = await queryOne(
-        `SELECT tour_date FROM bookings WHERE id = $1`,
-        [parseInt(booking_id as string)]
-      );
+    // Get booking to determine tour date
+    const { booking_id } = await context.params;
+    const booking = await queryOne(
+      `SELECT tour_date FROM bookings WHERE id = $1`,
+      [parseInt(booking_id as string)]
+    );
 
-      return {
-        driverId: body.driver_id,
-        vehicleId: body.vehicle_id,
-        tourDate: booking?.tour_date ? new Date(booking.tour_date) : new Date(),
-        bookingId: parseInt(booking_id as string),
-      };
-    },
-    allowOverride: true, // Allow admin override for non-critical violations
-  })
-);
+    return {
+      driverId: body.driver_id,
+      vehicleId: body.vehicle_id,
+      tourDate: booking?.tour_date ? new Date(booking.tour_date) : new Date(),
+      bookingId: parseInt(booking_id as string),
+    };
+  },
+  allowOverride: true, // Allow admin override for non-critical violations
+});
+
+// Wrap with admin auth (which includes error handling), then delegate to compliance handler
+export const PUT = withAdminAuth(async (request, _session, context) => {
+  return complianceHandler(request, context as { params: Promise<{ booking_id: string }> });
+});
 

@@ -110,6 +110,31 @@ export async function middleware(request: NextRequest) {
   const hostname = request.headers.get('host') || '';
 
   // ============================================================================
+  // API-LEVEL AUTH FOR ADMIN API ROUTES
+  // Protects /api/admin/* endpoints (except /api/admin/health for monitoring)
+  // ============================================================================
+
+  if (pathname.startsWith('/api/admin/') || pathname === '/api/admin') {
+    // Allow health endpoint without auth for monitoring
+    if (pathname === '/api/admin/health') {
+      return NextResponse.next();
+    }
+
+    const apiSession = await getSessionFromRequest(request);
+    const allowedRoles = ['admin', 'supervisor', 'geology_admin'];
+
+    if (!apiSession || !allowedRoles.includes(apiSession.user.role as string)) {
+      return NextResponse.json(
+        { success: false, error: { message: 'Unauthorized', statusCode: 401 } },
+        {
+          status: 401,
+          headers: { 'Cache-Control': 'no-store' },
+        }
+      );
+    }
+  }
+
+  // ============================================================================
   // WWW → NON-WWW REDIRECT (canonical domain)
   // ============================================================================
 
@@ -445,12 +470,13 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except:
-     * - api (API routes)
+     * - api (API routes — except admin API, see below)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public files (images, js, css, etc)
      */
     '/((?!api|_next/static|_next/image|favicon.ico|sw\\.js|manifest\\.json|.*\\.(?:svg|png|jpg|jpeg|gif|webp|js|css|json|txt|xml)$).*)',
+    '/api/admin/:path*',
   ],
 };

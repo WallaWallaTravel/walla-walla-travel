@@ -7,7 +7,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import { query } from '@/lib/db';
 import { Resend } from 'resend';
-import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -23,11 +24,12 @@ interface DepositRequestBody {
   sendSms: boolean;
 }
 
-export const POST = withErrorHandling(async (
+export const POST = withAdminAuth(async (
   request: NextRequest,
+  _session,
   context
 ) => {
-  const { id } = await context.params;
+  const { id } = await context!.params;
   const reservationId = parseInt(id, 10);
 
   if (isNaN(reservationId)) {
