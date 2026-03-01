@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logApiRequest } from '@/app/api/utils';
-import { withErrorHandling, BadRequestError, NotFoundError, UnauthorizedError, ForbiddenError } from '@/lib/api/middleware/error-handler';
-import { requireAdmin } from '@/lib/admin-auth';
+import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { query } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
@@ -23,22 +23,8 @@ const AssignVehicleSchema = z.object({
  *
  * ✅ REFACTORED: Zod validation + structured logging + withErrorHandling
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
-  // Check admin authentication
-  const authResult = await requireAdmin();
-  if ('status' in authResult) {
-    // Convert Response status to appropriate error
-    const status = (authResult as Response).status;
-    if (status === 401) {
-      throw new UnauthorizedError('Please log in');
-    } else if (status === 403) {
-      throw new ForbiddenError('Access denied - Admin or supervisor role required');
-    } else {
-      throw new UnauthorizedError('Authentication failed');
-    }
-  }
-
-  logApiRequest('POST', '/api/admin/assign-vehicle', authResult.userId);
+export const POST = withAdminAuth(async (request: NextRequest, session) => {
+  logApiRequest('POST', '/api/admin/assign-vehicle', session.userId);
 
   // Parse and validate request body
   let rawBody: unknown;
@@ -187,7 +173,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     timeCard.driver_id,
     body.vehicleId,
     clientService.id,
-    parseInt(authResult.userId),
+    parseInt(session.userId),
     body.notes || null
   ]);
 
@@ -203,7 +189,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     vehicleNumber: vehicle.vehicle_number,
     clientName: body.clientName,
     hourlyRate: body.hourlyRate,
-    assignedBy: `${authResult.name} (${authResult.email})`,
+    assignedBy: session.email,
   });
 
   return NextResponse.json({
