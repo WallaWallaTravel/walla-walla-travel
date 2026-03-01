@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling, UnauthorizedError, BadRequestError, RouteContext } from '@/lib/api/middleware/error-handler';
-import { getSessionFromRequest } from '@/lib/auth/session';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { query } from '@/lib/db';
 import type { CrmActivityWithUser, CreateActivityData } from '@/types/crm';
 
@@ -12,17 +12,10 @@ interface RouteParams {
  * GET /api/admin/crm/contacts/[id]/activities
  * Get all activities for a contact
  */
-export const GET = withErrorHandling(async (
-  request: NextRequest,
-  context: RouteContext<RouteParams>
+export const GET = withAdminAuth(async (
+  request: NextRequest, _session, context
 ) => {
-  const session = await getSessionFromRequest(request);
-
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-
-  const { id } = await context.params;
+  const { id } = await context!.params;
   const contactId = parseInt(id);
 
   if (isNaN(contactId)) {
@@ -62,17 +55,10 @@ export const GET = withErrorHandling(async (
  * POST /api/admin/crm/contacts/[id]/activities
  * Log a new activity for a contact
  */
-export const POST = withErrorHandling(async (
-  request: NextRequest,
-  context: RouteContext<RouteParams>
+export const POST = withAdminAuth(async (
+  request: NextRequest, session, context
 ) => {
-  const session = await getSessionFromRequest(request);
-
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-
-  const { id } = await context.params;
+  const { id } = await context!.params;
   const contactId = parseInt(id);
 
   if (isNaN(contactId)) {
@@ -87,7 +73,7 @@ export const POST = withErrorHandling(async (
 
   // Build insert query
   const fields: string[] = ['contact_id', 'activity_type', 'performed_by', 'source_type'];
-  const values: unknown[] = [contactId, body.activity_type, session.user.id, 'manual'];
+  const values: unknown[] = [contactId, body.activity_type, parseInt(session.userId), 'manual'];
   let _paramIndex = 5;
 
   const optionalFields: (keyof CreateActivityData)[] = [

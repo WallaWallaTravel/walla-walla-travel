@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import {
-  withErrorHandling,
-  UnauthorizedError,
-  NotFoundError,
-  RouteContext,
-} from '@/lib/api/middleware/error-handler';
-import { getSessionFromRequest } from '@/lib/auth/session';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { NotFoundError } from '@/lib/api/middleware/error-handler';
 import { query } from '@/lib/db';
 
 interface RouteParams {
@@ -16,14 +11,9 @@ interface RouteParams {
 // GET /api/admin/partners/[id] - Get single partner with linked business data
 // ============================================================================
 
-export const GET = withErrorHandling<unknown, RouteParams>(
-  async (request: NextRequest, context: RouteContext<RouteParams>) => {
-    const session = await getSessionFromRequest(request);
-    if (!session || session.user.role !== 'admin') {
-      throw new UnauthorizedError('Admin access required');
-    }
-
-    const { id } = await context.params;
+export const GET = withAdminAuth(
+  async (_request: NextRequest, _session, context) => {
+    const { id } = await context!.params;
     const partnerId = parseInt(id);
 
     if (isNaN(partnerId)) {

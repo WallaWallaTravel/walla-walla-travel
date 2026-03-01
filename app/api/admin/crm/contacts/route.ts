@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling, UnauthorizedError, BadRequestError } from '@/lib/api/middleware/error-handler';
-import { getSessionFromRequest } from '@/lib/auth/session';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { query } from '@/lib/db';
 import type { CrmContactSummary, CreateContactData } from '@/types/crm';
 
@@ -8,13 +8,7 @@ import type { CrmContactSummary, CreateContactData } from '@/types/crm';
  * GET /api/admin/crm/contacts
  * List all CRM contacts with optional filtering
  */
-export const GET = withErrorHandling(async (request: NextRequest) => {
-  const session = await getSessionFromRequest(request);
-
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-
+export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const { searchParams } = new URL(request.url);
   const search = searchParams.get('search') || '';
   const lifecycleStage = searchParams.get('lifecycle_stage');
@@ -119,13 +113,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
  * POST /api/admin/crm/contacts
  * Create a new CRM contact
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
-  const session = await getSessionFromRequest(request);
-
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-
+export const POST = withAdminAuth(async (request: NextRequest, session) => {
   const body = await request.json() as CreateContactData;
 
   // Validate required fields
@@ -176,7 +164,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   await query(
     `INSERT INTO crm_activities (contact_id, activity_type, subject, performed_by, source_type)
      VALUES ($1, 'system', 'Contact created', $2, 'manual')`,
-    [result.rows[0].id, session.user.id]
+    [result.rows[0].id, parseInt(session.userId)]
   );
 
   return NextResponse.json({

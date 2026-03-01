@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import { query } from '@/lib/db';
-import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 
@@ -276,7 +277,7 @@ function mapRowToImport(
  */
 export const POST = withCSRF(
   withRateLimit(rateLimiters.api)(
-    withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
+    withAdminAuth(async (request: NextRequest, _session): Promise<NextResponse> => {
       const formData = await request.formData();
       const file = formData.get('file') as File | null;
       const action = formData.get('action') as string || 'preview';
@@ -470,7 +471,7 @@ export const POST = withCSRF(
  * GET /api/admin/crm/import
  * Get available import sources and their field mappings
  */
-export const GET = withErrorHandling(async (): Promise<NextResponse> => {
+export const GET = withAdminAuth(async (_request: NextRequest, _session): Promise<NextResponse> => {
   return NextResponse.json({
     success: true,
     data: {

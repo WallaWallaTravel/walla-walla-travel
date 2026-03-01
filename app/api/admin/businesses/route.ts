@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getBusinesses } from '@/lib/business-portal/business-service';
-import { withErrorHandling } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic';
  * GET /api/admin/businesses?type=winery&status=invited
  * List all businesses with optional filters
  */
-export const GET = withErrorHandling(async (request: NextRequest) => {
+export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const { searchParams } = new URL(request.url);
 
   const filters = {

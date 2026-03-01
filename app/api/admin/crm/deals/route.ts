@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling, UnauthorizedError, BadRequestError } from '@/lib/api/middleware/error-handler';
-import { getSessionFromRequest } from '@/lib/auth/session';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { query } from '@/lib/db';
 import type { CrmDealWithRelations, CreateDealData } from '@/types/crm';
 
@@ -8,13 +8,7 @@ import type { CrmDealWithRelations, CreateDealData } from '@/types/crm';
  * GET /api/admin/crm/deals
  * List all CRM deals with optional filtering
  */
-export const GET = withErrorHandling(async (request: NextRequest) => {
-  const session = await getSessionFromRequest(request);
-
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-
+export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const { searchParams } = new URL(request.url);
   const search = searchParams.get('search') || '';
   const stageId = searchParams.get('stage_id');
@@ -149,13 +143,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
  * POST /api/admin/crm/deals
  * Create a new CRM deal
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
-  const session = await getSessionFromRequest(request);
-
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-
+export const POST = withAdminAuth(async (request: NextRequest, session) => {
   const body = await request.json() as CreateDealData;
 
   // Validate required fields
@@ -225,7 +213,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   await query(
     `INSERT INTO crm_activities (contact_id, deal_id, activity_type, subject, performed_by, source_type)
      VALUES ($1, $2, 'system', 'Deal created: ' || $3, $4, 'manual')`,
-    [body.contact_id, deal.id, body.title, session.user.id]
+    [body.contact_id, deal.id, body.title, parseInt(session.userId)]
   );
 
   return NextResponse.json({

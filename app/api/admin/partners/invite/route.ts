@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { withErrorHandling, UnauthorizedError } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { validateBody } from '@/lib/api/middleware/validation';
-import { getSessionFromRequest } from '@/lib/auth/session';
 import { partnerService } from '@/lib/services/partner.service';
 import { sendEmail } from '@/lib/email';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
@@ -20,17 +19,11 @@ const InviteSchema = z.object({
  * Invite a new partner
  */
 export const POST = withRateLimit(rateLimiters.api)(
-  withErrorHandling(async (request: NextRequest) => {
-  const session = await getSessionFromRequest(request);
-  
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-
+  withAdminAuth(async (request: NextRequest, session) => {
   const data = await validateBody(request, InviteSchema);
 
   // Create the invitation
-  const result = await partnerService.createInvitation(data, session.user.id);
+  const result = await partnerService.createInvitation(data, parseInt(session.userId));
 
   // Send invitation email
   const emailSent = await sendEmail({

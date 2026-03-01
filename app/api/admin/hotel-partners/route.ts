@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { hotelPartnerService } from '@/lib/services/hotel-partner.service';
 
 /**
  * GET /api/admin/hotel-partners
  * List all hotel partners (admin only)
  */
-export const GET = withErrorHandling(async (request: NextRequest) => {
+export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const searchParams = request.nextUrl.searchParams;
   const activeOnly = searchParams.get('active_only') === 'true';
 
@@ -23,7 +24,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
  * POST /api/admin/hotel-partners
  * Create a new hotel partner (admin only)
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json();
 
   // Validate required fields

@@ -7,7 +7,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { detectDiscrepancies } from '@/lib/business-portal/discrepancy-detector';
 import { logger } from '@/lib/logger';
-import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -16,11 +17,10 @@ export const dynamic = 'force-dynamic';
  * GET /api/admin/business-portal/[business_id]
  * Get complete business details for review
  */
-export const GET = withErrorHandling(async (
-  request: NextRequest,
-  { params }: { params: Promise<{ business_id: string }> }
+export const GET = withAdminAuth(async (
+  request: NextRequest, _session, context
 ) => {
-  const { business_id } = await params;
+  const { business_id } = await context!.params;
   const businessId = parseInt(business_id);
 
   if (isNaN(businessId)) {

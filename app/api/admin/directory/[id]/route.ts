@@ -4,8 +4,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling, UnauthorizedError, NotFoundError, BadRequestError } from '@/lib/api/middleware/error-handler';
-import { getSessionFromRequest } from '@/lib/auth/session';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { NotFoundError, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { businessDirectoryService, BusinessImportRow } from '@/lib/services/business-directory.service';
 import { z } from 'zod';
 
@@ -39,14 +39,8 @@ interface RouteParams {
  * GET /api/admin/directory/[id]
  * Get a specific business
  */
-export const GET = withErrorHandling(async (request: NextRequest, { params }: RouteParams) => {
-  const session = await getSessionFromRequest(request);
-
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-
-  const { id } = await params;
+export const GET = withAdminAuth(async (_request: NextRequest, _session, context) => {
+  const { id } = await context!.params;
   const businessId = parseInt(id);
 
   if (isNaN(businessId)) {
@@ -70,14 +64,8 @@ export const GET = withErrorHandling(async (request: NextRequest, { params }: Ro
  * PATCH /api/admin/directory/[id]
  * Update a business
  */
-export const PATCH = withErrorHandling(async (request: NextRequest, { params }: RouteParams) => {
-  const session = await getSessionFromRequest(request);
-
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-
-  const { id } = await params;
+export const PATCH = withAdminAuth(async (request: NextRequest, session, context) => {
+  const { id } = await context!.params;
   const businessId = parseInt(id);
 
   if (isNaN(businessId)) {
@@ -94,7 +82,7 @@ export const PATCH = withErrorHandling(async (request: NextRequest, { params }: 
   const business = await businessDirectoryService.updateBusiness(
     businessId,
     parsed.data as Partial<BusinessImportRow>,
-    session.user.id
+    parseInt(session.userId)
   );
 
   return NextResponse.json({
@@ -108,21 +96,15 @@ export const PATCH = withErrorHandling(async (request: NextRequest, { params }: 
  * DELETE /api/admin/directory/[id]
  * Hard delete a business
  */
-export const DELETE = withErrorHandling(async (request: NextRequest, { params }: RouteParams) => {
-  const session = await getSessionFromRequest(request);
-
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-
-  const { id } = await params;
+export const DELETE = withAdminAuth(async (_request: NextRequest, session, context) => {
+  const { id } = await context!.params;
   const businessId = parseInt(id);
 
   if (isNaN(businessId)) {
     throw new BadRequestError('Invalid business ID');
   }
 
-  await businessDirectoryService.deleteBusiness(businessId, session.user.id);
+  await businessDirectoryService.deleteBusiness(businessId, parseInt(session.userId));
 
   return NextResponse.json({
     success: true,

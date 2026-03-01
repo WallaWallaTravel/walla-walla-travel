@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
-import { withErrorHandling } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -14,8 +14,8 @@ export const dynamic = 'force-dynamic';
  * GET /api/admin/business-portal/businesses
  * List all businesses
  */
-export const GET = withErrorHandling(async (
-  _request: NextRequest
+export const GET = withAdminAuth(async (
+  _request: NextRequest, _session
 ) => {
   const result = await query(`
     SELECT

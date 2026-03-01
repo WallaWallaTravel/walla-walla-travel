@@ -5,7 +5,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createBusiness } from '@/lib/business-portal/business-service';
-import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { BadRequestError } from '@/lib/api/middleware/error-handler';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -14,7 +15,7 @@ export const dynamic = 'force-dynamic';
  * POST /api/admin/businesses/invite
  * Invite a new business to the portal
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withAdminAuth(async (request: NextRequest, _session) => {
   const {
     business_type,
     name,

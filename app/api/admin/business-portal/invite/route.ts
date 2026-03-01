@@ -7,7 +7,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import crypto from 'crypto';
 import { logger } from '@/lib/logger';
-import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { BadRequestError } from '@/lib/api/middleware/error-handler';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -24,7 +25,7 @@ interface BusinessInvite {
  * POST /api/admin/business-portal/invite
  * Send batch invites to businesses
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json();
   const { businesses } = body as { businesses: BusinessInvite[] };
 

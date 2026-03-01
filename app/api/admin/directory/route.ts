@@ -4,8 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling, UnauthorizedError } from '@/lib/api/middleware/error-handler';
-import { getSessionFromRequest } from '@/lib/auth/session';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { businessDirectoryService, BusinessFilters } from '@/lib/services/business-directory.service';
 
 export const runtime = 'nodejs';
@@ -25,13 +24,7 @@ export const dynamic = 'force-dynamic';
  * - offset: number (default 0)
  * - stats: true to include status/type counts
  */
-export const GET = withErrorHandling(async (request: NextRequest) => {
-  const session = await getSessionFromRequest(request);
-
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-
+export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const { searchParams } = new URL(request.url);
 
   // Parse filters

@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling, NotFoundError } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { NotFoundError } from '@/lib/api/middleware/error-handler';
 import { hotelPartnerService } from '@/lib/services/hotel-partner.service';
 
 /**
  * POST /api/admin/hotel-partners/[hotel_id]/invite
  * Send or resend invitation email to hotel partner
  */
-export const POST = withErrorHandling(async (
-  request: NextRequest,
-  { params }: { params: Promise<{ hotel_id: string }> }
+export const POST = withAdminAuth(async (
+  request: NextRequest, _session, context
 ) => {
-  const { hotel_id } = await params;
+  const { hotel_id } = await context!.params;
 
   const hotel = await hotelPartnerService.getHotelById(hotel_id);
   if (!hotel) {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling, UnauthorizedError, NotFoundError, BadRequestError, RouteContext } from '@/lib/api/middleware/error-handler';
-import { getSessionFromRequest } from '@/lib/auth/session';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { NotFoundError, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { query } from '@/lib/db';
 import type { CrmContactSummary, UpdateContactData } from '@/types/crm';
 
@@ -12,17 +12,10 @@ interface RouteParams {
  * GET /api/admin/crm/contacts/[id]
  * Get a single contact with full details
  */
-export const GET = withErrorHandling(async (
-  request: NextRequest,
-  context: RouteContext<RouteParams>
+export const GET = withAdminAuth(async (
+  _request: NextRequest, _session, context
 ) => {
-  const session = await getSessionFromRequest(request);
-
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-
-  const { id } = await context.params;
+  const { id } = await context!.params;
   const contactId = parseInt(id);
 
   if (isNaN(contactId)) {
@@ -108,17 +101,10 @@ export const GET = withErrorHandling(async (
  * PATCH /api/admin/crm/contacts/[id]
  * Update a contact
  */
-export const PATCH = withErrorHandling(async (
-  request: NextRequest,
-  context: RouteContext<RouteParams>
+export const PATCH = withAdminAuth(async (
+  request: NextRequest, _session, context
 ) => {
-  const session = await getSessionFromRequest(request);
-
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-
-  const { id } = await context.params;
+  const { id } = await context!.params;
   const contactId = parseInt(id);
 
   if (isNaN(contactId)) {
@@ -176,17 +162,10 @@ export const PATCH = withErrorHandling(async (
  * DELETE /api/admin/crm/contacts/[id]
  * Delete a contact (soft delete by setting lifecycle_stage to 'lost')
  */
-export const DELETE = withErrorHandling(async (
-  request: NextRequest,
-  context: RouteContext<RouteParams>
+export const DELETE = withAdminAuth(async (
+  _request: NextRequest, _session, context
 ) => {
-  const session = await getSessionFromRequest(request);
-
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-
-  const { id } = await context.params;
+  const { id } = await context!.params;
   const contactId = parseInt(id);
 
   if (isNaN(contactId)) {
