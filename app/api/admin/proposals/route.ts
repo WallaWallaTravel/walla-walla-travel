@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling, BadRequestError } from '@/lib/api-errors';
+import { BadRequestError } from '@/lib/api-errors';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { query, queryMany } from '@/lib/db-helpers';
 
 /**
  * POST /api/admin/proposals
  * Create a new proposal
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json();
   
   const {
@@ -126,7 +127,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
  * GET /api/admin/proposals
  * Get all proposals
  */
-export const GET = withErrorHandling(async (request: NextRequest) => {
+export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const searchParams = request.nextUrl.searchParams;
   const status = searchParams.get('status');
 
