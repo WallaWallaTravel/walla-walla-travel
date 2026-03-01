@@ -691,5 +691,105 @@ When adding tests, follow existing patterns in `__tests__/`.
 
 ---
 
-**Last Updated:** February 20, 2026
-**Active Focus:** Trip proposal service-level billing + Auditor's Dream Supabase setup + Walla Walla Travel commercial readiness
+## Build & Commit Rules
+
+- **MANDATORY**: Run `./scripts/verify.sh` before every commit
+- **Never** use `git commit --no-verify`
+- **Never** rely on `tsc --noEmit` alone — `next build` catches route type constraints that `tsc` misses
+- After pushing, verify CI status: `gh run list --limit 1`
+- Pin dependency versions in CI workflows — unpinned `npx` commands will pull latest majors that break builds (e.g., Prisma 7 broke `datasource.url` syntax)
+
+---
+
+## Route Architecture (every new route MUST have all 5 layers)
+
+1. **Error handling**: `withErrorHandling` (innermost)
+2. **Auth**: `withAdminAuth`, `withAuth`, or `withOptionalAuth` (wraps error handling)
+3. **Rate limiting**: `withRateLimit(rateLimiters.xxx)` where appropriate
+4. **CSRF**: `withCSRF` on all POST/PUT/PATCH/DELETE (outermost for mutations)
+5. **Zod validation**: every `request.json()` must use `z.object().parse()`
+
+### Composition pattern for admin mutation routes
+
+```typescript
+export const POST = withCSRF(
+  withRateLimit(rateLimiters.api)(
+    withAdminAuth(async (request: NextRequest, session) => {
+      const parsed = BodySchema.parse(await request.json());
+      // business logic
+    })
+  )
+);
+```
+
+### Exceptions (no CSRF)
+- Webhook routes (`/api/webhooks/*`)
+- Cron routes (`/api/cron/*`) — use `withCronAuth` instead
+- Auth routes (`/api/auth/*`)
+- GET handlers
+
+---
+
+## Session Properties
+
+- Use `session.userId` (string), `session.email`, `session.role`
+- **Never** use `session.user.id` — that's the old pattern
+- `parseInt(session.userId)` when a numeric ID is needed (e.g., for `auditService.logFromRequest`)
+
+---
+
+## Anti-Patterns (never do these)
+
+- **No inline auth checks** (`getSessionFromRequest`, `verifyAdmin`, `getSession`) — use wrapper middleware
+- **No raw `request.json()`** without a Zod schema
+- **No duplicate API paths** — check existing routes before creating new ones
+- **No new routes without tests** — every route needs at least happy-path + error-path tests
+- **No monster files over 500 lines** — decompose into services
+- **No `getDay()`** for date logic — use `getUTCDay()` to avoid timezone-dependent behavior in CI/production
+- **No `npx <tool>` in CI** without version pinning — always use `npx tool@version`
+
+---
+
+## File Organization
+
+- Business logic in `lib/services/`
+- Routes are thin wrappers that validate input, call services, return responses
+- Schemas inline in route files or in `lib/validation/schemas/`
+- Tests mirror the app structure in `__tests__/`
+- Middleware in `lib/api/middleware/`
+
+---
+
+## Audit Logging
+
+- All DELETE operations **must** call `auditService.logFromRequest()`
+- All approve/reject/cancel/assign operations **must** log
+- Include entity type, entity ID, and action performed
+- Place audit call **after** the successful operation, **before** the response
+- Audit service is non-blocking — no try/catch needed
+- Available actions: `resource_deleted`, `resource_updated`, `resource_created`, `booking_status_changed`, `booking_assigned`, `booking_cancelled`, `business_approved`, `business_rejected`, `bulk_action`
+
+```typescript
+await auditService.logFromRequest(request, parseInt(session.userId), 'resource_deleted', {
+  entityType: 'trip_proposal',
+  entityId: proposalId,
+});
+```
+
+---
+
+## Testing Rules
+
+- Mock `withCSRF` in all test files that test mutation routes:
+  ```typescript
+  jest.mock('@/lib/api/middleware/csrf', () => ({
+    withCSRF: (handler: unknown) => handler,
+  }));
+  ```
+- Use `Promise.resolve({})` or `Promise.resolve({ param })` for route context params
+- Date-dependent tests must use UTC-safe dates — never rely on local timezone
+
+---
+
+**Last Updated:** March 1, 2026
+**Active Focus:** Security hardening (CSRF, Zod validation, audit logging) + CI stability + Walla Walla Travel commercial readiness
