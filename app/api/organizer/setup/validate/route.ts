@@ -1,11 +1,12 @@
 import { NextResponse, NextRequest } from 'next/server';
+import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 import { eventOrganizerService } from '@/lib/services/event-organizer.service';
 
 /**
  * GET /api/organizer/setup/validate?token=...
  * Validate an organizer setup token (no auth required)
  */
-export async function GET(request: NextRequest) {
+export const GET = withErrorHandling(async (request: NextRequest) => {
   try {
     const token = request.nextUrl.searchParams.get('token');
 
@@ -26,4 +27,4 @@ export async function GET(request: NextRequest) {
   } catch {
     return NextResponse.json({ error: 'Failed to validate token' }, { status: 500 });
   }
-}
+});

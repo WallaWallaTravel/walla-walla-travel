@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { logger } from '@/lib/logger'
 import { transcribeAudio } from '@/lib/services/deepgram.service'
+import { withAuth } from '@/lib/api/middleware/auth-wrapper'
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit'
 
 export const runtime = 'nodejs'
@@ -15,7 +16,8 @@ export const dynamic = 'force-dynamic'
  * Accepts: multipart/form-data with 'audio' file
  * Returns: { transcript, confidence, duration, cost }
  */
-export const POST = withRateLimit(rateLimiters.transcription)(async (request: NextRequest) => {
+export const POST = withRateLimit(rateLimiters.transcription)(
+  withAuth(async (request: NextRequest, _session) => {
   try {
     const formData = await request.formData()
     const audioFile = formData.get('audio') as File
@@ -71,5 +73,5 @@ export const POST = withRateLimit(rateLimiters.transcription)(async (request: Ne
       { status: 500 }
     )
   }
-});
+}));
 
