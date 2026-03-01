@@ -59,7 +59,7 @@ jobs:
             -not -path "*/.well-known/*" \
             -not -path "*/health*" \
             | while read f; do
-              if ! grep -qE 'withAdminAuth|withAuth|withOptionalAuth|withErrorHandling|withCronAuth' "$f"; then
+              if ! grep -qE 'withAdminAuth|withAuth|withOptionalAuth|withDriverAuth|withErrorHandling|withCronAuth' "$f"; then
                 echo "$f"
               fi
             done)
