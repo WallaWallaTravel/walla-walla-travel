@@ -28,6 +28,14 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     const session = await getSessionFromRequest(request);
 
     if (session) {
+      // Revoke server-side session if sid present
+      if (session.sid) {
+        const { sessionStoreService } = await import('@/lib/services/session-store.service');
+        await sessionStoreService.revokeSession(session.sid).catch(err => {
+          logger.warn('Failed to revoke server-side session', { error: err });
+        });
+      }
+
       // Log logout activity
       await query(
         `INSERT INTO user_activity_logs (user_id, action, details, created_at)
@@ -63,6 +71,14 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   const session = await getSessionFromRequest(request);
 
   if (session) {
+    // Revoke server-side session if sid present
+    if (session.sid) {
+      const { sessionStoreService } = await import('@/lib/services/session-store.service');
+      await sessionStoreService.revokeSession(session.sid).catch(err => {
+        logger.warn('Failed to revoke server-side session', { error: err });
+      });
+    }
+
     await query(
       `INSERT INTO user_activity_logs (user_id, action, details, created_at)
        VALUES ($1, $2, $3, NOW())`,

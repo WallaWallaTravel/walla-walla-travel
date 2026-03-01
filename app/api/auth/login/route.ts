@@ -35,8 +35,9 @@ export const POST = withRateLimit(rateLimiters.auth)(
   // ✅ Validate with Zod
   const credentials = await validateBody(request, LoginSchema);
 
-  // ✅ Use auth service
-  const result = await authService.login(credentials, getClientIp(request));
+  // ✅ Use auth service (with IP and user-agent for session tracking)
+  const userAgent = request.headers.get('user-agent') || undefined;
+  const result = await authService.login(credentials, getClientIp(request), userAgent);
 
   // ✅ Audit log: successful login
   auditService.logFromRequest(request, result.user.id, 'login', {
