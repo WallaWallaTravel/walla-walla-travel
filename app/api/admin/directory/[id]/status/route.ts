@@ -4,8 +4,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling, UnauthorizedError, BadRequestError } from '@/lib/api/middleware/error-handler';
-import { getSessionFromRequest } from '@/lib/auth/session';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { businessDirectoryService } from '@/lib/services/business-directory.service';
 import { z } from 'zod';
 
@@ -32,14 +32,8 @@ interface RouteParams {
  * - 'rejected': Mark business as rejected (hidden but tracked)
  * - 'imported': Restore from rejected back to imported
  */
-export const PATCH = withErrorHandling(async (request: NextRequest, { params }: RouteParams) => {
-  const session = await getSessionFromRequest(request);
-
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-
-  const { id } = await params;
+export const PATCH = withAdminAuth(async (request: NextRequest, session, context) => {
+  const { id } = await context!.params;
   const businessId = parseInt(id);
 
   if (isNaN(businessId)) {
@@ -59,14 +53,14 @@ export const PATCH = withErrorHandling(async (request: NextRequest, { params }: 
 
   switch (status) {
     case 'approved':
-      business = await businessDirectoryService.approve(businessId, session.user.id, notes);
+      business = await businessDirectoryService.approve(businessId, parseInt(session.userId), notes);
       break;
     case 'rejected':
-      business = await businessDirectoryService.reject(businessId, session.user.id, notes);
+      business = await businessDirectoryService.reject(businessId, parseInt(session.userId), notes);
       break;
     case 'imported':
       // Restore from rejected
-      business = await businessDirectoryService.restore(businessId, session.user.id);
+      business = await businessDirectoryService.restore(businessId, parseInt(session.userId));
       break;
     default:
       throw new BadRequestError(`Invalid status: ${status}`);

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling, UnauthorizedError } from '@/lib/api/middleware/error-handler';
-import { getSessionFromRequest } from '@/lib/auth/session';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { query } from '@/lib/db';
 import type { CrmDashboardStats, CrmActivityWithUser } from '@/types/crm';
 
@@ -8,13 +7,7 @@ import type { CrmDashboardStats, CrmActivityWithUser } from '@/types/crm';
  * GET /api/admin/crm/dashboard
  * Get CRM dashboard statistics and recent activity
  */
-export const GET = withErrorHandling(async (request: NextRequest) => {
-  const session = await getSessionFromRequest(request);
-
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-
+export const GET = withAdminAuth(async (_request: NextRequest, _session) => {
   // Get contact stats
   const contactStatsResult = await query<{
     total_contacts: string;

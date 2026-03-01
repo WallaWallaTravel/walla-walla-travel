@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import { processJobs } from '@/lib/business-portal/processing-worker';
-import { withErrorHandling } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -16,7 +16,7 @@ export const maxDuration = 300; // 5 minutes for processing
  * POST /api/admin/business-portal/process-jobs
  * Trigger processing of pending jobs
  */
-export const POST = withErrorHandling(async (_request: NextRequest) => {
+export const POST = withAdminAuth(async (_request: NextRequest, _session) => {
   logger.info('Starting job processing');
 
   const result = await processJobs(50); // Process up to 50 jobs
@@ -32,7 +32,7 @@ export const POST = withErrorHandling(async (_request: NextRequest) => {
  * GET /api/admin/business-portal/process-jobs
  * Get processing status
  */
-export const GET = withErrorHandling(async (_request: NextRequest) => {
+export const GET = withAdminAuth(async (_request: NextRequest, _session) => {
   const { query } = await import('@/lib/db');
 
   // Get job stats

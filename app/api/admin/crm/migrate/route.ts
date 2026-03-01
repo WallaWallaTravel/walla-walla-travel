@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import { query } from '@/lib/db';
 import { queryOne } from '@/lib/db-helpers';
-import { withErrorHandling } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 
@@ -29,7 +29,7 @@ interface MigrationResult {
  * GET /api/admin/crm/migrate
  * Get migration status - how many customers need to be migrated
  */
-export const GET = withErrorHandling(async (): Promise<NextResponse> => {
+export const GET = withAdminAuth(async (_request: NextRequest, _session): Promise<NextResponse> => {
   // Count total customers
   const totalCustomers = await queryOne<{ count: string }>(
     `SELECT COUNT(*) as count FROM customers`
@@ -69,7 +69,7 @@ export const GET = withErrorHandling(async (): Promise<NextResponse> => {
  */
 export const POST = withCSRF(
   withRateLimit(rateLimiters.api)(
-    withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
+    withAdminAuth(async (request: NextRequest, _session): Promise<NextResponse> => {
       const body = await request.json().catch(() => ({}));
       const { dryRun = false, batchSize = 100 } = body;
 

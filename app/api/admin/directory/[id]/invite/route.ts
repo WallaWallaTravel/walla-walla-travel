@@ -4,8 +4,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling, UnauthorizedError, BadRequestError } from '@/lib/api/middleware/error-handler';
-import { getSessionFromRequest } from '@/lib/auth/session';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { businessDirectoryService } from '@/lib/services/business-directory.service';
 import { z } from 'zod';
 
@@ -33,14 +33,8 @@ interface RouteParams {
  *   expirationDays?: number (default 30)
  * }
  */
-export const POST = withErrorHandling(async (request: NextRequest, { params }: RouteParams) => {
-  const session = await getSessionFromRequest(request);
-
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-
-  const { id } = await params;
+export const POST = withAdminAuth(async (request: NextRequest, session, context) => {
+  const { id } = await context!.params;
   const businessId = parseInt(id);
 
   if (isNaN(businessId)) {
@@ -60,7 +54,7 @@ export const POST = withErrorHandling(async (request: NextRequest, { params }: R
     // Send invitation email
     const result = await businessDirectoryService.sendInviteEmail(
       businessId,
-      session.user.id,
+      parseInt(session.userId),
       email
     );
 
@@ -78,7 +72,7 @@ export const POST = withErrorHandling(async (request: NextRequest, { params }: R
     // Just generate link
     const result = await businessDirectoryService.generateInviteLink(
       businessId,
-      session.user.id,
+      parseInt(session.userId),
       expirationDays
     );
 
@@ -98,14 +92,8 @@ export const POST = withErrorHandling(async (request: NextRequest, { params }: R
  * GET /api/admin/directory/[id]/invite
  * Get current invitation status for a business
  */
-export const GET = withErrorHandling(async (request: NextRequest, { params }: RouteParams) => {
-  const session = await getSessionFromRequest(request);
-
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-
-  const { id } = await params;
+export const GET = withAdminAuth(async (request: NextRequest, _session, context) => {
+  const { id } = await context!.params;
   const businessId = parseInt(id);
 
   if (isNaN(businessId)) {

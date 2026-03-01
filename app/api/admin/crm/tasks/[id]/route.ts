@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling, UnauthorizedError, NotFoundError, BadRequestError, RouteContext } from '@/lib/api/middleware/error-handler';
-import { getSessionFromRequest } from '@/lib/auth/session';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { NotFoundError, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { query } from '@/lib/db';
 import type { CrmTaskWithRelations, UpdateTaskData } from '@/types/crm';
 
@@ -12,17 +12,10 @@ interface RouteParams {
  * GET /api/admin/crm/tasks/[id]
  * Get a single task with details
  */
-export const GET = withErrorHandling(async (
-  request: NextRequest,
-  context: RouteContext<RouteParams>
+export const GET = withAdminAuth(async (
+  _request: NextRequest, _session, context
 ) => {
-  const session = await getSessionFromRequest(request);
-
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-
-  const { id } = await context.params;
+  const { id } = await context!.params;
   const taskId = parseInt(id);
 
   if (isNaN(taskId)) {
@@ -61,17 +54,10 @@ export const GET = withErrorHandling(async (
  * PATCH /api/admin/crm/tasks/[id]
  * Update a task
  */
-export const PATCH = withErrorHandling(async (
-  request: NextRequest,
-  context: RouteContext<RouteParams>
+export const PATCH = withAdminAuth(async (
+  request: NextRequest, session, context
 ) => {
-  const session = await getSessionFromRequest(request);
-
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-
-  const { id } = await context.params;
+  const { id } = await context!.params;
   const taskId = parseInt(id);
 
   if (isNaN(taskId)) {
@@ -94,7 +80,7 @@ export const PATCH = withErrorHandling(async (
     if (body.status === 'completed') {
       updates.push(`completed_at = NOW()`);
       updates.push(`completed_by = $${paramIndex}`);
-      params.push(session.user.id);
+      params.push(parseInt(session.userId));
       paramIndex++;
 
       if (body.completion_notes) {
@@ -162,17 +148,10 @@ export const PATCH = withErrorHandling(async (
  * DELETE /api/admin/crm/tasks/[id]
  * Delete a task
  */
-export const DELETE = withErrorHandling(async (
-  request: NextRequest,
-  context: RouteContext<RouteParams>
+export const DELETE = withAdminAuth(async (
+  _request: NextRequest, _session, context
 ) => {
-  const session = await getSessionFromRequest(request);
-
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-
-  const { id } = await context.params;
+  const { id } = await context!.params;
   const taskId = parseInt(id);
 
   if (isNaN(taskId)) {

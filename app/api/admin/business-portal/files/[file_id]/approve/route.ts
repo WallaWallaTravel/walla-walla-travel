@@ -6,7 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import { query } from '@/lib/db';
-import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -15,11 +16,10 @@ export const dynamic = 'force-dynamic';
  * POST /api/admin/business-portal/files/[file_id]/approve
  * Approve or reject a file
  */
-export const POST = withErrorHandling(async (
-  request: NextRequest,
-  { params }: { params: Promise<{ file_id: string }> }
+export const POST = withAdminAuth(async (
+  request: NextRequest, _session, context
 ) => {
-  const { file_id } = await params;
+  const { file_id } = await context!.params;
   const fileId = parseInt(file_id);
   const { approved, notes } = await request.json();
 

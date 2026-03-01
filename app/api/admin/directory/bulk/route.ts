@@ -4,8 +4,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling, UnauthorizedError, BadRequestError } from '@/lib/api/middleware/error-handler';
-import { getSessionFromRequest } from '@/lib/auth/session';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { businessDirectoryService } from '@/lib/services/business-directory.service';
 import { z } from 'zod';
 
@@ -28,13 +28,7 @@ const BulkActionSchema = z.object({
  *   notes?: string
  * }
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
-  const session = await getSessionFromRequest(request);
-
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-
+export const POST = withAdminAuth(async (request: NextRequest, session) => {
   const body = await request.json();
   const parsed = BulkActionSchema.safeParse(body);
 
@@ -48,7 +42,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   const updatedCount = await businessDirectoryService.bulkUpdateStatus(
     ids,
     status,
-    session.user.id,
+    parseInt(session.userId),
     notes
   );
 

@@ -4,8 +4,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling, UnauthorizedError, BadRequestError } from '@/lib/api/middleware/error-handler';
-import { getSessionFromRequest } from '@/lib/auth/session';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { businessDirectoryService, BusinessImportRow } from '@/lib/services/business-directory.service';
 import { z } from 'zod';
 
@@ -47,13 +47,7 @@ const ImportRequestSchema = z.object({
  *   notes?: string
  * }
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
-  const session = await getSessionFromRequest(request);
-
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-
+export const POST = withAdminAuth(async (request: NextRequest, session) => {
   const body = await request.json();
 
   // Validate request
@@ -68,7 +62,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   const batch = await businessDirectoryService.startImportBatch(
     fileName || 'manual_import',
     'json',
-    session.user.id,
+    parseInt(session.userId),
     notes
   );
 
@@ -76,7 +70,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   const result = await businessDirectoryService.importBusinesses(
     businesses as BusinessImportRow[],
     batch.batch_id,
-    session.user.id
+    parseInt(session.userId)
   );
 
   return NextResponse.json({
@@ -94,13 +88,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
  * GET /api/admin/directory/import
  * Get import batch history
  */
-export const GET = withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
-  const session = await getSessionFromRequest(request);
-
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-
+export const GET = withAdminAuth(async (request: NextRequest, _session): Promise<NextResponse> => {
   const { searchParams } = new URL(request.url);
   const limit = parseInt(searchParams.get('limit') || '20');
   const batchId = searchParams.get('batchId');

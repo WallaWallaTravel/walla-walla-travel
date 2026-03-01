@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling, UnauthorizedError, BadRequestError } from '@/lib/api/middleware/error-handler';
-import { getSessionFromRequest } from '@/lib/auth/session';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { query } from '@/lib/db';
 import type { CrmTaskWithRelations, CreateTaskData } from '@/types/crm';
 
@@ -8,13 +8,7 @@ import type { CrmTaskWithRelations, CreateTaskData } from '@/types/crm';
  * GET /api/admin/crm/tasks
  * List all CRM tasks with optional filtering
  */
-export const GET = withErrorHandling(async (request: NextRequest) => {
-  const session = await getSessionFromRequest(request);
-
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-
+export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const { searchParams } = new URL(request.url);
   const status = searchParams.get('status');
   const priority = searchParams.get('priority');
@@ -126,13 +120,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
  * POST /api/admin/crm/tasks
  * Create a new CRM task
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
-  const session = await getSessionFromRequest(request);
-
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-
+export const POST = withAdminAuth(async (request: NextRequest, session) => {
   const body = await request.json() as CreateTaskData;
 
   // Validate required fields
@@ -159,7 +147,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
 
   // Build insert query
   const fields: string[] = ['title', 'due_date', 'assigned_to', 'created_by'];
-  const values: unknown[] = [body.title, body.due_date, body.assigned_to, session.user.id];
+  const values: unknown[] = [body.title, body.due_date, body.assigned_to, parseInt(session.userId)];
   let _paramIndex = 5;
 
   if (contactId) {
@@ -216,13 +204,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
  * PATCH /api/admin/crm/tasks
  * Update a task (complete, reschedule, etc.)
  */
-export const PATCH = withErrorHandling(async (request: NextRequest) => {
-  const session = await getSessionFromRequest(request);
-
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-
+export const PATCH = withAdminAuth(async (request: NextRequest, session) => {
   const body = await request.json();
   const { taskId, status, completion_notes, ...updates } = body;
 
@@ -243,7 +225,7 @@ export const PATCH = withErrorHandling(async (request: NextRequest) => {
     if (status === 'completed') {
       updateFields.push(`completed_at = NOW()`);
       updateFields.push(`completed_by = $${paramIndex}`);
-      params.push(session.user.id);
+      params.push(parseInt(session.userId));
       paramIndex++;
 
       if (completion_notes) {

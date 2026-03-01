@@ -6,7 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { logger } from '@/lib/logger';
-import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { BadRequestError } from '@/lib/api/middleware/error-handler';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -15,11 +16,10 @@ export const dynamic = 'force-dynamic';
  * GET /api/admin/business-portal/[business_id]/insights
  * Get all insights for a business
  */
-export const GET = withErrorHandling(async (
-  request: NextRequest,
-  { params }: { params: Promise<{ business_id: string }> }
+export const GET = withAdminAuth(async (
+  request: NextRequest, _session, context
 ) => {
-  const { business_id } = await params;
+  const { business_id } = await context!.params;
   const businessId = parseInt(business_id);
 
   if (isNaN(businessId)) {
@@ -43,11 +43,10 @@ export const GET = withErrorHandling(async (
  * POST /api/admin/business-portal/[business_id]/insights
  * Add or update insight
  */
-export const POST = withErrorHandling(async (
-  request: NextRequest,
-  { params }: { params: Promise<{ business_id: string }> }
+export const POST = withAdminAuth(async (
+  request: NextRequest, _session, context
 ) => {
-  const { business_id } = await params;
+  const { business_id } = await context!.params;
   const businessId = parseInt(business_id);
   const data = await request.json();
 
@@ -125,9 +124,8 @@ export const POST = withErrorHandling(async (
  * DELETE /api/admin/business-portal/[business_id]/insights
  * Delete an insight
  */
-export const DELETE = withErrorHandling(async (
-  request: NextRequest,
-  _context: { params: Promise<{ business_id: string }> }
+export const DELETE = withAdminAuth(async (
+  request: NextRequest, _session
 ) => {
   const { searchParams } = new URL(request.url);
   const insightId = parseInt(searchParams.get('insight_id') || '');
