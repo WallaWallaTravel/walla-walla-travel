@@ -7,6 +7,10 @@
 import { NextRequest } from 'next/server';
 import { POST } from '@/app/api/gpt/create-inquiry/route';
 
+jest.mock('@/lib/api/middleware/csrf', () => ({
+  withCSRF: (handler: unknown) => handler,
+}));
+
 // Mock the database
 jest.mock('@/lib/db-helpers', () => ({
   query: jest.fn(),

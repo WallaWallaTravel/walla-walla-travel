@@ -4,6 +4,10 @@
  * @jest-environment node
  */
 
+jest.mock('@/lib/api/middleware/csrf', () => ({
+  withCSRF: (handler: unknown) => handler,
+}));
+
 // Mock service
 const mockGetByAccessToken = jest.fn();
 const mockGetGuestCount = jest.fn();

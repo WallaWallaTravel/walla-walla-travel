@@ -7,6 +7,10 @@
 import { NextRequest } from 'next/server';
 import { POST } from '@/app/api/gpt/get-recommendations/route';
 
+jest.mock('@/lib/api/middleware/csrf', () => ({
+  withCSRF: (handler: unknown) => handler,
+}));
+
 // Mock the database
 jest.mock('@/lib/db-helpers', () => ({
   query: jest.fn(),
@@ -228,7 +232,7 @@ describe('POST /api/gpt/get-recommendations', () => {
       expect(data.suggested_itinerary.stops).toHaveLength(3);
     });
 
-    it('should cap number of stops at 5', async () => {
+    it('should reject number of stops greater than 5', async () => {
       const request = new NextRequest(
         'http://localhost:3000/api/gpt/get-recommendations',
         {
@@ -240,12 +244,15 @@ describe('POST /api/gpt/get-recommendations', () => {
         }
       );
       const response = await POST(request, { params: Promise.resolve({}) });
-      const data = await response.json();
 
-      expect(data.suggested_itinerary.stops.length).toBeLessThanOrEqual(5);
+      // Zod rejects values outside 2-5 range
+      expect(response.status).toBeGreaterThanOrEqual(400);
+      expect(response.status).toBeLessThan(600);
+      const data = await response.json();
+      expect(data.success).toBe(false);
     });
 
-    it('should enforce minimum of 2 stops', async () => {
+    it('should reject number of stops less than 2', async () => {
       const request = new NextRequest(
         'http://localhost:3000/api/gpt/get-recommendations',
         {
@@ -257,9 +264,12 @@ describe('POST /api/gpt/get-recommendations', () => {
         }
       );
       const response = await POST(request, { params: Promise.resolve({}) });
-      const data = await response.json();
 
-      expect(data.suggested_itinerary.stops.length).toBeGreaterThanOrEqual(2);
+      // Zod rejects values outside 2-5 range
+      expect(response.status).toBeGreaterThanOrEqual(400);
+      expect(response.status).toBeLessThan(600);
+      const data = await response.json();
+      expect(data.success).toBe(false);
     });
 
     it('should include timing information in itinerary', async () => {
