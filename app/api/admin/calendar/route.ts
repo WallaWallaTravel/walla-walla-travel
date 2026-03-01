@@ -10,8 +10,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
-import { withErrorHandling, UnauthorizedError } from '@/lib/api/middleware/error-handler';
-import { getSessionFromRequest } from '@/lib/auth/session';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 
 // Compliance warning thresholds
 const COMPLIANCE_WARNING_DAYS = 40;  // First notice
@@ -29,12 +28,7 @@ export interface ComplianceIssue {
   affectedBookings: number[];
 }
 
-export const GET = withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
-  // Verify admin access
-  const session = await getSessionFromRequest(request);
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
+export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const { searchParams } = new URL(request.url);
   const year = parseInt(searchParams.get('year') || new Date().getFullYear().toString());
   const month = parseInt(searchParams.get('month') || (new Date().getMonth() + 1).toString());

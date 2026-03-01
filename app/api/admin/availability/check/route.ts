@@ -8,7 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { z } from 'zod';
 import { vehicleAvailabilityService } from '@/lib/services/vehicle-availability.service';
 import { pool } from '@/lib/db';
@@ -28,7 +28,7 @@ interface DriverRow {
   phone: string | null;
 }
 
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json();
   const parsed = CheckAvailabilitySchema.safeParse(body);
 

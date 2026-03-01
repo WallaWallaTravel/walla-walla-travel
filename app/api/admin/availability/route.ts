@@ -10,24 +10,13 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
-import { withErrorHandling, UnauthorizedError, BadRequestError, NotFoundError, ConflictError, ForbiddenError } from '@/lib/api/middleware/error-handler';
-import { getSessionFromRequest } from '@/lib/auth/session';
+import { BadRequestError, NotFoundError, ConflictError, ForbiddenError } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 
-// Helper to verify admin access
-async function verifyAdmin(request: NextRequest) {
-  const session = await getSessionFromRequest(request);
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-  return session;
-}
-
 // GET - List availability blocks
-export const GET = withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
-  await verifyAdmin(request);
-
+export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const { searchParams } = new URL(request.url);
   const vehicleId = searchParams.get('vehicle_id');
   const startDate = searchParams.get('start_date');
@@ -96,9 +85,7 @@ export const GET = withErrorHandling(async (request: NextRequest): Promise<NextR
 // POST - Create new availability block
 export const POST = withCSRF(
   withRateLimit(rateLimiters.api)(
-    withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
-  await verifyAdmin(request);
-
+    withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json();
   const { vehicle_id, block_date, start_time, end_time, block_type, reason } = body;
 
@@ -146,9 +133,7 @@ export const POST = withCSRF(
 // PUT - Update existing availability block
 export const PUT = withCSRF(
   withRateLimit(rateLimiters.api)(
-    withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
-  await verifyAdmin(request);
-
+    withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json();
   const { id, vehicle_id, block_date, start_time, end_time, block_type, reason } = body;
 
@@ -196,9 +181,7 @@ export const PUT = withCSRF(
 // DELETE - Remove availability block
 export const DELETE = withCSRF(
   withRateLimit(rateLimiters.api)(
-    withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
-  await verifyAdmin(request);
-
+    withAdminAuth(async (request: NextRequest, _session) => {
   const { searchParams } = new URL(request.url);
   const id = searchParams.get('id');
 

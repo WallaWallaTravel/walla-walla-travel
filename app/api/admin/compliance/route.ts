@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, UnauthorizedError } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { getSessionFromRequest } from '@/lib/auth/session';
 import {
   getComplianceSummary,
@@ -17,13 +18,7 @@ import {
  * GET /api/admin/compliance
  * Returns compliance summary for dashboard display
  */
-export const GET = withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
-  // Verify admin access
-  const session = await getSessionFromRequest(request);
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-
+export const GET = withAdminAuth(async (_request: NextRequest, _session) => {
   const summary = await getComplianceSummary();
 
   return NextResponse.json({
