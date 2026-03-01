@@ -1082,8 +1082,8 @@ describe('BookingCoreService', () => {
     });
 
     it('should apply weekend multiplier for Saturday', () => {
-      // Use a known Saturday: 2026-02-22 (getDay() === 6 in UTC-based parse)
-      const result = service.calculateTotalPrice(4, 6, '2026-02-22');
+      // 2026-02-21 is a Saturday (getUTCDay() === 6)
+      const result = service.calculateTotalPrice(4, 6, '2026-02-21');
 
       // (100*6) + (50*4) = 800
       // Saturday is day 6 -> weekend multiplier = 1.2
@@ -1092,8 +1092,8 @@ describe('BookingCoreService', () => {
     });
 
     it('should apply weekend multiplier for Sunday', () => {
-      // Use a known Sunday: 2026-02-23 (getDay() === 0 in UTC-based parse)
-      const result = service.calculateTotalPrice(4, 6, '2026-02-23');
+      // 2026-02-22 is a Sunday (getUTCDay() === 0)
+      const result = service.calculateTotalPrice(4, 6, '2026-02-22');
 
       // Sunday is day 0 -> weekend multiplier = 1.2
       // total = 800 * 1.2 = 960
@@ -1101,8 +1101,8 @@ describe('BookingCoreService', () => {
     });
 
     it('should apply weekend multiplier for Friday', () => {
-      // Use a known Friday: 2026-03-07 (getDay() === 5)
-      const result = service.calculateTotalPrice(4, 6, '2026-03-07');
+      // 2026-02-20 is a Friday (getUTCDay() === 5)
+      const result = service.calculateTotalPrice(4, 6, '2026-02-20');
 
       // Friday is day 5 -> weekend multiplier = 1.2
       // (100*6) + (50*4) = 800 * 1.2 = 960
