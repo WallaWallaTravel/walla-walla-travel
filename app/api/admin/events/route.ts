@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling, ForbiddenError } from '@/lib/api/middleware/error-handler';
-import { getSession } from '@/lib/auth/session';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { eventsService } from '@/lib/services/events.service';
 import { createEventSchema, eventFiltersSchema } from '@/lib/validation/schemas/events';
 
@@ -8,12 +7,7 @@ import { createEventSchema, eventFiltersSchema } from '@/lib/validation/schemas/
 // GET /api/admin/events - List all events (admin)
 // ============================================================================
 
-export const GET = withErrorHandling(async (request: NextRequest) => {
-  const session = await getSession();
-  if (!session || session.user.role !== 'admin') {
-    throw new ForbiddenError('Admin access required');
-  }
-
+export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const { searchParams } = new URL(request.url);
   const filters = eventFiltersSchema.parse({
     category: searchParams.get('category') || undefined,
@@ -39,25 +33,20 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 // POST /api/admin/events - Create a new event
 // ============================================================================
 
-export const POST = withErrorHandling(async (request: NextRequest) => {
-  const session = await getSession();
-  if (!session || session.user.role !== 'admin') {
-    throw new ForbiddenError('Admin access required');
-  }
-
+export const POST = withAdminAuth(async (request: NextRequest, session) => {
   const body = await request.json();
   const data = createEventSchema.parse(body);
 
   // Handle recurring event creation
   if (data.is_recurring && data.recurrence_rule) {
-    const result = await eventsService.createRecurringEvent(data, session.user.id);
+    const result = await eventsService.createRecurringEvent(data, parseInt(session.userId));
     return NextResponse.json(
       { success: true, data: { event: result.parent, instanceCount: result.instanceCount } },
       { status: 201 }
     );
   }
 
-  const event = await eventsService.create(data, session.user.id);
+  const event = await eventsService.create(data, parseInt(session.userId));
 
   return NextResponse.json(
     { success: true, data: event },

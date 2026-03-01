@@ -11,7 +11,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling, ValidationError } from '@/lib/api/middleware/error-handler';
+import { ValidationError } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { vehicleAvailabilityService } from '@/lib/services/vehicle-availability.service';
 import { z } from 'zod';
 import { withCSRF } from '@/lib/api/middleware/csrf';
@@ -44,7 +45,7 @@ const CreateBlockSchema = z.object({
 // GET Handler - List Blocks
 // ============================================================================
 
-export const GET = withErrorHandling(async (request: NextRequest) => {
+export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const searchParams = request.nextUrl.searchParams;
   const params = Object.fromEntries(searchParams.entries());
   const validated = ListBlocksSchema.parse(params);
@@ -91,7 +92,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 
 export const POST = withCSRF(
   withRateLimit(rateLimiters.api)(
-    withErrorHandling(async (request: NextRequest) => {
+    withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json();
   const validated = CreateBlockSchema.parse(body);
 
@@ -155,7 +156,7 @@ export const POST = withCSRF(
 
 export const DELETE = withCSRF(
   withRateLimit(rateLimiters.api)(
-    withErrorHandling(async (request: NextRequest) => {
+    withAdminAuth(async (request: NextRequest, _session) => {
   const searchParams = request.nextUrl.searchParams;
   const blockId = searchParams.get('id');
 
