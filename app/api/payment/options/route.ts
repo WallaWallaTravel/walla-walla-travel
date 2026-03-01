@@ -4,7 +4,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
+import { BadRequestError } from '@/lib/api/middleware/error-handler';
+import { withAuth } from '@/lib/api/middleware/auth-wrapper';
+import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 import { calculatePaymentOptions } from '@/lib/payment/payment-calculator';
 
 export const runtime = 'nodejs';
@@ -14,7 +16,8 @@ export const dynamic = 'force-dynamic';
  * GET /api/payment/options?amount=1000
  * Get payment options for a given amount
  */
-export const GET = withErrorHandling(async (request: NextRequest) => {
+export const GET = withRateLimit(rateLimiters.payment)(
+  withAuth(async (request: NextRequest, _session) => {
   const { searchParams } = new URL(request.url);
   const amountParam = searchParams.get('amount');
 
@@ -35,5 +38,5 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     amount,
     options
   });
-});
+}));
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
-import { withErrorHandling, BadRequestError, NotFoundError, InternalServerError } from '@/lib/api-errors';
+import { BadRequestError, NotFoundError, InternalServerError } from '@/lib/api-errors';
+import { withOptionalAuth } from '@/lib/api/middleware/auth-wrapper';
 import { queryOne, withTransaction } from '@/lib/db-helpers';
 import { sendPaymentReceiptEmail } from '@/lib/services/email-automation.service';
 import { crmSyncService } from '@/lib/services/crm-sync.service';
@@ -36,7 +37,7 @@ interface Booking {
  */
 export const POST = withCSRF(
   withRateLimit(rateLimiters.payment)(
-    withErrorHandling(async (request: NextRequest) => {
+    withOptionalAuth(async (request: NextRequest, _session) => {
   // Validate input with Zod schema
   const { payment_intent_id } = await validateBody(request, ConfirmPaymentSchema);
 

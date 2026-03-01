@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { withErrorHandling, NotFoundError, InternalServerError, BadRequestError } from '@/lib/api-errors';
+import { NotFoundError, InternalServerError, BadRequestError } from '@/lib/api-errors';
+import { withAuth } from '@/lib/api/middleware/auth-wrapper';
 import { queryOne, query } from '@/lib/db-helpers';
 import { validateBody, CreatePaymentIntentSchema } from '@/lib/api/middleware/validation';
 import { auditService } from '@/lib/services/audit.service';
@@ -38,7 +39,7 @@ interface Booking {
  */
 export const POST = withCSRF(
   withRateLimit(rateLimiters.payment)(
-    withErrorHandling(async (request: NextRequest) => {
+    withAuth(async (request: NextRequest, _session) => {
   // Validate input with Zod schema
   const { booking_number, amount, payment_type } = await validateBody(request, CreatePaymentIntentSchema);
 
