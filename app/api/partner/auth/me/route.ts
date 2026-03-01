@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 import { getHotelSessionFromRequest } from '@/lib/auth/hotel-session';
 
 export const dynamic = 'force-dynamic';
@@ -7,7 +8,7 @@ export const dynamic = 'force-dynamic';
  * GET /api/partner/auth/me
  * Returns current hotel partner session or 401
  */
-export async function GET(request: NextRequest) {
+export const GET = withErrorHandling(async (request: NextRequest) => {
   const session = await getHotelSessionFromRequest(request);
 
   if (!session) {
@@ -22,4 +23,4 @@ export async function GET(request: NextRequest) {
       email: session.email,
     },
   });
-}
+});

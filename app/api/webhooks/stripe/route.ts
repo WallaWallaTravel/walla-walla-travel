@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import Stripe from 'stripe';
+import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 import { getStripe } from '@/lib/stripe';
 import { query, queryOne, withTransaction } from '@/lib/db-helpers';
 import { logger } from '@/lib/logger';
@@ -20,7 +21,7 @@ import { tipService } from '@/lib/services/tip.service';
  * - charge.refunded: Update payment status
  * - charge.dispute.created: Log dispute and notify admin
  */
-export async function POST(request: NextRequest) {
+export const POST = withErrorHandling(async (request: NextRequest) => {
   const body = await request.text();
   const headersList = await headers();
   const signature = headersList.get('stripe-signature');
@@ -124,7 +125,7 @@ export async function POST(request: NextRequest) {
     // Return 200 to prevent Stripe from retrying (we've logged the error)
     return NextResponse.json({ received: true, error: 'Processing error logged' });
   }
-}
+});
 
 /**
  * Handle successful payment
