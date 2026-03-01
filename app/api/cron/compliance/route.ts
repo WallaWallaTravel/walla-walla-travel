@@ -23,7 +23,7 @@ import { withCronAuth } from '@/lib/api/middleware/cron-auth';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // 60 seconds timeout for cron job
 
-export const GET = withCronAuth(async (_request: NextRequest) => {
+export const GET = withCronAuth('compliance', async (_request: NextRequest) => {
   logger.info('Starting daily compliance notification run');
 
   const result = await runComplianceNotifications();

@@ -294,7 +294,7 @@ function getRecommendedActions(changeType: ChangeType, threatLevel: ThreatLevel)
 }
 
 // POST handler for manual triggers and Vercel Cron
-export const POST = withCronAuth(async (_request: NextRequest) => {
+export const POST = withCronAuth('competitor-check', async (_request: NextRequest) => {
   const startTime = Date.now();
 
   logger.info('Starting competitor monitoring job');
@@ -322,7 +322,7 @@ export const POST = withCronAuth(async (_request: NextRequest) => {
 });
 
 // GET handler for health check
-export const GET = withCronAuth(async (_request: NextRequest) => {
+export const GET = withCronAuth('competitor-check', async (_request: NextRequest) => {
   const stats = await competitorMonitoringService.getStatistics();
 
   return NextResponse.json({

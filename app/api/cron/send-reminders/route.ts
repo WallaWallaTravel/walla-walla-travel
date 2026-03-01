@@ -9,7 +9,7 @@ import { withCronAuth } from '@/lib/api/middleware/cron-auth';
  * Sends reminder emails to customers 48 hours before their tour.
  * Protected by CRON_SECRET (fail-closed).
  */
-export const POST = withCronAuth(async (_request: NextRequest) => {
+export const POST = withCronAuth('send-reminders', async (_request: NextRequest) => {
   logger.info('Starting tour reminder processing');
 
   const result = await processTourReminders();
@@ -26,7 +26,7 @@ export const POST = withCronAuth(async (_request: NextRequest) => {
 });
 
 // GET endpoint for status check (also protected)
-export const GET = withCronAuth(async (_request: NextRequest) => {
+export const GET = withCronAuth('send-reminders', async (_request: NextRequest) => {
   return NextResponse.json({
     endpoint: '/api/cron/send-reminders',
     method: 'POST',

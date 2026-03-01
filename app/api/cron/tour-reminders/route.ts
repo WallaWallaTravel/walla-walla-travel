@@ -12,7 +12,7 @@ import { processTourReminders } from '@/lib/services/email-automation.service';
 import { logger } from '@/lib/logger';
 import { withCronAuth } from '@/lib/api/middleware/cron-auth';
 
-export const POST = withCronAuth(async (_request: NextRequest) => {
+export const POST = withCronAuth('tour-reminders', async (_request: NextRequest) => {
   logger.info('Processing tour reminders');
 
   const result = await processTourReminders();

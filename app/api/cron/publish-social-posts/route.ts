@@ -27,7 +27,7 @@ interface PostToPublish {
   connection_status: string | null
 }
 
-export const GET = withCronAuth(async (_request: NextRequest) => {
+export const GET = withCronAuth('publish-social-posts', async (_request: NextRequest) => {
   logger.info('Starting social post publishing cron')
 
   // Find posts ready to publish

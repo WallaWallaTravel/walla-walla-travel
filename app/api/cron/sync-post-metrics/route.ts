@@ -24,7 +24,7 @@ interface PostToSync {
   connection_status: string
 }
 
-export const GET = withCronAuth(async (_request: NextRequest) => {
+export const GET = withCronAuth('sync-post-metrics', async (_request: NextRequest) => {
   logger.info('Starting post metrics sync cron')
 
   try {

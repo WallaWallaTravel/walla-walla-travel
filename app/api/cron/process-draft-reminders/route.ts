@@ -11,7 +11,7 @@ import { withCronAuth } from '@/lib/api/middleware/cron-auth';
  *
  * Protected by CRON_SECRET (fail-closed).
  */
-export const POST = withCronAuth(async (_request: NextRequest) => {
+export const POST = withCronAuth('process-draft-reminders', async (_request: NextRequest) => {
   logger.info('Starting draft reminder processing');
 
   const result = await draftReminderService.processDraftReminders();
@@ -28,7 +28,7 @@ export const POST = withCronAuth(async (_request: NextRequest) => {
   });
 });
 
-export const GET = withCronAuth(async (_request: NextRequest) => {
+export const GET = withCronAuth('process-draft-reminders', async (_request: NextRequest) => {
   return NextResponse.json({
     endpoint: '/api/cron/process-draft-reminders',
     method: 'POST',

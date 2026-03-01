@@ -85,7 +85,7 @@ async function syncBlogPerformance(): Promise<{ matched: number }> {
   return { matched };
 }
 
-export const POST = withCronAuth(async (_request: NextRequest) => {
+export const POST = withCronAuth('sync-search-console', async (_request: NextRequest) => {
   const startTime = Date.now();
 
   try {
@@ -155,7 +155,7 @@ export const POST = withCronAuth(async (_request: NextRequest) => {
   }
 });
 
-export const GET = withCronAuth(async (_request: NextRequest) => {
+export const GET = withCronAuth('sync-search-console', async (_request: NextRequest) => {
   const integration = await getIntegration();
 
   return NextResponse.json({

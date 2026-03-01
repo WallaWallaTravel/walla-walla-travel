@@ -45,7 +45,7 @@ const currentSeason = () => {
   return 'Winter'
 }
 
-export const GET = withCronAuth(async (_request: NextRequest) => {
+export const GET = withCronAuth('trending-topics', async (_request: NextRequest) => {
   logger.info('Starting trending topics detection cron')
 
   try {

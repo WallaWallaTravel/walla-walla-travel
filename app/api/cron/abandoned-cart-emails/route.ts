@@ -21,7 +21,7 @@ import { withCronAuth } from '@/lib/api/middleware/cron-auth';
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
-export const GET = withCronAuth(async (_request: NextRequest) => {
+export const GET = withCronAuth('abandoned-cart-emails', async (_request: NextRequest) => {
   // Check if Resend is configured
   if (!resend) {
     return NextResponse.json({

@@ -11,7 +11,7 @@ import { withCronAuth } from '@/lib/api/middleware/cron-auth';
  *
  * These are admin-facing only — no emails sent to guests.
  */
-export const POST = withCronAuth(async (_request: NextRequest) => {
+export const POST = withCronAuth('process-admin-reminders', async (_request: NextRequest) => {
   logger.info('Starting admin reminder processing');
 
   const result = await adminReminderService.processTimeBased();
@@ -26,7 +26,7 @@ export const POST = withCronAuth(async (_request: NextRequest) => {
   });
 });
 
-export const GET = withCronAuth(async (_request: NextRequest) => {
+export const GET = withCronAuth('process-admin-reminders', async (_request: NextRequest) => {
   return NextResponse.json({
     endpoint: '/api/cron/process-admin-reminders',
     method: 'POST',
