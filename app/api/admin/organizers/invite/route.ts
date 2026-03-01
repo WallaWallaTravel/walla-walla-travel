@@ -1,25 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling } from '@/lib/api/middleware/error-handler';
-import { getSession } from '@/lib/auth/session';
+import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper';
 import { eventOrganizerService } from '@/lib/services/event-organizer.service';
 import { inviteOrganizerSchema } from '@/lib/validation/schemas/events';
 import { sendEmail } from '@/lib/email';
 
-export const POST = withErrorHandling(async (request: NextRequest) => {
-  const session = await getSession();
-  if (!session || session.user.role !== 'admin') {
-    return NextResponse.json(
-      { success: false, error: 'Unauthorized' },
-      { status: 401 }
-    );
-  }
-
+export const POST = withAdminAuth(async (request: NextRequest, session: AuthSession) => {
   const body = await request.json();
   const validated = inviteOrganizerSchema.parse(body);
 
   const result = await eventOrganizerService.createInvitation(
     validated,
-    session.user.id
+    parseInt(session.userId)
   );
 
   let emailSent = false;

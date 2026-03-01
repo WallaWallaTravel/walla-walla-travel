@@ -4,7 +4,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { google } from 'googleapis';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -16,7 +17,7 @@ export const dynamic = 'force-dynamic';
  * GET /api/admin/integrations/google-calendar/calendars
  * List available Google Calendars
  */
-export const GET = withErrorHandling(async (_request: NextRequest) => {
+export const GET = withAdminAuth(async (_request: NextRequest, _session) => {
   const credentialsPath = path.join(process.cwd(), 'scripts/import/credentials.json');
   const tokenPath = path.join(process.cwd(), 'scripts/import/token.json');
 

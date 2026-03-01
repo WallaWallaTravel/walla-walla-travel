@@ -7,7 +7,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { experienceRequestService, UpdateExperienceRequestSchema } from '@/lib/services/experience-request.service';
 import { logger } from '@/lib/logger';
 
@@ -23,7 +24,7 @@ const QuerySchema = z.object({
   offset: z.string().transform(Number).optional(),
 });
 
-export const GET = withErrorHandling(async (request: NextRequest) => {
+export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const { searchParams } = new URL(request.url);
 
   // Parse query params
@@ -68,7 +69,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 });
 
 // PATCH - Update a single experience request
-export const PATCH = withErrorHandling(async (request: NextRequest) => {
+export const PATCH = withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json();
 
   // Validate ID is provided

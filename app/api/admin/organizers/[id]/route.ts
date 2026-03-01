@@ -1,22 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling, type RouteContext } from '@/lib/api/middleware/error-handler';
-import { getSession } from '@/lib/auth/session';
+import { withAdminAuth, type AuthSession, type RouteContext } from '@/lib/api/middleware/auth-wrapper';
 import { eventOrganizerService } from '@/lib/services/event-organizer.service';
 import { updateOrganizerStatusSchema } from '@/lib/validation/schemas/events';
 
-type RouteParams = { id: string };
-
-export const GET = withErrorHandling(
-  async (_request: NextRequest, context: RouteContext<RouteParams>) => {
-    const session = await getSession();
-    if (!session || session.user.role !== 'admin') {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    const { id } = await context.params;
+export const GET = withAdminAuth(
+  async (_request: NextRequest, _session: AuthSession, context?: RouteContext) => {
+    const { id } = await context!.params;
     const organizer = await eventOrganizerService.getById(parseInt(id, 10));
 
     if (!organizer) {
@@ -44,17 +33,9 @@ export const GET = withErrorHandling(
   }
 );
 
-export const PUT = withErrorHandling(
-  async (request: NextRequest, context: RouteContext<RouteParams>) => {
-    const session = await getSession();
-    if (!session || session.user.role !== 'admin') {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    const { id } = await context.params;
+export const PUT = withAdminAuth(
+  async (request: NextRequest, _session: AuthSession, context?: RouteContext) => {
+    const { id } = await context!.params;
     const body = await request.json();
     const validated = updateOrganizerStatusSchema.parse(body);
 

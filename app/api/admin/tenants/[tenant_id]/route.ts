@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper';
 import { validateBody } from '@/lib/api/middleware/validation';
 import { tenantService } from '@/lib/services/tenant.service';
 import { z } from 'zod';
@@ -27,19 +27,16 @@ const UpdateTenantSchema = z.object({
   is_active: z.boolean().optional(),
 });
 
-interface RouteParams {
-  params: Promise<{ tenant_id: string }>;
-}
-
 /**
  * GET /api/admin/tenants/[tenant_id]
  * Get tenant details with brands
  */
-export const GET = withErrorHandling(async (
+export const GET = withAdminAuth(async (
   _request: NextRequest,
-  { params }: RouteParams
+  _session: AuthSession,
+  context?: { params: Promise<Record<string, string>> }
 ) => {
-  const { tenant_id } = await params;
+  const { tenant_id } = await context!.params;
   const tenantId = parseInt(tenant_id, 10);
 
   const tenant = await tenantService.getTenantById(tenantId);
@@ -58,13 +55,14 @@ export const GET = withErrorHandling(async (
  * PATCH /api/admin/tenants/[tenant_id]
  * Update a tenant
  */
-export const PATCH = withErrorHandling(async (
+export const PATCH = withAdminAuth(async (
   request: NextRequest,
-  { params }: RouteParams
+  _session: AuthSession,
+  context?: { params: Promise<Record<string, string>> }
 ) => {
-  const { tenant_id } = await params;
+  const { tenant_id } = await context!.params;
   const tenantId = parseInt(tenant_id, 10);
-  
+
   const data = await validateBody(request, UpdateTenantSchema);
 
   const tenant = await tenantService.updateTenant(tenantId, data);
@@ -75,10 +73,3 @@ export const PATCH = withErrorHandling(async (
     message: 'Tenant updated successfully',
   });
 });
-
-
-
-
-
-
-

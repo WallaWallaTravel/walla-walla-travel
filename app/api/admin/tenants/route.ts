@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { validateBody } from '@/lib/api/middleware/validation';
 import { tenantService, CreateTenantData } from '@/lib/services/tenant.service';
 import { z } from 'zod';
@@ -28,7 +28,7 @@ const CreateTenantSchema = z.object({
  * GET /api/admin/tenants
  * List all tenants
  */
-export const GET = withErrorHandling(async () => {
+export const GET = withAdminAuth(async () => {
   const tenants = await tenantService.listTenants();
 
   return NextResponse.json({
@@ -44,7 +44,7 @@ export const GET = withErrorHandling(async () => {
  */
 export const POST = withCSRF(
   withRateLimit(rateLimiters.api)(
-    withErrorHandling(async (request: NextRequest) => {
+    withAdminAuth(async (request: NextRequest) => {
   const data = await validateBody<CreateTenantData>(request, CreateTenantSchema);
 
   const tenant = await tenantService.createTenant(data);
@@ -55,10 +55,3 @@ export const POST = withCSRF(
     message: `Tenant '${tenant.display_name}' created successfully`,
   }, { status: 201 });
 })));
-
-
-
-
-
-
-

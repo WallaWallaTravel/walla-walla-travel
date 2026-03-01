@@ -5,17 +5,14 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling, RouteContext, NotFoundError, BadRequestError } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth, type AuthSession, type RouteContext } from '@/lib/api/middleware/auth-wrapper';
+import { NotFoundError, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { lunchSupplierService } from '@/lib/services/lunch-supplier.service';
 import { query } from '@/lib/db';
 
-interface RouteParams {
-  orderId: string;
-}
-
-export const PATCH = withErrorHandling<unknown, RouteParams>(
-  async (request: NextRequest, context: RouteContext<RouteParams>) => {
-    const { orderId } = await context.params;
+export const PATCH = withAdminAuth(
+  async (request: NextRequest, _session: AuthSession, context?: RouteContext) => {
+    const { orderId } = await context!.params;
     const orderIdNum = parseInt(orderId, 10);
 
     if (isNaN(orderIdNum)) {

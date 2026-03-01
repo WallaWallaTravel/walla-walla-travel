@@ -1,19 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling, UnauthorizedError } from '@/lib/api/middleware/error-handler';
-import { getSessionFromRequest } from '@/lib/auth/session';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { query } from '@/lib/db';
 
 /**
  * GET /api/admin/consultations
  * Get all consultation requests (trips with status 'handed_off')
  */
-export const GET = withErrorHandling(async (request: NextRequest) => {
-  const session = await getSessionFromRequest(request);
-
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-
+export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const { searchParams } = new URL(request.url);
   const status = searchParams.get('status') || 'all'; // 'pending', 'in_progress', 'completed', 'all'
 
@@ -91,13 +84,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
  * PATCH /api/admin/consultations
  * Update consultation (assign staff, change status)
  */
-export const PATCH = withErrorHandling<unknown>(async (request: NextRequest) => {
-  const session = await getSessionFromRequest(request);
-
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-
+export const PATCH = withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json();
   const { tripId, assignedStaffId, status, notes } = body;
 

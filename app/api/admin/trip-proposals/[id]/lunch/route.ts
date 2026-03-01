@@ -4,16 +4,13 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling, RouteContext, NotFoundError } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper';
+import { NotFoundError } from '@/lib/api/middleware/error-handler';
 import { lunchSupplierService } from '@/lib/services/lunch-supplier.service';
 
-interface RouteParams {
-  id: string;
-}
-
-export const GET = withErrorHandling<unknown, RouteParams>(
-  async (_request: NextRequest, context: RouteContext<RouteParams>) => {
-    const { id } = await context.params;
+export const GET = withAdminAuth(
+  async (_request: NextRequest, _session: AuthSession, context?: { params: Promise<Record<string, string>> }) => {
+    const { id } = await context!.params;
     const proposalId = parseInt(id, 10);
 
     if (isNaN(proposalId)) {

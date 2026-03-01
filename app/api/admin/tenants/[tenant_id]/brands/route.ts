@@ -4,22 +4,19 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper';
 import { tenantService } from '@/lib/services/tenant.service';
-
-interface RouteParams {
-  params: Promise<{ tenant_id: string }>;
-}
 
 /**
  * GET /api/admin/tenants/[tenant_id]/brands
  * List all brands for a tenant
  */
-export const GET = withErrorHandling(async (
+export const GET = withAdminAuth(async (
   _request: NextRequest,
-  { params }: RouteParams
+  _session: AuthSession,
+  context?: { params: Promise<Record<string, string>> }
 ) => {
-  const { tenant_id } = await params;
+  const { tenant_id } = await context!.params;
   const tenantId = parseInt(tenant_id, 10);
 
   // Verify tenant exists
@@ -33,10 +30,3 @@ export const GET = withErrorHandling(async (
     count: brands.length,
   });
 });
-
-
-
-
-
-
-

@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
-import { withErrorHandling } from '@/lib/api/middleware/error-handler';
+import { NextRequest, NextResponse } from 'next/server';
+import { withOptionalAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper';
 import { getRequestId } from '@/lib/api/middleware/request-context';
 import {
   getComprehensiveHealth,
@@ -20,7 +20,7 @@ import { logger } from '@/lib/logger';
  * - Database pool statistics
  * - Response time metrics
  */
-export const GET = withErrorHandling(async (_request: Request) => {
+export const GET = withOptionalAuth(async (_request: NextRequest, session: AuthSession | null) => {
   const requestId = getRequestId();
   const startTime = Date.now();
 
@@ -131,6 +131,7 @@ export const GET = withErrorHandling(async (_request: Request) => {
       timestamp: new Date().toISOString(),
       requestId,
       checkDurationMs: Date.now() - startTime,
+      authenticated: !!session,
 
       services: {
         database: {
@@ -186,7 +187,7 @@ export const GET = withErrorHandling(async (_request: Request) => {
  * Admin actions for health management
  * - Reset circuit breakers
  */
-export const POST = withErrorHandling(async (request: Request) => {
+export const POST = withOptionalAuth(async (request: NextRequest, session: AuthSession | null) => {
   const requestId = getRequestId();
   const body = await request.json();
 
@@ -195,6 +196,7 @@ export const POST = withErrorHandling(async (request: Request) => {
     logger.info('Circuit breaker reset', {
       requestId,
       service: body.service,
+      authenticatedUser: session?.email || 'anonymous',
     });
     return NextResponse.json({
       success: true,

@@ -7,9 +7,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { withErrorHandling, UnauthorizedError, RouteContext } from '@/lib/api/middleware/error-handler';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { validateBody } from '@/lib/api/middleware/validation';
-import { getSessionFromRequest } from '@/lib/auth/session';
 import { timeCardService } from '@/lib/services/timecard.service';
 
 // =============================================================================
@@ -47,13 +46,7 @@ const ListHistoricalTimeCardsSchema = z.object({
 // POST - Create historical time card
 // =============================================================================
 
-export const POST = withErrorHandling(async (request: NextRequest, _context: RouteContext) => {
-  // Verify admin authentication
-  const session = await getSessionFromRequest(request);
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-
+export const POST = withAdminAuth(async (request: NextRequest, session) => {
   // Validate request body
   const body = await validateBody(request, CreateHistoricalTimeCardSchema);
 
@@ -68,7 +61,7 @@ export const POST = withErrorHandling(async (request: NextRequest, _context: Rou
     drivingHours: body.drivingHours,
     onDutyHours: body.onDutyHours,
     bookingId: body.bookingId,
-    enteredBy: session.user.id,
+    enteredBy: parseInt(session.userId),
     historicalSource: body.historicalSource,
     entryNotes: body.entryNotes,
   });
@@ -87,13 +80,7 @@ export const POST = withErrorHandling(async (request: NextRequest, _context: Rou
 // GET - List historical time cards
 // =============================================================================
 
-export const GET = withErrorHandling(async (request: NextRequest, _context: RouteContext) => {
-  // Verify admin authentication
-  const session = await getSessionFromRequest(request);
-  if (!session || session.user.role !== 'admin') {
-    throw new UnauthorizedError('Admin access required');
-  }
-
+export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   // Parse query parameters
   const { searchParams } = new URL(request.url);
   const queryParams = Object.fromEntries(searchParams.entries());
