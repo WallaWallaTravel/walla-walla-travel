@@ -1,18 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
+import { NextResponse } from 'next/server';
+import { withAuth } from '@/lib/api/middleware/auth-wrapper';
 import { query } from '@/lib/db';
 
 // ============================================================================
-// GET /api/trips/my-trips - Get trips for a user by email
+// GET /api/trips/my-trips - Get trips for the authenticated user
 // ============================================================================
 
-export const GET = withErrorHandling(async (request: NextRequest) => {
-  const { searchParams } = new URL(request.url);
-  const email = searchParams.get('email');
-
-  if (!email) {
-    throw new BadRequestError('Email parameter is required');
-  }
+export const GET = withAuth(async (_request, session) => {
+  const email = session.email;
 
   const result = await query(
     `SELECT
