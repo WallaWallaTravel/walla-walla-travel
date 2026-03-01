@@ -11,6 +11,10 @@
  *   - Handles Stripe error gracefully
  */
 
+jest.mock('@/lib/api/middleware/csrf', () => ({
+  withCSRF: (handler: unknown) => handler,
+}));
+
 jest.mock('@/lib/services/trip-proposal.service', () => ({
   tripProposalService: {
     getByNumber: jest.fn(),

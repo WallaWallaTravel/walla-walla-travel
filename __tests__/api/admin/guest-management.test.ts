@@ -4,6 +4,10 @@
  * @jest-environment node
  */
 
+jest.mock('@/lib/api/middleware/csrf', () => ({
+  withCSRF: (handler: unknown) => handler,
+}));
+
 // Mock auth wrapper — passthrough
 jest.mock('@/lib/api/middleware/auth-wrapper', () => ({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
