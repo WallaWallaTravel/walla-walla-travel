@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next'
+import { withSentryConfig } from '@sentry/nextjs'
 import { securityHeaders, getCSPHeader } from './lib/config/security'
 
 const nextConfig: NextConfig = {
@@ -13,8 +14,8 @@ const nextConfig: NextConfig = {
   // BUNDLE OPTIMIZATION
   // ============================================================================
   
-  // Enable production optimizations
-  productionBrowserSourceMaps: false, // Disable source maps in production
+  // Source maps uploaded to Sentry but not served publicly (hideSourceMaps)
+  productionBrowserSourceMaps: true,
   
   // Optimize images
   images: {
@@ -121,4 +122,17 @@ const nextConfig: NextConfig = {
   },
 }
 
-export default nextConfig
+export default withSentryConfig(nextConfig, {
+  // Upload source maps to Sentry for readable production stack traces.
+  // org, project, and authToken are read from SENTRY_ORG, SENTRY_PROJECT,
+  // and SENTRY_AUTH_TOKEN env vars automatically — no need to set them here.
+
+  // Don't log source map upload progress during build
+  silent: true,
+
+  // Upload source maps then delete them from the build output so they're
+  // available in Sentry for stack trace deobfuscation but not served publicly
+  sourcemaps: {
+    deleteSourcemapsAfterUpload: true,
+  },
+})

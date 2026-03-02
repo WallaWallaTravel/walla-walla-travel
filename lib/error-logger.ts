@@ -1,7 +1,11 @@
 /**
  * Client-side error logger
- * Automatically captures and logs errors for debugging
+ *
+ * Primary: Sentry (when NEXT_PUBLIC_SENTRY_DSN is set)
+ * Backup:  POST /api/log-error (server-side file log)
  */
+
+import * as Sentry from '@sentry/nextjs';
 
 interface LoggedError {
   timestamp: string;
@@ -31,20 +35,22 @@ export class ErrorLogger {
   private setupErrorHandlers() {
     // Capture unhandled errors
     window.addEventListener('error', (event) => {
-      this.logError('Unhandled Error', event.error || event.message, event.filename);
+      const err = event.error || event.message;
+      if (err instanceof Error) {
+        Sentry.captureException(err);
+      }
+      this.logError('Unhandled Error', err, event.filename);
     });
 
     // Capture unhandled promise rejections
     window.addEventListener('unhandledrejection', (event) => {
+      if (event.reason instanceof Error) {
+        Sentry.captureException(event.reason);
+      } else {
+        Sentry.captureMessage(`Unhandled rejection: ${String(event.reason)}`, 'error');
+      }
       this.logError('Unhandled Promise Rejection', event.reason);
     });
-
-    // Capture console errors
-    const originalError = console.error;
-    console.error = (...args) => {
-      this.logError('Console Error', args.join(' '));
-      originalError.apply(console, args);
-    };
   }
 
   logError(type: string, message: unknown, url?: string) {
@@ -59,11 +65,8 @@ export class ErrorLogger {
 
     this.errors.push(error);
 
-    // Send to server for logging
+    // Backup: send to server log endpoint
     this.sendToServer(error);
-
-    // Also log to console for immediate visibility
-    console.log('🔴 ERROR CAPTURED:', error);
   }
 
   private async sendToServer(error: LoggedError) {

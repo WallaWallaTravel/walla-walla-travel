@@ -12,6 +12,7 @@
  */
 
 import { useEffect } from 'react';
+import * as Sentry from '@sentry/nextjs';
 
 export default function GlobalError({
   error,
@@ -21,7 +22,7 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Log to console in production (logger may not be available if root layout crashed)
+    Sentry.captureException(error);
     console.error('[GlobalError] Application crashed:', {
       message: error.message,
       stack: error.stack,
