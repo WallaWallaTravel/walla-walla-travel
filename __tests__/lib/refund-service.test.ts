@@ -258,15 +258,20 @@ describe('RefundService', () => {
       expect(result.refundAmount).toBe(200);
       expect(result.refundPercentage).toBe(100);
 
-      expect(mockRefundCreate).toHaveBeenCalledWith({
-        payment_intent: 'pi_abc123',
-        amount: 20000, // $200 in cents
-        reason: 'requested_by_customer',
-        metadata: expect.objectContaining({
-          booking_id: '1',
-          refund_percentage: '100',
-        }),
-      });
+      expect(mockRefundCreate).toHaveBeenCalledWith(
+        {
+          payment_intent: 'pi_abc123',
+          amount: 20000, // $200 in cents
+          reason: 'requested_by_customer',
+          metadata: expect.objectContaining({
+            booking_id: '1',
+            refund_percentage: '100',
+          }),
+        },
+        {
+          idempotencyKey: 'refund_pi_abc123_20000',
+        }
+      );
     });
 
     it('should process 50% Stripe refund', async () => {
@@ -298,6 +303,9 @@ describe('RefundService', () => {
       expect(mockRefundCreate).toHaveBeenCalledWith(
         expect.objectContaining({
           amount: 15000, // $150 in cents
+        }),
+        expect.objectContaining({
+          idempotencyKey: 'refund_pi_xyz_15000',
         })
       );
     });
