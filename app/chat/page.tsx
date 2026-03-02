@@ -628,7 +628,7 @@ export default function ChatPage() {
               Full Trip Assistance
             </Link>
           </div>
-          <p className="text-center text-xs text-gray-400 mt-3">
+          <p className="text-center text-xs text-gray-600 mt-3">
             Powered by OpenAI • Partner wineries only
           </p>
         </div>

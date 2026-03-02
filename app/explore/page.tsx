@@ -187,7 +187,7 @@ export default function ExplorePage() {
         </div>
 
         {/* Future: Referral Tracking Note */}
-        <p className="text-center text-xs text-gray-400 mt-8">
+        <p className="text-center text-xs text-gray-600 mt-8">
           Some links may earn us a small commission at no cost to you.
         </p>
       </div>

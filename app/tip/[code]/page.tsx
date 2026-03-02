@@ -161,7 +161,7 @@ export default function TipPage() {
         </p>
 
         <div className="mt-8 text-center">
-          <p className="text-sm text-gray-400">
+          <p className="text-sm text-gray-600">
             Powered by {pageData?.brand_name}
           </p>
         </div>
@@ -251,7 +251,7 @@ export default function TipPage() {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-xs text-gray-400 mt-6">
+        <p className="text-center text-xs text-gray-600 mt-6">
           100% of your tip goes directly to your driver
         </p>
       </div>

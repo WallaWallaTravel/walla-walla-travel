@@ -163,7 +163,7 @@ function ConciergeContent() {
         {/* Trust Signals */}
         <div className="text-center">
           <p className="text-sm text-gray-500 mb-4">Trusted by visitors since 2019</p>
-          <div className="flex justify-center gap-8 text-gray-400">
+          <div className="flex justify-center gap-8 text-gray-600">
             <div className="text-center">
               <div className="text-2xl font-bold text-purple-600">500+</div>
               <div className="text-xs">Happy Guests</div>

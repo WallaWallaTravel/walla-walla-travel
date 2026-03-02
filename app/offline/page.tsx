@@ -10,7 +10,7 @@ export default function OfflinePage() {
         <div className="mb-6">
           <div className="w-20 h-20 bg-gray-200 rounded-full mx-auto flex items-center justify-center mb-4">
             <svg
-              className="w-10 h-10 text-gray-400"
+              className="w-10 h-10 text-gray-600"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -74,7 +74,7 @@ export default function OfflinePage() {
           >
             Go to Dashboard
           </a>
-          <span className="text-gray-400 mx-2">•</span>
+          <span className="text-gray-600 mx-2">•</span>
           <a
             href="/inspections/pre-trip"
             className="text-blue-600 text-sm hover:underline"

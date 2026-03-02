@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { logger } from '@/lib/logger';
 import PhoneInput from '@/components/ui/PhoneInput';
 
@@ -27,6 +27,15 @@ export default function ManualBookingModal({ onClose, onComplete }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [pricing, setPricing] = useState<{ subtotal: number; taxes: number; total: number; deposit_required: number } | null>(null);
+
+  const handleEscapeKey = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'Escape' && !saving) onClose();
+  }, [onClose, saving]);
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleEscapeKey);
+    return () => document.removeEventListener('keydown', handleEscapeKey);
+  }, [handleEscapeKey]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -137,13 +146,18 @@ export default function ManualBookingModal({ onClose, onComplete }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="manual-booking-title"
+    >
       <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="bg-purple-600 text-white p-6 rounded-t-xl">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold">Create Manual Booking</h2>
+              <h2 id="manual-booking-title" className="text-2xl font-bold">Create Manual Booking</h2>
               <p className="text-purple-100 mt-1">Phone or in-person booking</p>
             </div>
             <button

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 
 interface DeleteConfirmModalProps {
   show: boolean;
@@ -17,13 +17,27 @@ export const DeleteConfirmModal = React.memo(function DeleteConfirmModal({
   proposalNumber,
   loading,
 }: DeleteConfirmModalProps) {
+  useEffect(() => {
+    if (!show) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape' && !loading) onClose();
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [show, loading, onClose]);
+
   if (!show) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !loading && onClose()} />
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="delete-confirm-title"
+    >
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !loading && onClose()} aria-hidden="true" />
       <div className="relative bg-white rounded-2xl shadow-xl max-w-sm w-full mx-4 p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-2">Delete Proposal</h2>
+        <h2 id="delete-confirm-title" className="text-xl font-bold text-gray-900 mb-2">Delete Proposal</h2>
         <p className="text-sm text-gray-600 mb-5">
           Permanently delete <span className="font-semibold">{proposalNumber}</span>? This will remove all days, stops, guests, and pricing data. This action cannot be undone.
         </p>
