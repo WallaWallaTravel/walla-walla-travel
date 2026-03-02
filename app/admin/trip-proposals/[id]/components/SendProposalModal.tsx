@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 
 interface SendProposalModalProps {
   show: boolean;
@@ -21,6 +22,7 @@ export const SendProposalModal = React.memo(function SendProposalModal({
   total,
   sending,
 }: SendProposalModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
   const [customMessage, setCustomMessage] = useState('');
 
   useEffect(() => {
@@ -34,6 +36,8 @@ export const SendProposalModal = React.memo(function SendProposalModal({
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [show, sending, onClose]);
+
+  useFocusTrap(dialogRef, show);
 
   if (!show) return null;
 
@@ -51,6 +55,7 @@ export const SendProposalModal = React.memo(function SendProposalModal({
 
   return (
     <div
+      ref={dialogRef}
       className="fixed inset-0 z-50 flex items-center justify-center"
       role="dialog"
       aria-modal="true"

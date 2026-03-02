@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 
 interface EmailCaptureModalProps {
   isOpen: boolean;
@@ -17,6 +18,7 @@ export default function EmailCaptureModal({
   triggerType,
   queryCount = 0
 }: EmailCaptureModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -29,6 +31,8 @@ export default function EmailCaptureModal({
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
+
+  useFocusTrap(dialogRef, isOpen);
 
   if (!isOpen) return null;
 
@@ -83,6 +87,7 @@ export default function EmailCaptureModal({
 
       {/* Modal */}
       <div
+        ref={dialogRef}
         className="fixed inset-0 z-50 flex items-center justify-center p-4"
         role="dialog"
         aria-modal="true"

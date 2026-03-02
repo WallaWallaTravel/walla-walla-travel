@@ -111,7 +111,7 @@ function RequestResetForm() {
             </div>
 
             {error && (
-              <div className="p-3 bg-red-50 text-red-700 rounded-lg mb-4 text-sm border border-red-200">
+              <div role="alert" className="p-3 bg-red-50 text-red-700 rounded-lg mb-4 text-sm border border-red-200">
                 {error}
               </div>
             )}
@@ -264,7 +264,7 @@ function NewPasswordForm({ token }: { token: string }) {
             </div>
 
             {error && (
-              <div className="p-3 bg-red-50 text-red-700 rounded-lg mb-4 text-sm border border-red-200">
+              <div role="alert" className="p-3 bg-red-50 text-red-700 rounded-lg mb-4 text-sm border border-red-200">
                 {error}
               </div>
             )}

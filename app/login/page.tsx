@@ -249,7 +249,7 @@ function LoginPageContent() {
           </div>
 
           {error && (
-            <div className="p-3 bg-red-50 text-red-700 rounded-lg mb-5 text-sm font-medium border border-red-200">
+            <div role="alert" className="p-3 bg-red-50 text-red-700 rounded-lg mb-5 text-sm font-medium border border-red-200">
               {error}
             </div>
           )}

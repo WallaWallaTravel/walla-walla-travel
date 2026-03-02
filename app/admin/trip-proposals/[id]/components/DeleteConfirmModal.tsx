@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
+import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 
 interface DeleteConfirmModalProps {
   show: boolean;
@@ -17,6 +18,8 @@ export const DeleteConfirmModal = React.memo(function DeleteConfirmModal({
   proposalNumber,
   loading,
 }: DeleteConfirmModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (!show) return;
     function handleKeyDown(e: KeyboardEvent) {
@@ -26,10 +29,13 @@ export const DeleteConfirmModal = React.memo(function DeleteConfirmModal({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [show, loading, onClose]);
 
+  useFocusTrap(dialogRef, show);
+
   if (!show) return null;
 
   return (
     <div
+      ref={dialogRef}
       className="fixed inset-0 z-50 flex items-center justify-center"
       role="dialog"
       aria-modal="true"
