@@ -19,15 +19,10 @@ const SESSION_COOKIE_NAME = 'session';
 function getSessionSecret(): Uint8Array {
   const secret = process.env.SESSION_SECRET;
   if (!secret) {
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error(
-        'CRITICAL: SESSION_SECRET environment variable is required in production. ' +
-        'Generate one with: openssl rand -base64 32'
-      );
-    }
-    // Development only - use a consistent dev secret
-    console.warn('[Session] WARNING: Using development session secret. Set SESSION_SECRET in production.');
-    return new TextEncoder().encode('dev-only-secret-do-not-use-in-production-32chars');
+    throw new Error(
+      'Missing required SESSION_SECRET environment variable. ' +
+      'Generate one with: openssl rand -base64 32'
+    );
   }
   if (secret.length < 32) {
     throw new Error('SESSION_SECRET must be at least 32 characters long');
