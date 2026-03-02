@@ -14,8 +14,9 @@ const nextConfig: NextConfig = {
   // BUNDLE OPTIMIZATION
   // ============================================================================
   
-  // Source maps uploaded to Sentry but not served publicly (hideSourceMaps)
-  productionBrowserSourceMaps: true,
+  // Sentry's withSentryConfig handles source map generation + upload separately.
+  // Setting this to true doubles memory usage and causes OOM on Vercel builds.
+  productionBrowserSourceMaps: false,
   
   // Optimize images
   images: {
