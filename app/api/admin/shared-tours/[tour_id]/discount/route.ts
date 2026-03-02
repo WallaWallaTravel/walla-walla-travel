@@ -277,19 +277,25 @@ export const POST = withCSRF(
 
       try {
         // Create Stripe refund (partial refund)
-        const refund = await stripe.refunds.create({
-          payment_intent: ticket.stripe_payment_intent_id,
-          amount: Math.round(ticket.refund_amount * 100), // Convert to cents
-          reason: 'requested_by_customer',
-          metadata: {
-            type: 'shared_tour_discount',
-            tour_id: tour_id,
-            ticket_id: ticket.ticket_id,
-            discount_type: body.discount_type,
-            discount_amount: String(body.discount_amount),
-            discount_reason: body.reason || '',
+        const refundAmountCents = Math.round(ticket.refund_amount * 100);
+        const refund = await stripe.refunds.create(
+          {
+            payment_intent: ticket.stripe_payment_intent_id,
+            amount: refundAmountCents,
+            reason: 'requested_by_customer',
+            metadata: {
+              type: 'shared_tour_discount',
+              tour_id: tour_id,
+              ticket_id: ticket.ticket_id,
+              discount_type: body.discount_type,
+              discount_amount: String(body.discount_amount),
+              discount_reason: body.reason || '',
+            },
           },
-        });
+          {
+            idempotencyKey: `refund_${ticket.stripe_payment_intent_id}_${refundAmountCents}`,
+          }
+        );
 
         // Update ticket with refund info
         await query(`

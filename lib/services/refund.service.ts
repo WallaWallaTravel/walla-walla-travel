@@ -171,16 +171,21 @@ export class RefundService extends BaseService {
 
       const refundAmountCents = Math.round(refundAmount * 100);
 
-      const refund = await stripe.refunds.create({
-        payment_intent: payment.stripe_payment_intent_id,
-        amount: refundAmountCents,
-        reason: 'requested_by_customer',
-        metadata: {
-          booking_id: bookingId.toString(),
-          policy_applied: policyApplied,
-          refund_percentage: refundPercentage.toString(),
+      const refund = await stripe.refunds.create(
+        {
+          payment_intent: payment.stripe_payment_intent_id,
+          amount: refundAmountCents,
+          reason: 'requested_by_customer',
+          metadata: {
+            booking_id: bookingId.toString(),
+            policy_applied: policyApplied,
+            refund_percentage: refundPercentage.toString(),
+          },
         },
-      });
+        {
+          idempotencyKey: `refund_${payment.stripe_payment_intent_id}_${refundAmountCents}`,
+        }
+      );
 
       // Update payment record
       await this.query(

@@ -6,6 +6,7 @@ import { getBrandEmailConfig } from '@/lib/email-brands';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import { logger } from '@/lib/logger';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { handleStripeError } from '@/lib/stripe/error-handler';
 
 /**
  * POST /api/trip-proposals/[proposalNumber]/create-payment
@@ -64,27 +65,40 @@ export const POST = withCSRF(
     }
 
     // Create Stripe PaymentIntent with idempotency key
-    const paymentIntent = await stripe.paymentIntents.create(
-      {
-        amount: amountInCents,
-        currency: 'usd',
-        metadata: {
-          payment_type: 'trip_proposal_deposit',
-          trip_proposal_id: proposal.id.toString(),
-          proposal_number: proposal.proposal_number,
-          customer_email: proposal.customer_email || '',
-          brand_id: (proposal.brand_id || 1).toString(),
+    let paymentIntent;
+    try {
+      paymentIntent = await stripe.paymentIntents.create(
+        {
+          amount: amountInCents,
+          currency: 'usd',
+          metadata: {
+            payment_type: 'trip_proposal_deposit',
+            trip_proposal_id: proposal.id.toString(),
+            proposal_number: proposal.proposal_number,
+            customer_email: proposal.customer_email || '',
+            brand_id: (proposal.brand_id || 1).toString(),
+          },
+          description: `${brand.name} - Trip Proposal Deposit for ${proposal.trip_title || proposal.proposal_number}`,
+          receipt_email: proposal.customer_email || undefined,
+          automatic_payment_methods: {
+            enabled: true,
+          },
         },
-        description: `${brand.name} - Trip Proposal Deposit for ${proposal.trip_title || proposal.proposal_number}`,
-        receipt_email: proposal.customer_email || undefined,
-        automatic_payment_methods: {
-          enabled: true,
-        },
-      },
-      {
-        idempotencyKey: `pi_tp_${proposal.id}_${amountInCents}`,
-      }
-    );
+        {
+          idempotencyKey: `pi_tp_${proposal.id}_${amountInCents}`,
+        }
+      );
+    } catch (stripeError) {
+      const { status, message, code, retryable } = handleStripeError(stripeError, {
+        proposalId: proposal.id,
+        proposalNumber: proposal.proposal_number,
+        amount: amountInCents / 100,
+      });
+      return NextResponse.json(
+        { error: message, code, retryable },
+        { status, ...(retryable ? { headers: { 'Retry-After': '30' } } : {}) }
+      );
+    }
 
     // Log activity asynchronously (don't block the response)
     after(async () => {
