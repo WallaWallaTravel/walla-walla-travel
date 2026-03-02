@@ -696,7 +696,8 @@ When adding tests, follow existing patterns in `__tests__/`.
 - **MANDATORY**: Run `./scripts/verify.sh` before every commit
 - **Never** use `git commit --no-verify`
 - **Never** rely on `tsc --noEmit` alone — `next build` catches route type constraints that `tsc` misses
-- After pushing, verify CI status: `gh run list --limit 1`
+- Always run `npx next build` (not just `tsc`) before trusting a commit
+- After pushing, verify CI status: `gh run list --limit 3`
 - Pin dependency versions in CI workflows — unpinned `npx` commands will pull latest majors that break builds (e.g., Prisma 7 broke `datasource.url` syntax)
 - Developers can run `./scripts/daily-health.sh` anytime for a quick health check (checks auth wrappers, Zod, CSRF, file sizes, vulnerabilities, test coverage)
 
@@ -704,38 +705,48 @@ When adding tests, follow existing patterns in `__tests__/`.
 
 ## Route Architecture (every new route MUST have all 5 layers)
 
-1. **Error handling**: `withErrorHandling` (innermost)
-2. **Auth**: `withAdminAuth`, `withAuth`, or `withOptionalAuth` (wraps error handling)
-3. **Rate limiting**: `withRateLimit(rateLimiters.xxx)` where appropriate
-4. **CSRF**: `withCSRF` on all POST/PUT/PATCH/DELETE (outermost for mutations)
-5. **Zod validation**: every `request.json()` must use `z.object().parse()`
-
-### Composition pattern for admin mutation routes
-
 ```typescript
-export const POST = withCSRF(
-  withRateLimit(rateLimiters.api)(
-    withAdminAuth(async (request: NextRequest, session) => {
-      const parsed = BodySchema.parse(await request.json());
-      // business logic
+export const POST = withCSRF(                    // 4. CSRF on mutations (outermost)
+  withRateLimit(rateLimiters.api)(               // 3. Rate limiting where appropriate
+    withAdminAuth(async (request, session) => {  // 2. Auth (withAdminAuth/withAuth/withOptionalAuth)
+      const parsed = BodySchema.parse(           // 5. Zod validation on all request.json()
+        await request.json()
+      );
+      // business logic                          // 1. withErrorHandling (innermost, via auth wrapper)
     })
   )
 );
 ```
 
-### Exceptions (no CSRF)
-- Webhook routes (`/api/webhooks/*`)
-- Cron routes (`/api/cron/*`) — use `withCronAuth` instead
-- Auth routes (`/api/auth/*`)
-- GET handlers
+### Exceptions
+- Webhook routes (`/api/webhooks/*`) — skip CSRF, use signature verification
+- Cron routes (`/api/cron/*`) — skip CSRF, use `withCronAuth` instead
+- Auth routes (`/api/auth/*`) — skip CSRF
+- Public GET handlers — skip auth
 
 ---
 
 ## Session Properties
 
-- Use `session.userId` (string), `session.email`, `session.role`
+- Use `session.userId` (string), `session.email`, `session.role`, `session.sid`
 - **Never** use `session.user.id` — that's the old pattern
 - `parseInt(session.userId)` when a numeric ID is needed (e.g., for `auditService.logFromRequest`)
+
+---
+
+## Session Hardening (March 2026)
+
+- Server-side `user_sessions` table with `session_id` (UUID) embedded in JWT as `sid` claim
+- **On login**: revoke all previous sessions, create new row, embed `sid` in JWT
+- **On logout**: revoke specific session via `sessionStoreService.revokeSession(sid)`
+- **On password change**: `sessionStoreService.revokeAllUserSessions(userId)` — forces re-login everywhere
+- **Validation in `withAuth`**: check `sid` exists in DB, not revoked, within idle timeout
+- **Idle timeout**: 30 minutes for admin/geology_admin sessions, 24 hours for regular users
+- **Touch throttling**: compares `last_active_at` from DB (5-minute threshold) — NOT in-memory Map (won't survive serverless cold starts on Vercel)
+- **Old JWTs without `sid`**: backward compatible, skip DB check, expire naturally within 7 days
+- **DB failure fallback**: fall back to JWT-only validation (don't lock everyone out)
+- **Key files**: `lib/services/session-store.service.ts`, `migrations/100-user-sessions.sql`
+- **Revocation points**: login, logout, password reset, partner completeSetup, organizer completeSetup, partner-invite
 
 ---
 
@@ -748,6 +759,8 @@ export const POST = withCSRF(
 - **No monster files over 500 lines** — decompose into services
 - **No `getDay()`** for date logic — use `getUTCDay()` to avoid timezone-dependent behavior in CI/production
 - **No `npx <tool>` in CI** without version pinning — always use `npx tool@version`
+- **No in-memory state** for throttling/caching on Vercel — use DB timestamp comparison (cold starts wipe memory)
+- **No `console.log`** — use structured logger from `lib/logger.ts`
 
 ---
 
@@ -756,6 +769,7 @@ export const POST = withCSRF(
 - Business logic in `lib/services/`
 - Routes are thin wrappers that validate input, call services, return responses
 - Schemas inline in route files or in `lib/validation/schemas/`
+- Types in `lib/types/`
 - Tests mirror the app structure in `__tests__/`
 - Middleware in `lib/api/middleware/`
 
@@ -789,8 +803,49 @@ await auditService.logFromRequest(request, parseInt(session.userId), 'resource_d
   ```
 - Use `Promise.resolve({})` or `Promise.resolve({ param })` for route context params
 - Date-dependent tests must use UTC-safe dates — never rely on local timezone
+- Run full test suite: `npx jest --passWithNoTests`
+
+---
+
+## Cron Routes
+
+- All use `withCronAuth('job-name', handler)` with timing-safe comparison (`crypto.timingSafeEqual`)
+- Every cron logs job name, start time, duration, and response status
+- `cleanup-sessions` runs daily at 5 AM UTC (table hygiene for `user_sessions`)
+- 18 total cron routes configured in `vercel.json`
+- Pattern: `export const GET = withCronAuth('name', async (request) => { ... });`
+- Support POST for manual triggering: `export const POST = GET;`
+
+---
+
+## Infrastructure & Services
+
+Active services (all required):
+
+| Service | Purpose | Notes |
+|---------|---------|-------|
+| **Supabase** | PostgreSQL DB + Storage | Pro plan, daily backups. Auth/Realtime/Edge Functions NOT used |
+| **Stripe** | Payments | Dual-brand (WWT + NWTouring), test + live webhook secrets |
+| **Resend** | Transactional email | Replaced Postmark |
+| **Upstash Redis** | Rate limiting + queue | |
+| **Sentry** | Error monitoring | `lib/logger.ts`, `lib/config/security.ts` |
+| **Anthropic + Google/Gemini** | AI features | 21 + 40 files |
+| **Twilio** | SMS notifications | |
+| **Deepgram** | Voice transcription | |
+
+See `/Users/temp/INFRASTRUCTURE.md` for complete registry.
+
+---
+
+## Health Monitoring
+
+- **Local**: `./scripts/daily-health.sh` — auth wrappers, Zod, CSRF, oversized files, npm audit, test ratio
+- **Local**: `./scripts/verify.sh` — tsc + lint + next build + jest (mirrors CI)
+- **CI**: `.github/workflows/daily-health-check.yml` — 3x daily + on every push
+- **CI**: `.github/workflows/storage-backup.yml` — weekly Supabase Storage backup
+- **Branch protection**: main requires Build Check + Lint Code status checks
 
 ---
 
 **Last Updated:** March 1, 2026
-**Active Focus:** Security hardening (CSRF, Zod validation, audit logging) + CI stability + Walla Walla Travel commercial readiness
+**Active Focus:** Security hardening (session hardening, CSRF, Zod validation, audit logging) + CI stability + Walla Walla Travel commercial readiness
