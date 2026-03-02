@@ -9,6 +9,9 @@
 import { Request, Response, Headers } from 'node-fetch';
 import { TextEncoder, TextDecoder } from 'util';
 
+// Set required secrets for test environment (must be before any module imports)
+process.env.SESSION_SECRET = process.env.SESSION_SECRET || 'test-session-secret-for-ci-at-least-32-chars-long';
+
 // Define Web API globals for Jest
 global.Request = Request as any;
 global.Response = Response as any;
