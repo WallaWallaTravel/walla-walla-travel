@@ -124,16 +124,13 @@ const nextConfig: NextConfig = {
 }
 
 export default withSentryConfig(nextConfig, {
-  // Upload source maps to Sentry for readable production stack traces.
-  // org, project, and authToken are read from SENTRY_ORG, SENTRY_PROJECT,
-  // and SENTRY_AUTH_TOKEN env vars automatically — no need to set them here.
-
   // Don't log source map upload progress during build
   silent: true,
 
-  // Upload source maps then delete them from the build output so they're
-  // available in Sentry for stack trace deobfuscation but not served publicly
+  // Disable source map upload during build to prevent OOM on Vercel's free tier.
+  // Sentry still captures errors via the SDK — stack traces will be minified
+  // until we move to a Vercel plan with more build memory.
   sourcemaps: {
-    deleteSourcemapsAfterUpload: true,
+    disable: true,
   },
 })
