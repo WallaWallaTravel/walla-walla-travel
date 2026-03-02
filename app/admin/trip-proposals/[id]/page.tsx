@@ -3,160 +3,18 @@
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { logger } from '@/lib/logger';
 import { useToast } from '@/lib/hooks/useToast';
 import { ToastContainer } from '@/components/ui/ToastContainer';
 import { TRIP_TYPE_OPTIONS } from '@/lib/types/trip-proposal';
 import PhoneInput from '@/components/ui/PhoneInput';
-
-interface Brand {
-  id: number;
-  brand_code: string;
-  brand_name: string;
-  display_name: string;
-  primary_color: string | null;
-}
-
-interface Winery {
-  id: number;
-  name: string;
-  city: string;
-}
-
-interface Restaurant {
-  id: number;
-  name: string;
-  city: string;
-  cuisine_type: string | null;
-}
-
-interface Hotel {
-  id: number;
-  name: string;
-  city: string;
-}
-
-interface StopData {
-  id: number;
-  stop_order: number;
-  stop_type: string;
-  winery_id?: number;
-  restaurant_id?: number;
-  hotel_id?: number;
-  winery?: { id: number; name: string };
-  restaurant?: { id: number; name: string };
-  hotel?: { id: number; name: string };
-  custom_name?: string;
-  custom_address?: string;
-  scheduled_time?: string;
-  duration_minutes?: number;
-  per_person_cost: string;
-  flat_cost: string;
-  cost_note?: string;
-  reservation_status: string;
-  client_notes?: string;
-  internal_notes?: string;
-  driver_notes?: string;
-  vendor_name?: string;
-  vendor_email?: string;
-  vendor_phone?: string;
-  quote_status?: string;
-  quoted_amount?: number;
-  quote_notes?: string;
-}
-
-interface DayData {
-  id: number;
-  day_number: number;
-  date: string;
-  title: string;
-  notes?: string;
-  stops: StopData[];
-}
-
-interface GuestData {
-  id: number;
-  name: string;
-  email?: string;
-  phone?: string;
-  dietary_restrictions?: string;
-  room_assignment?: string;
-  is_primary: boolean;
-  guest_access_token?: string;
-  rsvp_status?: string;
-  is_registered?: boolean;
-}
-
-interface InclusionData {
-  id: number;
-  inclusion_type: string;
-  description: string;
-  pricing_type: 'flat' | 'per_person' | 'per_day';
-  quantity: number;
-  unit_price: string;
-  total_price: string;
-  is_taxable: boolean;
-  tax_included_in_price: boolean;
-}
-
-interface TripProposal {
-  id: number;
-  proposal_number: string;
-  status: string;
-  access_token: string;
-  planning_phase: string;
-  brand_id: number | null;
-  customer_name: string;
-  customer_email: string | null;
-  customer_phone: string | null;
-  trip_type: string;
-  party_size: number;
-  start_date: string;
-  end_date: string | null;
-  introduction: string | null;
-  internal_notes: string | null;
-  valid_until: string | null;
-  deposit_percentage: number;
-  gratuity_percentage: number;
-  tax_rate: string;
-  discount_amount: string;
-  discount_reason: string | null;
-  subtotal: string;
-  taxes: string;
-  total: string;
-  deposit_amount: string;
-  skip_deposit_on_accept?: boolean;
-  planning_fee_mode?: 'flat' | 'percentage';
-  planning_fee_percentage?: number;
-  individual_billing_enabled?: boolean;
-  payment_deadline?: string | null;
-  reminders_paused?: boolean;
-  max_guests?: number | null;
-  min_guests?: number | null;
-  min_guests_deadline?: string | null;
-  dynamic_pricing_enabled?: boolean;
-  guest_approval_required?: boolean;
-  show_guest_count_to_guests?: boolean;
-  created_at: string;
-  updated_at: string;
-  days?: DayData[];
-  guests?: GuestData[];
-  inclusions?: InclusionData[];
-}
-
-interface ReminderRecord {
-  id: number;
-  guest_name?: string;
-  scheduled_date: string;
-  urgency: string;
-  status: string;
-  paused: boolean;
-  skip_reason: string | null;
-  sent_at: string | null;
-  custom_message: string | null;
-}
-
-// Trip types imported from @/lib/types/trip-proposal
+import { useProposalData } from '@/hooks/use-proposal-data';
+import { useProposalActions } from '@/hooks/use-proposal-actions';
+import { useGuestManagement } from '@/hooks/use-guest-management';
+import { useProposalItinerary } from '@/hooks/use-proposal-itinerary';
+import { useBilling } from '@/hooks/use-billing';
+import { useNotes } from '@/hooks/use-notes';
+import { formatCurrency, formatDate, getStatusColor } from '@/lib/utils/formatters';
+import type { ProposalDetail, GuestData } from '@/lib/types/proposal-detail';
 
 const STOP_TYPES = [
   { value: 'pickup', label: 'Pickup', icon: '🚗' },
@@ -181,40 +39,116 @@ const STATUS_OPTIONS = [
 export default function EditTripProposalPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
-  const [proposal, setProposal] = useState<TripProposal | null>(null);
-  const [_brands, setBrands] = useState<Brand[]>([]);
-  const [wineries, setWineries] = useState<Winery[]>([]);
-  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
-  const [hotels, setHotels] = useState<Hotel[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const { toasts, toast, dismissToast } = useToast();
+
+  // --- UI-only state (modals, inline editing) ---
   const [activeTab, setActiveTab] = useState<'overview' | 'days' | 'guests' | 'pricing' | 'billing' | 'notes'>('overview');
-  const [notes, setNotes] = useState<Array<{ id: number; author_type: string; author_name: string; content: string; context_type: string | null; context_id: number | null; is_read: boolean; created_at: string }>>([]);
-  const [newNote, setNewNote] = useState('');
-  const [notesLoading, setNotesLoading] = useState(false);
-  const [lunchOrders, setLunchOrders] = useState<Array<{ id: number; ordering_mode: string; day?: { day_number: number; title: string | null }; supplier?: { name: string } }>>([]);
-  const [reminderHistory, setReminderHistory] = useState<ReminderRecord[]>([]);
   const [showSendModal, setShowSendModal] = useState(false);
   const [sendCustomMessage, setSendCustomMessage] = useState('');
-  const [sending, setSending] = useState(false);
   const [showAddGuestModal, setShowAddGuestModal] = useState(false);
   const [newGuestData, setNewGuestData] = useState({ name: '', email: '', phone: '', is_primary: false });
   const [editingGuestField, setEditingGuestField] = useState<{ guestId: number; field: string } | null>(null);
   const [editingGuestValue, setEditingGuestValue] = useState('');
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const { toasts, toast, dismissToast } = useToast();
+  // Custom reminder form state (replaces document.getElementById)
+  const [customReminderDate, setCustomReminderDate] = useState('');
+  const [customReminderUrgency, setCustomReminderUrgency] = useState('friendly');
+  const [customReminderMessage, setCustomReminderMessage] = useState('');
+  // Lunch orders local state for optimistic updates
+  const [localLunchOrders, setLocalLunchOrders] = useState<Array<{ id: number; ordering_mode: string; day?: { day_number: number; title: string | null }; supplier?: { name: string } }>>([]);
 
+  // --- Data layer ---
+  const {
+    proposal,
+    setProposal,
+    wineries,
+    restaurants,
+    hotels,
+    lunchOrders,
+    reminderHistory,
+    loading,
+    refetchProposal,
+    loadReminderHistory,
+    setReminderHistory,
+  } = useProposalData(id, activeTab);
+
+  // Sync lunch orders to local state for optimistic updates
   useEffect(() => {
-    loadProposal();
-    loadBrands();
-    loadWineries();
-    loadRestaurants();
-    loadHotels();
-    loadLunchOrders();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+    if (lunchOrders.length > 0 && localLunchOrders.length === 0) {
+      setLocalLunchOrders(lunchOrders);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lunchOrders]);
 
+  // --- Proposal-level actions ---
+  const {
+    actionLoading,
+    updateProposal,
+    updateProposalDebounced,
+    updateStatus,
+    recalculatePricing,
+    convertToBooking,
+    generateItinerary,
+    sendProposal: sendProposalAction,
+    archiveProposal: archiveAction,
+    unarchiveProposal: unarchiveAction,
+    deleteProposal: deleteAction,
+    updatePlanningPhase,
+    updateLunchOrderingMode,
+  } = useProposalActions(id, proposal, setProposal, refetchProposal, toast);
+
+  // --- Guest management ---
+  const {
+    guestLoading,
+    addGuest: addGuestAction,
+    updateGuestField: updateGuestFieldAction,
+    updateGuestSettings,
+    approveGuest,
+    rejectGuest,
+    deleteGuest: deleteGuestAction,
+  } = useGuestManagement(id, proposal, setProposal, refetchProposal, toast);
+
+  // --- Day/stop operations ---
+  const {
+    itineraryLoading,
+    addDay,
+    addStop,
+    updateStop,
+    updateStopDebounced,
+    deleteStop: deleteStopAction,
+    updateVendorField,
+    logVendorInteraction,
+  } = useProposalItinerary(id, proposal, setProposal, refetchProposal, toast);
+
+  // --- Billing ---
+  const {
+    billingLoading,
+    updateInclusionTaxable,
+    updateInclusionTaxIncluded,
+    recalculateBilling,
+    verifyBilling,
+    updateGuestSponsored,
+    updateGuestOverride,
+    recordPayment,
+    createPaymentGroup,
+    pauseResumeReminders,
+    generateReminderSchedule,
+    cancelReminder,
+    addCustomReminder,
+  } = useBilling(id, refetchProposal, loadReminderHistory, setReminderHistory, toast);
+
+  // --- Notes ---
+  const {
+    notes,
+    notesLoading,
+    newNote,
+    setNewNote,
+    loadNotes,
+    sendNote,
+  } = useNotes(id, toast);
+
+  // Load notes when tab switches to 'notes'
   useEffect(() => {
     if (activeTab === 'notes' && proposal) {
       loadNotes();
@@ -222,631 +156,79 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, proposal?.id]);
 
-  const loadProposal = async () => {
-    try {
-      const response = await fetch(`/api/admin/trip-proposals/${id}`);
-      const result = await response.json();
-      if (result.success) {
-        setProposal(result.data);
-      } else {
-        toast(result.error || 'Failed to load trip proposal', 'error');
-        router.push('/admin/trip-proposals');
-      }
-    } catch (error) {
-      logger.error('Failed to load trip proposal', { error });
-      router.push('/admin/trip-proposals');
-    } finally {
-      setLoading(false);
-    }
+  // --- Convenience: any operation loading? ---
+  const saving = Object.values(actionLoading).some(Boolean) ||
+    Object.values(guestLoading).some(Boolean) ||
+    Object.values(itineraryLoading).some(Boolean) ||
+    Object.values(billingLoading).some(Boolean);
+
+  // --- Wrapped handlers that need UI state management ---
+  const handleSendProposal = async () => {
+    await sendProposalAction(sendCustomMessage);
+    setShowSendModal(false);
+    setSendCustomMessage('');
   };
 
-  const loadBrands = async () => {
-    try {
-      const response = await fetch('/api/brands');
-      const result = await response.json();
-      if (result.success) setBrands(result.data || []);
-    } catch (error) {
-      logger.error('Failed to load brands', { error });
-    }
+  const handleArchive = async () => {
+    await archiveAction();
+    setShowMoreMenu(false);
   };
 
-  const loadWineries = async () => {
-    try {
-      const response = await fetch('/api/wineries');
-      const result = await response.json();
-      if (result.success) setWineries(result.data || []);
-    } catch (error) {
-      logger.error('Failed to load wineries', { error });
-    }
+  const handleDelete = async () => {
+    await deleteAction();
+    setShowDeleteConfirm(false);
+    setShowMoreMenu(false);
   };
 
-  const loadRestaurants = async () => {
-    try {
-      const response = await fetch('/api/restaurants');
-      const result = await response.json();
-      if (result.success) setRestaurants(result.data || []);
-    } catch (error) {
-      logger.error('Failed to load restaurants', { error });
-    }
-  };
-
-  const loadHotels = async () => {
-    try {
-      const response = await fetch('/api/hotels');
-      const result = await response.json();
-      if (result.success) setHotels(result.data || []);
-    } catch (error) {
-      logger.error('Failed to load hotels', { error });
-    }
-  };
-
-  const updateProposal = async (updates: Partial<TripProposal>) => {
-    if (!proposal) return;
-
-    setSaving(true);
-    try {
-      const response = await fetch(`/api/admin/trip-proposals/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates),
-      });
-      const result = await response.json();
-      if (result.success) {
-        setProposal({ ...proposal, ...result.data });
-      } else {
-        toast(result.error || 'Failed to update proposal', 'error');
-      }
-    } catch (error) {
-      logger.error('Failed to update proposal', { error });
-      toast('Failed to update proposal', 'error');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const updateStatus = async (newStatus: string) => {
-    setSaving(true);
-    try {
-      const response = await fetch(`/api/admin/trip-proposals/${id}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
-      });
-      const result = await response.json();
-      if (result.success) {
-        setProposal({ ...proposal!, status: newStatus });
-        toast(`Status updated to ${newStatus}`, 'success');
-      } else {
-        toast(result.error || 'Failed to update status', 'error');
-      }
-    } catch (error) {
-      logger.error('Failed to update status', { error });
-      toast('Failed to update status', 'error');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const recalculatePricing = async () => {
-    setSaving(true);
-    try {
-      const response = await fetch(`/api/admin/trip-proposals/${id}/pricing`, {
-        method: 'POST',
-      });
-      const result = await response.json();
-      if (result.success) {
-        await loadProposal();
-        toast('Pricing recalculated!', 'success');
-      } else {
-        toast(result.error || 'Failed to recalculate pricing', 'error');
-      }
-    } catch (error) {
-      logger.error('Failed to recalculate pricing', { error });
-      toast('Failed to recalculate pricing', 'error');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const convertToBooking = async () => {
-    if (!confirm('Convert this trip proposal to a booking?')) return;
-
-    setSaving(true);
-    try {
-      const response = await fetch(`/api/admin/trip-proposals/${id}/convert`, {
-        method: 'POST',
-      });
-      const result = await response.json();
-      if (result.success) {
-        toast(`Booking ${result.data.booking_number} created!`, 'success');
-        router.push(`/admin/bookings/${result.data.booking_id}`);
-      } else {
-        toast(result.error || 'Failed to convert to booking', 'error');
-      }
-    } catch (error) {
-      logger.error('Failed to convert to booking', { error });
-      toast('Failed to convert to booking', 'error');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const generateItinerary = async () => {
-    setSaving(true);
-    try {
-      const response = await fetch(`/api/admin/trip-proposals/${id}/itinerary`, {
-        method: 'POST',
-      });
-      const result = await response.json();
-      if (result.success) {
-        toast('Driver itinerary generated!', 'success');
-      } else {
-        toast(result.error || 'Failed to generate itinerary', 'error');
-      }
-    } catch (error) {
-      logger.error('Failed to generate itinerary', { error });
-      toast('Failed to generate itinerary', 'error');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const sendProposal = async () => {
-    if (!proposal) return;
-    setSending(true);
-    try {
-      const response = await fetch(`/api/admin/trip-proposals/${id}/send`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          custom_message: sendCustomMessage.trim() || undefined,
-        }),
-      });
-      const result = await response.json();
-      if (result.success) {
-        setProposal({ ...proposal, status: 'sent' });
-        toast(`Proposal sent to ${result.email_to}`, 'success');
-        setShowSendModal(false);
-        setSendCustomMessage('');
-      } else {
-        toast(result.error || 'Failed to send proposal', 'error');
-      }
-    } catch (error) {
-      logger.error('Failed to send proposal', { error });
-      toast('Failed to send proposal', 'error');
-    } finally {
-      setSending(false);
-    }
-  };
-
-  const archiveProposal = async () => {
-    if (!proposal) return;
-    setSaving(true);
-    try {
-      const response = await fetch(`/api/admin/trip-proposals/${id}/archive`, {
-        method: 'POST',
-      });
-      const result = await response.json();
-      if (result.success) {
-        toast('Proposal archived', 'success');
-        router.push('/admin/trip-proposals');
-      } else {
-        toast(result.error || 'Failed to archive proposal', 'error');
-      }
-    } catch (error) {
-      logger.error('Failed to archive proposal', { error });
-      toast('Failed to archive proposal', 'error');
-    } finally {
-      setSaving(false);
-      setShowMoreMenu(false);
-    }
-  };
-
-  const unarchiveProposal = async () => {
-    if (!proposal) return;
-    setSaving(true);
-    try {
-      const response = await fetch(`/api/admin/trip-proposals/${id}/archive`, {
-        method: 'DELETE',
-      });
-      const result = await response.json();
-      if (result.success) {
-        setProposal({ ...proposal, archived_at: undefined } as TripProposal);
-        toast('Proposal unarchived', 'success');
-      } else {
-        toast(result.error || 'Failed to unarchive proposal', 'error');
-      }
-    } catch (error) {
-      logger.error('Failed to unarchive proposal', { error });
-      toast('Failed to unarchive proposal', 'error');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const deleteProposal = async () => {
-    if (!proposal) return;
-    setSaving(true);
-    try {
-      const response = await fetch(`/api/admin/trip-proposals/${id}`, {
-        method: 'DELETE',
-      });
-      const result = await response.json();
-      if (result.success) {
-        toast('Proposal deleted permanently', 'success');
-        router.push('/admin/trip-proposals');
-      } else {
-        toast(result.error || 'Failed to delete proposal', 'error');
-      }
-    } catch (error) {
-      logger.error('Failed to delete proposal', { error });
-      toast('Failed to delete proposal', 'error');
-    } finally {
-      setSaving(false);
-      setShowDeleteConfirm(false);
-      setShowMoreMenu(false);
-    }
-  };
-
-  const addDay = async () => {
-    if (!proposal) return;
-
-    const lastDay = proposal.days?.[proposal.days.length - 1];
-    const nextDate = lastDay
-      ? new Date(new Date(lastDay.date).getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-      : proposal.start_date;
-
-    setSaving(true);
-    try {
-      const response = await fetch(`/api/admin/trip-proposals/${id}/days`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          date: nextDate,
-          title: `Day ${(proposal.days?.length || 0) + 1}`,
-        }),
-      });
-      const result = await response.json();
-      if (result.success) {
-        loadProposal(); // Reload to get updated data
-      } else {
-        toast(result.error || 'Failed to add day', 'error');
-      }
-    } catch (error) {
-      logger.error('Failed to add day', { error });
-      toast('Failed to add day', 'error');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const addStop = async (dayId: number, stopType: string) => {
-    setSaving(true);
-    try {
-      const response = await fetch(`/api/admin/trip-proposals/${id}/days/${dayId}/stops`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          stop_type: stopType,
-          scheduled_time: '10:00',
-          duration_minutes: 60,
-          per_person_cost: 0,
-          flat_cost: 0,
-          reservation_status: 'pending',
-        }),
-      });
-      const result = await response.json();
-      if (result.success) {
-        loadProposal();
-      } else {
-        toast(result.error || 'Failed to add stop', 'error');
-      }
-    } catch (error) {
-      logger.error('Failed to add stop', { error });
-      toast('Failed to add stop', 'error');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const updateStop = async (dayId: number, stopId: number, updates: Record<string, unknown>) => {
-    setSaving(true);
-    try {
-      const response = await fetch(`/api/admin/trip-proposals/${id}/days/${dayId}/stops/${stopId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates),
-      });
-      const result = await response.json();
-      if (result.success) {
-        loadProposal();
-      } else {
-        toast(result.error || 'Failed to update stop', 'error');
-      }
-    } catch (error) {
-      logger.error('Failed to update stop', { error });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const deleteStop = async (dayId: number, stopId: number) => {
+  const handleDeleteStop = async (dayId: number, stopId: number) => {
     if (!confirm('Delete this stop?')) return;
+    await deleteStopAction(dayId, stopId);
+  };
 
-    setSaving(true);
-    try {
-      const response = await fetch(`/api/admin/trip-proposals/${id}/days/${dayId}/stops/${stopId}`, {
-        method: 'DELETE',
-      });
-      const result = await response.json();
-      if (result.success) {
-        loadProposal();
-      } else {
-        toast(result.error || 'Failed to delete stop', 'error');
-      }
-    } catch (error) {
-      logger.error('Failed to delete stop', { error });
-    } finally {
-      setSaving(false);
+  const handleDeleteGuest = async (guestId: number) => {
+    if (!confirm('Remove this guest?')) return;
+    await deleteGuestAction(guestId);
+  };
+
+  const handleRejectGuest = async (guestId: number) => {
+    if (!confirm('Reject this guest registration?')) return;
+    await rejectGuest(guestId);
+  };
+
+  const handleAddGuest = async () => {
+    const success = await addGuestAction(newGuestData);
+    if (success) {
+      setShowAddGuestModal(false);
+      setNewGuestData({ name: '', email: '', phone: '', is_primary: false });
     }
   };
 
-  const addGuest = async () => {
-    if (!newGuestData.name.trim()) {
-      toast('Guest name is required', 'error');
-      return;
-    }
-    setSaving(true);
-    try {
-      const response = await fetch(`/api/admin/trip-proposals/${id}/guests`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: newGuestData.name.trim(),
-          email: newGuestData.email.trim() || undefined,
-          phone: newGuestData.phone.trim() || undefined,
-          is_primary: newGuestData.is_primary || !proposal?.guests?.length,
-        }),
-      });
-      const result = await response.json();
-      if (result.success) {
-        loadProposal();
-        setShowAddGuestModal(false);
-        setNewGuestData({ name: '', email: '', phone: '', is_primary: false });
-        toast('Guest added', 'success');
-      } else {
-        toast(result.error || 'Failed to add guest', 'error');
-      }
-    } catch (error) {
-      logger.error('Failed to add guest', { error });
-      toast('Failed to add guest', 'error');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const updateGuestField = async (guestId: number, field: string, value: string) => {
-    try {
-      const response = await fetch(`/api/admin/trip-proposals/${id}/guests/${guestId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ [field]: value.trim() || null }),
-      });
-      const result = await response.json();
-      if (result.success) {
-        loadProposal();
-      } else {
-        toast(result.error || 'Failed to update guest', 'error');
-      }
-    } catch (error) {
-      logger.error('Failed to update guest', { error });
-    }
+  const handleUpdateGuestField = async (guestId: number, field: string, value: string) => {
+    await updateGuestFieldAction(guestId, field, value);
     setEditingGuestField(null);
   };
 
-  const updateGuestSettings = async (updates: Record<string, unknown>) => {
-    setSaving(true);
-    try {
-      const response = await fetch(`/api/admin/trip-proposals/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates),
-      });
-      const result = await response.json();
-      if (result.success) {
-        setProposal({ ...proposal!, ...result.data });
-      } else {
-        toast(result.error || 'Failed to update settings', 'error');
-      }
-    } catch (error) {
-      logger.error('Failed to update guest settings', { error });
-      toast('Failed to update settings', 'error');
-    } finally {
-      setSaving(false);
+  const handleConvertToBooking = async () => {
+    if (!confirm('Convert this trip proposal to a booking?')) return;
+    await convertToBooking();
+  };
+
+  const handleUpdateLunchOrderingMode = async (orderId: number, mode: string) => {
+    const success = await updateLunchOrderingMode(orderId, mode);
+    if (success) {
+      setLocalLunchOrders((prev) =>
+        prev.map((o) => (o.id === orderId ? { ...o, ordering_mode: mode } : o))
+      );
     }
   };
 
-  const approveGuest = async (guestId: number) => {
-    try {
-      const response = await fetch(`/api/admin/trip-proposals/${id}/guests/${guestId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rsvp_status: 'confirmed' }),
-      });
-      const result = await response.json();
-      if (result.success) {
-        loadProposal();
-        toast('Guest approved', 'success');
-      }
-    } catch { toast('Failed to approve', 'error'); }
+  const handleAddCustomReminder = async () => {
+    await addCustomReminder(customReminderDate, customReminderUrgency, customReminderMessage);
+    setCustomReminderDate('');
+    setCustomReminderMessage('');
   };
 
-  const rejectGuest = async (guestId: number) => {
-    if (!confirm('Reject this guest registration?')) return;
-    try {
-      const response = await fetch(`/api/admin/trip-proposals/${id}/guests/${guestId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rsvp_status: 'declined' }),
-      });
-      const result = await response.json();
-      if (result.success) {
-        loadProposal();
-        toast('Guest rejected', 'success');
-      }
-    } catch { toast('Failed to reject', 'error'); }
-  };
-
-  const deleteGuest = async (guestId: number) => {
-    if (!confirm('Remove this guest?')) return;
-
-    setSaving(true);
-    try {
-      const response = await fetch(`/api/admin/trip-proposals/${id}/guests/${guestId}`, {
-        method: 'DELETE',
-      });
-      const result = await response.json();
-      if (result.success) {
-        loadProposal();
-      } else {
-        toast(result.error || 'Failed to remove guest', 'error');
-      }
-    } catch (error) {
-      logger.error('Failed to remove guest', { error });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const formatCurrency = (amount: string | number) => {
-    const num = typeof amount === 'string' ? parseFloat(amount) : amount;
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
-
-  const loadReminderHistory = async () => {
-    try {
-      const response = await fetch(`/api/admin/trip-proposals/${id}/reminders`);
-      const result = await response.json();
-      if (result.success) {
-        setReminderHistory(result.data || []);
-      }
-    } catch {
-      // non-critical
-    }
-  };
-
-  const loadNotes = async () => {
-    if (!proposal) return;
-    setNotesLoading(true);
-    try {
-      const response = await fetch(`/api/admin/trip-proposals/${id}/notes`);
-      const result = await response.json();
-      if (result.success) {
-        setNotes(result.data?.notes || []);
-      }
-    } catch (error) {
-      logger.error('Failed to load notes', { error });
-    } finally {
-      setNotesLoading(false);
-    }
-  };
-
-  const sendNote = async () => {
-    if (!newNote.trim() || !proposal) return;
-    try {
-      const response = await fetch(`/api/admin/trip-proposals/${id}/notes`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          author_name: 'Staff',
-          content: newNote.trim(),
-        }),
-      });
-      const result = await response.json();
-      if (result.success) {
-        setNewNote('');
-        loadNotes();
-      } else {
-        toast(result.error || 'Failed to send note', 'error');
-      }
-    } catch (error) {
-      logger.error('Failed to send note', { error });
-      toast('Failed to send note', 'error');
-    }
-  };
-
-  const updatePlanningPhase = async (phase: string) => {
-    setSaving(true);
-    try {
-      const response = await fetch(`/api/admin/trip-proposals/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planning_phase: phase }),
-      });
-      const result = await response.json();
-      if (result.success) {
-        setProposal({ ...proposal!, ...result.data });
-      } else {
-        toast(result.error?.message || result.error || 'Failed to update planning phase', 'error');
-      }
-    } catch (error) {
-      logger.error('Failed to update planning phase', { error });
-      toast('Failed to update planning phase', 'error');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const loadLunchOrders = async () => {
-    try {
-      const response = await fetch(`/api/admin/trip-proposals/${id}/lunch`);
-      const result = await response.json();
-      if (result.success && result.data?.orders) {
-        setLunchOrders(result.data.orders.map((o: Record<string, unknown>) => ({
-          id: o.id,
-          ordering_mode: (o as Record<string, string>).ordering_mode || 'coordinator',
-          day: o.day as { day_number: number; title: string | null } | undefined,
-          supplier: o.supplier as { name: string } | undefined,
-        })));
-      }
-    } catch (error) {
-      logger.error('Failed to load lunch orders', { error });
-    }
-  };
-
-  const updateLunchOrderingMode = async (orderId: number, mode: string) => {
-    setSaving(true);
-    try {
-      const response = await fetch(`/api/admin/lunch-orders/${orderId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ordering_mode: mode }),
-      });
-      const result = await response.json();
-      if (result.success) {
-        setLunchOrders((prev) =>
-          prev.map((o) => (o.id === orderId ? { ...o, ordering_mode: mode } : o))
-        );
-      } else {
-        toast(result.error || 'Failed to update ordering mode', 'error');
-      }
-    } catch (error) {
-      logger.error('Failed to update lunch ordering mode', { error });
-      toast('Failed to update ordering mode', 'error');
-    } finally {
-      setSaving(false);
-    }
-  };
-
+  // --- Loading / not found states ---
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -869,18 +251,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
     );
   }
 
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      draft: 'bg-gray-100 text-gray-800',
-      sent: 'bg-blue-100 text-blue-800',
-      viewed: 'bg-yellow-100 text-yellow-800',
-      accepted: 'bg-green-100 text-green-800',
-      declined: 'bg-red-100 text-red-800',
-      expired: 'bg-orange-100 text-orange-800',
-      booked: 'bg-purple-100 text-purple-800',
-    };
-    return colors[status] || 'bg-gray-100 text-gray-800';
-  };
+  const sending = actionLoading['sendProposal'] || false;
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -932,7 +303,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                 Cancel
               </button>
               <button
-                onClick={sendProposal}
+                onClick={handleSendProposal}
                 disabled={sending || !proposal.customer_email || Number(proposal.total) <= 0}
                 className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-sm disabled:opacity-50 transition-colors"
               >
@@ -961,7 +332,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                 Cancel
               </button>
               <button
-                onClick={deleteProposal}
+                onClick={handleDelete}
                 disabled={saving}
                 className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold text-sm disabled:opacity-50 transition-colors"
               >
@@ -986,7 +357,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                   type="text"
                   value={newGuestData.name}
                   onChange={(e) => setNewGuestData({ ...newGuestData, name: e.target.value })}
-                  onKeyDown={(e) => e.key === 'Enter' && addGuest()}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddGuest()}
                   placeholder="Full name"
                   className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
                 />
@@ -1029,7 +400,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                 Cancel
               </button>
               <button
-                onClick={addGuest}
+                onClick={handleAddGuest}
                 disabled={saving || !newGuestData.name.trim()}
                 className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-sm disabled:opacity-50 transition-colors"
               >
@@ -1050,13 +421,13 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
             ← Back to Trip Proposals
           </Link>
 
-          {(proposal as TripProposal & { archived_at?: string }).archived_at && (
+          {(proposal as ProposalDetail & { archived_at?: string }).archived_at && (
             <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-4 flex items-center justify-between">
               <p className="text-sm text-amber-800 font-medium">
                 This proposal is archived. It won&apos;t appear in the proposals list.
               </p>
               <button
-                onClick={unarchiveProposal}
+                onClick={unarchiveAction}
                 disabled={saving}
                 className="text-sm font-bold text-amber-700 hover:text-amber-900 disabled:opacity-50"
               >
@@ -1110,7 +481,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                     🚗 Generate Itinerary
                   </button>
                   <button
-                    onClick={convertToBooking}
+                    onClick={handleConvertToBooking}
                     disabled={saving}
                     className="px-4 py-2 bg-purple-100 hover:bg-purple-200 text-purple-900 rounded-lg font-bold text-sm disabled:opacity-50"
                   >
@@ -1135,9 +506,9 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                   <>
                     <div className="fixed inset-0 z-10" onClick={() => setShowMoreMenu(false)} />
                     <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
-                      {(proposal as TripProposal & { archived_at?: string }).archived_at ? (
+                      {(proposal as ProposalDetail & { archived_at?: string }).archived_at ? (
                         <button
-                          onClick={unarchiveProposal}
+                          onClick={unarchiveAction}
                           disabled={saving}
                           className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
                         >
@@ -1145,7 +516,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                         </button>
                       ) : (
                         <button
-                          onClick={archiveProposal}
+                          onClick={handleArchive}
                           disabled={saving}
                           className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
                         >
@@ -1234,7 +605,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                         <input
                           type="text"
                           value={proposal.customer_name}
-                          onChange={(e) => updateProposal({ customer_name: e.target.value })}
+                          onChange={(e) => updateProposalDebounced({ customer_name: e.target.value })}
                           className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand"
                         />
                       </div>
@@ -1245,7 +616,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                         <input
                           type="email"
                           value={proposal.customer_email || ''}
-                          onChange={(e) => updateProposal({ customer_email: e.target.value })}
+                          onChange={(e) => updateProposalDebounced({ customer_email: e.target.value })}
                           className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand"
                         />
                       </div>
@@ -1255,7 +626,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                         </label>
                         <PhoneInput
                           value={proposal.customer_phone || ''}
-                          onChange={(value) => updateProposal({ customer_phone: value })}
+                          onChange={(value) => updateProposalDebounced({ customer_phone: value })}
                           className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand"
                         />
                       </div>
@@ -1340,7 +711,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                       </label>
                       <textarea
                         value={proposal.introduction || ''}
-                        onChange={(e) => updateProposal({ introduction: e.target.value })}
+                        onChange={(e) => updateProposalDebounced({ introduction: e.target.value })}
                         rows={3}
                         className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand"
                       />
@@ -1351,7 +722,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                       </label>
                       <textarea
                         value={proposal.internal_notes || ''}
-                        onChange={(e) => updateProposal({ internal_notes: e.target.value })}
+                        onChange={(e) => updateProposalDebounced({ internal_notes: e.target.value })}
                         rows={2}
                         className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand"
                       />
@@ -1392,7 +763,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                                     </div>
                                   </div>
                                   <button
-                                    onClick={() => deleteStop(day.id, stop.id)}
+                                    onClick={() => handleDeleteStop(day.id, stop.id)}
                                     className="text-red-600 hover:text-red-800 text-sm"
                                   >
                                     ✕
@@ -1490,7 +861,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                                     type="text"
                                     value={stop.cost_note || ''}
                                     onChange={(e) =>
-                                      updateStop(day.id, stop.id, { cost_note: e.target.value })
+                                      updateStopDebounced(day.id, stop.id, { cost_note: e.target.value })
                                     }
                                     placeholder="e.g., Tasting fee ~$25/pp, paid at winery"
                                     className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm text-gray-600 italic"
@@ -1517,17 +888,11 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                                       <input
                                         type="text"
                                         value={stop.vendor_name || ''}
-                                        onBlur={(e) => {
-                                          fetch(`/api/admin/trip-proposals/${id}/stops/${stop.id}/vendor`, {
-                                            method: 'PATCH',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ vendor_name: e.target.value }),
-                                          });
-                                        }}
+                                        onBlur={(e) => updateVendorField(stop.id, 'vendor_name', e.target.value)}
                                         onChange={(e) => {
                                           const newStops = day.stops.map(s => s.id === stop.id ? { ...s, vendor_name: e.target.value } : s);
                                           const newDays = (proposal.days || []).map(d => d.id === day.id ? { ...d, stops: newStops } : d);
-                                          setProposal({ ...proposal, days: newDays });
+                                          setProposal((prev: ProposalDetail | null) => prev ? { ...prev, days: newDays } : prev);
                                         }}
                                         placeholder="Contact name"
                                         className="px-2 py-1 border border-gray-300 rounded text-xs"
@@ -1536,17 +901,11 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                                         <input
                                           type="email"
                                           value={stop.vendor_email || ''}
-                                          onBlur={(e) => {
-                                            fetch(`/api/admin/trip-proposals/${id}/stops/${stop.id}/vendor`, {
-                                              method: 'PATCH',
-                                              headers: { 'Content-Type': 'application/json' },
-                                              body: JSON.stringify({ vendor_email: e.target.value }),
-                                            });
-                                          }}
+                                          onBlur={(e) => updateVendorField(stop.id, 'vendor_email', e.target.value)}
                                           onChange={(e) => {
                                             const newStops = day.stops.map(s => s.id === stop.id ? { ...s, vendor_email: e.target.value } : s);
                                             const newDays = (proposal.days || []).map(d => d.id === day.id ? { ...d, stops: newStops } : d);
-                                            setProposal({ ...proposal, days: newDays });
+                                            setProposal((prev: ProposalDetail | null) => prev ? { ...prev, days: newDays } : prev);
                                           }}
                                           placeholder="Email"
                                           className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs"
@@ -1566,7 +925,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                                         onChange={(value) => {
                                           const newStops = day.stops.map(s => s.id === stop.id ? { ...s, vendor_phone: value } : s);
                                           const newDays = (proposal.days || []).map(d => d.id === day.id ? { ...d, stops: newStops } : d);
-                                          setProposal({ ...proposal, days: newDays });
+                                          setProposal((prev: ProposalDetail | null) => prev ? { ...prev, days: newDays } : prev);
                                         }}
                                         placeholder="Phone"
                                         className="px-2 py-1 border border-gray-300 rounded text-xs"
@@ -1576,11 +935,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                                       <select
                                         value={stop.quote_status || 'none'}
                                         onChange={(e) => {
-                                          fetch(`/api/admin/trip-proposals/${id}/stops/${stop.id}/vendor`, {
-                                            method: 'PATCH',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ quote_status: e.target.value }),
-                                          }).then(() => loadProposal());
+                                          updateVendorField(stop.id, 'quote_status', e.target.value).then(() => refetchProposal());
                                         }}
                                         className="px-2 py-1 border border-gray-300 rounded text-xs"
                                       >
@@ -1597,16 +952,12 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                                         step="0.01"
                                         value={stop.quoted_amount ?? ''}
                                         onBlur={(e) => {
-                                          fetch(`/api/admin/trip-proposals/${id}/stops/${stop.id}/vendor`, {
-                                            method: 'PATCH',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ quoted_amount: e.target.value ? parseFloat(e.target.value) : null }),
-                                          });
+                                          updateVendorField(stop.id, 'quoted_amount', e.target.value ? parseFloat(e.target.value) : null);
                                         }}
                                         onChange={(e) => {
                                           const newStops = day.stops.map(s => s.id === stop.id ? { ...s, quoted_amount: e.target.value ? parseFloat(e.target.value) : undefined } : s);
                                           const newDays = (proposal.days || []).map(d => d.id === day.id ? { ...d, stops: newStops } : d);
-                                          setProposal({ ...proposal, days: newDays });
+                                          setProposal((prev: ProposalDetail | null) => prev ? { ...prev, days: newDays } : prev);
                                         }}
                                         placeholder="Quoted $"
                                         className="px-2 py-1 border border-gray-300 rounded text-xs"
@@ -1615,11 +966,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                                         onClick={() => {
                                           const content = prompt('Log vendor interaction:');
                                           if (!content) return;
-                                          fetch(`/api/admin/trip-proposals/${id}/stops/${stop.id}/vendor-log`, {
-                                            method: 'POST',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ interaction_type: 'note', content }),
-                                          }).then(() => toast('Interaction logged', 'success'));
+                                          logVendorInteraction(stop.id, content);
                                         }}
                                         className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs font-medium"
                                       >
@@ -1863,9 +1210,9 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                                   type="text"
                                   value={editingGuestValue}
                                   onChange={(e) => setEditingGuestValue(e.target.value)}
-                                  onBlur={() => updateGuestField(guest.id, 'name', editingGuestValue)}
+                                  onBlur={() => handleUpdateGuestField(guest.id, 'name', editingGuestValue)}
                                   onKeyDown={(e) => {
-                                    if (e.key === 'Enter') updateGuestField(guest.id, 'name', editingGuestValue);
+                                    if (e.key === 'Enter') handleUpdateGuestField(guest.id, 'name', editingGuestValue);
                                     if (e.key === 'Escape') setEditingGuestField(null);
                                   }}
                                   className="font-bold text-gray-900 border border-indigo-300 rounded px-2 py-0.5 text-sm w-full focus:ring-2 focus:ring-indigo-500"
@@ -1895,11 +1242,11 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                             {guest.rsvp_status === 'pending' && guest.is_registered && (
                               <>
                                 <button onClick={() => approveGuest(guest.id)} className="px-2 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded text-xs font-medium">Approve</button>
-                                <button onClick={() => rejectGuest(guest.id)} className="px-2 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded text-xs font-medium">Reject</button>
+                                <button onClick={() => handleRejectGuest(guest.id)} className="px-2 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded text-xs font-medium">Reject</button>
                               </>
                             )}
                             <button
-                              onClick={() => deleteGuest(guest.id)}
+                              onClick={() => handleDeleteGuest(guest.id)}
                               className="text-red-600 hover:text-red-800 font-bold text-sm"
                             >
                               Remove
@@ -1917,9 +1264,9 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                                 type="email"
                                 value={editingGuestValue}
                                 onChange={(e) => setEditingGuestValue(e.target.value)}
-                                onBlur={() => updateGuestField(guest.id, 'email', editingGuestValue)}
+                                onBlur={() => handleUpdateGuestField(guest.id, 'email', editingGuestValue)}
                                 onKeyDown={(e) => {
-                                  if (e.key === 'Enter') updateGuestField(guest.id, 'email', editingGuestValue);
+                                  if (e.key === 'Enter') handleUpdateGuestField(guest.id, 'email', editingGuestValue);
                                   if (e.key === 'Escape') setEditingGuestField(null);
                                 }}
                                 className="border border-indigo-300 rounded px-2 py-0.5 text-sm w-full focus:ring-2 focus:ring-indigo-500"
@@ -1943,9 +1290,9 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                                 type="tel"
                                 value={editingGuestValue}
                                 onChange={(e) => setEditingGuestValue(e.target.value)}
-                                onBlur={() => updateGuestField(guest.id, 'phone', editingGuestValue)}
+                                onBlur={() => handleUpdateGuestField(guest.id, 'phone', editingGuestValue)}
                                 onKeyDown={(e) => {
-                                  if (e.key === 'Enter') updateGuestField(guest.id, 'phone', editingGuestValue);
+                                  if (e.key === 'Enter') handleUpdateGuestField(guest.id, 'phone', editingGuestValue);
                                   if (e.key === 'Escape') setEditingGuestField(null);
                                 }}
                                 className="border border-indigo-300 rounded px-2 py-0.5 text-sm w-full focus:ring-2 focus:ring-indigo-500"
@@ -2087,7 +1434,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                           type="text"
                           value={proposal.discount_reason || ''}
                           onChange={(e) =>
-                            updateProposal({ discount_reason: e.target.value })
+                            updateProposalDebounced({ discount_reason: e.target.value })
                           }
                           placeholder="e.g., Repeat customer"
                           className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand"
@@ -2163,16 +1510,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                                     <input
                                       type="checkbox"
                                       checked={inc.is_taxable !== false}
-                                      onChange={async () => {
-                                        try {
-                                          const res = await fetch(`/api/admin/trip-proposals/${id}/inclusions/${inc.id}`, {
-                                            method: 'PATCH',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ is_taxable: inc.is_taxable === false }),
-                                          });
-                                          if ((await res.json()).success) loadProposal();
-                                        } catch { /* ignore */ }
-                                      }}
+                                      onChange={() => updateInclusionTaxable(inc.id, inc.is_taxable === false)}
                                       className="h-4 w-4 rounded border-gray-300 text-indigo-600"
                                     />
                                   </td>
@@ -2181,16 +1519,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                                       type="checkbox"
                                       checked={inc.tax_included_in_price === true}
                                       disabled={inc.is_taxable === false}
-                                      onChange={async () => {
-                                        try {
-                                          const res = await fetch(`/api/admin/trip-proposals/${id}/inclusions/${inc.id}`, {
-                                            method: 'PATCH',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ tax_included_in_price: !inc.tax_included_in_price }),
-                                          });
-                                          if ((await res.json()).success) loadProposal();
-                                        } catch { /* ignore */ }
-                                      }}
+                                      onChange={() => updateInclusionTaxIncluded(inc.id, !inc.tax_included_in_price)}
                                       className="h-4 w-4 rounded border-gray-300 text-indigo-600 disabled:opacity-50"
                                     />
                                   </td>
@@ -2225,7 +1554,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                         <input
                           type="checkbox"
                           checked={proposal.individual_billing_enabled || false}
-                          onChange={() => updateProposal({ individual_billing_enabled: !proposal.individual_billing_enabled } as Partial<TripProposal>)}
+                          onChange={() => updateProposal({ individual_billing_enabled: !proposal.individual_billing_enabled } as Partial<ProposalDetail>)}
                           className="sr-only peer"
                         />
                         <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
@@ -2240,7 +1569,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                           <input
                             type="date"
                             value={proposal.payment_deadline || ''}
-                            onChange={(e) => updateProposal({ payment_deadline: e.target.value || null } as Partial<TripProposal>)}
+                            onChange={(e) => updateProposal({ payment_deadline: e.target.value || null } as Partial<ProposalDetail>)}
                             className="w-full max-w-xs px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand"
                           />
                         </div>
@@ -2251,39 +1580,14 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                             <h3 className="text-sm font-bold text-gray-900">Guest Amounts</h3>
                             <div className="flex gap-2">
                               <button
-                                onClick={async () => {
-                                  setSaving(true);
-                                  try {
-                                    const res = await fetch(`/api/admin/trip-proposals/${id}/billing/calculate`, { method: 'POST' });
-                                    const result = await res.json();
-                                    if (result.success) {
-                                      toast('Guest amounts calculated!', 'success');
-                                      loadProposal();
-                                    } else {
-                                      toast(result.error?.message || result.error || 'Failed to calculate', 'error');
-                                    }
-                                  } catch { toast('Failed to calculate', 'error'); }
-                                  finally { setSaving(false); }
-                                }}
+                                onClick={recalculateBilling}
                                 disabled={saving}
                                 className="px-3 py-2 bg-blue-100 hover:bg-blue-200 text-blue-900 rounded-lg text-sm font-medium disabled:opacity-50"
                               >
                                 🔄 Recalculate All
                               </button>
                               <button
-                                onClick={async () => {
-                                  setSaving(true);
-                                  try {
-                                    const res = await fetch(`/api/admin/trip-proposals/${id}/billing/calculate`, { method: 'POST' });
-                                    const result = await res.json();
-                                    if (result.success && result.data.valid) {
-                                      toast('Billing verified — no discrepancies!', 'success');
-                                    } else if (result.success) {
-                                      toast('Warning: billing may have discrepancies', 'error');
-                                    }
-                                  } catch { toast('Failed to verify', 'error'); }
-                                  finally { setSaving(false); }
-                                }}
+                                onClick={verifyBilling}
                                 disabled={saving}
                                 className="px-3 py-2 bg-green-100 hover:bg-green-200 text-green-900 rounded-lg text-sm font-medium disabled:opacity-50"
                               >
@@ -2324,16 +1628,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                                         <input
                                           type="checkbox"
                                           checked={guestData.is_sponsored || false}
-                                          onChange={async () => {
-                                            try {
-                                              const res = await fetch(`/api/admin/trip-proposals/${id}/guests/${guest.id}/billing`, {
-                                                method: 'PATCH',
-                                                headers: { 'Content-Type': 'application/json' },
-                                                body: JSON.stringify({ is_sponsored: !guestData.is_sponsored }),
-                                              });
-                                              if ((await res.json()).success) loadProposal();
-                                            } catch { /* ignore */ }
-                                          }}
+                                          onChange={() => updateGuestSponsored(guest.id, !guestData.is_sponsored)}
                                           className="h-4 w-4 rounded border-gray-300 text-indigo-600"
                                         />
                                       </td>
@@ -2347,16 +1642,9 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                                           step="0.01"
                                           value={guestData.amount_owed_override ?? ''}
                                           placeholder="Auto"
-                                          onChange={async (e) => {
+                                          onChange={(e) => {
                                             const val = e.target.value === '' ? null : parseFloat(e.target.value);
-                                            try {
-                                              await fetch(`/api/admin/trip-proposals/${id}/guests/${guest.id}/billing`, {
-                                                method: 'PATCH',
-                                                headers: { 'Content-Type': 'application/json' },
-                                                body: JSON.stringify({ amount_owed_override: val }),
-                                              });
-                                              loadProposal();
-                                            } catch { /* ignore */ }
+                                            updateGuestOverride(guest.id, val);
                                           }}
                                           className="w-24 px-2 py-1 border border-gray-300 rounded text-sm text-right"
                                         />
@@ -2376,22 +1664,11 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                                       </td>
                                       <td className="py-2 px-2 text-right">
                                         <button
-                                          onClick={async () => {
+                                          onClick={() => {
                                             const amountStr = prompt(`Record manual payment for ${guest.name}. Amount ($):`);
                                             if (!amountStr) return;
                                             const amount = parseFloat(amountStr);
-                                            if (isNaN(amount) || amount <= 0) { toast('Invalid amount', 'error'); return; }
-                                            try {
-                                              const res = await fetch(`/api/admin/trip-proposals/${id}/guests/${guest.id}/record-payment`, {
-                                                method: 'POST',
-                                                headers: { 'Content-Type': 'application/json' },
-                                                body: JSON.stringify({ amount }),
-                                              });
-                                              if ((await res.json()).success) {
-                                                toast('Payment recorded!', 'success');
-                                                loadProposal();
-                                              }
-                                            } catch { toast('Failed to record payment', 'error'); }
+                                            recordPayment(guest.id, amount);
                                           }}
                                           className="text-indigo-600 hover:text-indigo-800 text-xs font-medium"
                                         >
@@ -2436,27 +1713,13 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                           <h3 className="text-sm font-bold text-gray-900 mb-2">Payment Groups (Couples)</h3>
                           <p className="text-xs text-gray-600 mb-3">Group guests to share a single payment link</p>
                           <button
-                            onClick={async () => {
+                            onClick={() => {
                               const name = prompt('Group name (e.g., "The Smiths"):');
                               if (!name) return;
                               const guestIdStr = prompt('Enter guest IDs to group (comma-separated):');
                               if (!guestIdStr) return;
                               const guestIds = guestIdStr.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
-                              if (guestIds.length < 1) { toast('Need at least 1 guest ID', 'error'); return; }
-                              try {
-                                const res = await fetch(`/api/admin/trip-proposals/${id}/payment-groups`, {
-                                  method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({ guest_ids: guestIds, name }),
-                                });
-                                const result = await res.json();
-                                if (result.success) {
-                                  toast('Payment group created!', 'success');
-                                  loadProposal();
-                                } else {
-                                  toast(result.error || 'Failed to create group', 'error');
-                                }
-                              } catch { toast('Failed to create group', 'error'); }
+                              createPaymentGroup(name, guestIds);
                             }}
                             className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium"
                           >
@@ -2473,19 +1736,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                             </div>
                             <div className="flex gap-2 items-center">
                               <button
-                                onClick={async () => {
-                                  try {
-                                    const res = await fetch(`/api/admin/trip-proposals/${id}/reminders`, {
-                                      method: 'POST',
-                                      headers: { 'Content-Type': 'application/json' },
-                                      body: JSON.stringify({ action: proposal.reminders_paused ? 'resume_proposal' : 'pause_proposal' }),
-                                    });
-                                    if ((await res.json()).success) {
-                                      toast(proposal.reminders_paused ? 'Reminders resumed' : 'Reminders paused', 'success');
-                                      loadProposal();
-                                    }
-                                  } catch { toast('Failed to update', 'error'); }
-                                }}
+                                onClick={() => pauseResumeReminders(proposal.reminders_paused || false)}
                                 className={`px-3 py-1.5 rounded-lg text-xs font-medium ${
                                   proposal.reminders_paused
                                     ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
@@ -2495,28 +1746,12 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                                 {proposal.reminders_paused ? 'Resume All' : 'Pause All'}
                               </button>
                               <button
-                                onClick={async () => {
+                                onClick={() => {
                                   if (!proposal.payment_deadline) {
                                     toast('Set a payment deadline first', 'error');
                                     return;
                                   }
-                                  setSaving(true);
-                                  try {
-                                    const res = await fetch(`/api/admin/trip-proposals/${id}/reminders`, {
-                                      method: 'POST',
-                                      headers: { 'Content-Type': 'application/json' },
-                                      body: JSON.stringify({ action: 'generate_schedule' }),
-                                    });
-                                    const result = await res.json();
-                                    if (result.success) {
-                                      toast(`Generated ${result.data.created} reminders`, 'success');
-                                      setReminderHistory([]);
-                                      loadReminderHistory();
-                                    } else {
-                                      toast(result.error?.message || result.error || 'Failed to generate', 'error');
-                                    }
-                                  } catch { toast('Failed to generate schedule', 'error'); }
-                                  finally { setSaving(false); }
+                                  generateReminderSchedule();
                                 }}
                                 disabled={saving}
                                 className="px-3 py-1.5 bg-indigo-100 hover:bg-indigo-200 text-indigo-800 rounded-lg text-xs font-medium disabled:opacity-50"
@@ -2556,7 +1791,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  {reminderHistory.map((r: ReminderRecord) => (
+                                  {reminderHistory.map((r) => (
                                     <tr key={r.id} className="border-b border-gray-100">
                                       <td className="py-1.5 px-2 text-gray-900">{r.guest_name || 'All'}</td>
                                       <td className="py-1.5 px-2 text-gray-700">{r.scheduled_date}</td>
@@ -2587,17 +1822,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                                       <td className="py-1.5 px-2 text-right">
                                         {r.status === 'pending' && (
                                           <button
-                                            onClick={async () => {
-                                              try {
-                                                await fetch(`/api/admin/trip-proposals/${id}/reminders`, {
-                                                  method: 'POST',
-                                                  headers: { 'Content-Type': 'application/json' },
-                                                  body: JSON.stringify({ action: 'cancel', reminder_id: r.id }),
-                                                });
-                                                toast('Reminder cancelled', 'success');
-                                                loadReminderHistory();
-                                              } catch { toast('Failed', 'error'); }
-                                            }}
+                                            onClick={() => cancelReminder(r.id)}
                                             className="text-red-600 hover:text-red-800 font-medium"
                                           >
                                             Cancel
@@ -2619,14 +1844,16 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                                 <label className="block text-xs text-gray-700 mb-1">Date</label>
                                 <input
                                   type="date"
-                                  id="custom-reminder-date"
+                                  value={customReminderDate}
+                                  onChange={(e) => setCustomReminderDate(e.target.value)}
                                   className="px-2 py-1.5 border border-gray-300 rounded text-xs"
                                 />
                               </div>
                               <div>
                                 <label className="block text-xs text-gray-700 mb-1">Urgency</label>
                                 <select
-                                  id="custom-reminder-urgency"
+                                  value={customReminderUrgency}
+                                  onChange={(e) => setCustomReminderUrgency(e.target.value)}
                                   className="px-2 py-1.5 border border-gray-300 rounded text-xs"
                                 >
                                   <option value="friendly">Friendly</option>
@@ -2639,36 +1866,14 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                                 <label className="block text-xs text-gray-700 mb-1">Custom Message (optional)</label>
                                 <input
                                   type="text"
-                                  id="custom-reminder-message"
+                                  value={customReminderMessage}
+                                  onChange={(e) => setCustomReminderMessage(e.target.value)}
                                   placeholder="Personal note to include in the email..."
                                   className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs"
                                 />
                               </div>
                               <button
-                                onClick={async () => {
-                                  const dateEl = document.getElementById('custom-reminder-date') as HTMLInputElement;
-                                  const urgencyEl = document.getElementById('custom-reminder-urgency') as HTMLSelectElement;
-                                  const msgEl = document.getElementById('custom-reminder-message') as HTMLInputElement;
-                                  if (!dateEl.value) { toast('Pick a date', 'error'); return; }
-                                  try {
-                                    const res = await fetch(`/api/admin/trip-proposals/${id}/reminders`, {
-                                      method: 'POST',
-                                      headers: { 'Content-Type': 'application/json' },
-                                      body: JSON.stringify({
-                                        action: 'add_manual',
-                                        scheduled_date: dateEl.value,
-                                        urgency: urgencyEl.value,
-                                        custom_message: msgEl.value || undefined,
-                                      }),
-                                    });
-                                    if ((await res.json()).success) {
-                                      toast('Custom reminder added', 'success');
-                                      dateEl.value = '';
-                                      msgEl.value = '';
-                                      loadReminderHistory();
-                                    }
-                                  } catch { toast('Failed to add reminder', 'error'); }
-                                }}
+                                onClick={handleAddCustomReminder}
                                 className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-medium"
                               >
                                 Add
@@ -2834,11 +2039,11 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
             </div>
 
             {/* Lunch Ordering Mode */}
-            {lunchOrders.length > 0 && (
+            {localLunchOrders.length > 0 && (
               <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">Lunch Ordering Mode</h3>
                 <div className="space-y-3">
-                  {lunchOrders.map((order) => (
+                  {localLunchOrders.map((order) => (
                     <div key={order.id} className="border border-gray-200 rounded-lg p-3">
                       <p className="text-xs font-medium text-gray-700 mb-2">
                         {order.day ? `Day ${order.day.day_number}${order.day.title ? ` - ${order.day.title}` : ''}` : 'Lunch'}
@@ -2846,7 +2051,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                       </p>
                       <div className="flex gap-1">
                         <button
-                          onClick={() => updateLunchOrderingMode(order.id, 'coordinator')}
+                          onClick={() => handleUpdateLunchOrderingMode(order.id, 'coordinator')}
                           disabled={saving || order.ordering_mode === 'coordinator'}
                           className={`flex-1 px-2 py-1.5 rounded text-xs font-medium transition-colors ${
                             order.ordering_mode === 'coordinator'
@@ -2857,7 +2062,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                           Coordinator
                         </button>
                         <button
-                          onClick={() => updateLunchOrderingMode(order.id, 'individual')}
+                          onClick={() => handleUpdateLunchOrderingMode(order.id, 'individual')}
                           disabled={saving || order.ordering_mode === 'individual'}
                           className={`flex-1 px-2 py-1.5 rounded text-xs font-medium transition-colors ${
                             order.ordering_mode === 'individual'
