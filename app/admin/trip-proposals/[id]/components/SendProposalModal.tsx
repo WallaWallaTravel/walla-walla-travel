@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface SendProposalModalProps {
   show: boolean;
@@ -23,6 +23,18 @@ export const SendProposalModal = React.memo(function SendProposalModal({
 }: SendProposalModalProps) {
   const [customMessage, setCustomMessage] = useState('');
 
+  useEffect(() => {
+    if (!show) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape' && !sending) {
+        onClose();
+        setCustomMessage('');
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [show, sending, onClose]);
+
   if (!show) return null;
 
   const handleSend = () => {
@@ -38,10 +50,15 @@ export const SendProposalModal = React.memo(function SendProposalModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={handleClose} />
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="send-proposal-title"
+    >
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={handleClose} aria-hidden="true" />
       <div className="relative bg-white rounded-2xl shadow-xl max-w-lg w-full mx-4 p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-1">Send Proposal</h2>
+        <h2 id="send-proposal-title" className="text-xl font-bold text-gray-900 mb-1">Send Proposal</h2>
         <p className="text-sm text-gray-600 mb-5">
           Send <span className="font-semibold">{proposalNumber}</span> to{' '}
           <span className="font-semibold">{customerEmail || 'no email set'}</span>

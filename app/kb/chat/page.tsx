@@ -366,7 +366,7 @@ What brings you to Walla Walla? Are you planning a trip, or just curious about t
               </svg>
             </button>
           </div>
-          <p className="mt-2 text-xs text-center text-gray-400">
+          <p className="mt-2 text-xs text-center text-gray-600">
             Powered by AI • Information from verified local sources
           </p>
         </form>

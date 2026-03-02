@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface Booking {
   id: number;
@@ -52,6 +52,15 @@ export default function AssignmentModal({ booking, onClose, onComplete }: Props)
     loadAvailability();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const handleEscapeKey = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'Escape') onClose();
+  }, [onClose]);
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleEscapeKey);
+    return () => document.removeEventListener('keydown', handleEscapeKey);
+  }, [handleEscapeKey]);
 
   const loadAvailability = async () => {
     try {
@@ -126,13 +135,18 @@ export default function AssignmentModal({ booking, onClose, onComplete }: Props)
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="assignment-modal-title"
+    >
       <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="bg-purple-600 text-white p-6 rounded-t-xl">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold">Assign Driver & Vehicle</h2>
+              <h2 id="assignment-modal-title" className="text-2xl font-bold">Assign Driver & Vehicle</h2>
               <p className="text-purple-100 mt-1">
                 {booking.customer_name} • {booking.booking_number}
               </p>

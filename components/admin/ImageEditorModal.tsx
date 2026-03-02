@@ -220,13 +220,28 @@ export default function ImageEditorModal({
     }
   };
 
+  // Handle Escape key
+  useEffect(() => {
+    if (!mounted || isProcessing) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') onCancel();
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [mounted, isProcessing, onCancel]);
+
   // Don't render until mounted (needed for portal)
   if (!mounted || !imageUrl) {
     return null;
   }
 
   const modalContent = (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90">
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="image-editor-title"
+    >
       {/* Close button */}
       <button
         onClick={onCancel}
@@ -241,7 +256,7 @@ export default function ImageEditorModal({
       <div className="flex flex-col items-center max-w-5xl w-full mx-4">
         {/* Header */}
         <div className="text-center mb-4">
-          <h2 className="text-xl font-semibold text-white">Edit Image</h2>
+          <h2 id="image-editor-title" className="text-xl font-semibold text-white">Edit Image</h2>
           <p className="text-white/60 text-sm mt-1">
             Crop, rotate, and flip your image
           </p>

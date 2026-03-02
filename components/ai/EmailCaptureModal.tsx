@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface EmailCaptureModalProps {
   isOpen: boolean;
@@ -20,6 +20,15 @@ export default function EmailCaptureModal({
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose();
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -66,18 +75,24 @@ export default function EmailCaptureModal({
   return (
     <>
       {/* Backdrop */}
-      <div 
+      <div
         className="fixed inset-0 bg-black bg-opacity-50 z-40"
         onClick={onClose}
+        aria-hidden="true"
       />
-      
+
       {/* Modal */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="email-capture-title"
+      >
         <div className="bg-white rounded-lg shadow-2xl max-w-md w-full p-6 animate-fade-in">
           {/* Close button */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition"
+            className="absolute top-4 right-4 text-gray-600 hover:text-gray-800 transition"
             aria-label="Close"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -87,7 +102,7 @@ export default function EmailCaptureModal({
 
           {/* Content */}
           <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">{title}</h2>
+            <h2 id="email-capture-title" className="text-2xl font-bold text-gray-900 mb-2">{title}</h2>
             <p className="text-gray-600">{description}</p>
           </div>
 
@@ -123,7 +138,7 @@ export default function EmailCaptureModal({
             </div>
 
             {/* Privacy note */}
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-600">
               We respect your privacy. Unsubscribe anytime. See our{' '}
               <a href="/privacy" className="text-blue-600 hover:underline">Privacy Policy</a>.
             </p>

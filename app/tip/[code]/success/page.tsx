@@ -71,7 +71,7 @@ export default function TipSuccessPage() {
       </p>
 
       <div className="mt-8 text-center">
-        <p className="text-sm text-gray-400">You can close this page</p>
+        <p className="text-sm text-gray-600">You can close this page</p>
       </div>
     </div>
   );

@@ -126,7 +126,7 @@ export function TipQRCodeDisplay({
             />
           </div>
           <p className="text-sm text-gray-500 mt-3">Scan to leave a tip</p>
-          <p className="text-xs text-gray-400 font-mono mt-1">Code: {tipCode}</p>
+          <p className="text-xs text-gray-600 font-mono mt-1">Code: {tipCode}</p>
         </div>
       </MobileCard>
 
@@ -187,7 +187,7 @@ export function TipQRCodeDisplay({
               </div>
             </div>
             <svg
-              className={`w-5 h-5 text-gray-400 transition-transform ${showNfcInfo ? 'rotate-180' : ''}`}
+              className={`w-5 h-5 text-gray-600 transition-transform ${showNfcInfo ? 'rotate-180' : ''}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -326,7 +326,7 @@ export function TipQRCodeDisplay({
 
       {/* Link display */}
       <div className="text-center">
-        <p className="text-xs text-gray-400 break-all">{tipPaymentLink}</p>
+        <p className="text-xs text-gray-600 break-all">{tipPaymentLink}</p>
       </div>
     </div>
   );

@@ -53,7 +53,7 @@ export default function PaymentsError({
           Having trouble? Call <a href="tel:+15091234567" className="text-purple-600">(509) 123-4567</a> for assistance.
         </p>
         {error.digest && (
-          <p className="mt-2 text-xs text-gray-400">Reference: {error.digest}</p>
+          <p className="mt-2 text-xs text-gray-600">Reference: {error.digest}</p>
         )}
       </div>
     </div>
