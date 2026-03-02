@@ -807,9 +807,9 @@ model corporate_requests {
   crm_deal_id        Int?
   created_at         DateTime?     @default(now()) @db.Timestamptz(6)
   updated_at         DateTime?     @default(now()) @db.Timestamptz(6)
-  users              users?        @relation(fields: [assigned_to], references: [id], onUpdate: NoAction)
-  crm_contacts       crm_contacts? @relation(fields: [crm_contact_id], references: [id], onUpdate: NoAction)
-  crm_deals          crm_deals?    @relation(fields: [crm_deal_id], references: [id], onUpdate: NoAction)
+  users              users?        @relation(fields: [assigned_to], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  crm_contacts       crm_contacts? @relation(fields: [crm_contact_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  crm_deals          crm_deals?    @relation(fields: [crm_deal_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@index([contact_email], map: "idx_corporate_requests_email")
   @@index([status], map: "idx_corporate_requests_status")
@@ -2040,7 +2040,7 @@ model shared_tours_tickets {
   refunded_at               DateTime?       @db.Timestamptz(6)
   original_price_per_person Decimal?        @db.Decimal(10, 2)
   original_total_amount     Decimal?        @db.Decimal(10, 2)
-  hotel_partners            hotel_partners? @relation(fields: [hotel_partner_id], references: [id], onUpdate: NoAction)
+  hotel_partners            hotel_partners? @relation(fields: [hotel_partner_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@ignore
 }
@@ -2668,7 +2668,7 @@ model wineries {
   features                         String[]
   featured_photo_override_id       Int?
   trip_proposal_stops              trip_proposal_stops[]
-  featured_photo_override          media_library?         @relation("winery_featured_photo_override", fields: [featured_photo_override_id], references: [id], onUpdate: NoAction)
+  featured_photo_override          media_library?         @relation("winery_featured_photo_override", fields: [featured_photo_override_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@index([is_active], map: "idx_wineries_active")
   @@index([is_active, is_featured], map: "idx_wineries_active_featured")
@@ -2841,8 +2841,8 @@ model driver_tips {
   payroll_exported_at      DateTime? @db.Timestamptz(6)
   created_at               DateTime? @default(now()) @db.Timestamptz(6)
   updated_at               DateTime? @default(now()) @db.Timestamptz(6)
-  bookings                 bookings  @relation(fields: [booking_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users                    users     @relation(fields: [driver_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  bookings                 bookings  @relation(fields: [booking_id], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  users                    users     @relation(fields: [driver_id], references: [id], onDelete: Restrict, onUpdate: NoAction)
 
   @@index([booking_id], map: "idx_driver_tips_booking")
   @@index([driver_id], map: "idx_driver_tips_driver")
@@ -2864,8 +2864,8 @@ model tour_expenses {
   reimbursed_at        DateTime? @db.Timestamptz(6)
   created_at           DateTime? @default(now()) @db.Timestamptz(6)
   updated_at           DateTime? @default(now()) @db.Timestamptz(6)
-  bookings             bookings  @relation(fields: [booking_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users                users     @relation(fields: [driver_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  bookings             bookings  @relation(fields: [booking_id], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  users                users     @relation(fields: [driver_id], references: [id], onDelete: Restrict, onUpdate: NoAction)
 
   @@index([booking_id], map: "idx_tour_expenses_booking")
   @@index([driver_id], map: "idx_tour_expenses_driver")
@@ -2888,8 +2888,8 @@ model tour_completions {
   tips_enabled     Boolean?  @default(true)
   created_at       DateTime? @default(now()) @db.Timestamptz(6)
   updated_at       DateTime? @default(now()) @db.Timestamptz(6)
-  bookings         bookings  @relation(fields: [booking_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users            users     @relation(fields: [driver_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  bookings         bookings  @relation(fields: [booking_id], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  users            users     @relation(fields: [driver_id], references: [id], onDelete: Restrict, onUpdate: NoAction)
 
   @@index([driver_id], map: "idx_tour_completions_driver")
   @@index([completed_at(sort: Desc)], map: "idx_tour_completions_completed")
@@ -3050,8 +3050,8 @@ model blog_drafts {
   updated_at                           DateTime? @default(now()) @db.Timestamptz(6)
   performance                          Json?     @default("{}")
   performance_synced_at                DateTime? @db.Timestamptz(6)
-  users_blog_drafts_created_byTousers  users?    @relation("blog_drafts_created_byTousers", fields: [created_by], references: [id], onUpdate: NoAction)
-  users_blog_drafts_reviewed_byTousers users?    @relation("blog_drafts_reviewed_byTousers", fields: [reviewed_by], references: [id], onUpdate: NoAction)
+  users_blog_drafts_created_byTousers  users?    @relation("blog_drafts_created_byTousers", fields: [created_by], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  users_blog_drafts_reviewed_byTousers users?    @relation("blog_drafts_reviewed_byTousers", fields: [reviewed_by], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@index([category], map: "idx_blog_drafts_category")
   @@index([status], map: "idx_blog_drafts_status")
@@ -3126,7 +3126,7 @@ model break_records {
   notes            String?
   created_at       DateTime?  @default(now()) @db.Timestamptz(6)
   updated_at       DateTime?  @default(now()) @db.Timestamptz(6)
-  users            users      @relation(fields: [driver_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users            users      @relation(fields: [driver_id], references: [id], onDelete: Restrict, onUpdate: NoAction)
   time_cards       time_cards @relation(fields: [time_card_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([driver_id], map: "idx_break_records_driver")
@@ -3190,7 +3190,7 @@ model campaign_items {
   created_at          DateTime?           @default(now()) @db.Timestamptz(6)
   updated_at          DateTime?           @default(now()) @db.Timestamptz(6)
   marketing_campaigns marketing_campaigns @relation(fields: [campaign_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  scheduled_posts     scheduled_posts?    @relation(fields: [scheduled_post_id], references: [id], onUpdate: NoAction)
+  scheduled_posts     scheduled_posts?    @relation(fields: [scheduled_post_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@index([campaign_id], map: "idx_campaign_items_campaign")
   @@index([channel], map: "idx_campaign_items_channel")
@@ -3216,7 +3216,7 @@ model competitive_advantages {
   created_at             DateTime? @default(now()) @db.Timestamptz(6)
   updated_at             DateTime? @default(now()) @db.Timestamptz(6)
   created_by             Int?
-  users                  users?    @relation(fields: [created_by], references: [id], onUpdate: NoAction)
+  users                  users?    @relation(fields: [created_by], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@index([category], map: "idx_competitive_advantages_category")
   @@index([importance], map: "idx_competitive_advantages_importance")
@@ -3236,8 +3236,8 @@ model competitor_alerts {
   delivery_status    String?             @default("pending") @db.VarChar(20)
   delivery_error     String?
   created_at         DateTime?           @default(now()) @db.Timestamptz(6)
-  competitor_changes competitor_changes? @relation(fields: [change_id], references: [id], onUpdate: NoAction)
-  competitors        competitors?        @relation(fields: [competitor_id], references: [id], onUpdate: NoAction)
+  competitor_changes competitor_changes? @relation(fields: [change_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  competitors        competitors?        @relation(fields: [competitor_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@index([delivery_status], map: "idx_competitor_alerts_status")
 }
@@ -3268,7 +3268,7 @@ model competitor_changes {
   updated_at             DateTime?           @default(now()) @db.Timestamptz(6)
   competitor_alerts      competitor_alerts[]
   competitors            competitors         @relation(fields: [competitor_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users                  users?              @relation(fields: [reviewed_by], references: [id], onUpdate: NoAction)
+  users                  users?              @relation(fields: [reviewed_by], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@index([competitor_id], map: "idx_competitor_changes_competitor")
   @@index([detected_at(sort: Desc)], map: "idx_competitor_changes_detected")
@@ -3336,7 +3336,7 @@ model competitor_swot {
   updated_at    DateTime?   @default(now()) @db.Timestamptz(6)
   created_by    Int?
   competitors   competitors @relation(fields: [competitor_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users         users?      @relation(fields: [created_by], references: [id], onUpdate: NoAction)
+  users         users?      @relation(fields: [created_by], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@index([competitor_id, category], map: "idx_competitor_swot_category")
   @@index([competitor_id], map: "idx_competitor_swot_competitor")
@@ -3375,7 +3375,7 @@ model competitors {
   competitor_pricing      competitor_pricing[]
   competitor_snapshots    competitor_snapshots[]
   competitor_swot         competitor_swot[]
-  users                   users?                 @relation(fields: [created_by], references: [id], onUpdate: NoAction)
+  users                   users?                 @relation(fields: [created_by], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@index([last_checked_at(sort: Desc)], map: "idx_competitors_last_checked")
   @@index([priority_level], map: "idx_competitors_priority")
@@ -3401,7 +3401,7 @@ model contact_inquiries {
   responded_by   Int?
   created_at     DateTime?     @default(now()) @db.Timestamptz(6)
   updated_at     DateTime?     @default(now()) @db.Timestamptz(6)
-  crm_contacts   crm_contacts? @relation(fields: [crm_contact_id], references: [id], onUpdate: NoAction)
+  crm_contacts   crm_contacts? @relation(fields: [crm_contact_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@index([created_at(sort: Desc)], map: "idx_contact_inquiries_created")
   @@index([crm_contact_id], map: "idx_contact_inquiries_crm_contact")
@@ -3426,7 +3426,7 @@ model content_approvals {
   notes                 String?
   approved_by           Int?
   created_at            DateTime? @default(now()) @db.Timestamptz(6)
-  users                 users?    @relation(fields: [approved_by], references: [id], onUpdate: NoAction)
+  users                 users?    @relation(fields: [approved_by], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@index([action], map: "idx_content_approvals_action")
   @@index([created_at(sort: Desc)], map: "idx_content_approvals_date")
@@ -3450,7 +3450,7 @@ model content_collections {
   created_at      DateTime? @default(now()) @db.Timestamptz(6)
   updated_at      DateTime? @default(now()) @db.Timestamptz(6)
   updated_by      Int?
-  users           users?    @relation(fields: [updated_by], references: [id], onUpdate: NoAction)
+  users           users?    @relation(fields: [updated_by], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@unique([collection_type, slug])
   @@index([collection_type, sort_order], map: "idx_content_collections_sort")
@@ -3467,7 +3467,7 @@ model content_history {
   new_value  String?
   changed_at DateTime? @default(now()) @db.Timestamptz(6)
   changed_by Int?
-  users      users?    @relation(fields: [changed_by], references: [id], onUpdate: NoAction)
+  users      users?    @relation(fields: [changed_by], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@index([changed_at(sort: Desc)], map: "idx_content_history_changed_at")
   @@index([table_name, record_id], map: "idx_content_history_record")
@@ -3491,7 +3491,7 @@ model content_refresh_suggestions {
   applied_by        Int?
   created_at        DateTime? @default(now()) @db.Timestamptz(6)
   updated_at        DateTime? @default(now()) @db.Timestamptz(6)
-  users             users?    @relation(fields: [applied_by], references: [id], onUpdate: NoAction)
+  users             users?    @relation(fields: [applied_by], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@index([page_path], map: "idx_content_refresh_page")
   @@index([status], map: "idx_content_refresh_status")
@@ -3523,8 +3523,8 @@ model content_suggestions {
   accepted_by          Int?
   created_at           DateTime?        @default(now()) @db.Timestamptz(6)
   updated_at           DateTime?        @default(now()) @db.Timestamptz(6)
-  users                users?           @relation(fields: [accepted_by], references: [id], onUpdate: NoAction)
-  scheduled_posts      scheduled_posts? @relation(fields: [scheduled_post_id], references: [id], onUpdate: NoAction)
+  users                users?           @relation(fields: [accepted_by], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  scheduled_posts      scheduled_posts? @relation(fields: [scheduled_post_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@index([suggestion_date, platform, status], map: "idx_content_suggestions_daily")
   @@index([suggestion_date(sort: Desc)], map: "idx_content_suggestions_date")
@@ -3551,7 +3551,7 @@ model crm_activities {
   created_at            DateTime?     @default(now()) @db.Timestamptz(6)
   crm_contacts          crm_contacts? @relation(fields: [contact_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   crm_deals             crm_deals?    @relation(fields: [deal_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users                 users?        @relation(fields: [performed_by], references: [id], onUpdate: NoAction)
+  users                 users?        @relation(fields: [performed_by], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@index([performed_at(sort: Desc)], map: "idx_crm_activities_date")
   @@index([activity_type], map: "idx_crm_activities_type")
@@ -3590,8 +3590,8 @@ model crm_contacts {
   contact_inquiries       contact_inquiries[]
   corporate_requests      corporate_requests[]
   crm_activities          crm_activities[]
-  users                   users?               @relation(fields: [assigned_to], references: [id], onUpdate: NoAction)
-  customers               customers?           @relation(fields: [customer_id], references: [id], onUpdate: NoAction)
+  users                   users?               @relation(fields: [assigned_to], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  customers               customers?           @relation(fields: [customer_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
   crm_deals               crm_deals[]
   crm_tasks               crm_tasks[]
 
@@ -3646,11 +3646,11 @@ model crm_deals {
   stage_changed_at     DateTime?            @default(now()) @db.Timestamptz(6)
   corporate_requests   corporate_requests[]
   crm_activities       crm_activities[]
-  users                users?               @relation(fields: [assigned_to], references: [id], onUpdate: NoAction)
-  bookings             bookings?            @relation(fields: [booking_id], references: [id], onUpdate: NoAction)
+  users                users?               @relation(fields: [assigned_to], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  bookings             bookings?            @relation(fields: [booking_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
   crm_contacts         crm_contacts         @relation(fields: [contact_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   crm_deal_types       crm_deal_types?      @relation(fields: [deal_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  proposals            proposals?           @relation(fields: [proposal_id], references: [id], onUpdate: NoAction)
+  proposals            proposals?           @relation(fields: [proposal_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
   crm_pipeline_stages  crm_pipeline_stages  @relation(fields: [stage_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   crm_tasks            crm_tasks[]
 
@@ -3725,10 +3725,10 @@ model crm_tasks {
   completion_notes                    String?
   created_at                          DateTime?     @default(now()) @db.Timestamptz(6)
   updated_at                          DateTime?     @default(now()) @db.Timestamptz(6)
-  users_crm_tasks_assigned_toTousers  users?        @relation("crm_tasks_assigned_toTousers", fields: [assigned_to], references: [id], onUpdate: NoAction)
-  users_crm_tasks_completed_byTousers users?        @relation("crm_tasks_completed_byTousers", fields: [completed_by], references: [id], onUpdate: NoAction)
+  users_crm_tasks_assigned_toTousers  users?        @relation("crm_tasks_assigned_toTousers", fields: [assigned_to], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  users_crm_tasks_completed_byTousers users?        @relation("crm_tasks_completed_byTousers", fields: [completed_by], references: [id], onDelete: SetNull, onUpdate: NoAction)
   crm_contacts                        crm_contacts? @relation(fields: [contact_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users_crm_tasks_created_byTousers   users?        @relation("crm_tasks_created_byTousers", fields: [created_by], references: [id], onUpdate: NoAction)
+  users_crm_tasks_created_byTousers   users?        @relation("crm_tasks_created_byTousers", fields: [created_by], references: [id], onDelete: SetNull, onUpdate: NoAction)
   crm_deals                           crm_deals?    @relation(fields: [deal_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([assigned_to, status], map: "idx_crm_tasks_assigned")
@@ -3745,8 +3745,8 @@ model driver_status_logs {
   change_time  DateTime    @default(now()) @db.Timestamptz(6)
   notes        String?
   created_at   DateTime?   @default(now()) @db.Timestamptz(6)
-  users        users       @relation(fields: [driver_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  time_cards   time_cards? @relation(fields: [time_card_id], references: [id], onUpdate: NoAction)
+  users        users       @relation(fields: [driver_id], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  time_cards   time_cards? @relation(fields: [time_card_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@index([change_time(sort: Desc)], map: "idx_driver_status_logs_change_time")
   @@index([driver_id], map: "idx_driver_status_logs_driver")
@@ -3772,11 +3772,11 @@ model dvir_reports {
   status                                                        String?      @default("submitted") @db.VarChar(50)
   created_at                                                    DateTime?    @default(now()) @db.Timestamptz(6)
   updated_at                                                    DateTime?    @default(now()) @db.Timestamptz(6)
-  users_dvir_reports_driver_idTousers                           users        @relation("dvir_reports_driver_idTousers", fields: [driver_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users_dvir_reports_mechanic_idTousers                         users?       @relation("dvir_reports_mechanic_idTousers", fields: [mechanic_id], references: [id], onUpdate: NoAction)
-  inspections_dvir_reports_post_trip_inspection_idToinspections inspections? @relation("dvir_reports_post_trip_inspection_idToinspections", fields: [post_trip_inspection_id], references: [id], onUpdate: NoAction)
-  inspections_dvir_reports_pre_trip_inspection_idToinspections  inspections? @relation("dvir_reports_pre_trip_inspection_idToinspections", fields: [pre_trip_inspection_id], references: [id], onUpdate: NoAction)
-  vehicles                                                      vehicles     @relation(fields: [vehicle_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_dvir_reports_driver_idTousers                           users        @relation("dvir_reports_driver_idTousers", fields: [driver_id], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  users_dvir_reports_mechanic_idTousers                         users?       @relation("dvir_reports_mechanic_idTousers", fields: [mechanic_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  inspections_dvir_reports_post_trip_inspection_idToinspections inspections? @relation("dvir_reports_post_trip_inspection_idToinspections", fields: [post_trip_inspection_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  inspections_dvir_reports_pre_trip_inspection_idToinspections  inspections? @relation("dvir_reports_pre_trip_inspection_idToinspections", fields: [pre_trip_inspection_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  vehicles                                                      vehicles     @relation(fields: [vehicle_id], references: [id], onDelete: Restrict, onUpdate: NoAction)
 
   @@index([report_date(sort: Desc)], map: "idx_dvir_reports_date")
   @@index([driver_id], map: "idx_dvir_reports_driver")
@@ -3810,8 +3810,8 @@ model geology_chat_messages {
   context_site_id  Int?
   ip_hash          String?         @db.VarChar(64)
   created_at       DateTime?       @default(now()) @db.Timestamptz(6)
-  geology_sites    geology_sites?  @relation(fields: [context_site_id], references: [id], onUpdate: NoAction)
-  geology_topics   geology_topics? @relation(fields: [context_topic_id], references: [id], onUpdate: NoAction)
+  geology_sites    geology_sites?  @relation(fields: [context_site_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  geology_topics   geology_topics? @relation(fields: [context_topic_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@index([created_at(sort: Desc)], map: "idx_geology_chat_created")
   @@index([session_id], map: "idx_geology_chat_session")
@@ -3828,7 +3828,7 @@ model geology_facts {
   display_order  Int?            @default(0)
   is_featured    Boolean?        @default(false)
   created_at     DateTime?       @default(now()) @db.Timestamptz(6)
-  geology_topics geology_topics? @relation(fields: [topic_id], references: [id], onUpdate: NoAction)
+  geology_topics geology_topics? @relation(fields: [topic_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@index([topic_id], map: "idx_geology_facts_topic")
   @@index([fact_type], map: "idx_geology_facts_type")
@@ -4075,8 +4075,8 @@ model kb_contributions {
   indexed_at                                   DateTime?           @db.Timestamp(6)
   last_retrieved_at                            DateTime?           @db.Timestamp(6)
   retrieval_count                              Int?                @default(0)
-  kb_businesses                                kb_businesses?      @relation(fields: [business_id], references: [id], onUpdate: NoAction)
-  users_kb_contributions_contributor_idTousers users?              @relation("kb_contributions_contributor_idTousers", fields: [contributor_id], references: [id], onUpdate: NoAction)
+  kb_businesses                                kb_businesses?      @relation(fields: [business_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  users_kb_contributions_contributor_idTousers users?              @relation("kb_contributions_contributor_idTousers", fields: [contributor_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
   users_kb_contributions_reviewed_byTousers    users?              @relation("kb_contributions_reviewed_byTousers", fields: [reviewed_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
   kb_review_history                            kb_review_history[]
 
@@ -4235,7 +4235,7 @@ model marketing_campaigns {
   created_at      DateTime?        @default(now()) @db.Timestamptz(6)
   updated_at      DateTime?        @default(now()) @db.Timestamptz(6)
   campaign_items  campaign_items[]
-  users           users?           @relation(fields: [created_by], references: [id], onUpdate: NoAction)
+  users           users?           @relation(fields: [created_by], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@index([start_date, end_date], map: "idx_campaigns_dates")
   @@index([status], map: "idx_campaigns_status")
@@ -4291,7 +4291,7 @@ model mileage_logs {
   recorded_by      Int?
   notes            String?
   created_at       DateTime? @default(now()) @db.Timestamptz(6)
-  users            users?    @relation(fields: [recorded_by], references: [id], onUpdate: NoAction)
+  users            users?    @relation(fields: [recorded_by], references: [id], onDelete: SetNull, onUpdate: NoAction)
   vehicles         vehicles  @relation(fields: [vehicle_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([recorded_date(sort: Desc)], map: "idx_mileage_logs_date")
@@ -4310,7 +4310,7 @@ model page_content {
   created_at   DateTime? @default(now()) @db.Timestamptz(6)
   updated_at   DateTime? @default(now()) @db.Timestamptz(6)
   updated_by   Int?
-  users        users?    @relation(fields: [updated_by], references: [id], onUpdate: NoAction)
+  users        users?    @relation(fields: [updated_by], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@unique([page_slug, section_key])
   @@index([page_slug], map: "idx_page_content_page_slug")
@@ -4364,9 +4364,9 @@ model scheduled_posts {
   strategy_id          Int?
   campaign_items       campaign_items[]
   content_suggestions  content_suggestions[]
-  social_accounts      social_accounts?      @relation(fields: [account_id], references: [id], onUpdate: NoAction)
-  users                users?                @relation(fields: [created_by], references: [id], onUpdate: NoAction)
-  marketing_strategies marketing_strategies? @relation(fields: [strategy_id], references: [id], onUpdate: NoAction)
+  social_accounts      social_accounts?      @relation(fields: [account_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  users                users?                @relation(fields: [created_by], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  marketing_strategies marketing_strategies? @relation(fields: [strategy_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
   trending_topics      trending_topics[]
 
   @@index([account_id], map: "idx_scheduled_posts_account")
@@ -4438,7 +4438,7 @@ model social_accounts {
   updated_at              DateTime?         @default(now()) @db.Timestamptz(6)
   connected_by            Int?
   scheduled_posts         scheduled_posts[]
-  users                   users?            @relation(fields: [connected_by], references: [id], onUpdate: NoAction)
+  users                   users?            @relation(fields: [connected_by], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@index([platform], map: "idx_social_accounts_platform")
   @@index([connection_status], map: "idx_social_accounts_status")
@@ -4461,7 +4461,7 @@ model trending_topics {
   actioned_post_id  Int?
   created_at        DateTime?        @default(now()) @db.Timestamptz(6)
   updated_at        DateTime?        @default(now()) @db.Timestamptz(6)
-  scheduled_posts   scheduled_posts? @relation(fields: [actioned_post_id], references: [id], onUpdate: NoAction)
+  scheduled_posts   scheduled_posts? @relation(fields: [actioned_post_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@index([category], map: "idx_trending_topics_category")
   @@index([detected_at(sort: Desc)], map: "idx_trending_topics_detected")
@@ -4531,7 +4531,7 @@ model trip_estimates {
   created_at          DateTime?             @default(now()) @db.Timestamptz(6)
   updated_at          DateTime?             @default(now()) @db.Timestamptz(6)
   trip_estimate_items trip_estimate_items[]
-  trip_proposals      trip_proposals?       @relation(fields: [trip_proposal_id], references: [id], onUpdate: NoAction)
+  trip_proposals      trip_proposals?       @relation(fields: [trip_proposal_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@index([created_at(sort: Desc)], map: "idx_trip_estimates_created_at")
   @@index([customer_email], map: "idx_trip_estimates_customer_email")
@@ -4576,7 +4576,7 @@ model trip_proposal_activity {
   ip_address       String?        @db.VarChar(50)
   user_agent       String?
   created_at       DateTime?      @default(now()) @db.Timestamptz(6)
-  users            users?         @relation(fields: [actor_user_id], references: [id], onUpdate: NoAction)
+  users            users?         @relation(fields: [actor_user_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
   trip_proposals   trip_proposals @relation(fields: [trip_proposal_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([action], map: "idx_trip_proposal_activity_action")
@@ -4677,10 +4677,10 @@ model trip_proposal_stops {
   driver_notes             String?
   created_at               DateTime?          @default(now()) @db.Timestamptz(6)
   updated_at               DateTime?          @default(now()) @db.Timestamptz(6)
-  hotels                   hotels?            @relation(fields: [hotel_id], references: [id], onUpdate: NoAction)
-  restaurants              restaurants?       @relation(fields: [restaurant_id], references: [id], onUpdate: NoAction)
+  hotels                   hotels?            @relation(fields: [hotel_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  restaurants              restaurants?       @relation(fields: [restaurant_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
   trip_proposal_days       trip_proposal_days @relation(fields: [trip_proposal_day_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  wineries                 wineries?          @relation(fields: [winery_id], references: [id], onUpdate: NoAction)
+  wineries                 wineries?          @relation(fields: [winery_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@index([trip_proposal_day_id], map: "idx_trip_proposal_stops_day")
   @@index([trip_proposal_day_id, stop_order], map: "idx_trip_proposal_stops_order")
@@ -4743,10 +4743,10 @@ model trip_proposals {
   trip_proposal_guests                                 trip_proposal_guests[]
   trip_proposal_inclusions                             trip_proposal_inclusions[]
   payments_trip_proposals_balance_payment_idTopayments payments?                  @relation("trip_proposals_balance_payment_idTopayments", fields: [balance_payment_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  brands                                               brands?                    @relation(fields: [brand_id], references: [id], onUpdate: NoAction)
-  bookings                                             bookings?                  @relation(fields: [converted_to_booking_id], references: [id], onUpdate: NoAction)
-  users                                                users?                     @relation(fields: [created_by], references: [id], onUpdate: NoAction)
-  customers                                            customers?                 @relation(fields: [customer_id], references: [id], onUpdate: NoAction)
+  brands                                               brands?                    @relation(fields: [brand_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  bookings                                             bookings?                  @relation(fields: [converted_to_booking_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  users                                                users?                     @relation(fields: [created_by], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  customers                                            customers?                 @relation(fields: [customer_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
   payments_trip_proposals_deposit_payment_idTopayments payments?                  @relation("trip_proposals_deposit_payment_idTopayments", fields: [deposit_payment_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([brand_id], map: "idx_trip_proposals_brand")
@@ -4838,8 +4838,8 @@ model vehicle_alerts {
   created_by                              Int?
   created_at                              DateTime? @default(now()) @db.Timestamptz(6)
   updated_at                              DateTime? @default(now()) @db.Timestamptz(6)
-  users_vehicle_alerts_created_byTousers  users?    @relation("vehicle_alerts_created_byTousers", fields: [created_by], references: [id], onUpdate: NoAction)
-  users_vehicle_alerts_resolved_byTousers users?    @relation("vehicle_alerts_resolved_byTousers", fields: [resolved_by], references: [id], onUpdate: NoAction)
+  users_vehicle_alerts_created_byTousers  users?    @relation("vehicle_alerts_created_byTousers", fields: [created_by], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  users_vehicle_alerts_resolved_byTousers users?    @relation("vehicle_alerts_resolved_byTousers", fields: [resolved_by], references: [id], onDelete: SetNull, onUpdate: NoAction)
   vehicles                                vehicles  @relation(fields: [vehicle_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([vehicle_id, alert_type])
