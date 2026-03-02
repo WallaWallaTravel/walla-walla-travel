@@ -199,19 +199,9 @@ ALTER TABLE dvir_reports DROP CONSTRAINT IF EXISTS dvir_reports_pre_trip_inspect
 ALTER TABLE dvir_reports ADD CONSTRAINT dvir_reports_pre_trip_inspection_id_fkey
   FOREIGN KEY (pre_trip_inspection_id) REFERENCES inspections(id) ON DELETE SET NULL ON UPDATE NO ACTION;
 
--- geology_facts
-ALTER TABLE geology_facts DROP CONSTRAINT IF EXISTS geology_facts_context_site_id_fkey;
-ALTER TABLE geology_facts ADD CONSTRAINT geology_facts_context_site_id_fkey
-  FOREIGN KEY (context_site_id) REFERENCES geology_sites(id) ON DELETE SET NULL ON UPDATE NO ACTION;
-
-ALTER TABLE geology_facts DROP CONSTRAINT IF EXISTS geology_facts_context_topic_id_fkey;
-ALTER TABLE geology_facts ADD CONSTRAINT geology_facts_context_topic_id_fkey
-  FOREIGN KEY (context_topic_id) REFERENCES geology_topics(id) ON DELETE SET NULL ON UPDATE NO ACTION;
-
--- geology_site_topics
-ALTER TABLE geology_site_topics DROP CONSTRAINT IF EXISTS geology_site_topics_topic_id_fkey;
-ALTER TABLE geology_site_topics ADD CONSTRAINT geology_site_topics_topic_id_fkey
-  FOREIGN KEY (topic_id) REFERENCES geology_topics(id) ON DELETE SET NULL ON UPDATE NO ACTION;
+-- geology_facts: SKIPPED — context_site_id and context_topic_id columns do not exist in live DB yet
+-- geology_site_topics: SKIPPED — table does not exist in live DB yet
+-- These will be handled when the geology schema migration is applied.
 
 -- kb_contributions
 ALTER TABLE kb_contributions DROP CONSTRAINT IF EXISTS kb_contributions_business_id_fkey;
