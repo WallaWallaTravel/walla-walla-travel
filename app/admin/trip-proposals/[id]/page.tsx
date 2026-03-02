@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, use } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useToast } from '@/lib/hooks/useToast';
 import { ToastContainer } from '@/components/ui/ToastContainer';
@@ -38,7 +37,6 @@ const STATUS_OPTIONS = [
 
 export default function EditTripProposalPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const router = useRouter();
   const { toasts, toast, dismissToast } = useToast();
 
   // --- UI-only state (modals, inline editing) ---
