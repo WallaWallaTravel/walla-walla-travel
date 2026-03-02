@@ -1,8 +1,18 @@
 'use client';
 
+import { useState } from 'react';
 import * as Sentry from '@sentry/nextjs';
 
 export default function SentryExamplePage() {
+  const [shouldThrow, setShouldThrow] = useState(false);
+
+  // Throwing during render triggers React's error boundary (error.tsx),
+  // which calls Sentry.captureException. Throwing inside onClick does NOT
+  // trigger error boundaries — it only creates an uncaught window error.
+  if (shouldThrow) {
+    throw new Error('Sentry test error — safe to ignore');
+  }
+
   return (
     <div style={{ padding: '2rem', maxWidth: '600px', margin: '0 auto' }}>
       <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1rem' }}>
@@ -15,9 +25,8 @@ export default function SentryExamplePage() {
       <button
         type="button"
         onClick={() => {
-          const error = new Error('Sentry test error — safe to ignore');
-          Sentry.captureException(error);
-          throw error;
+          Sentry.captureException(new Error('Sentry test error — safe to ignore'));
+          setShouldThrow(true);
         }}
         style={{
           backgroundColor: '#dc2626',
