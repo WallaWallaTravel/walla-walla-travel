@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import Stripe from 'stripe';
+import * as Sentry from '@sentry/nextjs';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 import { getStripe } from '@/lib/stripe';
 import { query, queryOne, withTransaction } from '@/lib/db-helpers';
 import { logger } from '@/lib/logger';
 import { auditService } from '@/lib/services/audit.service';
 import { sendBookingConfirmationEmail } from '@/lib/services/email-automation.service';
+import { sendEmail } from '@/lib/email';
 import { sharedTourService } from '@/lib/services/shared-tour.service';
 import { sendSharedTourConfirmationEmail } from '@/lib/email/templates/shared-tour-confirmation';
 import { tipService } from '@/lib/services/tip.service';
@@ -26,7 +28,10 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   const headersList = await headers();
   const signature = headersList.get('stripe-signature');
 
-  // Support webhook secrets from all Stripe accounts (NW Touring + WWT, live + test)
+  // Multi-account webhook verification: 2 brands × (test + live) = 4 secrets.
+  // Each Stripe account signs webhooks with its own secret. We try each until
+  // one verifies successfully. This is NOT a fallback chain — it's multi-account support.
+  // See docs/STRIPE_TESTING.md for details.
   const webhookSecrets = [
     process.env.STRIPE_WEBHOOK_SECRET_LIVE,        // NW Touring live
     process.env.STRIPE_WEBHOOK_SECRET_WWT_LIVE,    // Walla Walla Travel live
@@ -446,39 +451,130 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
 }
 
 /**
- * Handle dispute created
+ * Handle dispute created — updates payment status, flags booking, sends admin email, logs to Sentry.
  */
 async function handleDisputeCreated(dispute: Stripe.Dispute) {
-  const { id, charge, amount, reason } = dispute;
+  const { id, charge, amount, reason, status: disputeStatus } = dispute;
+  const amountDollars = amount / 100;
 
   logger.error('[Stripe Webhook] DISPUTE CREATED', {
     disputeId: id,
     chargeId: charge,
-    amount: amount / 100,
+    amount: amountDollars,
     reason,
+    disputeStatus,
   });
 
-  // Find the payment - extract ID if charge is an object
+  // Report to Sentry at error severity so it triggers alerts
+  Sentry.captureException(new Error(`Stripe dispute created: ${id}`), {
+    level: 'error',
+    tags: {
+      'stripe.dispute_id': id,
+      'stripe.dispute_reason': reason || 'unknown',
+    },
+    extra: {
+      disputeId: id,
+      chargeId: typeof charge === 'string' ? charge : charge?.id,
+      amount: amountDollars,
+      reason,
+      disputeStatus,
+    },
+  });
+
+  // Find the payment — extract ID if charge is an object
   const chargeId = typeof charge === 'string' ? charge : charge?.id;
-  const payment = await queryOne(
-    `SELECT p.*, b.booking_number
+  const payment = await queryOne<{
+    id: number;
+    booking_id: number | null;
+    booking_number: string | null;
+    trip_proposal_id: number | null;
+    customer_email: string | null;
+    amount: number;
+  }>(
+    `SELECT p.id, p.booking_id, p.trip_proposal_id, p.amount,
+            b.booking_number, b.customer_email
      FROM payments p
      LEFT JOIN bookings b ON p.booking_id = b.id
-     WHERE p.stripe_charge_id = $1`,
+     WHERE p.stripe_charge_id = $1 OR p.stripe_payment_intent_id = $1`,
     [chargeId]
   );
 
   if (payment) {
-    // Log the dispute
-    logger.error('[Stripe Webhook] Dispute linked to booking', {
+    logger.error('[Stripe Webhook] Dispute linked to payment', {
       paymentId: payment.id,
+      bookingId: payment.booking_id,
       bookingNumber: payment.booking_number,
-      amount: amount / 100,
+      amount: amountDollars,
       reason,
     });
 
-    // TODO: Send admin notification email
-    // TODO: Update payment status to 'disputed'
+    // Update payment status to 'disputed'
+    await query(
+      `UPDATE payments
+       SET status = 'disputed',
+           dispute_id = $2,
+           dispute_reason = $3,
+           dispute_amount = $4,
+           updated_at = NOW()
+       WHERE id = $1`,
+      [payment.id, id, reason || 'unknown', amountDollars]
+    ).catch((err) => {
+      // Some columns may not exist yet — log but don't fail
+      logger.warn('[Stripe Webhook] Could not update all dispute columns on payment', {
+        paymentId: payment.id,
+        error: err instanceof Error ? err.message : String(err),
+      });
+      // Fallback: just update status
+      return query(
+        `UPDATE payments SET status = 'disputed', updated_at = NOW() WHERE id = $1`,
+        [payment.id]
+      );
+    });
+
+    // Flag the booking if linked
+    if (payment.booking_id) {
+      await query(
+        `UPDATE bookings
+         SET has_dispute = true, updated_at = NOW()
+         WHERE id = $1`,
+        [payment.booking_id]
+      ).catch((err) => {
+        logger.warn('[Stripe Webhook] Could not flag booking dispute', {
+          bookingId: payment.booking_id,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      });
+    }
+
+    // Send admin notification email
+    const staffEmail = process.env.STAFF_NOTIFICATION_EMAIL || 'info@wallawalla.travel';
+    const bookingRef = payment.booking_number || `Payment #${payment.id}`;
+    await sendEmail({
+      to: staffEmail,
+      subject: `URGENT: Payment Dispute — ${bookingRef} ($${amountDollars.toFixed(2)})`,
+      html: `
+        <h2 style="color: #dc2626;">Payment Dispute Received</h2>
+        <p>A customer has disputed a charge. <strong>You must respond within the deadline in your Stripe Dashboard.</strong></p>
+        <table style="border-collapse: collapse; width: 100%; max-width: 500px;">
+          <tr><td style="padding: 8px; border-bottom: 1px solid #e5e7eb; font-weight: 600;">Dispute ID</td><td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${id}</td></tr>
+          <tr><td style="padding: 8px; border-bottom: 1px solid #e5e7eb; font-weight: 600;">Booking</td><td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${bookingRef}</td></tr>
+          <tr><td style="padding: 8px; border-bottom: 1px solid #e5e7eb; font-weight: 600;">Amount</td><td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">$${amountDollars.toFixed(2)}</td></tr>
+          <tr><td style="padding: 8px; border-bottom: 1px solid #e5e7eb; font-weight: 600;">Reason</td><td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${reason || 'Not specified'}</td></tr>
+          <tr><td style="padding: 8px; border-bottom: 1px solid #e5e7eb; font-weight: 600;">Customer</td><td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${payment.customer_email || 'Unknown'}</td></tr>
+        </table>
+        <p style="margin-top: 16px;"><a href="https://dashboard.stripe.com/disputes/${id}" style="background: #dc2626; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px;">View in Stripe Dashboard</a></p>
+      `,
+      text: `DISPUTE: ${bookingRef} — $${amountDollars.toFixed(2)} — Reason: ${reason || 'Not specified'}. View at https://dashboard.stripe.com/disputes/${id}`,
+    }).catch((err) => {
+      logger.error('[Stripe Webhook] Failed to send dispute admin email', {
+        error: err instanceof Error ? err.message : String(err),
+      });
+    });
+  } else {
+    logger.warn('[Stripe Webhook] Dispute received but no matching payment found', {
+      disputeId: id,
+      chargeId,
+    });
   }
 }
 
