@@ -11,9 +11,18 @@ const BodySchema = z.object({
   password: z.string().min(1).max(255),
 });
 
-const HOTEL_SESSION_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || process.env.SESSION_SECRET || 'fallback-secret-change-me'
-);
+function getHotelSessionSecret(): Uint8Array {
+  const secret = process.env.JWT_SECRET || process.env.SESSION_SECRET;
+  if (!secret) {
+    throw new Error(
+      'Missing required JWT_SECRET or SESSION_SECRET environment variable. ' +
+      'Generate one with: openssl rand -base64 32'
+    );
+  }
+  return new TextEncoder().encode(secret);
+}
+
+const HOTEL_SESSION_SECRET = getHotelSessionSecret();
 
 /**
  * POST /api/partner/auth/login
