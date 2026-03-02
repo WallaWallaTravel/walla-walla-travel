@@ -1,8 +1,8 @@
 /**
  * Client-side error logger
  *
- * Primary: Sentry (when NEXT_PUBLIC_SENTRY_DSN is set)
- * Backup:  POST /api/log-error (server-side file log)
+ * Sends all errors to Sentry (when NEXT_PUBLIC_SENTRY_DSN is set).
+ * Also keeps a small in-memory buffer for dev debugging.
  */
 
 import * as Sentry from '@sentry/nextjs';
@@ -64,21 +64,6 @@ export class ErrorLogger {
     };
 
     this.errors.push(error);
-
-    // Backup: send to server log endpoint
-    this.sendToServer(error);
-  }
-
-  private async sendToServer(error: LoggedError) {
-    try {
-      await fetch('/api/log-error', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(error)
-      });
-    } catch (_e) {
-      // Silently fail if logging fails
-    }
   }
 
   getErrors() {
@@ -94,5 +79,3 @@ export class ErrorLogger {
 if (typeof window !== 'undefined') {
   ErrorLogger.getInstance();
 }
-
-

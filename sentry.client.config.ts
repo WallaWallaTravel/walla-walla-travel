@@ -16,8 +16,9 @@ if (SENTRY_DSN) {
   Sentry.init({
     dsn: SENTRY_DSN,
 
-    // Environment identification
-    environment: process.env.NODE_ENV || 'development',
+    // Release & environment tracking (auto-populated by Vercel)
+    release: process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA || 'dev',
+    environment: process.env.NEXT_PUBLIC_VERCEL_ENV || process.env.NODE_ENV || 'development',
 
     // Capture 100% of errors in production, 100% in development
     // Adjust based on volume if needed
