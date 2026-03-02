@@ -824,7 +824,7 @@ Active services (all required):
 
 | Service | Purpose | Notes |
 |---------|---------|-------|
-| **Supabase** | PostgreSQL DB + Storage | Pro plan, daily backups. Auth/Realtime/Edge Functions NOT used |
+| **Supabase** | PostgreSQL DB + Storage + Realtime | Pro plan, daily backups. Auth and Edge Functions NOT used. Realtime IS used (hooks/useProposalRealtime.ts — 5 channel subscriptions for live proposal updates) |
 | **Stripe** | Payments | Dual-brand (WWT + NWTouring), test + live webhook secrets |
 | **Resend** | Transactional email | Replaced Postmark |
 | **Upstash Redis** | Rate limiting + queue | |
