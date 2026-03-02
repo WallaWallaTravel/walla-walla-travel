@@ -8,6 +8,7 @@ import { queryOne, queryMany } from '@/lib/db-helpers';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { handleStripeError } from '@/lib/stripe/error-handler';
 
 interface RouteParams { token: string; groupToken: string; }
 
@@ -73,24 +74,35 @@ export const POST = withCSRF(
 
     const guestNames = guests.map(g => g.name).join(', ');
 
-    const paymentIntent = await stripe.paymentIntents.create(
-      {
-        amount: amountInCents,
-        currency: 'usd',
-        metadata: {
-          payment_type: 'group_payment',
-          trip_proposal_id: proposal.id.toString(),
-          proposal_number: proposal.proposal_number,
-          group_id: group.id,
-          group_name: group.group_name,
-          guest_ids: guest_ids.join(','),
-          brand_id: (proposal.brand_id || 1).toString(),
+    let paymentIntent;
+    try {
+      paymentIntent = await stripe.paymentIntents.create(
+        {
+          amount: amountInCents,
+          currency: 'usd',
+          metadata: {
+            payment_type: 'group_payment',
+            trip_proposal_id: proposal.id.toString(),
+            proposal_number: proposal.proposal_number,
+            group_id: group.id,
+            group_name: group.group_name,
+            guest_ids: guest_ids.join(','),
+            brand_id: (proposal.brand_id || 1).toString(),
+          },
+          description: `${brand.name} - Group Payment for ${guestNames} (${proposal.proposal_number})`,
+          automatic_payment_methods: { enabled: true },
         },
-        description: `${brand.name} - Group Payment for ${guestNames} (${proposal.proposal_number})`,
-        automatic_payment_methods: { enabled: true },
-      },
-      { idempotencyKey: `pi_group_${group.id}_${guest_ids.sort().join('_')}_${amountInCents}` }
-    );
+        { idempotencyKey: `pi_group_${group.id}_${guest_ids.sort().join('_')}_${amountInCents}` }
+      );
+    } catch (stripeError) {
+      const { status, message, code, retryable } = handleStripeError(stripeError, {
+        proposalId: proposal.id, groupId: group.id, guestIds: guest_ids, amount: totalAmount,
+      });
+      return NextResponse.json(
+        { error: message, code, retryable },
+        { status, ...(retryable ? { headers: { 'Retry-After': '30' } } : {}) }
+      );
+    }
 
     after(async () => {
       logger.info('[Group Payment] Payment intent created', {

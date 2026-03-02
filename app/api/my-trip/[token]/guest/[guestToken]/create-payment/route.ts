@@ -7,6 +7,7 @@ import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import { queryOne } from '@/lib/db-helpers';
 import { logger } from '@/lib/logger';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { handleStripeError } from '@/lib/stripe/error-handler';
 
 interface RouteParams { token: string; guestToken: string; }
 
@@ -54,25 +55,36 @@ export const POST = withCSRF(
     const brand = getBrandEmailConfig(brandId);
     const publishableKey = getBrandStripePublishableKey(brandId);
 
-    const paymentIntent = await stripe.paymentIntents.create(
-      {
-        amount: amountInCents,
-        currency: 'usd',
-        metadata: {
-          payment_type: 'guest_share',
-          trip_proposal_id: proposal.id.toString(),
-          proposal_number: proposal.proposal_number,
-          guest_id: guest.id.toString(),
-          guest_name: guest.name,
-          customer_email: guest.email || '',
-          brand_id: (proposal.brand_id || 1).toString(),
+    let paymentIntent;
+    try {
+      paymentIntent = await stripe.paymentIntents.create(
+        {
+          amount: amountInCents,
+          currency: 'usd',
+          metadata: {
+            payment_type: 'guest_share',
+            trip_proposal_id: proposal.id.toString(),
+            proposal_number: proposal.proposal_number,
+            guest_id: guest.id.toString(),
+            guest_name: guest.name,
+            customer_email: guest.email || '',
+            brand_id: (proposal.brand_id || 1).toString(),
+          },
+          description: `${brand.name} - Guest Payment for ${guest.name} (${proposal.proposal_number})`,
+          receipt_email: guest.email || undefined,
+          automatic_payment_methods: { enabled: true },
         },
-        description: `${brand.name} - Guest Payment for ${guest.name} (${proposal.proposal_number})`,
-        receipt_email: guest.email || undefined,
-        automatic_payment_methods: { enabled: true },
-      },
-      { idempotencyKey: `pi_guest_${guest.id}_${amountInCents}` }
-    );
+        { idempotencyKey: `pi_guest_${guest.id}_${amountInCents}` }
+      );
+    } catch (stripeError) {
+      const { status, message, code, retryable } = handleStripeError(stripeError, {
+        proposalId: proposal.id, guestId: guest.id, amount: remaining,
+      });
+      return NextResponse.json(
+        { error: message, code, retryable },
+        { status, ...(retryable ? { headers: { 'Retry-After': '30' } } : {}) }
+      );
+    }
 
     after(async () => {
       logger.info('[Guest Payment] Payment intent created', {
