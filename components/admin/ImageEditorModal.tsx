@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import ReactCrop, { Crop, PixelCrop, centerCrop, makeAspectCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { logger } from '@/lib/logger';
+import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 
 // Aspect ratio presets
 const ASPECT_RATIOS = [
@@ -64,6 +65,7 @@ export default function ImageEditorModal({
   quality = 0.92,
 }: ImageEditorModalProps) {
   const imgRef = useRef<HTMLImageElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
@@ -230,6 +232,8 @@ export default function ImageEditorModal({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [mounted, isProcessing, onCancel]);
 
+  useFocusTrap(dialogRef, mounted && !!imageUrl);
+
   // Don't render until mounted (needed for portal)
   if (!mounted || !imageUrl) {
     return null;
@@ -237,6 +241,7 @@ export default function ImageEditorModal({
 
   const modalContent = (
     <div
+      ref={dialogRef}
       className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90"
       role="dialog"
       aria-modal="true"

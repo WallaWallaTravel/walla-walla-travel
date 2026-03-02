@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { logger } from '@/lib/logger';
+import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 import PhoneInput from '@/components/ui/PhoneInput';
 
 interface Props {
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export default function ManualBookingModal({ onClose, onComplete }: Props) {
+  const dialogRef = useRef<HTMLDivElement>(null);
   const [formData, setFormData] = useState({
     customer_name: '',
     customer_email: '',
@@ -36,6 +38,8 @@ export default function ManualBookingModal({ onClose, onComplete }: Props) {
     document.addEventListener('keydown', handleEscapeKey);
     return () => document.removeEventListener('keydown', handleEscapeKey);
   }, [handleEscapeKey]);
+
+  useFocusTrap(dialogRef);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -147,6 +151,7 @@ export default function ManualBookingModal({ onClose, onComplete }: Props) {
 
   return (
     <div
+      ref={dialogRef}
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
       role="dialog"
       aria-modal="true"

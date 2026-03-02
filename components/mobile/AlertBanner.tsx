@@ -77,6 +77,8 @@ export function AlertBanner({
 
   return (
     <div
+      role="alert"
+      aria-live="assertive"
       className={`
         ${config.bg}
         ${config.border}

@@ -1,7 +1,8 @@
 // Add New Winery Modal Component
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { NewWineryData } from '../types';
+import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 
 interface AddWineryModalProps {
   isOpen: boolean;
@@ -18,6 +19,8 @@ export const AddWineryModal: React.FC<AddWineryModalProps> = ({
   onChange,
   onSubmit,
 }) => {
+  const dialogRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (!isOpen) return;
     function handleKeyDown(e: KeyboardEvent) {
@@ -26,6 +29,8 @@ export const AddWineryModal: React.FC<AddWineryModalProps> = ({
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
+
+  useFocusTrap(dialogRef, isOpen);
 
   if (!isOpen) return null;
 
@@ -44,6 +49,7 @@ export const AddWineryModal: React.FC<AddWineryModalProps> = ({
 
   return (
     <div
+      ref={dialogRef}
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
       role="dialog"
       aria-modal="true"
