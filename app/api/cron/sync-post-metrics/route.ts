@@ -14,6 +14,7 @@ import { bufferService } from '@/lib/services/buffer.service'
 import { socialIntelligenceService } from '@/lib/services/social-intelligence.service'
 import { logger } from '@/lib/logger'
 import { withCronAuth } from '@/lib/api/middleware/cron-auth'
+import { withCronLock } from '@/lib/api/middleware/cron-lock'
 
 interface PostToSync {
   id: number
@@ -25,6 +26,7 @@ interface PostToSync {
 }
 
 export const GET = withCronAuth('sync-post-metrics', async (_request: NextRequest) => {
+  return withCronLock('sync-post-metrics', async () => {
   logger.info('Starting post metrics sync cron')
 
   try {
@@ -139,6 +141,7 @@ export const GET = withCronAuth('sync-post-metrics', async (_request: NextReques
       timestamp: new Date().toISOString(),
     }, { status: 500 })
   }
+  });
 })
 
 // Also support POST for manual triggering

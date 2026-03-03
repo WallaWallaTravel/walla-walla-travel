@@ -11,8 +11,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { processTourReminders } from '@/lib/services/email-automation.service';
 import { logger } from '@/lib/logger';
 import { withCronAuth } from '@/lib/api/middleware/cron-auth';
+import { withCronLock } from '@/lib/api/middleware/cron-lock';
 
 export const POST = withCronAuth('tour-reminders', async (_request: NextRequest) => {
+  return withCronLock('tour-reminders', async () => {
   logger.info('Processing tour reminders');
 
   const result = await processTourReminders();
@@ -27,6 +29,7 @@ export const POST = withCronAuth('tour-reminders', async (_request: NextRequest)
       failed: result.failed,
       processed_at: new Date().toISOString(),
     },
+  });
   });
 });
 

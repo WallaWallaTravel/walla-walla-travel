@@ -7,17 +7,20 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { withCronAuth } from '@/lib/api/middleware/cron-auth';
+import { withCronLock } from '@/lib/api/middleware/cron-lock';
 import { sessionStoreService } from '@/lib/services/session-store.service';
 
 export const dynamic = 'force-dynamic';
 
 export const GET = withCronAuth('cleanup-sessions', async (_request: NextRequest) => {
+  return withCronLock('cleanup-sessions', async () => {
   const deletedCount = await sessionStoreService.cleanupOldSessions();
 
   return NextResponse.json({
     success: true,
     deletedCount,
     timestamp: new Date().toISOString(),
+  });
   });
 });
 

@@ -13,6 +13,7 @@ import { query } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { sendEmail } from '@/lib/email'
 import { withCronAuth } from '@/lib/api/middleware/cron-auth'
+import { withCronLock } from '@/lib/api/middleware/cron-lock'
 import Anthropic from '@anthropic-ai/sdk'
 import { emailPreferencesService } from '@/lib/services/email-preferences.service'
 
@@ -346,6 +347,7 @@ function buildReportEmail(data: WeeklyData, aiSummary: string, unsubscribeUrl?: 
 // ---------- Route Handler ----------
 
 export const GET = withCronAuth('weekly-marketing-report', async (_request: NextRequest) => {
+  return withCronLock('weekly-marketing-report', async () => {
   logger.info('Starting weekly marketing report generation')
 
   try {
@@ -438,6 +440,7 @@ export const GET = withCronAuth('weekly-marketing-report', async (_request: Next
       timestamp: new Date().toISOString(),
     }, { status: 500 })
   }
+  });
 })
 
 // Also support POST for manual triggering

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminReminderService } from '@/lib/services/admin-reminder.service';
 import { logger } from '@/lib/logger';
 import { withCronAuth } from '@/lib/api/middleware/cron-auth';
+import { withCronLock } from '@/lib/api/middleware/cron-lock';
 
 /**
  * Cron Job: Process Admin Internal Reminders
@@ -12,6 +13,7 @@ import { withCronAuth } from '@/lib/api/middleware/cron-auth';
  * These are admin-facing only — no emails sent to guests.
  */
 export const POST = withCronAuth('process-admin-reminders', async (_request: NextRequest) => {
+  return withCronLock('process-admin-reminders', async () => {
   logger.info('Starting admin reminder processing');
 
   const result = await adminReminderService.processTimeBased();
@@ -23,6 +25,7 @@ export const POST = withCronAuth('process-admin-reminders', async (_request: Nex
     message: 'Admin reminders processed',
     triggered: result.triggered,
     timestamp: new Date().toISOString(),
+  });
   });
 });
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { paymentReminderService } from '@/lib/services/payment-reminder.service';
 import { logger } from '@/lib/logger';
 import { withCronAuth } from '@/lib/api/middleware/cron-auth';
+import { withCronLock } from '@/lib/api/middleware/cron-lock';
 
 /**
  * Cron Job: Process Payment Reminders
@@ -15,6 +16,7 @@ import { withCronAuth } from '@/lib/api/middleware/cron-auth';
  * Protected by CRON_SECRET (fail-closed).
  */
 export const POST = withCronAuth('process-payment-reminders', async (_request: NextRequest) => {
+  return withCronLock('process-payment-reminders', async () => {
   logger.info('Starting payment reminder processing');
 
   const result = await paymentReminderService.processScheduledReminders();
@@ -33,6 +35,7 @@ export const POST = withCronAuth('process-payment-reminders', async (_request: N
     failed: result.failed,
     details: result.details,
     timestamp: new Date().toISOString(),
+  });
   });
 });
 

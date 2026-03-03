@@ -19,6 +19,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { withCronAuth } from '@/lib/api/middleware/cron-auth'
+import { withCronLock } from '@/lib/api/middleware/cron-lock'
 import Anthropic from '@anthropic-ai/sdk'
 
 export const dynamic = 'force-dynamic'
@@ -493,6 +494,7 @@ async function runSeasonalContentRefresh(): Promise<{
 }
 
 export const GET = withCronAuth('seasonal-content-refresh', async (_request: NextRequest) => {
+  return withCronLock('seasonal-content-refresh', async () => {
   const startTime = Date.now()
 
   try {
@@ -554,6 +556,7 @@ export const GET = withCronAuth('seasonal-content-refresh', async (_request: Nex
       duration_ms: duration,
     }, { status: 500 })
   }
+  });
 })
 
 export const POST = GET

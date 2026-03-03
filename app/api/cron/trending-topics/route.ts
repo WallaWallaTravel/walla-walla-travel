@@ -14,6 +14,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { query } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { withCronAuth } from '@/lib/api/middleware/cron-auth'
+import { withCronLock } from '@/lib/api/middleware/cron-lock'
 
 interface TrendingTopic {
   topic: string
@@ -46,6 +47,7 @@ const currentSeason = () => {
 }
 
 export const GET = withCronAuth('trending-topics', async (_request: NextRequest) => {
+  return withCronLock('trending-topics', async () => {
   logger.info('Starting trending topics detection cron')
 
   try {
@@ -195,6 +197,7 @@ Respond with ONLY a JSON array, no markdown formatting:
       timestamp: new Date().toISOString(),
     }, { status: 500 })
   }
+  });
 })
 
 export const POST = GET

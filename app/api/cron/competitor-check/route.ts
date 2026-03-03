@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { competitorMonitoringService } from '@/lib/services/competitor-monitoring.service';
 import { logger } from '@/lib/logger';
 import { withCronAuth } from '@/lib/api/middleware/cron-auth';
+import { withCronLock } from '@/lib/api/middleware/cron-lock';
 import type { ChangeType, Significance, ThreatLevel, MonitoringResult } from '@/types/competitors';
 
 // Simple HTML to text extraction
@@ -295,6 +296,7 @@ function getRecommendedActions(changeType: ChangeType, threatLevel: ThreatLevel)
 
 // POST handler for manual triggers and Vercel Cron
 export const POST = withCronAuth('competitor-check', async (_request: NextRequest) => {
+  return withCronLock('competitor-check', async () => {
   const startTime = Date.now();
 
   logger.info('Starting competitor monitoring job');
@@ -318,6 +320,7 @@ export const POST = withCronAuth('competitor-check', async (_request: NextReques
     total_changes_detected: result.changesDetected,
     results: result.results,
     errors: result.errors,
+  });
   });
 });
 

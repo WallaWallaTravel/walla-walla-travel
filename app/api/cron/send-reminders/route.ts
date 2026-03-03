@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { processTourReminders } from '@/lib/services/email-automation.service';
 import { logger } from '@/lib/logger';
 import { withCronAuth } from '@/lib/api/middleware/cron-auth';
+import { withCronLock } from '@/lib/api/middleware/cron-lock';
 
 /**
  * Cron Job: Send Tour Reminders
@@ -10,6 +11,7 @@ import { withCronAuth } from '@/lib/api/middleware/cron-auth';
  * Protected by CRON_SECRET (fail-closed).
  */
 export const POST = withCronAuth('send-reminders', async (_request: NextRequest) => {
+  return withCronLock('send-reminders', async () => {
   logger.info('Starting tour reminder processing');
 
   const result = await processTourReminders();
@@ -22,6 +24,7 @@ export const POST = withCronAuth('send-reminders', async (_request: NextRequest)
     sent: result.sent,
     failed: result.failed,
     timestamp: new Date().toISOString(),
+  });
   });
 });
 

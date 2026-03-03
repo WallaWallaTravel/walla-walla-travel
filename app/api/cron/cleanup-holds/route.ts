@@ -9,8 +9,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { vehicleAvailabilityService } from '@/lib/services/vehicle-availability.service';
 import { withCronAuth } from '@/lib/api/middleware/cron-auth';
+import { withCronLock } from '@/lib/api/middleware/cron-lock';
 
 export const GET = withCronAuth('cleanup-holds', async (_request: NextRequest) => {
+  return withCronLock('cleanup-holds', async () => {
   const deletedCount = await vehicleAvailabilityService.cleanupExpiredHolds();
 
   return NextResponse.json({
@@ -18,6 +20,7 @@ export const GET = withCronAuth('cleanup-holds', async (_request: NextRequest) =
     message: `Cleaned up ${deletedCount} expired hold${deletedCount !== 1 ? 's' : ''}`,
     deleted_count: deletedCount,
     timestamp: new Date().toISOString(),
+  });
   });
 });
 

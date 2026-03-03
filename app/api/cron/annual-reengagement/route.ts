@@ -11,8 +11,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { crmTaskAutomationService } from '@/lib/services/crm-task-automation.service';
 import { logger } from '@/lib/logger';
 import { withCronAuth } from '@/lib/api/middleware/cron-auth';
+import { withCronLock } from '@/lib/api/middleware/cron-lock';
 
 export const POST = withCronAuth('annual-reengagement', async (_request: NextRequest) => {
+  return withCronLock('annual-reengagement', async () => {
   logger.info('Processing annual re-engagement tasks');
 
   const result = await crmTaskAutomationService.processAnnualReengagement();
@@ -28,6 +30,7 @@ export const POST = withCronAuth('annual-reengagement', async (_request: NextReq
       errors: result.errors,
       processed_at: new Date().toISOString(),
     },
+  });
   });
 });
 

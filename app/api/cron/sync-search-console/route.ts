@@ -7,6 +7,7 @@ import {
 import { query } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { withCronAuth } from '@/lib/api/middleware/cron-auth';
+import { withCronLock } from '@/lib/api/middleware/cron-lock';
 
 /**
  * Match published blog_drafts to Search Console data by slug.
@@ -86,6 +87,7 @@ async function syncBlogPerformance(): Promise<{ matched: number }> {
 }
 
 export const POST = withCronAuth('sync-search-console', async (_request: NextRequest) => {
+  return withCronLock('sync-search-console', async () => {
   const startTime = Date.now();
 
   try {
@@ -153,6 +155,7 @@ export const POST = withCronAuth('sync-search-console', async (_request: NextReq
       { status: 500 }
     );
   }
+  });
 });
 
 export const GET = withCronAuth('sync-search-console', async (_request: NextRequest) => {

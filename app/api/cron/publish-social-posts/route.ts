@@ -12,6 +12,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
 import { bufferService, BufferCreateUpdatePayload } from '@/lib/services/buffer.service'
 import { withCronAuth } from '@/lib/api/middleware/cron-auth'
+import { withCronLock } from '@/lib/api/middleware/cron-lock'
 import { logger } from '@/lib/logger'
 
 interface PostToPublish {
@@ -28,6 +29,7 @@ interface PostToPublish {
 }
 
 export const GET = withCronAuth('publish-social-posts', async (_request: NextRequest) => {
+  return withCronLock('publish-social-posts', async () => {
   logger.info('Starting social post publishing cron')
 
   // Find posts ready to publish
@@ -165,6 +167,7 @@ export const GET = withCronAuth('publish-social-posts', async (_request: NextReq
     results,
     timestamp: new Date().toISOString(),
   })
+  });
 })
 
 // Also support POST for manual triggering

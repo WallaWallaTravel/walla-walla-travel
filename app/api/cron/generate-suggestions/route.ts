@@ -13,8 +13,10 @@ import { query } from '@/lib/db'
 import { socialIntelligenceService } from '@/lib/services/social-intelligence.service'
 import { logger } from '@/lib/logger'
 import { withCronAuth } from '@/lib/api/middleware/cron-auth'
+import { withCronLock } from '@/lib/api/middleware/cron-lock'
 
 export const GET = withCronAuth('generate-suggestions', async (_request: NextRequest) => {
+  return withCronLock('generate-suggestions', async () => {
   logger.info('Starting daily content suggestion generation')
 
   try {
@@ -84,6 +86,7 @@ export const GET = withCronAuth('generate-suggestions', async (_request: NextReq
       timestamp: new Date().toISOString(),
     }, { status: 500 })
   }
+  });
 })
 
 // Also support POST for manual triggering
