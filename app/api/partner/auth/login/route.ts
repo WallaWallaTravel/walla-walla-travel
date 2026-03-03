@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, BadRequestError, UnauthorizedError } from '@/lib/api/middleware/error-handler';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 import { hotelPartnerService } from '@/lib/services/hotel-partner.service';
 import { SignJWT } from 'jose';
 import { cookies } from 'next/headers';
@@ -28,7 +29,8 @@ const HOTEL_SESSION_SECRET = getHotelSessionSecret();
  * POST /api/partner/auth/login
  * Authenticate hotel partner — sets HttpOnly session cookie
  */
-export const POST = withRateLimit(rateLimiters.auth)(
+export const POST = withCSRF(
+  withRateLimit(rateLimiters.auth)(
   withErrorHandling(async (request: NextRequest) => {
   const body = BodySchema.parse(await request.json());
 
@@ -73,4 +75,5 @@ export const POST = withRateLimit(rateLimiters.auth)(
       email: hotel.email,
     },
   });
-}));
+}))
+);

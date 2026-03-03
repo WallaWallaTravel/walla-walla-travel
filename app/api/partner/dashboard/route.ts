@@ -35,7 +35,7 @@ export const GET = withErrorHandling(async (request: NextRequest): Promise<NextR
 
   // 2. Try hotel session cookie (hotel partners)
   const hotelSession = await getHotelSessionFromRequest(request);
-  const hotelId = hotelSession?.hotelId || request.headers.get('x-hotel-id');
+  const hotelId = hotelSession?.hotelId;
 
   if (!hotelId) {
     throw new UnauthorizedError('Authentication required');
