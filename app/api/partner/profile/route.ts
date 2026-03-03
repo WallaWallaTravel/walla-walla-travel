@@ -25,8 +25,7 @@ const BodySchema = z.object({
 export const GET = withErrorHandling(async (request: NextRequest) => {
   const session = await getSessionFromRequest(request);
 
-  // Note: 'partner' role check may fail if role is not in the type union - use string comparison
-  if (!session || (session.user.role as string !== 'partner' && session.user.role !== 'admin')) {
+  if (!session || (session.user.role !== 'partner' && session.user.role !== 'admin')) {
     throw new UnauthorizedError('Partner access required');
   }
 
@@ -84,8 +83,7 @@ export const PUT = withCSRF(
   withErrorHandling(async (request: NextRequest) => {
   const session = await getSessionFromRequest(request);
 
-  // Note: 'partner' role check may fail if role is not in the type union - use string comparison
-  if (!session || (session.user.role as string !== 'partner' && session.user.role !== 'admin')) {
+  if (!session || (session.user.role !== 'partner' && session.user.role !== 'admin')) {
     throw new UnauthorizedError('Partner access required');
   }
 

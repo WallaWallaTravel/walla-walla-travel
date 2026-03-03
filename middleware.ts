@@ -123,7 +123,7 @@ export async function middleware(request: NextRequest) {
     const apiSession = await getSessionFromRequest(request);
     const allowedRoles = ['admin', 'supervisor', 'geology_admin'];
 
-    if (!apiSession || !allowedRoles.includes(apiSession.user.role as string)) {
+    if (!apiSession || !allowedRoles.includes(apiSession.user.role)) {
       return NextResponse.json(
         { success: false, error: { message: 'Unauthorized', statusCode: 401 } },
         {
@@ -330,14 +330,12 @@ export async function middleware(request: NextRequest) {
   if (session) {
     // Admin routes - check role-based access
     if (pathname.startsWith('/admin')) {
-      const userRole = session.user.role as string;
-
       // Full admins can access everything
-      if (userRole === 'admin') {
+      if (session.user.role === 'admin') {
         // Access granted
       }
       // Geology admins can only access /admin/geology/* routes
-      else if (userRole === 'geology_admin') {
+      else if (session.user.role === 'geology_admin') {
         if (!pathname.startsWith('/admin/geology')) {
           return addSecurityHeaders(
             NextResponse.redirect(new URL('/admin/geology', request.url))
@@ -364,11 +362,9 @@ export async function middleware(request: NextRequest) {
     }
 
     // Partner-only routes (admins can also access for oversight)
-    // Note: 'partner' role may not be in the type union - use string comparison
-    const role = session.user.role as string;
     if (
       pathname.startsWith('/partner-portal') &&
-      role !== 'partner' &&
+      session.user.role !== 'partner' &&
       session.user.role !== 'admin'
     ) {
       return addSecurityHeaders(
@@ -379,7 +375,7 @@ export async function middleware(request: NextRequest) {
     // Organizer-only routes (admins can also access for oversight)
     if (
       pathname.startsWith('/organizer-portal') &&
-      role !== 'organizer' &&
+      session.user.role !== 'organizer' &&
       session.user.role !== 'admin'
     ) {
       return addSecurityHeaders(
@@ -390,15 +386,14 @@ export async function middleware(request: NextRequest) {
 
   // If logged in and trying to access login page, redirect to appropriate dashboard
   if (pathname === '/login' && session) {
-    const userRole = session.user.role as string;
     let dashboardUrl = '/admin/dashboard';
     if (session.user.role === 'driver') {
       dashboardUrl = '/driver-portal/dashboard';
-    } else if (userRole === 'partner') {
+    } else if (session.user.role === 'partner') {
       dashboardUrl = '/partner-portal/dashboard';
-    } else if (userRole === 'organizer') {
+    } else if (session.user.role === 'organizer') {
       dashboardUrl = '/organizer-portal/dashboard';
-    } else if (userRole === 'geology_admin') {
+    } else if (session.user.role === 'geology_admin') {
       dashboardUrl = '/admin/geology';
     }
     return NextResponse.redirect(new URL(dashboardUrl, request.url));
