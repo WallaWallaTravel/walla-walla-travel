@@ -6,12 +6,13 @@
 import { NextResponse } from 'next/server';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 import { eventsService } from '@/lib/services/events.service';
+import { withRedisCache } from '@/lib/api/middleware/redis-cache';
 
 export const GET = withErrorHandling(async () => {
-  const categories = await eventsService.getCategories();
-
-  return NextResponse.json({
-    success: true,
-    data: categories,
+  const data = await withRedisCache('events:categories', 180, async () => {
+    const categories = await eventsService.getCategories();
+    return { success: true, data: categories };
   });
+
+  return NextResponse.json(data);
 });

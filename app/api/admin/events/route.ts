@@ -3,6 +3,7 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { eventsService } from '@/lib/services/events.service';
 import { createEventSchema, eventFiltersSchema } from '@/lib/validation/schemas/events';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { invalidateCache } from '@/lib/api/middleware/redis-cache';
 
 // ============================================================================
 // GET /api/admin/events - List all events (admin)
@@ -42,6 +43,7 @@ export const POST = withCSRF(
   // Handle recurring event creation
   if (data.is_recurring && data.recurrence_rule) {
     const result = await eventsService.createRecurringEvent(data, parseInt(session.userId));
+    await invalidateCache('events:');
     return NextResponse.json(
       { success: true, data: { event: result.parent, instanceCount: result.instanceCount } },
       { status: 201 }
@@ -49,6 +51,8 @@ export const POST = withCSRF(
   }
 
   const event = await eventsService.create(data, parseInt(session.userId));
+
+  await invalidateCache('events:');
 
   return NextResponse.json(
     { success: true, data: event },

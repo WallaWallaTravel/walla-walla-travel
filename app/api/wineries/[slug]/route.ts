@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, NotFoundError, RouteContext } from '@/lib/api/middleware/error-handler';
 import { wineryService } from '@/lib/services/winery.service';
+import { withRedisCache } from '@/lib/api/middleware/redis-cache';
 
 interface RouteParams {
   slug: string;
@@ -14,15 +15,16 @@ export const GET = withErrorHandling<unknown, RouteParams>(
   async (_request: NextRequest, context: RouteContext<RouteParams>) => {
     const { slug } = await context.params;
 
-    const winery = await wineryService.getBySlug(slug);
+    const data = await withRedisCache(`wineries:slug:${slug}`, 300, async () => {
+      const winery = await wineryService.getBySlug(slug);
 
-    if (!winery) {
-      throw new NotFoundError('Winery not found');
-    }
+      if (!winery) {
+        throw new NotFoundError('Winery not found');
+      }
 
-    return NextResponse.json({
-      success: true,
-      data: winery,
+      return { success: true, data: winery };
     });
+
+    return NextResponse.json(data);
   }
 );

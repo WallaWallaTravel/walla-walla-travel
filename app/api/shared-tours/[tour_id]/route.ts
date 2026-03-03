@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, RouteContext, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { sharedTourService } from '@/lib/services/shared-tour.service';
+import { withRedisCache } from '@/lib/api/middleware/redis-cache';
 
 /**
  * GET /api/shared-tours/[tour_id]
@@ -12,19 +13,20 @@ export const GET = withErrorHandling(async (
   { params }: RouteContext<{ tour_id: string }>
 ) => {
   const { tour_id } = await params;
-  const tour = await sharedTourService.getTourWithAvailability(tour_id);
+  const data = await withRedisCache(`shared-tours:detail:${tour_id}`, 60, async () => {
+    const tour = await sharedTourService.getTourWithAvailability(tour_id);
 
-  if (!tour) {
-    throw new NotFoundError('Tour not found');
-  }
+    if (!tour) {
+      throw new NotFoundError('Tour not found');
+    }
 
-  // Only return if published
-  if (!tour.is_published) {
-    throw new NotFoundError('Tour not available');
-  }
+    // Only return if published
+    if (!tour.is_published) {
+      throw new NotFoundError('Tour not available');
+    }
 
-  return NextResponse.json({
-    success: true,
-    data: tour,
+    return { success: true, data: tour };
   });
+
+  return NextResponse.json(data);
 });
