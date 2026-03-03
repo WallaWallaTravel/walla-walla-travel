@@ -16,6 +16,7 @@ import { sendReservationConfirmation } from '@/lib/email';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { z } from 'zod';
+import { noDisposableEmail } from '@/lib/utils/email-validation';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -23,7 +24,7 @@ export const dynamic = 'force-dynamic';
 const BodySchema = z.object({
   // Contact Info
   contactName: z.string().min(1).max(255),
-  contactEmail: z.string().email(),
+  contactEmail: z.string().email().superRefine(noDisposableEmail),
   contactPhone: z.string().min(1).max(20),
 
   // Event Details

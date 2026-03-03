@@ -15,6 +15,7 @@ import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import { query } from '@/lib/db';
 import { z } from 'zod';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { noDisposableEmail } from '@/lib/utils/email-validation';
 
 interface RouteParams {
   token: string;
@@ -23,7 +24,7 @@ interface RouteParams {
 
 const RegisterGuestSchema = z.object({
   name: z.string().min(1).max(255),
-  email: z.string().email(),
+  email: z.string().email().superRefine(noDisposableEmail),
   phone: z.string().max(50).optional().or(z.literal('')),
 });
 

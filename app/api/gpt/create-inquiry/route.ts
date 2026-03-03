@@ -10,6 +10,7 @@ import { query } from '@/lib/db-helpers';
 import { z } from 'zod';
 import { withErrorHandling, BadRequestError, ValidationError } from '@/lib/api/middleware/error-handler';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { noDisposableEmail } from '@/lib/utils/email-validation';
 
 // CORS headers for ChatGPT
 const corsHeaders = {
@@ -21,7 +22,7 @@ const corsHeaders = {
 // Validation schema
 const InquirySchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Please provide a valid email address'),
+  email: z.string().email('Please provide a valid email address').superRefine(noDisposableEmail),
   phone: z.string().optional(),
   tour_date: z.string().refine((date) => {
     const parsed = new Date(date);
