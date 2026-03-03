@@ -216,7 +216,7 @@ function extractSqlTableRefs(filePath: string): SqlTableRef[] {
     // and match FROM/JOIN patterns but are never table names
     'THE', 'THESE', 'THOSE', 'THIS', 'THAT', 'WHICH', 'EACH', 'EVERY',
     'THEIR', 'THEM', 'THEY', 'YOUR', 'OUR', 'ABOVE', 'BELOW',
-    'AI', 'WEEKLY', 'DAILY', 'MONTHLY', 'SEASONAL', 'STRATEGY',
+    'AI', 'WEEKLY', 'DAILY', 'MONTHLY', 'SEASONAL', 'STRATEGY', 'MARKETING',
   ]);
 
   // Pattern 1: INSERT INTO table

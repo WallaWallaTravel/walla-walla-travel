@@ -20,7 +20,7 @@ function escapeHtml(str: string): string {
     .replace(/'/g, '&#39;');
 }
 
-function emailShell(brand: BrandEmailConfig, headingText: string, subheadingText: string, bodyHtml: string): string {
+function emailShell(brand: BrandEmailConfig, headingText: string, subheadingText: string, bodyHtml: string, unsubscribeUrl?: string): string {
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -52,7 +52,10 @@ ${bodyHtml}
       </p>
       <p style="margin: 16px 0 0 0; font-size: 12px; color: #6b7280;">
         ${brand.name} &bull; ${brand.website}
-      </p>
+      </p>${unsubscribeUrl ? `
+      <p style="margin: 12px 0 0 0; font-size: 11px; color: #9ca3af;">
+        <a href="${unsubscribeUrl}" style="color: #9ca3af; text-decoration: underline;">Unsubscribe</a> from marketing emails
+      </p>` : ''}
     </div>
 
   </div>
@@ -152,7 +155,7 @@ function reminderItem(reminder: DigestReminder): string {
         </div>`;
 }
 
-export function buildDailyDigestEmail(data: DailyDigestData): { subject: string; html: string; text: string } {
+export function buildDailyDigestEmail(data: DailyDigestData, unsubscribeUrl?: string): { subject: string; html: string; text: string } {
   const brand = getBrandEmailConfig(1); // Always Walla Walla Travel brand
 
   const today = new Date();
@@ -209,7 +212,7 @@ export function buildDailyDigestEmail(data: DailyDigestData): { subject: string;
   // CTA button
   bodyHtml += ctaButton(brand, 'View Today\'s Priorities', `${BASE_URL}/admin/today`);
 
-  const html = emailShell(brand, 'Daily Digest', dateStr, bodyHtml);
+  const html = emailShell(brand, 'Daily Digest', dateStr, bodyHtml, unsubscribeUrl);
 
   // Plain text version
   const textParts: string[] = [`Daily Digest — ${dateStr}\n`];
@@ -236,6 +239,9 @@ export function buildDailyDigestEmail(data: DailyDigestData): { subject: string;
   }
 
   textParts.push(`\nView Today's Priorities: ${BASE_URL}/admin/today`);
+  if (unsubscribeUrl) {
+    textParts.push(`\nUnsubscribe: ${unsubscribeUrl}`);
+  }
 
   return { subject, html, text: textParts.join('\n') };
 }

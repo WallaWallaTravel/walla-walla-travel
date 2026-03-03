@@ -38,6 +38,7 @@ interface EmailOptions {
   text?: string;
   from?: string;
   replyTo?: string;
+  headers?: Record<string, string>;
 }
 
 /**

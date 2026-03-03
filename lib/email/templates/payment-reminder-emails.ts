@@ -32,7 +32,7 @@ function escapeHtml(str: string): string {
     .replace(/'/g, '&#39;');
 }
 
-function emailShell(brand: BrandEmailConfig, headingText: string, subheadingText: string, bodyHtml: string): string {
+function emailShell(brand: BrandEmailConfig, headingText: string, subheadingText: string, bodyHtml: string, unsubscribeUrl?: string): string {
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -64,7 +64,10 @@ ${bodyHtml}
       </p>
       <p style="margin: 16px 0 0 0; font-size: 12px; color: #6b7280;">
         ${brand.name} &bull; ${brand.website}
-      </p>
+      </p>${unsubscribeUrl ? `
+      <p style="margin: 12px 0 0 0; font-size: 11px; color: #9ca3af;">
+        <a href="${unsubscribeUrl}" style="color: #9ca3af; text-decoration: underline;">Unsubscribe</a> from marketing emails
+      </p>` : ''}
     </div>
 
   </div>
@@ -110,6 +113,7 @@ interface PaymentReminderData {
   payment_link: string;
   custom_message?: string;
   brand_id: number;
+  unsubscribe_url?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -139,7 +143,7 @@ export function paymentReminderFriendly(data: PaymentReminderData): { subject: s
         If you've already made this payment, please disregard this email. If you have any questions, don't hesitate to reach out.
       </p>`;
 
-  const html = emailShell(brand, 'Payment Reminder', tripName, bodyHtml);
+  const html = emailShell(brand, 'Payment Reminder', tripName, bodyHtml, data.unsubscribe_url);
 
   const text = `Hi ${data.guest_name},
 
@@ -157,7 +161,7 @@ ${brand.signature}
 
 ---
 ${brand.phone} | ${brand.reply_to}
-${brand.name} | ${brand.website}`;
+${brand.name} | ${brand.website}${data.unsubscribe_url ? `\nUnsubscribe: ${data.unsubscribe_url}` : ''}`;
 
   return {
     subject: `Payment Reminder: ${data.trip_name}`,
@@ -193,7 +197,7 @@ export function paymentReminderFirm(data: PaymentReminderData): { subject: strin
         If you've already submitted your payment, thank you! It may take a moment for our records to update.
       </p>`;
 
-  const html = emailShell(brand, 'Payment Due Soon', tripName, bodyHtml);
+  const html = emailShell(brand, 'Payment Due Soon', tripName, bodyHtml, data.unsubscribe_url);
 
   const text = `Hi ${data.guest_name},
 
@@ -211,7 +215,7 @@ ${brand.signature}
 
 ---
 ${brand.phone} | ${brand.reply_to}
-${brand.name} | ${brand.website}`;
+${brand.name} | ${brand.website}${data.unsubscribe_url ? `\nUnsubscribe: ${data.unsubscribe_url}` : ''}`;
 
   return {
     subject: `Payment Due Soon: ${data.trip_name}`,
@@ -252,7 +256,7 @@ export function paymentReminderUrgent(data: PaymentReminderData): { subject: str
         Having trouble making your payment? Please reach out to us and we'll help sort things out.
       </p>`;
 
-  const html = emailShell(brand, 'Action Required', `Payment for ${tripName}`, bodyHtml);
+  const html = emailShell(brand, 'Action Required', `Payment for ${tripName}`, bodyHtml, data.unsubscribe_url);
 
   const text = `Hi ${data.guest_name},
 
@@ -270,7 +274,7 @@ ${brand.signature}
 
 ---
 ${brand.phone} | ${brand.reply_to}
-${brand.name} | ${brand.website}`;
+${brand.name} | ${brand.website}${data.unsubscribe_url ? `\nUnsubscribe: ${data.unsubscribe_url}` : ''}`;
 
   return {
     subject: `Action Required: Payment for ${data.trip_name}`,
@@ -311,7 +315,7 @@ export function paymentReminderFinal(data: PaymentReminderData): { subject: stri
         If you need to discuss your payment or need an extension, please contact us immediately at <strong>${brand.phone}</strong>.
       </p>`;
 
-  const html = emailShell(brand, 'Final Payment Notice', `Payment for ${tripName}`, bodyHtml);
+  const html = emailShell(brand, 'Final Payment Notice', `Payment for ${tripName}`, bodyHtml, data.unsubscribe_url);
 
   const text = `Hi ${data.guest_name},
 
@@ -329,7 +333,7 @@ ${brand.signature}
 
 ---
 ${brand.phone} | ${brand.reply_to}
-${brand.name} | ${brand.website}`;
+${brand.name} | ${brand.website}${data.unsubscribe_url ? `\nUnsubscribe: ${data.unsubscribe_url}` : ''}`;
 
   return {
     subject: `FINAL NOTICE: Payment Due Tomorrow — ${data.trip_name}`,
