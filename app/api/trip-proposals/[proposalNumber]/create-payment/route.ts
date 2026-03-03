@@ -6,6 +6,7 @@ import { getBrandEmailConfig } from '@/lib/email-brands';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import { logger } from '@/lib/logger';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 import { handleStripeError } from '@/lib/stripe/error-handler';
 
 /**
@@ -18,6 +19,7 @@ interface RouteParams {
 }
 
 export const POST = withCSRF(
+  withRateLimit(rateLimiters.payment)(
   withErrorHandling<unknown, RouteParams>(
   async (request: NextRequest, context) => {
     const { proposalNumber } = await (context as RouteContext<RouteParams>).params;
@@ -128,5 +130,6 @@ export const POST = withCSRF(
       },
     });
   }
+)
 )
 );
