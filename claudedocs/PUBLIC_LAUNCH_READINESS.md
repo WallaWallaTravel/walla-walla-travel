@@ -87,7 +87,7 @@ The platform has solid foundational architecture but several critical gaps preve
 ### 5. Authentication Gaps
 **Impact:** Trip data not properly secured
 **Current State:**
-- Supabase Auth configured
+- JWT session auth configured (custom, session-hardened)
 - Some routes check auth, others don't
 - `/api/trips/my-trips` has no auth middleware
 - Customer portal uses booking_number (good for anonymous access)

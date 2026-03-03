@@ -28,7 +28,7 @@ You are the Backend Lead for the Walla Walla Travel ecosystem. You own server-si
 - **ORM**: Prisma
 - **Database**: Supabase (`eabqmcvmpkbpyhhpbcij`)
 - **Validation**: Zod
-- **Auth**: JWT (Supabase Auth planned)
+- **Auth**: JWT (custom, session-hardened)
 
 ### Auditor's Dream
 - **Database**: Supabase (`gymsdluogchurhdvhqao`)

@@ -51,7 +51,7 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['operators']['Insert']>;
       };
 
-      // User Profiles (linked to Supabase Auth)
+      // User Profiles (linked to JWT session auth)
       profiles: {
         Row: {
           id: string;

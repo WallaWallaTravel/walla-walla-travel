@@ -190,7 +190,7 @@ npm run dev        # http://localhost:5173
 |---------|-------------|--------------|
 | Page won't load | Vercel status | Browser console |
 | Slow response | Database metrics | API logs |
-| Auth failing | Supabase Auth | JWT config |
+| Auth failing | JWT session auth | Session config |
 | Data missing | RLS policies | Query logs |
 | Build failing | Type errors | Dependencies |
 
