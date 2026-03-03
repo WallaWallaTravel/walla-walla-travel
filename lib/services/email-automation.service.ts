@@ -112,7 +112,7 @@ export async function sendBookingConfirmationEmail(bookingId: number): Promise<b
         logger.warn('[EmailAutomation] CRM logging failed', { error: err });
       });
     } else {
-      // Log failed send for retry
+      // Log failed send for retry (next_retry_at = NOW for immediate first retry)
       await query(`
         INSERT INTO email_logs (
           booking_id,
@@ -121,8 +121,9 @@ export async function sendBookingConfirmationEmail(bookingId: number): Promise<b
           subject,
           sent_at,
           status,
-          retry_count
-        ) VALUES ($1, $2, $3, $4, NOW(), 'failed', 0)
+          retry_count,
+          next_retry_at
+        ) VALUES ($1, $2, $3, $4, NOW(), 'failed', 0, NOW())
       `, [bookingId, 'booking_confirmation', booking.customer_email, template.subject]).catch(() => {});
 
       logger.warn('[EmailAutomation] Booking confirmation send failed, logged for retry', {
@@ -137,7 +138,7 @@ export async function sendBookingConfirmationEmail(bookingId: number): Promise<b
   } catch (error) {
     logger.error('[EmailAutomation] Error sending booking confirmation', { error, bookingId });
 
-    // Log error for retry
+    // Log error for retry (next_retry_at = NOW for immediate first retry)
     await query(`
       INSERT INTO email_logs (
         booking_id,
@@ -147,8 +148,9 @@ export async function sendBookingConfirmationEmail(bookingId: number): Promise<b
         sent_at,
         status,
         error_message,
-        retry_count
-      ) VALUES ($1, 'booking_confirmation', 'unknown', 'Booking Confirmation', NOW(), 'error', $2, 0)
+        retry_count,
+        next_retry_at
+      ) VALUES ($1, 'booking_confirmation', 'unknown', 'Booking Confirmation', NOW(), 'error', $2, 0, NOW())
     `, [bookingId, error instanceof Error ? error.message : 'Unknown error']).catch(() => {});
 
     return false;
@@ -526,12 +528,21 @@ export async function sendDriverAssignmentToCustomer(bookingId: number): Promise
 }
 
 /**
- * Retry failed confirmation emails
- * Call this from a cron job or admin action to retry emails that failed to send.
- * Retries up to 3 times, with increasing delays.
+ * Backoff schedule for email retries.
+ * Attempt 1: immediate (next_retry_at = NOW on initial failure)
+ * Attempt 2: retry after 5 minutes
+ * Attempt 3: retry after 30 minutes
+ * After 3 attempts: no more retries (next_retry_at set to NULL)
+ */
+const RETRY_BACKOFF_MINUTES = [0, 5, 30] as const;
+const MAX_RETRIES = 3;
+
+/**
+ * Retry failed confirmation emails with exponential backoff.
+ * Called by the retry-emails cron job (every 15 min).
+ * Only picks up emails where next_retry_at <= NOW().
  */
 export async function retryFailedEmails(): Promise<{ retried: number; succeeded: number; failed: number }> {
-  const maxRetries = 3;
   let retried = 0;
   let succeeded = 0;
   let failed = 0;
@@ -547,10 +558,12 @@ export async function retryFailedEmails(): Promise<{ retried: number; succeeded:
       FROM email_logs
       WHERE status IN ('failed', 'error')
         AND COALESCE(retry_count, 0) < $1
+        AND next_retry_at IS NOT NULL
+        AND next_retry_at <= NOW()
         AND sent_at > NOW() - INTERVAL '24 hours'
-      ORDER BY sent_at ASC
+      ORDER BY next_retry_at ASC
       LIMIT 10
-    `, [maxRetries]);
+    `, [MAX_RETRIES]);
 
     for (const email of failedEmails) {
       retried++;
@@ -564,14 +577,24 @@ export async function retryFailedEmails(): Promise<{ retried: number; succeeded:
         succeeded++;
         // Mark original as superseded
         await query(
-          `UPDATE email_logs SET status = 'superseded', updated_at = NOW() WHERE id = $1`,
+          `UPDATE email_logs SET status = 'superseded', next_retry_at = NULL, updated_at = NOW() WHERE id = $1`,
           [email.id]
         );
       } else {
         failed++;
+        const newRetryCount = email.retry_count + 1;
+        // Schedule next retry with backoff, or NULL if max retries reached
+        const nextRetryAt = newRetryCount < MAX_RETRIES
+          ? `NOW() + INTERVAL '${RETRY_BACKOFF_MINUTES[newRetryCount]} minutes'`
+          : 'NULL';
+
         await query(
-          `UPDATE email_logs SET retry_count = COALESCE(retry_count, 0) + 1, updated_at = NOW() WHERE id = $1`,
-          [email.id]
+          `UPDATE email_logs
+           SET retry_count = $1,
+               next_retry_at = ${nextRetryAt},
+               updated_at = NOW()
+           WHERE id = $2`,
+          [newRetryCount, email.id]
         );
       }
     }
@@ -579,7 +602,9 @@ export async function retryFailedEmails(): Promise<{ retried: number; succeeded:
     logger.error('[EmailAutomation] Error retrying failed emails', { error });
   }
 
-  logger.info('[EmailAutomation] Retry results', { retried, succeeded, failed });
+  if (retried > 0) {
+    logger.info('[EmailAutomation] Retry results', { retried, succeeded, failed });
+  }
   return { retried, succeeded, failed };
 }
 
