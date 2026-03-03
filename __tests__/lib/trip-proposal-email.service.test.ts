@@ -77,6 +77,21 @@ jest.mock('@/lib/logger', () => ({
   logger: { error: jest.fn(), info: jest.fn(), warn: jest.fn(), debug: jest.fn() },
 }));
 
+jest.mock('@/lib/services/email-preferences.service', () => ({
+  emailPreferencesService: {
+    isUnsubscribed: jest.fn().mockResolvedValue(false),
+    getOrCreatePreference: jest.fn().mockResolvedValue({
+      unsubscribe_token: 'test-unsub-token-123',
+      unsubscribed_at: null,
+    }),
+    getUnsubscribeUrl: jest.fn().mockReturnValue('https://wallawalla.travel/unsubscribe/test-unsub-token-123'),
+    getUnsubscribeHeaders: jest.fn().mockReturnValue({
+      'List-Unsubscribe': '<https://wallawalla.travel/unsubscribe/test-unsub-token-123>',
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    }),
+  },
+}));
+
 const mockSendEmail = require('@/lib/email').sendEmail as jest.Mock;
 const mockQuery = require('@/lib/db-helpers').query as jest.Mock;
 const mockQueryOne = require('@/lib/db-helpers').queryOne as jest.Mock;

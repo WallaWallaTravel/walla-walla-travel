@@ -18,6 +18,7 @@ import { bookingTrackingService } from '@/lib/services/booking-tracking.service'
 import { Resend } from 'resend';
 import { logger } from '@/lib/logger';
 import { withCronAuth } from '@/lib/api/middleware/cron-auth';
+import { emailPreferencesService } from '@/lib/services/email-preferences.service';
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
@@ -48,11 +49,24 @@ export const GET = withCronAuth('abandoned-cart-emails', async (_request: NextRe
 
   let sent = 0;
   let failed = 0;
+  let skipped = 0;
 
   for (const attempt of abandoned) {
     if (!attempt.email) continue;
 
     try {
+      // CAN-SPAM: Check if recipient has unsubscribed
+      if (await emailPreferencesService.isUnsubscribed(attempt.email)) {
+        logger.info('Skipping abandoned cart email — recipient unsubscribed', { email: attempt.email });
+        skipped++;
+        continue;
+      }
+
+      // Get unsubscribe token for this email
+      const pref = await emailPreferencesService.getOrCreatePreference(attempt.email);
+      const unsubscribeUrl = emailPreferencesService.getUnsubscribeUrl(pref.unsubscribe_token);
+      const unsubscribeHeaders = emailPreferencesService.getUnsubscribeHeaders(pref.unsubscribe_token);
+
       // Build personalized email
       const tourDateStr = attempt.tour_date
         ? new Date(attempt.tour_date).toLocaleDateString('en-US', {
@@ -72,8 +86,10 @@ export const GET = withCronAuth('abandoned-cart-emails', async (_request: NextRe
           name: attempt.name,
           tourDate: tourDateStr,
           partySize: attempt.party_size,
-          step: attempt.step_reached
-        })
+          step: attempt.step_reached,
+          unsubscribeUrl,
+        }),
+        headers: unsubscribeHeaders,
       });
 
       // Mark as sent
@@ -94,6 +110,7 @@ export const GET = withCronAuth('abandoned-cart-emails', async (_request: NextRe
     success: true,
     message: `Processed ${abandoned.length} abandoned carts`,
     sent,
+    skipped,
     failed,
     timestamp: new Date().toISOString()
   });
@@ -110,6 +127,7 @@ function generateAbandonedCartEmail(data: {
   tourDate: string | null;
   partySize: number | null;
   step: string;
+  unsubscribeUrl?: string;
 }): string {
   const greeting = data.name ? `Hi ${data.name.split(' ')[0]},` : 'Hi there,';
 
@@ -150,7 +168,7 @@ function generateAbandonedCartEmail(data: {
   <div style="text-align: center; font-size: 12px; color: #888; margin-top: 30px;">
     <p>Walla Walla Travel | Your Gateway to Wine Country</p>
     <p>
-      <a href="https://wallawalla.travel/unsubscribe" style="color: #888;">Unsubscribe</a> |
+      <a href="${data.unsubscribeUrl || 'https://wallawalla.travel/unsubscribe'}" style="color: #888;">Unsubscribe</a> |
       <a href="https://wallawalla.travel/privacy" style="color: #888;">Privacy Policy</a>
     </p>
   </div>

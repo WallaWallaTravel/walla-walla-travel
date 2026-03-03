@@ -24,6 +24,7 @@ import {
   buildDepositReceivedEmail,
   buildDepositReceivedStaffEmail,
 } from '@/lib/email/templates/trip-proposal-emails';
+import { emailPreferencesService } from '@/lib/services/email-preferences.service';
 
 const STAFF_EMAIL = process.env.STAFF_NOTIFICATION_EMAIL || 'info@wallawalla.travel';
 
@@ -140,6 +141,20 @@ class TripProposalEmailService {
         return;
       }
 
+      // CAN-SPAM: Check if recipient has unsubscribed
+      if (await emailPreferencesService.isUnsubscribed(proposal.customer_email)) {
+        logger.info('[TripProposalEmail] Skipping proposal sent email — recipient unsubscribed', {
+          proposalId,
+          email: proposal.customer_email,
+        });
+        return;
+      }
+
+      // Get unsubscribe token and headers
+      const pref = await emailPreferencesService.getOrCreatePreference(proposal.customer_email);
+      const unsubscribeUrl = emailPreferencesService.getUnsubscribeUrl(pref.unsubscribe_token);
+      const unsubscribeHeaders = emailPreferencesService.getUnsubscribeHeaders(pref.unsubscribe_token);
+
       const brandId = proposal.brand_id ?? undefined;
       const brand = getBrandEmailConfig(brandId);
       const template = buildProposalSentEmail({
@@ -155,6 +170,7 @@ class TripProposalEmailService {
         valid_until: formatDateForEmail(proposal.valid_until),
         brand_id: proposal.brand_id || 1,
         custom_message: customMessage,
+        unsubscribe_url: unsubscribeUrl,
       });
 
       const success = await sendEmail({
@@ -164,6 +180,7 @@ class TripProposalEmailService {
         subject: template.subject,
         html: template.html,
         text: template.text,
+        headers: unsubscribeHeaders,
       });
 
       await logEmail(proposalId, emailType, proposal.customer_email, template.subject, success);
@@ -217,36 +234,51 @@ class TripProposalEmailService {
 
       // Customer email
       if (proposal.customer_email) {
-        const customerTemplate = buildProposalAcceptedEmail({
-          customer_name: proposal.customer_name,
-          proposal_number: proposal.proposal_number,
-          access_token: proposal.access_token,
-          trip_type: getTripTypeLabel(proposal.trip_type),
-          start_date: formatDateForEmail(proposal.start_date),
-          end_date: formatDateForEmail(proposal.end_date || proposal.start_date),
-          party_size: proposal.party_size,
-          total,
-          deposit_amount: depositAmount,
-          brand_id: proposal.brand_id || 1,
-        });
+        // CAN-SPAM: Check if recipient has unsubscribed
+        const customerUnsubscribed = await emailPreferencesService.isUnsubscribed(proposal.customer_email);
+        if (customerUnsubscribed) {
+          logger.info('[TripProposalEmail] Skipping accepted customer email — recipient unsubscribed', {
+            proposalId,
+            email: proposal.customer_email,
+          });
+        } else {
+          const pref = await emailPreferencesService.getOrCreatePreference(proposal.customer_email);
+          const unsubscribeUrl = emailPreferencesService.getUnsubscribeUrl(pref.unsubscribe_token);
+          const unsubscribeHeaders = emailPreferencesService.getUnsubscribeHeaders(pref.unsubscribe_token);
 
-        const customerSuccess = await sendEmail({
-          to: proposal.customer_email,
-          from: `${brand.name} <${brand.from_email}>`,
-          replyTo: brand.reply_to,
-          subject: customerTemplate.subject,
-          html: customerTemplate.html,
-          text: customerTemplate.text,
-        });
+          const customerTemplate = buildProposalAcceptedEmail({
+            customer_name: proposal.customer_name,
+            proposal_number: proposal.proposal_number,
+            access_token: proposal.access_token,
+            trip_type: getTripTypeLabel(proposal.trip_type),
+            start_date: formatDateForEmail(proposal.start_date),
+            end_date: formatDateForEmail(proposal.end_date || proposal.start_date),
+            party_size: proposal.party_size,
+            total,
+            deposit_amount: depositAmount,
+            brand_id: proposal.brand_id || 1,
+            unsubscribe_url: unsubscribeUrl,
+          });
 
-        await logEmail(proposalId, emailType, proposal.customer_email, customerTemplate.subject, customerSuccess);
+          const customerSuccess = await sendEmail({
+            to: proposal.customer_email,
+            from: `${brand.name} <${brand.from_email}>`,
+            replyTo: brand.reply_to,
+            subject: customerTemplate.subject,
+            html: customerTemplate.html,
+            text: customerTemplate.text,
+            headers: unsubscribeHeaders,
+          });
 
-        // CRM sync (non-blocking)
-        crmSyncService.logEmailSent({
-          customerEmail: proposal.customer_email,
-          subject: customerTemplate.subject,
-          emailType,
-        }).catch(() => {});
+          await logEmail(proposalId, emailType, proposal.customer_email, customerTemplate.subject, customerSuccess);
+
+          // CRM sync (non-blocking)
+          crmSyncService.logEmailSent({
+            customerEmail: proposal.customer_email,
+            subject: customerTemplate.subject,
+            emailType,
+          }).catch(() => {});
+        }
       }
 
       // Staff notification
@@ -315,36 +347,51 @@ class TripProposalEmailService {
 
       // Customer receipt
       if (proposal.customer_email) {
-        const customerTemplate = buildDepositReceivedEmail({
-          customer_name: proposal.customer_name,
-          proposal_number: proposal.proposal_number,
-          trip_type: getTripTypeLabel(proposal.trip_type),
-          start_date: formatDateForEmail(proposal.start_date),
-          party_size: proposal.party_size,
-          total,
-          deposit_amount: depositAmount,
-          amount_paid: amountPaid,
-          balance_remaining: balanceRemaining,
-          brand_id: proposal.brand_id || 1,
-        });
+        // CAN-SPAM: Check if recipient has unsubscribed
+        const customerUnsubscribed = await emailPreferencesService.isUnsubscribed(proposal.customer_email);
+        if (customerUnsubscribed) {
+          logger.info('[TripProposalEmail] Skipping deposit received customer email — recipient unsubscribed', {
+            proposalId,
+            email: proposal.customer_email,
+          });
+        } else {
+          const pref = await emailPreferencesService.getOrCreatePreference(proposal.customer_email);
+          const unsubscribeUrl = emailPreferencesService.getUnsubscribeUrl(pref.unsubscribe_token);
+          const unsubscribeHeaders = emailPreferencesService.getUnsubscribeHeaders(pref.unsubscribe_token);
 
-        const customerSuccess = await sendEmail({
-          to: proposal.customer_email,
-          from: `${brand.name} <${brand.from_email}>`,
-          replyTo: brand.reply_to,
-          subject: customerTemplate.subject,
-          html: customerTemplate.html,
-          text: customerTemplate.text,
-        });
+          const customerTemplate = buildDepositReceivedEmail({
+            customer_name: proposal.customer_name,
+            proposal_number: proposal.proposal_number,
+            trip_type: getTripTypeLabel(proposal.trip_type),
+            start_date: formatDateForEmail(proposal.start_date),
+            party_size: proposal.party_size,
+            total,
+            deposit_amount: depositAmount,
+            amount_paid: amountPaid,
+            balance_remaining: balanceRemaining,
+            brand_id: proposal.brand_id || 1,
+            unsubscribe_url: unsubscribeUrl,
+          });
 
-        await logEmail(proposalId, emailType, proposal.customer_email, customerTemplate.subject, customerSuccess);
+          const customerSuccess = await sendEmail({
+            to: proposal.customer_email,
+            from: `${brand.name} <${brand.from_email}>`,
+            replyTo: brand.reply_to,
+            subject: customerTemplate.subject,
+            html: customerTemplate.html,
+            text: customerTemplate.text,
+            headers: unsubscribeHeaders,
+          });
 
-        // CRM sync (non-blocking)
-        crmSyncService.logEmailSent({
-          customerEmail: proposal.customer_email,
-          subject: customerTemplate.subject,
-          emailType,
-        }).catch(() => {});
+          await logEmail(proposalId, emailType, proposal.customer_email, customerTemplate.subject, customerSuccess);
+
+          // CRM sync (non-blocking)
+          crmSyncService.logEmailSent({
+            customerEmail: proposal.customer_email,
+            subject: customerTemplate.subject,
+            emailType,
+          }).catch(() => {});
+        }
       }
 
       // Staff notification

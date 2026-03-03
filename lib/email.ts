@@ -14,6 +14,7 @@ interface EmailOptions {
   text?: string;
   from?: string;
   replyTo?: string;
+  headers?: Record<string, string>;
 }
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
@@ -44,6 +45,7 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
       html: options.html,
       text: options.text,
       replyTo: options.replyTo,
+      headers: options.headers,
     });
 
     if (error) {

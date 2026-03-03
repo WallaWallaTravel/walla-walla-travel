@@ -37,7 +37,7 @@ function escapeHtml(str: string): string {
 /**
  * Wraps content in the standard branded email shell (header + footer).
  */
-function emailShell(brand: BrandEmailConfig, headingText: string, subheadingText: string, bodyHtml: string): string {
+function emailShell(brand: BrandEmailConfig, headingText: string, subheadingText: string, bodyHtml: string, unsubscribeUrl?: string): string {
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -69,7 +69,10 @@ ${bodyHtml}
       </p>
       <p style="margin: 16px 0 0 0; font-size: 12px; color: #6b7280;">
         ${brand.name} &bull; ${brand.website}
-      </p>
+      </p>${unsubscribeUrl ? `
+      <p style="margin: 12px 0 0 0; font-size: 11px; color: #9ca3af;">
+        <a href="${unsubscribeUrl}" style="color: #9ca3af; text-decoration: underline;">Unsubscribe</a> from marketing emails
+      </p>` : ''}
     </div>
 
   </div>
@@ -116,6 +119,7 @@ interface ProposalSentData {
   valid_until: string;
   brand_id: number;
   custom_message?: string;
+  unsubscribe_url?: string;
 }
 
 export function buildProposalSentEmail(data: ProposalSentData): { subject: string; html: string; text: string } {
@@ -165,7 +169,7 @@ ${ctaButton(brand, 'View Your Proposal', proposalUrl)}
         ${brand.signature}
       </p>`;
 
-  const html = emailShell(brand, 'Your Trip Proposal is Ready', brand.tagline, bodyHtml);
+  const html = emailShell(brand, 'Your Trip Proposal is Ready', brand.tagline, bodyHtml, data.unsubscribe_url);
 
   const text = `Your Trip Proposal is Ready | ${brand.name}
 
@@ -192,7 +196,7 @@ ${brand.signature}
 
 ---
 ${brand.phone} | ${brand.reply_to}
-${brand.name} | ${brand.website}`;
+${brand.name} | ${brand.website}${data.unsubscribe_url ? `\nUnsubscribe: ${data.unsubscribe_url}` : ''}`;
 
   return {
     subject: `Your Trip Proposal is Ready | ${brand.name}`,
@@ -216,6 +220,7 @@ interface ProposalAcceptedData {
   total: number;
   deposit_amount: number;
   brand_id: number;
+  unsubscribe_url?: string;
 }
 
 export function buildProposalAcceptedEmail(data: ProposalAcceptedData): { subject: string; html: string; text: string } {
@@ -263,7 +268,7 @@ ${ctaButton(brand, 'Pay Deposit Now', payUrl)}
         ${brand.signature}
       </p>`;
 
-  const html = emailShell(brand, 'Your Trip is Confirmed!', brand.tagline, bodyHtml);
+  const html = emailShell(brand, 'Your Trip is Confirmed!', brand.tagline, bodyHtml, data.unsubscribe_url);
 
   const text = `Your Trip is Confirmed! | ${brand.name}
 
@@ -290,7 +295,7 @@ ${brand.signature}
 
 ---
 ${brand.phone} | ${brand.reply_to}
-${brand.name} | ${brand.website}`;
+${brand.name} | ${brand.website}${data.unsubscribe_url ? `\nUnsubscribe: ${data.unsubscribe_url}` : ''}`;
 
   return {
     subject: `Your Trip is Confirmed! | ${brand.name}`,
@@ -392,6 +397,7 @@ interface DepositReceivedData {
   amount_paid: number;
   balance_remaining: number;
   brand_id: number;
+  unsubscribe_url?: string;
 }
 
 export function buildDepositReceivedEmail(data: DepositReceivedData): { subject: string; html: string; text: string } {
@@ -454,7 +460,7 @@ ${summaryCard(brand, 'Trip Summary', [
         ${brand.signature}
       </p>`;
 
-  const html = emailShell(brand, 'Deposit Received', `Thank you for your payment, ${data.customer_name}`, bodyHtml);
+  const html = emailShell(brand, 'Deposit Received', `Thank you for your payment, ${data.customer_name}`, bodyHtml, data.unsubscribe_url);
 
   const text = `Deposit Received - ${data.proposal_number} | ${brand.name}
 
@@ -485,7 +491,7 @@ ${brand.signature}
 
 ---
 ${brand.phone} | ${brand.reply_to}
-${brand.name} | ${brand.website}`;
+${brand.name} | ${brand.website}${data.unsubscribe_url ? `\nUnsubscribe: ${data.unsubscribe_url}` : ''}`;
 
   return {
     subject: `Deposit Received - ${data.proposal_number} | ${brand.name}`,

@@ -21,6 +21,7 @@ import {
   paymentReminderUrgent,
   paymentReminderFinal,
 } from '@/lib/email/templates/payment-reminder-emails';
+import { emailPreferencesService } from '@/lib/services/email-preferences.service';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -359,6 +360,20 @@ async function sendReminderEmail(
   guest: { id: number; guest_name: string; guest_email: string; amount_owed: number; amount_paid: number; guest_token: string },
   proposal: { id: number; proposal_number: string; brand_id: number; customer_name: string; trip_type: string; start_date: string; payment_deadline: string; access_token: string }
 ): Promise<boolean> {
+  // CAN-SPAM: Check if recipient has unsubscribed
+  if (await emailPreferencesService.isUnsubscribed(guest.guest_email)) {
+    logger.info('Skipping payment reminder — recipient unsubscribed', {
+      reminder_id: reminder.id,
+      email: guest.guest_email,
+    });
+    return false;
+  }
+
+  // Get unsubscribe token and headers
+  const pref = await emailPreferencesService.getOrCreatePreference(guest.guest_email);
+  const unsubscribeUrl = emailPreferencesService.getUnsubscribeUrl(pref.unsubscribe_token);
+  const unsubscribeHeaders = emailPreferencesService.getUnsubscribeHeaders(pref.unsubscribe_token);
+
   const brand = getBrandEmailConfig(proposal.brand_id);
   const amountRemaining = Number(guest.amount_owed) - Number(guest.amount_paid);
   const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://wallawalla.travel';
@@ -375,6 +390,7 @@ async function sendReminderEmail(
     payment_link: paymentLink,
     custom_message: reminder.custom_message || undefined,
     brand_id: proposal.brand_id,
+    unsubscribe_url: unsubscribeUrl,
   };
 
   // Select template based on urgency
@@ -402,6 +418,7 @@ async function sendReminderEmail(
       subject: template.subject,
       html: template.html,
       text: template.text,
+      headers: unsubscribeHeaders,
     });
 
     // Audit logging for sent emails
