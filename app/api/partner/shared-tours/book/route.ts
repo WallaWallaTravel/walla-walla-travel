@@ -24,9 +24,9 @@ const BodySchema = z.object({
  */
 export const POST = withCSRF(
   withErrorHandling(async (request: NextRequest) => {
-  // Get hotel ID from server-side session cookie (preferred) or legacy header
+  // Get hotel ID from server-side session cookie
   const session = await getHotelSessionFromRequest(request);
-  const hotelId = session?.hotelId || request.headers.get('x-hotel-id');
+  const hotelId = session?.hotelId;
 
   if (!hotelId) {
     throw new UnauthorizedError('Hotel authentication required');
