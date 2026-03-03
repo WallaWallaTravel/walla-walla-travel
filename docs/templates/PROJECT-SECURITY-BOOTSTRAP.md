@@ -77,6 +77,9 @@ Do these **before writing any features**. Every item here was a real vulnerabili
 - [ ] **`verify.sh` mirroring CI locally**
   Create a `scripts/verify.sh` that runs `tsc + lint + next build + jest` — the same checks CI runs. Developers run this before pushing.
 
+- [ ] **Velocity-aware review reminders from commit #1**
+  Don't defer security review to "later" — it compounds. Run a code reviewer agent after every feature completion. Track security-relevant changes (auth, payments, data access) with extra scrutiny. Set up automated checks (health scripts, linter crons) in the first week, not the first month.
+
 ---
 
 ## Section 2: Infrastructure Monitoring
@@ -125,6 +128,9 @@ Pre-launch gate. Do not deploy to production without these.
 
 - [ ] **CAN-SPAM compliance on marketing emails**
   All marketing/transactional emails must include a working unsubscribe link. Use a token-based unsubscribe system (`/unsubscribe/[token]` route). Track opt-out state in an `email_preferences` table.
+
+- [ ] **Disposable email validation on customer-facing forms**
+  Block disposable/temporary email domains (mailinator.com, guerrillamail.com, etc.) on registration, booking, and contact forms. Validate at the API layer with a maintained blocklist. Disposable emails lead to undeliverable confirmations, fake accounts, and wasted resources.
 
 ### File Security
 
@@ -193,9 +199,9 @@ Anti-patterns discovered the hard way. These are not hypothetical — each one c
 
 ### Developer Experience
 
-> **Pre-commit hooks can bundle unrelated files — verify commit messages.**
+> **Pre-commit hooks can miss what `next build` catches.**
 >
-> Aggressive pre-commit hooks that auto-stage and commit can silently include dirty files from other work. Always check `git log --oneline -1` after commits to verify the message and diff match your intent.
+> Pre-commit hooks typically run `tsc` and `lint` for speed, but `next build` catches route-level type errors, missing exports, and server/client boundary mismatches that `tsc` alone misses. A commit can pass pre-commit hooks and still fail CI. Solution: always run `next build` in CI as the final gate, and consider running it in pre-commit for critical branches.
 
 ### React
 
