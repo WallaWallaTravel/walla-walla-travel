@@ -9,6 +9,7 @@ import { crmTaskAutomationService } from '@/lib/services/crm-task-automation.ser
 import { sendEmail } from '@/lib/email';
 import { COMPANY_INFO } from '@/lib/config/company';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { noDisposableEmail } from '@/lib/utils/email-validation';
 
 // ============================================================================
 // Validation Schema
@@ -16,7 +17,7 @@ import { withCSRF } from '@/lib/api/middleware/csrf';
 
 const ContactFormSchema = z.object({
   name: z.string().min(1, 'Name is required').max(200),
-  email: z.string().email('Invalid email address'),
+  email: z.string().email('Invalid email address').superRefine(noDisposableEmail),
   phone: z.string().optional(),
   dates: z.string().optional(),
   groupSize: z.string().optional(),

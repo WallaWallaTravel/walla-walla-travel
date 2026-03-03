@@ -12,13 +12,14 @@ import { experienceRequestService } from '@/lib/services/experience-request.serv
 import { sendEmail } from '@/lib/email';
 import { logger } from '@/lib/logger';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { noDisposableEmail } from '@/lib/utils/email-validation';
 
 // Validation schema for public inquiry form
 const InquirySchema = z.object({
   // Required fields
   first_name: z.string().min(2, 'First name must be at least 2 characters'),
   last_name: z.string().min(2, 'Last name must be at least 2 characters'),
-  email: z.string().email('Please provide a valid email address'),
+  email: z.string().email('Please provide a valid email address').superRefine(noDisposableEmail),
   phone: z.string().min(10, 'Please provide a valid phone number'),
   tour_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD format'),
   party_size: z.number().int().min(1, 'Party size must be at least 1').max(50, 'For groups over 50, please contact us directly'),

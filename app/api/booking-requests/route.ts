@@ -15,6 +15,7 @@ import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-h
 import { crmSyncService } from '@/lib/services/crm-sync.service';
 import { crmTaskAutomationService } from '@/lib/services/crm-task-automation.service';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { noDisposableEmail } from '@/lib/utils/email-validation';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -39,7 +40,7 @@ const BookingRequestSchema = z.object({
   additionalServices: z.array(AdditionalServiceSchema).optional(),
   contact: z.object({
     name: z.string().min(1, 'Name is required'),
-    email: z.string().email('Valid email is required'),
+    email: z.string().email('Valid email is required').superRefine(noDisposableEmail),
     phone: z.string().optional(),
     textConsent: z.boolean(),
   }),

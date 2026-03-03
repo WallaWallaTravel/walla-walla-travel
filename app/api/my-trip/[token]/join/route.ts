@@ -11,6 +11,7 @@ import { rateLimiters } from '@/lib/api/middleware/rate-limit';
 import { checkRateLimit } from '@/lib/api/middleware/rate-limit';
 import { z } from 'zod';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { noDisposableEmail } from '@/lib/utils/email-validation';
 
 interface RouteParams {
   token: string;
@@ -18,7 +19,7 @@ interface RouteParams {
 
 const JoinGuestSchema = z.object({
   name: z.string().min(1, 'Name is required').max(255),
-  email: z.string().email('Valid email required'),
+  email: z.string().email('Valid email required').superRefine(noDisposableEmail),
   phone: z.string().max(50).optional().or(z.literal('')),
 });
 

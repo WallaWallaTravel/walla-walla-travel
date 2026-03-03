@@ -4,6 +4,7 @@
  */
 
 import { z } from 'zod';
+import { noDisposableEmail } from '@/lib/utils/email-validation';
 
 // ============================================================================
 // BOOKING SCHEMAS
@@ -12,9 +13,9 @@ import { z } from 'zod';
 export const CreateBookingSchema = z.object({
   // Customer Information
   customer_name: z.string().min(2, 'Name must be at least 2 characters'),
-  customer_email: z.string().email('Invalid email address'),
+  customer_email: z.string().email('Invalid email address').superRefine(noDisposableEmail),
   customer_phone: z.string().optional(),
-  
+
   // Tour Details
   tour_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
   tour_start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
@@ -219,7 +220,7 @@ export const CreateSharedTourTicketSchema = z.object({
   tour_id: z.string().uuid('Invalid tour ID format'),
   ticket_count: z.number().int().min(1, 'At least 1 ticket required').max(14, 'Maximum 14 tickets per booking'),
   customer_name: z.string().min(2, 'Name must be at least 2 characters').max(100, 'Name too long'),
-  customer_email: z.string().email('Invalid email address').max(255, 'Email too long'),
+  customer_email: z.string().email('Invalid email address').max(255, 'Email too long').superRefine(noDisposableEmail),
   customer_phone: z.string().regex(/^[\d\s()+-]+$/, 'Invalid phone number format').max(20, 'Phone number too long').optional(),
   guest_names: z.array(z.string().min(1).max(100)).max(14).optional(),
   includes_lunch: z.boolean().default(true),

@@ -4,10 +4,11 @@ import { logger } from '@/lib/logger';
 import { captureVisitorEmail, logEmailCaptureAttempt, getVisitorByUUID } from '@/lib/visitor/visitor-tracking';
 import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { noDisposableEmail } from '@/lib/utils/email-validation';
 
 const BodySchema = z.object({
   visitor_uuid: z.string().min(1).max(255),
-  email: z.string().email().max(255),
+  email: z.string().email().max(255).superRefine(noDisposableEmail),
   name: z.string().max(255).optional(),
   phone: z.string().max(50).optional(),
   trigger_type: z.string().max(100).optional(),

@@ -4,11 +4,12 @@ import { hotelPartnerService } from '@/lib/services/hotel-partner.service';
 import { getHotelSessionFromRequest } from '@/lib/auth/hotel-session';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { z } from 'zod';
+import { noDisposableEmail } from '@/lib/utils/email-validation';
 
 const BodySchema = z.object({
   tour_id: z.string().min(1).max(50),
   customer_name: z.string().min(1).max(255),
-  customer_email: z.string().email().max(255),
+  customer_email: z.string().email().max(255).superRefine(noDisposableEmail),
   customer_phone: z.string().max(50).optional(),
   ticket_count: z.number().int().min(1).max(14),
   guest_names: z.array(z.string().max(255)).optional(),
