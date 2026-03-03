@@ -28,9 +28,9 @@ export async function generateStaticParams() {
   }
 }
 
-// Render dynamically at request time (not statically at build time)
-// This avoids build errors and allows pages to always show fresh data
-export const dynamic = 'force-dynamic';
+// ISR: revalidate every hour. Content changes rarely but traffic can spike.
+// generateStaticParams pre-renders known slugs; new slugs render on-demand then cache.
+export const revalidate = 3600;
 
 // ============================================================================
 // Dynamic Metadata (SEO)

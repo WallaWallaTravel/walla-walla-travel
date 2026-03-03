@@ -6,6 +6,9 @@ import { EventCard } from '@/components/events/EventCard';
 import { EventJsonLd } from '@/components/seo/EventJsonLd';
 import { getCanonicalUrl } from '@/lib/utils/domain';
 
+// ISR: revalidate every 30 minutes. Events change more often than wineries.
+export const revalidate = 1800;
+
 interface PageProps {
   params: Promise<{ slug: string }>;
 }

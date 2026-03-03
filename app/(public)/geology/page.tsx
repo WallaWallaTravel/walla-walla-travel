@@ -31,6 +31,9 @@ export const metadata: Metadata = {
   },
 };
 
+// ISR: revalidate every 24 hours. Geology content rarely changes.
+export const revalidate = 86400;
+
 // ============================================================================
 // Types
 // ============================================================================

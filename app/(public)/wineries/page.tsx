@@ -5,8 +5,8 @@ import { getWineries } from '@/lib/data/wineries';
 import { WineryDirectoryClient } from '@/components/wineries/WineryDirectoryClient';
 import { BreadcrumbJsonLd } from '@/components/seo/BreadcrumbJsonLd';
 
-// Force dynamic rendering to avoid database connection at build time
-export const dynamic = 'force-dynamic';
+// ISR: revalidate every hour. Winery listing changes rarely.
+export const revalidate = 3600;
 
 // ============================================================================
 // SEO Metadata

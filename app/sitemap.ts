@@ -8,8 +8,8 @@ import { getAllBestOfCategorySlugs } from '@/lib/data/best-of-categories';
 import { query } from '@/lib/db';
 import { logger } from '@/lib/logger';
 
-// Force dynamic rendering - sitemap needs fresh data
-export const dynamic = 'force-dynamic';
+// ISR: revalidate every hour. Sitemap content changes infrequently.
+export const revalidate = 3600;
 
 /**
  * Dynamic Sitemap Generation
