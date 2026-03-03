@@ -824,7 +824,8 @@ await auditService.logFromRequest(request, parseInt(session.userId), 'resource_d
 - `withCronLock('lock-name', fn)` uses PostgreSQL advisory locks to prevent duplicate runs on overlapping invocations
 - `cleanup-sessions` runs daily at 5 AM UTC (table hygiene for `user_sessions`)
 - `queue-worker` cron processes the Upstash Redis job queue (emails, CRM syncs, webhooks)
-- 18 total cron routes configured in `vercel.json`
+- `supabase-lint` runs daily at 6 AM UTC — queries `extensions.lint()` for SECURITY errors, alerts via Resend, stores in `system_health_checks`
+- 20 total cron routes configured in `vercel.json`
 - Pattern: `export const GET = withCronAuth('name', async (request) => { ... });`
 - Support POST for manual triggering: `export const POST = GET;`
 
@@ -836,7 +837,7 @@ Active services (all required):
 
 | Service | Purpose | Notes |
 |---------|---------|-------|
-| **Supabase** | PostgreSQL DB + Storage + Realtime | Pro plan, daily backups. Auth and Edge Functions NOT used. Realtime IS used (hooks/useProposalRealtime.ts — 5 channel subscriptions for live proposal updates) |
+| **Supabase** | PostgreSQL DB + Storage + Realtime | Pro plan, daily backups. Auth and Edge Functions NOT used. Realtime IS used (hooks/useProposalRealtime.ts — 5 channel subscriptions for live proposal updates). **RLS enabled on ALL tables with no policies** — blocks PostgREST access via anon key; backend uses service_role (bypasses RLS). Views use SECURITY INVOKER. |
 | **Stripe** | Payments | Dual-brand (WWT + NWTouring), test + live webhook secrets |
 | **Resend** | Transactional email | Replaced Postmark. CAN-SPAM compliant: all emails include unsubscribe link via `lib/email/unsubscribe.ts` |
 | **Upstash Redis** | Rate limiting + queue + response caching | 10 public GET routes cached (5-min TTL via `lib/cache.ts`) |
@@ -851,7 +852,7 @@ See `/Users/temp/INFRASTRUCTURE.md` for complete registry.
 
 ## Health Monitoring
 
-- **Local**: `./scripts/daily-health.sh` — auth wrappers, Zod, CSRF, oversized files, npm audit, test ratio
+- **Local**: `./scripts/daily-health.sh` — auth wrappers, Zod, CSRF, oversized files, npm audit, test ratio, Supabase lint (if DATABASE_URL set)
 - **Local**: `./scripts/verify.sh` — tsc + lint + next build + jest (mirrors CI)
 - **CI**: `.github/workflows/daily-health-check.yml` — 3x daily + on every push
 - **CI**: `.github/workflows/storage-backup.yml` — weekly Supabase Storage backup
