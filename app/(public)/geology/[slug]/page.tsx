@@ -15,6 +15,9 @@ function stripHtmlTags(input: string): string {
   return input.replace(/<[^>]*>/g, '');
 }
 
+// ISR: revalidate every 24 hours. Geology content rarely changes.
+export const revalidate = 86400;
+
 // ============================================================================
 // Types
 // ============================================================================
