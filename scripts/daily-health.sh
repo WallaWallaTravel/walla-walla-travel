@@ -154,6 +154,25 @@ else
   mark_pass "Coverage ratio acceptable (${RATIO}%)"
 fi
 
+# ── Check G: Supabase Database Lint (requires DATABASE_URL) ──────
+
+print_header "G. Supabase Database Lint (Security)"
+
+if [ -n "$DATABASE_URL" ]; then
+  LINT_ERRORS=$(psql "$DATABASE_URL" -t -A -c \
+    "SELECT count(*) FROM extensions.lint() WHERE level = 'ERROR' AND categories @> ARRAY['SECURITY']" 2>/dev/null)
+
+  if [ $? -ne 0 ] || [ -z "$LINT_ERRORS" ]; then
+    mark_warn "Could not run Supabase lint (extensions.lint() not available or DB unreachable)"
+  elif [ "$LINT_ERRORS" -gt 0 ]; then
+    mark_fail "$LINT_ERRORS security ERROR-level lint result(s) — run: SELECT * FROM extensions.lint() WHERE level = 'ERROR'"
+  else
+    mark_pass "No security ERROR-level lint results"
+  fi
+else
+  mark_warn "DATABASE_URL not set — skipping Supabase lint check"
+fi
+
 # ── Summary ───────────────────────────────────────────────────────
 
 echo ""
