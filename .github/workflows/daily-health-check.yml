@@ -12,6 +12,7 @@ on:
 permissions:
   contents: read
   issues: write
+  pull-requests: read
 
 jobs:
   health-check:
@@ -214,6 +215,45 @@ jobs:
             echo "passed=false" >> $GITHUB_OUTPUT
           fi
 
+      - name: Check H — Review reminder
+        id: check_review
+        run: |
+          echo "## H. Review Reminder" >> $GITHUB_STEP_SUMMARY
+
+          LAST_TAG=$(git tag -l 'review-*' --sort=-version:refname | head -1)
+          if [ -z "$LAST_TAG" ]; then
+            COMMITS_SINCE=0
+            LAST_DATE="(never)"
+          else
+            COMMITS_SINCE=$(git rev-list --count "${LAST_TAG}..HEAD")
+            LAST_DATE=$(echo "$LAST_TAG" | sed 's/review-//')
+          fi
+
+          COMMITS_7D=$(git rev-list --count --since="7 days ago" HEAD)
+
+          if [ "$COMMITS_7D" -ge 10 ]; then
+            TIER="high"; THRESHOLD=25
+          elif [ "$COMMITS_7D" -ge 3 ]; then
+            TIER="moderate"; THRESHOLD=50
+          else
+            TIER="low"; THRESHOLD=100
+          fi
+
+          echo "- **Last review:** ${LAST_DATE}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commits since review:** ${COMMITS_SINCE}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Velocity:** ${TIER} (${COMMITS_7D}/week → threshold ${THRESHOLD})" >> $GITHUB_STEP_SUMMARY
+
+          if [ "$COMMITS_SINCE" -ge "$THRESHOLD" ]; then
+            echo "- :warning: **REVIEW DUE** — ${COMMITS_SINCE} commits since last review" >> $GITHUB_STEP_SUMMARY
+            echo "review_due=true" >> $GITHUB_OUTPUT
+            echo "REVIEW_COMMITS=$COMMITS_SINCE" >> $GITHUB_ENV
+            echo "REVIEW_TIER=$TIER" >> $GITHUB_ENV
+          else
+            REMAINING=$((THRESHOLD - COMMITS_SINCE))
+            echo "- :white_check_mark: OK — ${REMAINING} commits until review due" >> $GITHUB_STEP_SUMMARY
+            echo "review_due=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Determine overall result
         id: result
         run: |
@@ -339,3 +379,61 @@ jobs:
               issue_number: issue.data.number,
               state: 'closed'
             });
+
+      - name: Create review-due issue if needed
+        if: steps.check_review.outputs.review_due == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const commits = process.env.REVIEW_COMMITS || '?';
+            const tier = process.env.REVIEW_TIER || 'unknown';
+
+            // Ensure label exists
+            try {
+              await github.rest.issues.getLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: 'review-due'
+              });
+            } catch {
+              await github.rest.issues.createLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: 'review-due',
+                color: 'd93f0b',
+                description: 'Code review is due based on commit velocity'
+              });
+            }
+
+            // Check if an open review-due issue already exists
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'review-due',
+              state: 'open'
+            });
+
+            if (existing.data.length > 0) {
+              // Update existing issue with latest count
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.data[0].number,
+                body: `Update: now ${commits} commits since last review (velocity: ${tier}).`
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `Review Due: ${commits} commits since last review`,
+                body: `## Code Review Needed\n\n` +
+                  `**Commits since last review:** ${commits}\n` +
+                  `**Velocity tier:** ${tier}\n\n` +
+                  `The velocity-aware review system has detected that a code review is due.\n\n` +
+                  `### Next Steps\n` +
+                  `1. Run a review/audit session\n` +
+                  `2. When complete, run: \`./scripts/mark-review-complete.sh\`\n` +
+                  `3. This will tag the commit and auto-close this issue\n`,
+                labels: ['review-due']
+              });
+            }

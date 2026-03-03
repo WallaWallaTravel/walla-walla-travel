@@ -857,6 +857,13 @@ See `/Users/temp/INFRASTRUCTURE.md` for complete registry.
 - **CI**: `.github/workflows/daily-health-check.yml` — 3x daily + on every push
 - **CI**: `.github/workflows/storage-backup.yml` — weekly Supabase Storage backup
 - **Branch protection**: main requires Build Check + Lint Code status checks
+- **Review reminders**: Velocity-adaptive — CI runs `check-review-due.sh` on every push, creates GitHub Issue when due. After review sessions, run `./scripts/mark-review-complete.sh` to tag and close issues.
+
+---
+
+## Security Bootstrap
+
+For new projects, apply all Day-One Checklist items from `docs/templates/PROJECT-SECURITY-BOOTSTRAP.md` before writing features. This template codifies lessons from 4 audit sessions.
 
 ---
 
