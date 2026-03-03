@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { dailyDigestService } from '@/lib/services/daily-digest.service';
 import { logger } from '@/lib/logger';
 import { withCronAuth } from '@/lib/api/middleware/cron-auth';
+import { withCronLock } from '@/lib/api/middleware/cron-lock';
 
 /**
  * Cron Job: Daily Digest Email
@@ -13,6 +14,7 @@ import { withCronAuth } from '@/lib/api/middleware/cron-auth';
  * Protected by CRON_SECRET (fail-closed).
  */
 export const POST = withCronAuth('daily-digest', async (_request: NextRequest) => {
+  return withCronLock('daily-digest', async () => {
   logger.info('Starting daily digest');
 
   const result = await dailyDigestService.sendDigest();
@@ -25,6 +27,7 @@ export const POST = withCronAuth('daily-digest', async (_request: NextRequest) =
     sent: result.sent,
     sections: result.sections,
     timestamp: new Date().toISOString(),
+  });
   });
 });
 

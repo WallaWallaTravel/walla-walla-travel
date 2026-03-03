@@ -15,6 +15,7 @@ import { query } from '@/lib/db'
 import { socialIntelligenceService } from '@/lib/services/social-intelligence.service'
 import { logger } from '@/lib/logger'
 import { withCronAuth } from '@/lib/api/middleware/cron-auth'
+import { withCronLock } from '@/lib/api/middleware/cron-lock'
 import Anthropic from '@anthropic-ai/sdk'
 
 // ---------- Types ----------
@@ -592,6 +593,7 @@ async function createSuggestionsFromStrategy(
 // ---------- Route Handlers ----------
 
 export const GET = withCronAuth('weekly-strategy', async (_request: NextRequest) => {
+  return withCronLock('weekly-strategy', async () => {
   logger.info('Starting weekly strategy generation')
 
   try {
@@ -709,6 +711,7 @@ export const GET = withCronAuth('weekly-strategy', async (_request: NextRequest)
       timestamp: new Date().toISOString(),
     }, { status: 500 })
   }
+  });
 })
 
 export const POST = GET

@@ -18,11 +18,13 @@ import { bookingTrackingService } from '@/lib/services/booking-tracking.service'
 import { Resend } from 'resend';
 import { logger } from '@/lib/logger';
 import { withCronAuth } from '@/lib/api/middleware/cron-auth';
+import { withCronLock } from '@/lib/api/middleware/cron-lock';
 import { emailPreferencesService } from '@/lib/services/email-preferences.service';
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 export const GET = withCronAuth('abandoned-cart-emails', async (_request: NextRequest) => {
+  return withCronLock('abandoned-cart-emails', async () => {
   // Check if Resend is configured
   if (!resend) {
     return NextResponse.json({
@@ -113,6 +115,7 @@ export const GET = withCronAuth('abandoned-cart-emails', async (_request: NextRe
     skipped,
     failed,
     timestamp: new Date().toISOString()
+  });
   });
 });
 

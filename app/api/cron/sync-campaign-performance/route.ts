@@ -13,6 +13,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { withCronAuth } from '@/lib/api/middleware/cron-auth'
+import { withCronLock } from '@/lib/api/middleware/cron-lock'
 
 interface CampaignToSync {
   id: number
@@ -35,6 +36,7 @@ interface ItemWithMetrics {
 }
 
 export const GET = withCronAuth('sync-campaign-performance', async (_request: NextRequest) => {
+  return withCronLock('sync-campaign-performance', async () => {
   logger.info('Starting campaign performance sync')
 
   try {
@@ -172,6 +174,7 @@ export const GET = withCronAuth('sync-campaign-performance', async (_request: Ne
       timestamp: new Date().toISOString(),
     }, { status: 500 })
   }
+  });
 })
 
 export const POST = GET

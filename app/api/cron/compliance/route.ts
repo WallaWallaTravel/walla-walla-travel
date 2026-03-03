@@ -19,11 +19,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { runComplianceNotifications } from '@/lib/services/compliance-notification.service';
 import { logger } from '@/lib/logger';
 import { withCronAuth } from '@/lib/api/middleware/cron-auth';
+import { withCronLock } from '@/lib/api/middleware/cron-lock';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // 60 seconds timeout for cron job
 
 export const GET = withCronAuth('compliance', async (_request: NextRequest) => {
+  return withCronLock('compliance', async () => {
   logger.info('Starting daily compliance notification run');
 
   const result = await runComplianceNotifications();
@@ -35,6 +37,7 @@ export const GET = withCronAuth('compliance', async (_request: NextRequest) => {
     message: 'Compliance check completed',
     result,
     timestamp: new Date().toISOString(),
+  });
   });
 });
 

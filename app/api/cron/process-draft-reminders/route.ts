@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { draftReminderService } from '@/lib/services/draft-reminder.service';
 import { logger } from '@/lib/logger';
 import { withCronAuth } from '@/lib/api/middleware/cron-auth';
+import { withCronLock } from '@/lib/api/middleware/cron-lock';
 
 /**
  * Cron Job: Process Draft Reminders
@@ -12,6 +13,7 @@ import { withCronAuth } from '@/lib/api/middleware/cron-auth';
  * Protected by CRON_SECRET (fail-closed).
  */
 export const POST = withCronAuth('process-draft-reminders', async (_request: NextRequest) => {
+  return withCronLock('process-draft-reminders', async () => {
   logger.info('Starting draft reminder processing');
 
   const result = await draftReminderService.processDraftReminders();
@@ -25,6 +27,7 @@ export const POST = withCronAuth('process-draft-reminders', async (_request: Nex
     tasksCreated: result.tasksCreated,
     errors: result.errors,
     timestamp: new Date().toISOString(),
+  });
   });
 });
 
