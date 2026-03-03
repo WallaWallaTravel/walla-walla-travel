@@ -5,6 +5,7 @@ import { validateBody } from '@/lib/api/middleware/validation';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 import { query } from '@/lib/db';
 import { sendEmail } from '@/lib/email';
+import { logAuthEvent } from '@/lib/services/auth-audit.service';
 import crypto from 'crypto';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 
@@ -50,6 +51,14 @@ export const POST = withCSRF(
 
       const resetUrl = `${appUrl}/partner-portal/reset-password?token=${rawToken}&type=hotel`;
       await sendPartnerResetEmail(normalizedEmail, hotel.name, resetUrl);
+
+      logAuthEvent({
+        eventType: 'password_reset_request',
+        partnerType: 'hotel',
+        partnerId: hotel.id,
+        email: normalizedEmail,
+        request,
+      });
     }
 
     // Handle business partner reset
@@ -66,6 +75,14 @@ export const POST = withCSRF(
 
       const resetUrl = `${appUrl}/partner-portal/reset-password?token=${rawToken}&type=business`;
       await sendPartnerResetEmail(normalizedEmail, user.name, resetUrl);
+
+      logAuthEvent({
+        eventType: 'password_reset_request',
+        partnerType: 'business',
+        partnerId: user.id,
+        email: normalizedEmail,
+        request,
+      });
     }
 
     // Always return success to prevent email enumeration

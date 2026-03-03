@@ -3,6 +3,7 @@ import { withErrorHandling, BadRequestError, UnauthorizedError } from '@/lib/api
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { hotelPartnerService } from '@/lib/services/hotel-partner.service';
+import { logAuthEvent } from '@/lib/services/auth-audit.service';
 import { SignJWT } from 'jose';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
@@ -41,6 +42,13 @@ export const POST = withCSRF(
   const hotel = await hotelPartnerService.authenticateHotel(body.email, body.password);
 
   if (!hotel) {
+    logAuthEvent({
+      eventType: 'login_failure',
+      partnerType: 'hotel',
+      partnerId: 0,
+      email: body.email,
+      request,
+    });
     throw new UnauthorizedError('Invalid email or password');
   }
 
@@ -63,6 +71,14 @@ export const POST = withCSRF(
     sameSite: 'lax',
     path: '/',
     maxAge: 7 * 24 * 60 * 60, // 7 days
+  });
+
+  logAuthEvent({
+    eventType: 'login_success',
+    partnerType: 'hotel',
+    partnerId: Number(hotel.id),
+    email: hotel.email,
+    request,
   });
 
   // Return hotel info for UI display (client no longer needs to store auth)

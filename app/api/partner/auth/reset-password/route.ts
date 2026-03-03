@@ -5,6 +5,7 @@ import { validateBody } from '@/lib/api/middleware/validation';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 import { query } from '@/lib/db';
 import { hashPassword, validatePasswordStrength } from '@/lib/auth/passwords';
+import { logAuthEvent } from '@/lib/services/auth-audit.service';
 import crypto from 'crypto';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 
@@ -32,11 +33,19 @@ export const POST = withCSRF(
     // Hash the incoming token to compare against stored hash
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 
+    let partnerId: number;
     if (type === 'hotel') {
-      await resetHotelPartnerPassword(hashedToken, password);
+      partnerId = await resetHotelPartnerPassword(hashedToken, password);
     } else {
-      await resetBusinessPartnerPassword(hashedToken, password);
+      partnerId = await resetBusinessPartnerPassword(hashedToken, password);
     }
+
+    logAuthEvent({
+      eventType: 'password_reset_complete',
+      partnerType: type,
+      partnerId,
+      request,
+    });
 
     return NextResponse.json({
       success: true,
@@ -50,7 +59,7 @@ export const POST = withCSRF(
 /**
  * Reset password for hotel partners (hotel_partners table)
  */
-async function resetHotelPartnerPassword(hashedToken: string, password: string) {
+async function resetHotelPartnerPassword(hashedToken: string, password: string): Promise<number> {
   const result = await query<{ id: number; reset_token_expires_at: string }>(
     `SELECT id, reset_token_expires_at FROM hotel_partners
      WHERE reset_token = $1 AND is_active = true
@@ -80,12 +89,14 @@ async function resetHotelPartnerPassword(hashedToken: string, password: string) 
      WHERE id = $2`,
     [passwordHash, hotel.id]
   );
+
+  return hotel.id;
 }
 
 /**
  * Reset password for business partners (users table)
  */
-async function resetBusinessPartnerPassword(hashedToken: string, password: string) {
+async function resetBusinessPartnerPassword(hashedToken: string, password: string): Promise<number> {
   const result = await query<{ id: number; reset_token_expires_at: string }>(
     `SELECT id, reset_token_expires_at FROM users
      WHERE reset_token = $1 AND is_active = true AND role = 'partner'
@@ -119,4 +130,6 @@ async function resetBusinessPartnerPassword(hashedToken: string, password: strin
   // Revoke all sessions — forces re-login with new password
   const { sessionStoreService } = await import('@/lib/services/session-store.service');
   await sessionStoreService.revokeAllUserSessions(user.id);
+
+  return user.id;
 }
