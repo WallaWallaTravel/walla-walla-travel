@@ -11,6 +11,7 @@ import { withCronLock } from '@/lib/api/middleware/cron-lock';
 import { sessionStoreService } from '@/lib/services/session-store.service';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
 export const GET = withCronAuth('cleanup-sessions', async (_request: NextRequest) => {
   return withCronLock('cleanup-sessions', async () => {

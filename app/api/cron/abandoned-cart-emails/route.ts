@@ -23,6 +23,8 @@ import { emailPreferencesService } from '@/lib/services/email-preferences.servic
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
+export const maxDuration = 60;
+
 export const GET = withCronAuth('abandoned-cart-emails', async (_request: NextRequest) => {
   return withCronLock('abandoned-cart-emails', async () => {
   // Check if Resend is configured

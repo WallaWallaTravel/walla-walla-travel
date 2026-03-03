@@ -15,6 +15,8 @@ import { logger } from '@/lib/logger'
 import { withCronAuth } from '@/lib/api/middleware/cron-auth'
 import { withCronLock } from '@/lib/api/middleware/cron-lock'
 
+export const maxDuration = 60
+
 interface CampaignToSync {
   id: number
   name: string

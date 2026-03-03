@@ -11,6 +11,8 @@ import { vehicleAvailabilityService } from '@/lib/services/vehicle-availability.
 import { withCronAuth } from '@/lib/api/middleware/cron-auth';
 import { withCronLock } from '@/lib/api/middleware/cron-lock';
 
+export const maxDuration = 60;
+
 export const GET = withCronAuth('cleanup-holds', async (_request: NextRequest) => {
   return withCronLock('cleanup-holds', async () => {
   const deletedCount = await vehicleAvailabilityService.cleanupExpiredHolds();

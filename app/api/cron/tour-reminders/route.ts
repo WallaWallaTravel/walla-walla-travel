@@ -13,6 +13,8 @@ import { logger } from '@/lib/logger';
 import { withCronAuth } from '@/lib/api/middleware/cron-auth';
 import { withCronLock } from '@/lib/api/middleware/cron-lock';
 
+export const maxDuration = 60;
+
 export const POST = withCronAuth('tour-reminders', async (_request: NextRequest) => {
   return withCronLock('tour-reminders', async () => {
   logger.info('Processing tour reminders');

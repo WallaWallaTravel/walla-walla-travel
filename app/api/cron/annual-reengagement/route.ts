@@ -13,6 +13,8 @@ import { logger } from '@/lib/logger';
 import { withCronAuth } from '@/lib/api/middleware/cron-auth';
 import { withCronLock } from '@/lib/api/middleware/cron-lock';
 
+export const maxDuration = 60;
+
 export const POST = withCronAuth('annual-reengagement', async (_request: NextRequest) => {
   return withCronLock('annual-reengagement', async () => {
   logger.info('Processing annual re-engagement tasks');
