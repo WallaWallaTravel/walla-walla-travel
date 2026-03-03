@@ -19,8 +19,13 @@ export const DB_DEFAULTS = {
   STATEMENT_TIMEOUT_MS: 30000,
   /** Slow query threshold in milliseconds (1 second) */
   SLOW_QUERY_THRESHOLD_MS: 1000,
-  /** Maximum connections in pool */
-  MAX_CONNECTIONS: 20,
+  /**
+   * Maximum connections in pool per serverless function.
+   * Vercel spawns many concurrent serverless functions, each with its own pool.
+   * Keep max low to avoid exceeding Supabase's 200-connection PgBouncer limit.
+   * (5 connections × 40 concurrent functions = 200 max theoretical connections)
+   */
+  MAX_CONNECTIONS: 5,
   /** Idle timeout in milliseconds */
   IDLE_TIMEOUT_MS: 30000,
   /** Connection timeout in milliseconds */
@@ -58,8 +63,9 @@ export function getDatabaseConfig(): PoolConfig {
     connectionTimeoutMillis: DB_DEFAULTS.CONNECTION_TIMEOUT_MS,
     maxUses: DB_DEFAULTS.MAX_USES,
     allowExitOnIdle: true,
-    // Set statement_timeout on each new connection
-    options: `-c statement_timeout=${statementTimeout}`,
+    // Set statement_timeout and idle_in_transaction_session_timeout on each new connection.
+    // idle_in_transaction_session_timeout prevents hung transactions from holding connections indefinitely.
+    options: `-c statement_timeout=${statementTimeout} -c idle_in_transaction_session_timeout=10000`,
   };
 }
 
