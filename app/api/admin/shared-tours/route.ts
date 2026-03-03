@@ -4,6 +4,7 @@ import { sharedTourService } from '@/lib/services/shared-tour.service';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { z } from 'zod';
+import { invalidateCache } from '@/lib/api/middleware/redis-cache';
 
 const PostBodySchema = z.object({
   tour_date: z.string().min(1),
@@ -111,6 +112,8 @@ export const POST = withCSRF(
     if (result.max_guests_locked_to_capacity) {
       message += `. Note: max_guests was reduced to ${result.tour.max_guests} to match vehicle capacity`;
     }
+
+    await invalidateCache('shared-tours:');
 
     return NextResponse.json({
       success: true,

@@ -847,5 +847,63 @@ See `/Users/temp/INFRASTRUCTURE.md` for complete registry.
 
 ---
 
-**Last Updated:** March 1, 2026
+## Staging Environment
+
+### Overview
+
+A staging environment exists on the `staging` branch for testing changes before production. Vercel automatically creates a preview deployment for this branch.
+
+### Workflow
+
+```
+feature-branch → staging → verify on preview URL → main (production)
+```
+
+1. Create a feature branch from `main`
+2. When ready to test: merge into `staging` and push
+3. Verify on the staging preview URL
+4. Once verified: merge the feature branch into `main`
+
+### Key Details
+
+| Item | Value |
+|------|-------|
+| **Branch** | `staging` |
+| **Preview URL** | `https://walla-walla-final-git-staging-walla-walla-travel-app.vercel.app` |
+| **Database** | Shared with production (same Supabase) — use test data when testing |
+| **Stripe** | Test mode — card `4242 4242 4242 4242`, any future date, any CVC |
+| **Sentry** | Auto-tagged as `preview` environment (via `NEXT_PUBLIC_VERCEL_ENV`) |
+| **Cron jobs** | Do NOT run on staging (Vercel only runs cron on production) |
+| **Analytics** | Disabled — no `NEXT_PUBLIC_GA_MEASUREMENT_ID` set for Preview |
+
+### Env Vars
+
+- **Category A (safety-critical)**: Stripe test keys — scoped to Preview, different from production
+- **Category B (best practice)**: CRON_SECRET, URL vars — unique values for Preview
+- **Category C (shared)**: DATABASE_URL, Supabase, AI keys, Twilio, etc. — same values, Preview-scoped
+
+To add/modify staging env vars: `vercel env add <NAME> preview` or Vercel Dashboard > Settings > Environment Variables.
+
+### Merging to Staging
+
+```bash
+git checkout staging
+git merge feature-branch
+git push origin staging
+# Wait for Vercel preview deployment
+# Verify at the preview URL
+```
+
+### Resetting Staging
+
+If staging gets messy, reset it to match main:
+```bash
+git checkout staging
+git reset --hard main
+git push --force origin staging
+```
+
+---
+
+**Last Updated:** March 3, 2026
 **Active Focus:** Security hardening (session hardening, CSRF, Zod validation, audit logging) + CI stability + Walla Walla Travel commercial readiness

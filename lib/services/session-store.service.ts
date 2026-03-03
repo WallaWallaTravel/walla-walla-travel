@@ -11,6 +11,7 @@
  */
 
 import { BaseService } from './base.service';
+import { redis } from '@/lib/redis';
 
 /** Idle timeout: 30 minutes for admins, 24 hours for everyone else */
 const ADMIN_IDLE_TIMEOUT_MS = 30 * 60 * 1000;
@@ -18,6 +19,13 @@ const DEFAULT_IDLE_TIMEOUT_MS = 24 * 60 * 60 * 1000;
 
 /** Only write a touch update if last_active_at is older than this */
 const TOUCH_THROTTLE_MS = 5 * 60 * 1000; // 5 minutes
+
+/** Redis cache TTL for validated sessions */
+const SESSION_CACHE_TTL = 60; // seconds
+
+function sessionCacheKey(sessionId: string): string {
+  return `session:${sessionId}`;
+}
 
 interface SessionRecord {
   id: number;
@@ -62,27 +70,51 @@ export class SessionStoreService extends BaseService {
   /**
    * Validate a session: not revoked and within idle timeout.
    * Returns the record if valid, null otherwise.
+   *
+   * Checks Redis cache first (60s TTL) to avoid a DB query on every request.
+   * Cache is invalidated on revocation/logout/password change.
    */
   async validateSession(sessionId: string, role?: string): Promise<SessionRecord | null> {
-    const record = await this.queryOne<SessionRecord>(
-      `SELECT id, session_id, user_id, created_at, last_active_at, revoked_at, ip_address, user_agent
-       FROM user_sessions
-       WHERE session_id = $1`,
-      [sessionId]
-    );
+    const cacheKey = sessionCacheKey(sessionId);
 
-    if (!record) {
-      this.log('Session not found', { sessionId });
-      return null;
+    // 1. Check Redis cache first
+    let record: SessionRecord | null = null;
+    try {
+      record = await redis.get<SessionRecord>(cacheKey);
+    } catch {
+      // Redis failure — fall through to DB
     }
 
-    // Check revocation
+    // 2. Cache miss → query DB
+    if (!record) {
+      record = await this.queryOne<SessionRecord>(
+        `SELECT id, session_id, user_id, created_at, last_active_at, revoked_at, ip_address, user_agent
+         FROM user_sessions
+         WHERE session_id = $1`,
+        [sessionId]
+      );
+
+      if (!record) {
+        this.log('Session not found', { sessionId });
+        return null;
+      }
+
+      // Cache the record for subsequent requests
+      try {
+        await redis.set(cacheKey, record, { ex: SESSION_CACHE_TTL });
+      } catch {
+        // Redis failure — continue without caching
+      }
+    }
+
+    // 3. Check revocation (defensive — cache is invalidated on revoke,
+    //    but a race or Redis lag could leave a stale entry)
     if (record.revoked_at) {
       this.log('Session revoked', { sessionId });
       return null;
     }
 
-    // Check idle timeout
+    // 4. Check idle timeout
     const lastActive = new Date(record.last_active_at).getTime();
     const now = Date.now();
     const isAdmin = role === 'admin' || role === 'geology_admin';
@@ -90,7 +122,7 @@ export class SessionStoreService extends BaseService {
 
     if (now - lastActive > timeout) {
       this.log('Session idle timeout', { sessionId, role, idleMs: now - lastActive });
-      // Auto-revoke timed-out sessions
+      // Auto-revoke timed-out sessions (also clears cache)
       await this.revokeSession(sessionId);
       return null;
     }
@@ -125,6 +157,8 @@ export class SessionStoreService extends BaseService {
       `UPDATE user_sessions SET revoked_at = NOW() WHERE session_id = $1 AND revoked_at IS NULL`,
       [sessionId]
     );
+    // Evict from Redis so the revocation is immediate
+    try { await redis.del(sessionCacheKey(sessionId)); } catch { /* best effort */ }
     this.log('Session revoked', { sessionId });
   }
 
@@ -132,10 +166,22 @@ export class SessionStoreService extends BaseService {
    * Revoke all active sessions for a user (e.g., on password change).
    */
   async revokeAllUserSessions(userId: number): Promise<void> {
+    // Collect active session IDs before revoking so we can evict from Redis
+    const rows = await this.queryMany<{ session_id: string }>(
+      `SELECT session_id FROM user_sessions WHERE user_id = $1 AND revoked_at IS NULL`,
+      [userId]
+    );
+
     const result = await this.query(
       `UPDATE user_sessions SET revoked_at = NOW() WHERE user_id = $1 AND revoked_at IS NULL`,
       [userId]
     );
+
+    // Evict all cached sessions for this user
+    try {
+      await Promise.all(rows.map(r => redis.del(sessionCacheKey(r.session_id))));
+    } catch { /* best effort */ }
+
     this.log('All user sessions revoked', { userId, count: result.rowCount });
   }
 

@@ -4,6 +4,7 @@ import { sharedTourService } from '@/lib/services/shared-tour.service';
 import { query } from '@/lib/db';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { z } from 'zod';
+import { invalidateCache } from '@/lib/api/middleware/redis-cache';
 
 interface RouteParams {
   params: Promise<{ tour_id: string }>;
@@ -111,6 +112,7 @@ export const PATCH = withCSRF(
   if (body.reassign_vehicle === true) {
     try {
       const result = await sharedTourService.reassignVehicle(tour_id, body.vehicle_id);
+      await invalidateCache('shared-tours:');
       return NextResponse.json({
         success: true,
         data: result.tour,
@@ -175,6 +177,8 @@ export const PATCH = withCSRF(
     );
   }
 
+  await invalidateCache('shared-tours:');
+
   return NextResponse.json({
     success: true,
     data: tour,
@@ -198,6 +202,8 @@ export const DELETE = withCSRF(
       { status: 404 }
     );
   }
+
+  await invalidateCache('shared-tours:');
 
   return NextResponse.json({
     success: true,
