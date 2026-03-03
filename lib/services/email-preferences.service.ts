@@ -88,13 +88,25 @@ class EmailPreferencesService {
    * Sets unsubscribed_at = NOW() and syncs the legacy booking_attempts.unsubscribed flag.
    */
   async unsubscribe(token: string): Promise<UnsubscribeResult> {
+    // Validate UUID format before querying (PostgreSQL rejects non-UUID strings)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(token)) {
+      return { success: false };
+    }
+
     // Look up the preference by token
-    const row = await queryOne<{ id: number; email: string; unsubscribed_at: string | null }>(
-      `SELECT id, email, unsubscribed_at
-       FROM email_preferences
-       WHERE unsubscribe_token = $1`,
-      [token]
-    );
+    let row: { id: number; email: string; unsubscribed_at: string | null } | null;
+    try {
+      row = await queryOne<{ id: number; email: string; unsubscribed_at: string | null }>(
+        `SELECT id, email, unsubscribed_at
+         FROM email_preferences
+         WHERE unsubscribe_token = $1`,
+        [token]
+      );
+    } catch {
+      // Invalid token format or DB error
+      return { success: false };
+    }
 
     if (!row) {
       return { success: false };
