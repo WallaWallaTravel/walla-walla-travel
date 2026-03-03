@@ -23,7 +23,7 @@ import { withCronLock } from '@/lib/api/middleware/cron-lock'
 import Anthropic from '@anthropic-ai/sdk'
 
 export const dynamic = 'force-dynamic'
-export const maxDuration = 300 // 5 minutes for AI analysis
+export const maxDuration = 60
 
 // Known public page paths to scan
 const PUBLIC_PAGES = [

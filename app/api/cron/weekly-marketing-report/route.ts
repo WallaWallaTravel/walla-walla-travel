@@ -17,6 +17,8 @@ import { withCronLock } from '@/lib/api/middleware/cron-lock'
 import Anthropic from '@anthropic-ai/sdk'
 import { emailPreferencesService } from '@/lib/services/email-preferences.service'
 
+export const maxDuration = 60
+
 // ---------- Types ----------
 
 interface PostMetrics {

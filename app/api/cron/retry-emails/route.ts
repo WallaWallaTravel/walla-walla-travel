@@ -13,6 +13,8 @@ import { withCronAuth } from '@/lib/api/middleware/cron-auth';
 import { withCronLock } from '@/lib/api/middleware/cron-lock';
 import { logger } from '@/lib/logger';
 
+export const maxDuration = 60;
+
 export const GET = withCronAuth('retry-emails', async (_request: NextRequest) => {
   return withCronLock('retry-emails', async () => {
   const result = await retryFailedEmails();
