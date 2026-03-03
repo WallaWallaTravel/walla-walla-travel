@@ -264,6 +264,31 @@ export const redis = {
   },
 
   /**
+   * Find keys matching a glob pattern (e.g., "queue:op_*")
+   */
+  async keys(pattern: string): Promise<string[]> {
+    const client = getRedisClient();
+
+    if (client && redisAvailable) {
+      try {
+        return await client.keys(pattern);
+      } catch (error) {
+        logger.error('Redis KEYS failed, falling back to memory', { error });
+        redisAvailable = false;
+      }
+    }
+
+    // Fallback to in-memory
+    const now = Date.now();
+    const regex = new RegExp('^' + pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.') + '$');
+    return Array.from(inMemoryStore.keys()).filter(k => {
+      const entry = inMemoryStore.get(k);
+      if (entry?.expiry && entry.expiry < now) return false;
+      return regex.test(k);
+    });
+  },
+
+  /**
    * Execute multiple commands atomically using pipeline
    * Falls back to sequential execution in memory mode
    */
@@ -312,6 +337,40 @@ export const redis = {
       }
     }
     return results as T;
+  },
+
+  /**
+   * Delete all keys matching a prefix (e.g., "cache:wineries:")
+   */
+  async deleteByPrefix(prefix: string): Promise<number> {
+    const client = getRedisClient();
+
+    if (client && redisAvailable) {
+      try {
+        const keys = await client.keys(`${prefix}*`);
+        if (keys.length > 0) {
+          const pipe = client.pipeline();
+          for (const key of keys) {
+            pipe.del(key);
+          }
+          await pipe.exec();
+        }
+        return keys.length;
+      } catch (error) {
+        logger.error('Redis deleteByPrefix failed', { error, prefix });
+        redisAvailable = false;
+      }
+    }
+
+    // Fallback to in-memory
+    let count = 0;
+    for (const key of inMemoryStore.keys()) {
+      if (key.startsWith(prefix)) {
+        inMemoryStore.delete(key);
+        count++;
+      }
+    }
+    return count;
   },
 
   /**

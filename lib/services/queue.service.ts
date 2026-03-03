@@ -202,13 +202,34 @@ class QueueService {
   }
 
   /**
-   * Get pending operations ready for processing
+   * Get pending operations ready for processing.
+   * Scans Redis for queue:op_* keys and filters by status + nextRetryAt.
    */
   async getPendingOperations(limit: number = 10): Promise<QueuedOperation[]> {
-    // In a production system, this would query a database
-    // For now, we return an empty array as operations are processed inline
-    logger.debug('Getting pending operations', { limit });
-    return [];
+    const now = Date.now();
+    const pending: QueuedOperation[] = [];
+
+    try {
+      const keys = await redis.keys('queue:op_*');
+
+      for (const key of keys) {
+        if (pending.length >= limit) break;
+
+        const op = await redis.get<QueuedOperation>(key);
+        if (!op) continue;
+
+        if (op.status !== 'pending') continue;
+
+        // Check if nextRetryAt has passed
+        if (op.nextRetryAt && new Date(op.nextRetryAt).getTime() > now) continue;
+
+        pending.push(op);
+      }
+    } catch (error) {
+      logger.error('Failed to scan for pending operations', { error });
+    }
+
+    return pending;
   }
 
   /**
@@ -237,7 +258,7 @@ class QueueService {
   }
 
   /**
-   * Get queue statistics
+   * Get queue statistics by scanning active operation keys.
    */
   async getStats(): Promise<{
     pending: number;
@@ -246,14 +267,28 @@ class QueueService {
     failed: number;
     deadLetter: number;
   }> {
-    // In production, query actual counts from database
-    return {
-      pending: 0,
-      processing: 0,
-      completed: 0,
-      failed: 0,
-      deadLetter: 0,
-    };
+    const stats = { pending: 0, processing: 0, completed: 0, failed: 0, deadLetter: 0 };
+
+    try {
+      const keys = await redis.keys('queue:op_*');
+
+      for (const key of keys) {
+        const op = await redis.get<QueuedOperation>(key);
+        if (!op) continue;
+
+        switch (op.status) {
+          case 'pending': stats.pending++; break;
+          case 'processing': stats.processing++; break;
+          case 'completed': stats.completed++; break;
+          case 'failed': stats.failed++; break;
+          case 'dead_letter': stats.deadLetter++; break;
+        }
+      }
+    } catch (error) {
+      logger.error('Failed to compute queue stats', { error });
+    }
+
+    return stats;
   }
 }
 
