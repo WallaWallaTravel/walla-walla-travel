@@ -5,6 +5,7 @@ import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handl
 import { withCSRF } from '@/lib/api/middleware/csrf'
 import { auditService } from '@/lib/services/audit.service'
 import { z } from 'zod'
+import { invalidateCache } from '@/lib/api/middleware/redis-cache'
 
 const PatchBodySchema = z.object({
   name: z.string().min(1).max(255).optional(),
@@ -133,6 +134,8 @@ export const PATCH = withCSRF(
     throw new NotFoundError('Winery not found')
   }
 
+  await invalidateCache('wineries:');
+
   return NextResponse.json({
     success: true,
     winery: result.rows[0]
@@ -157,6 +160,8 @@ export const DELETE = withCSRF(
     entityType: 'winery',
     entityId: id,
   });
+
+  await invalidateCache('wineries:');
 
   return NextResponse.json({
     success: true,

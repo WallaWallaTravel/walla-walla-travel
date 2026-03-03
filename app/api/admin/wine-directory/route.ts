@@ -4,6 +4,7 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError } from '@/lib/api/middleware/error-handler'
 import { withCSRF } from '@/lib/api/middleware/csrf'
 import { z } from 'zod'
+import { invalidateCache } from '@/lib/api/middleware/redis-cache'
 
 const PostBodySchema = z.object({
   name: z.string().min(1).max(255),
@@ -197,6 +198,8 @@ export const POST = withCSRF(
     }
     throw error
   })
+
+  await invalidateCache('wineries:');
 
   return NextResponse.json({
     success: true,

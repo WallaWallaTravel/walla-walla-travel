@@ -34,65 +34,90 @@ export function useProposalRealtime({
     if (!enabled || !proposalId) return;
 
     const supabase = createClient();
+    let cancelled = false;
 
-    // Create a single channel that listens to all relevant tables.
-    // We filter by trip_proposal_id where the column exists on the table.
-    const channel = supabase
-      .channel(`proposal-${proposalId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'trip_proposals',
-          filter: `id=eq.${proposalId}`,
-        },
-        handleChange
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'trip_proposal_days',
-          filter: `trip_proposal_id=eq.${proposalId}`,
-        },
-        handleChange
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'trip_proposal_stops',
-        },
-        handleChange
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'proposal_notes',
-          filter: `trip_proposal_id=eq.${proposalId}`,
-        },
-        handleChange
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'proposal_lunch_orders',
-          filter: `trip_proposal_id=eq.${proposalId}`,
-        },
-        handleChange
-      )
-      .subscribe();
+    // trip_proposal_stops links through trip_proposal_days (no direct
+    // trip_proposal_id column), so we fetch the day IDs first to build
+    // an `in` filter.  If days are added/removed later, the
+    // trip_proposal_days subscription fires onUpdate → consumer refetches.
+    async function subscribe() {
+      const { data: days } = await supabase
+        .from('trip_proposal_days')
+        .select('id')
+        .eq('trip_proposal_id', proposalId);
 
-    channelRef.current = channel;
+      if (cancelled) return;
+
+      const dayIds = (days as { id: number }[] || []).map(d => d.id);
+
+      // Build the channel with filters on every table.
+      let builder = supabase
+        .channel(`proposal-${proposalId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'trip_proposals',
+            filter: `id=eq.${proposalId}`,
+          },
+          handleChange
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'trip_proposal_days',
+            filter: `trip_proposal_id=eq.${proposalId}`,
+          },
+          handleChange
+        );
+
+      // Only subscribe to stops if there are days (otherwise no stops exist)
+      if (dayIds.length > 0) {
+        builder = builder.on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'trip_proposal_stops',
+            filter: `trip_proposal_day_id=in.(${dayIds.join(',')})`,
+          },
+          handleChange
+        );
+      }
+
+      builder = builder
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'proposal_notes',
+            filter: `trip_proposal_id=eq.${proposalId}`,
+          },
+          handleChange
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'proposal_lunch_orders',
+            filter: `trip_proposal_id=eq.${proposalId}`,
+          },
+          handleChange
+        );
+
+      const channel = builder.subscribe();
+      channelRef.current = channel;
+    }
+
+    subscribe();
 
     return () => {
+      cancelled = true;
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;

@@ -6,6 +6,7 @@
 import { NextResponse } from 'next/server';
 import { withErrorHandling } from '@/lib/api-errors';
 import { queryMany } from '@/lib/db-helpers';
+import { withRedisCache } from '@/lib/api/middleware/redis-cache';
 
 interface Restaurant {
   id: number;
@@ -21,28 +22,32 @@ interface Restaurant {
 }
 
 export const GET = withErrorHandling(async () => {
-  const restaurants = await queryMany<Restaurant>(`
-    SELECT 
-      id,
-      name,
-      cuisine_type,
-      address,
-      phone,
-      email,
-      website,
-      menu_url,
-      is_partner,
-      is_active
-    FROM restaurants
-    WHERE is_active = true
-    ORDER BY name
-  `);
+  const data = await withRedisCache('restaurants:list', 300, async () => {
+    const restaurants = await queryMany<Restaurant>(`
+      SELECT 
+        id,
+        name,
+        cuisine_type,
+        address,
+        phone,
+        email,
+        website,
+        menu_url,
+        is_partner,
+        is_active
+      FROM restaurants
+      WHERE is_active = true
+      ORDER BY name
+    `);
 
-  return NextResponse.json({
-    version: 'v1',
-    data: restaurants,
-    count: restaurants.length,
-  }, {
+    return {
+      version: 'v1',
+      data: restaurants,
+      count: restaurants.length,
+    };
+  });
+
+  return NextResponse.json(data, {
     headers: {
       'X-API-Version': 'v1',
     }
