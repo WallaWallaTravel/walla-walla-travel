@@ -3,6 +3,7 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { eventsService } from '@/lib/services/events.service';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { auditService } from '@/lib/services/audit.service';
+import { invalidateCache } from '@/lib/api/middleware/redis-cache';
 
 // ============================================================================
 // POST /api/admin/events/[id]/cancel - Cancel an event
@@ -27,6 +28,8 @@ export const POST = withCSRF(
       entityId: Number(id),
       isRecurring: existing?.is_recurring ?? false,
     });
+
+    await invalidateCache('events:');
 
     return NextResponse.json({
       success: true,
