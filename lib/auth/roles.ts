@@ -2,7 +2,7 @@
  * Role-based access control helpers
  */
 
-export type UserRole = 'admin' | 'geology_admin' | 'driver' | 'partner' | 'staff';
+export type UserRole = 'admin' | 'geology_admin' | 'driver' | 'partner' | 'organizer' | 'staff';
 
 /**
  * Check if user has admin-level access (full admin)

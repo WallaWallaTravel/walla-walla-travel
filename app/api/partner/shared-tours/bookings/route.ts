@@ -1,17 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withErrorHandling, UnauthorizedError } from '@/lib/api/middleware/error-handler';
+import { withErrorHandling, UnauthorizedError, ForbiddenError } from '@/lib/api/middleware/error-handler';
 import { hotelPartnerService } from '@/lib/services/hotel-partner.service';
+import { getHotelSessionFromRequest } from '@/lib/auth/hotel-session';
 
 /**
  * GET /api/partner/shared-tours/bookings
  * Get all bookings made by the hotel
  */
 export const GET = withErrorHandling(async (request: NextRequest) => {
-  // Get hotel ID from auth header/session
-  const hotelId = request.headers.get('x-hotel-id');
+  // Get hotel ID from server-side session cookie (preferred) or legacy header
+  const session = await getHotelSessionFromRequest(request);
+  const hotelId = session?.hotelId || request.headers.get('x-hotel-id');
 
   if (!hotelId) {
     throw new UnauthorizedError('Hotel authentication required');
+  }
+
+  // Verify hotel exists and is active
+  const hotel = await hotelPartnerService.getHotelById(hotelId);
+  if (!hotel || !hotel.is_active) {
+    throw new ForbiddenError('Hotel account is deactivated');
   }
 
   const searchParams = request.nextUrl.searchParams;

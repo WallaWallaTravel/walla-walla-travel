@@ -22,8 +22,7 @@ export const GET = withErrorHandling(async (request: NextRequest): Promise<NextR
   const session = await getSessionFromRequest(request);
 
   if (session) {
-    const role = session.user.role as string;
-    if (role === 'partner' || role === 'admin') {
+    if (session.user.role === 'partner' || session.user.role === 'admin') {
       const dashboard = await partnerService.getDashboardData(session.user.id);
 
       return NextResponse.json({
