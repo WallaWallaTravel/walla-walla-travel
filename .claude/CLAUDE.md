@@ -119,7 +119,7 @@ walla-walla-final/
 | Framework | Next.js 15 (App Router) |
 | Database | Supabase (`eabqmcvmpkbpyhhpbcij`) |
 | ORM | Prisma |
-| Auth | JWT (Supabase Auth planned) |
+| Auth | JWT (custom, session-hardened) |
 | Validation | Zod |
 | Styling | Tailwind CSS |
 
@@ -332,7 +332,7 @@ export const POST = withErrorHandling(async (request) => {
 ## ⚠️ CRITICAL REMINDERS
 
 1. **Don't delete legacy code** in `lsh/` until new system tested
-2. **Use Supabase Auth**, not localStorage
+2. **Auth uses custom JWT + server-side sessions** (`lib/auth/session.ts`) — not Supabase Auth, not localStorage
 3. **Default to Charter & Tour** carrier type
 4. **RLS is enabled** - queries filter by operator_id
 5. **User prefers robust, long-term solutions** over quick fixes
@@ -443,9 +443,12 @@ Trip proposals are the core deliverable for custom travel planning. Key files:
 |------|----------|
 | `lib/services/trip-proposal.service.ts` | Business logic, pricing calculations, CRUD operations |
 | `lib/types/trip-proposal.ts` | TypeScript type definitions for proposals, stops, inclusions |
-| `app/admin/trip-proposals/new/page.tsx` | Admin: create new proposal |
+| `app/admin/trip-proposals/new/page.tsx` | Admin: create new proposal (thin orchestrator, 189 lines) |
 | `app/admin/trip-proposals/[id]/page.tsx` | Admin: edit existing proposal |
 | `app/trip-proposals/[proposalNumber]/page.tsx` | Client-facing proposal view |
+| `components/trip-proposals/useProposalForm.ts` | Form state, CRUD ops, data loading (custom hook) |
+| `components/trip-proposals/types.ts` | Shared interfaces & constants (StopData, DayData, etc.) |
+| `components/trip-proposals/*.tsx` | Tab components: DetailsTab, DaysTab, GuestsTab, PricingTab, PricingSummary, StopCard |
 
 ### Service-Level Billing Model (NON-NEGOTIABLE)
 
@@ -772,6 +775,12 @@ export const POST = withCSRF(                    // 4. CSRF on mutations (outerm
 - Types in `lib/types/`
 - Tests mirror the app structure in `__tests__/`
 - Middleware in `lib/api/middleware/`
+- Large page components decomposed into `components/[feature]/` with custom hooks (e.g., `components/trip-proposals/`)
+- Image uploads are EXIF-stripped via `sharp` before storage (`lib/uploads/strip-exif.ts`)
+
+### Booking API Consolidation
+
+Legacy `/api/booking/reserve/*` routes (4 endpoints, raw SQL) are still live but planned for migration to `/api/reservations/*` using `ReservationService`. See `docs/booking-api-consolidation.md` for the full migration plan. Do NOT delete legacy routes until all frontend callers are migrated.
 
 ---
 
@@ -782,7 +791,8 @@ export const POST = withCSRF(                    // 4. CSRF on mutations (outerm
 - Include entity type, entity ID, and action performed
 - Place audit call **after** the successful operation, **before** the response
 - Audit service is non-blocking — no try/catch needed
-- Available actions: `resource_deleted`, `resource_updated`, `resource_created`, `booking_status_changed`, `booking_assigned`, `booking_cancelled`, `business_approved`, `business_rejected`, `bulk_action`
+- Available actions: `resource_deleted`, `resource_updated`, `resource_created`, `booking_status_changed`, `booking_assigned`, `booking_cancelled`, `business_approved`, `business_rejected`, `bulk_action`, `partner_login`, `partner_login_failed`
+- Partner auth events (`partner_login`, `partner_login_failed`) are logged automatically by the partner auth middleware
 
 ```typescript
 await auditService.logFromRequest(request, parseInt(session.userId), 'resource_deleted', {
@@ -811,7 +821,9 @@ await auditService.logFromRequest(request, parseInt(session.userId), 'resource_d
 
 - All use `withCronAuth('job-name', handler)` with timing-safe comparison (`crypto.timingSafeEqual`)
 - Every cron logs job name, start time, duration, and response status
+- `withCronLock('lock-name', fn)` uses PostgreSQL advisory locks to prevent duplicate runs on overlapping invocations
 - `cleanup-sessions` runs daily at 5 AM UTC (table hygiene for `user_sessions`)
+- `queue-worker` cron processes the Upstash Redis job queue (emails, CRM syncs, webhooks)
 - 18 total cron routes configured in `vercel.json`
 - Pattern: `export const GET = withCronAuth('name', async (request) => { ... });`
 - Support POST for manual triggering: `export const POST = GET;`
@@ -826,8 +838,8 @@ Active services (all required):
 |---------|---------|-------|
 | **Supabase** | PostgreSQL DB + Storage + Realtime | Pro plan, daily backups. Auth and Edge Functions NOT used. Realtime IS used (hooks/useProposalRealtime.ts — 5 channel subscriptions for live proposal updates) |
 | **Stripe** | Payments | Dual-brand (WWT + NWTouring), test + live webhook secrets |
-| **Resend** | Transactional email | Replaced Postmark |
-| **Upstash Redis** | Rate limiting + queue | |
+| **Resend** | Transactional email | Replaced Postmark. CAN-SPAM compliant: all emails include unsubscribe link via `lib/email/unsubscribe.ts` |
+| **Upstash Redis** | Rate limiting + queue + response caching | 10 public GET routes cached (5-min TTL via `lib/cache.ts`) |
 | **Sentry** | Error monitoring | `lib/logger.ts`, `lib/config/security.ts` |
 | **Anthropic + Google/Gemini** | AI features | 21 + 40 files |
 | **Twilio** | SMS notifications | |
@@ -906,4 +918,4 @@ git push --force origin staging
 ---
 
 **Last Updated:** March 3, 2026
-**Active Focus:** Security hardening (session hardening, CSRF, Zod validation, audit logging) + CI stability + Walla Walla Travel commercial readiness
+**Active Focus:** Security hardening (session hardening, CSRF, Zod validation, audit logging) + API consolidation (booking → reservations) + CI stability + Walla Walla Travel commercial readiness

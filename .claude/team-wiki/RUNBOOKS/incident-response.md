@@ -77,15 +77,15 @@ If unknown → Escalate
 **Symptoms**: Can't login, session lost, auth errors
 
 **Quick Checks**:
-1. JWT configuration correct?
-2. Supabase Auth service up?
-3. Environment variables present?
+1. JWT configuration correct? (`lib/auth/session.ts`)
+2. `user_sessions` table accessible?
+3. Environment variables present? (`JWT_SECRET`, `SESSION_SECRET`)
 4. CORS issues?
 
 **Actions**:
 ```
-Check Supabase Auth dashboard
-Verify env variables
+Check user_sessions table for active sessions
+Verify JWT env variables
 Check recent auth-related changes
 Test login flow step-by-step
 ```
