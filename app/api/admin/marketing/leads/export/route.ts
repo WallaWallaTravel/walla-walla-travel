@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 
+// Allow up to 60s for large exports on Vercel
+export const maxDuration = 60
+
+/** Safety cap — never fetch more than 10 000 rows */
+const EXPORT_LIMIT = 10_000
+
 /**
  * Map CRM lifecycle_stage to legacy lead status
  */
@@ -15,6 +21,39 @@ function mapLifecycleToStatus(lifecycle: string): string {
     'lost': 'lost',
   }
   return mapping[lifecycle] || 'new'
+}
+
+function escapeCSV(value: string | null | undefined): string {
+  return `"${(value || '').replace(/"/g, '""')}"`
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function transformRow(row: any) {
+  const nameParts = (row.name || '').split(' ')
+  const firstName = nameParts[0] || ''
+  const lastName = nameParts.slice(1).join(' ') || ''
+
+  return {
+    id: row.id,
+    first_name: firstName,
+    last_name: lastName,
+    email: row.email,
+    phone: row.phone,
+    company: row.company,
+    source: row.source || 'website',
+    status: mapLifecycleToStatus(row.lifecycle_stage),
+    temperature: row.temperature || 'cold',
+    score: row.score || 0,
+    interested_services: row.source_detail || '',
+    party_size_estimate: row.party_size_estimate,
+    estimated_date: row.estimated_date,
+    budget_range: row.budget_estimate ? `$${row.budget_estimate}` : '',
+    first_contact_at: row.created_at,
+    last_contact_at: row.last_contact_at,
+    next_followup_at: row.next_followup_at,
+    notes: row.notes,
+    created_at: row.created_at,
+  }
 }
 
 // GET - Export leads as CSV (now from crm_contacts)
@@ -83,88 +122,78 @@ async function getHandler(request: NextRequest) {
     params.push(source)
   }
 
-  queryText += ` ORDER BY c.created_at DESC`
+  // Safety cap: fetch at most EXPORT_LIMIT + 1 to detect truncation
+  queryText += ` ORDER BY c.created_at DESC LIMIT ${EXPORT_LIMIT + 1}`
 
   const result = await query(queryText, params)
 
-  // Transform rows to legacy format
-  const leads = result.rows.map(row => {
-    const nameParts = (row.name || '').split(' ')
-    const firstName = nameParts[0] || ''
-    const lastName = nameParts.slice(1).join(' ') || ''
-
-    return {
-      id: row.id,
-      first_name: firstName,
-      last_name: lastName,
-      email: row.email,
-      phone: row.phone,
-      company: row.company,
-      source: row.source || 'website',
-      status: mapLifecycleToStatus(row.lifecycle_stage),
-      temperature: row.temperature || 'cold',
-      score: row.score || 0,
-      interested_services: row.source_detail || '',
-      party_size_estimate: row.party_size_estimate,
-      estimated_date: row.estimated_date,
-      budget_range: row.budget_estimate ? `$${row.budget_estimate}` : '',
-      first_contact_at: row.created_at,
-      last_contact_at: row.last_contact_at,
-      next_followup_at: row.next_followup_at,
-      notes: row.notes,
-      created_at: row.created_at,
-    }
-  })
+  const truncated = result.rows.length > EXPORT_LIMIT
+  const rows = truncated ? result.rows.slice(0, EXPORT_LIMIT) : result.rows
+  const leads = rows.map(transformRow)
 
   if (format === 'json') {
     return NextResponse.json({
       leads,
       total: leads.length,
+      truncated,
       exported_at: new Date().toISOString()
     })
   }
 
-  // Generate CSV
-  const headers = [
+  // Stream CSV to avoid buffering the entire string in memory
+  const csvHeaders = [
     'ID', 'First Name', 'Last Name', 'Email', 'Phone', 'Company',
     'Source', 'Status', 'Temperature', 'Score', 'Interested Services',
     'Party Size', 'Estimated Date', 'Budget Range',
     'First Contact', 'Last Contact', 'Next Followup', 'Notes', 'Created At'
   ]
 
-  const csvRows = [
-    headers.join(','),
-    ...leads.map(row => [
-      row.id,
-      `"${(row.first_name || '').replace(/"/g, '""')}"`,
-      `"${(row.last_name || '').replace(/"/g, '""')}"`,
-      `"${(row.email || '').replace(/"/g, '""')}"`,
-      `"${(row.phone || '').replace(/"/g, '""')}"`,
-      `"${(row.company || '').replace(/"/g, '""')}"`,
-      row.source || '',
-      row.status || '',
-      row.temperature || '',
-      row.score || 0,
-      `"${(row.interested_services || '').replace(/"/g, '""')}"`,
-      row.party_size_estimate || '',
-      row.estimated_date || '',
-      `"${(row.budget_range || '').replace(/"/g, '""')}"`,
-      row.first_contact_at || '',
-      row.last_contact_at || '',
-      row.next_followup_at || '',
-      `"${(row.notes || '').replace(/"/g, '""').replace(/\n/g, ' ')}"`,
-      row.created_at
-    ].join(','))
-  ]
+  const encoder = new TextEncoder()
+  const stream = new ReadableStream({
+    start(controller) {
+      // Header row
+      controller.enqueue(encoder.encode(csvHeaders.join(',') + '\n'))
 
-  const csv = csvRows.join('\n')
+      // Data rows
+      for (const row of leads) {
+        const line = [
+          row.id,
+          escapeCSV(row.first_name),
+          escapeCSV(row.last_name),
+          escapeCSV(row.email),
+          escapeCSV(row.phone),
+          escapeCSV(row.company),
+          row.source || '',
+          row.status || '',
+          row.temperature || '',
+          row.score || 0,
+          escapeCSV(row.interested_services),
+          row.party_size_estimate || '',
+          row.estimated_date || '',
+          escapeCSV(row.budget_range),
+          row.first_contact_at || '',
+          row.last_contact_at || '',
+          row.next_followup_at || '',
+          escapeCSV((row.notes || '').replace(/\n/g, ' ')),
+          row.created_at
+        ].join(',') + '\n'
+        controller.enqueue(encoder.encode(line))
+      }
 
-  return new NextResponse(csv, {
-    headers: {
-      'Content-Type': 'text/csv',
-      'Content-Disposition': `attachment; filename="leads-export-${new Date().toISOString().split('T')[0]}.csv"`
+      controller.close()
     }
   })
+
+  const responseHeaders: Record<string, string> = {
+    'Content-Type': 'text/csv',
+    'Content-Disposition': `attachment; filename="leads-export-${new Date().toISOString().split('T')[0]}.csv"`,
+  }
+  if (truncated) {
+    responseHeaders['X-Truncated'] = 'true'
+    responseHeaders['X-Truncated-At'] = String(EXPORT_LIMIT)
+  }
+
+  return new NextResponse(stream, { headers: responseHeaders })
 }
 
 export const GET = withAdminAuth(getHandler)
