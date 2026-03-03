@@ -7,6 +7,7 @@ import { logger } from '@/lib/logger';
 import { sendBookingConfirmationEmail } from '@/lib/services/email-automation.service';
 import { crmSyncService } from '@/lib/services/crm-sync.service';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 
 const BodySchema = z.object({
   payment_intent_id: z.string().min(1).max(255),
@@ -17,6 +18,7 @@ const BodySchema = z.object({
  * Confirm payment succeeded and convert proposal to booking
  */
 export const POST = withCSRF(
+  withRateLimit(rateLimiters.payment)(
   withErrorHandling<unknown, { proposal_id: string }>(async (
   request: NextRequest,
   { params }: { params: Promise<{ proposal_id: string }> }
@@ -307,4 +309,4 @@ export const POST = withCSRF(
     },
   });
 })
-);
+));

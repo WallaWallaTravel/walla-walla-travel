@@ -5,12 +5,14 @@ import { getBrandEmailConfig } from '@/lib/email-brands';
 import { query, queryOne } from '@/lib/db-helpers';
 import { logger } from '@/lib/logger';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 
 /**
  * POST /api/proposals/[proposal_id]/create-payment
  * Create a Stripe PaymentIntent for a proposal deposit
  */
 export const POST = withCSRF(
+  withRateLimit(rateLimiters.payment)(
   withErrorHandling(async (
   request: NextRequest,
   { params }: { params: Promise<{ proposal_id: string }> }
@@ -152,4 +154,4 @@ export const POST = withCSRF(
     },
   });
 })
-);
+));
