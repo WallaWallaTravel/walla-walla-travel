@@ -1,5 +1,9 @@
 /**
  * Confirm Payment and Update Reservation
+ *
+ * @deprecated LEGACY — part of the Reserve & Refine flow.
+ * Modern equivalent: POST /api/bookings/create handles payment inline.
+ * Still in active use by /book/reserve/payment — do NOT delete without migrating.
  */
 
 import { NextRequest, NextResponse } from 'next/server';

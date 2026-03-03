@@ -2,6 +2,10 @@
  * Reserve & Refine Booking API
  * Allows customers to put down a deposit to hold their date
  * Then Ryan calls within 24 hours to customize
+ *
+ * @deprecated LEGACY — uses raw SQL instead of bookingService.
+ * Modern equivalent: POST /api/bookings/create (service-layer, full booking wizard).
+ * Still in active use by /book/reserve flow — do NOT delete without migrating that page.
  */
 
 import { NextRequest, NextResponse } from 'next/server';

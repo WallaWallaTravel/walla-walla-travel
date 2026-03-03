@@ -1,6 +1,10 @@
 /**
  * Get Reservation Details API
  * Fetch a specific reservation by ID
+ *
+ * @deprecated LEGACY — uses raw SQL instead of bookingService.
+ * Modern equivalent: GET /api/bookings/[bookingNumber] (service-layer).
+ * Still in active use by /book/reserve/confirmation — do NOT delete without migrating.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
