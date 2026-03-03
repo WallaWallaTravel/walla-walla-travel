@@ -8,6 +8,7 @@
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { logger } from '@/lib/logger';
 import { generateSecureString } from '@/lib/utils';
+import { stripExif } from '@/lib/utils/image-processing';
 
 // Storage bucket name - created in Supabase dashboard
 export const MEDIA_BUCKET = 'media';
@@ -95,8 +96,13 @@ export async function uploadFile(
   const originalName = fileName || (file instanceof File ? file.name : 'upload');
   const storagePath = generateStoragePath(originalName, category, subcategory);
 
-  // Convert File to ArrayBuffer if needed
-  const fileData = file instanceof File ? await file.arrayBuffer() : file;
+  // Convert File to Buffer
+  const rawBuffer = file instanceof File
+    ? Buffer.from(await file.arrayBuffer())
+    : file;
+
+  // Strip EXIF metadata from images (privacy: removes GPS coordinates etc.)
+  const fileData = await stripExif(rawBuffer, mimeType);
 
   // Upload to Supabase Storage
   const { data, error } = await supabaseAdmin.storage

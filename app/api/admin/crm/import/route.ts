@@ -371,7 +371,7 @@ export const POST = withCSRF(
         });
       }
 
-      // Perform actual import
+      // Perform actual import using batched INSERT with ON CONFLICT
       const result: ImportResult = {
         total_rows: rows.length,
         imported: 0,
@@ -381,78 +381,85 @@ export const POST = withCSRF(
         duplicates_found: duplicates.length,
       };
 
-      const duplicateEmails = new Set(duplicates.map(d => d.email));
+      const CHUNK_SIZE = 100;
+      const PARAMS_PER_ROW = 9;
 
-      for (const row of validRows) {
+      for (let chunkStart = 0; chunkStart < validRows.length; chunkStart += CHUNK_SIZE) {
+        const chunk = validRows.slice(chunkStart, chunkStart + CHUNK_SIZE);
+        const values: unknown[] = [];
+        const valueClauses: string[] = [];
+
+        for (let j = 0; j < chunk.length; j++) {
+          const row = chunk[j];
+          const lifecycleStage = (row.visit_count || 0) > 0 ? 'customer' : 'lead';
+          const offset = j * PARAMS_PER_ROW;
+
+          valueClauses.push(
+            `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, 'individual', $${offset + 5}, 'warm', 'import', $${offset + 6}, $${offset + 7}, $${offset + 8}, $${offset + 9}, 1, NOW(), NOW())`
+          );
+          values.push(
+            row.email,
+            row.name,
+            row.phone || null,
+            row.company || null,
+            lifecycleStage,
+            source,
+            row.notes || null,
+            row.visit_count || 0,
+            row.total_spent || 0,
+          );
+        }
+
         try {
-          const isDuplicate = duplicateEmails.has(row.email);
-
-          if (isDuplicate) {
-            if (duplicateAction === 'skip') {
-              result.skipped++;
-              continue;
-            }
-
-            if (duplicateAction === 'update' || duplicateAction === 'merge') {
-              // Update existing contact
-              await query(
-                `UPDATE crm_contacts
-                 SET
-                   name = $1,
-                   phone = COALESCE($2, phone),
-                   company = COALESCE($3, company),
-                   notes = CASE WHEN $4 IS NOT NULL THEN COALESCE(notes || E'\\n', '') || $4 ELSE notes END,
-                   total_revenue = CASE WHEN $5 IS NOT NULL THEN GREATEST(total_revenue, $5::decimal) ELSE total_revenue END,
-                   total_bookings = CASE WHEN $6 IS NOT NULL THEN GREATEST(total_bookings, $6) ELSE total_bookings END,
-                   source = COALESCE(source, $7),
-                   source_detail = COALESCE(source_detail, $8),
-                   updated_at = NOW()
-                 WHERE LOWER(email) = LOWER($9)`,
-                [
-                  row.name,
-                  row.phone,
-                  row.company,
-                  row.notes,
-                  row.total_spent,
-                  row.visit_count,
-                  'import',
-                  source,
-                  row.email,
-                ]
-              );
-              result.updated++;
-            }
-          } else {
-            // Insert new contact
-            const lifecycleStage = (row.visit_count || 0) > 0 ? 'customer' : 'lead';
-
-            await query(
+          if (duplicateAction === 'skip') {
+            const insertResult = await query(
               `INSERT INTO crm_contacts (
                 email, name, phone, company, contact_type, lifecycle_stage,
                 lead_temperature, source, source_detail, notes,
-                total_bookings, total_revenue,
-                brand_id, created_at, updated_at
-              ) VALUES ($1, $2, $3, $4, 'individual', $5, 'warm', 'import', $6, $7, $8, $9, 1, NOW(), NOW())`,
-              [
-                row.email,
-                row.name,
-                row.phone || null,
-                row.company || null,
-                lifecycleStage,
-                source,
-                row.notes || null,
-                row.visit_count || 0,
-                row.total_spent || 0,
-              ]
+                total_bookings, total_revenue, brand_id, created_at, updated_at
+              ) VALUES ${valueClauses.join(', ')}
+              ON CONFLICT (email) DO NOTHING`,
+              values
             );
-            result.imported++;
+            result.imported += insertResult.rowCount || 0;
+            result.skipped += chunk.length - (insertResult.rowCount || 0);
+          } else {
+            // update or merge — upsert with RETURNING to distinguish inserts from updates
+            const upsertResult = await query<{ is_new: boolean }>(
+              `INSERT INTO crm_contacts (
+                email, name, phone, company, contact_type, lifecycle_stage,
+                lead_temperature, source, source_detail, notes,
+                total_bookings, total_revenue, brand_id, created_at, updated_at
+              ) VALUES ${valueClauses.join(', ')}
+              ON CONFLICT (email) DO UPDATE SET
+                name = EXCLUDED.name,
+                phone = COALESCE(EXCLUDED.phone, crm_contacts.phone),
+                company = COALESCE(EXCLUDED.company, crm_contacts.company),
+                notes = CASE WHEN EXCLUDED.notes IS NOT NULL THEN COALESCE(crm_contacts.notes || E'\\n', '') || EXCLUDED.notes ELSE crm_contacts.notes END,
+                total_revenue = CASE WHEN EXCLUDED.total_revenue > 0 THEN GREATEST(crm_contacts.total_revenue, EXCLUDED.total_revenue) ELSE crm_contacts.total_revenue END,
+                total_bookings = CASE WHEN EXCLUDED.total_bookings > 0 THEN GREATEST(crm_contacts.total_bookings, EXCLUDED.total_bookings) ELSE crm_contacts.total_bookings END,
+                source = COALESCE(crm_contacts.source, EXCLUDED.source),
+                source_detail = COALESCE(crm_contacts.source_detail, EXCLUDED.source_detail),
+                updated_at = NOW()
+              RETURNING (xmax = 0) as is_new`,
+              values
+            );
+            for (const row of upsertResult.rows) {
+              if (row.is_new) {
+                result.imported++;
+              } else {
+                result.updated++;
+              }
+            }
           }
         } catch (error) {
-          result.errors.push({
-            row: validRows.indexOf(row) + 2,
-            field: 'general',
-            message: error instanceof Error ? error.message : 'Import failed',
-          });
+          for (let j = 0; j < chunk.length; j++) {
+            result.errors.push({
+              row: chunkStart + j + 2,
+              field: 'general',
+              message: error instanceof Error ? error.message : 'Batch import failed',
+            });
+          }
         }
       }
 

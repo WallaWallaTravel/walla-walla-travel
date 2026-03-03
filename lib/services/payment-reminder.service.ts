@@ -132,6 +132,10 @@ async function generateReminderSchedule(proposalId: number): Promise<{ created: 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    // Build all rows first, then batch INSERT
+    const insertValues: unknown[] = [];
+    const insertClauses: string[] = [];
+
     for (const guest of unpaidGuests.rows) {
       for (const config of DEFAULT_SCHEDULE) {
         const scheduledDate = new Date(deadline);
@@ -142,15 +146,29 @@ async function generateReminderSchedule(proposalId: number): Promise<{ created: 
           continue;
         }
 
-        await client.query(
-          `INSERT INTO payment_reminders (
-            trip_proposal_id, guest_id, reminder_type, scheduled_date,
-            days_before_deadline, urgency, status
-          ) VALUES ($1, $2, 'auto_schedule', $3, $4, $5, 'pending')`,
-          [proposalId, guest.id, scheduledDate.toISOString().split('T')[0], config.days_before, config.urgency]
+        const offset = insertClauses.length * 5;
+        insertClauses.push(
+          `($${offset + 1}, $${offset + 2}, 'auto_schedule', $${offset + 3}, $${offset + 4}, $${offset + 5}, 'pending')`
         );
-        created++;
+        insertValues.push(
+          proposalId,
+          guest.id,
+          scheduledDate.toISOString().split('T')[0],
+          config.days_before,
+          config.urgency,
+        );
       }
+    }
+
+    if (insertClauses.length > 0) {
+      await client.query(
+        `INSERT INTO payment_reminders (
+          trip_proposal_id, guest_id, reminder_type, scheduled_date,
+          days_before_deadline, urgency, status
+        ) VALUES ${insertClauses.join(', ')}`,
+        insertValues
+      );
+      created = insertClauses.length;
     }
   });
 
