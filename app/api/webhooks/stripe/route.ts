@@ -22,6 +22,10 @@ import { tipService } from '@/lib/services/tip.service';
  * - payment_intent.payment_failed: Log failure and notify
  * - charge.refunded: Update payment status
  * - charge.dispute.created: Log dispute and notify admin
+ * - charge.dispute.updated: Update dispute reason/status
+ * - charge.dispute.closed: Resolve dispute (won/lost), notify admin
+ * - charge.dispute.funds_withdrawn: Log fund withdrawal
+ * - charge.dispute.funds_reinstated: Log fund reinstatement, notify admin
  */
 export const POST = withErrorHandling(async (request: NextRequest) => {
   const body = await request.text();
@@ -115,6 +119,22 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
 
       case 'charge.dispute.created':
         await handleDisputeCreated(event.data.object as Stripe.Dispute);
+        break;
+
+      case 'charge.dispute.updated':
+        await handleDisputeUpdated(event.data.object as Stripe.Dispute);
+        break;
+
+      case 'charge.dispute.closed':
+        await handleDisputeClosed(event.data.object as Stripe.Dispute);
+        break;
+
+      case 'charge.dispute.funds_withdrawn':
+        await handleDisputeFundsWithdrawn(event.data.object as Stripe.Dispute);
+        break;
+
+      case 'charge.dispute.funds_reinstated':
+        await handleDisputeFundsReinstated(event.data.object as Stripe.Dispute);
         break;
 
       default:
@@ -576,6 +596,204 @@ async function handleDisputeCreated(dispute: Stripe.Dispute) {
       chargeId,
     });
   }
+}
+
+/**
+ * Shared helper: look up a payment record from a dispute's charge ID.
+ */
+async function findPaymentForDispute(dispute: Stripe.Dispute) {
+  const chargeId = typeof dispute.charge === 'string' ? dispute.charge : dispute.charge?.id;
+  if (!chargeId) return null;
+  return queryOne<{
+    id: number;
+    booking_id: number | null;
+    booking_number: string | null;
+    customer_email: string | null;
+    status: string;
+    amount: number;
+  }>(
+    `SELECT p.id, p.booking_id, p.status, p.amount,
+            b.booking_number, b.customer_email
+     FROM payments p
+     LEFT JOIN bookings b ON p.booking_id = b.id
+     WHERE p.stripe_charge_id = $1 OR p.stripe_payment_intent_id = $1`,
+    [chargeId]
+  );
+}
+
+/**
+ * Handle dispute updated — reason or status changed while dispute is open.
+ */
+async function handleDisputeUpdated(dispute: Stripe.Dispute) {
+  const { id, reason, status: disputeStatus } = dispute;
+
+  logger.warn('[Stripe Webhook] Dispute updated', {
+    disputeId: id,
+    reason,
+    disputeStatus,
+  });
+
+  Sentry.captureMessage(`Stripe dispute updated: ${id}`, {
+    level: 'warning',
+    tags: { 'stripe.dispute_id': id },
+    extra: { reason, disputeStatus },
+  });
+
+  const payment = await findPaymentForDispute(dispute);
+  if (!payment) return;
+
+  await query(
+    `UPDATE payments
+     SET dispute_reason = COALESCE($2, dispute_reason),
+         updated_at = NOW()
+     WHERE id = $1`,
+    [payment.id, reason || null]
+  ).catch(() => {
+    // dispute_reason column may not exist — non-fatal
+  });
+}
+
+/**
+ * Handle dispute closed — final outcome (won or lost).
+ */
+async function handleDisputeClosed(dispute: Stripe.Dispute) {
+  const { id, status: disputeStatus, reason } = dispute;
+  const amountDollars = dispute.amount / 100;
+  const won = disputeStatus === 'won';
+
+  logger.info('[Stripe Webhook] Dispute closed', {
+    disputeId: id,
+    outcome: won ? 'won' : 'lost',
+    amount: amountDollars,
+    reason,
+  });
+
+  Sentry.captureMessage(`Stripe dispute closed (${won ? 'won' : 'lost'}): ${id}`, {
+    level: won ? 'info' : 'error',
+    tags: { 'stripe.dispute_id': id, 'stripe.dispute_outcome': won ? 'won' : 'lost' },
+    extra: { amount: amountDollars, reason },
+  });
+
+  const payment = await findPaymentForDispute(dispute);
+  if (!payment) return;
+
+  // Won → restore to 'succeeded'; Lost → mark 'dispute_lost'
+  const newStatus = won ? 'succeeded' : 'dispute_lost';
+  await query(
+    `UPDATE payments SET status = $2, updated_at = NOW() WHERE id = $1`,
+    [payment.id, newStatus]
+  );
+
+  // Clear or keep has_dispute on booking
+  if (payment.booking_id) {
+    await query(
+      `UPDATE bookings SET has_dispute = $2, updated_at = NOW() WHERE id = $1`,
+      [payment.booking_id, !won]
+    ).catch(() => {});
+  }
+
+  // Send admin email with outcome
+  const staffEmail = process.env.STAFF_NOTIFICATION_EMAIL || 'info@wallawalla.travel';
+  const bookingRef = payment.booking_number || `Payment #${payment.id}`;
+  const outcomeLabel = won ? 'WON' : 'LOST';
+  const color = won ? '#16a34a' : '#dc2626';
+
+  await sendEmail({
+    to: staffEmail,
+    subject: `Dispute ${outcomeLabel}: ${bookingRef} ($${amountDollars.toFixed(2)})`,
+    html: `
+      <h2 style="color: ${color};">Dispute ${outcomeLabel}</h2>
+      <p>A payment dispute has been resolved.</p>
+      <table style="border-collapse: collapse; width: 100%; max-width: 500px;">
+        <tr><td style="padding: 8px; border-bottom: 1px solid #e5e7eb; font-weight: 600;">Dispute ID</td><td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${id}</td></tr>
+        <tr><td style="padding: 8px; border-bottom: 1px solid #e5e7eb; font-weight: 600;">Outcome</td><td style="padding: 8px; border-bottom: 1px solid #e5e7eb; font-weight: 700; color: ${color};">${outcomeLabel}</td></tr>
+        <tr><td style="padding: 8px; border-bottom: 1px solid #e5e7eb; font-weight: 600;">Booking</td><td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${bookingRef}</td></tr>
+        <tr><td style="padding: 8px; border-bottom: 1px solid #e5e7eb; font-weight: 600;">Amount</td><td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">$${amountDollars.toFixed(2)}</td></tr>
+        <tr><td style="padding: 8px; border-bottom: 1px solid #e5e7eb; font-weight: 600;">Reason</td><td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${reason || 'Not specified'}</td></tr>
+      </table>
+      ${won
+        ? '<p style="margin-top: 16px;">Funds have been returned. Payment status restored.</p>'
+        : '<p style="margin-top: 16px; color: #dc2626;">Funds were not returned. The payment has been marked as lost.</p>'}
+      <p><a href="https://dashboard.stripe.com/disputes/${id}" style="background: #374151; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px;">View in Stripe Dashboard</a></p>
+    `,
+    text: `Dispute ${outcomeLabel}: ${bookingRef} — $${amountDollars.toFixed(2)} — Reason: ${reason || 'Not specified'}. View at https://dashboard.stripe.com/disputes/${id}`,
+  }).catch((err) => {
+    logger.error('[Stripe Webhook] Failed to send dispute outcome email', {
+      error: err instanceof Error ? err.message : String(err),
+    });
+  });
+}
+
+/**
+ * Handle dispute funds withdrawn — Stripe has debited the disputed amount.
+ */
+async function handleDisputeFundsWithdrawn(dispute: Stripe.Dispute) {
+  const { id } = dispute;
+  const amountDollars = dispute.amount / 100;
+
+  logger.error('[Stripe Webhook] Dispute funds withdrawn', {
+    disputeId: id,
+    amount: amountDollars,
+  });
+
+  Sentry.captureException(new Error(`Stripe dispute funds withdrawn: ${id}`), {
+    level: 'error',
+    tags: { 'stripe.dispute_id': id },
+    extra: { amount: amountDollars },
+  });
+
+  const payment = await findPaymentForDispute(dispute);
+  if (!payment) return;
+
+  await query(
+    `UPDATE payments SET dispute_amount = $2, updated_at = NOW() WHERE id = $1`,
+    [payment.id, amountDollars]
+  ).catch(() => {});
+}
+
+/**
+ * Handle dispute funds reinstated — Stripe has returned funds after a won dispute.
+ */
+async function handleDisputeFundsReinstated(dispute: Stripe.Dispute) {
+  const { id } = dispute;
+  const amountDollars = dispute.amount / 100;
+
+  logger.info('[Stripe Webhook] Dispute funds reinstated', {
+    disputeId: id,
+    amount: amountDollars,
+  });
+
+  Sentry.captureMessage(`Stripe dispute funds reinstated: ${id}`, {
+    level: 'info',
+    tags: { 'stripe.dispute_id': id },
+    extra: { amount: amountDollars },
+  });
+
+  const payment = await findPaymentForDispute(dispute);
+  if (!payment) return;
+
+  await query(
+    `UPDATE payments SET dispute_amount = 0, updated_at = NOW() WHERE id = $1`,
+    [payment.id]
+  ).catch(() => {});
+
+  // Notify admin
+  const staffEmail = process.env.STAFF_NOTIFICATION_EMAIL || 'info@wallawalla.travel';
+  const bookingRef = payment.booking_number || `Payment #${payment.id}`;
+  await sendEmail({
+    to: staffEmail,
+    subject: `Funds Reinstated: ${bookingRef} ($${amountDollars.toFixed(2)})`,
+    html: `
+      <h2 style="color: #16a34a;">Dispute Funds Reinstated</h2>
+      <p>Stripe has returned $${amountDollars.toFixed(2)} for <strong>${bookingRef}</strong> (Dispute ${id}).</p>
+      <p><a href="https://dashboard.stripe.com/disputes/${id}" style="background: #16a34a; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px;">View in Stripe Dashboard</a></p>
+    `,
+    text: `Funds reinstated: ${bookingRef} — $${amountDollars.toFixed(2)}. View at https://dashboard.stripe.com/disputes/${id}`,
+  }).catch((err) => {
+    logger.error('[Stripe Webhook] Failed to send funds reinstated email', {
+      error: err instanceof Error ? err.message : String(err),
+    });
+  });
 }
 
 /**
