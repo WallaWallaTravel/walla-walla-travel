@@ -26,8 +26,28 @@ const STAFF_EMAIL = process.env.STAFF_NOTIFICATION_EMAIL || 'info@wallawalla.tra
 // Initialize Resend client
 const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
 
+// Retry configuration: 3 attempts with exponential backoff (1s, 5s, 15s)
+const MAX_RETRIES = 3;
+const RETRY_DELAYS_MS = [1000, 5000, 15000];
+
+function isRetryableError(error: unknown): boolean {
+  if (error && typeof error === 'object' && 'statusCode' in error) {
+    const status = (error as { statusCode: number }).statusCode;
+    // Retry on rate limits (429) and server errors (5xx)
+    return status === 429 || status >= 500;
+  }
+  // Network errors (thrown exceptions) are retryable
+  return true;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 /**
- * Send an email using Resend API
+ * Send an email using Resend API with automatic retry on transient failures.
+ * Retries up to 3 times with exponential backoff (1s, 5s, 15s).
+ * Only retries on rate limits (429) and server errors (5xx).
  */
 export async function sendEmail(options: EmailOptions): Promise<boolean> {
   if (!resend) {
@@ -35,31 +55,63 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
     return false;
   }
 
-  try {
-    const toAddresses = Array.isArray(options.to) ? options.to : [options.to];
+  const toAddresses = Array.isArray(options.to) ? options.to : [options.to];
 
-    const { data, error } = await resend.emails.send({
-      from: options.from || FROM_EMAIL,
-      to: toAddresses,
-      subject: options.subject,
-      html: options.html,
-      text: options.text,
-      replyTo: options.replyTo,
-      headers: options.headers,
-    });
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const { data, error } = await resend.emails.send({
+        from: options.from || FROM_EMAIL,
+        to: toAddresses,
+        subject: options.subject,
+        html: options.html,
+        text: options.text,
+        replyTo: options.replyTo,
+        headers: options.headers,
+      });
 
-    if (error) {
-      logger.error('Email send failed', { error, subject: options.subject });
+      if (error) {
+        if (attempt < MAX_RETRIES && isRetryableError(error)) {
+          const delay = RETRY_DELAYS_MS[attempt];
+          logger.warn('Email send failed, retrying', {
+            attempt: attempt + 1,
+            maxRetries: MAX_RETRIES,
+            delayMs: delay,
+            error,
+            subject: options.subject,
+          });
+          await sleep(delay);
+          continue;
+        }
+        logger.error('Email send failed (no more retries)', { error, subject: options.subject, attempts: attempt + 1 });
+        return false;
+      }
+
+      if (attempt > 0) {
+        logger.info('Email sent after retry', { emailId: data?.id, subject: options.subject, attempts: attempt + 1 });
+      } else {
+        logger.info('Email sent', { emailId: data?.id, subject: options.subject });
+      }
+      return true;
+
+    } catch (error) {
+      if (attempt < MAX_RETRIES && isRetryableError(error)) {
+        const delay = RETRY_DELAYS_MS[attempt];
+        logger.warn('Email send error, retrying', {
+          attempt: attempt + 1,
+          maxRetries: MAX_RETRIES,
+          delayMs: delay,
+          error,
+          subject: options.subject,
+        });
+        await sleep(delay);
+        continue;
+      }
+      logger.error('Email send error (no more retries)', { error, subject: options.subject, attempts: attempt + 1 });
       return false;
     }
-
-    logger.info('Email sent', { emailId: data?.id, subject: options.subject });
-    return true;
-
-  } catch (error) {
-    logger.error('Email send error', { error, subject: options.subject });
-    return false;
   }
+
+  return false;
 }
 
 /**

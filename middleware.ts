@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getSessionFromRequest, shouldRefreshSession, refreshSessionOnResponse } from './lib/auth/session';
 
+const CSRF_COOKIE_NAME = 'csrf-token';
+
 // Correlation ID header name
 const CORRELATION_ID_HEADER = 'x-request-id';
 
@@ -446,6 +448,20 @@ export async function middleware(request: NextRequest) {
   // Sliding window session refresh: if token is past half-life, issue a fresh one
   if (session && shouldRefreshSession(session)) {
     response = await refreshSessionOnResponse(session, response);
+  }
+
+  // Set CSRF cookie if not already present
+  if (!request.cookies.get(CSRF_COOKIE_NAME)) {
+    const csrfBytes = new Uint8Array(32);
+    crypto.getRandomValues(csrfBytes);
+    const csrfToken = Array.from(csrfBytes, b => b.toString(16).padStart(2, '0')).join('');
+    response.cookies.set(CSRF_COOKIE_NAME, csrfToken, {
+      httpOnly: false, // Must be readable by client JavaScript
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+      maxAge: 60 * 60 * 24, // 24 hours
+    });
   }
 
   // Generate and add correlation ID for request tracing
