@@ -11,6 +11,7 @@ import { query } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { stripExif } from '@/lib/utils/image-processing';
 
 // Lazy import supabase admin to avoid initialization errors when key is missing
 async function getSupabaseAdmin() {
@@ -190,9 +191,9 @@ export const POST = withCSRF(
   logger.info('[PHOTO UPLOAD] Starting upload', { winery_id: profile.winery_id, category, fileName });
   logger.debug('[PHOTO UPLOAD] SUPABASE_SERVICE_KEY exists', { exists: !!process.env.SUPABASE_SERVICE_KEY });
 
-  // Read file content
+  // Read file content and strip EXIF metadata (privacy: removes GPS coordinates etc.)
   const arrayBuffer = await file.arrayBuffer();
-  const buffer = Buffer.from(arrayBuffer);
+  const buffer = await stripExif(Buffer.from(arrayBuffer), file.type);
 
   let publicUrl: string;
 
