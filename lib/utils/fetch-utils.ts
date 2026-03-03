@@ -7,6 +7,19 @@
 
 import { logger } from '@/lib/logger';
 
+/**
+ * Read CSRF token from cookie for inclusion in mutation request headers.
+ * Returns empty string if not available (e.g., SSR context).
+ *
+ * Exported so components making direct fetch() calls can include it:
+ *   headers: { 'X-CSRF-Token': getCSRFToken() }
+ */
+export function getCSRFToken(): string {
+  if (typeof document === 'undefined') return '';
+  const match = document.cookie.match(/(?:^|;\s*)csrf-token=([^;]*)/);
+  return match ? match[1] : '';
+}
+
 export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
@@ -98,6 +111,7 @@ export async function apiPost<T = unknown, B = object>(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'X-CSRF-Token': getCSRFToken(),
         ...options.headers,
       },
       body: JSON.stringify(body),
@@ -140,6 +154,7 @@ export async function apiPut<T = unknown, B = object>(
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
+        'X-CSRF-Token': getCSRFToken(),
         ...options.headers,
       },
       body: JSON.stringify(body),
@@ -182,6 +197,7 @@ export async function apiPatch<T = unknown, B = object>(
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
+        'X-CSRF-Token': getCSRFToken(),
         ...options.headers,
       },
       body: JSON.stringify(body),
@@ -223,6 +239,7 @@ export async function apiDelete<T = unknown>(
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
+        'X-CSRF-Token': getCSRFToken(),
         ...options.headers,
       },
       ...options,
@@ -303,6 +320,10 @@ export async function apiUploadFile<T = unknown>(
       });
       
       xhr.open('POST', url);
+      const csrfToken = getCSRFToken();
+      if (csrfToken) {
+        xhr.setRequestHeader('X-CSRF-Token', csrfToken);
+      }
       Object.entries(options.headers || {}).forEach(([key, value]) => {
         xhr.setRequestHeader(key, value as string);
       });
