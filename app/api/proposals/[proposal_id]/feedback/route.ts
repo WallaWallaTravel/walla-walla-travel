@@ -3,6 +3,7 @@ import { query } from '@/lib/db';
 import { withErrorHandling, NotFoundError, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { z } from 'zod';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 
 // Schema for client feedback/suggestions
 const feedbackSchema = z.object({
@@ -18,6 +19,7 @@ const feedbackSchema = z.object({
  * Submit client feedback or suggestions on a proposal
  */
 export const POST = withCSRF(
+  withRateLimit(rateLimiters.payment)(
   withErrorHandling(async (
   request: NextRequest,
   { params }: { params: Promise<{ proposal_id: string }> }
@@ -85,7 +87,7 @@ export const POST = withCSRF(
     message: 'Thank you for your feedback! Our team will review and respond shortly.',
   });
 })
-);
+));
 
 /**
  * GET /api/proposals/[proposal_id]/feedback
