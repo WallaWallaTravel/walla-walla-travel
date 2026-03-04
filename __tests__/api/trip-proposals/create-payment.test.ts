@@ -55,11 +55,19 @@ jest.mock('@/lib/utils', () => ({
 
 jest.mock('next/server', () => ({
   NextResponse: {
-    json: jest.fn((data: unknown, init?: { status?: number }) => ({
-      json: async () => data,
-      status: init?.status || 200,
-      _data: data,
-    })),
+    json: jest.fn((data: unknown, init?: { status?: number }) => {
+      const headers = new Map<string, string>();
+      return {
+        json: async () => data,
+        status: init?.status || 200,
+        headers: {
+          set: (k: string, v: string) => headers.set(k, v),
+          get: (k: string) => headers.get(k),
+          forEach: (cb: (v: string, k: string) => void) => headers.forEach(cb),
+        },
+        _data: data,
+      };
+    }),
   },
   after: jest.fn((fn: () => void) => fn()),
 }));

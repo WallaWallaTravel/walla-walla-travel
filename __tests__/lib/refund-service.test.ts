@@ -52,7 +52,11 @@ describe('RefundService', () => {
     function futureDateDays(days: number): string {
       const d = new Date();
       d.setDate(d.getDate() + days);
-      return d.toISOString().split('T')[0];
+      // Use local date components to match the service's Date.UTC(now.getFullYear(), ...)
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
     }
 
     it('should give 100% refund for 45+ days before tour', () => {
