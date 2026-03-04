@@ -379,18 +379,19 @@ export default async function AdminDashboardPage() {
       )}
       
       {/* Stats Grid - Clickable Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {/* Total Trips */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        {/* Total Bookings */}
         <Link
           href="/admin/bookings"
           className="bg-white rounded-lg border border-slate-200 p-5 hover:shadow-soft hover:border-[#9FB3C8] transition-all"
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-500">Total Trips</p>
+              <p className="text-sm font-medium text-slate-500">Total Bookings</p>
               <p className="text-2xl font-bold text-slate-900 mt-1">
                 {stats.totalBookings}
               </p>
+              <p className="text-xs text-slate-400 mt-0.5">Confirmed &amp; paid</p>
             </div>
             <div className="bg-[#D9E2EC] rounded-lg p-2.5">
               <svg className="w-5 h-5 text-[#334E68]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -399,7 +400,30 @@ export default async function AdminDashboardPage() {
             </div>
           </div>
         </Link>
-        
+
+        {/* Proposals */}
+        <Link
+          href="/admin/trip-proposals"
+          className="bg-white rounded-lg border border-slate-200 p-5 hover:shadow-soft hover:border-violet-300 transition-all"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-slate-500">Proposals</p>
+              <p className="text-2xl font-bold text-slate-900 mt-1">
+                {stats.pendingProposals + stats.acceptedProposals}
+              </p>
+              <p className="text-xs text-slate-400 mt-0.5">
+                {stats.pendingProposals} pending, {stats.acceptedProposals} accepted
+              </p>
+            </div>
+            <div className="bg-violet-100 rounded-lg p-2.5">
+              <svg className="w-5 h-5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+          </div>
+        </Link>
+
         {/* Pending Bookings */}
         <Link 
           href="/admin/bookings?status=pending"
@@ -518,7 +542,7 @@ export default async function AdminDashboardPage() {
       {/* Recent Bookings */}
       <div className="bg-white rounded-lg border border-slate-200">
         <div className="px-5 py-4 border-b border-slate-100">
-          <h2 className="text-lg font-semibold text-slate-900">Recent Trips</h2>
+          <h2 className="text-lg font-semibold text-slate-900">Recent Bookings</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -548,7 +572,7 @@ export default async function AdminDashboardPage() {
               {stats.recentBookings.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-5 py-10 text-center text-slate-500">
-                    No bookings yet. Start by creating your first booking.
+                    No confirmed bookings yet. Proposals convert to bookings when customers pay.
                   </td>
                 </tr>
               ) : (
@@ -596,7 +620,7 @@ export default async function AdminDashboardPage() {
               href="/admin/bookings"
               className="text-sm text-[#334E68] hover:text-[#1A3354] font-medium"
             >
-              View all trips →
+              View all bookings →
             </Link>
           </div>
         )}

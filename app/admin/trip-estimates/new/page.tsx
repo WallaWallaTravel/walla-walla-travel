@@ -61,7 +61,8 @@ export default function NewTripEstimatePage() {
 
   // Deposit
   const [depositAmount, setDepositAmount] = useState(0);
-  const [depositReason, setDepositReason] = useState('Covers planning time and venue deposits');
+  const [depositManuallySet, setDepositManuallySet] = useState(false);
+  const [depositReason, setDepositReason] = useState('');
   const [validUntil, setValidUntil] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() + 30);
@@ -72,17 +73,23 @@ export default function NewTripEstimatePage() {
   const subtotal = items.reduce((sum, item) => sum + item.total_price, 0);
 
   const updateItem = (id: string, field: keyof LineItem, value: string | number) => {
-    setItems((prev) =>
-      prev.map((item) => {
+    setItems((prev) => {
+      const updated = prev.map((item) => {
         if (item.id !== id) return item;
-        const updated = { ...item, [field]: value };
+        const changed = { ...item, [field]: value };
         // Auto-calculate total when quantity or unit_price changes
         if (field === 'quantity' || field === 'unit_price') {
-          updated.total_price = Number(updated.quantity) * Number(updated.unit_price);
+          changed.total_price = Number(changed.quantity) * Number(changed.unit_price);
         }
-        return updated;
-      })
-    );
+        return changed;
+      });
+      // Auto-update deposit to 50% of new subtotal (unless user manually set it)
+      if ((field === 'quantity' || field === 'unit_price') && !depositManuallySet) {
+        const newSubtotal = updated.reduce((sum, item) => sum + item.total_price, 0);
+        setDepositAmount(Math.round(newSubtotal * 0.5 * 100) / 100);
+      }
+      return updated;
+    });
   };
 
   const addItem = () => {
@@ -101,7 +108,14 @@ export default function NewTripEstimatePage() {
   };
 
   const removeItem = (id: string) => {
-    setItems((prev) => prev.filter((item) => item.id !== id));
+    setItems((prev) => {
+      const updated = prev.filter((item) => item.id !== id);
+      if (!depositManuallySet) {
+        const newSubtotal = updated.reduce((sum, item) => sum + item.total_price, 0);
+        setDepositAmount(Math.round(newSubtotal * 0.5 * 100) / 100);
+      }
+      return updated;
+    });
   };
 
   const formatCurrency = (amount: number) => {
@@ -502,7 +516,10 @@ export default function NewTripEstimatePage() {
                     min={0}
                     step="0.01"
                     value={depositAmount || ''}
-                    onChange={(e) => setDepositAmount(parseFloat(e.target.value) || 0)}
+                    onChange={(e) => {
+                      setDepositAmount(parseFloat(e.target.value) || 0);
+                      setDepositManuallySet(true);
+                    }}
                     placeholder="0.00"
                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#8B1538] focus:ring-4 focus:ring-[#FDF2F4] outline-none text-lg font-semibold"
                   />
