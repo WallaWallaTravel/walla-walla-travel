@@ -304,6 +304,7 @@ export default function ManifestPrintPage({ params }: { params: Promise<{ tour_i
         {/* Guest List */}
         <div className="mb-6">
           <h2 className="font-bold text-lg text-slate-900 mb-3">Guest List</h2>
+          <div className="overflow-x-auto">
           <table className="w-full border-collapse border border-slate-300">
             <thead>
               <tr className="bg-slate-100">
@@ -347,11 +348,13 @@ export default function ManifestPrintPage({ params }: { params: Promise<{ tour_i
               ))}
             </tbody>
           </table>
+          </div>
         </div>
 
         {/* Contact Info for Primary Guests */}
         <div className="mb-6 print:break-before-page">
           <h2 className="font-bold text-lg text-slate-900 mb-3">Contact Information</h2>
+          <div className="overflow-x-auto">
           <table className="w-full border-collapse border border-slate-300 text-sm">
             <thead>
               <tr className="bg-slate-100">
@@ -376,6 +379,7 @@ export default function ManifestPrintPage({ params }: { params: Promise<{ tour_i
                 ))}
             </tbody>
           </table>
+          </div>
         </div>
 
         {/* Footer */}

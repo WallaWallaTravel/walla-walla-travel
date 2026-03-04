@@ -223,7 +223,7 @@ export default function AdminLodgingPage() {
             </button>
           </div>
         ) : (
-          <table className="w-full min-w-[900px]">
+          <table className="w-full">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
                 <th className="text-left px-4 py-3 text-xs font-medium text-slate-500 uppercase">Name</th>

@@ -621,8 +621,8 @@ export default function UnifiedLeadsPage() {
             className="absolute inset-0 bg-black/50"
             onClick={() => setSelectedLead(null)}
           />
-          <div className="relative bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+          <div className="relative bg-white rounded-2xl shadow-xl max-w-[calc(100vw-2rem)] sm:max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-slate-200 px-4 sm:px-6 py-4 flex items-center justify-between">
               <h2 className="text-xl font-bold text-slate-900">Inquiry Details</h2>
               <button
                 onClick={() => setSelectedLead(null)}
@@ -769,8 +769,8 @@ export default function UnifiedLeadsPage() {
             className="absolute inset-0 bg-black/50"
             onClick={() => setSelectedLead(null)}
           />
-          <div className="relative bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+          <div className="relative bg-white rounded-2xl shadow-xl max-w-[calc(100vw-2rem)] sm:max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-slate-200 px-4 sm:px-6 py-4 flex items-center justify-between">
               <h2 className="text-xl font-bold text-slate-900">Corporate Request Details</h2>
               <button
                 onClick={() => setSelectedLead(null)}

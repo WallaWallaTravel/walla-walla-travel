@@ -62,7 +62,7 @@ export const SendProposalModal = React.memo(function SendProposalModal({
       aria-labelledby="send-proposal-title"
     >
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={handleClose} aria-hidden="true" />
-      <div className="relative bg-white rounded-2xl shadow-xl max-w-lg w-full mx-4 p-6">
+      <div className="relative bg-white rounded-2xl shadow-xl max-w-[calc(100vw-2rem)] sm:max-w-lg w-full mx-4 p-4 sm:p-6">
         <h2 id="send-proposal-title" className="text-xl font-bold text-gray-900 mb-1">Send Proposal</h2>
         <p className="text-sm text-gray-600 mb-5">
           Send <span className="font-semibold">{proposalNumber}</span> to{' '}

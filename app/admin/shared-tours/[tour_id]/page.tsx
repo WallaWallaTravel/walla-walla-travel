@@ -846,8 +846,8 @@ export default function AdminTourDetailPage({ params }: { params: Promise<{ tour
       {/* Vehicle Reassignment Modal */}
       {showReassignModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-md w-full">
-            <div className="p-6 border-b border-slate-200 flex items-center justify-between">
+          <div className="bg-white rounded-xl max-w-[calc(100vw-2rem)] sm:max-w-md w-full">
+            <div className="p-4 sm:p-6 border-b border-slate-200 flex items-center justify-between">
               <h2 className="text-xl font-bold text-slate-900">
                 {vehicleInfo ? 'Change Vehicle' : 'Assign Vehicle'}
               </h2>
@@ -940,7 +940,7 @@ export default function AdminTourDetailPage({ params }: { params: Promise<{ tour
       {/* Discount Modal */}
       {showDiscountModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl max-w-[calc(100vw-2rem)] sm:max-w-lg w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-slate-200 flex items-center justify-between">
               <h2 className="text-xl font-bold text-slate-900">Apply Group Discount</h2>
               <button

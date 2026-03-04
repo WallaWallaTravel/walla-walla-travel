@@ -221,6 +221,7 @@ export default function AdminHotelPartnersPage() {
 
       {/* Hotels Table */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full">
           <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
@@ -302,6 +303,7 @@ export default function AdminHotelPartnersPage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* Create Hotel Modal */}

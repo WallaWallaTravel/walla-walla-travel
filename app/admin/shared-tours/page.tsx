@@ -761,7 +761,7 @@ export default function AdminSharedToursPage() {
       {/* Create Tour Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl max-w-[calc(100vw-2rem)] sm:max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-slate-200 flex items-center justify-between">
               <h2 className="text-xl font-bold text-slate-900">Add Tour Date</h2>
               <button
@@ -1276,8 +1276,8 @@ export default function AdminSharedToursPage() {
       {/* Save Preset Modal */}
       {showSavePresetModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
-          <div className="bg-white rounded-xl max-w-md w-full">
-            <div className="p-6 border-b border-slate-200">
+          <div className="bg-white rounded-xl max-w-[calc(100vw-2rem)] sm:max-w-md w-full">
+            <div className="p-4 sm:p-6 border-b border-slate-200">
               <h3 className="text-lg font-bold text-slate-900">Save as Preset</h3>
             </div>
             <div className="p-6">
@@ -1320,7 +1320,7 @@ export default function AdminSharedToursPage() {
       {/* Manage Presets Modal */}
       {showManagePresets && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
-          <div className="bg-white rounded-xl max-w-lg w-full max-h-[80vh] overflow-hidden">
+          <div className="bg-white rounded-xl max-w-[calc(100vw-2rem)] sm:max-w-lg w-full max-h-[80vh] overflow-hidden">
             <div className="p-6 border-b border-slate-200 flex items-center justify-between">
               <h3 className="text-lg font-bold text-slate-900">Manage Presets</h3>
               <button

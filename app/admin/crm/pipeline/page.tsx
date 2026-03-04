@@ -300,7 +300,7 @@ export default function PipelinePage() {
       {/* Deal Detail Modal */}
       {selectedDeal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg m-4 max-h-[80vh] overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-[calc(100vw-2rem)] sm:max-w-lg m-4 max-h-[80vh] overflow-y-auto">
             <div className="p-6 border-b border-slate-200 flex items-center justify-between">
               <h2 className="text-xl font-bold text-slate-900">{selectedDeal.title}</h2>
               <button
@@ -401,7 +401,7 @@ export default function PipelinePage() {
       {/* New Deal Modal Placeholder */}
       {showNewDealModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md m-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-[calc(100vw-2rem)] sm:max-w-md m-4">
             <div className="p-6 border-b border-slate-200">
               <h2 className="text-xl font-bold text-slate-900">Create New Deal</h2>
             </div>

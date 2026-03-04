@@ -461,6 +461,7 @@ export default function PricingAdminPage() {
 
             {/* Pricing Tiers Table */}
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
+              <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
@@ -545,6 +546,7 @@ export default function PricingAdminPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
 
             {filteredTiers.length === 0 && (
@@ -570,6 +572,7 @@ export default function PricingAdminPage() {
             </div>
 
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
+              <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
@@ -623,6 +626,7 @@ export default function PricingAdminPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
           </div>
         )}
@@ -643,7 +647,7 @@ export default function PricingAdminPage() {
       {/* Edit Tier Modal */}
       {showEditModal && editingTier && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-xl max-w-[calc(100vw-2rem)] sm:max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200">
               <h3 className="text-xl font-bold text-gray-900">Edit Pricing Tier</h3>
               <p className="text-sm text-gray-600 mt-1">{editingTier.tier_name}</p>

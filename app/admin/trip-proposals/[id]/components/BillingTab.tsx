@@ -102,7 +102,7 @@ export const BillingTab = React.memo(function BillingTab({
       {paymentGuest && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setPaymentGuest(null)} />
-          <div className="relative bg-white rounded-2xl shadow-xl max-w-sm w-full mx-4 p-6">
+          <div className="relative bg-white rounded-2xl shadow-xl max-w-[calc(100vw-2rem)] sm:max-w-sm w-full mx-4 p-4 sm:p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-2">Record Payment</h2>
             <p className="text-sm text-gray-600 mb-4">
               Manual payment for <span className="font-semibold">{paymentGuest.name}</span>
@@ -144,7 +144,7 @@ export const BillingTab = React.memo(function BillingTab({
       {showGroupModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowGroupModal(false)} />
-          <div className="relative bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 p-6">
+          <div className="relative bg-white rounded-2xl shadow-xl max-w-[calc(100vw-2rem)] sm:max-w-md w-full mx-4 p-4 sm:p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Create Payment Group</h2>
             <div className="space-y-4">
               <div>

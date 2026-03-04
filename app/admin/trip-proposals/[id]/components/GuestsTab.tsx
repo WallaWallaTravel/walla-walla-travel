@@ -63,7 +63,7 @@ export const GuestsTab = React.memo(function GuestsTab({
       {showAddGuestModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !saving && setShowAddGuestModal(false)} />
-          <div className="relative bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 p-6">
+          <div className="relative bg-white rounded-2xl shadow-xl max-w-[calc(100vw-2rem)] sm:max-w-md w-full mx-4 p-4 sm:p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Add Guest</h2>
             <div className="space-y-4">
               <div>
