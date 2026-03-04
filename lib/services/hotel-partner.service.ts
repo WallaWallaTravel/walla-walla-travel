@@ -20,6 +20,7 @@ import { sendPartnerRegistrationCompleteEmail } from '@/lib/email/templates/part
 import { sendPartnerBookingConfirmedEmail } from '@/lib/email/templates/partner-booking-confirmed';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
+import { emailDarkModeStyles } from '@/lib/email/dark-mode-styles';
 
 // ============================================================================
 // TYPES
@@ -655,22 +656,23 @@ function generateInviteEmailHtml(hotelName: string, contactName: string | null, 
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      ${emailDarkModeStyles()}
     </head>
     <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6;">
-      <div style="max-width: 600px; margin: 0 auto; background: #ffffff;">
+      <div class="em-wrapper" style="max-width: 600px; margin: 0 auto; background: #ffffff;">
         <div style="background-color: #8B1538; background: linear-gradient(135deg, #8B1538 0%, #722F37 100%); padding: 40px 24px; text-align: center;">
           <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">🍷 Partner Portal Invitation</h1>
           <p style="color: #fecaca; margin: 12px 0 0 0; font-size: 16px;">You're invited to join Walla Walla Travel</p>
         </div>
 
-        <div style="padding: 32px 24px;">
+        <div class="em-body" style="padding: 32px 24px;">
           <p style="font-size: 18px; color: #1f2937; margin: 0 0 20px 0;">Hi ${contactName || hotelName},</p>
 
           <p style="font-size: 16px; color: #4b5563; line-height: 1.6; margin: 0 0 24px 0;">
             Welcome to the Walla Walla Travel Partner Portal! You can now book wine tours directly for your guests.
           </p>
 
-          <div style="background: #f0fdf4; border: 2px solid #22c55e; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+          <div class="em-card" style="background: #f0fdf4; border: 2px solid #22c55e; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
             <h3 style="color: #166534; margin: 0 0 12px 0; font-size: 16px; font-weight: bold;">🎉 As a partner, you can:</h3>
             <ul style="margin: 0; padding-left: 20px; color: #1f2937; font-size: 14px; line-height: 1.8;">
               <li>View upcoming shared tour availability</li>
@@ -689,7 +691,7 @@ function generateInviteEmailHtml(hotelName: string, contactName: string | null, 
           </p>
         </div>
 
-        <div style="background: #f9fafb; padding: 24px; text-align: center; border-top: 1px solid #e5e7eb;">
+        <div class="em-footer" style="background: #f9fafb; padding: 24px; text-align: center; border-top: 1px solid #e5e7eb;">
           <p style="color: #6b7280; font-size: 14px; margin: 0;">Walla Walla Travel</p>
           <p style="color: #9ca3af; font-size: 12px; margin: 4px 0 0 0;">Your local wine country experts</p>
         </div>

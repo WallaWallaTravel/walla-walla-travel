@@ -10,6 +10,7 @@ import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 import { sendEmail } from '@/lib/email';
 import { getBrandEmailConfig } from '@/lib/email-brands';
 import { logger } from '@/lib/logger';
+import { emailDarkModeStyles } from '@/lib/email/dark-mode-styles';
 
 const BodySchema = z.object({
   counter_notes: z.string().max(5000).optional(),
@@ -269,6 +270,7 @@ export const POST = withCSRF(
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>Updated Proposal from ${brand.name}</title>
+          ${emailDarkModeStyles()}
         </head>
         <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
           <!-- Header -->
@@ -278,7 +280,7 @@ export const POST = withCSRF(
           </div>
 
           <!-- Content -->
-          <div style="background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 10px 10px;">
+          <div class="em-body" style="background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 10px 10px;">
             <h2 style="color: ${brand.primary_color}; margin-top: 0;">We've Updated Your Proposal</h2>
 
             <p>Hi ${original.client_name},</p>
@@ -293,7 +295,7 @@ export const POST = withCSRF(
             ` : ''}
 
             <!-- Proposal Summary -->
-            <div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <div class="em-card" style="background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
               <h3 style="margin-top: 0; color: #374151;">Proposal ${proposalNumber}</h3>
               <p style="margin: 10px 0;"><strong>Services:</strong> ${newServiceItemsList.length} service${newServiceItemsList.length !== 1 ? 's' : ''}</p>
               ${newDiscountPercentage > 0 ? `<p style="margin: 10px 0;"><strong>Discount:</strong> ${newDiscountPercentage}% off</p>` : ''}
@@ -309,7 +311,7 @@ export const POST = withCSRF(
             <p style="color: #6b7280; font-size: 14px;">This proposal is valid until ${validUntil.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}. We'd love to make this work for you!</p>
 
             <!-- Footer -->
-            <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 14px;">
+            <div class="em-footer" style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 14px;">
               <p><strong>${brand.name}</strong></p>
               <p>${brand.website}</p>
               <p>

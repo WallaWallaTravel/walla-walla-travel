@@ -3,6 +3,8 @@
  * Each brand has its own voice, colors, and contact information for emails
  */
 
+import { emailDarkModeStyles } from '@/lib/email/dark-mode-styles';
+
 export interface BrandEmailConfig {
   id: number;
   name: string;
@@ -110,18 +112,19 @@ export const brandReservationTemplates = {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  ${emailDarkModeStyles()}
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f3f4f6;">
-  <div style="max-width: 600px; margin: 0 auto; background: #ffffff;">
-    
+  <div class="em-wrapper" style="max-width: 600px; margin: 0 auto; background: #ffffff;">
+
     <!-- Header -->
     <div style="background-color: ${brand.primary_color}; background: linear-gradient(135deg, ${brand.primary_color} 0%, ${brand.secondary_color} 100%); padding: 40px 20px; text-align: center;">
       <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">🍷 Date Reserved!</h1>
       <p style="color: #e9d5ff; margin: 10px 0 0 0; font-size: 16px;">${brand.tagline}</p>
     </div>
-    
+
     <!-- Content -->
-    <div style="padding: 40px 30px;">
+    <div class="em-body" style="padding: 40px 30px;">
       
       <p style="font-size: 16px; color: #111827; margin: 0 0 20px 0;">
         Hi ${data.customer_name},
@@ -132,7 +135,7 @@ export const brandReservationTemplates = {
       </p>
       
       <!-- Reservation Details -->
-      <div style="background: #f9fafb; border-left: 4px solid ${brand.primary_color}; padding: 20px; margin: 30px 0;">
+      <div class="em-card" style="background: #f9fafb; border-left: 4px solid ${brand.primary_color}; padding: 20px; margin: 30px 0;">
         <h2 style="margin: 0 0 15px 0; font-size: 18px; color: #111827;">Reservation Details</h2>
         <table style="width: 100%; font-size: 14px; color: #374151;">
           <tr>
@@ -211,7 +214,7 @@ export const brandReservationTemplates = {
     </div>
     
     <!-- Footer -->
-    <div style="background: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+    <div class="em-footer" style="background: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
       <p style="margin: 0 0 10px 0; font-size: 14px; color: #6b7280;">
         Questions? We're here to help!
       </p>
@@ -222,12 +225,12 @@ export const brandReservationTemplates = {
         ${brand.name} • ${brand.website}
       </p>
     </div>
-    
+
   </div>
 </body>
 </html>
       `,
-      
+
       text: `
 Your Wine Tour Reservation is Confirmed! [${data.reservation_number}]
 
@@ -298,18 +301,19 @@ ${brand.name} • ${brand.website}
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  ${emailDarkModeStyles()}
 </head>
 <body style="margin: 0; padding: 0; font-family: 'Georgia', 'Times New Roman', serif; background-color: #F5F1E8;">
-  <div style="max-width: 600px; margin: 0 auto; background: #ffffff;">
-    
+  <div class="em-wrapper" style="max-width: 600px; margin: 0 auto; background: #ffffff;">
+
     <!-- Header -->
     <div style="background-color: ${brand.primary_color}; background: linear-gradient(135deg, ${brand.primary_color} 0%, ${brand.secondary_color} 100%); padding: 40px 30px; text-align: center;">
       <h1 style="color: #F5F1E8; margin: 0; font-size: 26px; font-weight: normal; letter-spacing: 0.5px;">HERDING CATS WINE TOURS</h1>
       <p style="color: #B8926A; margin: 15px 0 0 0; font-size: 14px; font-style: italic;">${brand.tagline}</p>
     </div>
-    
+
     <!-- Content -->
-    <div style="padding: 40px 30px; line-height: 1.8; color: #1A1614;">
+    <div class="em-body" style="padding: 40px 30px; line-height: 1.8; color: #1A1614;">
       
       <p style="font-size: 15px; margin: 0 0 20px 0;">
         Dear ${data.customer_name},
@@ -320,7 +324,7 @@ ${brand.name} • ${brand.website}
       </p>
       
       <!-- Reservation Particulars -->
-      <div style="background: #F5F1E8; border-left: 3px solid ${brand.primary_color}; padding: 25px; margin: 30px 0;">
+      <div class="em-card" style="background: #F5F1E8; border-left: 3px solid ${brand.primary_color}; padding: 25px; margin: 30px 0;">
         <h2 style="margin: 0 0 20px 0; font-size: 16px; color: #1A1614; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;">Reservation Particulars</h2>
         <table style="width: 100%; font-size: 14px; color: #3A3633;">
           <tr>
@@ -403,7 +407,7 @@ ${brand.name} • ${brand.website}
     </div>
     
     <!-- Footer -->
-    <div style="background: #F5F1E8; padding: 30px; text-align: center; border-top: 1px solid #B8926A;">
+    <div class="em-footer" style="background: #F5F1E8; padding: 30px; text-align: center; border-top: 1px solid #B8926A;">
       <p style="margin: 0 0 10px 0; font-size: 14px; color: #3A3633;">
         Questions or Concerns
       </p>
@@ -497,18 +501,19 @@ ${brand.name} • ${brand.website}
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  ${emailDarkModeStyles()}
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc;">
-  <div style="max-width: 600px; margin: 0 auto; background: #ffffff;">
-    
+  <div class="em-wrapper" style="max-width: 600px; margin: 0 auto; background: #ffffff;">
+
     <!-- Header -->
     <div style="background-color: ${brand.primary_color}; background: linear-gradient(135deg, ${brand.primary_color} 0%, ${brand.secondary_color} 100%); padding: 35px 30px; text-align: center;">
       <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600; letter-spacing: 0.5px;">NW TOURING & CONCIERGE</h1>
       <p style="color: #bfdbfe; margin: 12px 0 0 0; font-size: 14px;">${brand.tagline}</p>
     </div>
-    
+
     <!-- Content -->
-    <div style="padding: 40px 30px;">
+    <div class="em-body" style="padding: 40px 30px;">
       
       <p style="font-size: 15px; color: #111827; margin: 0 0 20px 0;">
         Dear ${data.customer_name},
@@ -519,7 +524,7 @@ ${brand.name} • ${brand.website}
       </p>
       
       <!-- Reservation Summary -->
-      <div style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; padding: 20px; margin: 30px 0;">
+      <div class="em-card" style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; padding: 20px; margin: 30px 0;">
         <h2 style="margin: 0 0 18px 0; font-size: 17px; color: #111827; font-weight: 600;">Reservation Summary</h2>
         <table style="width: 100%; font-size: 14px; color: #374151;">
           <tr>
@@ -592,7 +597,7 @@ ${brand.name} • ${brand.website}
     </div>
     
     <!-- Footer -->
-    <div style="background: #f8fafc; padding: 30px; text-align: center; border-top: 1px solid #e2e8f0;">
+    <div class="em-footer" style="background: #f8fafc; padding: 30px; text-align: center; border-top: 1px solid #e2e8f0;">
       <p style="margin: 0 0 10px 0; font-size: 14px; color: #64748b;">
         24/7 Service & Support
       </p>

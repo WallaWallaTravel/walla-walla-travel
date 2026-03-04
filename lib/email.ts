@@ -6,6 +6,7 @@
 
 import { Resend } from 'resend';
 import { logger } from '@/lib/logger';
+import { emailDarkModeStyles } from '@/lib/email/dark-mode-styles';
 
 interface EmailOptions {
   to: string | string[];
@@ -146,9 +147,10 @@ export async function sendConsultationRequestNotification(data: {
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      ${emailDarkModeStyles()}
     </head>
     <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6;">
-      <div style="max-width: 600px; margin: 0 auto; background: #ffffff;">
+      <div class="em-wrapper" style="max-width: 600px; margin: 0 auto; background: #ffffff;">
         <!-- Header -->
         <div style="background-color: #8B1538; background: linear-gradient(135deg, #8B1538 0%, #722F37 100%); padding: 32px 24px; text-align: center;">
           <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: bold;">🍷 New Consultation Request</h1>
@@ -156,9 +158,9 @@ export async function sendConsultationRequestNotification(data: {
         </div>
 
         <!-- Main Content -->
-        <div style="padding: 32px 24px;">
+        <div class="em-body" style="padding: 32px 24px;">
           <!-- Customer Info Card -->
-          <div style="background: #fef3c7; border: 2px solid #fbbf24; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+          <div class="em-card" style="background: #fef3c7; border: 2px solid #fbbf24; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
             <h2 style="color: #92400e; margin: 0 0 16px 0; font-size: 16px; font-weight: bold;">👤 Customer Details</h2>
             <table style="width: 100%; border-collapse: collapse;">
               <tr>
@@ -179,7 +181,7 @@ export async function sendConsultationRequestNotification(data: {
           </div>
 
           <!-- Trip Details Card -->
-          <div style="background: #f9fafb; border: 2px solid #e5e7eb; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+          <div class="em-card" style="background: #f9fafb; border: 2px solid #e5e7eb; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
             <h2 style="color: #374151; margin: 0 0 16px 0; font-size: 16px; font-weight: bold;">📋 Trip Details</h2>
             <table style="width: 100%; border-collapse: collapse;">
               <tr>
@@ -227,7 +229,7 @@ export async function sendConsultationRequestNotification(data: {
         </div>
 
         <!-- Footer -->
-        <div style="background: #f9fafb; padding: 20px 24px; text-align: center; border-top: 1px solid #e5e7eb;">
+        <div class="em-footer" style="background: #f9fafb; padding: 20px 24px; text-align: center; border-top: 1px solid #e5e7eb;">
           <p style="color: #6b7280; font-size: 12px; margin: 0;">
             This is an automated notification from ${COMPANY_NAME}
           </p>
@@ -284,9 +286,10 @@ export async function sendConsultationConfirmationToCustomer(data: {
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      ${emailDarkModeStyles()}
     </head>
     <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6;">
-      <div style="max-width: 600px; margin: 0 auto; background: #ffffff;">
+      <div class="em-wrapper" style="max-width: 600px; margin: 0 auto; background: #ffffff;">
         <!-- Header -->
         <div style="background-color: #8B1538; background: linear-gradient(135deg, #8B1538 0%, #722F37 100%); padding: 40px 24px; text-align: center;">
           <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">🍷 Request Received!</h1>
@@ -294,14 +297,14 @@ export async function sendConsultationConfirmationToCustomer(data: {
         </div>
 
         <!-- Main Content -->
-        <div style="padding: 40px 24px;">
+        <div class="em-body" style="padding: 40px 24px;">
           <p style="font-size: 18px; color: #1f2937; margin: 0 0 20px 0;">Hi ${data.customerName || 'there'},</p>
 
           <p style="font-size: 16px; color: #4b5563; line-height: 1.6; margin: 0 0 24px 0;">
             Thank you for reaching out! We've received your consultation request for <strong>"${data.tripTitle}"</strong> and our team is already reviewing it.
           </p>
 
-          <div style="background: #f0fdf4; border: 2px solid #22c55e; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+          <div class="em-card" style="background: #f0fdf4; border: 2px solid #22c55e; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
             <h2 style="color: #166534; margin: 0 0 12px 0; font-size: 16px; font-weight: bold;">✅ What happens next?</h2>
             <ol style="color: #1f2937; font-size: 14px; line-height: 1.8; margin: 0; padding-left: 20px;">
               <li>Our team reviews your trip details and winery preferences</li>
@@ -325,7 +328,7 @@ export async function sendConsultationConfirmationToCustomer(data: {
         </div>
 
         <!-- Footer -->
-        <div style="background: #f9fafb; padding: 24px; text-align: center; border-top: 1px solid #e5e7eb;">
+        <div class="em-footer" style="background: #f9fafb; padding: 24px; text-align: center; border-top: 1px solid #e5e7eb;">
           <p style="color: #6b7280; font-size: 14px; margin: 0 0 8px 0; font-weight: bold;">${COMPANY_NAME}</p>
           <p style="color: #9ca3af; font-size: 12px; margin: 0;">Your local wine country experts</p>
         </div>
@@ -382,9 +385,10 @@ export const EmailTemplates = {
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        ${emailDarkModeStyles()}
       </head>
       <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6;">
-        <div style="max-width: 600px; margin: 0 auto; background: #ffffff;">
+        <div class="em-wrapper" style="max-width: 600px; margin: 0 auto; background: #ffffff;">
           <!-- Header -->
           <div style="background-color: #8B1538; background: linear-gradient(135deg, #8B1538 0%, #722F37 100%); padding: 40px 24px; text-align: center;">
             <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">🤝 Partner Invitation</h1>
@@ -392,7 +396,7 @@ export const EmailTemplates = {
           </div>
 
           <!-- Main Content -->
-          <div style="padding: 40px 24px;">
+          <div class="em-body" style="padding: 40px 24px;">
             <p style="font-size: 18px; color: #1f2937; margin: 0 0 20px 0;">Hello <strong>${data.business_name}</strong>,</p>
 
             <p style="font-size: 16px; color: #4b5563; line-height: 1.6; margin: 0 0 24px 0;">
@@ -400,7 +404,7 @@ export const EmailTemplates = {
             </p>
 
             <!-- Benefits Card -->
-            <div style="background: #f0fdf4; border: 2px solid #22c55e; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+            <div class="em-card" style="background: #f0fdf4; border: 2px solid #22c55e; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
               <h2 style="color: #166534; margin: 0 0 16px 0; font-size: 18px; font-weight: bold;">✨ Partner Benefits</h2>
               <ul style="color: #1f2937; font-size: 15px; line-height: 1.8; margin: 0; padding-left: 20px;">
                 <li>Featured in our AI-powered winery recommendations</li>
@@ -423,7 +427,7 @@ export const EmailTemplates = {
             </p>
 
             <!-- What to Expect -->
-            <div style="background: #eff6ff; border: 2px solid #3b82f6; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+            <div class="em-card" style="background: #eff6ff; border: 2px solid #3b82f6; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
               <h2 style="color: #1e40af; margin: 0 0 12px 0; font-size: 16px; font-weight: bold;">📋 What to Expect</h2>
               <ol style="color: #1f2937; font-size: 14px; line-height: 1.8; margin: 0; padding-left: 20px;">
                 <li>Click the button above to accept the invitation</li>
@@ -439,7 +443,7 @@ export const EmailTemplates = {
           </div>
 
           <!-- Footer -->
-          <div style="background: #f9fafb; padding: 24px; text-align: center; border-top: 1px solid #e5e7eb;">
+          <div class="em-footer" style="background: #f9fafb; padding: 24px; text-align: center; border-top: 1px solid #e5e7eb;">
             <p style="color: #6b7280; font-size: 14px; margin: 0 0 8px 0; font-weight: bold;">Walla Walla Travel</p>
             <p style="color: #9ca3af; font-size: 12px; margin: 0;">Your local wine country experts</p>
           </div>
@@ -503,17 +507,18 @@ Your local wine country experts
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        ${emailDarkModeStyles()}
       </head>
       <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-        <div style="max-width: 600px; margin: 0 auto; background: #ffffff;">
+        <div class="em-wrapper" style="max-width: 600px; margin: 0 auto; background: #ffffff;">
           <!-- Header -->
           <div style="background-color: #7c3aed; background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%); padding: 40px 20px; text-align: center;">
             <h1 style="color: #ffffff; margin: 0; font-size: 32px; font-weight: bold;">🍷 Tour Confirmed!</h1>
             <p style="color: #e9d5ff; margin: 10px 0 0 0; font-size: 18px;">Your Walla Walla wine country adventure awaits</p>
           </div>
-          
+
           <!-- Main Content -->
-          <div style="padding: 40px 20px;">
+          <div class="em-body" style="padding: 40px 20px;">
             <p style="font-size: 18px; color: #1f2937; margin: 0 0 20px 0;">Hi ${data.customer_name},</p>
             
             <p style="font-size: 16px; color: #4b5563; line-height: 1.6; margin: 0 0 30px 0;">
@@ -521,7 +526,7 @@ Your local wine country experts
             </p>
             
             <!-- Booking Details Card -->
-            <div style="background: #f9fafb; border: 2px solid #e5e7eb; border-radius: 12px; padding: 24px; margin: 0 0 30px 0;">
+            <div class="em-card" style="background: #f9fafb; border: 2px solid #e5e7eb; border-radius: 12px; padding: 24px; margin: 0 0 30px 0;">
               <h2 style="color: #7c3aed; margin: 0 0 20px 0; font-size: 20px; font-weight: bold;">📋 Your Tour Details</h2>
               
               <table style="width: 100%; border-collapse: collapse;">
@@ -554,7 +559,7 @@ Your local wine country experts
             
             ${data.wineries && data.wineries.length > 0 ? `
             <!-- Wineries -->
-            <div style="background: #fef3c7; border: 2px solid #fbbf24; border-radius: 12px; padding: 24px; margin: 0 0 30px 0;">
+            <div class="em-card" style="background: #fef3c7; border: 2px solid #fbbf24; border-radius: 12px; padding: 24px; margin: 0 0 30px 0;">
               <h2 style="color: #92400e; margin: 0 0 16px 0; font-size: 18px; font-weight: bold;">🍇 Your Winery Stops</h2>
               ${data.wineries.map((winery, index) => `
                 <div style="padding: 8px 0;">
@@ -567,7 +572,7 @@ Your local wine country experts
             ` : ''}
             
             <!-- Payment Summary -->
-            <div style="background: #ecfdf5; border: 2px solid #10b981; border-radius: 12px; padding: 24px; margin: 0 0 30px 0;">
+            <div class="em-card" style="background: #ecfdf5; border: 2px solid #10b981; border-radius: 12px; padding: 24px; margin: 0 0 30px 0;">
               <h2 style="color: #065f46; margin: 0 0 16px 0; font-size: 18px; font-weight: bold;">💳 Payment Summary</h2>
               
               <table style="width: 100%; border-collapse: collapse;">
@@ -590,7 +595,7 @@ Your local wine country experts
             </div>
             
             <!-- What's Next -->
-            <div style="background: #eff6ff; border: 2px solid #3b82f6; border-radius: 12px; padding: 24px; margin: 0 0 30px 0;">
+            <div class="em-card" style="background: #eff6ff; border: 2px solid #3b82f6; border-radius: 12px; padding: 24px; margin: 0 0 30px 0;">
               <h2 style="color: #1e40af; margin: 0 0 16px 0; font-size: 18px; font-weight: bold;">📅 What's Next?</h2>
               
               <ul style="margin: 0; padding: 0 0 0 20px; color: #1f2937;">
@@ -614,7 +619,7 @@ Your local wine country experts
           </div>
           
           <!-- Footer -->
-          <div style="background: #f9fafb; padding: 30px 20px; text-align: center; border-top: 1px solid #e5e7eb;">
+          <div class="em-footer" style="background: #f9fafb; padding: 30px 20px; text-align: center; border-top: 1px solid #e5e7eb;">
             <p style="color: #6b7280; font-size: 14px; margin: 0 0 10px 0;">
               <strong style="color: #1f2937;">${COMPANY_NAME}</strong><br>
               Walla Walla, Washington
@@ -735,17 +740,18 @@ Walla Walla, Washington
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        ${emailDarkModeStyles()}
       </head>
       <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-        <div style="max-width: 600px; margin: 0 auto; background: #ffffff;">
+        <div class="em-wrapper" style="max-width: 600px; margin: 0 auto; background: #ffffff;">
           <!-- Header -->
           <div style="background-color: #7c3aed; background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%); padding: 40px 20px; text-align: center;">
             <h1 style="color: #ffffff; margin: 0; font-size: 32px; font-weight: bold;">🍷 Thank You!</h1>
             <p style="color: #e9d5ff; margin: 10px 0 0 0; font-size: 18px;">We hope you had an amazing tour</p>
           </div>
-          
+
           <!-- Main Content -->
-          <div style="padding: 40px 20px;">
+          <div class="em-body" style="padding: 40px 20px;">
             <p style="font-size: 18px; color: #1f2937; margin: 0 0 20px 0;">Hi ${data.customer_name},</p>
             
             <p style="font-size: 16px; color: #4b5563; line-height: 1.6; margin: 0 0 30px 0;">
@@ -753,7 +759,7 @@ Walla Walla, Washington
             </p>
             
             <!-- Invoice Details Card -->
-            <div style="background: #f9fafb; border: 2px solid #e5e7eb; border-radius: 12px; padding: 24px; margin: 0 0 30px 0;">
+            <div class="em-card" style="background: #f9fafb; border: 2px solid #e5e7eb; border-radius: 12px; padding: 24px; margin: 0 0 30px 0;">
               <h2 style="color: #7c3aed; margin: 0 0 20px 0; font-size: 20px; font-weight: bold;">📋 Final Invoice</h2>
               
               <table style="width: 100%; border-collapse: collapse;">
@@ -777,7 +783,7 @@ Walla Walla, Washington
             </div>
             
             <!-- Service Details -->
-            <div style="background: #ecfdf5; border: 2px solid #10b981; border-radius: 12px; padding: 24px; margin: 0 0 30px 0;">
+            <div class="em-card" style="background: #ecfdf5; border: 2px solid #10b981; border-radius: 12px; padding: 24px; margin: 0 0 30px 0;">
               <h2 style="color: #065f46; margin: 0 0 16px 0; font-size: 18px; font-weight: bold;">💰 Service Details</h2>
               
               <table style="width: 100%; border-collapse: collapse;">
@@ -797,7 +803,7 @@ Walla Walla, Washington
             </div>
             
             <!-- Tip Option Callout -->
-            <div style="background: #fffbeb; border: 2px solid #f59e0b; border-radius: 12px; padding: 24px; margin: 0 0 30px 0;">
+            <div class="em-card" style="background: #fffbeb; border: 2px solid #f59e0b; border-radius: 12px; padding: 24px; margin: 0 0 30px 0;">
               <h3 style="color: #92400e; margin: 0 0 12px 0; font-size: 16px; font-weight: bold;">💖 Show Your Appreciation</h3>
               <p style="color: #78350f; margin: 0 0 16px 0; font-size: 14px; line-height: 1.5;">
                 If ${data.driver_name} provided excellent service, you can add a tip when you pay. Suggested amounts:
@@ -834,7 +840,7 @@ Walla Walla, Washington
             </p>
             
             <!-- Thank You -->
-            <div style="background: #eff6ff; border: 2px solid #3b82f6; border-radius: 12px; padding: 24px; margin: 30px 0;">
+            <div class="em-card" style="background: #eff6ff; border: 2px solid #3b82f6; border-radius: 12px; padding: 24px; margin: 30px 0;">
               <h3 style="color: #1e40af; margin: 0 0 12px 0; font-size: 16px; font-weight: bold;">🙏 Thank You!</h3>
               <p style="color: #1e3a8a; margin: 0; font-size: 14px; line-height: 1.6;">
                 It was our pleasure to show you Walla Walla wine country. We'd love to hear about your experience! Feel free to reply to this email with any feedback or photos from your tour.
@@ -853,7 +859,7 @@ Walla Walla, Washington
           </div>
           
           <!-- Footer -->
-          <div style="background: #f9fafb; padding: 30px 20px; text-align: center; border-top: 1px solid #e5e7eb;">
+          <div class="em-footer" style="background: #f9fafb; padding: 30px 20px; text-align: center; border-top: 1px solid #e5e7eb;">
             <p style="color: #6b7280; font-size: 14px; margin: 0 0 10px 0;">
               <strong style="color: #1f2937;">${COMPANY_NAME}</strong><br>
               Walla Walla, Washington
@@ -1301,6 +1307,7 @@ Ryan & the ${COMPANY_NAME} Team
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Proposal Accepted</title>
+        ${emailDarkModeStyles()}
       </head>
       <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
         <!-- Header -->
@@ -1310,13 +1317,13 @@ Ryan & the ${COMPANY_NAME} Team
         </div>
 
         <!-- Content -->
-        <div style="background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 10px 10px;">
+        <div class="em-body" style="background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 10px 10px;">
           <p>Hi ${data.client_name},</p>
 
           <p>Thank you for accepting our proposal! We're excited to create an amazing experience for you.</p>
 
           <!-- Summary -->
-          <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981;">
+          <div class="em-card" style="background: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981;">
             <h3 style="margin-top: 0; color: #166534;">Proposal ${data.proposal_number}</h3>
             ${data.proposal_title ? `<p style="margin: 10px 0;"><strong>Title:</strong> ${data.proposal_title}</p>` : ''}
             <p style="margin: 10px 0;"><strong>Services:</strong> ${data.service_count} item${data.service_count !== 1 ? 's' : ''}</p>
@@ -1333,7 +1340,7 @@ Ryan & the ${COMPANY_NAME} Team
           <p style="color: #6b7280; font-size: 14px;">Once your deposit is received, we'll begin finalizing all the details for your experience.</p>
 
           <!-- What's Next -->
-          <div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <div class="em-card" style="background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
             <h3 style="margin-top: 0; color: #374151;">What's Next?</h3>
             <ol style="margin: 0; padding-left: 20px; color: #4b5563;">
               <li style="margin-bottom: 10px;">Complete your deposit payment</li>
@@ -1390,6 +1397,7 @@ ${COMPANY_NAME}
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Updated Proposal</title>
+        ${emailDarkModeStyles()}
       </head>
       <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
         <!-- Header -->
@@ -1399,7 +1407,7 @@ ${COMPANY_NAME}
         </div>
 
         <!-- Content -->
-        <div style="background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 10px 10px;">
+        <div class="em-body" style="background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 10px 10px;">
           <h2 style="color: #8B1538; margin-top: 0;">We've Updated Your Proposal</h2>
 
           <p>Hi ${data.client_name},</p>
@@ -1414,7 +1422,7 @@ ${COMPANY_NAME}
           ` : ''}
 
           <!-- Proposal Summary -->
-          <div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <div class="em-card" style="background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
             <h3 style="margin-top: 0; color: #374151;">Proposal ${data.new_proposal_number}</h3>
             <p style="color: #6b7280; font-size: 13px; margin: 5px 0 15px 0;">Updated from ${data.original_proposal_number}</p>
             <p style="margin: 10px 0;"><strong>Services:</strong> ${data.service_count} service${data.service_count !== 1 ? 's' : ''}</p>
@@ -1715,10 +1723,11 @@ export async function sendTripMagicLink(data: {
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        ${emailDarkModeStyles()}
       </head>
       <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: #f9fafb;">
         <div style="max-width: 500px; margin: 0 auto; padding: 40px 20px;">
-          <div style="background: white; border-radius: 16px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); overflow: hidden;">
+          <div class="em-wrapper" style="background: white; border-radius: 16px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); overflow: hidden;">
 
             <!-- Header -->
             <div style="background-color: #8B1538; background: linear-gradient(135deg, #8B1538 0%, #722F37 100%); padding: 32px 24px; text-align: center;">
@@ -1727,7 +1736,7 @@ export async function sendTripMagicLink(data: {
             </div>
 
             <!-- Content -->
-            <div style="padding: 32px 24px;">
+            <div class="em-body" style="padding: 32px 24px;">
               <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 24px 0;">
                 Hi${data.owner_name ? ` ${data.owner_name}` : ''},
               </p>
@@ -1751,7 +1760,7 @@ export async function sendTripMagicLink(data: {
             </div>
 
             <!-- Footer -->
-            <div style="background: #f9fafb; padding: 24px; border-top: 1px solid #e5e7eb; text-align: center;">
+            <div class="em-footer" style="background: #f9fafb; padding: 24px; border-top: 1px solid #e5e7eb; text-align: center;">
               <p style="color: #9ca3af; font-size: 12px; margin: 0;">
                 Walla Walla Travel<br>
                 Planning unforgettable wine country experiences

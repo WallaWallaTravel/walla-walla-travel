@@ -16,6 +16,7 @@ import { crmSyncService } from '@/lib/services/crm-sync.service';
 import { crmTaskAutomationService } from '@/lib/services/crm-task-automation.service';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { noDisposableEmail } from '@/lib/utils/email-validation';
+import { emailDarkModeStyles } from '@/lib/email/dark-mode-styles';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -242,9 +243,10 @@ export const POST = withCSRF(
         <head>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          ${emailDarkModeStyles()}
         </head>
         <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f9fafb;">
-          <div style="max-width: 600px; margin: 0 auto; background: #ffffff;">
+          <div class="em-wrapper" style="max-width: 600px; margin: 0 auto; background: #ffffff;">
             <!-- Header -->
             <div style="background-color: #10b981; background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 40px 20px; text-align: center;">
               <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">Request Received!</h1>
@@ -252,7 +254,7 @@ export const POST = withCSRF(
             </div>
 
             <!-- Main Content -->
-            <div style="padding: 40px 20px;">
+            <div class="em-body" style="padding: 40px 20px;">
               <p style="font-size: 18px; color: #1f2937; margin: 0 0 20px 0;">Hi ${firstName},</p>
 
               <p style="font-size: 16px; color: #4b5563; line-height: 1.6; margin: 0 0 30px 0;">
@@ -260,7 +262,7 @@ export const POST = withCSRF(
               </p>
 
               <!-- Request Details Card -->
-              <div style="background: #f9fafb; border: 2px solid #e5e7eb; border-radius: 12px; padding: 24px; margin: 0 0 30px 0;">
+              <div class="em-card" style="background: #f9fafb; border: 2px solid #e5e7eb; border-radius: 12px; padding: 24px; margin: 0 0 30px 0;">
                 <h2 style="color: #10b981; margin: 0 0 20px 0; font-size: 20px; font-weight: bold;">📋 Your Request Details</h2>
 
                 <table style="width: 100%; border-collapse: collapse;">
@@ -294,7 +296,7 @@ export const POST = withCSRF(
               </div>
 
               <!-- What's Next -->
-              <div style="background: #ecfdf5; border: 2px solid #10b981; border-radius: 12px; padding: 24px; margin: 0 0 30px 0;">
+              <div class="em-card" style="background: #ecfdf5; border: 2px solid #10b981; border-radius: 12px; padding: 24px; margin: 0 0 30px 0;">
                 <h2 style="color: #065f46; margin: 0 0 16px 0; font-size: 18px; font-weight: bold;">📅 What's Next?</h2>
 
                 <ul style="margin: 0; padding: 0 0 0 20px; color: #1f2937;">
@@ -317,7 +319,7 @@ export const POST = withCSRF(
             </div>
 
             <!-- Footer -->
-            <div style="background: #f9fafb; padding: 30px 20px; text-align: center; border-top: 1px solid #e5e7eb;">
+            <div class="em-footer" style="background: #f9fafb; padding: 30px 20px; text-align: center; border-top: 1px solid #e5e7eb;">
               <p style="color: #6b7280; font-size: 14px; margin: 0 0 10px 0;">
                 <strong style="color: #1f2937;">${data.provider}</strong><br>
                 Walla Walla, Washington

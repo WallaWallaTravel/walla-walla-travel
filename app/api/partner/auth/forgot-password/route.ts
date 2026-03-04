@@ -8,6 +8,7 @@ import { sendEmail } from '@/lib/email';
 import { logAuthEvent } from '@/lib/services/auth-audit.service';
 import crypto from 'crypto';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { emailDarkModeStyles } from '@/lib/email/dark-mode-styles';
 
 const ForgotPasswordSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -108,16 +109,17 @@ async function sendPartnerResetEmail(to: string, name: string, resetUrl: string)
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        ${emailDarkModeStyles()}
       </head>
       <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f1f5f9;">
-        <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+        <div class="em-wrapper" style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
           <div style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px #e5e7eb;">
             <div style="background-color: #8B1538; background: linear-gradient(135deg, #8B1538 0%, #6B1029 100%); padding: 40px 30px; text-align: center;">
               <h1 style="color: white; margin: 0; font-size: 24px; font-weight: bold;">
                 Partner Password Reset
               </h1>
             </div>
-            <div style="padding: 40px 30px;">
+            <div class="em-body" style="padding: 40px 30px;">
               <p style="font-size: 16px; color: #1f2937; margin: 0 0 20px 0;">
                 Hi <strong>${name}</strong>,
               </p>
@@ -132,7 +134,7 @@ async function sendPartnerResetEmail(to: string, name: string, resetUrl: string)
               <p style="font-size: 14px; color: #6b7280; text-align: center; margin: 20px 0;">
                 This link expires in 1 hour.
               </p>
-              <div style="background: #f9fafb; border-radius: 8px; padding: 20px; margin: 30px 0;">
+              <div class="em-card" style="background: #f9fafb; border-radius: 8px; padding: 20px; margin: 30px 0;">
                 <p style="font-size: 14px; color: #6b7280; margin: 0;">
                   <strong>Link not working?</strong> Copy and paste this URL into your browser:<br>
                   <span style="color: #8B1538; word-break: break-all;">${resetUrl}</span>
@@ -142,7 +144,7 @@ async function sendPartnerResetEmail(to: string, name: string, resetUrl: string)
                 If you didn't request this, you can safely ignore this email. Your password will not change.
               </p>
             </div>
-            <div style="background: #f9fafb; padding: 20px 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+            <div class="em-footer" style="background: #f9fafb; padding: 20px 30px; text-align: center; border-top: 1px solid #e5e7eb;">
               <p style="font-size: 12px; color: #6b7280; margin: 0;">
                 Walla Walla Travel Partner Portal &bull; Walla Walla, Washington
               </p>

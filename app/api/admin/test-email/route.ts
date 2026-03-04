@@ -5,6 +5,7 @@ import { sendEmail } from '@/lib/email';
 import { logger } from '@/lib/logger';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { z } from 'zod';
+import { emailDarkModeStyles } from '@/lib/email/dark-mode-styles';
 
 const BodySchema = z.object({
   to: z.string().email().max(255).optional(),
@@ -38,6 +39,7 @@ export const POST = withCSRF(
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      ${emailDarkModeStyles()}
     </head>
     <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; max-width: 600px; margin: 0 auto; padding: 20px;">
       <div style="background-color: #1E3A5F; background: linear-gradient(135deg, #1E3A5F 0%, #2D5A87 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
@@ -45,12 +47,12 @@ export const POST = withCSRF(
         <p style="color: #d9d9d9; margin: 10px 0 0;">Email System Test</p>
       </div>
 
-      <div style="background: white; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px;">
+      <div class="em-body" style="background: white; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px;">
         <h2 style="color: #1E3A5F; margin-top: 0;">✅ Email Delivery Successful!</h2>
 
         <p>This is a test email to verify that the Resend email service is properly configured.</p>
 
-        <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <div class="em-card" style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <h3 style="margin-top: 0; color: #374151;">Configuration Details:</h3>
           <table style="width: 100%; border-collapse: collapse;">
             <tr>
@@ -79,7 +81,7 @@ export const POST = withCSRF(
         </p>
       </div>
 
-      <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
+      <div class="em-footer" style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
         <p>Walla Walla Travel • info@wallawalla.travel • (509) 200-8000</p>
       </div>
     </body>

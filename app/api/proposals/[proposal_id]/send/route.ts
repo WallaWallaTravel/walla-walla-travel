@@ -10,6 +10,7 @@ import { withCSRF } from '@/lib/api/middleware/csrf';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 import { crmSyncService } from '@/lib/services/crm-sync.service';
 import { crmTaskAutomationService } from '@/lib/services/crm-task-automation.service';
+import { emailDarkModeStyles } from '@/lib/email/dark-mode-styles';
 
 const BodySchema = z.object({
   method: z.enum(['email', 'sms', 'both']).optional(),
@@ -81,6 +82,7 @@ export const POST = withCSRF(
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Your ${brand.name} Proposal</title>
+        ${emailDarkModeStyles()}
       </head>
       <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
         <!-- Header -->
@@ -90,7 +92,7 @@ export const POST = withCSRF(
         </div>
 
         <!-- Content -->
-        <div style="background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 10px 10px;">
+        <div class="em-body" style="background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 10px 10px;">
           <h2 style="color: ${brand.primary_color}; margin-top: 0;">Your Custom Wine Country Experience Awaits!</h2>
 
           <p>Hi ${proposal.client_name},</p>
@@ -100,7 +102,7 @@ export const POST = withCSRF(
           <p>We've prepared a personalized proposal for your Walla Walla wine country experience.</p>
 
           <!-- Proposal Summary -->
-          <div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <div class="em-card" style="background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
             <h3 style="margin-top: 0; color: #374151;">${proposal.proposal_title}</h3>
             <p style="margin: 10px 0;"><strong>Services:</strong> ${serviceItems.length} service${serviceItems.length !== 1 ? 's' : ''}</p>
             <p style="margin: 10px 0;"><strong>Total Investment:</strong> <span style="font-size: 24px; color: ${brand.primary_color}; font-weight: bold;">$${parseFloat(proposal.total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
@@ -115,7 +117,7 @@ export const POST = withCSRF(
           <p style="color: #6b7280; font-size: 14px;">This proposal is valid until ${new Date(proposal.valid_until).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}. Please review and accept at your earliest convenience.</p>
 
           <!-- Footer -->
-          <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 14px;">
+          <div class="em-footer" style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 14px;">
             <p><strong>${brand.name}</strong></p>
             <p>${brand.website}</p>
             <p>
