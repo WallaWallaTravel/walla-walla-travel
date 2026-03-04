@@ -24,6 +24,7 @@ interface UseProposalActionsReturn {
   convertToBooking: () => Promise<void>;
   generateItinerary: () => Promise<void>;
   sendProposal: (customMessage: string) => Promise<void>;
+  announceGuests: (subject: string, message: string) => Promise<void>;
   archiveProposal: () => Promise<void>;
   unarchiveProposal: () => Promise<void>;
   deleteProposal: () => Promise<void>;
@@ -235,6 +236,30 @@ export function useProposalActions(
     [proposal, proposalId, setProposal, toast, setLoading]
   );
 
+  // --- Announce to guests ---
+  const announceGuests = useCallback(
+    async (subject: string, message: string) => {
+      setLoading('announceGuests', true);
+      try {
+        const result = await apiPost<{ recipients: number }>(
+          `/api/admin/trip-proposals/${proposalId}/announce`,
+          { subject: subject.trim() || undefined, message }
+        );
+        if (result.success && result.data) {
+          toast(`Update sent to ${result.data.recipients} guest${result.data.recipients !== 1 ? 's' : ''}`, 'success');
+        } else {
+          toast(result.error || 'Failed to send announcement', 'error');
+        }
+      } catch (error) {
+        logger.error('Failed to send announcement', { error });
+        toast('Failed to send announcement', 'error');
+      } finally {
+        setLoading('announceGuests', false);
+      }
+    },
+    [proposalId, toast, setLoading]
+  );
+
   // --- Archive ---
   const archiveProposal = useCallback(async () => {
     setLoading('archiveProposal', true);
@@ -357,6 +382,7 @@ export function useProposalActions(
     convertToBooking,
     generateItinerary,
     sendProposal,
+    announceGuests,
     archiveProposal,
     unarchiveProposal,
     deleteProposal,

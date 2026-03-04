@@ -11,6 +11,7 @@ interface ProposalHeaderProps {
   showMoreMenu: boolean;
   setShowMoreMenu: (v: boolean) => void;
   onSendClick: () => void;
+  onAnnounceClick?: () => void;
   onArchive: () => void;
   onUnarchive: () => void;
   onDeleteClick: () => void;
@@ -24,6 +25,7 @@ export const ProposalHeader = React.memo(function ProposalHeader({
   showMoreMenu,
   setShowMoreMenu,
   onSendClick,
+  onAnnounceClick,
   onArchive,
   onUnarchive,
   onDeleteClick,
@@ -88,6 +90,16 @@ export const ProposalHeader = React.memo(function ProposalHeader({
           >
             Preview
           </Link>
+
+          {onAnnounceClick && proposal.guests?.some((g: { email?: string }) => g.email) && (
+            <button
+              onClick={onAnnounceClick}
+              disabled={saving}
+              className="px-4 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-900 rounded-lg font-bold text-sm disabled:opacity-50"
+            >
+              Send Update to Guests
+            </button>
+          )}
 
           {proposal.status === 'accepted' && (
             <>

@@ -1876,6 +1876,20 @@ export class TripProposalService extends BaseService {
       metadata: options?.metadata || {},
     });
   }
+
+  /**
+   * Log a group announcement activity on a proposal.
+   */
+  async logAnnouncementActivity(
+    proposalId: number,
+    data: { recipients: number; subject: string; actor_user_id?: number }
+  ): Promise<void> {
+    await this.logActivity(proposalId, 'announcement_sent', `Group announcement sent to ${data.recipients} guest(s)`, {
+      actor_type: 'staff',
+      actor_user_id: data.actor_user_id,
+      metadata: { recipients: data.recipients, subject: data.subject },
+    });
+  }
 }
 
 // Export singleton instance

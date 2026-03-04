@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, BadRequestError, NotFoundError, ConflictError } from '@/lib/api/middleware/error-handler';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 import { sharedTourService } from '@/lib/services/shared-tour.service';
+import { guestProfileService } from '@/lib/services/guest-profile.service';
 import { CreateSharedTourTicketSchema } from '@/lib/api/schemas';
 import { z } from 'zod';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { logger } from '@/lib/logger';
 
 /**
  * POST /api/shared-tours/tickets
@@ -48,6 +50,19 @@ export const POST = withCSRF(
       hotel_partner_id: validatedData.hotel_partner_id,
       booked_by_hotel: validatedData.booked_by_hotel,
     });
+
+    // Link guest profile (non-blocking — don't fail the ticket if this errors)
+    if (ticket.customer_email) {
+      try {
+        const profile = await guestProfileService.findOrCreateByEmail(
+          ticket.customer_email,
+          { name: ticket.customer_name, phone: ticket.customer_phone }
+        );
+        await sharedTourService.linkGuestProfile(ticket.id, profile.id);
+      } catch (err) {
+        logger.error('Failed to link guest profile to ticket', { ticketId: ticket.id, error: err });
+      }
+    }
 
     return NextResponse.json({
       success: true,

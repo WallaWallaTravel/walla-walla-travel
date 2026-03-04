@@ -8,3 +8,4 @@ export { SendProposalModal } from './SendProposalModal';
 export { DeleteConfirmModal } from './DeleteConfirmModal';
 export { ProposalHeader } from './ProposalHeader';
 export { ProposalSidebar } from './ProposalSidebar';
+export { AnnounceGuestsModal } from './AnnounceGuestsModal';

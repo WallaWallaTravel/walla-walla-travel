@@ -18,6 +18,7 @@ import {
   NotesTab,
   SendProposalModal,
   DeleteConfirmModal,
+  AnnounceGuestsModal,
   ProposalHeader,
   ProposalSidebar,
 } from './components';
@@ -40,6 +41,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
   // --- UI state ---
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
   const [showSendModal, setShowSendModal] = useState(false);
+  const [showAnnounceModal, setShowAnnounceModal] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [localLunchOrders, setLocalLunchOrders] = useState<Array<{ id: number; ordering_mode: string; day?: { day_number: number; title: string | null }; supplier?: { name: string } }>>([]);
@@ -60,7 +62,8 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
   const {
     actionLoading, updateProposal, updateProposalDebounced, updateStatus,
     recalculatePricing, convertToBooking, generateItinerary,
-    sendProposal: sendProposalAction, archiveProposal: archiveAction,
+    sendProposal: sendProposalAction, announceGuests,
+    archiveProposal: archiveAction,
     unarchiveProposal: unarchiveAction, deleteProposal: deleteAction,
     updatePlanningPhase, updateLunchOrderingMode,
   } = useProposalActions(id, proposal, setProposal, refetchProposal, toast);
@@ -99,6 +102,11 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
   const handleSendProposal = async (customMessage: string) => {
     await sendProposalAction(customMessage);
     setShowSendModal(false);
+  };
+
+  const handleAnnounceGuests = async (subject: string, message: string) => {
+    await announceGuests(subject, message);
+    setShowAnnounceModal(false);
   };
 
   const handleArchive = async () => { await archiveAction(); setShowMoreMenu(false); };
@@ -157,6 +165,14 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
         proposalNumber={proposal.proposal_number}
         loading={saving}
       />
+      <AnnounceGuestsModal
+        show={showAnnounceModal}
+        onClose={() => setShowAnnounceModal(false)}
+        onSend={handleAnnounceGuests}
+        proposalNumber={proposal.proposal_number}
+        guestCount={proposal.guests?.filter((g) => g.email).length || 0}
+        sending={actionLoading['announceGuests'] || false}
+      />
 
       <div className="max-w-7xl mx-auto">
         <ProposalHeader
@@ -165,6 +181,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
           showMoreMenu={showMoreMenu}
           setShowMoreMenu={setShowMoreMenu}
           onSendClick={() => setShowSendModal(true)}
+          onAnnounceClick={() => setShowAnnounceModal(true)}
           onArchive={handleArchive}
           onUnarchive={unarchiveAction}
           onDeleteClick={() => { setShowMoreMenu(false); setShowDeleteConfirm(true); }}

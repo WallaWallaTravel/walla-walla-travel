@@ -106,6 +106,7 @@ export interface SharedTourTicket {
   promo_code: string | null;
   hotel_partner_id: string | null;
   booked_by_hotel: boolean;
+  guest_profile_id: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -1104,6 +1105,16 @@ export const sharedTourService = {
 
       return ticket;
     });
+  },
+
+  /**
+   * Link a guest profile to a ticket
+   */
+  async linkGuestProfile(ticketId: string, guestProfileId: number): Promise<void> {
+    await query(
+      `UPDATE shared_tour_tickets SET guest_profile_id = $1 WHERE id = $2`,
+      [guestProfileId, ticketId]
+    );
   },
 
   /**
