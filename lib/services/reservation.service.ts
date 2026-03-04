@@ -5,7 +5,11 @@
  */
 
 import { BaseService } from './base.service';
-import { NotFoundError } from '@/lib/api/middleware/error-handler';
+import { NotFoundError, BadRequestError } from '@/lib/api/middleware/error-handler';
+import { confirmPaymentSuccess } from '@/lib/stripe';
+import { sendReservationConfirmation } from '@/lib/email';
+import { crmSyncService } from '@/lib/services/crm-sync.service';
+import { logger } from '@/lib/logger';
 import { z } from 'zod';
 
 export interface Reservation {
@@ -29,6 +33,15 @@ export interface Reservation {
   booking_id?: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface ReservationWithCustomer extends Reservation {
+  customer: {
+    id: number;
+    name: string;
+    email: string;
+    phone: string;
+  };
 }
 
 export const CreateReservationSchema = z.object({
@@ -88,6 +101,121 @@ export class ReservationService extends BaseService {
     });
   }
 
+  /**
+   * Get a single reservation by ID with joined customer data.
+   * Returns the reservation with flat customer fields (customer_name, etc.)
+   * plus a nested customer object for frontend compatibility.
+   */
+  async getById(id: number): Promise<ReservationWithCustomer> {
+    const row = await this.queryOne<Reservation>(
+      `SELECT
+         r.*,
+         c.name  AS customer_name,
+         c.email AS customer_email,
+         c.phone AS customer_phone
+       FROM reservations r
+       JOIN customers c ON r.customer_id = c.id
+       WHERE r.id = $1`,
+      [id]
+    );
+
+    if (!row) {
+      throw new NotFoundError('Reservation', id.toString());
+    }
+
+    const withCustomer = row as ReservationWithCustomer;
+    withCustomer.customer = {
+      id: row.customer_id,
+      name: row.customer_name,
+      email: row.customer_email,
+      phone: row.customer_phone,
+    };
+
+    return withCustomer;
+  }
+
+  /**
+   * Confirm a Stripe payment for a reservation.
+   * Verifies payment with Stripe, updates the reservation, sends confirmation
+   * email, and logs to CRM. Mirrors the legacy confirm-payment route logic.
+   */
+  async confirmPayment(
+    id: number,
+    paymentIntentId: string
+  ): Promise<{ reservationId: number; reservationNumber: string }> {
+    const paymentSuccessful = await confirmPaymentSuccess(paymentIntentId);
+    if (!paymentSuccessful) {
+      throw new BadRequestError('Payment not confirmed');
+    }
+
+    const updated = await this.queryOne<Reservation>(
+      `UPDATE reservations
+       SET deposit_paid = true,
+           payment_method = 'card',
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $1
+       RETURNING *`,
+      [id]
+    );
+
+    if (!updated) {
+      throw new NotFoundError('Reservation', id.toString());
+    }
+
+    const customer = await this.queryOne<{
+      id: number;
+      name: string;
+      email: string;
+      phone: string;
+    }>('SELECT id, name, email, phone FROM customers WHERE id = $1', [updated.customer_id]);
+
+    if (customer) {
+      const appUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+
+      sendReservationConfirmation(
+        {
+          customer_name: customer.name,
+          customer_email: customer.email,
+          reservation_number: updated.reservation_number,
+          party_size: updated.party_size,
+          preferred_date: updated.preferred_date,
+          alternate_date: updated.alternate_date,
+          event_type: updated.event_type || 'Wine Tour',
+          special_requests: updated.special_requests,
+          deposit_amount: parseFloat(String(updated.deposit_amount)),
+          payment_method: 'card',
+          consultation_hours: 24,
+          confirmation_url: `${appUrl}/book/reserve/confirmation?id=${updated.id}`,
+        },
+        customer.email,
+        updated.brand_id ?? undefined
+      ).catch((err: unknown) => {
+        logger.error('Failed to send reservation confirmation email', {
+          reservationId: id,
+          error: err,
+        });
+      });
+
+      crmSyncService
+        .logPaymentReceived(
+          customer.id,
+          parseFloat(String(updated.deposit_amount)),
+          'Deposit'
+        )
+        .catch((err: unknown) => {
+          logger.error('Failed to log payment to CRM', {
+            customerId: customer.id,
+            error: err,
+          });
+        });
+    }
+
+    return {
+      reservationId: updated.id,
+      reservationNumber: updated.reservation_number,
+    };
+  }
+
   async findManyWithFilters(filters: {
     status?: string;
     customerId?: number;
@@ -134,7 +262,7 @@ export class ReservationService extends BaseService {
     const offset = filters.offset || 0;
 
     const result = await this.query<Reservation>(
-      `SELECT ${selectClause} FROM reservations r ${joinClause} ${where} 
+      `SELECT ${selectClause} FROM reservations r ${joinClause} ${where}
        ORDER BY r.created_at DESC LIMIT ${limit} OFFSET ${offset}`,
       params
     );
@@ -143,7 +271,7 @@ export class ReservationService extends BaseService {
   }
 
   async updateStatus(id: number, status: Reservation['status']): Promise<Reservation> {
-    const updated = await this.update<Reservation>('reservations', id, { 
+    const updated = await this.update<Reservation>('reservations', id, {
       status,
       updated_at: new Date().toISOString()
     });
