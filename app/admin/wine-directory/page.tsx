@@ -184,7 +184,7 @@ export default function WineDirectoryPage() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
           <div className="bg-white rounded-lg p-4 shadow-sm">
             <p className="text-sm text-gray-500">Total Wineries</p>
             <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
@@ -210,7 +210,7 @@ export default function WineDirectoryPage() {
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   filter === f
                     ? 'bg-purple-600 text-white'
                     : 'bg-white text-gray-700 hover:bg-gray-100'

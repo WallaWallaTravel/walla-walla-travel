@@ -527,7 +527,7 @@ function TripsPageContent() {
                 <button
                   key={key}
                   onClick={() => setPaymentFilter(key)}
-                  className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                  className={`inline-flex items-center gap-1 px-3 py-2 rounded-full text-xs font-medium transition-colors ${
                     isActive
                       ? 'bg-[#1E3A5F] text-white'
                       : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'
@@ -691,7 +691,7 @@ function TripsPageContent() {
                           <div className="relative" ref={openMenuId === menuId ? menuRef : undefined} onClick={(e) => e.stopPropagation()}>
                             <button
                               onClick={() => setOpenMenuId(openMenuId === menuId ? null : menuId)}
-                              className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                              className="p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
                               title="More actions"
                             >
                               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">

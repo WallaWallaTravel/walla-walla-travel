@@ -176,13 +176,13 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-white rounded-xl shadow-md">
-              <div className="flex border-b border-gray-200">
+              <div className="flex border-b border-gray-200 overflow-x-auto scrollbar-hide">
                 {TABS.map((tab) => (
                   <button
                     key={tab.key}
                     type="button"
                     onClick={() => setActiveTab(tab.key)}
-                    className={`flex-1 px-4 py-3 text-sm font-bold transition-colors ${
+                    className={`flex-shrink-0 px-4 py-3 text-sm font-bold transition-colors ${
                       activeTab === tab.key
                         ? 'text-brand border-b-2 border-brand bg-brand-light'
                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'

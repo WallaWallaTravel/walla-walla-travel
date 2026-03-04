@@ -626,7 +626,7 @@ export default function AdminSharedToursPage() {
         )}
 
         {/* Stats */}
-        <div className="grid grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
           <div className="bg-white rounded-xl p-4 border border-slate-200">
             <div className="text-sm text-slate-500 mb-1">Upcoming Tours</div>
             <div className="text-2xl font-bold text-slate-900">{upcomingTours.length}</div>

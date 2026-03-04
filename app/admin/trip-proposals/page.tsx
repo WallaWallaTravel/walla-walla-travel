@@ -662,7 +662,7 @@ function ProposalsPageContent() {
                         <Link
                           href={item.previewUrl}
                           target="_blank"
-                          className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                          className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
                           title="Preview client page"
                         >
                           👁️
@@ -670,7 +670,7 @@ function ProposalsPageContent() {
                       )}
                       <Link
                         href={item.editUrl}
-                        className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                         title="Edit"
                       >
                         ✏️
@@ -681,7 +681,7 @@ function ProposalsPageContent() {
                             const est = estimates.find((e) => e.id === item.id);
                             if (est && !est.trip_proposal_id) convertToProposal(est);
                           }}
-                          className="p-2 text-slate-400 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors"
+                          className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors"
                           title="Convert to Full Proposal"
                         >
                           🗺️
@@ -691,7 +691,7 @@ function ProposalsPageContent() {
                         item.archivedAt ? (
                           <button
                             onClick={() => unarchiveProposal(item.id)}
-                            className="p-2 text-amber-500 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors"
+                            className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-amber-500 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors"
                             title="Unarchive"
                           >
                             📤
@@ -699,7 +699,7 @@ function ProposalsPageContent() {
                         ) : (
                           <button
                             onClick={() => archiveProposal(item.id)}
-                            className="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                            className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
                             title="Archive"
                           >
                             📦
@@ -712,7 +712,7 @@ function ProposalsPageContent() {
                             if (item.type === 'quick_quote') deleteEstimate(item.id);
                             else deleteProposal(item.id);
                           }}
-                          className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                           title="Delete"
                         >
                           🗑️

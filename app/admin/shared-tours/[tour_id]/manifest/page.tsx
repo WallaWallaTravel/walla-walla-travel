@@ -250,7 +250,7 @@ export default function ManifestPrintPage({ params }: { params: Promise<{ tour_i
         </div>
 
         {/* Summary Stats */}
-        <div className="grid grid-cols-4 gap-4 mb-6 text-center">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 text-center">
           <div className="border border-slate-300 rounded p-3">
             <p className="text-2xl font-bold text-slate-900">{manifest.length}</p>
             <p className="text-sm text-slate-600">Total Guests</p>

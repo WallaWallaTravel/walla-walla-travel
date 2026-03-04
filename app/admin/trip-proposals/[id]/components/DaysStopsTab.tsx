@@ -217,7 +217,7 @@ export const DaysStopsTab = React.memo(function DaysStopsTab({
                       )}
                     </summary>
                     <div className="mt-2 space-y-2">
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                         <input
                           type="text"
                           value={stop.vendor_name || ''}
@@ -264,7 +264,7 @@ export const DaysStopsTab = React.memo(function DaysStopsTab({
                           className="px-2 py-1 border border-gray-300 rounded text-xs"
                         />
                       </div>
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                         <select
                           value={stop.quote_status || 'none'}
                           onChange={(e) => {

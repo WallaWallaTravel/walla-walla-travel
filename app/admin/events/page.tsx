@@ -220,14 +220,14 @@ export default function AdminEventsPage() {
                       <div className="flex items-center justify-end gap-1">
                         <button
                           onClick={() => router.push(`/admin/events/${event.id}/edit`)}
-                          className="px-2.5 py-1.5 rounded text-xs font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+                          className="px-3 py-2 min-h-[44px] rounded text-xs font-medium text-gray-700 hover:bg-gray-100 transition-colors"
                         >
                           Edit
                         </button>
                         {event.status === 'draft' && (
                           <button
                             onClick={() => handlePublish(event.id)}
-                            className="px-2.5 py-1.5 rounded text-xs font-medium text-emerald-700 hover:bg-emerald-50 transition-colors"
+                            className="px-3 py-2 min-h-[44px] rounded text-xs font-medium text-emerald-700 hover:bg-emerald-50 transition-colors"
                           >
                             Publish
                           </button>
@@ -235,7 +235,7 @@ export default function AdminEventsPage() {
                         {event.status === 'published' && (
                           <button
                             onClick={() => handleCancel(event.id)}
-                            className="px-2.5 py-1.5 rounded text-xs font-medium text-red-700 hover:bg-red-50 transition-colors"
+                            className="px-3 py-2 min-h-[44px] rounded text-xs font-medium text-red-700 hover:bg-red-50 transition-colors"
                           >
                             Cancel
                           </button>
@@ -243,7 +243,7 @@ export default function AdminEventsPage() {
                         {event.status === 'draft' && (
                           <button
                             onClick={() => handleDelete(event.id)}
-                            className="px-2.5 py-1.5 rounded text-xs font-medium text-red-700 hover:bg-red-50 transition-colors"
+                            className="px-3 py-2 min-h-[44px] rounded text-xs font-medium text-red-700 hover:bg-red-50 transition-colors"
                           >
                             Delete
                           </button>

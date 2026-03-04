@@ -162,12 +162,12 @@ export const BillingTab = React.memo(function BillingTab({
                 <label className="block text-sm font-semibold text-gray-900 mb-2">Select Guests</label>
                 <div className="space-y-2 max-h-48 overflow-y-auto">
                   {(proposal.guests || []).map((guest) => (
-                    <label key={guest.id} className="flex items-center gap-2 cursor-pointer p-2 rounded-lg hover:bg-gray-50">
+                    <label key={guest.id} className="flex items-center gap-2 cursor-pointer p-3 rounded-lg hover:bg-gray-50">
                       <input
                         type="checkbox"
                         checked={selectedGuestIds.includes(guest.id)}
                         onChange={() => toggleGuestSelection(guest.id)}
-                        className="h-4 w-4 rounded border-gray-300 text-indigo-600"
+                        className="h-5 w-5 rounded border-gray-300 text-indigo-600"
                       />
                       <span className="text-sm text-gray-900">{guest.name}</span>
                       {guest.is_primary && <span className="text-xs text-indigo-600">(Primary)</span>}
@@ -280,7 +280,7 @@ export const BillingTab = React.memo(function BillingTab({
                             type="checkbox"
                             checked={guestData.is_sponsored || false}
                             onChange={() => updateGuestSponsored(guest.id, !guestData.is_sponsored)}
-                            className="h-4 w-4 rounded border-gray-300 text-indigo-600"
+                            className="h-5 w-5 rounded border-gray-300 text-indigo-600"
                           />
                         </td>
                         <td className="py-2 px-2 text-right text-gray-700">

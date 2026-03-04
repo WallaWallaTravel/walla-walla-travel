@@ -455,7 +455,7 @@ export default function AdminTourDetailPage({ params }: { params: Promise<{ tour
         )}
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-5 gap-4 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
           <div className="bg-white rounded-xl p-4 border border-slate-200">
             <div className="text-sm text-slate-500 mb-1">Tickets Sold</div>
             <div className="text-2xl font-bold text-slate-900">

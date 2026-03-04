@@ -168,7 +168,7 @@ function TasksPageContent() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div className={`p-4 rounded-xl border ${counts.overdue > 0 ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-200'}`}>
           <div className={`text-2xl font-bold ${counts.overdue > 0 ? 'text-red-600' : 'text-slate-400'}`}>
             {counts.overdue}

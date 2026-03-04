@@ -181,7 +181,7 @@ export default function OrganizersListPage() {
           <button
             key={filter.key}
             onClick={() => setStatusFilter(filter.key)}
-            className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
               statusFilter === filter.key
                 ? 'bg-[#1E3A5F] text-white'
                 : 'border border-gray-200 text-gray-700 hover:bg-gray-50'

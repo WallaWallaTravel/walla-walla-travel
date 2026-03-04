@@ -198,7 +198,7 @@ export const GuestsTab = React.memo(function GuestsTab({
               type="checkbox"
               checked={proposal.dynamic_pricing_enabled || false}
               onChange={() => updateGuestSettings({ dynamic_pricing_enabled: !proposal.dynamic_pricing_enabled })}
-              className="h-4 w-4 rounded border-gray-300 text-indigo-600"
+              className="h-5 w-5 rounded border-gray-300 text-indigo-600"
             />
           </label>
           <label className="flex items-center justify-between cursor-pointer">
@@ -210,7 +210,7 @@ export const GuestsTab = React.memo(function GuestsTab({
               type="checkbox"
               checked={proposal.show_guest_count_to_guests || false}
               onChange={() => updateGuestSettings({ show_guest_count_to_guests: !proposal.show_guest_count_to_guests })}
-              className="h-4 w-4 rounded border-gray-300 text-indigo-600"
+              className="h-5 w-5 rounded border-gray-300 text-indigo-600"
             />
           </label>
         </div>

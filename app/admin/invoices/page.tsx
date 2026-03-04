@@ -302,7 +302,7 @@ export default function AdminInvoicesPage() {
                         </button>
                         <button
                           onClick={() => router.push(`/admin/bookings/${invoice.booking_id}`)}
-                          className="w-full mt-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-semibold transition-colors"
+                          className="w-full mt-3 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-semibold transition-colors"
                         >
                           View Booking Details
                         </button>

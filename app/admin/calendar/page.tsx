@@ -522,7 +522,7 @@ export default function CalendarView() {
           </div>
 
           {/* Filters */}
-          <div className="grid grid-cols-3 gap-4 pt-4 border-t-2 border-gray-200">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t-2 border-gray-200">
             <div>
               <label className="block text-sm font-bold text-gray-900 mb-2">Filter by Status</label>
               <select
