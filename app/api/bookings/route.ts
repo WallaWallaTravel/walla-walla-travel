@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
-import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
+import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { bookingService } from '@/lib/services/booking.service';
 import { sendBookingConfirmationEmail } from '@/lib/services/email-automation.service';
@@ -77,7 +77,7 @@ export const GET = withRateLimit(rateLimiters.api)(
  */
 export const POST = withCSRF(
   withRateLimit(rateLimiters.payment)(
-    withErrorHandling(async (request: NextRequest) => {
+    withAdminAuth(async (request: NextRequest, session) => {
   const body = await request.json();
 
   // Validate request body
@@ -103,7 +103,7 @@ export const POST = withCSRF(
   });
 
   // Audit log: booking created
-  auditService.logFromRequest(request, 0, 'booking_created', {
+  auditService.logFromRequest(request, parseInt(session.userId), 'booking_created', {
     bookingId: booking.id,
     bookingNumber: booking.booking_number,
     customerEmail: data.customer_email,

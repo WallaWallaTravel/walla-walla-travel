@@ -65,6 +65,13 @@ export default function ContactDetailPage() {
   });
   const [newTask, setNewTask] = useState({ title: '', due_date: '', priority: 'normal' });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch('/api/auth/me').then(r => r.ok ? r.json() : null).then(d => {
+      if (d?.user?.id) setCurrentUserId(d.user.id);
+    }).catch(() => {});
+  }, []);
 
   const fetchContact = useCallback(async () => {
     try {
@@ -117,7 +124,7 @@ export default function ContactDetailPage() {
         body: JSON.stringify({
           ...newTask,
           contact_id: parseInt(contactId),
-          assigned_to: 1, // TODO: Get from session
+          assigned_to: currentUserId || 1
         }),
       });
       if (response.ok) {

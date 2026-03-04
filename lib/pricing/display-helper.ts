@@ -3,7 +3,7 @@
  * Determines how to display pricing based on group size and settings
  */
 
-import { getSetting } from '@/lib/settings/settings-service';
+import { getSetting, getTaxSettings } from '@/lib/settings/settings-service';
 
 export type PricingDisplayStrategy = 
   | 'consultation_required' // Too small - custom pricing needed
@@ -63,16 +63,27 @@ export async function getPricingStrategy(partySize: number): Promise<{
 }
 
 /**
- * Format a price for display based on strategy
+ * Format a price for display based on strategy.
+ * Fetches tax rate from settings (9.1% WA state + local default).
  */
-export function formatPriceForStrategy(
+export async function formatPriceForStrategy(
   strategy: PricingDisplayStrategy,
   basePrice: number,
   partySize: number,
   includeTax: boolean = true
-): string {
-  const taxRate = 1.089; // TODO: Get from settings
-  const finalPrice = includeTax ? basePrice * taxRate : basePrice;
+): Promise<string> {
+  let taxMultiplier = 1.091; // 9.1% WA state + local tax (default)
+  if (includeTax) {
+    try {
+      const taxSettings = await getTaxSettings();
+      if (taxSettings.sales_tax_rate > 0) {
+        taxMultiplier = 1 + taxSettings.sales_tax_rate / 100;
+      }
+    } catch {
+      // Fall back to 9.1% default
+    }
+  }
+  const finalPrice = includeTax ? basePrice * taxMultiplier : basePrice;
 
   switch (strategy) {
     case 'consultation_required':

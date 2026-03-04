@@ -6,8 +6,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 import { proposalService } from '@/lib/services/proposal.service';
+import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 
@@ -65,8 +65,8 @@ const BodySchema = z.object({
  * 
  * ✅ REFACTORED: Service layer
  */
-export const GET = withRateLimit(rateLimiters.public)(
-  withErrorHandling(async (request: NextRequest) => {
+export const GET = withRateLimit(rateLimiters.api)(
+  withAdminAuth(async (request: NextRequest) => {
     const { searchParams } = new URL(request.url);
 
     const result = await proposalService.list({
@@ -92,7 +92,7 @@ export const GET = withRateLimit(rateLimiters.public)(
  */
 export const POST = withCSRF(
   withRateLimit(rateLimiters.api)(
-    withErrorHandling(async (request: NextRequest) => {
+    withAdminAuth(async (request: NextRequest) => {
   const data = BodySchema.parse(await request.json());
 
   const proposal = await proposalService.create(data as unknown as Parameters<typeof proposalService.create>[0]);

@@ -29,7 +29,7 @@ export const dynamic = 'force-dynamic';
 export const PATCH = withCSRF(
   withAdminAuth(async (
   request: NextRequest,
-  _session,
+  session,
   context
 ) => {
   const { id: idStr } = await context!.params;
@@ -40,7 +40,7 @@ export const PATCH = withCSRF(
   await updatePricingTier(
     id,
     updates,
-    1, // TODO: Get actual user ID from session
+    parseInt(session.userId),
     changeReason || 'Admin update'
   );
 

@@ -58,7 +58,7 @@ export const POST = withCSRF(
     contact_email,
     contact_phone,
     website,
-    invited_by: 1 // TODO: Get from auth session
+    invited_by: parseInt(session.userId)
   });
 
   // In production: Send invitation email with invite token
