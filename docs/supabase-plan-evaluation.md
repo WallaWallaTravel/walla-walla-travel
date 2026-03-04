@@ -191,12 +191,12 @@ Subscriptions (2 tables):
 
 | Feature | Pro Quota | Our Usage | Waste |
 |---------|-----------|-----------|-------|
-| Auth | 100K MAUs | 0 MAUs | 100% unused |
+| Auth | 100K MAUs | <10 MAUs (Auditor's Dream only) | ~99.99% unused |
 | Edge Functions | 2M invocations | 0 invocations | 100% unused |
-| PostgREST API | Unlimited requests | 0 requests | 100% unused |
-| Vector/AI | Included | 0 queries | 100% unused |
+| PostgREST API | Unlimited requests | 0 data requests | 100% unused |
+| pgvector | Included | 0 queries | 100% unused |
 | pg_cron | Included | 0 jobs | 100% unused |
-| Realtime | 5M messages | Low (admin-only) | ~99% unused |
+| Realtime | 5M messages | Low (admin-only, 7 tables) | ~99% unused |
 
 ### Is the Pro Plan Worth It?
 
@@ -234,7 +234,10 @@ Subscriptions (2 tables):
 | Option | Potential Savings | Effort | Verdict |
 |--------|-------------------|--------|---------|
 | **Check compute add-on** | $5–10/month if on Micro/Small | 5 min — check Supabase dashboard | **Worth checking** — if an unnecessary add-on is active, easy savings |
+| **Remove `pgvector` extension** | 0 (frees DB memory) | Low — `DROP EXTENSION IF EXISTS vector;` | Extension is installed but zero application code uses it |
+| **Audit `useRealtimeSync` dead code** | 0 (cleanup) | Low — verify + remove unused hook in Auditor's Dream | Subscribes channels without `.on()` handlers |
 | **Remove unused Prisma** | 0 (no cost, just cleanup) | Low — remove `prisma` from deps, delete `lib/generated/prisma/` | Low priority — harmless but adds to `node_modules` size |
+| **Set storage alert at 50 GB** | 0 (monitoring) | 5 min — Supabase dashboard | Photo uploads from partners could grow; alert provides lead time |
 
 ---
 
@@ -244,58 +247,85 @@ Subscriptions (2 tables):
 
 At $25–35/month for managed PostgreSQL + connection pooler + Storage + Realtime + daily backups + RLS + dashboard, this is excellent value. The unused features (Auth, Edge Functions, PostgREST, Vector, pg_cron) cost nothing extra.
 
-**One action item:** Check the Supabase dashboard (Settings > Billing) to confirm whether a compute add-on is enabled. If Micro ($5/month) or Small ($10/month) is active but not needed for current workload, that's an easy saving.
+**Action items:**
+- [ ] Check the Supabase dashboard (Settings > Billing) to confirm whether a compute add-on is enabled. If Micro ($5/month) or Small ($10/month) is active but not needed for current workload, that's an easy saving.
+- [ ] Remove `pgvector` extension — installed but zero application code uses it (`DROP EXTENSION IF EXISTS vector;`)
+- [ ] Verify and remove `useRealtimeSync` dead code in Auditor's Dream (subscribes channels without handlers)
+- [ ] Set storage alert at 50 GB in Supabase dashboard (partner photo growth monitoring)
+- [ ] Re-evaluate annually or if usage patterns change significantly
 
 ---
 
 ## Architecture Summary
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    Supabase Pro ($25/mo)                     │
-│                                                             │
-│  ┌──────────────────┐  ┌──────────────┐  ┌──────────────┐  │
-│  │   PostgreSQL DB   │  │   Storage    │  │   Realtime   │  │
-│  │   108 tables      │  │   media      │  │   5 channels │  │
-│  │   72 migrations   │  │   bucket     │  │   admin-only │  │
-│  │   HEAVY USE       │  │  MODERATE    │  │   LIGHT USE  │  │
-│  └──────┬───────────┘  └──────┬───────┘  └──────┬───────┘  │
-│         │                     │                   │          │
-│  ┌──────┴───────────┐        │                   │          │
-│  │  Supavisor       │        │                   │          │
-│  │  (port 6543)     │        │                   │          │
-│  │  Connection pool  │        │                   │          │
-│  └──────┬───────────┘        │                   │          │
-│         │                     │                   │          │
-│  ╔══════╧═══════════════╗    │                   │          │
-│  ║  UNUSED:             ║    │                   │          │
-│  ║  Auth (100K MAUs)    ║    │                   │          │
-│  ║  Edge Functions (2M) ║    │                   │          │
-│  ║  PostgREST API       ║    │                   │          │
-│  ║  pgvector            ║    │                   │          │
-│  ║  pg_cron             ║    │                   │          │
-│  ╚══════════════════════╝    │                   │          │
-└─────────┬───────────────────┬───────────────────┬──────────┘
-          │                   │                   │
-     direct pg           supabase-js         supabase-js
-     (lib/db.ts)         admin client        browser client
-          │              (service_role)       (anon key)
-          │                   │                   │
-          ▼                   ▼                   ▼
-    ┌──────────────────────────────────────────────────┐
-    │              Vercel (Next.js App)                 │
-    │   285+ API routes    │   Client components       │
-    │   Service layer      │   useProposalRealtime     │
-    │   Custom JWT auth    │   Media uploads           │
-    └──────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│                     Supabase Pro ($25/mo)                         │
+│                                                                  │
+│  ┌───────────────────┐  ┌───────────────┐  ┌─────────────────┐  │
+│  │   PostgreSQL DB    │  │   Storage     │  │    Realtime     │  │
+│  │   193 tables       │  │   2 buckets   │  │    7 tables     │  │
+│  │   112+ migrations  │  │   media +     │  │    admin-only   │  │
+│  │   HEAVY USE        │  │   winery-     │  │    LIGHT USE    │  │
+│  │                    │  │   photos      │  │                 │  │
+│  │                    │  │   MODERATE    │  │                 │  │
+│  └──────┬────────────┘  └──────┬────────┘  └──────┬──────────┘  │
+│         │                      │                    │             │
+│  ┌──────┴────────────┐        │                    │             │
+│  │  Supavisor        │        │                    │             │
+│  │  (port 6543)      │        │                    │             │
+│  │  Connection pool   │        │                    │             │
+│  └──────┬────────────┘        │                    │             │
+│         │                      │                    │             │
+│  ╔══════╧═════════════════╗   │                    │             │
+│  ║  MOSTLY UNUSED:        ║   │                    │             │
+│  ║  Auth (<10 of 100K)    ║──── Auditor's Dream only             │
+│  ║  Edge Functions (0/2M) ║   │                    │             │
+│  ║  PostgREST (0 queries) ║   │                    │             │
+│  ║  pgvector (installed,  ║   │                    │             │
+│  ║    not used)           ║   │                    │             │
+│  ║  pg_cron (0 jobs)      ║   │                    │             │
+│  ╚════════════════════════╝   │                    │             │
+└──────────┬───────────────────┬────────────────────┬─────────────┘
+           │                   │                    │
+      direct pg           supabase-js          supabase-js
+      (lib/db.ts)         admin client         browser client
+           │              (service_role)        (anon key)
+           │                   │                    │
+           ▼                   ▼                    ▼
+    ┌──────────────────────────────────────────────────────┐
+    │               Vercel (Next.js App)                   │
+    │    285+ API routes    │   Client components          │
+    │    Service layer      │   useProposalRealtime        │
+    │    Custom JWT auth    │   Media uploads              │
+    └──────────────────────────────────────────────────────┘
+                                        │
+                              ┌─────────┴──────────┐
+                              │  Auditor's Dream    │
+                              │  (Vite+React)       │
+                              │  Uses Supabase Auth │
+                              │  + Realtime         │
+                              └────────────────────┘
 ```
 
 ---
 
+## Pro Plan Quotas Reference
+
+| Feature | Included | Overage Rate |
+|---------|----------|-------------|
+| Database disk | 8 GB | $0.125/GB |
+| Storage | 100 GB | $0.021/GB |
+| Egress | 250 GB | $0.09/GB |
+| Auth MAUs | 100,000 | $0.00325/user |
+| Edge Functions | 2M invocations | $2/million |
+| Realtime messages | 5M/month | $2.50/million |
+| Realtime peak connections | 500 | $10/1000 |
+
 ## References
 
 - [Supabase Pricing](https://supabase.com/pricing)
-- [Supabase Pro Plan Breakdown](https://www.metacto.com/blogs/the-true-cost-of-supabase-a-comprehensive-guide-to-pricing-integration-and-maintenance)
 - [Supabase Billing Docs](https://supabase.com/docs/guides/platform/billing-on-supabase)
-- Project infrastructure: `/Users/temp/INFRASTRUCTURE.md`
-- CLAUDE.md infrastructure section: `.claude/CLAUDE.md` (line ~840)
+- [Supabase Pro Plan Breakdown](https://www.metacto.com/blogs/the-true-cost-of-supabase-a-comprehensive-guide-to-pricing-integration-and-maintenance)
+- Project infrastructure: `INFRASTRUCTURE.md` (repo root)
+- CLAUDE.md infrastructure section: `.claude/CLAUDE.md`

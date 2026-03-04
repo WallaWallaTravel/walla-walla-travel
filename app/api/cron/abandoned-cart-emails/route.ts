@@ -20,6 +20,7 @@ import { logger } from '@/lib/logger';
 import { withCronAuth } from '@/lib/api/middleware/cron-auth';
 import { withCronLock } from '@/lib/api/middleware/cron-lock';
 import { emailPreferencesService } from '@/lib/services/email-preferences.service';
+import { emailDarkModeStyles } from '@/lib/email/dark-mode-styles';
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
@@ -143,6 +144,7 @@ function generateAbandonedCartEmail(data: {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Complete Your Booking</title>
+  ${emailDarkModeStyles()}
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
 
@@ -151,7 +153,7 @@ function generateAbandonedCartEmail(data: {
     <p style="color: #666; margin: 5px 0;">Wine Country Tours & Experiences</p>
   </div>
 
-  <div style="background: #f8f5f0; border-radius: 8px; padding: 30px; margin-bottom: 20px;">
+  <div class="em-body" style="background: #f8f5f0; border-radius: 8px; padding: 30px; margin-bottom: 20px;">
     <p style="font-size: 18px; margin-top: 0;">${greeting}</p>
 
     <p>We noticed you were exploring our wine tour options${data.tourDate ? ` for <strong>${data.tourDate}</strong>` : ''} but didn't complete your booking.</p>
@@ -170,7 +172,7 @@ function generateAbandonedCartEmail(data: {
     </p>
   </div>
 
-  <div style="text-align: center; font-size: 12px; color: #888; margin-top: 30px;">
+  <div class="em-footer" style="text-align: center; font-size: 12px; color: #888; margin-top: 30px;">
     <p>Walla Walla Travel | Your Gateway to Wine Country</p>
     <p>
       <a href="${data.unsubscribeUrl || 'https://wallawalla.travel/unsubscribe'}" style="color: #888;">Unsubscribe</a> |

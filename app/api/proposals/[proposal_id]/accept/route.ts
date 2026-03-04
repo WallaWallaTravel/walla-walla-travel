@@ -9,6 +9,7 @@ import { getBrandEmailConfig } from '@/lib/email-brands';
 import { getBrandStripeClient } from '@/lib/stripe-brands';
 import { logger } from '@/lib/logger';
 import { withCSRF } from '@/lib/api/middleware/csrf';
+import { emailDarkModeStyles } from '@/lib/email/dark-mode-styles';
 
 const BodySchema = z.object({
   name: z.string().min(1).max(255),
@@ -225,6 +226,7 @@ export const POST = withCSRF(
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Proposal Accepted</title>
+      ${emailDarkModeStyles()}
     </head>
     <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
       <!-- Header -->
@@ -234,13 +236,13 @@ export const POST = withCSRF(
       </div>
 
       <!-- Content -->
-      <div style="background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 10px 10px;">
+      <div class="em-body" style="background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 10px 10px;">
         <p>Hi ${name},</p>
 
         <p>Thank you for accepting our proposal! We're excited to create an amazing experience for you.</p>
 
         <!-- Summary -->
-        <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981;">
+        <div class="em-card" style="background: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981;">
           <h3 style="margin-top: 0; color: #166534;">Proposal ${proposal.proposal_number}</h3>
           <p style="margin: 10px 0;"><strong>Services:</strong> ${serviceItems.length} item${serviceItems.length !== 1 ? 's' : ''}</p>
           <p style="margin: 10px 0;"><strong>Total:</strong> $${finalTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
@@ -256,7 +258,7 @@ export const POST = withCSRF(
         <p style="color: #6b7280; font-size: 14px;">Once your deposit is received, we'll begin finalizing all the details for your experience.</p>
 
         <!-- What's Next -->
-        <div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <div class="em-card" style="background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <h3 style="margin-top: 0; color: #374151;">What's Next?</h3>
           <ol style="margin: 0; padding-left: 20px; color: #4b5563;">
             <li style="margin-bottom: 10px;">Complete your deposit payment</li>
@@ -267,7 +269,7 @@ export const POST = withCSRF(
         </div>
 
         <!-- Footer -->
-        <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 14px;">
+        <div class="em-footer" style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 14px;">
           <p><strong>${brand.name}</strong></p>
           <p>${brand.website}</p>
           <p>

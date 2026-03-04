@@ -8,6 +8,7 @@
 import { sendEmail } from '@/lib/email';
 import { sharedTourService } from '@/lib/services/shared-tour.service';
 import { logger } from '@/lib/logger';
+import { emailDarkModeStyles } from '@/lib/email/dark-mode-styles';
 
 const COMPANY_NAME = 'Walla Walla Travel';
 const COMPANY_PHONE = '(509) 200-8000';
@@ -147,9 +148,10 @@ function generateConfirmationHtml({
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      ${emailDarkModeStyles()}
     </head>
     <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6;">
-      <div style="max-width: 600px; margin: 0 auto; background: #ffffff;">
+      <div class="em-wrapper" style="max-width: 600px; margin: 0 auto; background: #ffffff;">
         <!-- Header -->
         <div style="background-color: #8B1538; background: linear-gradient(135deg, #8B1538 0%, #722F37 100%); padding: 40px 24px; text-align: center;">
           <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">🍷 You're All Set!</h1>
@@ -165,7 +167,7 @@ function generateConfirmationHtml({
         </div>
 
         <!-- Main Content -->
-        <div style="padding: 32px 24px;">
+        <div class="em-body" style="padding: 32px 24px;">
           <p style="font-size: 18px; color: #1f2937; margin: 0 0 20px 0;">Hi ${ticket.customer_name},</p>
 
           <p style="font-size: 16px; color: #4b5563; line-height: 1.6; margin: 0 0 24px 0;">
@@ -173,7 +175,7 @@ function generateConfirmationHtml({
           </p>
 
           <!-- Tour Details Card -->
-          <div style="background: #f9fafb; border: 2px solid #e5e7eb; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+          <div class="em-card" style="background: #f9fafb; border: 2px solid #e5e7eb; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
             <h2 style="color: #1f2937; margin: 0 0 16px 0; font-size: 18px; font-weight: bold;">${tourDetails.title}</h2>
 
             <table style="width: 100%; border-collapse: collapse;">
@@ -207,7 +209,7 @@ function generateConfirmationHtml({
           </div>
 
           <!-- Guest List -->
-          <div style="background: #eff6ff; border: 2px solid #3b82f6; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+          <div class="em-card" style="background: #eff6ff; border: 2px solid #3b82f6; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
             <h3 style="color: #1e40af; margin: 0 0 12px 0; font-size: 14px; font-weight: bold;">👥 Guest List</h3>
             <ul style="margin: 0; padding-left: 20px; color: #1f2937; font-size: 14px; line-height: 1.8;">
               ${guestList.map(name => `<li>${name}</li>`).join('')}
@@ -220,7 +222,7 @@ function generateConfirmationHtml({
           </div>
 
           <!-- Payment Summary -->
-          <div style="background: #f0fdf4; border: 2px solid #22c55e; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+          <div class="em-card" style="background: #f0fdf4; border: 2px solid #22c55e; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
             <h3 style="color: #166534; margin: 0 0 12px 0; font-size: 14px; font-weight: bold;">✅ Payment Confirmed</h3>
             <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
               <tr>
@@ -239,7 +241,7 @@ function generateConfirmationHtml({
           </div>
 
           <!-- What to Bring -->
-          <div style="background: #fef3c7; border: 2px solid #fbbf24; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+          <div class="em-card" style="background: #fef3c7; border: 2px solid #fbbf24; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
             <h3 style="color: #92400e; margin: 0 0 12px 0; font-size: 14px; font-weight: bold;">📝 What to Bring</h3>
             <ul style="margin: 0; padding-left: 20px; color: #78350f; font-size: 14px; line-height: 1.8;">
               <li>Valid ID (21+ required for tastings)</li>
@@ -261,7 +263,7 @@ function generateConfirmationHtml({
         </div>
 
         <!-- Footer -->
-        <div style="background: #f9fafb; padding: 24px; text-align: center; border-top: 1px solid #e5e7eb;">
+        <div class="em-footer" style="background: #f9fafb; padding: 24px; text-align: center; border-top: 1px solid #e5e7eb;">
           <p style="color: #6b7280; font-size: 14px; margin: 0 0 8px 0; font-weight: bold;">${COMPANY_NAME}</p>
           <p style="color: #9ca3af; font-size: 12px; margin: 0;">Your local wine country experts</p>
           <p style="color: #9ca3af; font-size: 12px; margin: 8px 0 0 0;">

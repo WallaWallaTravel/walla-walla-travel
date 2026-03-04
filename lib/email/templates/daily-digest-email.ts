@@ -8,6 +8,7 @@
  */
 
 import { getBrandEmailConfig, type BrandEmailConfig } from '@/lib/email-brands';
+import { emailDarkModeStyles } from '@/lib/email/dark-mode-styles';
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://wallawalla.travel';
 
@@ -26,9 +27,10 @@ function emailShell(brand: BrandEmailConfig, headingText: string, subheadingText
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  ${emailDarkModeStyles()}
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6;">
-  <div style="max-width: 600px; margin: 0 auto; background: #ffffff;">
+  <div class="em-wrapper" style="max-width: 600px; margin: 0 auto; background: #ffffff;">
 
     <!-- Header -->
     <div style="background-color: ${brand.primary_color}; background: linear-gradient(135deg, ${brand.primary_color} 0%, ${brand.secondary_color} 100%); padding: 40px 24px; text-align: center;">
@@ -37,12 +39,12 @@ function emailShell(brand: BrandEmailConfig, headingText: string, subheadingText
     </div>
 
     <!-- Body -->
-    <div style="padding: 36px 28px;">
+    <div class="em-body" style="padding: 36px 28px;">
 ${bodyHtml}
     </div>
 
     <!-- Footer -->
-    <div style="background: #f9fafb; padding: 28px 24px; text-align: center; border-top: 1px solid #e5e7eb;">
+    <div class="em-footer" style="background: #f9fafb; padding: 28px 24px; text-align: center; border-top: 1px solid #e5e7eb;">
       <p style="margin: 0 0 8px 0; font-size: 14px; color: #374151;">
         Questions? We're here to help.
       </p>

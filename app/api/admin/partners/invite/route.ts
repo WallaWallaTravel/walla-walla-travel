@@ -7,6 +7,7 @@ import { sendEmail } from '@/lib/email';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { auditService } from '@/lib/services/audit.service';
+import { emailDarkModeStyles } from '@/lib/email/dark-mode-styles';
 
 const InviteSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -38,9 +39,10 @@ export const POST = withCSRF(
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        ${emailDarkModeStyles()}
       </head>
       <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f1f5f9;">
-        <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+        <div class="em-wrapper" style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
           <div style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px #e5e7eb;">
             <!-- Header -->
             <div style="background-color: #059669; background: linear-gradient(135deg, #059669 0%, #047857 100%); padding: 40px 30px; text-align: center;">
@@ -53,7 +55,7 @@ export const POST = withCSRF(
             </div>
             
             <!-- Content -->
-            <div style="padding: 40px 30px;">
+            <div class="em-body" style="padding: 40px 30px;">
               <p style="font-size: 18px; color: #1f2937; margin: 0 0 20px 0;">
                 Hello <strong>${data.business_name}</strong>,
               </p>
@@ -79,7 +81,7 @@ export const POST = withCSRF(
                 This link expires in 7 days.
               </p>
               
-              <div style="background: #f9fafb; border-radius: 8px; padding: 20px; margin: 30px 0;">
+              <div class="em-card" style="background: #f9fafb; border-radius: 8px; padding: 20px; margin: 30px 0;">
                 <p style="font-size: 14px; color: #6b7280; margin: 0;">
                   <strong>Link not working?</strong> Copy and paste this URL into your browser:<br>
                   <span style="color: #059669; word-break: break-all;">${result.setup_url}</span>
@@ -97,7 +99,7 @@ export const POST = withCSRF(
             </div>
             
             <!-- Footer -->
-            <div style="background: #f9fafb; padding: 20px 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+            <div class="em-footer" style="background: #f9fafb; padding: 20px 30px; text-align: center; border-top: 1px solid #e5e7eb;">
               <p style="font-size: 12px; color: #9ca3af; margin: 0;">
                 Walla Walla Travel • Walla Walla, Washington<br>
                 © ${new Date().getFullYear()} All rights reserved.
