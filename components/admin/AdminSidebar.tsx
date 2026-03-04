@@ -163,8 +163,10 @@ export function AdminSidebar() {
   }, []);
 
   // Filter and group items by section based on user role
+  // While role is loading, show admin items by default (the layout already requires admin session)
+  const effectiveRole = userRole ?? 'admin';
   const sections: { [key: string]: NavItem[] } = {};
-  NAV_ITEMS.filter(item => canAccessItem(item, userRole)).forEach(item => {
+  NAV_ITEMS.filter(item => canAccessItem(item, effectiveRole)).forEach(item => {
     const section = item.section || 'Other';
     if (!sections[section]) {
       sections[section] = [];
