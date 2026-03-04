@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { addCacheHeaders, CachePresets } from '@/lib/api/middleware/cache';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
+import { logger } from '@/lib/logger';
 
 /**
  * GET /api/announcements
@@ -15,8 +16,6 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   const { searchParams } = new URL(request.url);
   const position = searchParams.get('position');
 
-  // Build query for active announcements
-  // Active means: is_active = true AND (starts_at is null OR starts_at <= now) AND (expires_at is null OR expires_at > now)
   let sql = `
     SELECT id, title, message, link_text, link_url, type, position, background_color
     FROM announcements
@@ -33,12 +32,26 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 
   sql += ` ORDER BY created_at DESC`;
 
-  const result = await query(sql, params);
+  let rows: Record<string, unknown>[] = [];
+
+  try {
+    const result = await query(sql, params);
+    rows = result.rows;
+  } catch (err: unknown) {
+    // PostgreSQL error code 42P01 = "relation does not exist"
+    // Return empty results instead of 500 — the table may not be migrated yet
+    const pgCode = (err as { code?: string }).code;
+    if (pgCode === '42P01') {
+      logger.warn('[Announcements] Table does not exist — migration 044 may not be applied');
+    } else {
+      throw err;
+    }
+  }
 
   const response = NextResponse.json({
     success: true,
-    announcements: result.rows,
-    count: result.rows.length,
+    announcements: rows,
+    count: rows.length,
   });
 
   // Cache announcements for 5 minutes (frequently checked, semi-static)
