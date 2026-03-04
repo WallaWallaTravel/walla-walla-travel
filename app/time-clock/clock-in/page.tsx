@@ -1,15 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { TouchButton, MobileCard, AlertBanner, BottomActionBar, BottomActionBarSpacer } from '@/components/mobile';
 import { logger } from '@/lib/logger';
-
-interface Driver {
-  id: number;
-  name: string;
-  email: string;
-}
 
 interface Vehicle {
   id: number;
@@ -27,51 +21,34 @@ interface Location {
 
 export default function ClockInPage() {
   const router = useRouter();
-  const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [driverId, setDriverId] = useState<number | null>(null);
+  const [driverName, setDriverName] = useState<string>('');
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [selectedDriver, setSelectedDriver] = useState<number | null>(null);
   const [selectedVehicle, setSelectedVehicle] = useState<number | null>(null);
   const [location, setLocation] = useState<Location | null>(null);
   const [locationError, setLocationError] = useState<string>('');
   const [loading, setLoading] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Load drivers and vehicles
-  useEffect(() => {
-    loadData();
-    getLocation();
-  }, []);
-
-  const loadData = async () => {
+  const loadVehicles = useCallback(async () => {
     try {
-      // Load drivers from API
-      const driversResponse = await fetch('/api/drivers');
-      const driversData = await driversResponse.json();
-      if (driversData.success) {
-        // Handle different response formats
-        const driversList = driversData.drivers || driversData.data?.drivers || driversData.data || [];
-        setDrivers(Array.isArray(driversList) ? driversList : []);
-      }
-
-      // Load vehicles from API
       const vehiclesResponse = await fetch('/api/vehicles');
       const vehiclesData = await vehiclesResponse.json();
       if (vehiclesData.success) {
-        // Handle different response formats
         const vehiclesList = vehiclesData.vehicles || vehiclesData.data?.vehicles || vehiclesData.data || [];
         setVehicles(Array.isArray(vehiclesList) ? vehiclesList : []);
       }
     } catch (err) {
-      logger.error('Error loading data', { error: err });
-      // Provide fallback vehicles for emergency use
+      logger.error('Error loading vehicles', { error: err });
       setVehicles([
         { id: 2, vehicle_number: 'Vehicle #2', capacity: 14, make: 'Mercedes', model: 'Sprinter' },
       ]);
       setError('Using offline vehicle list');
     }
-  };
+  }, []);
 
-  const getLocation = () => {
+  const getLocation = useCallback(() => {
     if (!navigator.geolocation) {
       setLocationError('Location services not available');
       return;
@@ -86,33 +63,58 @@ export default function ClockInPage() {
         });
         setLocationError('');
       },
-      (error) => {
-        setLocationError(`Location error: ${error.message}`);
+      (geoError) => {
+        setLocationError(`Location error: ${geoError.message}`);
       }
     );
-  };
+  }, []);
+
+  // Authenticate driver and load vehicles
+  useEffect(() => {
+    const authenticateDriver = async () => {
+      try {
+        const res = await fetch('/api/auth/me');
+        if (!res.ok) {
+          router.push('/login?error=unauthorized');
+          return;
+        }
+        const data = await res.json();
+        if (data.user?.role !== 'driver' && data.user?.role !== 'admin') {
+          router.push('/login?error=forbidden');
+          return;
+        }
+        setDriverId(data.user.id);
+        setDriverName(data.user.name || 'Driver');
+        setAuthLoading(false);
+        loadVehicles();
+      } catch {
+        router.push('/login?error=unauthorized');
+      }
+    };
+
+    authenticateDriver();
+    getLocation();
+  }, [router, loadVehicles, getLocation]);
 
   const handleClockIn = async () => {
-    if (!selectedDriver) {
-      setError('Please select a driver');
+    if (!driverId) {
+      setError('Not authenticated');
       return;
     }
     if (!selectedVehicle) {
       setError('Please select a vehicle');
       return;
     }
-    // Location is optional - proceed without it if needed
 
     setLoading(true);
     setError('');
 
     try {
-      // Call the real clock-in API
       const response = await fetch('/api/time-clock/clock-in', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          driverId: selectedDriver,
+          driverId,
           vehicleId: selectedVehicle,
           location,
         }),
@@ -121,7 +123,6 @@ export default function ClockInPage() {
       const data = await response.json();
 
       if (data.success) {
-        // Success! Redirect to dashboard
         router.push('/time-clock/dashboard');
       } else {
         const errorMessage = typeof data.error === 'object' && data.error?.message
@@ -136,6 +137,17 @@ export default function ClockInPage() {
       setLoading(false);
     }
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-800">Authenticating...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 pb-32 overflow-y-auto">
@@ -184,24 +196,16 @@ export default function ClockInPage() {
           />
         )}
 
-        {/* Driver Selection */}
-        <MobileCard title="Select Driver" variant="elevated">
-          <div className="space-y-2">
-            {drivers && drivers.length > 0 ? (
-              drivers.map((driver) => (
-                <TouchButton
-                  key={driver.id}
-                  variant={selectedDriver === driver.id ? 'primary' : 'secondary'}
-                  size="large"
-                  fullWidth
-                  onClick={() => setSelectedDriver(driver.id)}
-                >
-                  {driver.name}
-                </TouchButton>
-              ))
-            ) : (
-              <p className="text-gray-500 text-center py-2">Loading drivers...</p>
-            )}
+        {/* Logged-in Driver */}
+        <MobileCard title="Driver" variant="elevated">
+          <div className="flex items-center gap-3 py-2">
+            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-lg">
+              {driverName.charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <p className="font-semibold text-gray-900">{driverName}</p>
+              <p className="text-sm text-gray-600">Logged in</p>
+            </div>
           </div>
         </MobileCard>
 
@@ -234,12 +238,12 @@ export default function ClockInPage() {
         {/* Compliance Reminder */}
         <MobileCard variant="bordered">
           <div className="space-y-2 text-sm text-gray-700">
-            <h3 className="font-semibold text-base">📋 Today&apos;s Requirements:</h3>
+            <h3 className="font-semibold text-base">Today&apos;s Requirements:</h3>
             <ul className="space-y-1 ml-4">
-              <li>✓ Pre-trip inspection before departure</li>
-              <li>✓ Maximum 10 hours driving</li>
-              <li>✓ Maximum 15 hours on-duty</li>
-              <li>✓ Minimum 8 hours off-duty before next shift</li>
+              <li>Pre-trip inspection before departure</li>
+              <li>Maximum 10 hours driving</li>
+              <li>Maximum 15 hours on-duty</li>
+              <li>Minimum 8 hours off-duty before next shift</li>
             </ul>
           </div>
         </MobileCard>
@@ -262,7 +266,7 @@ export default function ClockInPage() {
           size="large"
           fullWidth
           onClick={handleClockIn}
-          disabled={!selectedDriver || !selectedVehicle || loading}
+          disabled={!driverId || !selectedVehicle || loading}
         >
           {loading ? 'Clocking In...' : 'Clock In Now'}
         </TouchButton>

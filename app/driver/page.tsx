@@ -33,17 +33,38 @@ export default function DriverDashboard() {
   const [viewMode, setViewMode] = useState<ViewMode>('upcoming');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
 
+  const [driverId, setDriverId] = useState<number | null>(null);
+
   useEffect(() => {
-    loadTours();
+    const authenticate = async () => {
+      try {
+        const res = await fetch('/api/auth/me');
+        if (!res.ok) {
+          router.push('/login?error=unauthorized');
+          return;
+        }
+        const data = await res.json();
+        if (data.user?.role !== 'driver' && data.user?.role !== 'admin') {
+          router.push('/login?error=forbidden');
+          return;
+        }
+        setDriverId(data.user.id);
+      } catch {
+        router.push('/login?error=unauthorized');
+      }
+    };
+    authenticate();
+  }, [router]);
+
+  useEffect(() => {
+    if (driverId) loadTours();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewMode, selectedDate]);
+  }, [viewMode, selectedDate, driverId]);
 
   const loadTours = async () => {
+    if (!driverId) return;
     setLoading(true);
     try {
-      // TODO: Get actual driver ID from auth
-      const driverId = 1;
-
       let url: string;
       if (viewMode === 'upcoming') {
         url = `/api/driver/tours?driver_id=${driverId}&upcoming=true&days=30&limit=50`;

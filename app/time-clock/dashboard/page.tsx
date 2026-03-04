@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   TouchButton,
@@ -41,29 +41,20 @@ export default function UnifiedDashboard() {
   });
   const [alerts, setAlerts] = useState<ComplianceAlert[]>([]);
   const [loading, setLoading] = useState(true);
-  const [driverId] = useState(1); // Default to driver 1 (Owner) - will add user selection later
+  const [driverId, setDriverId] = useState<number | null>(null);
 
-  useEffect(() => {
-    loadDashboardData();
-    // Refresh every 30 seconds
-    const interval = setInterval(loadDashboardData, 30000);
-    return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async (id: number) => {
     setLoading(true);
     try {
-      // Load today's status
-      const todayResponse = await fetch(`/api/time-clock/today?driverId=${driverId}`);
+      const todayResponse = await fetch(`/api/time-clock/today?driverId=${id}`);
       const todayData = await todayResponse.json();
 
       if (todayData.success) {
         const status = todayData.status;
-        
+
         setTodayStatus({
           isClockedIn: status.isClockedIn,
-          clockInTime: status.timeCard?.clock_in_time 
+          clockInTime: status.timeCard?.clock_in_time
             ? new Date(status.timeCard.clock_in_time).toLocaleTimeString('en-US', {
                 hour: '2-digit',
                 minute: '2-digit',
@@ -77,13 +68,11 @@ export default function UnifiedDashboard() {
           weeklyHours: status.weeklyHours || 0,
         });
 
-        // Convert API alerts to dashboard alerts
         const dashboardAlerts: ComplianceAlert[] = (status.alerts || []).map((alert: { type: string; message: string }) => ({
           type: alert.type,
           message: alert.message,
         }));
 
-        // Add welcome message if no alerts
         if (dashboardAlerts.length === 0 && !status.isClockedIn) {
           dashboardAlerts.push({
             type: 'info',
@@ -102,7 +91,38 @@ export default function UnifiedDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    const authenticate = async () => {
+      try {
+        const res = await fetch('/api/auth/me');
+        if (!res.ok) {
+          router.push('/login?error=unauthorized');
+          return;
+        }
+        const data = await res.json();
+        if (data.user?.role !== 'driver' && data.user?.role !== 'admin') {
+          router.push('/login?error=forbidden');
+          return;
+        }
+        const id = data.user.id;
+        setDriverId(id);
+        loadDashboardData(id);
+      } catch {
+        router.push('/login?error=unauthorized');
+      }
+    };
+
+    authenticate();
+  }, [router, loadDashboardData]);
+
+  // Refresh every 30 seconds once authenticated
+  useEffect(() => {
+    if (!driverId) return;
+    const interval = setInterval(() => loadDashboardData(driverId), 30000);
+    return () => clearInterval(interval);
+  }, [driverId, loadDashboardData]);
 
   const getCurrentDate = () => {
     return new Date().toLocaleDateString('en-US', {
@@ -207,7 +227,7 @@ export default function UnifiedDashboard() {
                 fullWidth
                 onClick={() => router.push('/time-clock/clock-in')}
               >
-                🕐 Clock In
+                Clock In
               </TouchButton>
             ) : (
               <TouchButton
@@ -216,7 +236,7 @@ export default function UnifiedDashboard() {
                 fullWidth
                 onClick={() => router.push('/time-clock/clock-out')}
               >
-                🕐 Clock Out
+                Clock Out
               </TouchButton>
             )}
 
@@ -226,7 +246,7 @@ export default function UnifiedDashboard() {
               fullWidth
               onClick={() => router.push('/inspections/pre-trip')}
             >
-              {todayStatus.preTripCompleted ? '✓ Pre-Trip Done' : '📋 Pre-Trip Inspection'}
+              {todayStatus.preTripCompleted ? 'Pre-Trip Done' : 'Pre-Trip Inspection'}
             </TouchButton>
 
             <TouchButton
@@ -235,7 +255,7 @@ export default function UnifiedDashboard() {
               fullWidth
               onClick={() => router.push('/inspections/post-trip')}
             >
-              📋 Post-Trip Inspection
+              Post-Trip Inspection
             </TouchButton>
 
             <TouchButton
@@ -244,7 +264,7 @@ export default function UnifiedDashboard() {
               fullWidth
               onClick={() => router.push('/time-clock/hos-dashboard')}
             >
-              📊 HOS Dashboard
+              HOS Dashboard
             </TouchButton>
           </MobileCardGrid>
         </MobileCard>
@@ -260,9 +280,9 @@ export default function UnifiedDashboard() {
             </div>
             <div className="flex items-center justify-between">
               <span className="text-gray-700">HOS Compliance</span>
-              <StatusIndicator 
-                status={todayStatus.drivingHours >= 10 ? 'error' : todayStatus.drivingHours >= 9 ? 'warning' : 'completed'} 
-                label="Within Limits" 
+              <StatusIndicator
+                status={todayStatus.drivingHours >= 10 ? 'error' : todayStatus.drivingHours >= 9 ? 'warning' : 'completed'}
+                label="Within Limits"
               />
             </div>
             <div className="flex items-center justify-between">
