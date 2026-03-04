@@ -84,9 +84,9 @@ export const POST = withCSRF(
       </head>
       <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
         <!-- Header -->
-        <div style="background: linear-gradient(135deg, ${brand.primary_color} 0%, ${brand.secondary_color} 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+        <div style="background-color: ${brand.primary_color}; background: linear-gradient(135deg, ${brand.primary_color} 0%, ${brand.secondary_color} 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
           <h1 style="margin: 0; font-size: 28px;">${brand.name}</h1>
-          <p style="margin: 10px 0 0 0; opacity: 0.9;">${brand.tagline}</p>
+          <p style="margin: 10px 0 0 0; color: #d9d9d9;">${brand.tagline}</p>
         </div>
 
         <!-- Content -->

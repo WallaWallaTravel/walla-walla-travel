@@ -246,7 +246,7 @@ export const POST = withCSRF(
         <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f9fafb;">
           <div style="max-width: 600px; margin: 0 auto; background: #ffffff;">
             <!-- Header -->
-            <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 40px 20px; text-align: center;">
+            <div style="background-color: #10b981; background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 40px 20px; text-align: center;">
               <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">Request Received!</h1>
               <p style="color: #d1fae5; margin: 10px 0 0 0; font-size: 16px;">We'll be in touch within 24 hours</p>
             </div>

@@ -130,7 +130,7 @@ function generatePaymentRequestHtml({
     <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6;">
       <div style="max-width: 600px; margin: 0 auto; background: #ffffff;">
         <!-- Header -->
-        <div style="background: linear-gradient(135deg, #8B1538 0%, #722F37 100%); padding: 40px 24px; text-align: center;">
+        <div style="background-color: #8B1538; background: linear-gradient(135deg, #8B1538 0%, #722F37 100%); padding: 40px 24px; text-align: center;">
           <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">🍷 Wine Tour Reserved!</h1>
           <p style="color: #fecaca; margin: 12px 0 0 0; font-size: 16px;">Complete payment to confirm your spot</p>
         </div>
@@ -179,7 +179,7 @@ function generatePaymentRequestHtml({
           </div>
 
           <!-- Payment Box -->
-          <div style="background: linear-gradient(135deg, #E07A5F 0%, #B87333 100%); border-radius: 12px; padding: 24px; margin-bottom: 24px; text-align: center;">
+          <div style="background-color: #E07A5F; background: linear-gradient(135deg, #E07A5F 0%, #B87333 100%); border-radius: 12px; padding: 24px; margin-bottom: 24px; text-align: center;">
             <p style="color: #ffffff; font-size: 14px; margin: 0 0 8px 0; opacity: 0.9;">Amount Due</p>
             <p style="color: #ffffff; font-size: 36px; font-weight: bold; margin: 0 0 16px 0;">$${ticket.total_amount.toFixed(2)}</p>
             <a href="${paymentUrl}" style="display: inline-block; background: #ffffff; color: #8B1538; text-decoration: none; padding: 14px 40px; border-radius: 8px; font-size: 18px; font-weight: bold;">Complete Payment</a>

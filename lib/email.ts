@@ -150,7 +150,7 @@ export async function sendConsultationRequestNotification(data: {
     <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6;">
       <div style="max-width: 600px; margin: 0 auto; background: #ffffff;">
         <!-- Header -->
-        <div style="background: linear-gradient(135deg, #8B1538 0%, #722F37 100%); padding: 32px 24px; text-align: center;">
+        <div style="background-color: #8B1538; background: linear-gradient(135deg, #8B1538 0%, #722F37 100%); padding: 32px 24px; text-align: center;">
           <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: bold;">🍷 New Consultation Request</h1>
           <p style="color: #fecaca; margin: 8px 0 0 0; font-size: 14px;">A customer needs help planning their wine tour</p>
         </div>
@@ -288,7 +288,7 @@ export async function sendConsultationConfirmationToCustomer(data: {
     <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6;">
       <div style="max-width: 600px; margin: 0 auto; background: #ffffff;">
         <!-- Header -->
-        <div style="background: linear-gradient(135deg, #8B1538 0%, #722F37 100%); padding: 40px 24px; text-align: center;">
+        <div style="background-color: #8B1538; background: linear-gradient(135deg, #8B1538 0%, #722F37 100%); padding: 40px 24px; text-align: center;">
           <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">🍷 Request Received!</h1>
           <p style="color: #fecaca; margin: 12px 0 0 0; font-size: 16px;">We're excited to help plan your wine tour</p>
         </div>
@@ -386,7 +386,7 @@ export const EmailTemplates = {
       <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6;">
         <div style="max-width: 600px; margin: 0 auto; background: #ffffff;">
           <!-- Header -->
-          <div style="background: linear-gradient(135deg, #8B1538 0%, #722F37 100%); padding: 40px 24px; text-align: center;">
+          <div style="background-color: #8B1538; background: linear-gradient(135deg, #8B1538 0%, #722F37 100%); padding: 40px 24px; text-align: center;">
             <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">🤝 Partner Invitation</h1>
             <p style="color: #fecaca; margin: 12px 0 0 0; font-size: 16px;">Walla Walla Travel</p>
           </div>
@@ -507,7 +507,7 @@ Your local wine country experts
       <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
         <div style="max-width: 600px; margin: 0 auto; background: #ffffff;">
           <!-- Header -->
-          <div style="background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%); padding: 40px 20px; text-align: center;">
+          <div style="background-color: #7c3aed; background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%); padding: 40px 20px; text-align: center;">
             <h1 style="color: #ffffff; margin: 0; font-size: 32px; font-weight: bold;">🍷 Tour Confirmed!</h1>
             <p style="color: #e9d5ff; margin: 10px 0 0 0; font-size: 18px;">Your Walla Walla wine country adventure awaits</p>
           </div>
@@ -739,7 +739,7 @@ Walla Walla, Washington
       <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
         <div style="max-width: 600px; margin: 0 auto; background: #ffffff;">
           <!-- Header -->
-          <div style="background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%); padding: 40px 20px; text-align: center;">
+          <div style="background-color: #7c3aed; background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%); padding: 40px 20px; text-align: center;">
             <h1 style="color: #ffffff; margin: 0; font-size: 32px; font-weight: bold;">🍷 Thank You!</h1>
             <p style="color: #e9d5ff; margin: 10px 0 0 0; font-size: 18px;">We hope you had an amazing tour</p>
           </div>
@@ -1153,7 +1153,7 @@ Walla Walla, Washington
     subject: `Reservation Confirmed! ${data.reservation_number}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+        <div style="background-color: #10b981; background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
           <div style="font-size: 48px; margin-bottom: 10px;">🎉</div>
           <h1 style="margin: 0; font-size: 28px;">Reservation Confirmed!</h1>
           <p style="margin: 10px 0 0 0; font-size: 18px;">Your date is secured</p>
@@ -1304,7 +1304,7 @@ Ryan & the ${COMPANY_NAME} Team
       </head>
       <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
         <!-- Header -->
-        <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+        <div style="background-color: #10b981; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
           <h1 style="margin: 0; font-size: 28px;">✓ Proposal Accepted!</h1>
           <p style="margin: 10px 0 0 0; opacity: 0.9;">${COMPANY_NAME}</p>
         </div>
@@ -1393,7 +1393,7 @@ ${COMPANY_NAME}
       </head>
       <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
         <!-- Header -->
-        <div style="background: linear-gradient(135deg, #8B1538 0%, #6B1028 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+        <div style="background-color: #8B1538; background: linear-gradient(135deg, #8B1538 0%, #6B1028 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
           <h1 style="margin: 0; font-size: 28px;">${COMPANY_NAME}</h1>
           <p style="margin: 10px 0 0 0; opacity: 0.9;">Updated Proposal</p>
         </div>
@@ -1721,7 +1721,7 @@ export async function sendTripMagicLink(data: {
           <div style="background: white; border-radius: 16px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); overflow: hidden;">
 
             <!-- Header -->
-            <div style="background: linear-gradient(135deg, #8B1538 0%, #722F37 100%); padding: 32px 24px; text-align: center;">
+            <div style="background-color: #8B1538; background: linear-gradient(135deg, #8B1538 0%, #722F37 100%); padding: 32px 24px; text-align: center;">
               <div style="font-size: 48px; margin-bottom: 12px;">🍷</div>
               <h1 style="color: white; margin: 0; font-size: 24px; font-weight: 600;">Your Trip Link</h1>
             </div>
@@ -1800,7 +1800,7 @@ export async function sendCorporateRequestNotification(data: {
     subject: `🏢 New Corporate Request: ${data.company_name}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+        <div style="background-color: #3b82f6; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0;">
           <h1 style="margin: 0;">🏢 New Corporate Request</h1>
           <p style="margin: 10px 0 0 0; opacity: 0.9;">${data.request_number}</p>
         </div>

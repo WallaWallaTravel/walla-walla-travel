@@ -180,7 +180,7 @@ export const POST = withCSRF(
     <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6;">
       <div style="max-width: 600px; margin: 0 auto; background: #ffffff;">
         <!-- Header -->
-        <div style="background: linear-gradient(135deg, #8B1538 0%, #722F37 100%); padding: 40px 24px; text-align: center;">
+        <div style="background-color: #8B1538; background: linear-gradient(135deg, #8B1538 0%, #722F37 100%); padding: 40px 24px; text-align: center;">
           <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">Thank You for Your Inquiry!</h1>
           <p style="color: #fecaca; margin: 12px 0 0 0; font-size: 16px;">We're excited to help plan your wine tour</p>
         </div>
@@ -261,7 +261,7 @@ export const POST = withCSRF(
     <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6;">
       <div style="max-width: 600px; margin: 0 auto; background: #ffffff;">
         <!-- Header -->
-        <div style="background: linear-gradient(135deg, #8B1538 0%, #722F37 100%); padding: 32px 24px; text-align: center;">
+        <div style="background-color: #8B1538; background: linear-gradient(135deg, #8B1538 0%, #722F37 100%); padding: 32px 24px; text-align: center;">
           <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: bold;">New Inquiry: ${experienceRequest.request_number}</h1>
           <p style="color: #fecaca; margin: 8px 0 0 0; font-size: 14px;">From the public inquiry form</p>
         </div>

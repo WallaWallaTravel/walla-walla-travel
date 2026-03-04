@@ -23,9 +23,9 @@ export const POST = withCSRF(
       subject: 'You\'re invited to join Walla Walla Events as an organizer',
       html: `
 <div style="font-family: 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto;">
-  <div style="background: linear-gradient(135deg, #8B1538 0%, #722F37 100%); padding: 32px; text-align: center; border-radius: 12px 12px 0 0;">
+  <div style="background-color: #8B1538; background: linear-gradient(135deg, #8B1538 0%, #722F37 100%); padding: 32px; text-align: center; border-radius: 12px 12px 0 0;">
     <h1 style="color: white; margin: 0; font-size: 24px;">Walla Walla Events</h1>
-    <p style="color: rgba(255,255,255,0.85); margin: 8px 0 0; font-size: 14px;">Event Organizer Portal</p>
+    <p style="color: #d9d9d9; margin: 8px 0 0; font-size: 14px;">Event Organizer Portal</p>
   </div>
   <div style="background: white; padding: 32px; border: 1px solid #e5e7eb; border-top: 0;">
     <h2 style="color: #1f2937; margin: 0 0 16px;">You're Invited!</h2>
