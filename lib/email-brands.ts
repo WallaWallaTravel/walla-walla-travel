@@ -115,7 +115,7 @@ export const brandReservationTemplates = {
   <div style="max-width: 600px; margin: 0 auto; background: #ffffff;">
     
     <!-- Header -->
-    <div style="background: linear-gradient(135deg, ${brand.primary_color} 0%, ${brand.secondary_color} 100%); padding: 40px 20px; text-align: center;">
+    <div style="background-color: ${brand.primary_color}; background: linear-gradient(135deg, ${brand.primary_color} 0%, ${brand.secondary_color} 100%); padding: 40px 20px; text-align: center;">
       <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">🍷 Date Reserved!</h1>
       <p style="color: #e9d5ff; margin: 10px 0 0 0; font-size: 16px;">${brand.tagline}</p>
     </div>
@@ -303,7 +303,7 @@ ${brand.name} • ${brand.website}
   <div style="max-width: 600px; margin: 0 auto; background: #ffffff;">
     
     <!-- Header -->
-    <div style="background: linear-gradient(135deg, ${brand.primary_color} 0%, ${brand.secondary_color} 100%); padding: 40px 30px; text-align: center;">
+    <div style="background-color: ${brand.primary_color}; background: linear-gradient(135deg, ${brand.primary_color} 0%, ${brand.secondary_color} 100%); padding: 40px 30px; text-align: center;">
       <h1 style="color: #F5F1E8; margin: 0; font-size: 26px; font-weight: normal; letter-spacing: 0.5px;">HERDING CATS WINE TOURS</h1>
       <p style="color: #B8926A; margin: 15px 0 0 0; font-size: 14px; font-style: italic;">${brand.tagline}</p>
     </div>
@@ -502,7 +502,7 @@ ${brand.name} • ${brand.website}
   <div style="max-width: 600px; margin: 0 auto; background: #ffffff;">
     
     <!-- Header -->
-    <div style="background: linear-gradient(135deg, ${brand.primary_color} 0%, ${brand.secondary_color} 100%); padding: 35px 30px; text-align: center;">
+    <div style="background-color: ${brand.primary_color}; background: linear-gradient(135deg, ${brand.primary_color} 0%, ${brand.secondary_color} 100%); padding: 35px 30px; text-align: center;">
       <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600; letter-spacing: 0.5px;">NW TOURING & CONCIERGE</h1>
       <p style="color: #bfdbfe; margin: 12px 0 0 0; font-size: 14px;">${brand.tagline}</p>
     </div>

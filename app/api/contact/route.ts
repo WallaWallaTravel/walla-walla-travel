@@ -203,9 +203,9 @@ async function sendInternalNotification(
 async function sendConfirmationEmail(data: z.infer<typeof ContactFormSchema>): Promise<void> {
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <div style="background: linear-gradient(135deg, #8B1538 0%, #722F37 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+      <div style="background-color: #8B1538; background: linear-gradient(135deg, #8B1538 0%, #722F37 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
         <h1 style="margin: 0;">Thank You!</h1>
-        <p style="margin: 10px 0 0 0; opacity: 0.9;">We've Received Your Inquiry</p>
+        <p style="margin: 10px 0 0 0; color: #d9d9d9;">We've Received Your Inquiry</p>
       </div>
 
       <div style="background: #f9fafb; padding: 30px; border: 1px solid #e5e7eb; border-radius: 0 0 10px 10px;">

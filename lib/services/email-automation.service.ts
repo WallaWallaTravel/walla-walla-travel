@@ -284,10 +284,10 @@ export async function sendTourReminderEmail(bookingId: number): Promise<boolean>
       subject: `🍷 Your Tour is Coming Up! ${formattedDate}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+          <div style="background-color: #7c3aed; background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
             <div style="font-size: 48px; margin-bottom: 10px;">🍷</div>
             <h1 style="margin: 0;">Your Tour is Almost Here!</h1>
-            <p style="margin: 10px 0 0 0; opacity: 0.9;">${formattedDate}</p>
+            <p style="margin: 10px 0 0 0; color: #d9d9d9;">${formattedDate}</p>
           </div>
           
           <div style="background: #f9fafb; padding: 30px; border: 1px solid #e5e7eb; border-radius: 0 0 10px 10px;">
@@ -456,7 +456,7 @@ export async function sendDriverAssignmentToCustomer(bookingId: number): Promise
       subject: `🚗 Your Driver is Confirmed - ${booking.booking_number}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+          <div style="background-color: #3b82f6; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
             <div style="font-size: 48px; margin-bottom: 10px;">🚗</div>
             <h1 style="margin: 0;">Driver Confirmed!</h1>
           </div>

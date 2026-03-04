@@ -111,8 +111,8 @@ async function sendPartnerResetEmail(to: string, name: string, resetUrl: string)
       </head>
       <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f1f5f9;">
         <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-          <div style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-            <div style="background: linear-gradient(135deg, #8B1538 0%, #6B1029 100%); padding: 40px 30px; text-align: center;">
+          <div style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px #e5e7eb;">
+            <div style="background-color: #8B1538; background: linear-gradient(135deg, #8B1538 0%, #6B1029 100%); padding: 40px 30px; text-align: center;">
               <h1 style="color: white; margin: 0; font-size: 24px; font-weight: bold;">
                 Partner Password Reset
               </h1>

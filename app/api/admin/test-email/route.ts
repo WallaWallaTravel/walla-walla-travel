@@ -40,9 +40,9 @@ export const POST = withCSRF(
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
     </head>
     <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <div style="background: linear-gradient(135deg, #1E3A5F 0%, #2D5A87 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
+      <div style="background-color: #1E3A5F; background: linear-gradient(135deg, #1E3A5F 0%, #2D5A87 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
         <h1 style="color: white; margin: 0; font-size: 24px;">🍷 Walla Walla Travel</h1>
-        <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0;">Email System Test</p>
+        <p style="color: #d9d9d9; margin: 10px 0 0;">Email System Test</p>
       </div>
 
       <div style="background: white; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px;">

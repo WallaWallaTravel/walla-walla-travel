@@ -48,9 +48,9 @@ function emailShell(brand: BrandEmailConfig, headingText: string, subheadingText
   <div style="max-width: 600px; margin: 0 auto; background: #ffffff;">
 
     <!-- Header -->
-    <div style="background: linear-gradient(135deg, ${brand.primary_color} 0%, ${brand.secondary_color} 100%); padding: 40px 24px; text-align: center;">
+    <div style="background-color: ${brand.primary_color}; background: linear-gradient(135deg, ${brand.primary_color} 0%, ${brand.secondary_color} 100%); padding: 40px 24px; text-align: center;">
       <h1 style="color: #ffffff; margin: 0; font-size: 26px; font-weight: bold;">${headingText}</h1>
-      <p style="color: rgba(255,255,255,0.85); margin: 12px 0 0 0; font-size: 15px;">${subheadingText}</p>
+      <p style="color: #d9d9d9; margin: 12px 0 0 0; font-size: 15px;">${subheadingText}</p>
     </div>
 
     <!-- Body -->

@@ -151,13 +151,13 @@ function generateConfirmationHtml({
     <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6;">
       <div style="max-width: 600px; margin: 0 auto; background: #ffffff;">
         <!-- Header -->
-        <div style="background: linear-gradient(135deg, #8B1538 0%, #722F37 100%); padding: 40px 24px; text-align: center;">
+        <div style="background-color: #8B1538; background: linear-gradient(135deg, #8B1538 0%, #722F37 100%); padding: 40px 24px; text-align: center;">
           <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">🍷 You're All Set!</h1>
           <p style="color: #fecaca; margin: 12px 0 0 0; font-size: 16px;">Your wine tour is confirmed</p>
         </div>
 
         <!-- Ticket Badge -->
-        <div style="text-align: center; padding: 24px; background: linear-gradient(135deg, #E07A5F 0%, #B87333 100%);">
+        <div style="text-align: center; padding: 24px; background-color: #E07A5F; background: linear-gradient(135deg, #E07A5F 0%, #B87333 100%);">
           <div style="display: inline-block; background: #ffffff; border-radius: 12px; padding: 20px 32px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
             <p style="color: #6b7280; font-size: 12px; margin: 0 0 4px 0; text-transform: uppercase; letter-spacing: 1px;">Ticket Number</p>
             <p style="color: #1f2937; font-size: 28px; font-weight: bold; margin: 0; font-family: monospace;">${ticket.ticket_number}</p>
