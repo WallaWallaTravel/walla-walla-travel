@@ -1,26 +1,83 @@
 #!/bin/sh
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Pre-commit hook with stash isolation
+#
+# Problem this solves: Multiple Claude Code windows share one git index.
+# Window A stages file1, Window B stages file2, and whichever commits first
+# picks up both files. The stash --keep-index pattern isolates validation
+# to only the staged changes and prevents unstaged work from interfering.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Record staged files for the log message
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR)
+if [ -z "$STAGED_FILES" ]; then
+  echo "No staged files — skipping pre-commit checks."
+  exit 0
+fi
+
 echo "Running pre-commit checks..."
+echo "Staged files:"
+echo "$STAGED_FILES" | sed 's/^/  /'
+
+# ── Stash unstaged changes ──────────────────────────────────────────────────
+# Save unstaged/untracked changes so checks run against staged-only state.
+# --keep-index: leave staged changes in the working tree
+# --include-untracked: also stash new files that aren't tracked
+STASH_NAME="pre-commit-$(date +%s)"
+git stash push --keep-index --include-untracked -m "$STASH_NAME" -q 2>/dev/null
+STASH_RESULT=$?
+
+# Track whether we actually stashed something (vs no unstaged changes)
+if [ $STASH_RESULT -eq 0 ] && git stash list | head -1 | grep -q "$STASH_NAME"; then
+  STASHED=1
+else
+  STASHED=0
+fi
+
+# ── Cleanup function ────────────────────────────────────────────────────────
+# Always restore unstaged changes, even if checks fail
+restore_stash() {
+  if [ "$STASHED" = "1" ]; then
+    git stash pop -q 2>/dev/null
+    if [ $? -ne 0 ]; then
+      echo ""
+      echo "Warning: Could not restore stashed changes cleanly."
+      echo "Your unstaged changes are saved in: git stash list"
+      echo "Run 'git stash pop' manually to recover them."
+    fi
+  fi
+}
+
+# ── Run checks ───────────────────────────────────────────────────────────────
 
 # Type-check (catches real code errors)
 echo "Checking types..."
-npx tsc --noEmit || {
+npx tsc --noEmit
+if [ $? -ne 0 ]; then
   echo "TypeScript errors found. Fix before committing."
+  restore_stash
   exit 1
-}
+fi
 
 # Lint (catches code quality issues)
 echo "Linting..."
-npx next lint || {
+npx next lint
+if [ $? -ne 0 ]; then
   echo "Lint errors found. Fix before committing."
+  restore_stash
   exit 1
-}
+fi
 
 # Schema validation & feature health (catches missing tables/columns)
 echo "Validating schema integrity..."
-npx jest --testPathPatterns="schema-sql-validation|feature-health" --silent || {
+npx jest --testPathPatterns="schema-sql-validation|feature-health" --silent
+if [ $? -ne 0 ]; then
   echo "Schema validation or feature health tests failed. Fix before committing."
+  restore_stash
   exit 1
-}
+fi
 
+# ── Restore and finish ───────────────────────────────────────────────────────
+restore_stash
 echo "Pre-commit checks passed"
