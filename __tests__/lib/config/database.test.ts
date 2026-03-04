@@ -127,7 +127,7 @@ describe('DB_DEFAULTS', () => {
   it('should have reasonable default values', () => {
     expect(DB_DEFAULTS.STATEMENT_TIMEOUT_MS).toBe(30000); // 30 seconds
     expect(DB_DEFAULTS.SLOW_QUERY_THRESHOLD_MS).toBe(1000); // 1 second
-    expect(DB_DEFAULTS.MAX_CONNECTIONS).toBe(20);
+    expect(DB_DEFAULTS.MAX_CONNECTIONS).toBe(5);
     expect(DB_DEFAULTS.IDLE_TIMEOUT_MS).toBe(30000); // 30 seconds
     expect(DB_DEFAULTS.CONNECTION_TIMEOUT_MS).toBe(2000); // 2 seconds
     expect(DB_DEFAULTS.MAX_USES).toBe(7500);
