@@ -1,0 +1,24 @@
+name: Morning Briefing
+
+on:
+  schedule:
+    # 8 AM Pacific = 4 PM UTC (or 3 PM UTC during PDT)
+    - cron: '0 16 * * *'
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  briefing:
+    name: Generate Morning Briefing
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run morning briefing
+        run: bash scripts/morning-briefing.sh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
