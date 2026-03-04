@@ -113,7 +113,10 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
   };
 
   // --- Loading / not found ---
-  if (loading) {
+  // Only show full-page loading on initial load (no data yet).
+  // During refetches (after add stop, add day, etc.), keep showing
+  // existing content to avoid a jarring flash.
+  if (loading && !proposal) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
