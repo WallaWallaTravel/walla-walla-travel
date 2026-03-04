@@ -16,6 +16,8 @@ import { query } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { sharedTourService, CreateTicketRequest, SharedTourTicket } from './shared-tour.service';
 import { sendSharedTourPaymentRequestEmail } from '@/lib/email/templates/shared-tour-payment-request';
+import { sendPartnerRegistrationCompleteEmail } from '@/lib/email/templates/partner-registration-complete';
+import { sendPartnerBookingConfirmedEmail } from '@/lib/email/templates/partner-booking-confirmed';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 
@@ -194,9 +196,22 @@ export const hotelPartnerService = {
       RETURNING *
     `, [hotel.id, passwordHash, data.contact_name || null, data.phone || null]);
 
+    const registeredHotel = updateResult.rows[0];
+
     logger.info('Hotel partner registered', { hotelId: hotel.id, hotelName: hotel.name });
 
-    return updateResult.rows[0];
+    // Send registration complete notification
+    try {
+      await sendPartnerRegistrationCompleteEmail({
+        hotelName: registeredHotel.name,
+        contactName: registeredHotel.contact_name,
+        email: registeredHotel.email,
+      });
+    } catch (error) {
+      logger.error('Failed to send partner registration email', { hotelId: hotel.id, error });
+    }
+
+    return registeredHotel;
   },
 
   /**
@@ -470,6 +485,36 @@ export const hotelPartnerService = {
     } catch (error) {
       logger.error('Failed to send payment request email', {
         ticketId: ticket.id,
+        error,
+      });
+    }
+
+    // Send booking confirmed notification to hotel partner
+    try {
+      const tourResult = await query<{ title: string; tour_date: string }>(
+        `SELECT title, tour_date FROM shared_tours WHERE id = $1`,
+        [data.tour_id]
+      );
+      const tourInfo = tourResult.rows[0];
+      if (tourInfo) {
+        await sendPartnerBookingConfirmedEmail({
+          hotelName: hotel.name,
+          hotelEmail: hotel.email,
+          contactName: hotel.contact_name,
+          ticketNumber: ticket.ticket_number,
+          customerName: data.customer_name,
+          customerEmail: data.customer_email,
+          ticketCount: data.ticket_count,
+          totalAmount: ticket.total_amount || 0,
+          tourTitle: tourInfo.title,
+          tourDate: tourInfo.tour_date,
+          includesLunch: data.includes_lunch || false,
+        });
+      }
+    } catch (error) {
+      logger.error('Failed to send partner booking notification', {
+        ticketId: ticket.id,
+        hotelId,
         error,
       });
     }

@@ -11,6 +11,7 @@ import { logger } from '@/lib/logger';
 import { sendBookingConfirmationEmail } from '@/lib/services/email-automation.service';
 import { sharedTourService } from '@/lib/services/shared-tour.service';
 import { sendSharedTourConfirmationEmail } from '@/lib/email/templates/shared-tour-confirmation';
+import { sendPartnerPaymentReceivedEmail } from '@/lib/email/templates/partner-payment-received';
 import { tipService } from '@/lib/services/tip.service';
 
 /**
@@ -340,6 +341,16 @@ async function handleSharedTourPaymentSuccess(paymentIntent: Stripe.PaymentInten
     });
   } catch (error) {
     logger.error('[Stripe Webhook] Failed to send shared tour confirmation email', {
+      ticketId: ticket.id,
+      error,
+    });
+  }
+
+  // Notify hotel partner if this was a partner-booked ticket
+  try {
+    await sendPartnerPaymentReceivedEmail(ticket.id);
+  } catch (error) {
+    logger.error('[Stripe Webhook] Failed to send partner payment notification', {
       ticketId: ticket.id,
       error,
     });
