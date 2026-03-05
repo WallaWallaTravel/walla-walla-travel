@@ -216,6 +216,7 @@ export class TripProposalService extends BaseService {
       winery_id: validated.winery_id || null,
       restaurant_id: validated.restaurant_id || null,
       hotel_id: validated.hotel_id || null,
+        saved_menu_id: validated.saved_menu_id || null,
       custom_name: validated.custom_name || null,
       custom_address: validated.custom_address || null,
       custom_description: validated.custom_description || null,

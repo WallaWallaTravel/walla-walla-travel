@@ -48,7 +48,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
 
   // --- Data layer ---
   const {
-    proposal, setProposal, wineries, restaurants, hotels,
+    proposal, setProposal, wineries, restaurants, hotels, savedMenus,
     lunchOrders, reminderHistory, loading,
     refetchProposal, loadReminderHistory, setReminderHistory,
   } = useProposalData(id, activeTab);
@@ -214,7 +214,7 @@ export default function EditTripProposalPage({ params }: { params: Promise<{ id:
                   <OverviewTab proposal={proposal} updateProposal={updateProposal} updateProposalDebounced={updateProposalDebounced} updateStatus={updateStatus} saving={saving} />
                 )}
                 {activeTab === 'days' && (
-                  <DaysStopsTab proposal={proposal} wineries={wineries} restaurants={restaurants} hotels={hotels} addDay={addDay} addStop={addStop} updateStop={updateStop} updateStopDebounced={updateStopDebounced} deleteStop={deleteStop} updateVendorField={updateVendorField} logVendorInteraction={logVendorInteraction} setProposal={setProposal} refetchProposal={refetchProposal} saving={saving} />
+                  <DaysStopsTab proposal={proposal} wineries={wineries} restaurants={restaurants} hotels={hotels} savedMenus={savedMenus} addDay={addDay} addStop={addStop} updateStop={updateStop} updateStopDebounced={updateStopDebounced} deleteStop={deleteStop} updateVendorField={updateVendorField} logVendorInteraction={logVendorInteraction} setProposal={setProposal} refetchProposal={refetchProposal} saving={saving} />
                 )}
                 {activeTab === 'guests' && (
                   <GuestsTab proposal={proposal} addGuest={addGuestAction} updateGuestField={updateGuestFieldAction} updateGuestSettings={updateGuestSettings} approveGuest={approveGuest} rejectGuest={rejectGuest} deleteGuest={deleteGuestAction} saving={saving} toast={toast} />

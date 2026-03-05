@@ -41,6 +41,7 @@ export interface StopData {
   winery_id?: number;
   restaurant_id?: number;
   hotel_id?: number;
+  saved_menu_id?: number;
   winery?: { id: number; name: string };
   restaurant?: { id: number; name: string };
   hotel?: { id: number; name: string };

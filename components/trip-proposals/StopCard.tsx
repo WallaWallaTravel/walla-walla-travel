@@ -1,6 +1,6 @@
 'use client';
 
-import type { StopData, Winery, Restaurant, Hotel } from './types';
+import type { StopData, Winery, Restaurant, Hotel, SavedMenuOption } from './types';
 import { STOP_TYPES } from './types';
 
 interface StopCardProps {
@@ -8,6 +8,7 @@ interface StopCardProps {
   wineries: Winery[];
   restaurants: Restaurant[];
   hotels: Hotel[];
+  savedMenus: SavedMenuOption[];
   onUpdate: (updates: Partial<StopData>) => void;
   onRemove: () => void;
 }
@@ -17,6 +18,7 @@ export default function StopCard({
   wineries,
   restaurants,
   hotels,
+  savedMenus,
   onUpdate,
   onRemove,
 }: StopCardProps) {
@@ -135,6 +137,22 @@ export default function StopCard({
           />
         </div>
       </div>
+
+      {/* Saved Menu Selector */}
+      {['restaurant', 'winery'].includes(stop.stop_type) && savedMenus.length > 0 && (
+        <div className="mt-2">
+          <select
+            value={stop.saved_menu_id || ''}
+            onChange={(e) => onUpdate({ saved_menu_id: parseInt(e.target.value) || undefined })}
+            className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
+          >
+            <option value="">Lunch menu (optional)...</option>
+            {savedMenus.map((m) => (
+              <option key={m.id} value={m.id}>{m.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* Cost Note (informational, not calculated) */}
       <div className="mt-2">

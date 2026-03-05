@@ -20,12 +20,18 @@ import type {
   ReminderRecord,
 } from '@/lib/types/proposal-detail';
 
+interface SavedMenuOption {
+  id: number;
+  name: string;
+}
+
 interface UseProposalDataReturn {
   proposal: ProposalDetail | null;
   setProposal: (p: ProposalDetail | null | ((prev: ProposalDetail | null) => ProposalDetail | null)) => void;
   wineries: Winery[];
   restaurants: Restaurant[];
   hotels: Hotel[];
+  savedMenus: SavedMenuOption[];
   notes: NoteData[];
   notesLoading: boolean;
   lunchOrders: LunchOrderData[];
@@ -84,6 +90,13 @@ export function useProposalData(
     cache: true,
     cacheDuration: 5 * 60 * 1000,
   });
+
+  // --- Saved Menus (cached 5 min) ---
+  const { data: menusRaw } = useDataFetch<Array<{ id: number; name: string }>>(
+    '/api/admin/menus',
+    { cache: true, cacheDuration: 5 * 60 * 1000 }
+  );
+  const savedMenus: SavedMenuOption[] = (menusRaw || []).map((m) => ({ id: m.id, name: m.name }));
 
   // --- Notes (lazy-load when notes tab is active) ---
   const [notes, setNotes] = useState<NoteData[]>([]);
@@ -146,6 +159,7 @@ export function useProposalData(
     wineries: wineriesData || [],
     restaurants: restaurantsData || [],
     hotels: hotelsData || [],
+    savedMenus,
     notes,
     notesLoading,
     lunchOrders,

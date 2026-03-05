@@ -1,6 +1,6 @@
 'use client';
 
-import type { FormData, StopData, Winery, Restaurant, Hotel } from './types';
+import type { FormData, StopData, Winery, Restaurant, Hotel, SavedMenuOption } from './types';
 import { STOP_TYPES } from './types';
 import StopCard from './StopCard';
 
@@ -9,6 +9,7 @@ interface DaysTabProps {
   wineries: Winery[];
   restaurants: Restaurant[];
   hotels: Hotel[];
+  savedMenus: SavedMenuOption[];
   onAddStop: (dayIndex: number, stopType: string) => void;
   onUpdateStop: (dayIndex: number, stopIndex: number, updates: Partial<StopData>) => void;
   onRemoveStop: (dayIndex: number, stopIndex: number) => void;
@@ -20,6 +21,7 @@ export default function DaysTab({
   wineries,
   restaurants,
   hotels,
+  savedMenus,
   onAddStop,
   onUpdateStop,
   onRemoveStop,
@@ -75,6 +77,7 @@ export default function DaysTab({
                 wineries={wineries}
                 restaurants={restaurants}
                 hotels={hotels}
+                savedMenus={savedMenus}
                 onUpdate={(updates) => onUpdateStop(dayIndex, stopIndex, updates)}
                 onRemove={() => onRemoveStop(dayIndex, stopIndex)}
               />

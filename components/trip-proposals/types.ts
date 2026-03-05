@@ -30,6 +30,11 @@ export interface Hotel {
   city: string;
 }
 
+export interface SavedMenuOption {
+  id: number;
+  name: string;
+}
+
 export interface StopData {
   id: string;
   stop_order: number;
@@ -37,6 +42,7 @@ export interface StopData {
   winery_id?: number;
   restaurant_id?: number;
   hotel_id?: number;
+  saved_menu_id?: number;
   custom_name?: string;
   custom_address?: string;
   scheduled_time?: string;

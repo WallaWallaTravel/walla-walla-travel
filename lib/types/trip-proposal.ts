@@ -257,6 +257,7 @@ export interface TripProposalStop {
   winery_id: number | null;
   restaurant_id: number | null;
   hotel_id: number | null;
+  saved_menu_id: number | null;
 
   // Custom stop info
   custom_name: string | null;
@@ -660,6 +661,7 @@ export const AddStopSchema = z.object({
   winery_id: z.number().int().positive().optional(),
   restaurant_id: z.number().int().positive().optional(),
   hotel_id: z.number().int().positive().optional(),
+  saved_menu_id: z.number().int().positive().optional(),
   custom_name: z.string().max(255).optional(),
   custom_address: z.string().optional(),
   custom_description: z.string().optional(),

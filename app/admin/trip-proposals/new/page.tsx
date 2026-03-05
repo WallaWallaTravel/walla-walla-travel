@@ -20,6 +20,7 @@ export default function NewTripProposalPage() {
     wineries,
     restaurants,
     hotels,
+    savedMenus,
     saving,
     activeTab,
     setActiveTab,
@@ -146,6 +147,7 @@ export default function NewTripProposalPage() {
                       wineries={wineries}
                       restaurants={restaurants}
                       hotels={hotels}
+                      savedMenus={savedMenus}
                       onAddStop={addStop}
                       onUpdateStop={updateStop}
                       onRemoveStop={removeStop}

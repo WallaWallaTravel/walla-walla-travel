@@ -16,6 +16,7 @@ import type {
   Winery,
   Restaurant,
   Hotel,
+  SavedMenuOption,
   StopData,
   DayData,
   GuestData,
@@ -31,6 +32,7 @@ export function useProposalForm() {
   const [wineries, setWineries] = useState<Winery[]>([]);
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [hotels, setHotels] = useState<Hotel[]>([]);
+  const [savedMenus, setSavedMenus] = useState<SavedMenuOption[]>([]);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'details' | 'days' | 'guests' | 'pricing'>('details');
   const { toasts, toast, dismissToast } = useToast();
@@ -70,6 +72,7 @@ export function useProposalForm() {
     loadWineries();
     loadRestaurants();
     loadHotels();
+    loadSavedMenus();
   }, []);
 
   useEffect(() => {
@@ -141,6 +144,18 @@ export function useProposalForm() {
       if (result.success) setHotels(result.data || []);
     } catch (error) {
       logger.error('Failed to load hotels', { error });
+    }
+  };
+
+  const loadSavedMenus = async () => {
+    try {
+      const response = await fetch('/api/admin/menus');
+      const result = await response.json();
+      if (result.success) {
+        setSavedMenus((result.data || []).map((m: { id: number; name: string }) => ({ id: m.id, name: m.name })));
+      }
+    } catch (error) {
+      logger.error('Failed to load saved menus', { error });
     }
   };
 
@@ -420,6 +435,7 @@ export function useProposalForm() {
               winery_id: stop.winery_id || null,
               restaurant_id: stop.restaurant_id || null,
               hotel_id: stop.hotel_id || null,
+              saved_menu_id: stop.saved_menu_id || null,
               custom_name: stop.custom_name || null,
               custom_address: stop.custom_address || null,
               scheduled_time: stop.scheduled_time || null,
@@ -485,6 +501,7 @@ export function useProposalForm() {
     wineries,
     restaurants,
     hotels,
+    savedMenus,
     saving,
     activeTab,
     setActiveTab,

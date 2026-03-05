@@ -20,6 +20,7 @@ interface DaysStopsTabProps {
   wineries: Winery[];
   restaurants: Restaurant[];
   hotels: Hotel[];
+  savedMenus: Array<{ id: number; name: string }>;
   addDay: () => Promise<void>;
   addStop: (dayId: number, stopType: string) => Promise<void>;
   updateStop: (dayId: number, stopId: number, updates: Record<string, unknown>) => Promise<void>;
@@ -37,6 +38,7 @@ export const DaysStopsTab = React.memo(function DaysStopsTab({
   wineries,
   restaurants,
   hotels,
+  savedMenus,
   addDay,
   addStop,
   updateStop,
@@ -187,6 +189,24 @@ export const DaysStopsTab = React.memo(function DaysStopsTab({
                       className="px-2 py-1.5 border border-gray-300 rounded text-sm"
                     />
                   </div>
+
+                  {/* Saved Menu Selector */}
+                  {['restaurant', 'winery'].includes(stop.stop_type) && savedMenus.length > 0 && (
+                    <div className="mt-2">
+                      <select
+                        value={stop.saved_menu_id || ''}
+                        onChange={(e) =>
+                          updateStop(day.id, stop.id, { saved_menu_id: parseInt(e.target.value) || null })
+                        }
+                        className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
+                      >
+                        <option value="">Lunch menu (optional)...</option>
+                        {savedMenus.map((m) => (
+                          <option key={m.id} value={m.id}>{m.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
 
                   {/* Cost Note (informational) */}
                   <div className="mt-2">
