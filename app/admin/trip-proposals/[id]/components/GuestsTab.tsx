@@ -348,6 +348,11 @@ export const GuestsTab = React.memo(function GuestsTab({
                     Primary
                   </span>
                 )}
+                {guest.shared_tour_ticket_id && (
+                  <span className="ml-2 px-2 py-0.5 bg-sky-100 text-sky-700 text-xs rounded-full font-medium">
+                    Shared Tour
+                  </span>
+                )}
                 {guest.rsvp_status === 'pending' && guest.is_registered && (
                   <span className="ml-2 px-2 py-0.5 bg-amber-200 text-amber-800 text-xs rounded font-medium">
                     Pending Approval

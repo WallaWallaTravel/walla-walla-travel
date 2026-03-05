@@ -84,6 +84,7 @@ export interface GuestData {
   guest_access_token?: string;
   rsvp_status?: string;
   is_registered?: boolean;
+  shared_tour_ticket_id?: number | null;
 }
 
 export interface InclusionData {

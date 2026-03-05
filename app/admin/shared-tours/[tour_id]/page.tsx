@@ -126,6 +126,7 @@ export default function AdminTourDetailPage({ params }: { params: Promise<{ tour
   // Trip proposal integration state
   const [tripProposalId, setTripProposalId] = useState<number | null>(null);
   const [linkedProposal, setLinkedProposal] = useState<LinkedProposal | null>(null);
+  const [ticketsOnProposal, setTicketsOnProposal] = useState<string[]>([]);
   const [tripProposals, setTripProposals] = useState<TripProposalOption[]>([]);
   const [selectedProposalId, setSelectedProposalId] = useState<string>('');
   const [linkingProposal, setLinkingProposal] = useState(false);
@@ -154,6 +155,7 @@ export default function AdminTourDetailPage({ params }: { params: Promise<{ tour
         setTicketsSold(data.data.tickets_sold || 0);
         setTripProposalId(data.data.trip_proposal_id || null);
         setLinkedProposal(data.data.linked_proposal || null);
+        setTicketsOnProposal(data.data.tickets_on_proposal || []);
       } else {
         const errorMessage = typeof data.error === 'object' && data.error?.message
           ? data.error.message
@@ -630,7 +632,14 @@ export default function AdminTourDetailPage({ params }: { params: Promise<{ tour
                               {ticket.status}
                             </span>
                           </div>
-                          <p className="text-lg font-medium text-slate-900">{ticket.customer_name}</p>
+                          <p className="text-lg font-medium text-slate-900">
+                            {ticket.customer_name}
+                            {ticketsOnProposal.includes(String(ticket.id)) && (
+                              <span className="ml-2 px-2 py-0.5 bg-indigo-100 text-indigo-700 text-xs rounded-full font-medium align-middle">
+                                On Proposal
+                              </span>
+                            )}
+                          </p>
                           <p className="text-sm text-slate-600">{ticket.customer_email}</p>
                           {ticket.customer_phone && (
                             <p className="text-sm text-slate-600">{ticket.customer_phone}</p>
@@ -774,6 +783,9 @@ export default function AdminTourDetailPage({ params }: { params: Promise<{ tour
                           )}
                           {guest.ticket.booked_by_hotel && guest.isMain && (
                             <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">Hotel</span>
+                          )}
+                          {guest.isMain && ticketsOnProposal.includes(String(guest.ticket.id)) && (
+                            <span className="ml-2 text-xs bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded">On Proposal</span>
                           )}
                         </td>
                         <td className="px-4 py-3 text-sm text-slate-600">{guest.ticket.ticket_number}</td>

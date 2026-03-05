@@ -96,6 +96,19 @@ export const GET = withAdminAuth(async (request: NextRequest, _session: AuthSess
     linkedProposal = proposalResult.rows[0] || null;
   }
 
+  // Get ticket IDs that are cross-referenced in trip_proposal_guests (for "On Proposal" badges)
+  const ticketIds = tickets.map((t: { id: string }) => t.id);
+  let ticketsOnProposal: string[] = [];
+  if (ticketIds.length > 0) {
+    const crossRefResult = await query<{ shared_tour_ticket_id: number }>(
+      `SELECT DISTINCT shared_tour_ticket_id
+       FROM trip_proposal_guests
+       WHERE shared_tour_ticket_id = ANY($1::int[])`,
+      [ticketIds]
+    );
+    ticketsOnProposal = crossRefResult.rows.map(r => String(r.shared_tour_ticket_id));
+  }
+
   return NextResponse.json({
     success: true,
     data: {
@@ -107,6 +120,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session: AuthSess
       tickets_sold: currentTicketsSold,
       trip_proposal_id: tripProposalId,
       linked_proposal: linkedProposal,
+      tickets_on_proposal: ticketsOnProposal,
     },
   });
 });
