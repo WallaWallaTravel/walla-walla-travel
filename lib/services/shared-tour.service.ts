@@ -572,12 +572,29 @@ export const sharedTourService = {
       values.push(data.driver_id);
     }
 
-    if (updates.length === 0) {
+    // Handle trip_proposal_id separately (not in the shared_tour_schedule view)
+    const tripProposalIdValue = (data as Record<string, unknown>).trip_proposal_id;
+    const hasTripProposalUpdate = tripProposalIdValue !== undefined;
+
+    if (updates.length === 0 && !hasTripProposalUpdate) {
       return this.getTourById(tourId);
     }
 
     // Get current tour state before update
     const currentTour = await this.getTourById(tourId);
+
+    // Update trip_proposal_id directly on the base table (not available in the view)
+    if (hasTripProposalUpdate) {
+      await query(
+        'UPDATE shared_tours SET trip_proposal_id = $1, updated_at = NOW() WHERE id = $2',
+        [tripProposalIdValue, tourId]
+      );
+    }
+
+    // If no other fields to update via the view, return early
+    if (updates.length === 0) {
+      return this.getTourById(tourId);
+    }
 
     updates.push(`updated_at = NOW()`);
     values.push(tourId);

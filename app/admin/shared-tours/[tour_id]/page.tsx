@@ -74,6 +74,20 @@ interface VehicleInfo {
   available?: boolean;
 }
 
+interface TripProposalOption {
+  id: number;
+  proposal_number: string;
+  title: string;
+  status: string;
+}
+
+interface LinkedProposal {
+  id: number;
+  proposal_number: string;
+  title: string;
+  status: string;
+}
+
 interface DiscountPreview {
   original_base_price: number;
   new_base_price: number;
@@ -109,6 +123,16 @@ export default function AdminTourDetailPage({ params }: { params: Promise<{ tour
   const [showReassignModal, setShowReassignModal] = useState(false);
   const [selectedNewVehicle, setSelectedNewVehicle] = useState<number | null>(null);
 
+  // Trip proposal integration state
+  const [tripProposalId, setTripProposalId] = useState<number | null>(null);
+  const [linkedProposal, setLinkedProposal] = useState<LinkedProposal | null>(null);
+  const [tripProposals, setTripProposals] = useState<TripProposalOption[]>([]);
+  const [selectedProposalId, setSelectedProposalId] = useState<string>('');
+  const [linkingProposal, setLinkingProposal] = useState(false);
+  const [importingGuests, setImportingGuests] = useState(false);
+  const [importResult, setImportResult] = useState<{ imported: number; skipped: number; total_tickets: number } | null>(null);
+  const [proposalSuccess, setProposalSuccess] = useState<string | null>(null);
+
   // Discount modal state
   const [showDiscountModal, setShowDiscountModal] = useState(false);
   const [discountType, setDiscountType] = useState<'flat' | 'percentage'>('flat');
@@ -128,6 +152,8 @@ export default function AdminTourDetailPage({ params }: { params: Promise<{ tour
         setVehicleInfo(data.data.vehicle_info || null);
         setAvailableVehicles(data.data.available_vehicles || []);
         setTicketsSold(data.data.tickets_sold || 0);
+        setTripProposalId(data.data.trip_proposal_id || null);
+        setLinkedProposal(data.data.linked_proposal || null);
       } else {
         const errorMessage = typeof data.error === 'object' && data.error?.message
           ? data.error.message
@@ -144,6 +170,81 @@ export default function AdminTourDetailPage({ params }: { params: Promise<{ tour
   useEffect(() => {
     fetchTourDetails();
   }, [fetchTourDetails]);
+
+  // Fetch trip proposals for the dropdown
+  useEffect(() => {
+    const fetchProposals = async () => {
+      try {
+        const response = await fetch('/api/admin/trip-proposals?limit=200');
+        const data = await response.json();
+        if (data.success) {
+          setTripProposals(data.data.proposals.map((p: TripProposalOption) => ({
+            id: p.id,
+            proposal_number: p.proposal_number,
+            title: p.title,
+            status: p.status,
+          })));
+        }
+      } catch (_err) {
+        // Non-critical - dropdown will just be empty
+      }
+    };
+    fetchProposals();
+  }, []);
+
+  const handleLinkProposal = async (unlinkMode = false) => {
+    const proposalId = unlinkMode ? null : (selectedProposalId ? parseInt(selectedProposalId) : null);
+    setLinkingProposal(true);
+    setError(null);
+    setProposalSuccess(null);
+    setImportResult(null);
+    try {
+      const response = await fetch(`/api/admin/shared-tours/${tour_id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trip_proposal_id: proposalId }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        await fetchTourDetails();
+        setSelectedProposalId('');
+        setProposalSuccess(proposalId ? 'Trip proposal linked successfully' : 'Trip proposal unlinked');
+      } else {
+        setError(data.error || 'Failed to update trip proposal link');
+      }
+    } catch (_err) {
+      setError('Failed to update trip proposal link');
+    } finally {
+      setLinkingProposal(false);
+    }
+  };
+
+  const handleImportGuests = async () => {
+    setImportingGuests(true);
+    setError(null);
+    setProposalSuccess(null);
+    setImportResult(null);
+    try {
+      const response = await fetch(`/api/admin/shared-tours/${tour_id}/import-guests`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await response.json();
+      if (data.success) {
+        setImportResult(data.data);
+        setProposalSuccess(
+          `Imported ${data.data.imported} guest${data.data.imported !== 1 ? 's' : ''}` +
+          (data.data.skipped > 0 ? ` (${data.data.skipped} skipped — already on proposal or missing email)` : '')
+        );
+      } else {
+        setError(data.error || 'Failed to import guests');
+      }
+    } catch (_err) {
+      setError('Failed to import guests');
+    } finally {
+      setImportingGuests(false);
+    }
+  };
 
   const handleCheckIn = async (ticketId: string) => {
     try {
@@ -834,6 +935,122 @@ export default function AdminTourDetailPage({ params }: { params: Promise<{ tour
                     <div className="mt-6">
                       <h3 className="font-semibold text-slate-900 mb-2">Admin Notes</h3>
                       <p className="text-slate-600 bg-slate-50 rounded p-3">{tour.notes}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Trip Proposal Integration Section */}
+              <div className="mt-6 pt-6 border-t border-slate-200">
+                <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                  </svg>
+                  Trip Proposal Integration
+                </h3>
+
+                {/* Success message */}
+                {proposalSuccess && (
+                  <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-2">
+                    <svg className="w-5 h-5 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <p className="text-sm text-green-700">{proposalSuccess}</p>
+                  </div>
+                )}
+
+                {/* Currently linked proposal */}
+                {linkedProposal ? (
+                  <div className="mb-4 bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-indigo-600 font-medium">Linked to Proposal</p>
+                        <p className="font-semibold text-slate-900">
+                          {linkedProposal.proposal_number} — {linkedProposal.title}
+                        </p>
+                        <p className="text-sm text-slate-600">Status: {linkedProposal.status}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Link
+                          href={`/admin/trip-proposals/${linkedProposal.id}`}
+                          className="px-3 py-1.5 text-sm bg-white text-indigo-700 border border-indigo-300 rounded-lg hover:bg-indigo-100 transition-colors font-medium"
+                        >
+                          View Proposal
+                        </Link>
+                        <button
+                          onClick={() => handleLinkProposal(true)}
+                          disabled={linkingProposal}
+                          className="px-3 py-1.5 text-sm bg-white text-red-600 border border-red-300 rounded-lg hover:bg-red-50 transition-colors font-medium disabled:opacity-50"
+                        >
+                          {linkingProposal ? 'Unlinking...' : 'Unlink'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mb-4 bg-slate-50 border border-slate-200 rounded-lg p-4">
+                    <p className="text-sm text-slate-600 mb-3">
+                      No trip proposal linked. Link a proposal to enable guest import and portal access.
+                    </p>
+                    <div className="flex items-center gap-3">
+                      <select
+                        value={selectedProposalId}
+                        onChange={e => setSelectedProposalId(e.target.value)}
+                        className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      >
+                        <option value="">Select a trip proposal...</option>
+                        {tripProposals.map(p => (
+                          <option key={p.id} value={p.id}>
+                            {p.proposal_number} — {p.title} ({p.status})
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => handleLinkProposal(false)}
+                        disabled={!selectedProposalId || linkingProposal}
+                        className="px-4 py-2.5 bg-indigo-600 text-white rounded-lg font-medium shadow-sm hover:bg-indigo-700 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed flex items-center gap-2 text-sm"
+                      >
+                        {linkingProposal && (
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        )}
+                        Link
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Import Guests Button */}
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-slate-900">Import Ticket Holders to Proposal</p>
+                      <p className="text-sm text-slate-600">
+                        {tripProposalId
+                          ? 'Import all ticket holders as guests on the linked trip proposal.'
+                          : 'Link a trip proposal first to enable guest import.'}
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleImportGuests}
+                      disabled={!tripProposalId || importingGuests}
+                      className="px-4 py-2.5 bg-indigo-600 text-white rounded-lg font-medium shadow-sm hover:bg-indigo-700 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed flex items-center gap-2 text-sm"
+                    >
+                      {importingGuests && (
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      )}
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                      </svg>
+                      Import Guests
+                    </button>
+                  </div>
+
+                  {/* Import result */}
+                  {importResult && (
+                    <div className="mt-3 pt-3 border-t border-slate-200 text-sm text-slate-600">
+                      <span className="font-medium">{importResult.imported}</span> imported,{' '}
+                      <span className="font-medium">{importResult.skipped}</span> skipped,{' '}
+                      <span className="font-medium">{importResult.total_tickets}</span> total tickets
                     </div>
                   )}
                 </div>

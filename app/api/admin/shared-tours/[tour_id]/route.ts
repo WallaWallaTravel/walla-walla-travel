@@ -29,6 +29,7 @@ const PatchBodySchema = z.object({
   vehicle_id: z.number().int().positive().optional(),
   driver_id: z.number().int().positive().optional(),
   reassign_vehicle: z.boolean().optional(),
+  trip_proposal_id: z.number().int().positive().nullable().optional(),
 });
 
 /**
@@ -78,6 +79,23 @@ export const GET = withAdminAuth(async (request: NextRequest, _session: AuthSess
   // Get available vehicles for reassignment
   const { vehicles: availableVehicles, currentTicketsSold } = await sharedTourService.getAvailableVehiclesForTour(tour_id);
 
+  // Get trip_proposal_id (not in the view, fetch from base table)
+  const proposalLinkResult = await query<{ trip_proposal_id: number | null }>(
+    'SELECT trip_proposal_id FROM shared_tours WHERE id = $1',
+    [tour_id]
+  );
+  const tripProposalId = proposalLinkResult.rows[0]?.trip_proposal_id || null;
+
+  // If linked to a proposal, get basic proposal info
+  let linkedProposal: { id: number; proposal_number: string; title: string; status: string } | null = null;
+  if (tripProposalId) {
+    const proposalResult = await query<{ id: number; proposal_number: string; title: string; status: string }>(
+      'SELECT id, proposal_number, title, status FROM trip_proposals WHERE id = $1',
+      [tripProposalId]
+    );
+    linkedProposal = proposalResult.rows[0] || null;
+  }
+
   return NextResponse.json({
     success: true,
     data: {
@@ -87,6 +105,8 @@ export const GET = withAdminAuth(async (request: NextRequest, _session: AuthSess
       vehicle_info: vehicleInfo,
       available_vehicles: availableVehicles,
       tickets_sold: currentTicketsSold,
+      trip_proposal_id: tripProposalId,
+      linked_proposal: linkedProposal,
     },
   });
 });
