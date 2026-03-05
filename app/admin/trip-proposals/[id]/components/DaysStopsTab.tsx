@@ -3,7 +3,9 @@
 import React, { useState } from 'react';
 import PhoneInput from '@/components/ui/PhoneInput';
 import { formatDate } from '@/lib/utils/formatters';
-import type { ProposalDetail, Winery, Restaurant, Hotel } from '@/lib/types/proposal-detail';
+import type { ProposalDetail, Winery, Restaurant, Hotel, StopData } from '@/lib/types/proposal-detail';
+import SendRequestModal from '@/components/trip-proposals/SendRequestModal';
+import RequestStatusBadge from '@/components/trip-proposals/RequestStatusBadge';
 
 const STOP_TYPES = [
   { value: 'pickup', label: 'Pickup', icon: '🚗' },
@@ -53,6 +55,8 @@ export const DaysStopsTab = React.memo(function DaysStopsTab({
   // Vendor interaction log: which stop has the log input open
   const [vendorLogStopId, setVendorLogStopId] = useState<number | null>(null);
   const [vendorLogText, setVendorLogText] = useState('');
+  // Send Request modal state
+  const [requestModalStop, setRequestModalStop] = useState<{ stop: StopData; dayDate: string } | null>(null);
 
   const handleDeleteStop = (dayId: number, stopId: number) => {
     if (!confirm('Delete this stop?')) return;
@@ -225,6 +229,7 @@ export const DaysStopsTab = React.memo(function DaysStopsTab({
                   <details className="mt-2 border-t border-gray-200 pt-2">
                     <summary className="text-xs font-bold text-gray-700 cursor-pointer hover:text-gray-900 flex items-center gap-1">
                       Vendor
+                      <RequestStatusBadge status={stop.reservation_status || 'pending'} />
                       {stop.quote_status && stop.quote_status !== 'none' && (
                         <span className={`ml-1 px-1.5 py-0.5 rounded text-xs font-medium ${
                           stop.quote_status === 'paid' ? 'bg-green-100 text-green-800' :
@@ -338,12 +343,20 @@ export const DaysStopsTab = React.memo(function DaysStopsTab({
                             </button>
                           </div>
                         ) : (
-                          <button
-                            onClick={() => { setVendorLogStopId(stop.id); setVendorLogText(''); }}
-                            className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs font-medium"
-                          >
-                            + Log
-                          </button>
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => { setVendorLogStopId(stop.id); setVendorLogText(''); }}
+                              className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs font-medium"
+                            >
+                              + Log
+                            </button>
+                            <button
+                              onClick={() => setRequestModalStop({ stop, dayDate: day.date })}
+                              className="px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded text-xs font-medium"
+                            >
+                              Send Request
+                            </button>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -377,6 +390,25 @@ export const DaysStopsTab = React.memo(function DaysStopsTab({
       >
         + Add Another Day
       </button>
+
+      {/* Send Request Modal */}
+      {requestModalStop && (
+        <SendRequestModal
+          proposalId={proposal.id}
+          stopId={requestModalStop.stop.id}
+          venueName={requestModalStop.stop.winery?.name || requestModalStop.stop.restaurant?.name || requestModalStop.stop.hotel?.name || requestModalStop.stop.custom_name || 'Venue'}
+          vendorEmail={requestModalStop.stop.vendor_email}
+          vendorName={requestModalStop.stop.vendor_name}
+          date={requestModalStop.dayDate}
+          time={requestModalStop.stop.scheduled_time}
+          partySize={proposal.party_size}
+          onClose={() => setRequestModalStop(null)}
+          onSent={() => {
+            setRequestModalStop(null);
+            refetchProposal();
+          }}
+        />
+      )}
     </div>
   );
 });
