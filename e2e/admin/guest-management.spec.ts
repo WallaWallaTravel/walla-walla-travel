@@ -17,18 +17,25 @@ test.describe('Admin Guest Management', () => {
     const ctx = await browser.newContext({
       storageState: 'e2e/.auth/admin.json',
     });
-    const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:4100';
 
     try {
+      // Extract cookies for manual injection (domain mismatch: localhost vs 127.0.0.1)
+      const cookies = await ctx.cookies();
+      const cookieHeader = cookies.map(c => `${c.name}=${c.value}`).join('; ');
+
       const response = await ctx.request.get(
-        `${baseURL}/api/admin/trip-proposals?limit=1`
+        'http://127.0.0.1:4100/api/admin/trip-proposals?limit=1',
+        { headers: { Cookie: cookieHeader } }
       );
+
       if (response.ok()) {
         const json = await response.json();
         const proposals = json.data?.proposals || [];
         if (proposals.length > 0 && proposals[0].id) {
           proposalUrl = `/admin/trip-proposals/${proposals[0].id}`;
         }
+      } else {
+        console.warn('[GuestMgmt beforeAll] API returned', response.status());
       }
     } catch (err) {
       console.warn('[GuestMgmt beforeAll] Failed to fetch proposal:', err);
