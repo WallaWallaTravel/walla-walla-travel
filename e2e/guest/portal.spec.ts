@@ -54,52 +54,35 @@ test.describe('Guest Portal — Invalid Tokens', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Portal with valid token (requires admin auth to set up data)
+// Portal with valid token (uses API to get token — fast)
 // ---------------------------------------------------------------------------
 
 test.describe('Guest Portal — Valid Trip', () => {
-  test.use({
-    storageState: 'e2e/.auth/admin.json',
-  });
+  test.describe.configure({ timeout: 60_000 });
 
   let proposalAccessToken: string | null = null;
 
   test.beforeAll(async ({ browser }) => {
-    const context = await browser.newContext({
+    const ctx = await browser.newContext({
       storageState: 'e2e/.auth/admin.json',
     });
-    const page = await context.newPage();
+    const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:4100';
 
     try {
-      await page.goto('/admin/trip-proposals');
-      await expect(page.getByRole('heading', { name: /Proposals/i }).first()).toBeVisible({
-        timeout: 15_000,
-      });
-
-      const firstProposalLink = page.locator('a[href*="/admin/trip-proposals/"]').first();
-      if (await firstProposalLink.isVisible({ timeout: 5000 }).catch(() => false)) {
-        await firstProposalLink.click();
-        await page.waitForTimeout(2000);
-
-        const guestsTab = page.getByRole('button', { name: /Guests/i });
-        if (await guestsTab.isVisible({ timeout: 3000 }).catch(() => false)) {
-          await guestsTab.click();
-          await page.waitForTimeout(1000);
-
-          const linkInput = page.locator('input[readonly]').first();
-          if (await linkInput.isVisible({ timeout: 3000 }).catch(() => false)) {
-            const linkValue = await linkInput.inputValue();
-            const tokenMatch = linkValue.match(/my-trip\/([A-Za-z0-9]+)/);
-            if (tokenMatch) {
-              proposalAccessToken = tokenMatch[1];
-            }
-          }
+      const response = await ctx.request.get(
+        `${baseURL}/api/admin/trip-proposals?limit=1`
+      );
+      if (response.ok()) {
+        const json = await response.json();
+        const proposals = json.data?.proposals || [];
+        if (proposals.length > 0 && proposals[0].access_token) {
+          proposalAccessToken = proposals[0].access_token;
         }
       }
-    } catch (e) {
-      console.warn('Could not find test proposal for portal tests:', e);
+    } catch (err) {
+      console.warn('[Portal beforeAll] Failed to fetch proposal:', err);
     } finally {
-      await context.close();
+      await ctx.close();
     }
   });
 
@@ -120,7 +103,6 @@ test.describe('Guest Portal — Valid Trip', () => {
     await page.context().clearCookies();
     await page.goto(`/my-trip/${proposalAccessToken}`);
 
-    // Without a guest token, coordinator view passes through to content
     const contentVisible = await Promise.race([
       page.getByText(/Itinerary|Welcome to Your Trip|Trip for/i).first().waitFor({ timeout: 20_000 }).then(() => true),
       page.getByText(/Trip Not Found/i).first().waitFor({ timeout: 20_000 }).then(() => false),
