@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
-import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
+import React from 'react';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 
 interface DeleteConfirmModalProps {
   show: boolean;
@@ -18,52 +18,16 @@ export const DeleteConfirmModal = React.memo(function DeleteConfirmModal({
   proposalNumber,
   loading,
 }: DeleteConfirmModalProps) {
-  const dialogRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!show) return;
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape' && !loading) onClose();
-    }
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [show, loading, onClose]);
-
-  useFocusTrap(dialogRef, show);
-
-  if (!show) return null;
-
   return (
-    <div
-      ref={dialogRef}
-      className="fixed inset-0 z-50 flex items-center justify-center"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="delete-confirm-title"
-    >
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !loading && onClose()} aria-hidden="true" />
-      <div className="relative bg-white rounded-2xl shadow-xl max-w-[calc(100vw-2rem)] sm:max-w-sm w-full mx-4 p-4 sm:p-6">
-        <h2 id="delete-confirm-title" className="text-xl font-bold text-gray-900 mb-2">Delete Proposal</h2>
-        <p className="text-sm text-gray-600 mb-5">
-          Permanently delete <span className="font-semibold">{proposalNumber}</span>? This will remove all days, stops, guests, and pricing data. This action cannot be undone.
-        </p>
-        <div className="flex items-center justify-end gap-3">
-          <button
-            onClick={onClose}
-            disabled={loading}
-            className="px-4 py-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium text-sm disabled:opacity-50"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            disabled={loading}
-            className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold text-sm disabled:opacity-50 transition-colors"
-          >
-            {loading ? 'Deleting...' : 'Delete Permanently'}
-          </button>
-        </div>
-      </div>
-    </div>
+    <ConfirmModal
+      isOpen={show}
+      onClose={onClose}
+      onConfirm={onConfirm}
+      title="Delete Proposal"
+      message={`Permanently delete ${proposalNumber}? This will remove all days, stops, guests, and pricing data. This action cannot be undone.`}
+      confirmLabel={loading ? 'Deleting...' : 'Delete Permanently'}
+      confirmVariant="danger"
+      isLoading={loading}
+    />
   );
 });

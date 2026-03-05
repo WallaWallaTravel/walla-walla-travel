@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { BaseModal } from '@/components/ui/BaseModal';
 import type { RequestType } from '@/lib/types/partner-request';
 
 interface SendRequestModalProps {
@@ -122,112 +123,14 @@ export default function SendRequestModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-bold text-gray-900">Send Partner Request</h2>
-              <p className="text-sm text-gray-600 mt-0.5">{venueName}</p>
-            </div>
-            <button
-              onClick={onClose}
-              className="text-gray-500 hover:text-gray-700 text-xl font-bold leading-none"
-              aria-label="Close"
-            >
-              &times;
-            </button>
-          </div>
-        </div>
-
-        {/* Body */}
-        <div className="px-6 py-4 space-y-4">
-          {error && (
-            <div className="bg-red-50 text-red-700 text-sm px-3 py-2 rounded-lg">
-              {error}
-            </div>
-          )}
-
-          {/* Partner Email */}
-          <div>
-            <label className="block text-sm font-medium text-gray-900 mb-1">
-              Partner Email <span className="text-red-600">*</span>
-            </label>
-            <input
-              type="email"
-              value={partnerEmail}
-              onChange={(e) => setPartnerEmail(e.target.value)}
-              placeholder="contact@venue.com"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            />
-          </div>
-
-          {/* Partner Name */}
-          <div>
-            <label className="block text-sm font-medium text-gray-900 mb-1">
-              Contact Name
-            </label>
-            <input
-              type="text"
-              value={partnerName}
-              onChange={(e) => setPartnerName(e.target.value)}
-              placeholder="Contact person at venue"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            />
-          </div>
-
-          {/* Request Type */}
-          <div>
-            <label className="block text-sm font-medium text-gray-900 mb-1">
-              Request Type
-            </label>
-            <select
-              value={requestType}
-              onChange={(e) => setRequestType(e.target.value as RequestType)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            >
-              {REQUEST_TYPE_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Subject (optional) */}
-          <div>
-            <label className="block text-sm font-medium text-gray-900 mb-1">
-              Subject <span className="text-gray-500 font-normal">(optional)</span>
-            </label>
-            <input
-              type="text"
-              value={requestSubject}
-              onChange={(e) => setRequestSubject(e.target.value)}
-              placeholder="Auto-generated if left blank"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            />
-          </div>
-
-          {/* Message Body */}
-          <div>
-            <label className="block text-sm font-medium text-gray-900 mb-1">
-              Message <span className="text-red-600">*</span>
-            </label>
-            <textarea
-              value={requestBody}
-              onChange={(e) => setRequestBody(e.target.value)}
-              rows={8}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-y"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              This message will be included in the email along with the trip details (date, time, party size).
-            </p>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3">
+    <BaseModal
+      isOpen={true}
+      onClose={onClose}
+      title="Send Partner Request"
+      size="lg"
+      isLoading={sending}
+      footer={
+        <div className="flex items-center justify-end gap-3 border-t border-gray-200 pt-4">
           <button
             onClick={onClose}
             disabled={sending}
@@ -243,7 +146,93 @@ export default function SendRequestModal({
             {sending ? 'Sending...' : 'Send Request'}
           </button>
         </div>
+      }
+    >
+      <p className="text-sm text-gray-600 mb-4">{venueName}</p>
+
+      <div className="space-y-4">
+        {error && (
+          <div className="bg-red-50 text-red-700 text-sm px-3 py-2 rounded-lg">
+            {error}
+          </div>
+        )}
+
+        {/* Partner Email */}
+        <div>
+          <label className="block text-sm font-medium text-gray-900 mb-1">
+            Partner Email <span className="text-red-600">*</span>
+          </label>
+          <input
+            type="email"
+            value={partnerEmail}
+            onChange={(e) => setPartnerEmail(e.target.value)}
+            placeholder="contact@venue.com"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          />
+        </div>
+
+        {/* Partner Name */}
+        <div>
+          <label className="block text-sm font-medium text-gray-900 mb-1">
+            Contact Name
+          </label>
+          <input
+            type="text"
+            value={partnerName}
+            onChange={(e) => setPartnerName(e.target.value)}
+            placeholder="Contact person at venue"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          />
+        </div>
+
+        {/* Request Type */}
+        <div>
+          <label className="block text-sm font-medium text-gray-900 mb-1">
+            Request Type
+          </label>
+          <select
+            value={requestType}
+            onChange={(e) => setRequestType(e.target.value as RequestType)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          >
+            {REQUEST_TYPE_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Subject (optional) */}
+        <div>
+          <label className="block text-sm font-medium text-gray-900 mb-1">
+            Subject <span className="text-gray-500 font-normal">(optional)</span>
+          </label>
+          <input
+            type="text"
+            value={requestSubject}
+            onChange={(e) => setRequestSubject(e.target.value)}
+            placeholder="Auto-generated if left blank"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          />
+        </div>
+
+        {/* Message Body */}
+        <div>
+          <label className="block text-sm font-medium text-gray-900 mb-1">
+            Message <span className="text-red-600">*</span>
+          </label>
+          <textarea
+            value={requestBody}
+            onChange={(e) => setRequestBody(e.target.value)}
+            rows={8}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-y"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            This message will be included in the email along with the trip details (date, time, party size).
+          </p>
+        </div>
       </div>
-    </div>
+    </BaseModal>
   );
 }
