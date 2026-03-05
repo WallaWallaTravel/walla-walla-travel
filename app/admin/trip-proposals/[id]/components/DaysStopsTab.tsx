@@ -6,6 +6,7 @@ import { formatDate } from '@/lib/utils/formatters';
 import type { ProposalDetail, Winery, Restaurant, Hotel, StopData } from '@/lib/types/proposal-detail';
 import SendRequestModal from '@/components/trip-proposals/SendRequestModal';
 import RequestStatusBadge from '@/components/trip-proposals/RequestStatusBadge';
+import VendorThread from '@/components/trip-proposals/VendorThread';
 
 const STOP_TYPES = [
   { value: 'pickup', label: 'Pickup', icon: '🚗' },
@@ -359,6 +360,9 @@ export const DaysStopsTab = React.memo(function DaysStopsTab({
                           </div>
                         )}
                       </div>
+
+                      {/* Conversation Thread */}
+                      <VendorThread proposalId={proposal.id} stopId={stop.id} />
                     </div>
                   </details>
                 </div>

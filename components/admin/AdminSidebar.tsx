@@ -70,6 +70,9 @@ const NAV_ITEMS: NavItem[] = [
   // Partners (admin only) - unchanged
   { label: 'Partners', icon: '🤝', href: '/admin/partners', section: 'Partners', requiredAccess: 'admin' },
 
+  // Communication
+  { label: 'Inbound Emails', icon: '📨', href: '/admin/emails/inbound', section: 'Communication', requiredAccess: 'admin' },
+
   // System (admin only) - expanded to include moved config items
   { label: 'Users', icon: '👥', href: '/admin/users', section: 'System', requiredAccess: 'admin' },
   { label: 'Settings', icon: '⚙️', href: '/admin/settings', section: 'System', requiredAccess: 'admin' },
