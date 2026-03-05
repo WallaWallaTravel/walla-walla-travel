@@ -79,6 +79,11 @@ interface DigestTask {
   title: string;
   due_date: string;
   priority: string;
+  contact_id?: number | null;
+  contact_name?: string | null;
+  deal_id?: number | null;
+  deal_title?: string | null;
+  deal_proposal_id?: number | null;
 }
 
 interface DigestDraft {
@@ -127,8 +132,25 @@ function buildSection(title: string, color: string, items: string[], count: numb
 }
 
 function taskItem(task: DigestTask): string {
+  const contextParts: string[] = [];
+  if (task.contact_name) contextParts.push(escapeHtml(task.contact_name));
+  if (task.deal_title) contextParts.push(escapeHtml(task.deal_title));
+  const contextLine = contextParts.length > 0
+    ? `<p style="margin: 2px 0 0 0; font-size: 12px; color: #374151;">${contextParts.join(' &bull; ')}</p>`
+    : '';
+
+  const taskUrl = task.deal_proposal_id
+    ? `${BASE_URL}/admin/trip-proposals/${task.deal_proposal_id}`
+    : task.contact_id
+      ? `${BASE_URL}/admin/crm/contacts/${task.contact_id}`
+      : '';
+  const titleHtml = taskUrl
+    ? `<a href="${escapeHtml(taskUrl)}" style="color: #111827; text-decoration: underline;">${escapeHtml(task.title)}</a>`
+    : escapeHtml(task.title);
+
   return `<div style="padding: 8px 16px; border-bottom: 1px solid #f3f4f6;">
-          <p style="margin: 0; font-size: 14px; color: #111827;">${escapeHtml(task.title)}</p>
+          <p style="margin: 0; font-size: 14px; color: #111827;">${titleHtml}</p>
+          ${contextLine}
           <p style="margin: 4px 0 0 0; font-size: 12px; color: #6b7280;">Due: ${formatDate(task.due_date)} &bull; Priority: ${escapeHtml(task.priority)}</p>
         </div>`;
 }

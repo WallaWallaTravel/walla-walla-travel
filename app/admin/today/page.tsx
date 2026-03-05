@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { logger } from '@/lib/logger';
@@ -10,6 +10,11 @@ interface Task {
   title: string;
   due_date: string;
   priority: string;
+  contact_id: number | null;
+  contact_name: string | null;
+  deal_id: number | null;
+  deal_title: string | null;
+  deal_proposal_id: number | null;
 }
 
 interface DraftProposal {
@@ -74,6 +79,75 @@ function formatDate(dateStr: string): string {
 
 function getDaysOld(createdAt: string): number {
   return Math.floor((Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function getTaskEntityLink(task: Task): string | null {
+  if (task.deal_proposal_id) return `/admin/trip-proposals/${task.deal_proposal_id}`;
+  if (task.contact_id) return `/admin/crm/contacts/${task.contact_id}`;
+  return null;
+}
+
+function TaskItem({
+  task,
+  dueLabel,
+  actionLoading,
+  onComplete,
+  onSnooze,
+}: {
+  task: Task;
+  dueLabel: ReactNode;
+  actionLoading: string | null;
+  onComplete: (id: number) => void;
+  onSnooze: (id: number) => void;
+}) {
+  const entityLink = getTaskEntityLink(task);
+
+  return (
+    <div className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
+      <div className="flex-1 min-w-0">
+        {entityLink ? (
+          <Link href={entityLink} className="text-sm font-medium text-slate-900 hover:text-[#8B1538] hover:underline truncate block">
+            {task.title}
+          </Link>
+        ) : (
+          <p className="text-sm font-medium text-slate-900 truncate">{task.title}</p>
+        )}
+        {(task.contact_name || task.deal_title) && (
+          <div className="text-xs text-slate-600 mt-0.5 truncate">
+            {task.contact_name && (
+              <Link href={`/admin/crm/contacts/${task.contact_id}`} className="hover:text-[#8B1538]">
+                {task.contact_name}
+              </Link>
+            )}
+            {task.contact_name && task.deal_title && ' \u2022 '}
+            {task.deal_title && <span>{task.deal_title}</span>}
+          </div>
+        )}
+        <div className="flex items-center gap-2 mt-1">
+          {dueLabel}
+          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${PRIORITY_COLORS[task.priority] || PRIORITY_COLORS.normal}`}>
+            {task.priority.toUpperCase()}
+          </span>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 ml-4">
+        <button
+          onClick={() => onComplete(task.id)}
+          disabled={actionLoading === `task-complete-${task.id}`}
+          className="px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 disabled:opacity-50 transition-colors"
+        >
+          Complete
+        </button>
+        <button
+          onClick={() => onSnooze(task.id)}
+          disabled={actionLoading === `task-snooze-${task.id}`}
+          className="px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 transition-colors"
+        >
+          Snooze
+        </button>
+      </div>
+    </div>
+  );
 }
 
 export default function TodayPage() {
@@ -303,33 +377,14 @@ export default function TodayPage() {
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="divide-y divide-slate-100">
                   {data.overdueTasks.map(task => (
-                    <div key={task.id} className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-slate-900 truncate">{task.title}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-xs text-red-700">Due {formatDate(task.due_date)}</span>
-                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${PRIORITY_COLORS[task.priority] || PRIORITY_COLORS.normal}`}>
-                            {task.priority.toUpperCase()}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 ml-4">
-                        <button
-                          onClick={() => completeTask(task.id)}
-                          disabled={actionLoading === `task-complete-${task.id}`}
-                          className="px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 disabled:opacity-50 transition-colors"
-                        >
-                          Complete
-                        </button>
-                        <button
-                          onClick={() => snoozeTask(task.id)}
-                          disabled={actionLoading === `task-snooze-${task.id}`}
-                          className="px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 transition-colors"
-                        >
-                          Snooze
-                        </button>
-                      </div>
-                    </div>
+                    <TaskItem
+                      key={task.id}
+                      task={task}
+                      dueLabel={<span className="text-xs text-red-700">Due {formatDate(task.due_date)}</span>}
+                      actionLoading={actionLoading}
+                      onComplete={completeTask}
+                      onSnooze={snoozeTask}
+                    />
                   ))}
                 </div>
               </div>
@@ -347,33 +402,14 @@ export default function TodayPage() {
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="divide-y divide-slate-100">
                   {data.todayTasks.map(task => (
-                    <div key={task.id} className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-slate-900 truncate">{task.title}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-xs text-amber-700">Due today</span>
-                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${PRIORITY_COLORS[task.priority] || PRIORITY_COLORS.normal}`}>
-                            {task.priority.toUpperCase()}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 ml-4">
-                        <button
-                          onClick={() => completeTask(task.id)}
-                          disabled={actionLoading === `task-complete-${task.id}`}
-                          className="px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 disabled:opacity-50 transition-colors"
-                        >
-                          Complete
-                        </button>
-                        <button
-                          onClick={() => snoozeTask(task.id)}
-                          disabled={actionLoading === `task-snooze-${task.id}`}
-                          className="px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 transition-colors"
-                        >
-                          Snooze
-                        </button>
-                      </div>
-                    </div>
+                    <TaskItem
+                      key={task.id}
+                      task={task}
+                      dueLabel={<span className="text-xs text-amber-700">Due today</span>}
+                      actionLoading={actionLoading}
+                      onComplete={completeTask}
+                      onSnooze={snoozeTask}
+                    />
                   ))}
                 </div>
               </div>

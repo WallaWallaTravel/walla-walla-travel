@@ -278,7 +278,12 @@ export default function CrmDashboardPage() {
                         </div>
                         <div className="font-medium text-slate-900 truncate">{task.title}</div>
                         {task.contact_name && (
-                          <div className="text-sm text-slate-600">{task.contact_name}</div>
+                          <div className="text-sm text-slate-600">
+                            <Link href={`/admin/crm/contacts/${task.contact_id}`} className="hover:text-[#8B1538]">
+                              {task.contact_name}
+                            </Link>
+                            {task.deal_title && <span> &bull; {task.deal_title}</span>}
+                          </div>
                         )}
                       </div>
                     </div>

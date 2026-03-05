@@ -27,21 +27,29 @@ class DailyDigestService extends BaseService {
     // Run all queries in parallel
     const [overdueTasks, todayTasks, draftProposals, upcomingTrips, triggeredReminders] = await Promise.all([
       // Overdue tasks
-      this.queryMany<{ id: number; title: string; due_date: string; priority: string }>(`
-        SELECT id, title, due_date, priority
-        FROM crm_tasks
-        WHERE due_date < $1
-          AND status IN ('pending', 'in_progress')
-        ORDER BY due_date ASC
+      this.queryMany<{ id: number; title: string; due_date: string; priority: string; contact_id: number | null; contact_name: string | null; deal_id: number | null; deal_title: string | null; deal_proposal_id: number | null }>(`
+        SELECT t.id, t.title, t.due_date, t.priority,
+               t.contact_id, c.name as contact_name,
+               t.deal_id, d.title as deal_title, d.trip_proposal_id as deal_proposal_id
+        FROM crm_tasks t
+        LEFT JOIN crm_contacts c ON t.contact_id = c.id
+        LEFT JOIN crm_deals d ON t.deal_id = d.id
+        WHERE t.due_date < $1
+          AND t.status IN ('pending', 'in_progress')
+        ORDER BY t.due_date ASC
       `, [today]),
 
       // Today's tasks
-      this.queryMany<{ id: number; title: string; due_date: string; priority: string }>(`
-        SELECT id, title, due_date, priority
-        FROM crm_tasks
-        WHERE due_date = $1
-          AND status IN ('pending', 'in_progress')
-        ORDER BY priority DESC, created_at ASC
+      this.queryMany<{ id: number; title: string; due_date: string; priority: string; contact_id: number | null; contact_name: string | null; deal_id: number | null; deal_title: string | null; deal_proposal_id: number | null }>(`
+        SELECT t.id, t.title, t.due_date, t.priority,
+               t.contact_id, c.name as contact_name,
+               t.deal_id, d.title as deal_title, d.trip_proposal_id as deal_proposal_id
+        FROM crm_tasks t
+        LEFT JOIN crm_contacts c ON t.contact_id = c.id
+        LEFT JOIN crm_deals d ON t.deal_id = d.id
+        WHERE t.due_date = $1
+          AND t.status IN ('pending', 'in_progress')
+        ORDER BY t.priority DESC, t.created_at ASC
       `, [today]),
 
       // Draft proposals
