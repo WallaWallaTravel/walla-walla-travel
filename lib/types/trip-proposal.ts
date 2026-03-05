@@ -527,6 +527,7 @@ export interface AddStopInput {
   winery_id?: number;
   restaurant_id?: number;
   hotel_id?: number;
+  saved_menu_id?: number;
   custom_name?: string;
   custom_address?: string;
   custom_description?: string;
