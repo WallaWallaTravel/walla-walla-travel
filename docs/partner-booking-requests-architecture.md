@@ -1,6 +1,6 @@
 # Partner Booking Requests — Architecture
 
-> **Status:** Design Document (no code written yet)
+> **Status:** Design Document — Track 1 (foundation) implemented
 > **Created:** 2026-03-04
 > **Purpose:** Enable admin to send customized booking/reservation requests to venue partners (wineries, restaurants, hotels) per itinerary stop, receive structured responses via token-based web forms, and track the conversation thread per stop.
 
