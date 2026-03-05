@@ -12,7 +12,7 @@ import { after } from 'next/server';
 import { withErrorHandling, BadRequestError, NotFoundError, RouteContext } from '@/lib/api/middleware/error-handler';
 import { getBrandStripeClient } from '@/lib/stripe-brands';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
-import { tripProposalEmailService } from '@/lib/services/trip-proposal-email.service';
+import { tripProposalEmailService as _tripProposalEmailService } from '@/lib/services/trip-proposal-email.service';
 import { query, queryOne, withTransaction } from '@/lib/db-helpers';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
