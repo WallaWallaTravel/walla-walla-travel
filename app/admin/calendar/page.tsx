@@ -1,3 +1,23 @@
+/**
+ * Admin Booking Calendar — Unified Operations View
+ *
+ * Displays ALL event types in one calendar:
+ *   - Confirmed bookings (green) — with driver/vehicle assignments
+ *   - Pending bookings (yellow) — awaiting confirmation
+ *   - Completed bookings (blue)
+ *   - Shared tours (sky blue) — with spots remaining count
+ *   - Trip proposals (amber) — pending/sent/accepted proposals
+ *   - Old proposals (blue), Corporate requests (purple), Reservations (amber)
+ *   - Availability blocks: maintenance (orange), blackout (dark), hold (purple)
+ *   - Compliance warnings: expired/critical/urgent/warning badges
+ *
+ * Data sources:
+ *   GET /api/admin/calendar          — bookings, blocks, vehicles, drivers, compliance
+ *   GET /api/admin/calendar/events   — tentative events (proposals, corporate, reservations,
+ *                                       shared tours, trip proposals)
+ *
+ * iCal feeds: /api/calendar/feed/{bookings|driver/[id]|all}?token=xxx
+ */
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -53,7 +73,7 @@ interface DailySummary {
 }
 
 // Tentative event types
-type EventSource = 'proposal' | 'corporate_request' | 'reservation';
+type EventSource = 'proposal' | 'corporate_request' | 'reservation' | 'shared_tour' | 'trip_proposal';
 
 interface TentativeEvent {
   id: string;
@@ -230,6 +250,8 @@ export default function CalendarView() {
       case 'proposal': return 'Proposal';
       case 'corporate_request': return 'Corporate';
       case 'reservation': return 'Reservation';
+      case 'shared_tour': return 'Shared Tour';
+      case 'trip_proposal': return 'Trip Proposal';
       default: return source;
     }
   };
@@ -239,6 +261,8 @@ export default function CalendarView() {
       case 'proposal': return '📄';
       case 'corporate_request': return '🏢';
       case 'reservation': return '📋';
+      case 'shared_tour': return '🌟';
+      case 'trip_proposal': return '📨';
       default: return '📌';
     }
   };
@@ -586,6 +610,14 @@ export default function CalendarView() {
             <span className="text-gray-400">|</span>
             <span className="text-gray-500 font-bold">Tentative:</span>
             <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded" style={{ backgroundColor: '#0EA5E9' }}></div>
+              <span className="text-gray-700">🌟 Shared Tour</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded" style={{ backgroundColor: '#D97706' }}></div>
+              <span className="text-gray-700">📨 Trip Proposal</span>
+            </div>
+            <div className="flex items-center gap-2">
               <div className="w-4 h-4 rounded" style={{ backgroundColor: '#3B82F6' }}></div>
               <span className="text-gray-700">📄 Proposal</span>
             </div>
@@ -805,6 +837,9 @@ export default function CalendarView() {
                         )}
                         <div className="font-bold text-xs truncate">{formatTime(booking.start_time || booking.pickup_time || '')}</div>
                         <div className="text-xs truncate font-semibold">{booking.customer_name}</div>
+                        {booking.driver_name && (
+                          <div className="text-xs truncate text-gray-600">🚐 {booking.driver_name}</div>
+                        )}
                       </div>
                     ))}
                     {dayBookings.length > 2 && (

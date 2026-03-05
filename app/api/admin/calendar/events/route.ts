@@ -14,7 +14,7 @@ import { query } from '@/lib/db';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 
 // Calendar event types
-export type EventSource = 'proposal' | 'corporate_request' | 'reservation';
+export type EventSource = 'proposal' | 'corporate_request' | 'reservation' | 'shared_tour' | 'trip_proposal';
 export type EventType = 'tentative' | 'task';
 
 export interface CalendarEvent {
@@ -39,6 +39,8 @@ const EVENT_COLORS: Record<EventSource, string> = {
   proposal: '#3B82F6',      // Blue
   corporate_request: '#8B5CF6', // Purple
   reservation: '#F59E0B',   // Amber
+  shared_tour: '#0EA5E9',   // Sky blue
+  trip_proposal: '#D97706', // Amber-dark
 };
 
 export const GET = withAdminAuth(async (request: NextRequest, _session) => {
@@ -235,6 +237,90 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
     }
   }
 
+  // 4. Fetch shared tours with spots remaining
+  try {
+    const sharedToursResult = await query(
+      `SELECT id, tour_code, title, tour_date, start_time, max_guests,
+              current_guests, status, driver_id
+       FROM shared_tours
+       WHERE tour_date >= $1 AND tour_date <= $2
+         AND status NOT IN ('cancelled', 'completed')
+       ORDER BY tour_date, start_time`,
+      [startDateStr, endDateStr]
+    );
+
+    for (const tour of sharedToursResult.rows) {
+      const date = tour.tour_date instanceof Date
+        ? tour.tour_date.toISOString().split('T')[0]
+        : String(tour.tour_date).split('T')[0];
+      const spotsRemaining = (tour.max_guests || 14) - (tour.current_guests || 0);
+
+      events.push({
+        id: `shared-tour-${tour.id}`,
+        source: 'shared_tour',
+        sourceId: tour.id,
+        title: `${tour.title} (${spotsRemaining} spots)`,
+        date,
+        startTime: tour.start_time || undefined,
+        status: tour.status || 'scheduled',
+        eventType: 'tentative',
+        color: EVENT_COLORS.shared_tour,
+        partySize: tour.current_guests || 0,
+        link: `/admin/shared-tours/${tour.tour_code}`,
+      });
+    }
+  } catch {
+    // shared_tours table may not exist — skip gracefully
+  }
+
+  // 5. Fetch trip proposals (new system) with dates in range
+  try {
+    const tripProposalsResult = await query(
+      `SELECT id, proposal_number, trip_title, customer_name, start_date, end_date,
+              party_size, status
+       FROM trip_proposals
+       WHERE status NOT IN ('expired', 'declined', 'converted')
+         AND (
+           (start_date >= $1 AND start_date <= $2)
+           OR (end_date >= $1 AND end_date <= $2)
+           OR (start_date <= $1 AND COALESCE(end_date, start_date) >= $2)
+         )
+       ORDER BY start_date`,
+      [startDateStr, endDateStr]
+    );
+
+    for (const tp of tripProposalsResult.rows) {
+      const startDt = tp.start_date instanceof Date
+        ? tp.start_date : new Date(tp.start_date);
+      const endDt = tp.end_date
+        ? (tp.end_date instanceof Date ? tp.end_date : new Date(tp.end_date))
+        : startDt;
+      const current = new Date(startDt);
+
+      while (current <= endDt) {
+        const date = current.toISOString().split('T')[0];
+        if (date >= startDateStr && date <= endDateStr) {
+          events.push({
+            id: `trip-proposal-${tp.id}-${date}`,
+            source: 'trip_proposal',
+            sourceId: tp.id,
+            title: tp.customer_name + (tp.trip_title ? ` — ${tp.trip_title}` : ''),
+            date,
+            status: tp.status || 'draft',
+            eventType: 'tentative',
+            color: EVENT_COLORS.trip_proposal,
+            partySize: tp.party_size,
+            customerName: tp.customer_name,
+            link: `/admin/trip-proposals/${tp.id}`,
+          });
+        }
+        current.setDate(current.getDate() + 1);
+      }
+    }
+  } catch {
+    // trip_proposals table may not exist — skip gracefully
+  }
+
   // Sort events by date
   events.sort((a, b) => a.date.localeCompare(b.date));
 
@@ -260,6 +346,8 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
         proposals: events.filter(e => e.source === 'proposal').length,
         corporateRequests: events.filter(e => e.source === 'corporate_request').length,
         reservations: events.filter(e => e.source === 'reservation').length,
+        sharedTours: events.filter(e => e.source === 'shared_tour').length,
+        tripProposals: events.filter(e => e.source === 'trip_proposal').length,
       },
     },
   });

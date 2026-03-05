@@ -16,6 +16,8 @@ import {
   generateICalendar,
   createBookingEvent,
   createDriverAssignmentEvent,
+  createSharedTourEvent,
+  createTripProposalEvent,
   ICalEvent,
 } from '@/lib/calendar/ical-generator';
 import { logger } from '@/lib/logger';
@@ -237,7 +239,7 @@ export const GET = withErrorHandling<unknown, CalendarRouteParams>(
           }, baseUrl)
         );
 
-        // Add tentative events from proposals
+        // Add tentative events from proposals (old system)
         const proposalsResult = await query(
           `SELECT id, proposal_number, client_name, service_items, status
            FROM proposals
@@ -268,6 +270,160 @@ export const GET = withErrorHandling<unknown, CalendarRouteParams>(
               });
             }
           }
+        }
+
+        // Add shared tours
+        try {
+          const sharedToursResult = await query(
+            `SELECT id, tour_code, title, tour_date, start_time, end_time,
+                    max_guests, current_guests, status
+             FROM shared_tours
+             WHERE status NOT IN ('cancelled', 'completed')
+               AND tour_date >= CURRENT_DATE - INTERVAL '30 days'
+               AND tour_date <= CURRENT_DATE + INTERVAL '90 days'
+             ORDER BY tour_date`,
+            []
+          );
+
+          for (const tour of sharedToursResult.rows) {
+            events.push(
+              createSharedTourEvent({
+                id: tour.id,
+                tour_code: tour.tour_code,
+                title: tour.title,
+                tour_date: tour.tour_date instanceof Date
+                  ? tour.tour_date.toISOString().split('T')[0]
+                  : String(tour.tour_date).split('T')[0],
+                start_time: tour.start_time || '09:00',
+                end_time: tour.end_time,
+                max_guests: tour.max_guests || 14,
+                current_guests: tour.current_guests || 0,
+                status: tour.status,
+              }, baseUrl)
+            );
+          }
+        } catch {
+          // shared_tours table may not exist
+        }
+
+        // Add trip proposals (new system)
+        try {
+          const tripProposalsResult = await query(
+            `SELECT id, proposal_number, customer_name, trip_title, start_date,
+                    end_date, party_size, status
+             FROM trip_proposals
+             WHERE status NOT IN ('expired', 'declined', 'converted')
+               AND start_date >= CURRENT_DATE - INTERVAL '30 days'
+               AND start_date <= CURRENT_DATE + INTERVAL '90 days'
+             ORDER BY start_date`,
+            []
+          );
+
+          for (const tp of tripProposalsResult.rows) {
+            const startDt = tp.start_date instanceof Date
+              ? tp.start_date : new Date(tp.start_date);
+            const endDt = tp.end_date
+              ? (tp.end_date instanceof Date ? tp.end_date : new Date(tp.end_date))
+              : startDt;
+            const current = new Date(startDt);
+
+            while (current <= endDt) {
+              const dateStr = current.toISOString().split('T')[0];
+              events.push(
+                createTripProposalEvent({
+                  id: tp.id,
+                  proposal_number: tp.proposal_number,
+                  customer_name: tp.customer_name || 'Guest',
+                  trip_title: tp.trip_title,
+                  tour_date: dateStr,
+                  party_size: tp.party_size,
+                  status: tp.status,
+                }, baseUrl)
+              );
+              current.setDate(current.getDate() + 1);
+            }
+          }
+        } catch {
+          // trip_proposals table may not exist
+        }
+
+        // Add corporate requests
+        try {
+          const corporateResult = await query(
+            `SELECT id, request_number, company_name, contact_name, party_size,
+                    preferred_dates, status
+             FROM corporate_requests
+             WHERE status NOT IN ('won', 'lost', 'cancelled')
+               AND preferred_dates IS NOT NULL`,
+            []
+          );
+
+          for (const req of corporateResult.rows) {
+            const dates: string[] = [];
+            if (Array.isArray(req.preferred_dates)) {
+              dates.push(...req.preferred_dates.filter((d: unknown) => typeof d === 'string'));
+            } else if (req.preferred_dates?.start) {
+              dates.push(req.preferred_dates.start);
+            }
+
+            for (const d of dates) {
+              const dateStr = d.split('T')[0];
+              const [year, month, day] = dateStr.split('-').map(Number);
+              const dtstart = new Date(Date.UTC(year, month - 1, day, 9, 0));
+              const dtend = new Date(Date.UTC(year, month - 1, day, 17, 0));
+
+              events.push({
+                uid: `corporate-${req.id}-${dateStr}@wallawalla.travel`,
+                summary: `[CORPORATE] ${req.company_name || req.contact_name}${req.party_size ? ` (${req.party_size})` : ''}`,
+                description: `Corporate Request: ${req.request_number}\\nStatus: ${req.status}`,
+                dtstart,
+                dtend,
+                categories: ['Corporate', 'Tentative'],
+                status: 'TENTATIVE',
+                url: `${baseUrl}/admin/corporate/${req.request_number}`,
+              });
+            }
+          }
+        } catch {
+          // corporate_requests table may not exist
+        }
+
+        // Add reservations
+        try {
+          const reservationsResult = await query(
+            `SELECT r.id, r.reservation_number, r.party_size, r.preferred_date,
+                    r.status, c.name as customer_name
+             FROM reservations r
+             LEFT JOIN customers c ON r.customer_id = c.id
+             WHERE r.status NOT IN ('booked', 'cancelled', 'expired')
+               AND r.booking_id IS NULL
+               AND r.preferred_date >= CURRENT_DATE - INTERVAL '30 days'
+               AND r.preferred_date <= CURRENT_DATE + INTERVAL '90 days'`,
+            []
+          );
+
+          for (const res of reservationsResult.rows) {
+            if (!res.preferred_date) continue;
+            const dateStr = res.preferred_date instanceof Date
+              ? res.preferred_date.toISOString().split('T')[0]
+              : String(res.preferred_date).split('T')[0];
+            const [year, month, day] = dateStr.split('-').map(Number);
+            const dtstart = new Date(Date.UTC(year, month - 1, day, 9, 0));
+            const dtend = new Date(Date.UTC(year, month - 1, day, 17, 0));
+
+            events.push({
+              uid: `reservation-${res.id}@wallawalla.travel`,
+              summary: `[RESERVATION] ${res.customer_name || `Res ${res.reservation_number}`}${res.party_size ? ` (${res.party_size})` : ''}`,
+              description: `Reservation: ${res.reservation_number}\\nStatus: ${res.status}`,
+              dtstart,
+              dtend,
+              categories: ['Reservation', 'Tentative'],
+              status: 'TENTATIVE',
+              url: `${baseUrl}/admin/reservations/${res.reservation_number}`,
+            });
+          }
+        } catch {
+          // reservations table may not exist
         }
         break;
       }

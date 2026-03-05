@@ -240,6 +240,68 @@ export function createBookingEvent(booking: {
 }
 
 /**
+ * Create a shared tour event for iCalendar
+ */
+export function createSharedTourEvent(tour: {
+  id: number;
+  tour_code: string;
+  title: string;
+  tour_date: string;
+  start_time: string;
+  end_time?: string;
+  max_guests: number;
+  current_guests: number;
+  status: string;
+}, baseUrl: string): ICalEvent {
+  const [year, month, day] = tour.tour_date.split('-').map(Number);
+  const [startHour, startMinute] = (tour.start_time || '09:00').split(':').map(Number);
+  const [endHour, endMinute] = (tour.end_time || '15:00').split(':').map(Number);
+
+  const dtstart = new Date(Date.UTC(year, month - 1, day, startHour, startMinute));
+  const dtend = new Date(Date.UTC(year, month - 1, day, endHour, endMinute));
+  const spotsRemaining = (tour.max_guests || 14) - (tour.current_guests || 0);
+
+  return {
+    uid: `shared-tour-${tour.id}@wallawalla.travel`,
+    summary: `[SHARED] ${tour.title} (${spotsRemaining} spots left)`,
+    description: `Shared Tour: ${tour.tour_code}\nCapacity: ${tour.current_guests}/${tour.max_guests} guests\nSpots remaining: ${spotsRemaining}\nStatus: ${tour.status}`,
+    dtstart,
+    dtend,
+    categories: ['Shared Tour'],
+    status: tour.status === 'confirmed' ? 'CONFIRMED' : 'TENTATIVE',
+    url: `${baseUrl}/admin/shared-tours/${tour.tour_code}`,
+  };
+}
+
+/**
+ * Create a trip proposal event for iCalendar
+ */
+export function createTripProposalEvent(proposal: {
+  id: number;
+  proposal_number: string;
+  customer_name: string;
+  trip_title?: string;
+  tour_date: string;
+  party_size: number;
+  status: string;
+}, baseUrl: string): ICalEvent {
+  const [year, month, day] = proposal.tour_date.split('-').map(Number);
+  const dtstart = new Date(Date.UTC(year, month - 1, day, 9, 0));
+  const dtend = new Date(Date.UTC(year, month - 1, day, 17, 0));
+
+  return {
+    uid: `trip-proposal-${proposal.id}-${proposal.tour_date}@wallawalla.travel`,
+    summary: `[TRIP PROPOSAL] ${proposal.customer_name}${proposal.trip_title ? ` — ${proposal.trip_title}` : ''} (${proposal.party_size})`,
+    description: `Trip Proposal: ${proposal.proposal_number}\nCustomer: ${proposal.customer_name}\nParty Size: ${proposal.party_size} guests\nStatus: ${proposal.status}`,
+    dtstart,
+    dtend,
+    categories: ['Trip Proposal', 'Tentative'],
+    status: proposal.status === 'accepted' ? 'CONFIRMED' : 'TENTATIVE',
+    url: `${baseUrl}/admin/trip-proposals/${proposal.id}`,
+  };
+}
+
+/**
  * Create a driver assignment event for iCalendar
  */
 export function createDriverAssignmentEvent(booking: {
