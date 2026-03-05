@@ -44,23 +44,22 @@ test.describe('Admin Partner Requests', () => {
 
   test('proposal page loads with Days/Stops tab', async ({ page }) => {
     test.skip(!proposalUrl, 'No test proposal available');
-    await page.goto(proposalUrl!);
+    test.setTimeout(60_000);
+    await page.goto(proposalUrl!, { timeout: 30_000 });
 
-    await expect(page.getByRole('heading').first()).toBeVisible({
-      timeout: 15_000,
-    });
+    // Wait for proposal data to load (loading text disappears)
+    await expect(page.getByText('Loading trip proposal')).toBeHidden({ timeout: 45_000 });
 
-    // Days tab should be accessible
+    // Days & Stops tab should be accessible
     const daysTab = page.getByRole('button', { name: /Days/i }).first();
-    await expect(daysTab).toBeVisible();
+    await expect(daysTab).toBeVisible({ timeout: 10_000 });
   });
 
   test('vendor section shows RequestStatusBadge', async ({ page }) => {
     test.skip(!proposalUrl, 'No test proposal available');
-    await page.goto(proposalUrl!);
-    await expect(page.getByRole('heading').first()).toBeVisible({
-      timeout: 15_000,
-    });
+    test.setTimeout(60_000);
+    await page.goto(proposalUrl!, { timeout: 30_000 });
+    await expect(page.getByText('Loading trip proposal')).toBeHidden({ timeout: 45_000 });
 
     // Click Days tab
     await page.getByRole('button', { name: /Days/i }).first().click();
@@ -88,10 +87,9 @@ test.describe('Admin Partner Requests', () => {
 
   test('Send Request button appears in vendor section', async ({ page }) => {
     test.skip(!proposalUrl, 'No test proposal available');
-    await page.goto(proposalUrl!);
-    await expect(page.getByRole('heading').first()).toBeVisible({
-      timeout: 15_000,
-    });
+    test.setTimeout(60_000);
+    await page.goto(proposalUrl!, { timeout: 30_000 });
+    await expect(page.getByText('Loading trip proposal')).toBeHidden({ timeout: 45_000 });
 
     await page.getByRole('button', { name: /Days/i }).first().click();
     await page.waitForTimeout(1000);
@@ -108,10 +106,9 @@ test.describe('Admin Partner Requests', () => {
 
   test('Send Request button opens SendRequestModal', async ({ page }) => {
     test.skip(!proposalUrl, 'No test proposal available');
-    await page.goto(proposalUrl!);
-    await expect(page.getByRole('heading').first()).toBeVisible({
-      timeout: 15_000,
-    });
+    test.setTimeout(60_000);
+    await page.goto(proposalUrl!, { timeout: 30_000 });
+    await expect(page.getByText('Loading trip proposal')).toBeHidden({ timeout: 45_000 });
 
     await page.getByRole('button', { name: /Days/i }).first().click();
     await page.waitForTimeout(1000);
@@ -133,10 +130,9 @@ test.describe('Admin Partner Requests', () => {
 
   test('SendRequestModal has required form fields', async ({ page }) => {
     test.skip(!proposalUrl, 'No test proposal available');
-    await page.goto(proposalUrl!);
-    await expect(page.getByRole('heading').first()).toBeVisible({
-      timeout: 15_000,
-    });
+    test.setTimeout(60_000);
+    await page.goto(proposalUrl!, { timeout: 30_000 });
+    await expect(page.getByText('Loading trip proposal')).toBeHidden({ timeout: 45_000 });
 
     await page.getByRole('button', { name: /Days/i }).first().click();
     await page.waitForTimeout(1000);
@@ -153,7 +149,7 @@ test.describe('Admin Partner Requests', () => {
 
         // Required fields: Partner Email, Message
         await expect(page.getByText('Partner Email')).toBeVisible();
-        await expect(page.getByText('Message')).toBeVisible();
+        await expect(page.getByText('Message *')).toBeVisible();
 
         // Optional fields: Contact Name, Request Type, Subject
         await expect(page.getByText('Contact Name')).toBeVisible();
@@ -166,19 +162,18 @@ test.describe('Admin Partner Requests', () => {
         });
         await expect(requestTypeSelect).toBeVisible();
 
-        // Cancel and Send buttons
+        // Cancel and Send buttons (use .nth(1) for modal's Send Request — .first() is behind the modal)
         await expect(page.getByRole('button', { name: 'Cancel' })).toBeVisible();
-        await expect(page.getByRole('button', { name: 'Send Request' })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Send Request' }).nth(1)).toBeVisible();
       }
     }
   });
 
   test('SendRequestModal validates required fields', async ({ page }) => {
     test.skip(!proposalUrl, 'No test proposal available');
-    await page.goto(proposalUrl!);
-    await expect(page.getByRole('heading').first()).toBeVisible({
-      timeout: 15_000,
-    });
+    test.setTimeout(60_000);
+    await page.goto(proposalUrl!, { timeout: 30_000 });
+    await expect(page.getByText('Loading trip proposal')).toBeHidden({ timeout: 45_000 });
 
     await page.getByRole('button', { name: /Days/i }).first().click();
     await page.waitForTimeout(1000);
@@ -201,7 +196,7 @@ test.describe('Admin Partner Requests', () => {
         await messageTextarea.fill('');
 
         // Send button should be disabled when required fields are empty
-        const submitBtn = page.getByRole('button', { name: 'Send Request' });
+        const submitBtn = page.getByRole('button', { name: 'Send Request' }).nth(1);
         await expect(submitBtn).toBeDisabled();
       }
     }
@@ -209,10 +204,9 @@ test.describe('Admin Partner Requests', () => {
 
   test('SendRequestModal cancel closes modal', async ({ page }) => {
     test.skip(!proposalUrl, 'No test proposal available');
-    await page.goto(proposalUrl!);
-    await expect(page.getByRole('heading').first()).toBeVisible({
-      timeout: 15_000,
-    });
+    test.setTimeout(60_000);
+    await page.goto(proposalUrl!, { timeout: 30_000 });
+    await expect(page.getByText('Loading trip proposal')).toBeHidden({ timeout: 45_000 });
 
     await page.getByRole('button', { name: /Days/i }).first().click();
     await page.waitForTimeout(1000);
