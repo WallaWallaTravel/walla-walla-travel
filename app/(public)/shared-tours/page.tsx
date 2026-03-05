@@ -150,15 +150,9 @@ export default function SharedToursPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Header */}
-      <header className="bg-white border-b border-slate-200">
+      {/* Title Section */}
+      <div className="bg-white border-b border-slate-200">
         <div className="max-w-4xl mx-auto px-4 py-6">
-          <Link href="/" className="flex items-center gap-2 mb-4">
-            <div className="w-8 h-8 bg-[#E07A5F] rounded flex items-center justify-center">
-              <span className="text-white text-sm font-bold">W</span>
-            </div>
-            <span className="font-medium text-slate-900">Walla Walla Travel</span>
-          </Link>
           <h1 className="text-3xl font-bold text-slate-900 mb-2">
             Shared Wine Tours
           </h1>
@@ -166,7 +160,7 @@ export default function SharedToursPage() {
             Join fellow wine enthusiasts for a curated tasting journey through Walla Walla&apos;s finest wineries.
           </p>
         </div>
-      </header>
+      </div>
 
       {/* Pricing Info */}
       <div className="bg-gradient-to-r from-[#E07A5F]/10 to-[#B87333]/10 border-b border-slate-200">

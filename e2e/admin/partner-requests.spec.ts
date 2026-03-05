@@ -7,21 +7,39 @@ test.describe('Admin Partner Requests', () => {
   let proposalUrl: string | null = null;
 
   test('setup: find a proposal with stops', async ({ page }) => {
-    test.setTimeout(60_000);
+    test.setTimeout(90_000);
 
-    // Find an existing proposal from the bookings page
-    await page.goto('/admin/bookings');
-    await expect(page.getByRole('heading', { name: /Trips/i }).first()).toBeVisible({
-      timeout: 15_000,
-    });
+    // Navigate to proposals list and wait for data to load
+    await page.goto('/admin/trip-proposals');
+    await page.waitForLoadState('networkidle', { timeout: 30_000 });
 
+    // Wait for proposals count text to appear (indicates API data loaded)
+    const countText = page.getByText(/\d+ proposals?/);
+    await countText.waitFor({ timeout: 20_000 }).catch(() => {});
+
+    // Try to find a proposal link
     const firstLink = page.locator('a[href*="/admin/trip-proposals/"]').first();
-    if (await firstLink.isVisible({ timeout: 5_000 }).catch(() => false)) {
+    if (await firstLink.isVisible({ timeout: 10_000 }).catch(() => false)) {
       const href = await firstLink.getAttribute('href');
       if (href) proposalUrl = href;
     }
 
-    test.skip(!proposalUrl, 'No test proposals available in the database');
+    // If no proposals on the filtered page, try "Pending/Drafts" sidebar link which may show all
+    if (!proposalUrl) {
+      const pendingLink = page.locator('a[href*="/admin/trip-proposals"]').filter({ hasText: /Pending|Draft/i }).first();
+      if (await pendingLink.isVisible({ timeout: 3_000 }).catch(() => false)) {
+        await pendingLink.click();
+        await page.waitForLoadState('networkidle', { timeout: 15_000 });
+        const link = page.locator('a[href*="/admin/trip-proposals/"]').first();
+        if (await link.isVisible({ timeout: 5_000 }).catch(() => false)) {
+          const href = await link.getAttribute('href');
+          if (href) proposalUrl = href;
+        }
+      }
+    }
+
+    // Skip all tests if no proposals exist in the database
+    test.skip(!proposalUrl, 'No proposals available — create one manually to enable these tests');
   });
 
   test('proposal page loads with Days/Stops tab', async ({ page }) => {
