@@ -25,7 +25,7 @@ export default function WWCCPartnerPage() {
     <div className={`min-h-screen bg-wwcc-cream ${lora.className}`}>
       {/* ───────────────────────── Header ───────────────────────── */}
       <header className="bg-wwcc-dark">
-        <div className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
           <div>
             <p
               className={`${playfair.className} text-wwcc-cream`}
@@ -45,7 +45,7 @@ export default function WWCCPartnerPage() {
 
       {/* ───────────────────────── Hero ───────────────────────── */}
       <section className="bg-wwcc-dark">
-        <div className="max-w-6xl mx-auto px-6 py-24 md:py-36">
+        <div className="max-w-7xl mx-auto px-6 py-16 md:py-24">
           <div className="max-w-3xl">
             <p
               className="text-wwcc-gold uppercase mb-4"
@@ -88,7 +88,7 @@ export default function WWCCPartnerPage() {
 
       {/* ───────────────────────── Trust Bar ───────────────────────── */}
       <section className="bg-wwcc-feature border-t border-wwcc-dark/10">
-        <div className="max-w-6xl mx-auto px-6 py-5">
+        <div className="max-w-7xl mx-auto px-6 py-5">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
             <div>
               <p
@@ -139,7 +139,7 @@ export default function WWCCPartnerPage() {
       </section>
 
       {/* ───────────────────────── Family Callout ───────────────────────── */}
-      <section className="bg-wwcc-cream py-20 md:py-28">
+      <section className="bg-wwcc-cream py-10 md:py-12">
         <div className="max-w-3xl mx-auto px-6">
           <div className="border-l-4 border-wwcc-gold bg-wwcc-warm rounded-r-lg p-6 md:p-8 shadow-sm">
             <p
@@ -158,9 +158,9 @@ export default function WWCCPartnerPage() {
       </section>
 
       {/* ───────────────────────── Wine Tour Packages ───────────────────────── */}
-      <section id="packages" className="py-20 md:py-28 bg-wwcc-cream">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-14 md:mb-16">
+      <section id="packages" className="py-12 md:py-16 bg-wwcc-cream">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-8 md:mb-10">
             <p
               className="text-wwcc-gold-dark uppercase mb-3"
               style={{ fontSize: '12px', letterSpacing: '0.15em', fontWeight: 500 }}
@@ -307,9 +307,9 @@ export default function WWCCPartnerPage() {
       </section>
 
       {/* ───────────────────────── Geology Tours ───────────────────────── */}
-      <section className="py-20 md:py-28 bg-wwcc-dark">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-14 md:mb-16">
+      <section className="py-12 md:py-16 bg-wwcc-dark">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-8 md:mb-10">
             <p
               className="text-wwcc-gold uppercase mb-3"
               style={{ fontSize: '12px', letterSpacing: '0.15em', fontWeight: 500 }}
@@ -417,9 +417,9 @@ export default function WWCCPartnerPage() {
       </section>
 
       {/* ───────────────────────── Golf Excursions ───────────────────────── */}
-      <section className="py-20 md:py-28 bg-wwcc-cream">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-14 md:mb-16">
+      <section className="py-12 md:py-16 bg-wwcc-cream">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-8 md:mb-10">
             <p
               className="text-wwcc-gold-dark uppercase mb-3"
               style={{ fontSize: '12px', letterSpacing: '0.15em', fontWeight: 500 }}
@@ -577,7 +577,7 @@ export default function WWCCPartnerPage() {
       </section>
 
       {/* ───────────────────────── Dining ───────────────────────── */}
-      <section className="bg-wwcc-dark py-20 md:py-28">
+      <section className="bg-wwcc-dark py-12 md:py-16">
         <div className="max-w-3xl mx-auto px-6 text-center">
           <p
             className="text-wwcc-gold uppercase mb-3"
@@ -604,9 +604,9 @@ export default function WWCCPartnerPage() {
       </section>
 
       {/* ───────────────────────── How It Works ───────────────────────── */}
-      <section className="py-20 md:py-28 bg-wwcc-cream">
-        <div className="max-w-5xl mx-auto px-6">
-          <div className="text-center mb-14 md:mb-16">
+      <section className="py-12 md:py-16 bg-wwcc-cream">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="text-center mb-8 md:mb-10">
             <h2
               className={`${playfair.className} text-wwcc-dark`}
               style={{ fontSize: '32px', lineHeight: 1.1, letterSpacing: '-0.02em', fontWeight: 400 }}
@@ -675,7 +675,7 @@ export default function WWCCPartnerPage() {
       </section>
 
       {/* ───────────────────────── Final CTA ───────────────────────── */}
-      <section className="bg-wwcc-dark py-20 md:py-28">
+      <section className="bg-wwcc-dark py-12 md:py-16">
         <div className="max-w-3xl mx-auto px-6 text-center">
           <h2
             className={`${playfair.className} text-wwcc-cream mb-4`}
@@ -715,7 +715,7 @@ export default function WWCCPartnerPage() {
 
       {/* ───────────────────────── Footer ───────────────────────── */}
       <footer className="bg-wwcc-dark border-t border-wwcc-cream/10 py-12">
-        <div className="max-w-6xl mx-auto px-6">
+        <div className="max-w-7xl mx-auto px-6">
           <div className="grid md:grid-cols-3 gap-8 mb-10">
             <div>
               <p
