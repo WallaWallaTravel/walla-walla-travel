@@ -58,6 +58,6 @@ ALTER TABLE guest_magic_links ENABLE ROW LEVEL SECURITY;
 -- Track migration
 -- ============================================================================
 
-INSERT INTO _migrations (name, applied_at)
-VALUES ('115-guest-profiles', NOW())
-ON CONFLICT (name) DO NOTHING;
+INSERT INTO _migrations (id, migration_name, applied_at)
+VALUES (116, '115-guest-profiles', NOW())
+ON CONFLICT (migration_name) DO NOTHING;
