@@ -10,9 +10,12 @@ import { query, queryOne, withTransaction } from '@/lib/db-helpers';
 import { logger } from '@/lib/logger';
 import { sendBookingConfirmationEmail } from '@/lib/services/email-automation.service';
 import { sharedTourService } from '@/lib/services/shared-tour.service';
-import { sendSharedTourConfirmationEmail } from '@/lib/email/templates/shared-tour-confirmation';
+import { SharedTourTicket } from '@/lib/services/shared-tour.service';
+import { sendSharedTourConfirmationEmail, PortalLinkInfo } from '@/lib/email/templates/shared-tour-confirmation';
 import { sendPartnerPaymentReceivedEmail } from '@/lib/email/templates/partner-payment-received';
 import { tipService } from '@/lib/services/tip.service';
+import { tripProposalService } from '@/lib/services/trip-proposal.service';
+import { guestProfileService } from '@/lib/services/guest-profile.service';
 
 /**
  * Handle payment_intent.succeeded — routes to the correct sub-handler
@@ -333,11 +336,23 @@ async function handleSharedTourPaymentSuccess(paymentIntent: Stripe.PaymentInten
     return;
   }
 
+  // Auto-create trip_proposal_guest records (non-blocking)
+  let portalInfo: PortalLinkInfo | null = null;
   try {
-    await sendSharedTourConfirmationEmail(ticket.id);
+    portalInfo = await autoCreateProposalGuests(ticket);
+  } catch (error) {
+    logger.error('[Stripe Webhook] Failed to auto-create proposal guests', {
+      ticketId: ticket.id,
+      error,
+    });
+  }
+
+  try {
+    await sendSharedTourConfirmationEmail(ticket.id, portalInfo);
     logger.info('[Stripe Webhook] Sent shared tour confirmation email', {
       ticketId: ticket.id,
       customerEmail: ticket.customer_email,
+      hasPortalLink: !!portalInfo,
     });
   } catch (error) {
     logger.error('[Stripe Webhook] Failed to send shared tour confirmation email', {
@@ -355,6 +370,139 @@ async function handleSharedTourPaymentSuccess(paymentIntent: Stripe.PaymentInten
       error,
     });
   }
+}
+
+/**
+ * Auto-create trip_proposal_guest records when a shared tour ticket is purchased
+ * and the tour is linked to a trip proposal.
+ *
+ * Returns portal link info if guests were successfully created, null otherwise.
+ */
+async function autoCreateProposalGuests(ticket: SharedTourTicket): Promise<PortalLinkInfo | null> {
+  // Look up the shared tour's trip_proposal_id
+  const tour = await queryOne<{ trip_proposal_id: number | null }>(
+    'SELECT trip_proposal_id FROM shared_tours WHERE id = $1',
+    [ticket.tour_id]
+  );
+
+  if (!tour?.trip_proposal_id) {
+    logger.info('[Shared Tour] No trip_proposal_id set on tour, skipping guest creation', {
+      ticketId: ticket.id,
+      tourId: ticket.tour_id,
+    });
+    return null;
+  }
+
+  const proposalId = tour.trip_proposal_id;
+
+  // Verify the proposal exists
+  const proposal = await tripProposalService.getById(proposalId);
+  if (!proposal) {
+    logger.warn('[Shared Tour] Linked trip proposal not found', { proposalId, ticketId: ticket.id });
+    return null;
+  }
+
+  // Check if primary guest already exists on proposal (by email)
+  if (ticket.customer_email) {
+    const alreadyExists = await tripProposalService.isEmailRegistered(
+      proposalId,
+      ticket.customer_email
+    );
+    if (alreadyExists) {
+      logger.info('[Shared Tour] Primary guest already on proposal, skipping', {
+        ticketId: ticket.id,
+        email: ticket.customer_email,
+        proposalId,
+      });
+      // Still return portal info so email can include the link
+      const existingGuest = await queryOne<{ guest_access_token: string }>(
+        'SELECT guest_access_token FROM trip_proposal_guests WHERE trip_proposal_id = $1 AND LOWER(email) = LOWER($2)',
+        [proposalId, ticket.customer_email]
+      );
+      if (existingGuest) {
+        return {
+          proposalAccessToken: proposal.access_token,
+          primaryGuestAccessToken: existingGuest.guest_access_token,
+        };
+      }
+      return null;
+    }
+  }
+
+  // Find or create guest profile for linking
+  let guestProfileId: number | undefined;
+  if (ticket.customer_email) {
+    try {
+      const profile = await guestProfileService.findOrCreateByEmail(
+        ticket.customer_email,
+        { name: ticket.customer_name, phone: ticket.customer_phone }
+      );
+      guestProfileId = profile.id;
+    } catch (err) {
+      logger.error('[Shared Tour] Failed to find/create guest profile', { error: err });
+    }
+  }
+
+  // Create primary guest on proposal
+  const primaryGuest = await tripProposalService.addGuest(proposalId, {
+    name: ticket.customer_name,
+    email: ticket.customer_email || undefined,
+    phone: ticket.customer_phone || undefined,
+    is_primary: false,
+    dietary_restrictions: ticket.dietary_restrictions || undefined,
+  });
+
+  // Link shared_tour_ticket_id and guest_profile_id on the primary guest
+  await query(
+    `UPDATE trip_proposal_guests
+     SET shared_tour_ticket_id = $1${guestProfileId ? ', guest_profile_id = $3' : ''}
+     WHERE id = $2`,
+    guestProfileId
+      ? [ticket.id, primaryGuest.id, guestProfileId]
+      : [ticket.id, primaryGuest.id]
+  );
+
+  logger.info('[Shared Tour] Created primary proposal guest from ticket', {
+    ticketId: ticket.id,
+    proposalId,
+    guestId: primaryGuest.id,
+    guestAccessToken: primaryGuest.guest_access_token,
+  });
+
+  // Create additional guests if any
+  if (ticket.guest_names && ticket.guest_names.length > 0) {
+    for (const guestName of ticket.guest_names) {
+      if (!guestName) continue;
+      try {
+        const additionalGuest = await tripProposalService.addGuest(proposalId, {
+          name: guestName,
+          is_primary: false,
+        });
+        // Link shared_tour_ticket_id on additional guest
+        await query(
+          'UPDATE trip_proposal_guests SET shared_tour_ticket_id = $1 WHERE id = $2',
+          [ticket.id, additionalGuest.id]
+        );
+        logger.info('[Shared Tour] Created additional proposal guest from ticket', {
+          ticketId: ticket.id,
+          proposalId,
+          guestId: additionalGuest.id,
+          guestName,
+        });
+      } catch (err) {
+        logger.error('[Shared Tour] Failed to create additional proposal guest', {
+          ticketId: ticket.id,
+          guestName,
+          error: err,
+        });
+      }
+    }
+  }
+
+  return {
+    proposalAccessToken: proposal.access_token,
+    primaryGuestAccessToken: primaryGuest.guest_access_token,
+  };
 }
 
 async function handleSharedTourPaymentFailed(paymentIntent: Stripe.PaymentIntent) {
@@ -555,12 +703,7 @@ async function handleTripProposalPaymentSuccess(paymentIntent: Stripe.PaymentInt
       ON CONFLICT DO NOTHING`,
       [tripProposalId, amount / 100, id],
       client
-    ).catch((err) => {
-      logger.warn('[Stripe Webhook] Could not insert payment record for trip proposal', {
-        error: String(err),
-        tripProposalId,
-      });
-    });
+    );
   });
 
   try {

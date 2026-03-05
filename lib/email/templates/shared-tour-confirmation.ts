@@ -10,6 +10,15 @@ import { sharedTourService } from '@/lib/services/shared-tour.service';
 import { logger } from '@/lib/logger';
 import { emailDarkModeStyles } from '@/lib/email/dark-mode-styles';
 
+/**
+ * Portal link info for guest access to the trip portal.
+ * Passed from the payment handler when a proposal guest is auto-created.
+ */
+export interface PortalLinkInfo {
+  proposalAccessToken: string;
+  primaryGuestAccessToken: string;
+}
+
 const COMPANY_NAME = 'Walla Walla Travel';
 const COMPANY_PHONE = '(509) 200-8000';
 const COMPANY_EMAIL = 'info@wallawalla.travel';
@@ -44,7 +53,7 @@ interface TicketDetails {
 /**
  * Send shared tour confirmation email after payment
  */
-export async function sendSharedTourConfirmationEmail(ticketId: string): Promise<boolean> {
+export async function sendSharedTourConfirmationEmail(ticketId: string, portalInfo?: PortalLinkInfo | null): Promise<boolean> {
   try {
     // Get ticket details
     const ticket = await sharedTourService.getTicketById(ticketId) as TicketDetails | null;
@@ -83,12 +92,19 @@ export async function sendSharedTourConfirmationEmail(ticketId: string): Promise
     const hour12 = hour % 12 || 12;
     const formattedTime = `${hour12}:${minutes} ${ampm}`;
 
+    // Build portal URL if guest was linked to a trip proposal
+    let portalUrl: string | null = null;
+    if (portalInfo) {
+      portalUrl = `${appUrl}/my-trip/${portalInfo.proposalAccessToken}?guest=${portalInfo.primaryGuestAccessToken}`;
+    }
+
     const html = generateConfirmationHtml({
       ticket,
       tourDetails,
       formattedDate,
       formattedTime,
       ticketUrl,
+      portalUrl,
     });
 
     const text = generateConfirmationText({
@@ -97,6 +113,7 @@ export async function sendSharedTourConfirmationEmail(ticketId: string): Promise
       formattedDate,
       formattedTime,
       ticketUrl,
+      portalUrl,
     });
 
     return await sendEmail({
@@ -117,12 +134,14 @@ function generateConfirmationHtml({
   formattedDate,
   formattedTime,
   ticketUrl,
+  portalUrl,
 }: {
   ticket: TicketDetails;
   tourDetails: TourDetails;
   formattedDate: string;
   formattedTime: string;
   ticketUrl: string;
+  portalUrl: string | null;
 }): string {
   const guestList = ticket.guest_names && ticket.guest_names.length > 0
     ? [ticket.customer_name, ...ticket.guest_names].filter(Boolean)
@@ -252,6 +271,19 @@ function generateConfirmationHtml({
             </ul>
           </div>
 
+          ${portalUrl ? `
+          <!-- Trip Portal Link -->
+          <div class="em-card" style="background: #f0f9ff; border: 2px solid #0ea5e9; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+            <h3 style="color: #0c4a6e; margin: 0 0 12px 0; font-size: 14px; font-weight: bold;">📋 View Your Trip Details</h3>
+            <p style="color: #1e3a5f; font-size: 14px; line-height: 1.6; margin: 0 0 16px 0;">
+              Access your full tour itinerary, select lunch options, and manage your trip details through your personal trip portal.
+            </p>
+            <div style="text-align: center;">
+              <a href="${portalUrl}" style="display: inline-block; background: #0ea5e9; color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-size: 14px; font-weight: bold;">View Trip Portal</a>
+            </div>
+          </div>
+          ` : ''}
+
           <!-- CTA Button -->
           <div style="text-align: center; margin-top: 32px;">
             <a href="${ticketUrl}" style="display: inline-block; background: #8B1538; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-size: 16px; font-weight: bold;">View Your Ticket</a>
@@ -282,12 +314,14 @@ function generateConfirmationText({
   formattedDate,
   formattedTime,
   ticketUrl,
+  portalUrl,
 }: {
   ticket: TicketDetails;
   tourDetails: TourDetails;
   formattedDate: string;
   formattedTime: string;
   ticketUrl: string;
+  portalUrl: string | null;
 }): string {
   const guestList = ticket.guest_names && ticket.guest_names.length > 0
     ? [ticket.customer_name, ...ticket.guest_names].filter(Boolean)
@@ -342,7 +376,14 @@ WHAT TO BRING
 • Water bottle
 • Your sense of adventure!
 
-View your ticket: ${ticketUrl}
+${portalUrl ? `
+─────────────────────────────────
+VIEW YOUR TRIP DETAILS
+─────────────────────────────────
+Access your full tour itinerary, select lunch options, and manage your trip details:
+${portalUrl}
+
+` : ''}View your ticket: ${ticketUrl}
 
 Questions? Reply to this email or call us at ${COMPANY_PHONE}
 
