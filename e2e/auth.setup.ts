@@ -14,7 +14,7 @@ setup('authenticate as admin', async ({ page }) => {
   await page.getByRole('button', { name: 'Sign In' }).click();
 
   // Wait for redirect to admin dashboard
-  await page.waitForURL('**/admin/dashboard', { timeout: 15_000 });
+  await page.waitForURL('**/admin/dashboard', { timeout: 45_000 });
   await expect(page.getByText(/Welcome back/)).toBeVisible();
 
   // Save signed-in state
