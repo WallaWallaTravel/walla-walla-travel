@@ -51,6 +51,24 @@ restore_stash() {
 
 # ── Run checks ───────────────────────────────────────────────────────────────
 
+# Clean .next cache to avoid stale build artifacts
+rm -rf .next
+
+# Check for duplicate migration number prefixes in staged files
+STAGED_MIGRATIONS=$(echo "$STAGED_FILES" | grep '^migrations/' || true)
+if [ -n "$STAGED_MIGRATIONS" ]; then
+  DUPES=$(ls migrations/ 2>/dev/null | sed 's/-.*//' | sort | uniq -d)
+  if [ -n "$DUPES" ]; then
+    echo ""
+    echo "WARNING: Duplicate migration number prefixes detected:"
+    for d in $DUPES; do
+      echo "  $d: $(ls migrations/ | grep "^${d}-")"
+    done
+    echo "Run ./scripts/next-migration.sh to get the next available number."
+    echo ""
+  fi
+fi
+
 # Type-check (catches real code errors)
 echo "Checking types..."
 npx tsc --noEmit

@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+echo "=== Cleaning .next cache ==="
+rm -rf .next
+
 echo "=== Type Check ==="
 npx tsc --noEmit
 
