@@ -18,7 +18,7 @@ export const POST = withCSRF(
   async (request: NextRequest, context: RouteContext<RouteParams>) => {
     const { slug } = await context.params;
     const body = await request.json();
-    const { type } = trackEventSchema.parse(body);
+    const { type, source } = trackEventSchema.parse(body);
 
     // Look up event by slug to get its ID
     const event = await eventsService.getBySlug(slug);
@@ -26,10 +26,14 @@ export const POST = withCSRF(
       throw new NotFoundError('Event not found');
     }
 
+    // Capture referrer and ref query param
+    const referrer = request.headers.get('referer') || null;
+    const refParam = request.nextUrl.searchParams.get('ref') || source || null;
+
     if (type === 'view') {
-      await eventsService.trackView(event.id);
+      await eventsService.trackView(event.id, refParam, referrer);
     } else {
-      await eventsService.trackClick(event.id);
+      await eventsService.trackClick(event.id, refParam, referrer);
     }
 
     return NextResponse.json({
