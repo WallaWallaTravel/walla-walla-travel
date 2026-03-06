@@ -27,6 +27,7 @@ interface GroupAnnouncementOptions {
   message: string;
   portalUrl?: string;
   brandId?: number;
+  unsubscribeUrl?: string;
 }
 
 export function buildGroupAnnouncementEmail(options: GroupAnnouncementOptions): {
@@ -101,6 +102,7 @@ ${bodyHtml}
       <p style="margin: 16px 0 0 0; font-size: 12px; color: #6b7280;">
         ${brand.name} &bull; ${brand.website}
       </p>
+${options.unsubscribeUrl ? `      <p style="margin: 12px 0 0 0; font-size: 11px; color: #9ca3af;"><a href="${options.unsubscribeUrl}" style="color: #9ca3af; text-decoration: underline;">Unsubscribe</a> from marketing emails</p>` : ''}
     </div>
 
   </div>
@@ -120,7 +122,7 @@ ${brand.signature}
 
 ---
 ${brand.phone} | ${brand.reply_to}
-${brand.name} | ${brand.website}`;
+${brand.name} | ${brand.website}${options.unsubscribeUrl ? `\nUnsubscribe: ${options.unsubscribeUrl}` : ''}`;
 
   return {
     subject: `Update from ${options.senderName}: ${options.tripTitle}`,

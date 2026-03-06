@@ -11,7 +11,9 @@ import { withCSRF } from '@/lib/api/middleware/csrf';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import { buildGroupAnnouncementEmail } from '@/lib/email/templates/group-announcement-emails';
 import { sendEmail } from '@/lib/email';
+import { emailPreferencesService } from '@/lib/services/email-preferences.service';
 import { logger } from '@/lib/logger';
+import { query } from '@/lib/db-helpers';
 import { z } from 'zod';
 
 interface RouteParams {
@@ -79,6 +81,17 @@ export const POST = withCSRF(
     const errors: string[] = [];
 
     for (const guest of guestsWithEmail) {
+      // CAN-SPAM: skip guests who have unsubscribed
+      if (await emailPreferencesService.isUnsubscribed(guest.email!)) {
+        logger.info('[Announce] Skipping unsubscribed guest', { email: guest.email, proposalId });
+        continue;
+      }
+
+      // Get unsubscribe token/URL/headers
+      const pref = await emailPreferencesService.getOrCreatePreference(guest.email!);
+      const unsubscribeUrl = emailPreferencesService.getUnsubscribeUrl(pref.unsubscribe_token);
+      const headers = emailPreferencesService.getUnsubscribeHeaders(pref.unsubscribe_token);
+
       const portalUrl = guest.guest_access_token
         ? `${BASE_URL}/my-trip/${proposal.access_token}?guest=${guest.guest_access_token}`
         : undefined;
@@ -91,6 +104,7 @@ export const POST = withCSRF(
         message,
         portalUrl,
         brandId: proposal.brand_id ?? undefined,
+        unsubscribeUrl,
       });
 
       const success = await sendEmail({
@@ -98,6 +112,7 @@ export const POST = withCSRF(
         subject: subject || emailContent.subject,
         html: emailContent.html,
         text: emailContent.text,
+        headers,
       });
 
       if (success) {
@@ -108,6 +123,17 @@ export const POST = withCSRF(
           proposalId,
           guestEmail: guest.email,
         });
+      }
+
+      // Log to email_logs for audit trail
+      try {
+        await query(
+          `INSERT INTO email_logs (trip_proposal_id, email_type, recipient, subject, sent_at, status)
+           VALUES ($1, 'group_announcement', $2, $3, NOW(), $4)`,
+          [proposalId, guest.email, subject || emailContent.subject, success ? 'sent' : 'failed']
+        );
+      } catch {
+        // Non-critical — don't fail the announcement if logging fails
       }
     }
 
