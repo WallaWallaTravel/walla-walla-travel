@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { logger } from '@/lib/logger';
+import { getApiErrorMessage } from '@/lib/utils/error-messages';
 
 interface FeedbackItem {
   id: number;
@@ -93,12 +94,12 @@ export function ProposalFeedbackPanel({
         await loadFeedback(); // Reload to show new feedback
         setTimeout(() => setSubmitSuccess(false), 3000);
       } else {
-        const error = await response.json();
-        alert(error.message || 'Failed to submit feedback');
+        const errorData = await response.json().catch(() => ({}));
+        alert(getApiErrorMessage(errorData, 'Failed to submit feedback'));
       }
     } catch (error) {
       logger.error('Failed to submit feedback', { error, proposalId });
-      alert('Failed to submit feedback. Please try again.');
+      alert(getApiErrorMessage(error, 'Failed to submit feedback'));
     } finally {
       setIsSubmitting(false);
     }

@@ -9,6 +9,7 @@
 import { useState, useCallback } from 'react';
 import { apiPost, apiPatch, apiDelete } from '@/lib/utils/fetch-utils';
 import { logger } from '@/lib/logger';
+import { getApiErrorMessage } from '@/lib/utils/error-messages';
 import type { ProposalDetail, ToastFn } from '@/lib/types/proposal-detail';
 
 interface AddGuestData {
@@ -69,7 +70,7 @@ export function useGuestManagement(
         }
       } catch (error) {
         logger.error('Failed to add guest', { error });
-        toast('Failed to add guest', 'error');
+        toast(getApiErrorMessage(error, 'Failed to add guest'), 'error');
         return false;
       } finally {
         setLoading('addGuest', false);
@@ -140,8 +141,8 @@ export function useGuestManagement(
           await refetchProposal();
           toast('Guest approved', 'success');
         }
-      } catch {
-        toast('Failed to approve', 'error');
+      } catch (error) {
+        toast(getApiErrorMessage(error, 'Failed to approve guest'), 'error');
       } finally {
         setLoading(`approveGuest_${guestId}`, false);
       }
@@ -162,8 +163,8 @@ export function useGuestManagement(
           await refetchProposal();
           toast('Guest rejected', 'success');
         }
-      } catch {
-        toast('Failed to reject', 'error');
+      } catch (error) {
+        toast(getApiErrorMessage(error, 'Failed to reject guest'), 'error');
       } finally {
         setLoading(`rejectGuest_${guestId}`, false);
       }

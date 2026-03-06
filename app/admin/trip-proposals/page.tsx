@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { logger } from '@/lib/logger';
+import { getApiErrorMessage } from '@/lib/utils/error-messages';
 import { useToast } from '@/lib/hooks/useToast';
 import { ToastContainer } from '@/components/ui/ToastContainer';
 import { TRIP_TYPE_OPTIONS } from '@/lib/types/trip-proposal';
@@ -306,11 +307,11 @@ function ProposalsPageContent() {
         toast('Estimate deleted', 'success');
         loadEstimates();
       } else {
-        toast(result.error?.message || 'Failed to delete', 'error');
+        toast(getApiErrorMessage(result.error, 'Failed to delete estimate'), 'error');
       }
     } catch (error) {
       logger.error('Failed to delete estimate', { error });
-      toast('Failed to delete estimate', 'error');
+      toast(getApiErrorMessage(error, 'Failed to delete estimate'), 'error');
     }
   };
 
@@ -323,11 +324,11 @@ function ProposalsPageContent() {
         toast('Proposal deleted', 'success');
         loadProposals();
       } else {
-        toast(result.error || 'Failed to delete', 'error');
+        toast(getApiErrorMessage(result, 'Failed to delete proposal'), 'error');
       }
     } catch (error) {
       logger.error('Failed to delete proposal', { error });
-      toast('Failed to delete proposal', 'error');
+      toast(getApiErrorMessage(error, 'Failed to delete proposal'), 'error');
     }
   };
 
@@ -342,11 +343,11 @@ function ProposalsPageContent() {
         toast(`Proposal ${result.data.proposal_number} created!`, 'success');
         router.push(`/admin/trip-proposals/${result.data.proposal_id}`);
       } else {
-        toast(result.error?.message || 'Failed to convert', 'error');
+        toast(getApiErrorMessage(result.error, 'Failed to convert estimate'), 'error');
       }
     } catch (error) {
       logger.error('Failed to convert estimate', { error });
-      toast('Failed to convert estimate', 'error');
+      toast(getApiErrorMessage(error, 'Failed to convert estimate'), 'error');
     }
   };
 
@@ -358,11 +359,11 @@ function ProposalsPageContent() {
         toast('Proposal archived', 'success');
         loadProposals();
       } else {
-        toast(result.error || 'Failed to archive', 'error');
+        toast(getApiErrorMessage(result, 'Failed to archive proposal'), 'error');
       }
     } catch (error) {
       logger.error('Failed to archive proposal', { error });
-      toast('Failed to archive proposal', 'error');
+      toast(getApiErrorMessage(error, 'Failed to archive proposal'), 'error');
     }
   };
 
@@ -374,11 +375,11 @@ function ProposalsPageContent() {
         toast('Proposal unarchived', 'success');
         loadProposals();
       } else {
-        toast(result.error || 'Failed to unarchive', 'error');
+        toast(getApiErrorMessage(result, 'Failed to unarchive proposal'), 'error');
       }
     } catch (error) {
       logger.error('Failed to unarchive proposal', { error });
-      toast('Failed to unarchive proposal', 'error');
+      toast(getApiErrorMessage(error, 'Failed to unarchive proposal'), 'error');
     }
   };
 

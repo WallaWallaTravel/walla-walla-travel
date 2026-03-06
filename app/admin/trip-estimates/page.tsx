@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { logger } from '@/lib/logger';
+import { getApiErrorMessage } from '@/lib/utils/error-messages';
 
 interface TripEstimate {
   id: number;
@@ -74,11 +75,11 @@ export default function TripEstimatesPage() {
       if (result.success) {
         loadEstimates();
       } else {
-        alert(result.error?.message || result.error || 'Failed to delete estimate');
+        alert(getApiErrorMessage(result.error, 'Failed to delete estimate'));
       }
     } catch (error) {
       logger.error('Failed to delete trip estimate', { error });
-      alert('Failed to delete estimate');
+      alert(getApiErrorMessage(error, 'Failed to delete estimate'));
     }
   };
 
@@ -97,11 +98,11 @@ export default function TripEstimatesPage() {
         alert(`Proposal ${result.data.proposal_number} created! Redirecting...`);
         router.push(`/admin/trip-proposals/${result.data.proposal_id}`);
       } else {
-        alert(result.error?.message || result.error || 'Failed to convert estimate');
+        alert(getApiErrorMessage(result.error, 'Failed to convert estimate'));
       }
     } catch (error) {
       logger.error('Failed to convert trip estimate', { error });
-      alert('Failed to convert estimate');
+      alert(getApiErrorMessage(error, 'Failed to convert estimate'));
     }
   };
 

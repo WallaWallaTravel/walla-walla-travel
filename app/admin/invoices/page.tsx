@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { logger } from '@/lib/logger';
+import { getApiErrorMessage } from '@/lib/utils/error-messages';
 
 interface PendingInvoice {
   booking_id: number;
@@ -90,7 +91,7 @@ export default function AdminInvoicesPage() {
       }
     } catch (error) {
       logger.error('Error approving invoice', { error });
-      alert('Failed to send invoice');
+      alert(getApiErrorMessage(error, 'Failed to send invoice'));
     } finally {
       setApproving(null);
     }

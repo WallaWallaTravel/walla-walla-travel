@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { logger } from '@/lib/logger'
+import { getApiErrorMessage } from '@/lib/utils/error-messages'
 
 interface VariantData {
   name: string
@@ -101,11 +102,12 @@ export default function NewABTestPage() {
       if (response.ok) {
         router.push('/admin/marketing/ab-testing')
       } else {
-        alert('Failed to create test. Please try again.')
+        const data = await response.json().catch(() => ({}))
+        alert(getApiErrorMessage(data, 'Failed to create test'))
       }
     } catch (error) {
       logger.error('Error creating test', { error })
-      alert('Failed to create test. Please try again.')
+      alert(getApiErrorMessage(error, 'Failed to create test'))
     } finally {
       setLoading(false)
     }

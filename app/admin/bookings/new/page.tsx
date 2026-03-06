@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic';
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { logger } from '@/lib/logger';
+import { getApiErrorMessage } from '@/lib/utils/error-messages';
 import PhoneInput from '@/components/ui/PhoneInput';
 
 // Component that uses search params - must be wrapped in Suspense
@@ -149,7 +150,7 @@ function BookingFormContent() {
       router.push(`/itinerary-builder/${bookingId}`);
     } catch (error) {
       logger.error('Error creating booking', { error });
-      alert('Error creating booking. Please try again.');
+      alert(getApiErrorMessage(error, 'Error creating booking'));
     } finally {
       setSaving(false);
     }

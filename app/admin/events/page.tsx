@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { logger } from '@/lib/logger';
+import { getApiErrorMessage } from '@/lib/utils/error-messages';
 import type { EventWithCategory, EventStatus } from '@/lib/types/events';
 
 interface EventListData {
@@ -40,7 +42,7 @@ export default function AdminEventsPage() {
         setEvents(result);
       }
     } catch (error) {
-      console.error('Failed to fetch events:', error);
+      logger.error('Failed to fetch events', { error });
     } finally {
       setIsLoading(false);
     }
@@ -55,9 +57,13 @@ export default function AdminEventsPage() {
       const response = await fetch(`/api/admin/events/${id}/publish`, { method: 'POST' });
       if (response.ok) {
         fetchEvents();
+      } else {
+        const data = await response.json().catch(() => ({}));
+        alert(getApiErrorMessage(data, 'Failed to publish event'));
       }
     } catch (error) {
-      console.error('Failed to publish event:', error);
+      logger.error('Failed to publish event', { error });
+      alert(getApiErrorMessage(error, 'Failed to publish event'));
     }
   };
 
@@ -67,9 +73,13 @@ export default function AdminEventsPage() {
       const response = await fetch(`/api/admin/events/${id}/cancel`, { method: 'POST' });
       if (response.ok) {
         fetchEvents();
+      } else {
+        const data = await response.json().catch(() => ({}));
+        alert(getApiErrorMessage(data, 'Failed to cancel event'));
       }
     } catch (error) {
-      console.error('Failed to cancel event:', error);
+      logger.error('Failed to cancel event', { error });
+      alert(getApiErrorMessage(error, 'Failed to cancel event'));
     }
   };
 
@@ -79,9 +89,13 @@ export default function AdminEventsPage() {
       const response = await fetch(`/api/admin/events/${id}`, { method: 'DELETE' });
       if (response.ok) {
         fetchEvents();
+      } else {
+        const data = await response.json().catch(() => ({}));
+        alert(getApiErrorMessage(data, 'Failed to delete event'));
       }
     } catch (error) {
-      console.error('Failed to delete event:', error);
+      logger.error('Failed to delete event', { error });
+      alert(getApiErrorMessage(error, 'Failed to delete event'));
     }
   };
 

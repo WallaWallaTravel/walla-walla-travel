@@ -8,6 +8,7 @@
 import { useState, useCallback } from 'react';
 import { apiGet, apiPost } from '@/lib/utils/fetch-utils';
 import { logger } from '@/lib/logger';
+import { getApiErrorMessage } from '@/lib/utils/error-messages';
 import type { NoteData, ToastFn } from '@/lib/types/proposal-detail';
 
 interface UseNotesReturn {
@@ -59,7 +60,7 @@ export function useNotes(proposalId: string, toast: ToastFn): UseNotesReturn {
       }
     } catch (error) {
       logger.error('Failed to send note', { error });
-      toast('Failed to send note', 'error');
+      toast(getApiErrorMessage(error, 'Failed to send note'), 'error');
     }
   }, [newNote, proposalId, loadNotes, toast]);
 

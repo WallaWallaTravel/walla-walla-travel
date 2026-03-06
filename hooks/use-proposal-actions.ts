@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation';
 import { apiPatch, apiPost, apiDelete } from '@/lib/utils/fetch-utils';
 import { logger } from '@/lib/logger';
 import { debounce } from '@/lib/utils/debounce';
+import { getApiErrorMessage } from '@/lib/utils/error-messages';
 import type { ProposalDetail, ToastFn } from '@/lib/types/proposal-detail';
 
 interface UseProposalActionsReturn {
@@ -65,7 +66,7 @@ export function useProposalActions(
         }
       } catch (error) {
         logger.error('Failed to update proposal', { error });
-        toast('Failed to update proposal', 'error');
+        toast(getApiErrorMessage(error, 'Failed to update proposal'), 'error');
       } finally {
         setLoading('updateProposal', false);
       }
@@ -98,7 +99,7 @@ export function useProposalActions(
           }
         } catch (error) {
           logger.error('Failed to update proposal (debounced)', { error });
-          toast('Failed to update proposal', 'error');
+          toast(getApiErrorMessage(error, 'Failed to update proposal'), 'error');
         }
       }, 500),
     [proposalId, setProposal, toast]
@@ -141,7 +142,7 @@ export function useProposalActions(
         }
       } catch (error) {
         logger.error('Failed to update status', { error });
-        toast('Failed to update status', 'error');
+        toast(getApiErrorMessage(error, 'Failed to update status'), 'error');
       } finally {
         setLoading('updateStatus', false);
       }
@@ -162,7 +163,7 @@ export function useProposalActions(
       }
     } catch (error) {
       logger.error('Failed to recalculate pricing', { error });
-      toast('Failed to recalculate pricing', 'error');
+      toast(getApiErrorMessage(error, 'Failed to recalculate pricing'), 'error');
     } finally {
       setLoading('recalculatePricing', false);
     }
@@ -184,7 +185,7 @@ export function useProposalActions(
       }
     } catch (error) {
       logger.error('Failed to convert to booking', { error });
-      toast('Failed to convert to booking', 'error');
+      toast(getApiErrorMessage(error, 'Failed to convert to booking'), 'error');
     } finally {
       setLoading('convertToBooking', false);
     }
@@ -202,7 +203,7 @@ export function useProposalActions(
       }
     } catch (error) {
       logger.error('Failed to generate itinerary', { error });
-      toast('Failed to generate itinerary', 'error');
+      toast(getApiErrorMessage(error, 'Failed to generate itinerary'), 'error');
     } finally {
       setLoading('generateItinerary', false);
     }
@@ -228,7 +229,7 @@ export function useProposalActions(
         }
       } catch (error) {
         logger.error('Failed to send proposal', { error });
-        toast('Failed to send proposal', 'error');
+        toast(getApiErrorMessage(error, 'Failed to send proposal'), 'error');
       } finally {
         setLoading('sendProposal', false);
       }
@@ -252,7 +253,7 @@ export function useProposalActions(
         }
       } catch (error) {
         logger.error('Failed to send announcement', { error });
-        toast('Failed to send announcement', 'error');
+        toast(getApiErrorMessage(error, 'Failed to send announcement'), 'error');
       } finally {
         setLoading('announceGuests', false);
       }
@@ -273,7 +274,7 @@ export function useProposalActions(
       }
     } catch (error) {
       logger.error('Failed to archive proposal', { error });
-      toast('Failed to archive proposal', 'error');
+      toast(getApiErrorMessage(error, 'Failed to archive proposal'), 'error');
     } finally {
       setLoading('archiveProposal', false);
     }
@@ -294,7 +295,7 @@ export function useProposalActions(
       }
     } catch (error) {
       logger.error('Failed to unarchive proposal', { error });
-      toast('Failed to unarchive proposal', 'error');
+      toast(getApiErrorMessage(error, 'Failed to unarchive proposal'), 'error');
     } finally {
       setLoading('unarchiveProposal', false);
     }
@@ -313,7 +314,7 @@ export function useProposalActions(
       }
     } catch (error) {
       logger.error('Failed to delete proposal', { error });
-      toast('Failed to delete proposal', 'error');
+      toast(getApiErrorMessage(error, 'Failed to delete proposal'), 'error');
     } finally {
       setLoading('deleteProposal', false);
     }
@@ -340,7 +341,7 @@ export function useProposalActions(
         }
       } catch (error) {
         logger.error('Failed to update planning phase', { error });
-        toast('Failed to update planning phase', 'error');
+        toast(getApiErrorMessage(error, 'Failed to update planning phase'), 'error');
       } finally {
         setLoading('updatePlanningPhase', false);
       }
@@ -364,7 +365,7 @@ export function useProposalActions(
         }
       } catch (error) {
         logger.error('Failed to update lunch ordering mode', { error });
-        toast('Failed to update ordering mode', 'error');
+        toast(getApiErrorMessage(error, 'Failed to update ordering mode'), 'error');
         return false;
       } finally {
         setLoading('updateLunchOrderingMode', false);

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { logger } from '@/lib/logger';
+import { getApiErrorMessage } from '@/lib/utils/error-messages';
 
 interface Media {
   id: number;
@@ -106,10 +107,13 @@ export default function MediaLibraryPage() {
       if (response.ok) {
         setMedia(media.filter(m => m.id !== id));
         alert('Media deleted successfully');
+      } else {
+        const data = await response.json().catch(() => ({}));
+        alert(getApiErrorMessage(data, 'Failed to delete media'));
       }
     } catch (error) {
       logger.error('Failed to delete media', { error });
-      alert('Failed to delete media');
+      alert(getApiErrorMessage(error, 'Failed to delete media'));
     }
   };
 

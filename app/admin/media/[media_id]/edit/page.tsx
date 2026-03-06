@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { logger } from '@/lib/logger';
+import { getApiErrorMessage } from '@/lib/utils/error-messages';
 import ImageEditorModal from '@/components/admin/ImageEditorModal';
 
 interface Media {
@@ -92,7 +93,7 @@ export default function EditMediaPage() {
       }
     } catch (error) {
       logger.error('Failed to load media', { error });
-      alert('Failed to load media');
+      alert(getApiErrorMessage(error, 'Failed to load media'));
       router.push('/admin/media');
     } finally {
       setLoading(false);
@@ -200,11 +201,11 @@ export default function EditMediaPage() {
         setNewFilePreview(null);
         setNewFileType(null);
       } else {
-        alert(`Replace failed: ${result.error}`);
+        alert(getApiErrorMessage(result, 'Failed to replace file'));
       }
     } catch (error) {
       logger.error('Replace error', { error });
-      alert('Failed to replace file');
+      alert(getApiErrorMessage(error, 'Failed to replace file'));
     } finally {
       setReplacing(false);
     }
@@ -243,11 +244,11 @@ export default function EditMediaPage() {
         alert('Media updated successfully!');
         router.push('/admin/media');
       } else {
-        alert(`Update failed: ${result.error}`);
+        alert(getApiErrorMessage(result, 'Failed to update media'));
       }
     } catch (error) {
       logger.error('Update error', { error });
-      alert('Failed to update media');
+      alert(getApiErrorMessage(error, 'Failed to update media'));
     } finally {
       setSaving(false);
     }

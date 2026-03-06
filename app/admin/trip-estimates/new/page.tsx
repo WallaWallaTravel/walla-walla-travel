@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { logger } from '@/lib/logger';
+import { getApiErrorMessage } from '@/lib/utils/error-messages';
 import { TRIP_TYPE_OPTIONS } from '@/lib/types/trip-proposal';
 import PhoneInput from '@/components/ui/PhoneInput';
 
@@ -172,11 +173,11 @@ export default function NewTripEstimatePage() {
       if (result.success) {
         router.push(`/admin/trip-estimates/${result.data.id}`);
       } else {
-        alert(result.error || 'Failed to create estimate');
+        alert(getApiErrorMessage(result, 'Failed to create estimate'));
       }
     } catch (error) {
       logger.error('Failed to save estimate', { error });
-      alert('Failed to save estimate');
+      alert(getApiErrorMessage(error, 'Failed to save estimate'));
     } finally {
       setSaving(false);
       setSendingStatus('idle');
@@ -205,7 +206,7 @@ export default function NewTripEstimatePage() {
       const createResult = await createResponse.json();
 
       if (!createResult.success) {
-        alert(createResult.error || 'Failed to create estimate');
+        alert(getApiErrorMessage(createResult, 'Failed to create estimate'));
         return;
       }
 
@@ -232,7 +233,7 @@ export default function NewTripEstimatePage() {
       }
     } catch (error) {
       logger.error('Failed to save and send estimate', { error });
-      alert('Failed to save estimate');
+      alert(getApiErrorMessage(error, 'Failed to save estimate'));
     } finally {
       setSaving(false);
       setSendingStatus('idle');

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { logger } from '@/lib/logger';
+import { getApiErrorMessage } from '@/lib/utils/error-messages';
 import PhoneInput from '@/components/ui/PhoneInput';
 
 const TRIP_TYPES = [
@@ -143,7 +144,7 @@ export default function EditTripEstimatePage({ params }: { params: Promise<{ id:
       }
     } catch (error) {
       logger.error('Failed to load trip estimate', { error });
-      alert('Failed to load estimate');
+      alert(getApiErrorMessage(error, 'Failed to load estimate'));
       router.push('/admin/trip-estimates');
     } finally {
       setLoading(false);
@@ -238,11 +239,11 @@ export default function EditTripEstimatePage({ params }: { params: Promise<{ id:
       if (result.success) {
         loadEstimate();
       } else {
-        alert(result.error?.message || result.error || 'Failed to update estimate');
+        alert(getApiErrorMessage(result.error, 'Failed to update estimate'));
       }
     } catch (error) {
       logger.error('Failed to save trip estimate', { error });
-      alert('Failed to save estimate');
+      alert(getApiErrorMessage(error, 'Failed to save estimate'));
     } finally {
       setSaving(false);
     }
@@ -265,11 +266,11 @@ export default function EditTripEstimatePage({ params }: { params: Promise<{ id:
         }
         loadEstimate();
       } else {
-        alert(result.error?.message || result.error || 'Failed to update status');
+        alert(getApiErrorMessage(result.error, 'Failed to update status'));
       }
     } catch (error) {
       logger.error('Failed to update status', { error });
-      alert('Failed to update status');
+      alert(getApiErrorMessage(error, 'Failed to update status'));
     }
   };
 
@@ -288,11 +289,11 @@ export default function EditTripEstimatePage({ params }: { params: Promise<{ id:
         alert(`Proposal ${result.data.proposal_number} created! Redirecting...`);
         router.push(`/admin/trip-proposals/${result.data.proposal_id}`);
       } else {
-        alert(result.error?.message || result.error || 'Failed to convert estimate');
+        alert(getApiErrorMessage(result.error, 'Failed to convert estimate'));
       }
     } catch (error) {
       logger.error('Failed to convert estimate', { error });
-      alert('Failed to convert estimate');
+      alert(getApiErrorMessage(error, 'Failed to convert estimate'));
     }
   };
 

@@ -9,6 +9,7 @@
 import { useState, useEffect, useRef, Suspense, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { logger } from '@/lib/logger';
+import { getApiErrorMessage } from '@/lib/utils/error-messages';
 import { useToast } from '@/lib/hooks/useToast';
 import { ToastContainer } from '@/components/ui/ToastContainer';
 
@@ -330,11 +331,11 @@ function TripsPageContent() {
         toast('Trip archived', 'success');
         loadProposals();
       } else {
-        toast(result.error || 'Failed to archive', 'error');
+        toast(getApiErrorMessage(result, 'Failed to archive trip'), 'error');
       }
     } catch (error) {
       logger.error('Failed to archive trip', { error });
-      toast('Failed to archive trip', 'error');
+      toast(getApiErrorMessage(error, 'Failed to archive trip'), 'error');
     }
     setOpenMenuId(null);
   };
@@ -347,11 +348,11 @@ function TripsPageContent() {
         toast('Trip unarchived', 'success');
         loadProposals();
       } else {
-        toast(result.error || 'Failed to unarchive', 'error');
+        toast(getApiErrorMessage(result, 'Failed to unarchive trip'), 'error');
       }
     } catch (error) {
       logger.error('Failed to unarchive trip', { error });
-      toast('Failed to unarchive trip', 'error');
+      toast(getApiErrorMessage(error, 'Failed to unarchive trip'), 'error');
     }
     setOpenMenuId(null);
   };

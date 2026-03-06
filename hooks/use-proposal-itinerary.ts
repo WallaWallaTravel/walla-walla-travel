@@ -13,6 +13,7 @@ import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { apiPost, apiPatch, apiDelete } from '@/lib/utils/fetch-utils';
 import { logger } from '@/lib/logger';
 import { debounce } from '@/lib/utils/debounce';
+import { getApiErrorMessage } from '@/lib/utils/error-messages';
 import type { ProposalDetail, ToastFn } from '@/lib/types/proposal-detail';
 
 interface UseProposalItineraryReturn {
@@ -66,7 +67,7 @@ export function useProposalItinerary(
       }
     } catch (error) {
       logger.error('Failed to add day', { error });
-      toast('Failed to add day', 'error');
+      toast(getApiErrorMessage(error, 'Failed to add day'), 'error');
     } finally {
       setLoading('addDay', false);
     }
@@ -95,7 +96,7 @@ export function useProposalItinerary(
         }
       } catch (error) {
         logger.error('Failed to add stop', { error });
-        toast('Failed to add stop', 'error');
+        toast(getApiErrorMessage(error, 'Failed to add stop'), 'error');
       } finally {
         setLoading(`addStop_${dayId}`, false);
       }
@@ -229,7 +230,7 @@ export function useProposalItinerary(
         }
       } catch (error) {
         logger.error(`Failed to update vendor ${field}`, { error });
-        toast(`Failed to update vendor ${field}`, 'error');
+        toast(getApiErrorMessage(error, `Failed to update vendor ${field}`), 'error');
       } finally {
         setLoading(`vendor_${stopId}`, false);
       }
@@ -254,7 +255,7 @@ export function useProposalItinerary(
         }
       } catch (error) {
         logger.error('Failed to log vendor interaction', { error });
-        toast('Failed to log interaction', 'error');
+        toast(getApiErrorMessage(error, 'Failed to log interaction'), 'error');
       } finally {
         setLoading(`vendorLog_${stopId}`, false);
       }

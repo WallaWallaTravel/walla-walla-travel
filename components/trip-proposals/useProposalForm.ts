@@ -8,6 +8,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { logger } from '@/lib/logger';
+import { getApiErrorMessage } from '@/lib/utils/error-messages';
 import { useToast } from '@/lib/hooks/useToast';
 import type { SmartImportResult } from '@/lib/import/types';
 
@@ -367,7 +368,7 @@ export function useProposalForm() {
       toast('Draft saved successfully', 'success');
       router.push(`/admin/trip-proposals/${data.data.id}`);
     } catch (error) {
-      toast(error instanceof Error ? error.message : 'Failed to save draft', 'error');
+      toast(getApiErrorMessage(error, 'Failed to save draft'), 'error');
     } finally {
       setSaving(false);
     }
@@ -487,7 +488,7 @@ export function useProposalForm() {
       router.push('/admin/trip-proposals');
     } catch (error) {
       logger.error('Failed to create trip proposal', { error });
-      toast(error instanceof Error ? error.message : 'Failed to create trip proposal', 'error');
+      toast(getApiErrorMessage(error, 'Failed to create trip proposal'), 'error');
     } finally {
       setSaving(false);
     }

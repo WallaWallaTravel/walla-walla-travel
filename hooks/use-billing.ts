@@ -10,6 +10,7 @@
 import { useState, useCallback } from 'react';
 import { apiPost, apiPatch } from '@/lib/utils/fetch-utils';
 import { logger } from '@/lib/logger';
+import { getApiErrorMessage } from '@/lib/utils/error-messages';
 import type { ReminderRecord, ToastFn } from '@/lib/types/proposal-detail';
 
 interface UseBillingReturn {
@@ -102,8 +103,8 @@ export function useBilling(
           (result.error as string) || 'Failed to calculate';
         toast(errMsg, 'error');
       }
-    } catch {
-      toast('Failed to calculate', 'error');
+    } catch (error) {
+      toast(getApiErrorMessage(error, 'Failed to calculate billing'), 'error');
     } finally {
       setLoading('recalculateBilling', false);
     }
@@ -122,8 +123,8 @@ export function useBilling(
       } else if (result.success) {
         toast('Warning: billing may have discrepancies', 'error');
       }
-    } catch {
-      toast('Failed to verify', 'error');
+    } catch (error) {
+      toast(getApiErrorMessage(error, 'Failed to verify billing'), 'error');
     } finally {
       setLoading('verifyBilling', false);
     }
@@ -186,8 +187,8 @@ export function useBilling(
           toast('Payment recorded!', 'success');
           await refetchProposal();
         }
-      } catch {
-        toast('Failed to record payment', 'error');
+      } catch (error) {
+        toast(getApiErrorMessage(error, 'Failed to record payment'), 'error');
       } finally {
         setLoading(`payment_${guestId}`, false);
       }
@@ -214,8 +215,8 @@ export function useBilling(
         } else {
           toast(result.error || 'Failed to create group', 'error');
         }
-      } catch {
-        toast('Failed to create group', 'error');
+      } catch (error) {
+        toast(getApiErrorMessage(error, 'Failed to create payment group'), 'error');
       } finally {
         setLoading('createPaymentGroup', false);
       }
@@ -239,8 +240,8 @@ export function useBilling(
           );
           await refetchProposal();
         }
-      } catch {
-        toast('Failed to update', 'error');
+      } catch (error) {
+        toast(getApiErrorMessage(error, 'Failed to update reminders'), 'error');
       } finally {
         setLoading('pauseResumeReminders', false);
       }
@@ -264,8 +265,8 @@ export function useBilling(
         const errMsg = (result.error as string) || 'Failed to generate';
         toast(errMsg, 'error');
       }
-    } catch {
-      toast('Failed to generate schedule', 'error');
+    } catch (error) {
+      toast(getApiErrorMessage(error, 'Failed to generate reminder schedule'), 'error');
     } finally {
       setLoading('generateReminderSchedule', false);
     }
@@ -282,8 +283,8 @@ export function useBilling(
         });
         toast('Reminder cancelled', 'success');
         await loadReminderHistory();
-      } catch {
-        toast('Failed', 'error');
+      } catch (error) {
+        toast(getApiErrorMessage(error, 'Failed to cancel reminder'), 'error');
       } finally {
         setLoading(`cancelReminder_${reminderId}`, false);
       }
@@ -313,8 +314,8 @@ export function useBilling(
           toast('Custom reminder added', 'success');
           await loadReminderHistory();
         }
-      } catch {
-        toast('Failed to add reminder', 'error');
+      } catch (error) {
+        toast(getApiErrorMessage(error, 'Failed to add reminder'), 'error');
       } finally {
         setLoading('addCustomReminder', false);
       }

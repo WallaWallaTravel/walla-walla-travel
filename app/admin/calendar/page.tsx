@@ -23,6 +23,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { logger } from '@/lib/logger';
+import { getApiErrorMessage } from '@/lib/utils/error-messages';
 
 interface Booking {
   id: number;
@@ -352,12 +353,12 @@ export default function CalendarView() {
         setSelectedBooking(null);
         setShowDeleteConfirm(false);
       } else {
-        const data = await response.json();
-        alert(`Failed to delete booking: ${data.error?.message || 'Unknown error'}`);
+        const data = await response.json().catch(() => ({}));
+        alert(getApiErrorMessage(data, 'Failed to delete booking'));
       }
     } catch (error) {
       logger.error('Error deleting booking', { error });
-      alert('Failed to delete booking. Please try again.');
+      alert(getApiErrorMessage(error, 'Failed to delete booking'));
     } finally {
       setDeleting(false);
     }
