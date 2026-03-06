@@ -27,7 +27,14 @@ import type {
   EventFilters,
   EventListResult,
   RecurrenceRule,
+  EventAnalyticsOverview,
+  EventAnalyticsByEvent,
+  EventAnalyticsByCoordinator,
+  EventAnalyticsByCategory,
+  EventAnalyticsBySource,
+  EventAnalyticsDailyTrend,
 } from '@/lib/types/events';
+import crypto from 'crypto';
 import { generateInstanceDates } from '@/lib/utils/recurrence';
 
 export class EventsService extends BaseService {
@@ -509,30 +516,53 @@ export class EventsService extends BaseService {
   // ============================================================================
 
   /**
-   * Track an impression (detail page view) with optional source
+   * Hash an IP address for privacy-safe storage
    */
-  async trackView(id: number, source?: string | null, referrer?: string | null): Promise<void> {
+  private hashIp(ip: string): string {
+    return crypto.createHash('sha256').update(ip + 'wwt-salt').digest('hex').slice(0, 16);
+  }
+
+  /**
+   * Track an impression (detail page view) with optional source and request metadata
+   */
+  async trackView(
+    id: number,
+    source?: string | null,
+    referrer?: string | null,
+    userAgent?: string | null,
+    ipAddress?: string | null,
+  ): Promise<void> {
     await this.query(
       `UPDATE events SET view_count = view_count + 1 WHERE id = $1`,
       [id]
     );
+    const ipHash = ipAddress ? this.hashIp(ipAddress) : null;
     await this.query(
-      `INSERT INTO event_analytics (event_id, action, source, referrer) VALUES ($1, 'impression', $2, $3)`,
-      [id, source || null, referrer || null]
+      `INSERT INTO event_analytics (event_id, action, source, referrer, user_agent, ip_hash)
+       VALUES ($1, 'impression', $2, $3, $4, $5)`,
+      [id, source || null, referrer || null, userAgent || null, ipHash]
     );
   }
 
   /**
-   * Track a click-through (ticket/external link click) with optional source
+   * Track a click-through (ticket/external link click) with optional source and request metadata
    */
-  async trackClick(id: number, source?: string | null, referrer?: string | null): Promise<void> {
+  async trackClick(
+    id: number,
+    source?: string | null,
+    referrer?: string | null,
+    userAgent?: string | null,
+    ipAddress?: string | null,
+  ): Promise<void> {
     await this.query(
       `UPDATE events SET click_count = click_count + 1 WHERE id = $1`,
       [id]
     );
+    const ipHash = ipAddress ? this.hashIp(ipAddress) : null;
     await this.query(
-      `INSERT INTO event_analytics (event_id, action, source, referrer) VALUES ($1, 'click_through', $2, $3)`,
-      [id, source || null, referrer || null]
+      `INSERT INTO event_analytics (event_id, action, source, referrer, user_agent, ip_hash)
+       VALUES ($1, 'click_through', $2, $3, $4, $5)`,
+      [id, source || null, referrer || null, userAgent || null, ipHash]
     );
   }
 
@@ -559,6 +589,269 @@ export class EventsService extends BaseService {
       impressions,
       click_throughs: clickThroughs,
       click_through_rate: impressions > 0 ? Math.round((clickThroughs / impressions) * 10000) / 100 : 0,
+    };
+  }
+
+  // ============================================================================
+  // Marketing Analytics (Aggregated)
+  // ============================================================================
+
+  /**
+   * Get overview analytics with optional date range
+   */
+  async getAnalyticsOverview(startDate?: string, endDate?: string): Promise<EventAnalyticsOverview> {
+    const conditions: string[] = [];
+    const params: unknown[] = [];
+    let idx = 1;
+
+    if (startDate) {
+      conditions.push(`ea.created_at >= $${idx}::timestamptz`);
+      params.push(startDate);
+      idx++;
+    }
+    if (endDate) {
+      conditions.push(`ea.created_at < ($${idx}::date + interval '1 day')`);
+      params.push(endDate);
+      idx++;
+    }
+
+    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    const result = await this.queryOne<{
+      impressions: string;
+      click_throughs: string;
+    }>(
+      `SELECT
+        COUNT(*) FILTER (WHERE ea.action = 'impression')::text as impressions,
+        COUNT(*) FILTER (WHERE ea.action = 'click_through')::text as click_throughs
+       FROM event_analytics ea
+       ${where}`,
+      params
+    );
+
+    const impressions = parseInt(result?.impressions || '0');
+    const clickThroughs = parseInt(result?.click_throughs || '0');
+
+    return {
+      impressions,
+      click_throughs: clickThroughs,
+      click_through_rate: impressions > 0 ? Math.round((clickThroughs / impressions) * 10000) / 100 : 0,
+      traffic_facilitated: clickThroughs,
+    };
+  }
+
+  /**
+   * Get daily trend data for line chart
+   */
+  async getAnalyticsTrends(days: number = 30): Promise<EventAnalyticsDailyTrend[]> {
+    return this.queryMany<EventAnalyticsDailyTrend>(
+      `SELECT
+        d::date::text as date,
+        COALESCE(COUNT(*) FILTER (WHERE ea.action = 'impression'), 0)::int as impressions,
+        COALESCE(COUNT(*) FILTER (WHERE ea.action = 'click_through'), 0)::int as click_throughs
+       FROM generate_series(
+         CURRENT_DATE - ($1 || ' days')::interval,
+         CURRENT_DATE,
+         '1 day'::interval
+       ) d
+       LEFT JOIN event_analytics ea ON ea.created_at::date = d::date
+       GROUP BY d
+       ORDER BY d ASC`,
+      [days]
+    );
+  }
+
+  /**
+   * Get per-event analytics breakdown
+   */
+  async getAnalyticsByEvent(startDate?: string, endDate?: string): Promise<EventAnalyticsByEvent[]> {
+    const conditions: string[] = [];
+    const params: unknown[] = [];
+    let idx = 1;
+
+    if (startDate) {
+      conditions.push(`ea.created_at >= $${idx}::timestamptz`);
+      params.push(startDate);
+      idx++;
+    }
+    if (endDate) {
+      conditions.push(`ea.created_at < ($${idx}::date + interval '1 day')`);
+      params.push(endDate);
+      idx++;
+    }
+
+    const where = conditions.length > 0 ? `AND ${conditions.join(' AND ')}` : '';
+
+    return this.queryMany<EventAnalyticsByEvent>(
+      `SELECT
+        e.id as event_id,
+        e.title as event_title,
+        ec.name as category_name,
+        e.start_date::text as event_date,
+        COUNT(*) FILTER (WHERE ea.action = 'impression')::int as impressions,
+        COUNT(*) FILTER (WHERE ea.action = 'click_through')::int as click_throughs,
+        CASE
+          WHEN COUNT(*) FILTER (WHERE ea.action = 'impression') > 0
+          THEN ROUND(COUNT(*) FILTER (WHERE ea.action = 'click_through')::numeric /
+               COUNT(*) FILTER (WHERE ea.action = 'impression') * 100, 2)::float
+          ELSE 0
+        END as click_through_rate
+       FROM events e
+       LEFT JOIN event_analytics ea ON ea.event_id = e.id ${where ? where : ''}
+       LEFT JOIN event_categories ec ON e.category_id = ec.id
+       WHERE ea.id IS NOT NULL
+       GROUP BY e.id, e.title, ec.name, e.start_date
+       ORDER BY COUNT(*) FILTER (WHERE ea.action = 'impression') DESC
+       LIMIT 100`,
+      params
+    );
+  }
+
+  /**
+   * Get per-coordinator (organizer) analytics breakdown
+   */
+  async getAnalyticsByCoordinator(startDate?: string, endDate?: string): Promise<EventAnalyticsByCoordinator[]> {
+    const conditions: string[] = [];
+    const params: unknown[] = [];
+    let idx = 1;
+
+    if (startDate) {
+      conditions.push(`ea.created_at >= $${idx}::timestamptz`);
+      params.push(startDate);
+      idx++;
+    }
+    if (endDate) {
+      conditions.push(`ea.created_at < ($${idx}::date + interval '1 day')`);
+      params.push(endDate);
+      idx++;
+    }
+
+    const where = conditions.length > 0 ? `AND ${conditions.join(' AND ')}` : '';
+
+    return this.queryMany<EventAnalyticsByCoordinator>(
+      `SELECT
+        COALESCE(eo.organization_name, e.organizer_name, 'Unknown') as coordinator_name,
+        COUNT(DISTINCT e.id)::int as total_events,
+        COUNT(*) FILTER (WHERE ea.action = 'impression')::int as impressions,
+        COUNT(*) FILTER (WHERE ea.action = 'click_through')::int as click_throughs,
+        CASE
+          WHEN COUNT(*) FILTER (WHERE ea.action = 'impression') > 0
+          THEN ROUND(COUNT(*) FILTER (WHERE ea.action = 'click_through')::numeric /
+               COUNT(*) FILTER (WHERE ea.action = 'impression') * 100, 2)::float
+          ELSE 0
+        END as click_through_rate,
+        COUNT(*) FILTER (WHERE ea.action = 'click_through')::int as traffic_value
+       FROM events e
+       LEFT JOIN event_analytics ea ON ea.event_id = e.id ${where ? where : ''}
+       LEFT JOIN event_organizers eo ON e.organizer_id = eo.id
+       WHERE ea.id IS NOT NULL
+       GROUP BY COALESCE(eo.organization_name, e.organizer_name, 'Unknown')
+       ORDER BY COUNT(*) FILTER (WHERE ea.action = 'impression') DESC`,
+      params
+    );
+  }
+
+  /**
+   * Get per-category analytics breakdown
+   */
+  async getAnalyticsByCategory(startDate?: string, endDate?: string): Promise<EventAnalyticsByCategory[]> {
+    const conditions: string[] = [];
+    const params: unknown[] = [];
+    let idx = 1;
+
+    if (startDate) {
+      conditions.push(`ea.created_at >= $${idx}::timestamptz`);
+      params.push(startDate);
+      idx++;
+    }
+    if (endDate) {
+      conditions.push(`ea.created_at < ($${idx}::date + interval '1 day')`);
+      params.push(endDate);
+      idx++;
+    }
+
+    const where = conditions.length > 0 ? `AND ${conditions.join(' AND ')}` : '';
+
+    return this.queryMany<EventAnalyticsByCategory>(
+      `SELECT
+        COALESCE(ec.name, 'Uncategorized') as category_name,
+        COUNT(*) FILTER (WHERE ea.action = 'impression')::int as impressions,
+        COUNT(*) FILTER (WHERE ea.action = 'click_through')::int as click_throughs,
+        CASE
+          WHEN COUNT(*) FILTER (WHERE ea.action = 'impression') > 0
+          THEN ROUND(COUNT(*) FILTER (WHERE ea.action = 'click_through')::numeric /
+               COUNT(*) FILTER (WHERE ea.action = 'impression') * 100, 2)::float
+          ELSE 0
+        END as click_through_rate
+       FROM events e
+       LEFT JOIN event_analytics ea ON ea.event_id = e.id ${where ? where : ''}
+       LEFT JOIN event_categories ec ON e.category_id = ec.id
+       WHERE ea.id IS NOT NULL
+       GROUP BY ec.name
+       ORDER BY COUNT(*) FILTER (WHERE ea.action = 'impression') DESC`,
+      params
+    );
+  }
+
+  /**
+   * Get per-source analytics breakdown
+   */
+  async getAnalyticsBySource(startDate?: string, endDate?: string): Promise<EventAnalyticsBySource[]> {
+    const conditions: string[] = [];
+    const params: unknown[] = [];
+    let idx = 1;
+
+    if (startDate) {
+      conditions.push(`ea.created_at >= $${idx}::timestamptz`);
+      params.push(startDate);
+      idx++;
+    }
+    if (endDate) {
+      conditions.push(`ea.created_at < ($${idx}::date + interval '1 day')`);
+      params.push(endDate);
+      idx++;
+    }
+
+    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    return this.queryMany<EventAnalyticsBySource>(
+      `SELECT
+        COALESCE(ea.source, 'direct') as source,
+        COUNT(*) FILTER (WHERE ea.action = 'impression')::int as impressions,
+        COUNT(*) FILTER (WHERE ea.action = 'click_through')::int as click_throughs,
+        CASE
+          WHEN COUNT(*) FILTER (WHERE ea.action = 'impression') > 0
+          THEN ROUND(COUNT(*) FILTER (WHERE ea.action = 'click_through')::numeric /
+               COUNT(*) FILTER (WHERE ea.action = 'impression') * 100, 2)::float
+          ELSE 0
+        END as click_through_rate
+       FROM event_analytics ea
+       ${where}
+       GROUP BY COALESCE(ea.source, 'direct')
+       ORDER BY COUNT(*) DESC`,
+      params
+    );
+  }
+
+  /**
+   * Get analytics summary for a single event, with top source
+   */
+  async getAnalyticsSummaryWithTopSource(eventId: number): Promise<EventAnalyticsSummary & { top_source: string | null }> {
+    const summary = await this.getAnalyticsSummary(eventId);
+
+    const topSource = await this.queryOne<{ source: string }>(
+      `SELECT COALESCE(source, 'direct') as source
+       FROM event_analytics
+       WHERE event_id = $1
+       GROUP BY COALESCE(source, 'direct')
+       ORDER BY COUNT(*) DESC
+       LIMIT 1`,
+      [eventId]
+    );
+
+    return {
+      ...summary,
+      top_source: topSource?.source || null,
     };
   }
 

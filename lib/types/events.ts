@@ -248,6 +248,49 @@ export interface EventAnalyticsSummary {
   click_through_rate: number;
 }
 
+export interface EventAnalyticsOverview extends EventAnalyticsSummary {
+  traffic_facilitated: number;
+}
+
+export interface EventAnalyticsDailyTrend {
+  date: string;
+  impressions: number;
+  click_throughs: number;
+}
+
+export interface EventAnalyticsByEvent {
+  event_id: number;
+  event_title: string;
+  category_name: string | null;
+  event_date: string;
+  impressions: number;
+  click_throughs: number;
+  click_through_rate: number;
+}
+
+export interface EventAnalyticsByCoordinator {
+  coordinator_name: string;
+  total_events: number;
+  impressions: number;
+  click_throughs: number;
+  click_through_rate: number;
+  traffic_value: number;
+}
+
+export interface EventAnalyticsByCategory {
+  category_name: string;
+  impressions: number;
+  click_throughs: number;
+  click_through_rate: number;
+}
+
+export interface EventAnalyticsBySource {
+  source: string;
+  impressions: number;
+  click_throughs: number;
+  click_through_rate: number;
+}
+
 // ============================================================================
 // Filters & List Results
 // ============================================================================

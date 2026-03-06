@@ -18,7 +18,7 @@ export const GET = withAdminAuth(
       throw new NotFoundError('Event not found');
     }
 
-    const analytics = await eventsService.getAnalyticsSummary(eventId);
+    const analytics = await eventsService.getAnalyticsSummaryWithTopSource(eventId);
 
     return NextResponse.json({
       success: true,

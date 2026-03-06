@@ -26,14 +26,18 @@ export const POST = withCSRF(
       throw new NotFoundError('Event not found');
     }
 
-    // Capture referrer and ref query param
+    // Capture referrer, ref query param, and request metadata
     const referrer = request.headers.get('referer') || null;
     const refParam = request.nextUrl.searchParams.get('ref') || source || null;
+    const userAgent = request.headers.get('user-agent') || null;
+    const ipAddress = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+      || request.headers.get('x-real-ip')
+      || null;
 
     if (type === 'view') {
-      await eventsService.trackView(event.id, refParam, referrer);
+      await eventsService.trackView(event.id, refParam, referrer, userAgent, ipAddress);
     } else {
-      await eventsService.trackClick(event.id, refParam, referrer);
+      await eventsService.trackClick(event.id, refParam, referrer, userAgent, ipAddress);
     }
 
     return NextResponse.json({
