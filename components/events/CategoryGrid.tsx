@@ -1,3 +1,6 @@
+'use client';
+
+import { useState } from 'react';
 import Link from 'next/link';
 import type { EventCategory } from '@/lib/types/events';
 
@@ -24,32 +27,68 @@ function getCategoryIcon(category: EventCategory): string {
   return '\uD83D\uDCC5';
 }
 
+function CategoryCard({ category }: { category: EventCategory }) {
+  return (
+    <Link href={`/events/category/${category.slug}`} className="group block">
+      <div className="rounded-xl border border-gray-200 bg-gray-50 hover:bg-white hover:shadow-md p-6 text-center transition-all duration-200 group-hover:scale-[1.02]">
+        <span className="block text-4xl mb-3">{getCategoryIcon(category)}</span>
+        <h3 className="text-lg font-semibold text-gray-900 group-hover:text-[#8B1538] transition-colors">
+          {category.name}
+        </h3>
+        {category.description && (
+          <p className="mt-1.5 text-sm text-gray-700 line-clamp-2">{category.description}</p>
+        )}
+      </div>
+    </Link>
+  );
+}
+
 export function CategoryGrid({ categories }: CategoryGridProps) {
+  const [showMore, setShowMore] = useState(false);
+
   const activeCategories = categories
     .filter((c) => c.is_active)
     .sort((a, b) => a.display_order - b.display_order);
 
+  const primaryCategories = activeCategories.filter((c) => c.display_tier === 'primary');
+  const secondaryCategories = activeCategories.filter((c) => c.display_tier === 'secondary');
+
   if (activeCategories.length === 0) return null;
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      {activeCategories.map((category) => (
-        <Link
-          key={category.id}
-          href={`/events/category/${category.slug}`}
-          className="group block"
-        >
-          <div className="rounded-xl border border-gray-200 bg-gray-50 hover:bg-white hover:shadow-md p-6 text-center transition-all duration-200 group-hover:scale-[1.02]">
-            <span className="block text-4xl mb-3">{getCategoryIcon(category)}</span>
-            <h3 className="text-lg font-semibold text-gray-900 group-hover:text-[#8B1538] transition-colors">
-              {category.name}
-            </h3>
-            {category.description && (
-              <p className="mt-1.5 text-sm text-gray-700 line-clamp-2">{category.description}</p>
-            )}
-          </div>
-        </Link>
-      ))}
+    <div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {primaryCategories.map((category) => (
+          <CategoryCard key={category.id} category={category} />
+        ))}
+      </div>
+
+      {secondaryCategories.length > 0 && (
+        <div className="mt-6">
+          <button
+            onClick={() => setShowMore(!showMore)}
+            className="mx-auto flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-[#8B1538] transition-colors"
+          >
+            <svg
+              className={`w-4 h-4 transition-transform ${showMore ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+            {showMore ? 'Show fewer categories' : `More categories (${secondaryCategories.length})`}
+          </button>
+
+          {showMore && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+              {secondaryCategories.map((category) => (
+                <CategoryCard key={category.id} category={category} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
