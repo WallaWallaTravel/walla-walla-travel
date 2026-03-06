@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import type { EventCategory, EventTag, EventWithCategory, EventAnalyticsSummary } from '@/lib/types/events';
 import { RecurrenceSection } from '@/components/events/RecurrenceSection';
 import { TagSelector } from '@/components/events/TagSelector';
@@ -13,7 +14,7 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
   const [categories, setCategories] = useState<EventCategory[]>([]);
   const [availableTags, setAvailableTags] = useState<EventTag[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
-  const [analytics, setAnalytics] = useState<EventAnalyticsSummary | null>(null);
+  const [analytics, setAnalytics] = useState<(EventAnalyticsSummary & { top_source?: string | null }) | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -259,18 +260,32 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
 
       {/* Analytics Summary */}
       {analytics && (
-        <div className="mb-6 grid grid-cols-3 gap-4">
-          <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-            <p className="text-2xl font-bold text-gray-900">{analytics.impressions.toLocaleString()}</p>
-            <p className="text-sm text-gray-600">Views</p>
+        <div className="mb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
+              <p className="text-2xl font-bold text-gray-900">{analytics.impressions.toLocaleString()}</p>
+              <p className="text-sm text-gray-600">Views</p>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
+              <p className="text-2xl font-bold text-gray-900">{analytics.click_throughs.toLocaleString()}</p>
+              <p className="text-sm text-gray-600">Clicks</p>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
+              <p className="text-2xl font-bold text-gray-900">{analytics.click_through_rate}%</p>
+              <p className="text-sm text-gray-600">CTR</p>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
+              <p className="text-2xl font-bold text-gray-900 truncate">{analytics.top_source || 'N/A'}</p>
+              <p className="text-sm text-gray-600">Top Source</p>
+            </div>
           </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-            <p className="text-2xl font-bold text-gray-900">{analytics.click_throughs.toLocaleString()}</p>
-            <p className="text-sm text-gray-600">Clicks</p>
-          </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-            <p className="text-2xl font-bold text-gray-900">{analytics.click_through_rate}%</p>
-            <p className="text-sm text-gray-600">CTR</p>
+          <div className="mt-2 text-right">
+            <Link
+              href="/admin/marketing/events-analytics"
+              className="text-sm text-[#1E3A5F] hover:underline font-medium"
+            >
+              See more analytics →
+            </Link>
           </div>
         </div>
       )}

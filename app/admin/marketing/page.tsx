@@ -77,6 +77,14 @@ export default function MarketingDashboard() {
 
   const marketingModules = [
     {
+      title: 'Events Analytics',
+      description: 'Track event impressions, click-throughs, CTR, and traffic attribution by source',
+      icon: '📈',
+      href: '/admin/marketing/events-analytics',
+      color: 'from-blue-500 to-indigo-600',
+      stats: 'NEW',
+    },
+    {
       title: 'AI Content Generator',
       description: 'Generate social media posts for partner wineries using AI',
       icon: '🤖',

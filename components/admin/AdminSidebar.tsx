@@ -58,6 +58,7 @@ const NAV_ITEMS: NavItem[] = [
   // Other items (Analytics, A/B Testing, Social Media, Email, Content Calendar, Competitors)
   // are now sub-navigation inside Marketing Hub
   { label: 'Marketing Hub', icon: '📊', href: '/admin/marketing', section: 'Marketing', requiredAccess: 'admin' },
+  { label: 'Events Analytics', icon: '📈', href: '/admin/marketing/events-analytics', section: 'Marketing', requiredAccess: 'admin' },
   { label: 'Leads', icon: '🎯', href: '/admin/marketing/leads', section: 'Marketing', requiredAccess: 'admin' },
 
   // Services section REMOVED - features live inside Trip Proposals
