@@ -4,7 +4,7 @@
  * GET /api/my-trip/[token]/join - Get trip info for the join page
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { withErrorHandling, RouteContext } from '@/lib/api/middleware/error-handler';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import { rateLimiters } from '@/lib/api/middleware/rate-limit';
@@ -68,6 +68,8 @@ export const GET = withErrorHandling<unknown, RouteParams>(
       end_date: proposal.end_date,
       at_capacity: atCapacity,
       max_guests: proposal.max_guests,
+      registration_deposit_amount: proposal.registration_deposit_amount ? parseFloat(proposal.registration_deposit_amount) : null,
+      registration_deposit_type: proposal.registration_deposit_type || null,
     };
 
     if (proposal.show_guest_count_to_guests) {
@@ -164,6 +166,22 @@ export const POST = withCSRF(
       rsvp_status: rsvpStatus,
     });
 
+    // Send registration confirmation email (no deposit)
+    after(async () => {
+      try {
+        const { tripProposalEmailService } = await import('@/lib/services/trip-proposal-email.service');
+        await tripProposalEmailService.sendRegistrationConfirmationEmail(
+          proposal.id,
+          guest.id
+        );
+      } catch (err) {
+        const { logger } = await import('@/lib/logger');
+        logger.error('[Guest Join] Failed to send registration confirmation', {
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    });
+
     return NextResponse.json(
       {
         success: true,
@@ -171,6 +189,7 @@ export const POST = withCSRF(
           guest_access_token: guest.guest_access_token,
           rsvp_status: rsvpStatus,
           needs_approval: proposal.guest_approval_required,
+          registration_deposit_amount: proposal.registration_deposit_amount ? parseFloat(proposal.registration_deposit_amount) : null,
         },
         message: proposal.guest_approval_required
           ? 'Registration submitted — awaiting approval'

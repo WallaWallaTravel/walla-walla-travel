@@ -215,6 +215,49 @@ export const GuestsTab = React.memo(function GuestsTab({
           </label>
         </div>
 
+        {/* Registration Deposit Settings */}
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <h4 className="text-xs font-bold text-gray-700 mb-3">Registration Deposit</h4>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Deposit Amount ($)</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={proposal.registration_deposit_amount ?? ''}
+                onChange={(e) => updateGuestSettings({
+                  registration_deposit_amount: e.target.value ? parseFloat(e.target.value) : null,
+                })}
+                placeholder="0.00"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Deposit Type</label>
+              <select
+                value={proposal.registration_deposit_type || 'flat'}
+                onChange={(e) => updateGuestSettings({ registration_deposit_type: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              >
+                <option value="flat">Flat Rate</option>
+                <option value="per_person">Per Person</option>
+              </select>
+            </div>
+            <div className="flex items-end">
+              <label className="flex items-center gap-2 cursor-pointer pb-2">
+                <input
+                  type="checkbox"
+                  checked={proposal.registration_open || false}
+                  onChange={() => updateGuestSettings({ registration_open: !proposal.registration_open })}
+                  className="h-4 w-4 rounded border-gray-300 text-indigo-600"
+                />
+                <span className="text-sm font-medium text-gray-900">Registration Open</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
         {/* Dynamic Pricing Preview Table */}
         {proposal.dynamic_pricing_enabled && proposal.min_guests && proposal.max_guests && parseFloat(proposal.total) > 0 && (
           <div className="mt-4 pt-4 border-t border-gray-200">
@@ -433,6 +476,21 @@ export const GuestsTab = React.memo(function GuestsTab({
               <div className="col-span-2">
                 <span className="text-gray-500 text-xs">Dietary:</span>{' '}
                 <span className="text-gray-900">{guest.dietary_restrictions}</span>
+              </div>
+            )}
+            {guest.payment_status && guest.payment_status !== 'unpaid' && (
+              <div className="col-span-2">
+                <span className="text-gray-500 text-xs">Deposit:</span>{' '}
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                  guest.payment_status === 'paid' ? 'bg-emerald-100 text-emerald-800' :
+                  guest.payment_status === 'partial' ? 'bg-amber-100 text-amber-800' :
+                  'bg-gray-100 text-gray-700'
+                }`}>
+                  {guest.payment_status === 'paid' ? 'Paid' : guest.payment_status === 'partial' ? 'Partial' : guest.payment_status}
+                  {guest.amount_paid && parseFloat(guest.amount_paid) > 0 && (
+                    <span className="ml-1">(${parseFloat(guest.amount_paid).toFixed(2)})</span>
+                  )}
+                </span>
               </div>
             )}
           </div>

@@ -12,7 +12,6 @@ import { after } from 'next/server';
 import { withErrorHandling, BadRequestError, NotFoundError, RouteContext } from '@/lib/api/middleware/error-handler';
 import { getBrandStripeClient } from '@/lib/stripe-brands';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
-import { tripProposalEmailService as _tripProposalEmailService } from '@/lib/services/trip-proposal-email.service';
 import { query, queryOne, withTransaction } from '@/lib/db-helpers';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
@@ -131,19 +130,12 @@ export const POST = withCSRF(
     // Send confirmation email asynchronously
     after(async () => {
       try {
-        logger.info('[Registration Payment] Payment confirmed', {
-          proposalId: proposal.id,
-          guestId: guest.id,
-          amount,
-          paymentIntentId: payment_intent_id,
-        });
-
-        // TODO: sendRegistrationConfirmationEmail not yet implemented
-        // await tripProposalEmailService.sendRegistrationConfirmationEmail(
-        //   proposal.id,
-        //   guest.id,
-        //   amount
-        // );
+        const { tripProposalEmailService } = await import('@/lib/services/trip-proposal-email.service');
+        await tripProposalEmailService.sendRegistrationConfirmationEmail(
+          proposal.id,
+          guest.id,
+          amount
+        );
       } catch (err) {
         logger.error('[Registration Payment] Failed to send confirmation email', {
           error: err instanceof Error ? err.message : String(err),

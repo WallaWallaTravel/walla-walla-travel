@@ -85,6 +85,8 @@ export interface GuestData {
   rsvp_status?: string;
   is_registered?: boolean;
   shared_tour_ticket_id?: number | null;
+  payment_status?: string;
+  amount_paid?: string;
 }
 
 export interface InclusionData {
@@ -137,6 +139,9 @@ export interface ProposalDetail {
   dynamic_pricing_enabled?: boolean;
   guest_approval_required?: boolean;
   show_guest_count_to_guests?: boolean;
+  registration_deposit_amount?: string | null;
+  registration_deposit_type?: string | null;
+  registration_open?: boolean;
   archived_at?: string;
   created_at: string;
   updated_at: string;

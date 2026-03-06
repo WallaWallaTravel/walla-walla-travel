@@ -24,6 +24,7 @@ import {
   buildDepositReceivedEmail,
   buildDepositReceivedStaffEmail,
 } from '@/lib/email/templates/trip-proposal-emails';
+import { buildRegistrationConfirmationEmail } from '@/lib/email/templates/registration-confirmation-email';
 import { emailPreferencesService } from '@/lib/services/email-preferences.service';
 
 const STAFF_EMAIL = process.env.STAFF_NOTIFICATION_EMAIL || 'info@wallawalla.travel';
@@ -423,6 +424,86 @@ class TripProposalEmailService {
     } catch (error) {
       logger.error('[TripProposalEmail] Error sending deposit received emails', {
         proposalId,
+        error,
+      });
+    }
+  }
+
+  /**
+   * Send "Registration Confirmation" email to a guest.
+   * Triggered after a guest registers (with or without a deposit payment).
+   */
+  async sendRegistrationConfirmationEmail(
+    proposalId: number,
+    guestId: number,
+    depositAmount?: number
+  ): Promise<void> {
+    const emailType = 'registration_confirmation';
+    try {
+      const proposal = await tripProposalService.getById(proposalId);
+      if (!proposal) {
+        logger.warn('[TripProposalEmail] Proposal not found for registration confirmation', { proposalId });
+        return;
+      }
+
+      // Get guest info
+      const guest = await queryOne<{ name: string; email: string | null; guest_access_token: string }>(
+        `SELECT name, email, guest_access_token FROM trip_proposal_guests WHERE id = $1 AND trip_proposal_id = $2`,
+        [guestId, proposalId]
+      );
+      if (!guest?.email) {
+        logger.warn('[TripProposalEmail] Guest has no email for registration confirmation', { proposalId, guestId });
+        return;
+      }
+
+      // CAN-SPAM: check unsubscribe
+      if (await emailPreferencesService.isUnsubscribed(guest.email)) {
+        logger.info('[TripProposalEmail] Skipping registration confirmation — recipient unsubscribed', { email: guest.email });
+        return;
+      }
+
+      const pref = await emailPreferencesService.getOrCreatePreference(guest.email);
+      const unsubscribeUrl = emailPreferencesService.getUnsubscribeUrl(pref.unsubscribe_token);
+      const unsubscribeHeaders = emailPreferencesService.getUnsubscribeHeaders(pref.unsubscribe_token);
+
+      const brandId = proposal.brand_id ?? undefined;
+      const brand = getBrandEmailConfig(brandId);
+      const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://wallawalla.travel';
+      const portalUrl = `${BASE_URL}/my-trip/${proposal.access_token}?guest=${guest.guest_access_token}`;
+
+      const template = buildRegistrationConfirmationEmail({
+        guest_name: guest.name,
+        trip_title: proposal.trip_title || proposal.proposal_number,
+        start_date: formatDateForEmail(proposal.start_date),
+        end_date: formatDateForEmail(proposal.end_date || null),
+        deposit_amount: depositAmount,
+        portal_url: portalUrl,
+        brand_id: proposal.brand_id || 1,
+        unsubscribe_url: unsubscribeUrl,
+      });
+
+      const success = await sendEmail({
+        to: guest.email,
+        from: `${brand.name} <${brand.from_email}>`,
+        replyTo: brand.reply_to,
+        subject: template.subject,
+        html: template.html,
+        text: template.text,
+        headers: unsubscribeHeaders,
+      });
+
+      await logEmail(proposalId, emailType, guest.email, template.subject, success);
+
+      logger.info('[TripProposalEmail] Registration confirmation email sent', {
+        proposalId,
+        guestId,
+        success,
+        to: guest.email,
+      });
+    } catch (error) {
+      logger.error('[TripProposalEmail] Error sending registration confirmation email', {
+        proposalId,
+        guestId,
         error,
       });
     }

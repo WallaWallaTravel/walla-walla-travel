@@ -177,6 +177,11 @@ export interface TripProposal {
   guest_approval_required: boolean;
   show_guest_count_to_guests: boolean;
 
+  // Registration deposit
+  registration_deposit_amount: string | null;
+  registration_deposit_type: string | null;
+  registration_open: boolean;
+
   // Balance
   balance_due: number;
   balance_paid: boolean;
@@ -646,6 +651,9 @@ export const UpdateTripProposalSchema = CreateTripProposalSchema.partial().exten
   guest_approval_required: z.boolean().optional(),
   show_guest_count_to_guests: z.boolean().optional(),
   draft_reminders_enabled: z.boolean().optional(),
+  registration_deposit_amount: z.number().min(0).nullable().optional(),
+  registration_deposit_type: z.enum(['flat', 'per_person']).nullable().optional(),
+  registration_open: z.boolean().optional(),
 });
 
 export const AddDaySchema = z.object({
