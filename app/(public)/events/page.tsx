@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { eventsService } from '@/lib/services/events.service';
 import { EventCard } from '@/components/events/EventCard';
 import { CategoryGrid } from '@/components/events/CategoryGrid';
+import { TagFilterChips } from '@/components/events/TagFilterChips';
 import { EventsSearchBar } from '@/components/events/EventsSearchBar';
 import { getCanonicalUrl } from '@/lib/utils/domain';
 
@@ -35,17 +36,20 @@ export default async function EventsHomePage({
   const params = await searchParams;
   const category = typeof params.category === 'string' ? params.category : undefined;
   const search = typeof params.search === 'string' ? params.search : undefined;
+  const tags = typeof params.tags === 'string' ? params.tags : undefined;
   const free = params.free === 'true' ? true : undefined;
   const page = typeof params.page === 'string' ? parseInt(params.page) : 1;
   const limit = 12;
   const offset = (page - 1) * limit;
 
-  const [featured, categories, events] = await Promise.all([
+  const [featured, categories, allTags, events] = await Promise.all([
     eventsService.getFeatured(4),
     eventsService.getCategories(),
+    eventsService.getAllTags(),
     eventsService.listPublished({
       category,
       search,
+      tags,
       isFree: free,
       limit,
       offset,
@@ -100,6 +104,13 @@ export default async function EventsHomePage({
         </section>
       )}
 
+      {/* Tag Filter Chips */}
+      {allTags.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <TagFilterChips tags={allTags} activeTags={tags} />
+        </section>
+      )}
+
       {/* Category Grid */}
       <section id="categories" className="bg-gray-50 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -126,7 +137,7 @@ export default async function EventsHomePage({
         </div>
 
         {/* Active filters */}
-        {(search || category || free) && (
+        {(search || category || tags || free) && (
           <div className="flex flex-wrap gap-2 mb-6">
             {search && (
               <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gray-100 text-sm text-gray-700">
@@ -140,6 +151,14 @@ export default async function EventsHomePage({
               <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gray-100 text-sm text-gray-700">
                 Category: {category}
                 <Link href="/events" className="ml-1 text-gray-500 hover:text-gray-700">
+                  &times;
+                </Link>
+              </span>
+            )}
+            {tags && (
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#8B1538]/10 text-sm text-[#8B1538]">
+                Tags: {tags.split(',').join(', ')}
+                <Link href="/events" className="ml-1 text-[#8B1538]/60 hover:text-[#8B1538]">
                   &times;
                 </Link>
               </span>
@@ -171,7 +190,7 @@ export default async function EventsHomePage({
               <div className="flex justify-center gap-2 mt-10">
                 {page > 1 && (
                   <Link
-                    href={`/events?page=${page - 1}${category ? `&category=${category}` : ''}${search ? `&search=${search}` : ''}${free ? '&free=true' : ''}`}
+                    href={`/events?page=${page - 1}${category ? `&category=${category}` : ''}${search ? `&search=${search}` : ''}${tags ? `&tags=${tags}` : ''}${free ? '&free=true' : ''}`}
                     className="px-4 py-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 text-sm font-medium"
                   >
                     Previous
@@ -182,7 +201,7 @@ export default async function EventsHomePage({
                 </span>
                 {page < totalPages && (
                   <Link
-                    href={`/events?page=${page + 1}${category ? `&category=${category}` : ''}${search ? `&search=${search}` : ''}${free ? '&free=true' : ''}`}
+                    href={`/events?page=${page + 1}${category ? `&category=${category}` : ''}${search ? `&search=${search}` : ''}${tags ? `&tags=${tags}` : ''}${free ? '&free=true' : ''}`}
                     className="px-4 py-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 text-sm font-medium"
                   >
                     Next

@@ -2,13 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import type { EventCategory } from '@/lib/types/events';
+import type { EventCategory, EventTag } from '@/lib/types/events';
 import { RecurrenceSection } from '@/components/events/RecurrenceSection';
+import { TagSelector } from '@/components/events/TagSelector';
 import PhoneInput from '@/components/ui/PhoneInput';
 
 export default function AdminCreateEventPage() {
   const router = useRouter();
   const [categories, setCategories] = useState<EventCategory[]>([]);
+  const [availableTags, setAvailableTags] = useState<EventTag[]>([]);
+  const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isRecurring, setIsRecurring] = useState(false);
@@ -53,18 +56,25 @@ export default function AdminCreateEventPage() {
   });
 
   useEffect(() => {
-    async function fetchCategories() {
+    async function fetchFormData() {
       try {
-        const response = await fetch('/api/v1/events/categories');
-        if (response.ok) {
-          const result = await response.json();
+        const [catRes, tagRes] = await Promise.all([
+          fetch('/api/v1/events/categories'),
+          fetch('/api/v1/events/tags'),
+        ]);
+        if (catRes.ok) {
+          const result = await catRes.json();
           setCategories(result.data);
         }
+        if (tagRes.ok) {
+          const result = await tagRes.json();
+          setAvailableTags(result.data);
+        }
       } catch (err) {
-        console.error('Failed to fetch categories:', err);
+        console.error('Failed to fetch form data:', err);
       }
     }
-    fetchCategories();
+    fetchFormData();
   }, []);
 
   const updateField = (field: string, value: string | boolean) => {
@@ -108,6 +118,10 @@ export default function AdminCreateEventPage() {
       if (form.feature_priority) payload.feature_priority = parseInt(form.feature_priority);
       if (form.meta_title) payload.meta_title = form.meta_title;
       if (form.meta_description) payload.meta_description = form.meta_description;
+
+      if (selectedTagIds.length > 0) {
+        payload.tag_ids = selectedTagIds;
+      }
 
       if (isRecurring && recurrenceRule) {
         payload.is_recurring = true;
@@ -237,16 +251,13 @@ export default function AdminCreateEventPage() {
               </select>
             </div>
             <div>
-              <label htmlFor="tags" className="block text-sm font-medium text-gray-900 mb-1">
+              <label className="block text-sm font-medium text-gray-900 mb-1">
                 Tags
               </label>
-              <input
-                id="tags"
-                type="text"
-                value={form.tags}
-                onChange={(e) => updateField('tags', e.target.value)}
-                placeholder="wine, tasting, spring (comma separated)"
-                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/30"
+              <TagSelector
+                availableTags={availableTags}
+                selectedTagIds={selectedTagIds}
+                onChange={setSelectedTagIds}
               />
             </div>
           </div>

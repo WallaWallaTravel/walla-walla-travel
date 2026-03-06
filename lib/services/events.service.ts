@@ -20,6 +20,8 @@ import type {
   Event,
   EventWithCategory,
   EventCategory,
+  EventTag,
+  EventAnalyticsSummary,
   CreateEventData,
   UpdateEventData,
   EventFilters,
@@ -83,29 +85,45 @@ export class EventsService extends BaseService {
       paramIndex++;
     }
 
+    // Tag filtering: ?tags=family-friendly,free
+    let tagJoin = '';
+    if (filters.tags) {
+      const tagSlugs = filters.tags.split(',').map(t => t.trim()).filter(Boolean);
+      if (tagSlugs.length > 0) {
+        tagJoin = `JOIN event_tag_assignments eta ON eta.event_id = e.id JOIN event_tags et ON et.id = eta.tag_id`;
+        conditions.push(`et.slug = ANY($${paramIndex})`);
+        params.push(tagSlugs);
+        paramIndex++;
+      }
+    }
+
     const whereClause = conditions.join(' AND ');
     const limit = filters.limit || 20;
     const offset = filters.offset || 0;
 
     // Count total
     const countSql = `
-      SELECT COUNT(*)::text as count
+      SELECT COUNT(DISTINCT e.id)::text as count
       FROM events e
       LEFT JOIN event_categories ec ON e.category_id = ec.id
+      ${tagJoin}
       WHERE ${whereClause}
     `;
     const total = await this.queryCount(countSql, params);
 
     // Fetch data
     const dataSql = `
-      SELECT e.*,
+      SELECT DISTINCT ON (e.is_featured, e.feature_priority, e.start_date, e.id)
+             e.*,
              ec.name as category_name,
              ec.slug as category_slug,
-             ec.icon as category_icon
+             ec.icon as category_icon,
+             (SELECT ARRAY_AGG(et2.slug) FROM event_tag_assignments eta2 JOIN event_tags et2 ON et2.id = eta2.tag_id WHERE eta2.event_id = e.id) as event_tag_slugs
       FROM events e
       LEFT JOIN event_categories ec ON e.category_id = ec.id
+      ${tagJoin}
       WHERE ${whereClause}
-      ORDER BY e.is_featured DESC, e.feature_priority DESC, e.start_date ASC
+      ORDER BY e.is_featured DESC, e.feature_priority DESC, e.start_date ASC, e.id
       LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
     `;
     const data = await this.queryMany<EventWithCategory>(dataSql, [...params, limit, offset]);
@@ -129,7 +147,8 @@ export class EventsService extends BaseService {
       `SELECT e.*,
               ec.name as category_name,
               ec.slug as category_slug,
-              ec.icon as category_icon
+              ec.icon as category_icon,
+              (SELECT ARRAY_AGG(et.slug) FROM event_tag_assignments eta JOIN event_tags et ON et.id = eta.tag_id WHERE eta.event_id = e.id) as event_tag_slugs
        FROM events e
        LEFT JOIN event_categories ec ON e.category_id = ec.id
        WHERE e.status = 'published'
@@ -151,7 +170,8 @@ export class EventsService extends BaseService {
       `SELECT e.*,
               ec.name as category_name,
               ec.slug as category_slug,
-              ec.icon as category_icon
+              ec.icon as category_icon,
+              (SELECT ARRAY_AGG(et.slug) FROM event_tag_assignments eta JOIN event_tags et ON et.id = eta.tag_id WHERE eta.event_id = e.id) as event_tag_slugs
        FROM events e
        LEFT JOIN event_categories ec ON e.category_id = ec.id
        WHERE e.status = 'published'
@@ -172,7 +192,8 @@ export class EventsService extends BaseService {
       `SELECT e.*,
               ec.name as category_name,
               ec.slug as category_slug,
-              ec.icon as category_icon
+              ec.icon as category_icon,
+              (SELECT ARRAY_AGG(et.slug) FROM event_tag_assignments eta JOIN event_tags et ON et.id = eta.tag_id WHERE eta.event_id = e.id) as event_tag_slugs
        FROM events e
        LEFT JOIN event_categories ec ON e.category_id = ec.id
        WHERE e.slug = $1 AND e.status = 'published'`,
@@ -294,7 +315,8 @@ export class EventsService extends BaseService {
       SELECT e.*,
              ec.name as category_name,
              ec.slug as category_slug,
-             ec.icon as category_icon
+             ec.icon as category_icon,
+             (SELECT ARRAY_AGG(et.slug) FROM event_tag_assignments eta JOIN event_tags et ON et.id = eta.tag_id WHERE eta.event_id = e.id) as event_tag_slugs
       FROM events e
       LEFT JOIN event_categories ec ON e.category_id = ec.id
       WHERE ${whereClause}
@@ -320,7 +342,8 @@ export class EventsService extends BaseService {
       `SELECT e.*,
               ec.name as category_name,
               ec.slug as category_slug,
-              ec.icon as category_icon
+              ec.icon as category_icon,
+              (SELECT ARRAY_AGG(et.slug) FROM event_tag_assignments eta JOIN event_tags et ON et.id = eta.tag_id WHERE eta.event_id = e.id) as event_tag_slugs
        FROM events e
        LEFT JOIN event_categories ec ON e.category_id = ec.id
        WHERE e.id = $1`,
@@ -371,7 +394,14 @@ export class EventsService extends BaseService {
       created_by: userId,
     };
 
-    return this.insert<Event>('events', eventData);
+    const event = await this.insert<Event>('events', eventData);
+
+    // Handle structured tag assignments
+    if (data.tag_ids && data.tag_ids.length > 0) {
+      await this.setEventTags(event.id, data.tag_ids);
+    }
+
+    return event;
   }
 
   /**
@@ -402,6 +432,15 @@ export class EventsService extends BaseService {
       if (field in data && data[field as keyof UpdateEventData] !== undefined) {
         updateData[field] = data[field as keyof UpdateEventData];
       }
+    }
+
+    if (Object.keys(updateData).length === 0 && !('tag_ids' in data)) {
+      return existing;
+    }
+
+    // Handle structured tag assignments
+    if ('tag_ids' in data) {
+      await this.setEventTags(id, data.tag_ids || []);
     }
 
     if (Object.keys(updateData).length === 0) {
@@ -470,23 +509,104 @@ export class EventsService extends BaseService {
   // ============================================================================
 
   /**
-   * Increment view count
+   * Track an impression (detail page view) with optional source
    */
-  async trackView(id: number): Promise<void> {
+  async trackView(id: number, source?: string | null, referrer?: string | null): Promise<void> {
     await this.query(
       `UPDATE events SET view_count = view_count + 1 WHERE id = $1`,
       [id]
     );
+    await this.query(
+      `INSERT INTO event_analytics (event_id, action, source, referrer) VALUES ($1, 'impression', $2, $3)`,
+      [id, source || null, referrer || null]
+    );
   }
 
   /**
-   * Increment click count (ticket link clicks)
+   * Track a click-through (ticket/external link click) with optional source
    */
-  async trackClick(id: number): Promise<void> {
+  async trackClick(id: number, source?: string | null, referrer?: string | null): Promise<void> {
     await this.query(
       `UPDATE events SET click_count = click_count + 1 WHERE id = $1`,
       [id]
     );
+    await this.query(
+      `INSERT INTO event_analytics (event_id, action, source, referrer) VALUES ($1, 'click_through', $2, $3)`,
+      [id, source || null, referrer || null]
+    );
+  }
+
+  /**
+   * Get analytics summary for an event
+   */
+  async getAnalyticsSummary(eventId: number): Promise<EventAnalyticsSummary> {
+    const result = await this.queryOne<{
+      impressions: string;
+      click_throughs: string;
+    }>(
+      `SELECT
+        COUNT(*) FILTER (WHERE action = 'impression')::text as impressions,
+        COUNT(*) FILTER (WHERE action = 'click_through')::text as click_throughs
+       FROM event_analytics
+       WHERE event_id = $1`,
+      [eventId]
+    );
+
+    const impressions = parseInt(result?.impressions || '0');
+    const clickThroughs = parseInt(result?.click_throughs || '0');
+
+    return {
+      impressions,
+      click_throughs: clickThroughs,
+      click_through_rate: impressions > 0 ? Math.round((clickThroughs / impressions) * 10000) / 100 : 0,
+    };
+  }
+
+  // ============================================================================
+  // Tags
+  // ============================================================================
+
+  async getAllTags(): Promise<EventTag[]> {
+    return this.queryMany<EventTag>(
+      `SELECT * FROM event_tags ORDER BY name ASC`
+    );
+  }
+
+  async createTag(name: string, slug: string): Promise<EventTag> {
+    return this.insert<EventTag>('event_tags', { name, slug });
+  }
+
+  async updateTag(id: number, name: string, slug: string): Promise<EventTag | null> {
+    return this.update<EventTag>('event_tags', id, { name, slug });
+  }
+
+  async deleteTag(id: number): Promise<boolean> {
+    return this.delete('event_tags', id);
+  }
+
+  async setEventTags(eventId: number, tagIds: number[]): Promise<void> {
+    // Remove existing assignments
+    await this.query(
+      `DELETE FROM event_tag_assignments WHERE event_id = $1`,
+      [eventId]
+    );
+
+    // Insert new assignments
+    if (tagIds.length > 0) {
+      const values = tagIds.map((tagId, i) => `($1, $${i + 2})`).join(', ');
+      await this.query(
+        `INSERT INTO event_tag_assignments (event_id, tag_id) VALUES ${values} ON CONFLICT DO NOTHING`,
+        [eventId, ...tagIds]
+      );
+    }
+  }
+
+  async getEventTagIds(eventId: number): Promise<number[]> {
+    const rows = await this.queryMany<{ tag_id: number }>(
+      `SELECT tag_id FROM event_tag_assignments WHERE event_id = $1`,
+      [eventId]
+    );
+    return rows.map(r => r.tag_id);
   }
 
   // ============================================================================

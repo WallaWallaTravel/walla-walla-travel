@@ -1,64 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { RecurrenceSection } from '@/components/events/RecurrenceSection';
+import { TagSelector } from '@/components/events/TagSelector';
+import ImageEditorModal from '@/components/admin/ImageEditorModal';
+import type { EventTag } from '@/lib/types/events';
 
 interface Category {
   id: number;
   name: string;
   slug: string;
 }
-
-interface EventFormData {
-  title: string;
-  short_description: string;
-  description: string;
-  category_id: string;
-  tags: string;
-  start_date: string;
-  end_date: string;
-  start_time: string;
-  end_time: string;
-  is_all_day: boolean;
-  venue_name: string;
-  address: string;
-  city: string;
-  state: string;
-  zip: string;
-  featured_image_url: string;
-  is_free: boolean;
-  price_min: string;
-  price_max: string;
-  ticket_url: string;
-  meta_title: string;
-  meta_description: string;
-}
-
-const initialFormData: EventFormData = {
-  title: '',
-  short_description: '',
-  description: '',
-  category_id: '',
-  tags: '',
-  start_date: '',
-  end_date: '',
-  start_time: '',
-  end_time: '',
-  is_all_day: false,
-  venue_name: '',
-  address: '',
-  city: 'Walla Walla',
-  state: 'WA',
-  zip: '',
-  featured_image_url: '',
-  is_free: true,
-  price_min: '',
-  price_max: '',
-  ticket_url: '',
-  meta_title: '',
-  meta_description: '',
-};
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return <h2 className="text-lg font-semibold text-gray-900 mb-4">{children}</h2>;
@@ -89,12 +42,23 @@ function FormSkeleton() {
 
 export default function CreateEventPage() {
   const router = useRouter();
-  const [form, setForm] = useState<EventFormData>(initialFormData);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [availableTags, setAvailableTags] = useState<EventTag[]>([]);
+  const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [submitAction, setSubmitAction] = useState<'draft' | 'review'>('draft');
   const [error, setError] = useState('');
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  // Image upload
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string>('');
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Recurrence (advanced)
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurrenceRule, setRecurrenceRule] = useState<{
     frequency: 'weekly' | 'biweekly' | 'monthly';
@@ -105,21 +69,54 @@ export default function CreateEventPage() {
     until_date?: string;
   } | null>(null);
 
+  // Essential fields
+  const [form, setForm] = useState({
+    title: '',
+    description: '',
+    category_id: '',
+    start_date: '',
+    start_time: '',
+    end_time: '',
+    is_all_day: false,
+    venue_name: '',
+    address: '',
+    city: 'Walla Walla',
+    state: 'WA',
+    zip: '',
+    featured_image_url: '',
+    is_free: true,
+    price_min: '',
+    price_max: '',
+    ticket_url: '',
+    // Advanced fields
+    short_description: '',
+    end_date: '',
+    meta_title: '',
+    meta_description: '',
+  });
+
   useEffect(() => {
-    async function fetchCategories() {
+    async function fetchFormData() {
       try {
-        const res = await fetch('/api/v1/events/categories');
-        if (res.ok) {
-          const data = await res.json();
-          setCategories(data.categories || data || []);
+        const [catRes, tagRes] = await Promise.all([
+          fetch('/api/v1/events/categories'),
+          fetch('/api/v1/events/tags'),
+        ]);
+        if (catRes.ok) {
+          const data = await catRes.json();
+          setCategories(data.categories || data.data || data || []);
+        }
+        if (tagRes.ok) {
+          const data = await tagRes.json();
+          setAvailableTags(data.data || []);
         }
       } catch {
-        // Categories are optional, can still create event
+        // Categories/tags are optional
       } finally {
         setLoading(false);
       }
     }
-    fetchCategories();
+    fetchFormData();
   }, []);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
@@ -129,6 +126,43 @@ export default function CreateEventPage() {
       setForm((prev) => ({ ...prev, [name]: checked }));
     } else {
       setForm((prev) => ({ ...prev, [name]: value }));
+    }
+  }
+
+  function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageFile(file);
+    setShowCropModal(true);
+  }
+
+  async function handleCropSave(blob: Blob, fileName: string) {
+    setShowCropModal(false);
+    setIsUploading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', blob, fileName);
+      formData.append('folder', 'events');
+
+      const res = await fetch('/api/uploads', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const url = data.url || data.data?.url;
+        if (url) {
+          setForm((prev) => ({ ...prev, featured_image_url: url }));
+          setImagePreview(URL.createObjectURL(blob));
+        }
+      }
+    } catch {
+      setError('Failed to upload image');
+    } finally {
+      setIsUploading(false);
+      setImageFile(null);
     }
   }
 
@@ -151,12 +185,34 @@ export default function CreateEventPage() {
 
     try {
       const payload: Record<string, unknown> = {
-        ...form,
+        title: form.title,
+        description: form.description,
+        start_date: form.start_date,
+        is_all_day: form.is_all_day,
+        is_free: form.is_free,
+        city: form.city,
+        state: form.state,
         category_id: form.category_id ? parseInt(form.category_id, 10) : null,
-        tags: form.tags ? form.tags.split(',').map((t) => t.trim()).filter(Boolean) : [],
+        tags: [],
         price_min: form.price_min ? parseFloat(form.price_min) : null,
         price_max: form.price_max ? parseFloat(form.price_max) : null,
       };
+
+      if (form.short_description) payload.short_description = form.short_description;
+      if (form.end_date) payload.end_date = form.end_date;
+      if (!form.is_all_day && form.start_time) payload.start_time = form.start_time;
+      if (!form.is_all_day && form.end_time) payload.end_time = form.end_time;
+      if (form.venue_name) payload.venue_name = form.venue_name;
+      if (form.address) payload.address = form.address;
+      if (form.zip) payload.zip = form.zip;
+      if (form.featured_image_url) payload.featured_image_url = form.featured_image_url;
+      if (form.ticket_url) payload.ticket_url = form.ticket_url;
+      if (form.meta_title) payload.meta_title = form.meta_title;
+      if (form.meta_description) payload.meta_description = form.meta_description;
+
+      if (selectedTagIds.length > 0) {
+        payload.tag_ids = selectedTagIds;
+      }
 
       if (isRecurring && recurrenceRule) {
         payload.is_recurring = true;
@@ -182,7 +238,6 @@ export default function CreateEventPage() {
       if (action === 'review' && eventId) {
         const submitRes = await fetch(`/api/organizer/events/${eventId}/submit`, { method: 'POST' });
         if (!submitRes.ok) {
-          // Event created but submit failed - redirect to events list anyway
           router.push('/organizer-portal/events');
           return;
         }
@@ -220,13 +275,13 @@ export default function CreateEventPage() {
         </div>
       )}
 
-      <form onSubmit={(e) => handleSubmit(e, submitAction)} className="space-y-8">
-        {/* Basic Info */}
+      <form onSubmit={(e) => handleSubmit(e, submitAction)} className="space-y-6">
+        {/* Event Name */}
         <section className="bg-white rounded-xl border border-gray-200 p-6">
-          <SectionHeading>Basic Information</SectionHeading>
+          <SectionHeading>Event Details</SectionHeading>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="title" required>Event Title</Label>
+              <Label htmlFor="title" required>Event Name</Label>
               <input
                 type="text"
                 id="title"
@@ -234,75 +289,46 @@ export default function CreateEventPage() {
                 value={form.title}
                 onChange={handleChange}
                 className={inputCls}
-                placeholder="Enter event title"
-                aria-label="Event title"
+                placeholder="What's the name of your event?"
                 required
               />
             </div>
             <div>
-              <Label htmlFor="short_description">Short Description</Label>
-              <input
-                type="text"
-                id="short_description"
-                name="short_description"
-                value={form.short_description}
-                onChange={handleChange}
-                className={inputCls}
-                placeholder="Brief summary of the event"
-                aria-label="Short description"
-                maxLength={200}
-              />
-              <p className="text-xs text-gray-600 mt-1">{form.short_description.length}/200 characters</p>
-            </div>
-            <div>
-              <Label htmlFor="description">Full Description</Label>
+              <Label htmlFor="description">Description</Label>
               <textarea
                 id="description"
                 name="description"
                 value={form.description}
                 onChange={handleChange}
-                rows={6}
+                rows={4}
                 className={inputCls}
-                placeholder="Detailed description of the event"
-                aria-label="Full description"
+                placeholder="Tell people what to expect at your event..."
               />
             </div>
-          </div>
-        </section>
-
-        {/* Category & Tags */}
-        <section className="bg-white rounded-xl border border-gray-200 p-6">
-          <SectionHeading>Category &amp; Tags</SectionHeading>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="category_id">Category</Label>
-              <select
-                id="category_id"
-                name="category_id"
-                value={form.category_id}
-                onChange={handleChange}
-                className={inputCls}
-                aria-label="Event category"
-              >
-                <option value="">Select a category</option>
-                {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>{cat.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <Label htmlFor="tags">Tags</Label>
-              <input
-                type="text"
-                id="tags"
-                name="tags"
-                value={form.tags}
-                onChange={handleChange}
-                className={inputCls}
-                placeholder="e.g., wine, music, family-friendly (comma separated)"
-                aria-label="Event tags"
-              />
-              <p className="text-xs text-gray-600 mt-1">Separate multiple tags with commas</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="category_id">Category</Label>
+                <select
+                  id="category_id"
+                  name="category_id"
+                  value={form.category_id}
+                  onChange={handleChange}
+                  className={inputCls}
+                >
+                  <option value="">Select a category</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <Label htmlFor="tags">Tags</Label>
+                <TagSelector
+                  availableTags={availableTags}
+                  selectedTagIds={selectedTagIds}
+                  onChange={setSelectedTagIds}
+                />
+              </div>
             </div>
           </div>
         </section>
@@ -322,9 +348,9 @@ export default function CreateEventPage() {
               />
               <label htmlFor="is_all_day" className="text-sm font-medium text-gray-900">All-day event</label>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <Label htmlFor="start_date" required>Start Date</Label>
+                <Label htmlFor="start_date" required>Date</Label>
                 <input
                   type="date"
                   id="start_date"
@@ -332,62 +358,38 @@ export default function CreateEventPage() {
                   value={form.start_date}
                   onChange={handleChange}
                   className={inputCls}
-                  aria-label="Start date"
                   required
                 />
               </div>
-              <div>
-                <Label htmlFor="end_date">End Date</Label>
-                <input
-                  type="date"
-                  id="end_date"
-                  name="end_date"
-                  value={form.end_date}
-                  onChange={handleChange}
-                  className={inputCls}
-                  aria-label="End date"
-                />
-              </div>
+              {!form.is_all_day && (
+                <>
+                  <div>
+                    <Label htmlFor="start_time">Start Time</Label>
+                    <input
+                      type="time"
+                      id="start_time"
+                      name="start_time"
+                      value={form.start_time}
+                      onChange={handleChange}
+                      className={inputCls}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="end_time">End Time</Label>
+                    <input
+                      type="time"
+                      id="end_time"
+                      name="end_time"
+                      value={form.end_time}
+                      onChange={handleChange}
+                      className={inputCls}
+                    />
+                  </div>
+                </>
+              )}
             </div>
-            {!form.is_all_day && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="start_time">Start Time</Label>
-                  <input
-                    type="time"
-                    id="start_time"
-                    name="start_time"
-                    value={form.start_time}
-                    onChange={handleChange}
-                    className={inputCls}
-                    aria-label="Start time"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="end_time">End Time</Label>
-                  <input
-                    type="time"
-                    id="end_time"
-                    name="end_time"
-                    value={form.end_time}
-                    onChange={handleChange}
-                    className={inputCls}
-                    aria-label="End time"
-                  />
-                </div>
-              </div>
-            )}
           </div>
         </section>
-
-        {/* Recurrence */}
-        <RecurrenceSection
-          isRecurring={isRecurring}
-          onIsRecurringChange={setIsRecurring}
-          recurrenceRule={recurrenceRule}
-          onRecurrenceRuleChange={setRecurrenceRule}
-          startDate={form.start_date}
-        />
 
         {/* Location */}
         <section className="bg-white rounded-xl border border-gray-200 p-6">
@@ -403,7 +405,6 @@ export default function CreateEventPage() {
                 onChange={handleChange}
                 className={inputCls}
                 placeholder="e.g., Marcus Whitman Hotel"
-                aria-label="Venue name"
               />
             </div>
             <div>
@@ -416,67 +417,70 @@ export default function CreateEventPage() {
                 onChange={handleChange}
                 className={inputCls}
                 placeholder="123 Main St"
-                aria-label="Street address"
               />
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="city">City</Label>
-                <input
-                  type="text"
-                  id="city"
-                  name="city"
-                  value={form.city}
-                  onChange={handleChange}
-                  className={inputCls}
-                  aria-label="City"
-                />
+                <input type="text" id="city" name="city" value={form.city} onChange={handleChange} className={inputCls} />
               </div>
               <div>
                 <Label htmlFor="state">State</Label>
-                <input
-                  type="text"
-                  id="state"
-                  name="state"
-                  value={form.state}
-                  onChange={handleChange}
-                  className={inputCls}
-                  aria-label="State"
-                />
+                <input type="text" id="state" name="state" value={form.state} onChange={handleChange} className={inputCls} />
               </div>
               <div>
-                <Label htmlFor="zip">ZIP Code</Label>
-                <input
-                  type="text"
-                  id="zip"
-                  name="zip"
-                  value={form.zip}
-                  onChange={handleChange}
-                  className={inputCls}
-                  placeholder="99362"
-                  aria-label="ZIP code"
-                />
+                <Label htmlFor="zip">ZIP</Label>
+                <input type="text" id="zip" name="zip" value={form.zip} onChange={handleChange} className={inputCls} placeholder="99362" />
               </div>
             </div>
           </div>
         </section>
 
-        {/* Media */}
+        {/* Image Upload */}
         <section className="bg-white rounded-xl border border-gray-200 p-6">
-          <SectionHeading>Media</SectionHeading>
-          <div>
-            <Label htmlFor="featured_image_url">Featured Image URL</Label>
-            <input
-              type="url"
-              id="featured_image_url"
-              name="featured_image_url"
-              value={form.featured_image_url}
-              onChange={handleChange}
-              className={inputCls}
-              placeholder="https://example.com/image.jpg"
-              aria-label="Featured image URL"
-            />
-            <p className="text-xs text-gray-600 mt-1">Paste a direct link to the event image</p>
+          <SectionHeading>Event Image</SectionHeading>
+          <div className="space-y-3">
+            {(imagePreview || form.featured_image_url) && (
+              <div className="relative aspect-video w-full max-w-md rounded-lg overflow-hidden bg-gray-100">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={imagePreview || form.featured_image_url}
+                  alt="Event preview"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            )}
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+                className="px-4 py-2 rounded-lg border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
+              >
+                {isUploading ? 'Uploading...' : 'Upload Image'}
+              </button>
+              <span className="text-xs text-gray-600">Recommended: 16:9 aspect ratio</span>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageSelect}
+                className="hidden"
+                aria-label="Upload event image"
+              />
+            </div>
+            <div>
+              <Label htmlFor="featured_image_url">Or paste image URL</Label>
+              <input
+                type="url"
+                id="featured_image_url"
+                name="featured_image_url"
+                value={form.featured_image_url}
+                onChange={handleChange}
+                className={inputCls}
+                placeholder="https://example.com/image.jpg"
+              />
+            </div>
           </div>
         </section>
 
@@ -498,7 +502,7 @@ export default function CreateEventPage() {
             {!form.is_free && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="price_min">Minimum Price ($)</Label>
+                  <Label htmlFor="price_min">Price ($)</Label>
                   <input
                     type="number"
                     id="price_min"
@@ -509,11 +513,10 @@ export default function CreateEventPage() {
                     placeholder="0.00"
                     min="0"
                     step="0.01"
-                    aria-label="Minimum price"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="price_max">Maximum Price ($)</Label>
+                  <Label htmlFor="price_max">Max Price ($)</Label>
                   <input
                     type="number"
                     id="price_max"
@@ -521,10 +524,9 @@ export default function CreateEventPage() {
                     value={form.price_max}
                     onChange={handleChange}
                     className={inputCls}
-                    placeholder="0.00"
+                    placeholder="Optional — for price range"
                     min="0"
                     step="0.01"
-                    aria-label="Maximum price"
                   />
                 </div>
               </div>
@@ -539,48 +541,108 @@ export default function CreateEventPage() {
                 onChange={handleChange}
                 className={inputCls}
                 placeholder="https://tickets.example.com/event"
-                aria-label="Ticket URL"
               />
             </div>
           </div>
         </section>
 
-        {/* SEO */}
-        <section className="bg-white rounded-xl border border-gray-200 p-6">
-          <SectionHeading>SEO (Optional)</SectionHeading>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="meta_title">Meta Title</Label>
-              <input
-                type="text"
-                id="meta_title"
-                name="meta_title"
-                value={form.meta_title}
-                onChange={handleChange}
-                className={inputCls}
-                placeholder="Custom title for search engines"
-                aria-label="Meta title"
-                maxLength={70}
+        {/* Advanced Options */}
+        <div>
+          <button
+            type="button"
+            onClick={() => setShowAdvanced(!showAdvanced)}
+            className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-[#8B1538] transition-colors"
+          >
+            <svg
+              className={`w-4 h-4 transition-transform ${showAdvanced ? 'rotate-90' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+            Advanced Options
+          </button>
+
+          {showAdvanced && (
+            <div className="space-y-6 mt-4">
+              {/* Short Description */}
+              <section className="bg-white rounded-xl border border-gray-200 p-6">
+                <SectionHeading>Short Description</SectionHeading>
+                <input
+                  type="text"
+                  id="short_description"
+                  name="short_description"
+                  value={form.short_description}
+                  onChange={handleChange}
+                  className={inputCls}
+                  placeholder="Brief summary (shown in search results)"
+                  maxLength={200}
+                />
+                <p className="text-xs text-gray-600 mt-1">{form.short_description.length}/200 characters</p>
+              </section>
+
+              {/* Multi-day */}
+              <section className="bg-white rounded-xl border border-gray-200 p-6">
+                <SectionHeading>Multi-Day Event</SectionHeading>
+                <div>
+                  <Label htmlFor="end_date">End Date</Label>
+                  <input
+                    type="date"
+                    id="end_date"
+                    name="end_date"
+                    value={form.end_date}
+                    onChange={handleChange}
+                    className={inputCls}
+                  />
+                  <p className="text-xs text-gray-600 mt-1">Leave blank for single-day events</p>
+                </div>
+              </section>
+
+              {/* Recurring */}
+              <RecurrenceSection
+                isRecurring={isRecurring}
+                onIsRecurringChange={setIsRecurring}
+                recurrenceRule={recurrenceRule}
+                onRecurrenceRuleChange={setRecurrenceRule}
+                startDate={form.start_date}
               />
-              <p className="text-xs text-gray-600 mt-1">{form.meta_title.length}/70 characters</p>
+
+              {/* SEO */}
+              <section className="bg-white rounded-xl border border-gray-200 p-6">
+                <SectionHeading>SEO (Optional)</SectionHeading>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="meta_title">Meta Title</Label>
+                    <input
+                      type="text"
+                      id="meta_title"
+                      name="meta_title"
+                      value={form.meta_title}
+                      onChange={handleChange}
+                      className={inputCls}
+                      placeholder="Custom title for search engines"
+                      maxLength={70}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="meta_description">Meta Description</Label>
+                    <textarea
+                      id="meta_description"
+                      name="meta_description"
+                      value={form.meta_description}
+                      onChange={handleChange}
+                      rows={2}
+                      className={inputCls}
+                      placeholder="Custom description for search engines"
+                      maxLength={160}
+                    />
+                  </div>
+                </div>
+              </section>
             </div>
-            <div>
-              <Label htmlFor="meta_description">Meta Description</Label>
-              <textarea
-                id="meta_description"
-                name="meta_description"
-                value={form.meta_description}
-                onChange={handleChange}
-                rows={3}
-                className={inputCls}
-                placeholder="Custom description for search engines"
-                aria-label="Meta description"
-                maxLength={160}
-              />
-              <p className="text-xs text-gray-600 mt-1">{form.meta_description.length}/160 characters</p>
-            </div>
-          </div>
-        </section>
+          )}
+        </div>
 
         {/* Actions */}
         <div className="flex flex-col sm:flex-row gap-3 pb-8">
@@ -602,6 +664,19 @@ export default function CreateEventPage() {
           </button>
         </div>
       </form>
+
+      {/* Image Crop Modal */}
+      {showCropModal && imageFile && (
+        <ImageEditorModal
+          imageFile={imageFile}
+          onSave={handleCropSave}
+          onCancel={() => {
+            setShowCropModal(false);
+            setImageFile(null);
+          }}
+          initialAspectRatio={16 / 9}
+        />
+      )}
     </div>
   );
 }

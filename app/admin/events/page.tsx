@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { logger } from '@/lib/logger';
 import { getApiErrorMessage } from '@/lib/utils/error-messages';
-import type { EventWithCategory, EventStatus } from '@/lib/types/events';
+import type { EventWithCategory, EventStatus, EventTag } from '@/lib/types/events';
 
 interface EventListData {
   data: EventWithCategory[];
@@ -27,6 +27,10 @@ export default function AdminEventsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [hideInstances, setHideInstances] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
+  const [showTagManager, setShowTagManager] = useState(false);
+  const [allTags, setAllTags] = useState<EventTag[]>([]);
+  const [newTagName, setNewTagName] = useState('');
+  const [editingTag, setEditingTag] = useState<EventTag | null>(null);
 
   const fetchEvents = useCallback(async () => {
     setIsLoading(true);
@@ -104,6 +108,76 @@ export default function AdminEventsPage() {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
+  const fetchTags = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/events/tags');
+      if (res.ok) {
+        const data = await res.json();
+        setAllTags(data.data || []);
+      }
+    } catch (error) {
+      logger.error('Failed to fetch tags', { error });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (showTagManager && allTags.length === 0) {
+      fetchTags();
+    }
+  }, [showTagManager, allTags.length, fetchTags]);
+
+  const handleCreateTag = async () => {
+    if (!newTagName.trim()) return;
+    const slug = newTagName.trim().toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-');
+    try {
+      const res = await fetch('/api/admin/events/tags', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newTagName.trim(), slug }),
+      });
+      if (res.ok) {
+        setNewTagName('');
+        fetchTags();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(getApiErrorMessage(data, 'Failed to create tag'));
+      }
+    } catch (error) {
+      logger.error('Failed to create tag', { error });
+    }
+  };
+
+  const handleUpdateTag = async (tag: EventTag) => {
+    const slug = tag.name.trim().toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-');
+    try {
+      const res = await fetch('/api/admin/events/tags', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: tag.id, name: tag.name, slug }),
+      });
+      if (res.ok) {
+        setEditingTag(null);
+        fetchTags();
+      }
+    } catch (error) {
+      logger.error('Failed to update tag', { error });
+    }
+  };
+
+  const handleDeleteTag = async (id: number) => {
+    if (!confirm('Delete this tag? It will be removed from all events.')) return;
+    try {
+      const res = await fetch('/api/admin/events/tags', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      if (res.ok) fetchTags();
+    } catch (error) {
+      logger.error('Failed to delete tag', { error });
+    }
+  };
+
   return (
     <div>
       {/* Header */}
@@ -120,6 +194,82 @@ export default function AdminEventsPage() {
         >
           Create Event
         </button>
+      </div>
+
+      {/* Tag Manager Toggle */}
+      <div className="mb-4">
+        <button
+          onClick={() => setShowTagManager(!showTagManager)}
+          className="text-sm text-gray-600 hover:text-gray-900 inline-flex items-center gap-1"
+        >
+          <svg className={`w-4 h-4 transition-transform ${showTagManager ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+          Manage Tags
+        </button>
+        {showTagManager && (
+          <div className="mt-3 bg-white rounded-xl border border-gray-200 p-4">
+            <div className="flex gap-2 mb-3">
+              <input
+                type="text"
+                value={newTagName}
+                onChange={(e) => setNewTagName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleCreateTag()}
+                placeholder="New tag name..."
+                className="px-3 py-2 rounded-lg border border-gray-200 text-gray-900 placeholder-gray-600 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/30 flex-1"
+                aria-label="New tag name"
+              />
+              <button
+                onClick={handleCreateTag}
+                disabled={!newTagName.trim()}
+                className="px-4 py-2 rounded-lg bg-[#1E3A5F] text-white text-sm font-medium hover:bg-[#1E3A5F]/90 disabled:opacity-50"
+              >
+                Add
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {allTags.map((tag) => (
+                <div key={tag.id} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-gray-100 text-sm">
+                  {editingTag?.id === tag.id ? (
+                    <input
+                      type="text"
+                      value={editingTag.name}
+                      onChange={(e) => setEditingTag({ ...editingTag, name: e.target.value })}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleUpdateTag(editingTag);
+                        if (e.key === 'Escape') setEditingTag(null);
+                      }}
+                      onBlur={() => handleUpdateTag(editingTag)}
+                      className="w-24 px-1 py-0 border-b border-gray-400 bg-transparent text-sm focus:outline-none"
+                      autoFocus
+                      aria-label="Edit tag name"
+                    />
+                  ) : (
+                    <>
+                      <span
+                        className="text-gray-700 cursor-pointer"
+                        onClick={() => setEditingTag(tag)}
+                        title="Click to edit"
+                      >
+                        {tag.name}
+                      </span>
+                      <button
+                        onClick={() => handleDeleteTag(tag.id)}
+                        className="text-gray-500 hover:text-red-600 ml-1"
+                        aria-label={`Delete tag ${tag.name}`}
+                      >
+                        &times;
+                      </button>
+                    </>
+                  )}
+                </div>
+              ))}
+              {allTags.length === 0 && (
+                <p className="text-sm text-gray-600">No tags yet. Add one above.</p>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Filters */}

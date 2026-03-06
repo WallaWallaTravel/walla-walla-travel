@@ -116,6 +116,7 @@ export const createEventSchema = z.object({
   // Categorization
   category_id: z.number().int().positive('Category ID must be a positive integer').optional().nullable(),
   tags: z.array(z.string().max(50)).max(20, 'Maximum 20 tags allowed').optional().nullable(),
+  tag_ids: z.array(z.number().int().positive()).max(20, 'Maximum 20 tags allowed').optional().nullable(),
 
   // Date/Time
   start_date: dateSchema,
@@ -185,6 +186,7 @@ export const updateEventSchema = z.object({
   description: z.string().min(10).trim().optional(),
   category_id: z.number().int().positive().optional().nullable(),
   tags: z.array(z.string().max(50)).max(20).optional().nullable(),
+  tag_ids: z.array(z.number().int().positive()).max(20).optional().nullable(),
   start_date: dateSchema.optional(),
   end_date: dateSchema.optional().nullable(),
   start_time: timeSchema.optional().nullable(),
@@ -217,6 +219,7 @@ export const updateEventSchema = z.object({
  */
 export const eventFiltersSchema = z.object({
   category: slugSchema.optional(),
+  tags: z.string().max(500).trim().optional(),
   search: z.string().max(200).trim().optional(),
   startDate: dateSchema.optional(),
   endDate: dateSchema.optional(),
@@ -232,6 +235,7 @@ export const eventFiltersSchema = z.object({
  */
 export const trackEventSchema = z.object({
   type: z.enum(['view', 'click'], { message: 'Type must be view or click' }),
+  source: z.string().max(255).trim().optional().nullable(),
 });
 
 // ============================================================================

@@ -16,7 +16,19 @@ export interface EventCategory {
   description: string | null;
   icon: string | null;
   display_order: number;
+  display_tier: 'primary' | 'secondary';
   is_active: boolean;
+  created_at: string;
+}
+
+// ============================================================================
+// Event Tags
+// ============================================================================
+
+export interface EventTag {
+  id: number;
+  name: string;
+  slug: string;
   created_at: string;
 }
 
@@ -114,6 +126,7 @@ export interface EventWithCategory extends Event {
   category_name: string | null;
   category_slug: string | null;
   category_icon: string | null;
+  event_tag_slugs?: string[] | null;
 }
 
 // ============================================================================
@@ -126,6 +139,7 @@ export interface CreateEventData {
   description: string;
   category_id?: number | null;
   tags?: string[] | null;
+  tag_ids?: number[] | null;
   start_date: string;
   end_date?: string | null;
   start_time?: string | null;
@@ -225,11 +239,22 @@ export interface UpdateOrganizerProfileData {
 }
 
 // ============================================================================
+// Analytics
+// ============================================================================
+
+export interface EventAnalyticsSummary {
+  impressions: number;
+  click_throughs: number;
+  click_through_rate: number;
+}
+
+// ============================================================================
 // Filters & List Results
 // ============================================================================
 
 export interface EventFilters {
   category?: string;
+  tags?: string;
   search?: string;
   startDate?: string;
   endDate?: string;

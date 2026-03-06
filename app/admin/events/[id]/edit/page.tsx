@@ -2,14 +2,18 @@
 
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
-import type { EventCategory, EventWithCategory } from '@/lib/types/events';
+import type { EventCategory, EventTag, EventWithCategory, EventAnalyticsSummary } from '@/lib/types/events';
 import { RecurrenceSection } from '@/components/events/RecurrenceSection';
+import { TagSelector } from '@/components/events/TagSelector';
 import PhoneInput from '@/components/ui/PhoneInput';
 
 export default function AdminEditEventPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
   const [categories, setCategories] = useState<EventCategory[]>([]);
+  const [availableTags, setAvailableTags] = useState<EventTag[]>([]);
+  const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
+  const [analytics, setAnalytics] = useState<EventAnalyticsSummary | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -59,14 +63,28 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
   useEffect(() => {
     async function fetchData() {
       try {
-        const [eventRes, catRes] = await Promise.all([
+        const [eventRes, catRes, tagRes, analyticsRes] = await Promise.all([
           fetch(`/api/admin/events/${id}`),
           fetch('/api/v1/events/categories'),
+          fetch('/api/v1/events/tags'),
+          fetch(`/api/admin/events/${id}/analytics`),
         ]);
+
+        if (analyticsRes.ok) {
+          const analyticsData = await analyticsRes.json();
+          setAnalytics(analyticsData.data);
+        }
 
         if (catRes.ok) {
           const catData = await catRes.json();
           setCategories(catData.data);
+        }
+
+        let allTags: EventTag[] = [];
+        if (tagRes.ok) {
+          const tagData = await tagRes.json();
+          allTags = tagData.data || [];
+          setAvailableTags(allTags);
         }
 
         if (!eventRes.ok) {
@@ -112,6 +130,14 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
         setIsRecurring(event.is_recurring || false);
         setParentEventId(event.parent_event_id || null);
         setRecurrenceRule(event.recurrence_rule || null);
+
+        // Set tag selections from event_tag_slugs
+        if (event.event_tag_slugs && allTags.length > 0) {
+          const eventTagIds = allTags
+            .filter((t) => event.event_tag_slugs?.includes(t.slug))
+            .map((t) => t.id);
+          setSelectedTagIds(eventTagIds);
+        }
       } catch (err) {
         setError('Failed to load event');
         console.error(err);
@@ -160,6 +186,7 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
         feature_priority: parseInt(form.feature_priority) || 0,
         meta_title: form.meta_title || null,
         meta_description: form.meta_description || null,
+        tag_ids: selectedTagIds,
       };
 
       const url = scope
@@ -230,6 +257,24 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
         </div>
       )}
 
+      {/* Analytics Summary */}
+      {analytics && (
+        <div className="mb-6 grid grid-cols-3 gap-4">
+          <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
+            <p className="text-2xl font-bold text-gray-900">{analytics.impressions.toLocaleString()}</p>
+            <p className="text-sm text-gray-600">Views</p>
+          </div>
+          <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
+            <p className="text-2xl font-bold text-gray-900">{analytics.click_throughs.toLocaleString()}</p>
+            <p className="text-sm text-gray-600">Clicks</p>
+          </div>
+          <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
+            <p className="text-2xl font-bold text-gray-900">{analytics.click_through_rate}%</p>
+            <p className="text-sm text-gray-600">CTR</p>
+          </div>
+        </div>
+      )}
+
       {parentEventId && (
         <div className="mb-6 p-4 rounded-lg bg-blue-50 border border-blue-200">
           <p className="text-sm text-blue-800 font-medium">This event is part of a recurring series</p>
@@ -272,8 +317,12 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
               </select>
             </div>
             <div>
-              <label htmlFor="tags" className="block text-sm font-medium text-gray-900 mb-1">Tags</label>
-              <input id="tags" type="text" value={form.tags} onChange={(e) => updateField('tags', e.target.value)} placeholder="comma separated" className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/30" />
+              <label className="block text-sm font-medium text-gray-900 mb-1">Tags</label>
+              <TagSelector
+                availableTags={availableTags}
+                selectedTagIds={selectedTagIds}
+                onChange={setSelectedTagIds}
+              />
             </div>
           </div>
         </section>
