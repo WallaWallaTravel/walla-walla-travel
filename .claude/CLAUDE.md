@@ -604,6 +604,7 @@ Claude should automatically check:
 2. /standup         # Plan today's work
 3. Review handoff   # Check CLAUDE_CODE_HANDOFF.md for immediate tasks
 ```
+- Check `docs/active-work.md` before starting tasks to avoid file conflicts.
 
 ### During Development
 - Use TodoWrite for multi-step tasks
@@ -692,6 +693,8 @@ __tests__/
 
 When adding tests, follow existing patterns in `__tests__/`.
 
+Integration tests in `e2e/flows/` trace complete workflows — every new feature should have one.
+
 ---
 
 ## Build & Commit Rules
@@ -703,6 +706,8 @@ When adding tests, follow existing patterns in `__tests__/`.
 - After pushing, verify CI status: `gh run list --limit 3`
 - Pin dependency versions in CI workflows — unpinned `npx` commands will pull latest majors that break builds (e.g., Prisma 7 broke `datasource.url` syntax)
 - Developers can run `./scripts/daily-health.sh` anytime for a quick health check (checks auth wrappers, Zod, CSRF, file sizes, vulnerabilities, test coverage)
+- Run `./scripts/next-migration.sh` before creating migrations to get the next available number prefix
+- The `.next` directory is auto-cleaned before builds (via `prebuild` script, `verify.sh`, and the pre-commit hook)
 
 ---
 
