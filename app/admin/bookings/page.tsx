@@ -485,13 +485,22 @@ function TripsPageContent() {
               Confirmed trips — from accepted proposals to completed tours
             </p>
           </div>
-          <Link
-            href="/admin/bookings/console"
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#1E3A5F] text-white rounded-lg font-medium text-sm hover:bg-[#2a4d7a] transition-colors shadow-sm"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-            Quick Create Trip
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/admin/bookings/quick-create"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-lg font-medium text-sm hover:bg-indigo-700 transition-colors shadow-sm"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+              Quick Create
+            </Link>
+            <Link
+              href="/admin/bookings/console"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#1E3A5F] text-white rounded-lg font-medium text-sm hover:bg-[#2a4d7a] transition-colors shadow-sm"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+              Booking Console
+            </Link>
+          </div>
         </div>
 
         {/* Tabs */}
