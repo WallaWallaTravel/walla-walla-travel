@@ -75,6 +75,7 @@ logs
 # Prisma engine binaries (platform-specific, generated at build time)
 lib/generated/prisma/*.so.node
 lib/generated/prisma/*.dll.node
+lib/generated/prisma/*.dylib.node
 
 # Temporary files
 tmp/

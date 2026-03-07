@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
+    "postinstall": "prisma generate",
     "prebuild": "rm -rf .next",
     "build": "next build",
     "start": "next start",
@@ -27,6 +28,8 @@
     "test:smoke": "./scripts/smoke-test.sh",
     "precommit": "npm run build",
     "prepare": "node -e \"if(process.env.CI!=='true'&&!process.env.VERCEL)require('husky')()\"",
+    "prisma:generate": "prisma generate",
+    "prisma:pull": "prisma db pull",
     "db:setup": "node scripts/setup-database.js",
     "db:verify": "node scripts/verify-database.js",
     "type-check": "tsc --noEmit",
@@ -45,6 +48,7 @@
     "@anthropic-ai/sdk": "^0.68.0",
     "@deepgram/sdk": "^4.11.2",
     "@google/generative-ai": "^0.24.1",
+    "@prisma/client": "^6.10.1",
     "@sentry/nextjs": "^10.32.1",
     "@stripe/react-stripe-js": "^5.2.0",
     "@stripe/stripe-js": "^8.1.0",
@@ -107,6 +111,7 @@
     "lint-staged": "^16.2.6",
     "node-fetch": "^2.7.0",
     "prettier": "^3.6.2",
+    "prisma": "^6.10.1",
     "tailwindcss": "^4",
     "ts-jest": "^29.4.5",
     "typescript": "^5"
