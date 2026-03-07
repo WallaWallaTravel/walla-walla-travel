@@ -8,6 +8,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { logger } from '@/lib/logger';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 
 interface Business {
   id: number;
@@ -74,7 +75,8 @@ export default function BusinessPortalAdminPage() {
 
     try {
       const response = await fetch('/api/admin/business-portal/process-jobs', {
-        method: 'POST'
+        method: 'POST',
+        headers: { 'X-CSRF-Token': getCSRFToken() },
       });
 
       if (!response.ok) throw new Error('Processing failed');

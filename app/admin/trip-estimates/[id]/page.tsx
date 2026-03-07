@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { logger } from '@/lib/logger';
 import { getApiErrorMessage } from '@/lib/utils/error-messages';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 import PhoneInput from '@/components/ui/PhoneInput';
 
 const TRIP_TYPES = [
@@ -217,7 +218,7 @@ export default function EditTripEstimatePage({ params }: { params: Promise<{ id:
 
       const response = await fetch(`/api/admin/trip-estimates/${id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({
           customer_name: customerName,
           customer_email: customerEmail || undefined,
@@ -253,7 +254,7 @@ export default function EditTripEstimatePage({ params }: { params: Promise<{ id:
     try {
       const response = await fetch(`/api/admin/trip-estimates/${id}/status`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({ status: newStatus }),
       });
       const result = await response.json();
@@ -282,6 +283,7 @@ export default function EditTripEstimatePage({ params }: { params: Promise<{ id:
     try {
       const response = await fetch(`/api/admin/trip-estimates/${id}/convert`, {
         method: 'POST',
+        headers: { 'X-CSRF-Token': getCSRFToken() },
       });
       const result = await response.json();
 

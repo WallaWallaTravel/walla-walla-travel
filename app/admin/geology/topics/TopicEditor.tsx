@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 
 // ============================================================================
 // Types
@@ -487,7 +488,7 @@ export function TopicEditor({ initialData, isEditing = false }: TopicEditorProps
 
       const response = await fetch(url, {
         method: isEditing ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify(dataToSave),
       });
 
@@ -515,6 +516,7 @@ export function TopicEditor({ initialData, isEditing = false }: TopicEditorProps
     try {
       const response = await fetch(`/api/admin/geology/topics/${initialData?.id}`, {
         method: 'DELETE',
+        headers: { 'X-CSRF-Token': getCSRFToken() },
       });
 
       if (!response.ok) {

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 import type {
   CompetitorWithChanges,
   CompetitorChangeWithName,
@@ -76,7 +77,7 @@ export default function CompetitorMonitoring() {
       setSaving(true);
       const response = await fetch('/api/admin/marketing/competitors', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify(newCompetitor),
       });
 
@@ -107,7 +108,7 @@ export default function CompetitorMonitoring() {
     try {
       const response = await fetch(`/api/admin/marketing/competitors/changes/${changeId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({ status, action_taken: actionTaken }),
       });
 

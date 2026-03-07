@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { ALLOWED_MIME_TYPES, MAX_FILE_SIZE, MAX_FILES } from '@/lib/import/types';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 import type { SmartImportResult } from '@/lib/import/types';
 
 const ACCEPTED_EXTENSIONS = '.pdf,.docx,.xlsx,.csv,.png,.jpg,.jpeg,.webp';
@@ -95,6 +96,7 @@ export default function SmartImportUploader({ onResult, onError }: SmartImportUp
 
       const response = await fetch('/api/admin/trip-proposals/smart-import', {
         method: 'POST',
+        headers: { 'X-CSRF-Token': getCSRFToken() },
         body: formData,
       });
 

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { logger } from '@/lib/logger';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 import type { CrmContactSummary, LifecycleStage, LeadTemperature } from '@/types/crm';
 import PhoneInput from '@/components/ui/PhoneInput';
 
@@ -72,7 +73,7 @@ export default function CrmContactsPage() {
     try {
       const response = await fetch('/api/admin/crm/contacts', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify(newContact),
       });
 

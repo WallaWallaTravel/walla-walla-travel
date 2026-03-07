@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { logger } from '@/lib/logger';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 import type {
   PipelineTemplate,
   PipelineStageSummary,
@@ -73,7 +74,7 @@ export default function PipelinePage() {
     try {
       const response = await fetch(`/api/admin/crm/deals/${dealId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({ stage_id: newStageId }),
       });
       if (response.ok) {
@@ -364,7 +365,7 @@ export default function PipelinePage() {
                     if (confirm('Mark this deal as won?')) {
                       await fetch(`/api/admin/crm/deals/${selectedDeal.id}`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
                         body: JSON.stringify({ action: 'win' }),
                       });
                       setSelectedDeal(null);
@@ -381,7 +382,7 @@ export default function PipelinePage() {
                     if (reason !== null) {
                       await fetch(`/api/admin/crm/deals/${selectedDeal.id}`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
                         body: JSON.stringify({ action: 'lose', lost_reason: reason }),
                       });
                       setSelectedDeal(null);

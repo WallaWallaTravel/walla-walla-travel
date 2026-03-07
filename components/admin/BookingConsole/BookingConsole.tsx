@@ -11,6 +11,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 import CustomerPanel from './CustomerPanel';
 import AvailabilityPanel from './AvailabilityPanel';
 import PricingCalculator from './PricingCalculator';
@@ -79,7 +80,7 @@ export default function BookingConsole() {
     try {
       const response = await fetch('/api/admin/availability/check', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({
           date: debouncedDate,
           startTime: debouncedTime,
@@ -116,7 +117,7 @@ export default function BookingConsole() {
     try {
       const response = await fetch('/api/admin/pricing/calculate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({
           date: debouncedDate,
           duration_hours: debouncedDuration,
@@ -215,7 +216,7 @@ export default function BookingConsole() {
 
       const response = await fetch('/api/admin/bookings/console/create', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({
           saveMode,
           customer,

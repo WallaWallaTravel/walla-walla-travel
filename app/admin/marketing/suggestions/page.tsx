@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { format } from 'date-fns'
+import { getCSRFToken } from '@/lib/utils/fetch-utils'
 
 interface ContentSuggestion {
   id: number
@@ -90,7 +91,7 @@ export default function SuggestionsPage() {
     try {
       await fetch('/api/admin/marketing/suggestions', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({
           id: suggestion.id,
           suggested_media_urls: [photo.url],
@@ -101,7 +102,7 @@ export default function SuggestionsPage() {
       // Track download per Unsplash API guidelines
       await fetch('/api/admin/marketing/unsplash', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({ photo_id: photo.id }),
       })
 
@@ -137,7 +138,7 @@ export default function SuggestionsPage() {
       // Create scheduled post
       const response = await fetch('/api/admin/marketing/social-posts', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({
           content: suggestion.suggested_content,
           media_urls: suggestion.suggested_media_urls,
@@ -158,7 +159,7 @@ export default function SuggestionsPage() {
       // Update suggestion status
       await fetch('/api/admin/marketing/suggestions', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({
           id: suggestion.id,
           status: 'accepted',
@@ -186,7 +187,7 @@ export default function SuggestionsPage() {
     try {
       await fetch('/api/admin/marketing/suggestions', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({
           id: suggestionId,
           status: 'dismissed',
@@ -209,6 +210,7 @@ export default function SuggestionsPage() {
     try {
       const response = await fetch('/api/cron/generate-suggestions', {
         method: 'POST',
+        headers: { 'X-CSRF-Token': getCSRFToken() },
       })
 
       if (response.ok) {

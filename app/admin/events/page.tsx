@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { logger } from '@/lib/logger';
 import { getApiErrorMessage } from '@/lib/utils/error-messages';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 import type { EventWithCategory, EventStatus, EventTag } from '@/lib/types/events';
 
 interface EventListData {
@@ -58,7 +59,7 @@ export default function AdminEventsPage() {
 
   const handlePublish = async (id: number) => {
     try {
-      const response = await fetch(`/api/admin/events/${id}/publish`, { method: 'POST' });
+      const response = await fetch(`/api/admin/events/${id}/publish`, { method: 'POST', headers: { 'X-CSRF-Token': getCSRFToken() } });
       if (response.ok) {
         fetchEvents();
       } else {
@@ -74,7 +75,7 @@ export default function AdminEventsPage() {
   const handleCancel = async (id: number) => {
     if (!confirm('Are you sure you want to cancel this event?')) return;
     try {
-      const response = await fetch(`/api/admin/events/${id}/cancel`, { method: 'POST' });
+      const response = await fetch(`/api/admin/events/${id}/cancel`, { method: 'POST', headers: { 'X-CSRF-Token': getCSRFToken() } });
       if (response.ok) {
         fetchEvents();
       } else {
@@ -90,7 +91,7 @@ export default function AdminEventsPage() {
   const handleDelete = async (id: number) => {
     if (!confirm('Are you sure you want to permanently delete this event?')) return;
     try {
-      const response = await fetch(`/api/admin/events/${id}`, { method: 'DELETE' });
+      const response = await fetch(`/api/admin/events/${id}`, { method: 'DELETE', headers: { 'X-CSRF-Token': getCSRFToken() } });
       if (response.ok) {
         fetchEvents();
       } else {
@@ -132,7 +133,7 @@ export default function AdminEventsPage() {
     try {
       const res = await fetch('/api/admin/events/tags', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({ name: newTagName.trim(), slug }),
       });
       if (res.ok) {
@@ -152,7 +153,7 @@ export default function AdminEventsPage() {
     try {
       const res = await fetch('/api/admin/events/tags', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({ id: tag.id, name: tag.name, slug }),
       });
       if (res.ok) {
@@ -169,7 +170,7 @@ export default function AdminEventsPage() {
     try {
       const res = await fetch('/api/admin/events/tags', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({ id }),
       });
       if (res.ok) fetchTags();

@@ -10,6 +10,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 
 interface Driver {
   id: number;
@@ -137,7 +138,7 @@ export default function HistoricalInspectionEntryPage() {
     try {
       const response = await fetch('/api/admin/historical/inspections', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({
           driverId: Number(driverId),
           vehicleId: Number(vehicleId),

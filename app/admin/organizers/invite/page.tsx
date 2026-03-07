@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 import PhoneInput from '@/components/ui/PhoneInput';
 
 interface InviteForm {
@@ -78,7 +79,7 @@ export default function InviteOrganizerPage() {
 
       const res = await fetch('/api/admin/organizers/invite', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({
           organization_name: form.organization_name.trim(),
           contact_name: form.contact_name.trim(),

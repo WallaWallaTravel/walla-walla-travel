@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { logger } from '@/lib/logger'
 import { getApiErrorMessage } from '@/lib/utils/error-messages'
+import { getCSRFToken } from '@/lib/utils/fetch-utils'
 
 interface VariantData {
   name: string
@@ -85,7 +86,7 @@ export default function NewABTestPage() {
     try {
       const response = await fetch('/api/admin/marketing/ab-tests', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({
           ...testData,
           variant_a: {

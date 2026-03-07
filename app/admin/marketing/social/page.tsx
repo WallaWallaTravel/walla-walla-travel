@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { format, addDays, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from 'date-fns'
+import { getCSRFToken } from '@/lib/utils/fetch-utils'
 
 interface ScheduledPost {
   id: number
@@ -105,7 +106,7 @@ export default function SocialMediaScheduler() {
 
       const response = await fetch('/api/admin/marketing/social-posts', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({
           content: newPost.content,
           media_urls: newPost.media_urls,
@@ -150,7 +151,7 @@ export default function SocialMediaScheduler() {
     try {
       const response = await fetch('/api/admin/marketing/social-posts', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({ id, ...updates }),
       })
 

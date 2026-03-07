@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { logger } from '@/lib/logger';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 import type { CrmTaskWithRelations, TaskPriority, TaskStatus } from '@/types/crm';
 
 interface TasksResponse {
@@ -83,7 +84,7 @@ function TasksPageContent() {
     try {
       const response = await fetch(`/api/admin/crm/tasks/${task.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({
           status: task.status === 'completed' ? 'pending' : 'completed',
         }),
@@ -101,6 +102,7 @@ function TasksPageContent() {
     try {
       const response = await fetch(`/api/admin/crm/tasks/${taskId}`, {
         method: 'DELETE',
+        headers: { 'X-CSRF-Token': getCSRFToken() },
       });
       if (response.ok) {
         fetchTasks();

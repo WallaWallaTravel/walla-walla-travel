@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 
 // ============================================================================
 // Types
@@ -136,6 +137,7 @@ export default function CrmImportPage() {
 
       const response = await fetch('/api/admin/crm/import', {
         method: 'POST',
+        headers: { 'X-CSRF-Token': getCSRFToken() },
         body: formData,
       });
 
@@ -173,6 +175,7 @@ export default function CrmImportPage() {
 
       const response = await fetch('/api/admin/crm/import', {
         method: 'POST',
+        headers: { 'X-CSRF-Token': getCSRFToken() },
         body: formData,
       });
 
@@ -217,7 +220,7 @@ export default function CrmImportPage() {
     try {
       const response = await fetch('/api/admin/crm/migrate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({ dryRun: false }),
       });
 

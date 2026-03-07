@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, use } from 'react';
 import { useRouter } from 'next/navigation';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 
 interface Organizer {
   id: string;
@@ -76,7 +77,7 @@ export default function OrganizerDetailPage({
       setStatusAction(newStatus);
       const res = await fetch(`/api/admin/organizers/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({ status: newStatus }),
       });
       if (!res.ok) throw new Error(`Failed to ${newStatus === 'active' ? 'activate' : 'suspend'} organizer`);
@@ -103,7 +104,7 @@ export default function OrganizerDetailPage({
       setSaving(true);
       const res = await fetch(`/api/admin/organizers/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({ trust_level: trustLevel, auto_approve: autoApprove }),
       });
       if (!res.ok) throw new Error('Failed to update trust settings');
@@ -131,6 +132,7 @@ export default function OrganizerDetailPage({
     try {
       const res = await fetch(`/api/admin/events/${eventId}/publish`, {
         method: 'POST',
+        headers: { 'X-CSRF-Token': getCSRFToken() },
       });
       if (!res.ok) throw new Error('Failed to approve event');
       setEvents((prev) =>
@@ -151,7 +153,7 @@ export default function OrganizerDetailPage({
     try {
       const res = await fetch(`/api/admin/events/${eventId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({ status: 'draft', rejection_reason: rejectReason.trim() }),
       });
       if (!res.ok) throw new Error('Failed to reject event');

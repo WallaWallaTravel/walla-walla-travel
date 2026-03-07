@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { logger } from '@/lib/logger';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 import type {
   CrmContactSummary,
   CrmDealWithRelations,
@@ -99,7 +100,7 @@ export default function ContactDetailPage() {
     try {
       const response = await fetch(`/api/admin/crm/contacts/${contactId}/activities`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify(newActivity),
       });
       if (response.ok) {
@@ -120,7 +121,7 @@ export default function ContactDetailPage() {
     try {
       const response = await fetch('/api/admin/crm/tasks', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({
           ...newTask,
           contact_id: parseInt(contactId),
@@ -443,7 +444,7 @@ export default function ContactDetailPage() {
                           onChange={() => {
                             fetch(`/api/admin/crm/tasks/${task.id}`, {
                               method: 'PATCH',
-                              headers: { 'Content-Type': 'application/json' },
+                              headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
                               body: JSON.stringify({ status: task.status === 'completed' ? 'pending' : 'completed' }),
                             }).then(() => fetchContact());
                           }}

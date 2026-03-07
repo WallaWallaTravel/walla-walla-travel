@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { logger } from '@/lib/logger';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 
 interface LodgingProperty {
   id: number;
@@ -329,7 +330,7 @@ export default function EditLodgingPage() {
       const payload = buildPayload();
       const response = await fetch(`/api/admin/lodging/${propertyId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify(payload),
       });
 
@@ -358,6 +359,7 @@ export default function EditLodgingPage() {
     try {
       const response = await fetch(`/api/admin/lodging/${propertyId}`, {
         method: 'DELETE',
+        headers: { 'X-CSRF-Token': getCSRFToken() },
       });
       if (response.ok) {
         router.push('/admin/lodging');
@@ -385,7 +387,7 @@ export default function EditLodgingPage() {
     try {
       const response = await fetch(`/api/admin/lodging/${propertyId}/availability`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({
           entries: [{ date: dateStr, status: newStatus }],
         }),

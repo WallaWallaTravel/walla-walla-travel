@@ -5,6 +5,7 @@ import { LunchExpenseForm } from './LunchExpenseForm';
 import { ReceiptPhotoCapture } from './ReceiptPhotoCapture';
 import { TipQRCodeDisplay } from './TipQRCodeDisplay';
 import { TouchButton } from '@/components/mobile/TouchButton';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 
 type Step = 'lunch' | 'receipt' | 'qr' | 'error';
 
@@ -88,6 +89,7 @@ export function TourCompletionFlow({
 
         const expenseResponse = await fetch('/api/driver/expenses/upload-receipt', {
           method: 'POST',
+          headers: { 'X-CSRF-Token': getCSRFToken() },
           body: formData,
         });
 
@@ -102,6 +104,7 @@ export function TourCompletionFlow({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-CSRF-Token': getCSRFToken(),
         },
         body: JSON.stringify({
           lunch_cost_total: lunchAmount,

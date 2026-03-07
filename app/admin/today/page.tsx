@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { logger } from '@/lib/logger';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 
 interface Task {
   id: number;
@@ -187,7 +188,7 @@ export default function TodayPage() {
     try {
       const res = await fetch(`/api/admin/crm/tasks/${taskId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({ status: 'completed' }),
       });
       if (res.ok && data) {
@@ -211,7 +212,7 @@ export default function TodayPage() {
     try {
       const res = await fetch(`/api/admin/crm/tasks/${taskId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({ due_date: tomorrow }),
       });
       if (res.ok && data) {
@@ -233,7 +234,7 @@ export default function TodayPage() {
     if (!confirm('Delete this draft? This cannot be undone.')) return;
     setActionLoading(`draft-delete-${draftId}`);
     try {
-      const res = await fetch(`/api/admin/trip-proposals/${draftId}`, { method: 'DELETE' });
+      const res = await fetch(`/api/admin/trip-proposals/${draftId}`, { method: 'DELETE', headers: { 'X-CSRF-Token': getCSRFToken() } });
       if (res.ok && data) {
         setData({
           ...data,
@@ -253,6 +254,7 @@ export default function TodayPage() {
     try {
       const res = await fetch(`/api/admin/reminders/${reminderId}/dismiss`, {
         method: 'POST',
+        headers: { 'X-CSRF-Token': getCSRFToken() },
       });
       if (res.ok && data) {
         setData({

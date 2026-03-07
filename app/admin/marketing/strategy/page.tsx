@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { format } from 'date-fns'
+import { getCSRFToken } from '@/lib/utils/fetch-utils'
 
 interface RecommendedPost {
   platform: string
@@ -112,6 +113,7 @@ export default function StrategyPage() {
     try {
       const response = await fetch('/api/admin/marketing/strategies', {
         method: 'POST',
+        headers: { 'X-CSRF-Token': getCSRFToken() },
       })
 
       const data = await response.json()
@@ -134,7 +136,7 @@ export default function StrategyPage() {
     try {
       const response = await fetch('/api/admin/marketing/strategies', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({ id: strategyId, status: 'active' }),
       })
 
@@ -152,7 +154,7 @@ export default function StrategyPage() {
     try {
       const response = await fetch('/api/admin/marketing/strategies', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({ id: strategyId, status: 'archived' }),
       })
 

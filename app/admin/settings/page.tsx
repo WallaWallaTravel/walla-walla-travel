@@ -7,6 +7,7 @@
 
 import { useState, useEffect } from 'react';
 import { logger } from '@/lib/logger';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 
 interface SystemSetting {
   setting_key: string;
@@ -96,7 +97,7 @@ export default function SystemSettingsPage() {
     try {
       const response = await fetch('/api/admin/settings', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({
           setting_key: editingKey,
           setting_value: editValue

@@ -7,6 +7,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { logger } from '@/lib/logger';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 
 interface PageContent {
   id: number;
@@ -132,7 +133,7 @@ export default function ContentManagementPage() {
     try {
       const res = await fetch('/api/admin/content/pages', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({ page_slug: pageSlug, section_key: sectionKey, content }),
       });
 
@@ -158,7 +159,7 @@ export default function ContentManagementPage() {
     try {
       const res = await fetch('/api/admin/content/collections', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({
           id: item.id,
           title: item.title,

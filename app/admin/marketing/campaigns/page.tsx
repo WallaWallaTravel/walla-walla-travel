@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import { getCSRFToken } from '@/lib/utils/fetch-utils'
 
 interface Campaign {
   id: number
@@ -148,7 +149,7 @@ export default function CampaignsPage() {
     try {
       const res = await fetch('/api/admin/marketing/campaigns', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify(form),
       })
 
@@ -180,6 +181,7 @@ export default function CampaignsPage() {
     try {
       const res = await fetch(`/api/admin/marketing/campaigns/${campaignId}/approve`, {
         method: 'POST',
+        headers: { 'X-CSRF-Token': getCSRFToken() },
       })
       if (!res.ok) {
         const data = await res.json()
@@ -206,6 +208,7 @@ export default function CampaignsPage() {
     try {
       const res = await fetch(`/api/admin/marketing/campaigns/${campaignId}`, {
         method: 'DELETE',
+        headers: { 'X-CSRF-Token': getCSRFToken() },
       })
       if (!res.ok) {
         const data = await res.json()

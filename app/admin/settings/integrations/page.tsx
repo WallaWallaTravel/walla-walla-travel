@@ -7,6 +7,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { logger } from '@/lib/logger';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 
 interface CalendarStatus {
   configured: boolean;
@@ -87,7 +88,7 @@ export default function IntegrationsPage() {
     try {
       const response = await fetch('/api/admin/integrations/google-calendar/sync', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({ type }),
       });
 

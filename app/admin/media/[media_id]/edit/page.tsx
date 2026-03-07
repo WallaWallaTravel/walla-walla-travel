@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { logger } from '@/lib/logger';
 import { getApiErrorMessage } from '@/lib/utils/error-messages';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 import ImageEditorModal from '@/components/admin/ImageEditorModal';
 
 interface Media {
@@ -187,6 +188,7 @@ export default function EditMediaPage() {
 
       const response = await fetch(`/api/media/${media_id}/replace`, {
         method: 'POST',
+        headers: { 'X-CSRF-Token': getCSRFToken() },
         body: data
       });
 
@@ -226,7 +228,7 @@ export default function EditMediaPage() {
     try {
       const response = await fetch(`/api/media/${media_id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({
           category: formData.category,
           subcategory: formData.subcategory,

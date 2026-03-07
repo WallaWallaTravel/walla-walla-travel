@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { logger } from '@/lib/logger';
 import { getApiErrorMessage } from '@/lib/utils/error-messages';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 import { TRIP_TYPE_OPTIONS } from '@/lib/types/trip-proposal';
 import PhoneInput from '@/components/ui/PhoneInput';
 
@@ -165,7 +166,7 @@ export default function NewTripEstimatePage() {
     try {
       const response = await fetch('/api/admin/trip-estimates', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify(buildPayload()),
       });
       const result = await response.json();
@@ -200,7 +201,7 @@ export default function NewTripEstimatePage() {
       // Create first
       const createResponse = await fetch('/api/admin/trip-estimates', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify(buildPayload()),
       });
       const createResult = await createResponse.json();
@@ -215,7 +216,7 @@ export default function NewTripEstimatePage() {
         `/api/admin/trip-estimates/${createResult.data.id}/status`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
           body: JSON.stringify({ status: 'sent' }),
         }
       );

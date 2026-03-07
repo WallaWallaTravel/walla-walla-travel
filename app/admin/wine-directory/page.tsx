@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { logger } from '@/lib/logger'
+import { getCSRFToken } from '@/lib/utils/fetch-utils'
 
 interface Winery {
   id: number
@@ -92,7 +93,7 @@ export default function WineDirectoryPage() {
     try {
       const res = await fetch(`/api/admin/wine-directory/${winery.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({ is_featured: !winery.is_featured })
       })
 
@@ -118,7 +119,7 @@ export default function WineDirectoryPage() {
     try {
       const res = await fetch(`/api/admin/wine-directory/${winery.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({ featured_photo_override_id: mediaId })
       })
 

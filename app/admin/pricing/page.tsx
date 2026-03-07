@@ -8,6 +8,7 @@
 import { useState, useEffect } from 'react';
 import { formatCurrency } from '@/lib/rate-config';
 import { logger } from '@/lib/logger';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 
 interface PricingTier {
   id: number;
@@ -67,7 +68,7 @@ function PricingCalculator() {
     try {
       const response = await fetch('/api/pricing/calculate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({
           serviceType,
           partySize,
@@ -338,7 +339,7 @@ export default function PricingAdminPage() {
     try {
       const response = await fetch(`/api/admin/pricing/tiers/${tierId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({
           [field]: value,
           changeReason: `Quick edit: ${field}`

@@ -9,6 +9,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 
 interface Driver {
   id: number;
@@ -131,7 +132,7 @@ export default function HistoricalTimeCardEntryPage() {
     try {
       const response = await fetch('/api/admin/historical/time-cards', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({
           driverId: Number(driverId),
           vehicleId: vehicleId ? Number(vehicleId) : undefined,

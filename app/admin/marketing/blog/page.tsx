@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import { getCSRFToken } from '@/lib/utils/fetch-utils'
 
 interface BlogDraft {
   id: number
@@ -158,7 +159,7 @@ export default function BlogDashboard() {
     try {
       const res = await fetch('/api/admin/marketing/blog-generator', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({
           title: formTitle.trim(),
           targetKeywords: keywords,
@@ -209,7 +210,7 @@ export default function BlogDashboard() {
     try {
       const res = await fetch('/api/admin/marketing/blog-generator', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({ id: draftId, status: newStatus }),
       })
 
@@ -232,7 +233,7 @@ export default function BlogDashboard() {
     try {
       await fetch('/api/admin/marketing/trending', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({ id: topicId, status: 'dismissed' }),
       })
       setTrendingTopics(prev => prev.filter(t => t.id !== topicId))

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 
 interface Driver {
   id: number;
@@ -59,7 +60,7 @@ export function BookingAssignment({
     try {
       const response = await fetch(`/api/admin/bookings/${bookingId}/assign`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({
           driver_id: driverId,
           vehicle_id: vehicleId,

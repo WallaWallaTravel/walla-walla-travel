@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, use } from 'react';
 import Link from 'next/link';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 
 /**
  * Admin Shared Tour Detail Page
@@ -203,7 +204,7 @@ export default function AdminTourDetailPage({ params }: { params: Promise<{ tour
     try {
       const response = await fetch(`/api/admin/shared-tours/${tour_id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({ trip_proposal_id: proposalId }),
       });
       const data = await response.json();
@@ -229,7 +230,7 @@ export default function AdminTourDetailPage({ params }: { params: Promise<{ tour
     try {
       const response = await fetch(`/api/admin/shared-tours/${tour_id}/import-guests`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
       });
       const data = await response.json();
       if (data.success) {
@@ -252,6 +253,7 @@ export default function AdminTourDetailPage({ params }: { params: Promise<{ tour
     try {
       const response = await fetch(`/api/admin/shared-tours/tickets/${ticketId}/check-in`, {
         method: 'POST',
+        headers: { 'X-CSRF-Token': getCSRFToken() },
       });
       const data = await response.json();
       if (data.success) {
@@ -273,7 +275,7 @@ export default function AdminTourDetailPage({ params }: { params: Promise<{ tour
     try {
       const response = await fetch(`/api/admin/shared-tours/${tour_id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({
           reassign_vehicle: true,
           vehicle_id: selectedNewVehicle || undefined,
@@ -306,7 +308,7 @@ export default function AdminTourDetailPage({ params }: { params: Promise<{ tour
     try {
       const response = await fetch(`/api/admin/shared-tours/${tour_id}/discount`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({
           discount_type: discountType,
           discount_amount: amount,
@@ -342,7 +344,7 @@ export default function AdminTourDetailPage({ params }: { params: Promise<{ tour
     try {
       const response = await fetch(`/api/admin/shared-tours/${tour_id}/discount`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({
           discount_type: discountType,
           discount_amount: amount,

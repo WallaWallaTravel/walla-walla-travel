@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { format } from 'date-fns'
+import { getCSRFToken } from '@/lib/utils/fetch-utils'
 
 interface SocialAccount {
   id: number
@@ -67,7 +68,7 @@ function MarketingSettingsContent() {
     try {
       const response = await fetch('/api/admin/marketing/social-accounts', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({ id: accountId }),
       })
 

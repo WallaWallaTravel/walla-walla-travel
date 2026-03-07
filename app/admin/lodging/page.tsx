@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { logger } from '@/lib/logger';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 
 interface LodgingProperty {
   id: number;
@@ -104,6 +105,7 @@ export default function AdminLodgingPage() {
     try {
       const response = await fetch(`/api/admin/lodging/${id}/verify`, {
         method: 'POST',
+        headers: { 'X-CSRF-Token': getCSRFToken() },
       });
       if (response.ok) {
         fetchProperties(pagination.offset);
@@ -120,6 +122,7 @@ export default function AdminLodgingPage() {
     try {
       const response = await fetch(`/api/admin/lodging/${id}`, {
         method: 'DELETE',
+        headers: { 'X-CSRF-Token': getCSRFToken() },
       });
       if (response.ok) {
         setDeleteConfirmId(null);

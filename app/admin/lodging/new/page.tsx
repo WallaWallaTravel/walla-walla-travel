@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { logger } from '@/lib/logger';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 
 const PROPERTY_TYPES = [
   { value: 'hotel', label: 'Hotel' },
@@ -205,7 +206,7 @@ export default function NewLodgingPage() {
 
       const response = await fetch('/api/admin/lodging', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify(payload),
       });
 

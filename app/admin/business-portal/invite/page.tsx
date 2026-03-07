@@ -7,6 +7,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 import Link from 'next/link';
 import PhoneInput from '@/components/ui/PhoneInput';
 
@@ -89,7 +90,7 @@ export default function BusinessInvitePage() {
       }));
       const response = await fetch('/api/admin/business-portal/invite', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({ businesses: mappedInvites })
       });
 

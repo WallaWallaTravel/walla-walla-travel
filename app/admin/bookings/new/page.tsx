@@ -7,6 +7,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { logger } from '@/lib/logger';
 import { getApiErrorMessage } from '@/lib/utils/error-messages';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 import PhoneInput from '@/components/ui/PhoneInput';
 
 // Component that uses search params - must be wrapped in Suspense
@@ -87,7 +88,7 @@ function BookingFormContent() {
       // Create the booking
       const bookingResponse = await fetch('/api/bookings', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({
           customer_name: `${formData.first_name} ${formData.last_name}`,
           customer_email: formData.email,
@@ -126,7 +127,7 @@ function BookingFormContent() {
       // Create empty itinerary for this booking
       const itineraryResponse = await fetch(`/api/itineraries/${bookingId}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({
           pickup_location: formData.lodging_location || 'TBD',
           pickup_time: formData.pickup_time || '10:00',

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 import type { CompetitiveAdvantage, CreateAdvantageInput, AdvantageCategory, AdvantageImportance } from '@/types/competitors';
 
 export default function CompetitiveAdvantagesPage() {
@@ -49,7 +50,7 @@ export default function CompetitiveAdvantagesPage() {
       setSaving(true);
       const response = await fetch('/api/admin/marketing/competitors/advantages', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify(newAdvantage),
       });
 

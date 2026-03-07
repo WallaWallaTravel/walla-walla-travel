@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { format } from 'date-fns';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 import type {
   Competitor,
   CompetitorPricing,
@@ -84,7 +85,7 @@ export default function CompetitorDetailPage() {
       setSaving(true);
       const response = await fetch(`/api/admin/marketing/competitors/${competitorId}/swot`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({
           category: swotCategory,
           title: newSwot.title,
@@ -112,7 +113,7 @@ export default function CompetitorDetailPage() {
       setError(null);
       const response = await fetch('/api/admin/marketing/competitors/analyze', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({
           type: 'competitor',
           competitor_id: parseInt(competitorId),
@@ -136,7 +137,7 @@ export default function CompetitorDetailPage() {
       setError(null);
       const response = await fetch('/api/admin/marketing/competitors/analyze', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({
           type: 'swot_suggestions',
           competitor_id: parseInt(competitorId),

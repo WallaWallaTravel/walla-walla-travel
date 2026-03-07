@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 
 interface BookingActionsProps {
   bookingId: number;
@@ -26,7 +27,7 @@ export function BookingActions({ bookingId, bookingNumber, status, customerEmail
     try {
       const response = await fetch(`/api/admin/bookings/${bookingId}/status`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({ status: 'confirmed' }),
       });
 
@@ -56,7 +57,7 @@ export function BookingActions({ bookingId, bookingNumber, status, customerEmail
     try {
       const response = await fetch('/api/bookings/cancel', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({ booking_id: bookingId, reason }),
       });
 
@@ -90,7 +91,7 @@ export function BookingActions({ bookingId, bookingNumber, status, customerEmail
     try {
       const response = await fetch('/api/bookings/send-confirmation', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({ booking_number: bookingNumber }),
       });
 
@@ -125,6 +126,7 @@ export function BookingActions({ bookingId, bookingNumber, status, customerEmail
     try {
       const response = await fetch(`/api/admin/bookings/${bookingId}`, {
         method: 'DELETE',
+        headers: { 'X-CSRF-Token': getCSRFToken() },
       });
 
       const data = await response.json();

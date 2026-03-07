@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { format, addDays } from 'date-fns'
 import { logger } from '@/lib/logger'
+import { getCSRFToken } from '@/lib/utils/fetch-utils'
 
 interface Winery {
   id: number
@@ -124,7 +125,7 @@ export default function AIContentGenerator() {
     try {
       const response = await fetch('/api/admin/marketing/generate-content', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({
           wineryId: selectedWinery || undefined,
           platform: selectedPlatform,
@@ -169,7 +170,7 @@ export default function AIContentGenerator() {
 
       const response = await fetch('/api/admin/marketing/social-posts', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({
           content: generatedContent.content,
           media_urls: [],

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { logger } from '@/lib/logger';
 import { getApiErrorMessage } from '@/lib/utils/error-messages';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 
 interface TripEstimate {
   id: number;
@@ -69,7 +70,7 @@ export default function TripEstimatesPage() {
     }
 
     try {
-      const response = await fetch(`/api/admin/trip-estimates/${id}`, { method: 'DELETE' });
+      const response = await fetch(`/api/admin/trip-estimates/${id}`, { method: 'DELETE', headers: { 'X-CSRF-Token': getCSRFToken() } });
       const result = await response.json();
 
       if (result.success) {
@@ -91,6 +92,7 @@ export default function TripEstimatesPage() {
     try {
       const response = await fetch(`/api/admin/trip-estimates/${estimate.id}/convert`, {
         method: 'POST',
+        headers: { 'X-CSRF-Token': getCSRFToken() },
       });
       const result = await response.json();
 

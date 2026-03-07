@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 
 interface Booking {
   id: number;
@@ -70,7 +71,7 @@ export default function AssignmentModal({ booking, onClose, onComplete }: Props)
     try {
       const response = await fetch('/api/bookings/check-availability', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({
           date: booking.tour_date,
           duration_hours: calculateDuration(booking.start_time, booking.end_time),
@@ -111,7 +112,7 @@ export default function AssignmentModal({ booking, onClose, onComplete }: Props)
     try {
       const response = await fetch(`/api/admin/bookings/${booking.id}/assign`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({
           driver_id: selectedDriver,
           vehicle_id: selectedVehicle,

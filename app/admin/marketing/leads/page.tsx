@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import PhoneInput from '@/components/ui/PhoneInput'
+import { getCSRFToken } from '@/lib/utils/fetch-utils'
 
 interface Lead {
   id: number
@@ -398,7 +399,7 @@ function AddLeadModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
       setSubmitting(true)
       const response = await fetch('/api/admin/marketing/leads', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify(formData),
       })
 

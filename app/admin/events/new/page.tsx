@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import type { EventCategory, EventTag } from '@/lib/types/events';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 import { RecurrenceSection } from '@/components/events/RecurrenceSection';
 import { TagSelector } from '@/components/events/TagSelector';
 import PhoneInput from '@/components/ui/PhoneInput';
@@ -131,7 +132,7 @@ export default function AdminCreateEventPage() {
       // Create event
       const createResponse = await fetch('/api/admin/events', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify(payload),
       });
 
@@ -145,7 +146,7 @@ export default function AdminCreateEventPage() {
 
       // Publish if requested
       if (publish) {
-        await fetch(`/api/admin/events/${eventId}/publish`, { method: 'POST' });
+        await fetch(`/api/admin/events/${eventId}/publish`, { method: 'POST', headers: { 'X-CSRF-Token': getCSRFToken() } });
       }
 
       router.push('/admin/events');

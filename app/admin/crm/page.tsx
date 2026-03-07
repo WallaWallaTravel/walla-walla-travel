@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { logger } from '@/lib/logger';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 import type { CrmDashboardStats, CrmActivityWithUser, CrmTaskWithRelations } from '@/types/crm';
 
 interface PipelineStage {
@@ -259,7 +260,7 @@ export default function CrmDashboardPage() {
                         onChange={() => {
                           fetch(`/api/admin/crm/tasks/${task.id}`, {
                             method: 'PATCH',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
                             body: JSON.stringify({ status: 'completed' }),
                           }).then(() => fetchDashboard());
                         }}

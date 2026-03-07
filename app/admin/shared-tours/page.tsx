@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 
 /**
  * Admin Shared Tours Management Page
@@ -213,7 +214,7 @@ export default function AdminSharedToursPage() {
     try {
       const response = await fetch('/api/admin/shared-tours/presets', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({
           name: newPresetName,
           start_time: createForm.start_time,
@@ -246,6 +247,7 @@ export default function AdminSharedToursPage() {
     try {
       const response = await fetch(`/api/admin/shared-tours/presets/${presetId}`, {
         method: 'DELETE',
+        headers: { 'X-CSRF-Token': getCSRFToken() },
       });
       const data = await response.json();
       if (data.success) {
@@ -265,7 +267,7 @@ export default function AdminSharedToursPage() {
     try {
       const response = await fetch(`/api/admin/shared-tours/presets/${presetId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({ is_default: true }),
       });
       const data = await response.json();
@@ -391,7 +393,7 @@ export default function AdminSharedToursPage() {
     try {
       const response = await fetch('/api/admin/shared-tours', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({
           ...createForm,
           vehicle_id: createForm.vehicle_id || undefined,
@@ -431,7 +433,7 @@ export default function AdminSharedToursPage() {
       try {
         const response = await fetch('/api/admin/shared-tours', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
           body: JSON.stringify({
             ...createForm,
             tour_date: date,
@@ -486,6 +488,7 @@ export default function AdminSharedToursPage() {
     try {
       const response = await fetch(`/api/admin/shared-tours/${tourId}`, {
         method: 'DELETE',
+        headers: { 'X-CSRF-Token': getCSRFToken() },
       });
       const data = await response.json();
 
@@ -506,7 +509,7 @@ export default function AdminSharedToursPage() {
     try {
       const response = await fetch(`/api/admin/shared-tours/${tour.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({ is_published: !tour.is_published }),
       });
       const data = await response.json();

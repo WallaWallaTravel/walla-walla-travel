@@ -9,6 +9,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 
 // ============================================================================
 // Types
@@ -112,7 +113,7 @@ export function SiteEditor({ initialData, isEditing = false }: SiteEditorProps) 
 
       const res = await fetch(url, {
         method: isEditing ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify(payload),
       });
 
@@ -137,6 +138,7 @@ export function SiteEditor({ initialData, isEditing = false }: SiteEditorProps) 
     try {
       const res = await fetch(`/api/admin/geology/sites/${initialData?.id}`, {
         method: 'DELETE',
+        headers: { 'X-CSRF-Token': getCSRFToken() },
       });
 
       if (!res.ok) {

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { logger } from '@/lib/logger';
 import { getApiErrorMessage } from '@/lib/utils/error-messages';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 
 interface PendingInvoice {
   booking_id: number;
@@ -76,7 +77,7 @@ export default function AdminInvoicesPage() {
     try {
       const response = await fetch(`/api/admin/approve-invoice/${bookingId}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({ reviewed_hours: reviewedHours }),
       });
 

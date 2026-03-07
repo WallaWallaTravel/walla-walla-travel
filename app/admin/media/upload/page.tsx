@@ -4,6 +4,7 @@ import { useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { logger } from '@/lib/logger';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 import ImageEditorModal from '@/components/admin/ImageEditorModal';
 
 const MAX_WIDTH = 1920;
@@ -267,6 +268,7 @@ export default function MediaUploadPage() {
 
         const response = await fetch('/api/media/upload', {
           method: 'POST',
+          headers: { 'X-CSRF-Token': getCSRFToken() },
           body: data,
         });
 

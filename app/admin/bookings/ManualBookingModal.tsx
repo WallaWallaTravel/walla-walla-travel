@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { logger } from '@/lib/logger';
 import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 import PhoneInput from '@/components/ui/PhoneInput';
 
 interface Props {
@@ -59,7 +60,7 @@ export default function ManualBookingModal({ onClose, onComplete }: Props) {
     try {
       const response = await fetch('/api/bookings/calculate-price', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({
           date: formData.tour_date,
           duration_hours: parseInt(String(formData.duration_hours)),
@@ -85,7 +86,7 @@ export default function ManualBookingModal({ onClose, onComplete }: Props) {
       // Create booking
       const bookingResponse = await fetch('/api/bookings', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({
           customer_name: formData.customer_name,
           customer_email: formData.customer_email,
@@ -116,7 +117,7 @@ export default function ManualBookingModal({ onClose, onComplete }: Props) {
       // Create empty itinerary
       await fetch('/api/itineraries', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({
           booking_id: booking.id,
           pickup_location: formData.pickup_location,

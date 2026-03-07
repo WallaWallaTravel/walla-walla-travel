@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { logger } from '@/lib/logger';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 
 // Types
 interface Business {
@@ -145,7 +146,7 @@ export default function AdminDirectoryPage() {
     try {
       const response = await fetch('/api/admin/directory/bulk', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({ ids: Array.from(selectedIds), action }),
       });
 
@@ -167,7 +168,7 @@ export default function AdminDirectoryPage() {
     setActionLoading(`${action}-${id}`);
     try {
       if (action === 'delete') {
-        const response = await fetch(`/api/admin/directory/${id}`, { method: 'DELETE' });
+        const response = await fetch(`/api/admin/directory/${id}`, { method: 'DELETE', headers: { 'X-CSRF-Token': getCSRFToken() } });
         if (!response.ok) {
           const data = await response.json();
           alert(data.error || 'Delete failed');
@@ -177,7 +178,7 @@ export default function AdminDirectoryPage() {
         const status = action === 'restore' ? 'imported' : action === 'approve' ? 'approved' : 'rejected';
         const response = await fetch(`/api/admin/directory/${id}/status`, {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
           body: JSON.stringify({ status }),
         });
         if (!response.ok) {
@@ -199,7 +200,7 @@ export default function AdminDirectoryPage() {
     try {
       const response = await fetch(`/api/admin/directory/${id}/invite`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({ action: 'link' }),
       });
       const data = await response.json();
@@ -222,7 +223,7 @@ export default function AdminDirectoryPage() {
     try {
       const response = await fetch(`/api/admin/directory/${id}/invite`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({ action: 'email' }),
       });
       const data = await response.json();
@@ -300,7 +301,7 @@ export default function AdminDirectoryPage() {
     try {
       const response = await fetch('/api/admin/directory/import', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({ businesses: importPreview }),
       });
       const data = await response.json();

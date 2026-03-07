@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import PhoneInput from '@/components/ui/PhoneInput';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 
 interface HotelPartner {
   id: string;
@@ -75,7 +76,7 @@ export default function AdminHotelPartnersPage() {
     try {
       const response = await fetch('/api/admin/hotel-partners', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify(newHotel),
       });
 
@@ -97,6 +98,7 @@ export default function AdminHotelPartnersPage() {
     try {
       const response = await fetch(`/api/admin/hotel-partners/${hotelId}/invite`, {
         method: 'POST',
+        headers: { 'X-CSRF-Token': getCSRFToken() },
       });
 
       const data = await response.json();
@@ -117,7 +119,7 @@ export default function AdminHotelPartnersPage() {
     try {
       const response = await fetch(`/api/admin/hotel-partners/${hotelId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({ is_active: !isActive }),
       });
 

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { logger } from '@/lib/logger';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 
 interface DraftProposal {
   id: number;
@@ -95,7 +96,7 @@ export default function DraftsPage() {
     try {
       const res = await fetch(`/api/admin/trip-proposals/${draft.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({ draft_reminders_enabled: !draft.draft_reminders_enabled }),
       });
       if (res.ok) {
@@ -115,7 +116,7 @@ export default function DraftsPage() {
     if (!confirm(`Delete draft "${draft.customer_name}"? This cannot be undone.`)) return;
     setActionLoading(draft.id);
     try {
-      const res = await fetch(`/api/admin/trip-proposals/${draft.id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/admin/trip-proposals/${draft.id}`, { method: 'DELETE', headers: { 'X-CSRF-Token': getCSRFToken() } });
       if (res.ok) {
         setDrafts(prev => prev.filter(d => d.id !== draft.id));
         setSummary(prev => ({ ...prev, total: prev.total - 1 }));
@@ -132,7 +133,7 @@ export default function DraftsPage() {
     if (!draft.customer_email) return;
     setActionLoading(draft.id);
     try {
-      const res = await fetch(`/api/admin/trip-proposals/${draft.id}/send`, { method: 'POST' });
+      const res = await fetch(`/api/admin/trip-proposals/${draft.id}/send`, { method: 'POST', headers: { 'X-CSRF-Token': getCSRFToken() } });
       if (res.ok) {
         setDrafts(prev => prev.filter(d => d.id !== draft.id));
         setSummary(prev => ({ ...prev, total: prev.total - 1 }));

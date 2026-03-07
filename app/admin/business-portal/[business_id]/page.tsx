@@ -8,6 +8,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { logger } from '@/lib/logger';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 // import Image from 'next/image';
 
 interface Business {
@@ -136,7 +137,7 @@ export default function BusinessReviewPage() {
       setProcessingAction(true);
       const response = await fetch(`/api/admin/business-portal/${businessId}/insights`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify(insightForm)
       });
 
@@ -173,7 +174,7 @@ export default function BusinessReviewPage() {
       setProcessingAction(true);
       const response = await fetch(`/api/admin/business-portal/files/${fileId}/approve`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({ approved: true })
       });
 
@@ -195,7 +196,7 @@ export default function BusinessReviewPage() {
       setProcessingAction(true);
       const response = await fetch(`/api/admin/business-portal/${businessId}/approve`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({ status: 'approved' })
       });
 

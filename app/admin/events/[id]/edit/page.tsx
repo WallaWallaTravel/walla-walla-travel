@@ -4,6 +4,7 @@ import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import type { EventCategory, EventTag, EventWithCategory, EventAnalyticsSummary } from '@/lib/types/events';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 import { RecurrenceSection } from '@/components/events/RecurrenceSection';
 import { TagSelector } from '@/components/events/TagSelector';
 import PhoneInput from '@/components/ui/PhoneInput';
@@ -195,7 +196,7 @@ export default function AdminEditEventPage({ params }: { params: Promise<{ id: s
         : `/api/admin/events/${id}`;
       const response = await fetch(url, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify(payload),
       });
 

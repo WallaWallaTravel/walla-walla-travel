@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { logger } from '@/lib/logger';
 import { getApiErrorMessage } from '@/lib/utils/error-messages';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 
 interface Media {
   id: number;
@@ -101,7 +102,8 @@ export default function MediaLibraryPage() {
 
     try {
       const response = await fetch(`/api/media/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: { 'X-CSRF-Token': getCSRFToken() },
       });
 
       if (response.ok) {

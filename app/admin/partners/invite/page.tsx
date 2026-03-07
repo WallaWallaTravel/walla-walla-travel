@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { logger } from '@/lib/logger';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 
 interface Winery {
   id: number;
@@ -49,7 +50,7 @@ export default function InvitePartnerPage() {
     try {
       const response = await fetch('/api/admin/partners/invite', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({
           ...formData,
           winery_id: formData.winery_id ? parseInt(formData.winery_id) : undefined,
