@@ -9,6 +9,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { logger } from '@/lib/logger';
 import { getApiErrorMessage } from '@/lib/utils/error-messages';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 import { useToast } from '@/lib/hooks/useToast';
 import type { SmartImportResult } from '@/lib/import/types';
 
@@ -355,7 +356,7 @@ export function useProposalForm() {
 
       const response = await fetch('/api/admin/trip-proposals?draft=true', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify(draftData),
       });
 
@@ -388,9 +389,10 @@ export function useProposalForm() {
 
     setSaving(true);
     try {
+      const csrfToken = getCSRFToken();
       const response = await fetch('/api/admin/trip-proposals', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
         body: JSON.stringify({
           brand_id: formData.brand_id,
           customer_name: formData.customer_name,
@@ -420,7 +422,7 @@ export function useProposalForm() {
       for (const day of formData.days) {
         const dayResponse = await fetch(`/api/admin/trip-proposals/${proposalId}/days`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
           body: JSON.stringify({ date: day.date, title: day.title || null, notes: day.notes || null }),
         });
         const dayResult = await dayResponse.json();
@@ -430,7 +432,7 @@ export function useProposalForm() {
         for (const stop of day.stops) {
           await fetch(`/api/admin/trip-proposals/${proposalId}/days/${dayId}/stops`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
             body: JSON.stringify({
               stop_type: stop.stop_type,
               winery_id: stop.winery_id || null,
@@ -456,7 +458,7 @@ export function useProposalForm() {
       for (const guest of formData.guests) {
         await fetch(`/api/admin/trip-proposals/${proposalId}/guests`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
           body: JSON.stringify({
             name: guest.name,
             email: guest.email || null,
@@ -471,7 +473,7 @@ export function useProposalForm() {
       for (const inclusion of formData.inclusions) {
         await fetch(`/api/admin/trip-proposals/${proposalId}/inclusions`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
           body: JSON.stringify({
             inclusion_type: inclusion.inclusion_type,
             description: inclusion.description,
@@ -482,7 +484,7 @@ export function useProposalForm() {
         });
       }
 
-      await fetch(`/api/admin/trip-proposals/${proposalId}/pricing`, { method: 'POST' });
+      await fetch(`/api/admin/trip-proposals/${proposalId}/pricing`, { method: 'POST', headers: { 'X-CSRF-Token': csrfToken } });
 
       toast(`Trip proposal created! Proposal #${result.data.proposal_number}`, 'success');
       router.push('/admin/trip-proposals');

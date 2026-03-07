@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { logger } from '@/lib/logger';
 import { getApiErrorMessage } from '@/lib/utils/error-messages';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 import { useToast } from '@/lib/hooks/useToast';
 import { ToastContainer } from '@/components/ui/ToastContainer';
 import { TRIP_TYPE_OPTIONS } from '@/lib/types/trip-proposal';
@@ -301,7 +302,7 @@ function ProposalsPageContent() {
   const deleteEstimate = async (id: number) => {
     if (!confirm('Are you sure you want to delete this estimate? This cannot be undone.')) return;
     try {
-      const response = await fetch(`/api/admin/trip-estimates/${id}`, { method: 'DELETE' });
+      const response = await fetch(`/api/admin/trip-estimates/${id}`, { method: 'DELETE', headers: { 'X-CSRF-Token': getCSRFToken() } });
       const result = await response.json();
       if (result.success) {
         toast('Estimate deleted', 'success');
@@ -318,7 +319,7 @@ function ProposalsPageContent() {
   const deleteProposal = async (id: number) => {
     if (!confirm('Are you sure you want to delete this proposal? This cannot be undone.')) return;
     try {
-      const response = await fetch(`/api/admin/trip-proposals/${id}`, { method: 'DELETE' });
+      const response = await fetch(`/api/admin/trip-proposals/${id}`, { method: 'DELETE', headers: { 'X-CSRF-Token': getCSRFToken() } });
       const result = await response.json();
       if (result.success) {
         toast('Proposal deleted', 'success');
@@ -337,6 +338,7 @@ function ProposalsPageContent() {
     try {
       const response = await fetch(`/api/admin/trip-estimates/${estimate.id}/convert`, {
         method: 'POST',
+        headers: { 'X-CSRF-Token': getCSRFToken() },
       });
       const result = await response.json();
       if (result.success) {
@@ -353,7 +355,7 @@ function ProposalsPageContent() {
 
   const archiveProposal = async (id: number) => {
     try {
-      const response = await fetch(`/api/admin/trip-proposals/${id}/archive`, { method: 'POST' });
+      const response = await fetch(`/api/admin/trip-proposals/${id}/archive`, { method: 'POST', headers: { 'X-CSRF-Token': getCSRFToken() } });
       const result = await response.json();
       if (result.success) {
         toast('Proposal archived', 'success');
@@ -369,7 +371,7 @@ function ProposalsPageContent() {
 
   const unarchiveProposal = async (id: number) => {
     try {
-      const response = await fetch(`/api/admin/trip-proposals/${id}/archive`, { method: 'DELETE' });
+      const response = await fetch(`/api/admin/trip-proposals/${id}/archive`, { method: 'DELETE', headers: { 'X-CSRF-Token': getCSRFToken() } });
       const result = await response.json();
       if (result.success) {
         toast('Proposal unarchived', 'success');
