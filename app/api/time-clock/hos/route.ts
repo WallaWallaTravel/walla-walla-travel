@@ -38,7 +38,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   // Get this week's hours (starting Sunday)
   const weeklyResult = await query(
     `SELECT
-      COALESCE(SUM(total_hours_worked), 0) as weekly_hours,
+      COALESCE(SUM(on_duty_hours), 0) as weekly_hours,
       COUNT(*) as days_worked_this_week
     FROM time_cards
     WHERE driver_id = $1
@@ -53,7 +53,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   // Get last 8 days for 70-hour rule
   const eightDayResult = await query(
     `SELECT
-      COALESCE(SUM(total_hours_worked), 0) as eight_day_hours,
+      COALESCE(SUM(on_duty_hours), 0) as eight_day_hours,
       COUNT(*) as days_worked_last_8
     FROM time_cards
     WHERE driver_id = $1
@@ -87,7 +87,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   const dailyBreakdownResult = await query(
     `SELECT
       clock_in_time::date as date,
-      total_hours_worked as hours,
+      on_duty_hours as hours,
       COALESCE(dt.air_miles_from_base, 0) as miles
     FROM time_cards tc
     LEFT JOIN daily_trips dt ON tc.driver_id = dt.driver_id AND tc.clock_in_time::date = dt.trip_date

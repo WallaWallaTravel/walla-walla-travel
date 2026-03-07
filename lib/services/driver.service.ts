@@ -107,7 +107,7 @@ export class DriverService extends BaseService {
       LEFT JOIN itinerary_stops s ON i.id = s.itinerary_id
       LEFT JOIN wineries w ON s.winery_id = w.id
       WHERE b.driver_id = $1 AND b.tour_date = $2
-      GROUP BY b.id, i.id
+      GROUP BY b.id, i.id, i.pickup_location, i.dropoff_location, i.driver_notes
       ORDER BY b.start_time ASC
     `;
 
@@ -172,7 +172,7 @@ export class DriverService extends BaseService {
       params.push(driverId);
     }
 
-    sql += ` GROUP BY b.id, i.id`;
+    sql += ` GROUP BY b.id, i.id, i.pickup_location, i.dropoff_location, i.driver_notes`;
 
     const result = await this.queryOne<DriverTour>(sql, params);
 
@@ -223,11 +223,11 @@ export class DriverService extends BaseService {
       LEFT JOIN itineraries i ON b.id = i.booking_id
       LEFT JOIN itinerary_stops s ON i.id = s.itinerary_id
       LEFT JOIN wineries w ON s.winery_id = w.id
-      WHERE b.driver_id = $1 
+      WHERE b.driver_id = $1
         AND b.tour_date >= CURRENT_DATE
         AND b.tour_date <= CURRENT_DATE + INTERVAL '1 day' * $2
         AND b.status NOT IN ('cancelled', 'rejected')
-      GROUP BY b.id, i.id
+      GROUP BY b.id, i.id, i.pickup_location, i.dropoff_location, i.driver_notes
       ORDER BY b.tour_date ASC, b.start_time ASC
       LIMIT $3
     `;
