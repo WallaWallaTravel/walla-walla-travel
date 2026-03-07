@@ -7,9 +7,11 @@
  */
 
 import { useState, useEffect, useRef, Suspense, useCallback } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { logger } from '@/lib/logger';
 import { getApiErrorMessage } from '@/lib/utils/error-messages';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 import { useToast } from '@/lib/hooks/useToast';
 import { ToastContainer } from '@/components/ui/ToastContainer';
 
@@ -325,7 +327,7 @@ function TripsPageContent() {
 
   const archiveTrip = async (id: number) => {
     try {
-      const response = await fetch(`/api/admin/trip-proposals/${id}/archive`, { method: 'POST' });
+      const response = await fetch(`/api/admin/trip-proposals/${id}/archive`, { method: 'POST', headers: { 'X-CSRF-Token': getCSRFToken() } });
       const result = await response.json();
       if (result.success) {
         toast('Trip archived', 'success');
@@ -342,7 +344,7 @@ function TripsPageContent() {
 
   const unarchiveTrip = async (id: number) => {
     try {
-      const response = await fetch(`/api/admin/trip-proposals/${id}/archive`, { method: 'DELETE' });
+      const response = await fetch(`/api/admin/trip-proposals/${id}/archive`, { method: 'DELETE', headers: { 'X-CSRF-Token': getCSRFToken() } });
       const result = await response.json();
       if (result.success) {
         toast('Trip unarchived', 'success');
@@ -476,11 +478,20 @@ function TripsPageContent() {
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-900">Trips</h1>
-          <p className="text-slate-500 mt-1">
-            Confirmed trips — from accepted proposals to completed tours
-          </p>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Trips</h1>
+            <p className="text-slate-500 mt-1">
+              Confirmed trips — from accepted proposals to completed tours
+            </p>
+          </div>
+          <Link
+            href="/admin/bookings/console"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#1E3A5F] text-white rounded-lg font-medium text-sm hover:bg-[#2a4d7a] transition-colors shadow-sm"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+            Quick Create Trip
+          </Link>
         </div>
 
         {/* Tabs */}

@@ -22,8 +22,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { logger } from '@/lib/logger';
 import { getApiErrorMessage } from '@/lib/utils/error-messages';
+import { getCSRFToken } from '@/lib/utils/fetch-utils';
 
 interface Booking {
   id: number;
@@ -344,6 +346,7 @@ export default function CalendarView() {
     try {
       const response = await fetch(`/api/admin/bookings/${selectedBooking.id}`, {
         method: 'DELETE',
+        headers: { 'X-CSRF-Token': getCSRFToken() },
       });
 
       if (response.ok) {
@@ -390,6 +393,13 @@ export default function CalendarView() {
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-4xl font-bold text-gray-900">Booking Calendar</h1>
           <div className="flex items-center gap-3">
+            <Link
+              href="/admin/bookings/console"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[#1E3A5F] text-white rounded-lg font-semibold text-sm hover:bg-[#2a4d7a] transition-colors shadow-sm"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+              Quick Create
+            </Link>
             <button
               onClick={() => setShowTentative(!showTentative)}
               className={`px-3 py-2 rounded-lg font-semibold text-sm transition-colors ${
