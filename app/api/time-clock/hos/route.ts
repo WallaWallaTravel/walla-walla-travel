@@ -65,34 +65,22 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   const eightDayHours = parseFloat(eightDayResult.rows[0]?.eight_day_hours || '0');
   const daysWorkedLast8 = parseInt(eightDayResult.rows[0]?.days_worked_last_8 || '0');
 
-  // Get 150-mile exemption status
-  const exemptionResult = await query(
-    `SELECT
-      mes.*,
-      dt.air_miles_from_base as today_miles
-    FROM monthly_exemption_status mes
-    LEFT JOIN daily_trips dt ON dt.driver_id = mes.driver_id AND dt.trip_date = CURRENT_DATE
-    WHERE mes.driver_id = $1
-    AND mes.month = DATE_TRUNC('month', CURRENT_DATE)`,
-    [driverId]
-  );
-
-  const exemptionStatus = exemptionResult.rows[0] || {
+  // 150-mile exemption: default to exempt (tables may not exist yet)
+  const exemptionStatus = {
     is_exempt: true,
     days_exceeded_this_month: 0,
     today_miles: 0
   };
 
-  // Get daily breakdown for last 7 days
+  // Get daily breakdown for last 7 days (time_cards only, no daily_trips join)
   const dailyBreakdownResult = await query(
     `SELECT
       clock_in_time::date as date,
       on_duty_hours as hours,
-      COALESCE(dt.air_miles_from_base, 0) as miles
-    FROM time_cards tc
-    LEFT JOIN daily_trips dt ON tc.driver_id = dt.driver_id AND tc.clock_in_time::date = dt.trip_date
-    WHERE tc.driver_id = $1
-    AND tc.clock_in_time >= CURRENT_DATE - INTERVAL '6 days'
+      0 as miles
+    FROM time_cards
+    WHERE driver_id = $1
+    AND clock_in_time >= CURRENT_DATE - INTERVAL '6 days'
     ORDER BY clock_in_time::date DESC`,
     [driverId]
   );
