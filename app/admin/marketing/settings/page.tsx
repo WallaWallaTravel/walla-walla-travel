@@ -153,6 +153,7 @@ function MarketingSettingsContent() {
                 <p className="text-sm text-gray-500">Connect your Buffer account to schedule posts to multiple platforms</p>
               </div>
             </div>
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
             <a
               href="/api/auth/buffer"
               className="px-4 py-2 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 flex items-center gap-2"
@@ -256,6 +257,7 @@ function MarketingSettingsContent() {
                     {/* Actions */}
                     <div className="flex items-center gap-2">
                       {account.connection_status === 'expired' && (
+                        // eslint-disable-next-line @next/next/no-html-link-for-pages
                         <a
                           href="/api/auth/buffer"
                           className="px-3 py-1.5 text-sm bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200"
