@@ -822,6 +822,13 @@ await auditService.logFromRequest(request, parseInt(session.userId), 'resource_d
 - Date-dependent tests must use UTC-safe dates — never rely on local timezone
 - Run full test suite: `npx jest --passWithNoTests`
 
+## Testing
+
+- Critical business workflows are defined in `.claude/skills/e2e-testing/SKILL.md`
+- Run with Chrome integration: `/chrome` then "run critical path test [number]"
+- Every new feature MUST have a corresponding workflow test added to the skill
+- Test with real data patterns, not just compile checks
+
 ---
 
 ## Cron Routes

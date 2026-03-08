@@ -60,33 +60,41 @@ export const POST = withRateLimit(rateLimiters.auth)(
   setSessionCookie(response, result.token);
 
   // Also set Auth.js session cookie (for server components/actions using auth())
-  const authJsToken = await encode({
-    token: {
-      sub: String(result.user.id),
-      name: result.user.name,
-      email: result.user.email,
-      role: result.user.role,
-      userId: String(result.user.id),
-    },
-    secret: process.env.AUTH_SECRET!,
-    salt: process.env.NODE_ENV === 'production'
-      ? '__Secure-authjs.session-token'
-      : 'authjs.session-token',
-  });
+  // Graceful: if AUTH_SECRET is missing, skip — old JWT still works during migration
+  if (process.env.AUTH_SECRET) {
+    try {
+      const authJsToken = await encode({
+        token: {
+          sub: String(result.user.id),
+          name: result.user.name,
+          email: result.user.email,
+          role: result.user.role,
+          userId: String(result.user.id),
+        },
+        secret: process.env.AUTH_SECRET,
+        salt: process.env.NODE_ENV === 'production'
+          ? '__Secure-authjs.session-token'
+          : 'authjs.session-token',
+      });
 
-  const cookieName = process.env.NODE_ENV === 'production'
-    ? '__Secure-authjs.session-token'
-    : 'authjs.session-token';
+      const cookieName = process.env.NODE_ENV === 'production'
+        ? '__Secure-authjs.session-token'
+        : 'authjs.session-token';
 
-  response.cookies.set({
-    name: cookieName,
-    value: authJsToken,
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 7 * 24 * 60 * 60, // 7 days
-  });
+      response.cookies.set({
+        name: cookieName,
+        value: authJsToken,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 7 * 24 * 60 * 60, // 7 days
+      });
+    } catch {
+      // Auth.js cookie is optional during migration — log but don't break login
+      console.warn('[login] Failed to set Auth.js session cookie — AUTH_SECRET may be invalid');
+    }
+  }
 
   return response;
 }));
