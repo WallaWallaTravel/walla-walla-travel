@@ -39,7 +39,7 @@ export async function createBooking(data: CreateBookingInput): Promise<BookingAc
       tourDate: v.tripDate,
       startTime: '10:00',
       durationHours: v.duration,
-      totalPrice: 0,
+      totalPrice: v.totalPrice ?? 0,
       depositPaid: v.depositAmount ?? 0,
     })
 

@@ -473,3 +473,50 @@ export async function getVehicles(): Promise<VehiclesResult> {
     return { success: false, error: message }
   }
 }
+
+// ============================================================================
+// HOTEL SEARCH — Typeahead for pickup location
+// ============================================================================
+
+const FALLBACK_HOTELS = [
+  'Marcus Whitman Hotel',
+  'Courtyard by Marriott',
+  'The Finch Hotel',
+  'Eritage Resort',
+  'Abeja Inn',
+  'The Barn at Walla Walla',
+]
+
+export async function searchHotels(query: string): Promise<{ success: boolean; hotels: string[]; error?: string }> {
+  try {
+    if (!query || query.length < 1) {
+      return { success: true, hotels: FALLBACK_HOTELS }
+    }
+
+    const results = await prisma.hotels.findMany({
+      where: {
+        is_active: true,
+        name: { contains: query, mode: 'insensitive' },
+      },
+      select: { name: true },
+      orderBy: { display_order: 'asc' },
+      take: 10,
+    })
+
+    if (results.length > 0) {
+      return { success: true, hotels: results.map(h => h.name) }
+    }
+
+    // Fall back to static list filtered by query
+    const filtered = FALLBACK_HOTELS.filter(h =>
+      h.toLowerCase().includes(query.toLowerCase())
+    )
+    return { success: true, hotels: filtered.length > 0 ? filtered : FALLBACK_HOTELS }
+  } catch {
+    // If DB query fails, fall back to static suggestions
+    const filtered = query
+      ? FALLBACK_HOTELS.filter(h => h.toLowerCase().includes(query.toLowerCase()))
+      : FALLBACK_HOTELS
+    return { success: true, hotels: filtered.length > 0 ? filtered : FALLBACK_HOTELS }
+  }
+}
