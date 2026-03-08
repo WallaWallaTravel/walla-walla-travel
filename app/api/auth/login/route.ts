@@ -1,9 +1,11 @@
 /**
  * Login API
  * POST /api/auth/login
- * 
- * Authenticates user and creates session
- * 
+ *
+ * Authenticates user and creates session via the old JWT system.
+ * The old JWT is the source of truth for auth — middleware reads it.
+ * Auth.js session cookie is set separately after login succeeds.
+ *
  * ✅ REFACTORED: Service layer + error handling + audit logging
  */
 
@@ -15,7 +17,6 @@ import { authService } from '@/lib/services/auth.service';
 import { auditService } from '@/lib/services/audit.service';
 import { z } from 'zod';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
-import { encode } from 'next-auth/jwt';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,45 +57,11 @@ export const POST = withRateLimit(rateLimiters.auth)(
     timestamp: new Date().toISOString(),
   });
 
-  // Set old JWT session cookie (for middleware compatibility)
+  // Set JWT session cookie — this is the ONLY auth that middleware reads
   setSessionCookie(response, result.token);
 
-  // Also set Auth.js session cookie (for server components/actions using auth())
-  // Graceful: if AUTH_SECRET is missing, skip — old JWT still works during migration
-  if (process.env.AUTH_SECRET) {
-    try {
-      const authJsToken = await encode({
-        token: {
-          sub: String(result.user.id),
-          name: result.user.name,
-          email: result.user.email,
-          role: result.user.role,
-          userId: String(result.user.id),
-        },
-        secret: process.env.AUTH_SECRET,
-        salt: process.env.NODE_ENV === 'production'
-          ? '__Secure-authjs.session-token'
-          : 'authjs.session-token',
-      });
-
-      const cookieName = process.env.NODE_ENV === 'production'
-        ? '__Secure-authjs.session-token'
-        : 'authjs.session-token';
-
-      response.cookies.set({
-        name: cookieName,
-        value: authJsToken,
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 7 * 24 * 60 * 60, // 7 days
-      });
-    } catch {
-      // Auth.js cookie is optional during migration — log but don't break login
-      console.warn('[login] Failed to set Auth.js session cookie — AUTH_SECRET may be invalid');
-    }
-  }
+  // Auth.js session cookie is set lazily on first auth() call that finds
+  // a valid old-JWT but no Auth.js cookie. See auth.ts callbacks.
 
   return response;
 }));
