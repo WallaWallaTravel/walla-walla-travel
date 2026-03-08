@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, UnauthorizedError, NotFoundError } from '@/lib/api/middleware/error-handler';
-import { getSessionFromRequest } from '@/lib/auth/session';
+import { auth } from '@/auth';
 import { partnerService } from '@/lib/services/partner.service';
 import { query } from '@/lib/db';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
@@ -36,13 +36,13 @@ function getClientIp(request: NextRequest): string {
  * Get partner's directory listing data
  */
 export const GET = withErrorHandling(async (request: NextRequest) => {
-  const session = await getSessionFromRequest(request);
+  const session = await auth();
   
   if (!session || (session.user.role !== 'partner' && session.user.role !== 'admin')) {
     throw new UnauthorizedError('Partner access required');
   }
 
-  const profile = await partnerService.getProfileByUserId(session.user.id);
+  const profile = await partnerService.getProfileByUserId(parseInt(session.user.id));
   
   if (!profile) {
     throw new NotFoundError('Partner profile not found');
@@ -97,13 +97,13 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 export const PUT = withCSRF(
   withRateLimit(rateLimiters.api)(
   withErrorHandling(async (request: NextRequest) => {
-  const session = await getSessionFromRequest(request);
+  const session = await auth();
 
   if (!session || (session.user.role !== 'partner' && session.user.role !== 'admin')) {
     throw new UnauthorizedError('Partner access required');
   }
 
-  const profile = await partnerService.getProfileByUserId(session.user.id);
+  const profile = await partnerService.getProfileByUserId(parseInt(session.user.id));
   
   if (!profile) {
     throw new NotFoundError('Partner profile not found');

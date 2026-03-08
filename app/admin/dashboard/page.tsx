@@ -4,7 +4,7 @@
  * Main landing page for administrators with key metrics and quick actions
  */
 
-import { getSession } from '@/lib/auth/session';
+import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { query } from '@/lib/db';
@@ -227,7 +227,7 @@ async function getDashboardStats(): Promise<DashboardStats> {
 }
 
 export default async function AdminDashboardPage() {
-  const session = await getSession();
+  const session = await auth();
   
   if (!session || session.user.role !== 'admin') {
     redirect('/login');

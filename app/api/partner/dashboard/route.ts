@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, UnauthorizedError } from '@/lib/api/middleware/error-handler';
-import { getSessionFromRequest } from '@/lib/auth/session';
+import { auth } from '@/auth';
 import { getHotelSessionFromRequest } from '@/lib/auth/hotel-session';
 import { partnerService } from '@/lib/services/partner.service';
 import { hotelPartnerService } from '@/lib/services/hotel-partner.service';
@@ -19,11 +19,11 @@ interface DashboardResponse {
  */
 export const GET = withErrorHandling(async (request: NextRequest): Promise<NextResponse<DashboardResponse>> => {
   // 1. Try JWT session first (business partners)
-  const session = await getSessionFromRequest(request);
+  const session = await auth();
 
   if (session) {
     if (session.user.role === 'partner' || session.user.role === 'admin') {
-      const dashboard = await partnerService.getDashboardData(session.user.id);
+      const dashboard = await partnerService.getDashboardData(parseInt(session.user.id));
 
       return NextResponse.json({
         success: true,

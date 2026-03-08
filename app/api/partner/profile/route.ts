@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, UnauthorizedError } from '@/lib/api/middleware/error-handler';
-import { getSessionFromRequest } from '@/lib/auth/session';
+import { auth } from '@/auth';
 import { getHotelSessionFromRequest } from '@/lib/auth/hotel-session';
 import { partnerService } from '@/lib/services/partner.service';
 import { hotelPartnerService } from '@/lib/services/hotel-partner.service';
@@ -34,10 +34,10 @@ const HotelBodySchema = z.object({
  */
 export const GET = withErrorHandling(async (request: NextRequest) => {
   // 1. Try JWT session first (business partners)
-  const session = await getSessionFromRequest(request);
+  const session = await auth();
 
   if (session && (session.user.role === 'partner' || session.user.role === 'admin')) {
-    const profile = await partnerService.getProfileByUserId(session.user.id);
+    const profile = await partnerService.getProfileByUserId(parseInt(session.user.id));
 
     const userInfo = {
       contact_name: session.user.name,
@@ -117,13 +117,13 @@ export const PUT = withCSRF(
   withRateLimit(rateLimiters.api)(
   withErrorHandling(async (request: NextRequest) => {
   // 1. Try JWT session first (business partners)
-  const session = await getSessionFromRequest(request);
+  const session = await auth();
 
   if (session && (session.user.role === 'partner' || session.user.role === 'admin')) {
     const body = BusinessBodySchema.parse(await request.json());
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const updatedProfile = await partnerService.updateProfile(session.user.id, body as any);
+    const updatedProfile = await partnerService.updateProfile(parseInt(session.user.id), body as any);
 
     return NextResponse.json({
       success: true,

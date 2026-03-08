@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, type RouteContext } from '@/lib/api/middleware/error-handler';
-import { getSession } from '@/lib/auth/session';
+import { auth } from '@/auth';
 import { eventOrganizerService } from '@/lib/services/event-organizer.service';
 import { eventsService } from '@/lib/services/events.service';
 import { updateEventSchema } from '@/lib/validation/schemas/events';
@@ -10,7 +10,7 @@ type RouteParams = { id: string };
 
 export const GET = withErrorHandling(
   async (_request: NextRequest, context: RouteContext<RouteParams>) => {
-    const session = await getSession();
+    const session = await auth();
     if (!session || (session.user.role !== 'organizer' && session.user.role !== 'admin')) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
@@ -21,7 +21,7 @@ export const GET = withErrorHandling(
     const { id } = await context.params;
     const eventId = parseInt(id, 10);
 
-    const owns = await eventOrganizerService.ownsEvent(session.user.id, eventId);
+    const owns = await eventOrganizerService.ownsEvent(parseInt(session.user.id), eventId);
     if (!owns) {
       return NextResponse.json(
         { success: false, error: 'Event not found or access denied' },
@@ -45,7 +45,7 @@ export const GET = withErrorHandling(
 export const PUT = withCSRF(
   withErrorHandling(
   async (request: NextRequest, context: RouteContext<RouteParams>) => {
-    const session = await getSession();
+    const session = await auth();
     if (!session || (session.user.role !== 'organizer' && session.user.role !== 'admin')) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
@@ -56,7 +56,7 @@ export const PUT = withCSRF(
     const { id } = await context.params;
     const eventId = parseInt(id, 10);
 
-    const owns = await eventOrganizerService.ownsEvent(session.user.id, eventId);
+    const owns = await eventOrganizerService.ownsEvent(parseInt(session.user.id), eventId);
     if (!owns) {
       return NextResponse.json(
         { success: false, error: 'Event not found or access denied' },
@@ -92,7 +92,7 @@ export const PUT = withCSRF(
 export const DELETE = withCSRF(
   withErrorHandling(
   async (_request: NextRequest, context: RouteContext<RouteParams>) => {
-    const session = await getSession();
+    const session = await auth();
     if (!session || (session.user.role !== 'organizer' && session.user.role !== 'admin')) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
@@ -103,7 +103,7 @@ export const DELETE = withCSRF(
     const { id } = await context.params;
     const eventId = parseInt(id, 10);
 
-    const owns = await eventOrganizerService.ownsEvent(session.user.id, eventId);
+    const owns = await eventOrganizerService.ownsEvent(parseInt(session.user.id), eventId);
     if (!owns) {
       return NextResponse.json(
         { success: false, error: 'Event not found or access denied' },

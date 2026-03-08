@@ -1,9 +1,9 @@
 import { redirect } from 'next/navigation'
-import { getSession } from '@/lib/auth/session'
+import { auth } from '@/auth'
 import PreTripInspectionClient from './PreTripInspectionClient'
 
 export default async function PreTripInspection() {
-  const session = await getSession()
+  const session = await auth()
   
   if (!session) {
     redirect('/login')

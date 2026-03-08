@@ -13,6 +13,25 @@ import { clearSessionCookie, getSessionFromRequest } from '@/lib/auth/session';
 import { query } from '@/lib/db';
 import { logger } from '@/lib/logger';
 
+/** Clear both old session and Auth.js session cookies */
+function clearAllSessionCookies(response: NextResponse): NextResponse {
+  clearSessionCookie(response);
+  // Clear Auth.js session cookie
+  const authJsCookieName = process.env.NODE_ENV === 'production'
+    ? '__Secure-authjs.session-token'
+    : 'authjs.session-token';
+  response.cookies.set({
+    name: authJsCookieName,
+    value: '',
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 0,
+  });
+  return response;
+}
+
 export const dynamic = 'force-dynamic';
 
 // Get client IP from request headers (Next.js 15 removed request.ip)
@@ -52,7 +71,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       message: 'Logged out successfully',
     });
 
-    return clearSessionCookie(response);
+    return clearAllSessionCookies(response);
   } catch (error) {
     logger.error('Logout error', { error });
 
@@ -62,7 +81,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       message: 'Logged out',
     });
 
-    return clearSessionCookie(response);
+    return clearAllSessionCookies(response);
   }
 });
 
@@ -90,5 +109,5 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 
   // Redirect to homepage
   const response = NextResponse.redirect(new URL('/', request.url));
-  return clearSessionCookie(response);
+  return clearAllSessionCookies(response);
 });

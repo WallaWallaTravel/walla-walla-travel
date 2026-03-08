@@ -130,7 +130,7 @@ export const rateLimiters = {
 // ============================================================================
 
 /**
- * @deprecated Use requireAdmin() from '@/lib/admin-auth' for server-side auth.
+ * @deprecated Use requireAdmin() from '@/auth' for server-side auth.
  * This function is kept for reference but should not be used.
  * The actual auth implementation uses session cookies validated against the database.
  */
@@ -155,16 +155,16 @@ export async function requireAuth(
     );
   }
 
-  // NOTE: For proper auth, use requireAdmin() from '@/lib/admin-auth'
+  // NOTE: For proper auth, use requireAdmin() from '@/auth'
   // This parses the session cookie and validates against the database
-  logger.warn('requireAuth from middleware.ts is deprecated - use @/lib/admin-auth');
+  logger.warn('requireAuth from middleware.ts is deprecated - use @/auth');
 
   return NextResponse.json(
     {
       success: false,
       error: {
         code: 'NOT_IMPLEMENTED',
-        message: 'Use requireAdmin() from @/lib/admin-auth instead',
+        message: 'Use requireAdmin() from @/auth instead',
         statusCode: 501,
       },
     },
@@ -173,13 +173,13 @@ export async function requireAuth(
 }
 
 /**
- * @deprecated Use requireAdmin() or isAdmin() from '@/lib/admin-auth' for role checking.
+ * @deprecated Use requireAdmin() or isAdmin() from '@/auth' for role checking.
  */
 export function requireRole(
   _user: { userId: number; email: string },
   _requiredRole: 'admin' | 'driver' | 'customer'
 ): boolean {
-  logger.warn('requireRole from middleware.ts is deprecated - use @/lib/admin-auth');
+  logger.warn('requireRole from middleware.ts is deprecated - use @/auth');
   return false;
 }
 

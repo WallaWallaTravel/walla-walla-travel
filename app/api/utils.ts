@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from '@/lib/auth';
+import { auth } from '@/auth';
 import type { NextRequest } from 'next/server';
 import { logger } from '@/lib/logger';
 import { generateSecureString } from '@/lib/utils';
@@ -14,11 +14,12 @@ interface ApiResponse<T = unknown> {
   timestamp: string;
 }
 
-// Session type from our cookie-based auth
+// Session type
 interface Session {
   email: string;
   userId: string;
   name: string;
+  role?: string;
 }
 
 // Create a success response
@@ -54,15 +55,20 @@ export function errorResponse(error: string, status: number = 400): NextResponse
   return NextResponse.json(response, { status });
 }
 
-// Auth middleware - uses cookie-based session
+// Auth middleware - uses Auth.js session
 // Throws UnauthorizedError on failure (caught by withErrorHandling)
 export async function requireAuth(): Promise<Session> {
   try {
-    const session = await getServerSession();
-    if (!session) {
+    const session = await auth();
+    if (!session?.user) {
       throw new UnauthorizedError('Unauthorized - Please login');
     }
-    return session;
+    return {
+      userId: session.user.id,
+      email: session.user.email ?? '',
+      name: session.user.name ?? '',
+      role: session.user.role,
+    };
   } catch (error) {
     if (error instanceof UnauthorizedError) throw error;
     throw new UnauthorizedError('Authentication failed');
@@ -72,8 +78,14 @@ export async function requireAuth(): Promise<Session> {
 // Optional auth - returns session or null, doesn't throw
 export async function getOptionalAuth(): Promise<Session | null> {
   try {
-    const session = await getServerSession();
-    return session;
+    const session = await auth();
+    if (!session?.user) return null;
+    return {
+      userId: session.user.id,
+      email: session.user.email ?? '',
+      name: session.user.name ?? '',
+      role: session.user.role,
+    };
   } catch {
     return null;
   }

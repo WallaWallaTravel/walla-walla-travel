@@ -11,9 +11,7 @@ import { logger } from '@/lib/logger';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, UnauthorizedError, ForbiddenError } from './error-handler';
-import { requireAdmin as checkAdminRole } from '@/lib/admin-auth';
-
-// Note: getSessionFromRequest is defined at bottom of file and uses lib/auth/session.ts
+// Note: getSessionFromRequest is defined at bottom of file and uses Auth.js auth()
 
 // ============================================================================
 // Session Type
@@ -109,11 +107,7 @@ export function withAdminAuth(
   return withAuth(async (request: NextRequest, session: AuthSession, context?: RouteContext) => {
     // Check admin role
     if (session.role !== 'admin') {
-      // Double-check with admin auth service
-      const adminCheck = await checkAdminRole();
-      if ('status' in adminCheck) {
-        throw new ForbiddenError('Admin access required');
-      }
+      throw new ForbiddenError('Admin access required');
     }
 
     // Execute handler with verified admin session
@@ -214,40 +208,15 @@ interface InternalSession {
 
 async function getSessionFromRequest(): Promise<InternalSession | null> {
   try {
-    const { getSession: getAuthSession } = await import('@/lib/auth/session');
-    const authSession = await getAuthSession();
-    if (authSession?.user?.id) {
-      const role = authSession.user.role as InternalSession['role'];
-
-      // Server-side session validation (when sid is present in JWT)
-      if (authSession.sid) {
-        try {
-          const { sessionStoreService } = await import('@/lib/services/session-store.service');
-          const sessionRecord = await sessionStoreService.validateSession(authSession.sid, role);
-
-          if (!sessionRecord) {
-            // Session revoked or idle-timed-out
-            logger.warn('[Auth Wrapper] Server-side session invalid', { sid: authSession.sid });
-            return null;
-          }
-
-          // Touch session to keep it alive (non-blocking, throttled by last_active_at comparison)
-          sessionStoreService.touchSession(authSession.sid, sessionRecord.last_active_at).catch((err: unknown) => {
-            logger.warn('[Auth Wrapper] Failed to touch session', { error: err });
-          });
-        } catch (dbError: unknown) {
-          // DB failure: fall back to JWT-only validation (don't lock everyone out)
-          const msg = dbError instanceof Error ? dbError.message : 'Unknown error';
-          logger.error('[Auth Wrapper] Session store unavailable, falling back to JWT-only', { error: msg });
-        }
-      }
-      // If no sid (old JWT): skip DB check — backward compatible
+    const { auth } = await import('@/auth');
+    const session = await auth();
+    if (session?.user?.id) {
+      const role = (session.user.role || 'customer') as InternalSession['role'];
 
       return {
-        userId: String(authSession.user.id),
-        email: authSession.user.email,
+        userId: session.user.id,
+        email: session.user.email ?? '',
         role,
-        sid: authSession.sid,
         isLoggedIn: true,
       };
     }

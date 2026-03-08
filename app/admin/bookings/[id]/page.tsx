@@ -3,7 +3,7 @@
  * View and manage individual booking details
  */
 
-import { getSession } from '@/lib/auth/session';
+import { auth } from '@/auth';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { query } from '@/lib/db';
@@ -143,7 +143,7 @@ function getDaysUntil(dateStr: string): { days: number; label: string; urgent: b
 
 export default async function BookingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const session = await getSession();
+  const session = await auth();
   
   if (!session || session.user.role !== 'admin') {
     redirect('/login');

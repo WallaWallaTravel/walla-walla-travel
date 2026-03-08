@@ -4,7 +4,7 @@
  * List, create, and manage system users (admins and drivers)
  */
 
-import { getSession } from '@/lib/auth/session';
+import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { query } from '@/lib/db';
@@ -35,7 +35,7 @@ async function getUsers(): Promise<User[]> {
 }
 
 export default async function UsersPage() {
-  const session = await getSession();
+  const session = await auth();
   
   if (!session || session.user.role !== 'admin') {
     redirect('/login');

@@ -5,7 +5,7 @@
  * Displays import statistics and provides access to inspection/time card entry forms.
  */
 
-import { getSession } from '@/lib/auth/session';
+import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { query } from '@/lib/db';
@@ -131,7 +131,7 @@ async function getRecentEntries(): Promise<RecentEntry[]> {
 }
 
 export default async function HistoricalEntryPage() {
-  const session = await getSession();
+  const session = await auth();
 
   if (!session || session.user.role !== 'admin') {
     redirect('/login');

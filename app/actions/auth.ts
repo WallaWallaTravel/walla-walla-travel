@@ -1,26 +1,31 @@
 'use server'
 
-import { login } from '@/lib/auth'
+import { signIn } from '@/auth'
 import { redirect } from 'next/navigation'
 import { logger } from '@/lib/logger'
+import { AuthError } from 'next-auth'
 
 export async function loginAction(email: string, password: string) {
   logger.debug('Login attempt', { email })
 
   try {
-    logger.debug('Calling login function')
-    const result = await login(email, password)
-    logger.debug('Login result', { result })
-
-    if (!result.success) {
-      logger.debug('Login failed', { error: result.error })
-      return { error: result.error }
-    }
+    await signIn('credentials', {
+      email,
+      password,
+      redirect: false,
+    })
 
     logger.debug('Login successful, redirecting')
-    // Redirect to workflow on success
     redirect('/workflow')
   } catch (error) {
+    // Auth.js throws NEXT_REDIRECT for redirect(), re-throw it
+    if (error instanceof Error && error.message === 'NEXT_REDIRECT') {
+      throw error
+    }
+    if (error instanceof AuthError) {
+      logger.debug('Login failed', { error: error.message })
+      return { error: 'Invalid email or password' }
+    }
     logger.error('Login action error', {
       error,
       errorType: error instanceof Error ? error.constructor.name : typeof error,

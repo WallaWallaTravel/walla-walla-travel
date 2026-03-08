@@ -4,7 +4,7 @@
  * Edit an existing geology topic/article.
  */
 
-import { getSession } from '@/lib/auth/session';
+import { auth } from '@/auth';
 import { canAccessGeology } from '@/lib/auth/roles';
 import { redirect, notFound } from 'next/navigation';
 import { query } from '@/lib/db';
@@ -28,7 +28,7 @@ async function getTopic(id: number): Promise<GeologyTopic | null> {
 }
 
 export default async function EditTopicPage({ params }: PageProps) {
-  const session = await getSession();
+  const session = await auth();
 
   if (!session || !canAccessGeology(session.user.role)) {
     redirect('/login');

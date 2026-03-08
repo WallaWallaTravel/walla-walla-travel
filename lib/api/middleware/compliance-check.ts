@@ -25,11 +25,18 @@ import {
   AssignmentComplianceResult,
   ComplianceViolation,
 } from '@/lib/services/compliance.service';
-import { getServerSession } from '@/lib/auth';
+import { auth } from '@/auth';
 
-// Helper to get session from request (wrapper around getServerSession)
+// Helper to get session from request (wrapper around Auth.js auth())
 async function getSessionFromRequest(_request: NextRequest) {
-  return await getServerSession();
+  const session = await auth();
+  if (!session?.user) return null;
+  return {
+    userId: session.user.id,
+    email: session.user.email,
+    name: session.user.name,
+    role: session.user.role,
+  };
 }
 
 // ============================================================================
@@ -285,7 +292,7 @@ export function withComplianceCheck<T = unknown, P = Record<string, string>>(
       if (isOverrideAttempt && canOverride && overrideReason) {
         // Log the override (non-blocking)
         try {
-          const session = await getServerSession();
+          const session = await getSessionFromRequest(request);
           await complianceService.logComplianceCheck(
             config.checkType,
             request.nextUrl.pathname,

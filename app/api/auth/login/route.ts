@@ -15,6 +15,7 @@ import { authService } from '@/lib/services/auth.service';
 import { auditService } from '@/lib/services/audit.service';
 import { z } from 'zod';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
+import { encode } from 'next-auth/jwt';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,5 +56,37 @@ export const POST = withRateLimit(rateLimiters.auth)(
     timestamp: new Date().toISOString(),
   });
 
-  return setSessionCookie(response, result.token);
+  // Set old JWT session cookie (for middleware compatibility)
+  setSessionCookie(response, result.token);
+
+  // Also set Auth.js session cookie (for server components/actions using auth())
+  const authJsToken = await encode({
+    token: {
+      sub: String(result.user.id),
+      name: result.user.name,
+      email: result.user.email,
+      role: result.user.role,
+      userId: String(result.user.id),
+    },
+    secret: process.env.AUTH_SECRET!,
+    salt: process.env.NODE_ENV === 'production'
+      ? '__Secure-authjs.session-token'
+      : 'authjs.session-token',
+  });
+
+  const cookieName = process.env.NODE_ENV === 'production'
+    ? '__Secure-authjs.session-token'
+    : 'authjs.session-token';
+
+  response.cookies.set({
+    name: cookieName,
+    value: authJsToken,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 7 * 24 * 60 * 60, // 7 days
+  });
+
+  return response;
 }));

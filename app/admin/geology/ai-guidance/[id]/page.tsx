@@ -4,7 +4,7 @@
  * Edit existing AI guidance entry.
  */
 
-import { getSession } from '@/lib/auth/session';
+import { auth } from '@/auth';
 import { canAccessGeology } from '@/lib/auth/roles';
 import { redirect, notFound } from 'next/navigation';
 import { query } from '@/lib/db';
@@ -36,7 +36,7 @@ async function getGuidance(id: number): Promise<GuidanceData | null> {
 }
 
 export default async function EditGuidancePage({ params }: PageProps) {
-  const session = await getSession();
+  const session = await auth();
 
   if (!session || !canAccessGeology(session.user.role)) {
     redirect('/login');

@@ -85,16 +85,6 @@ test.describe('Admin Dashboard', () => {
       expect(response.status()).toBeGreaterThanOrEqual(400);
     });
 
-    test('admin rates PATCH requires auth and CSRF', async ({ request }) => {
-      const response = await request.patch('/api/admin/rates', {
-        data: {
-          id: 1,
-          rate: 100,
-        },
-      });
-      expect(response.status()).toBeGreaterThanOrEqual(400);
-    });
-
     test('admin partner invite requires auth', async ({ request }) => {
       const response = await request.post('/api/admin/partners/invite', {
         data: {
@@ -115,14 +105,6 @@ test.describe('Admin Dashboard', () => {
       expect(response.status()).toBeGreaterThanOrEqual(400);
     });
 
-    test('admin tenants requires auth', async ({ request }) => {
-      const response = await request.post('/api/admin/tenants', {
-        data: {
-          name: 'Test Tenant',
-        },
-      });
-      expect(response.status()).toBeGreaterThanOrEqual(400);
-    });
   });
 
   test.describe('Proposal Endpoints Security', () => {

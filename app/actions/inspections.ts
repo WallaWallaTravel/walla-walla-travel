@@ -1,7 +1,7 @@
 'use server'
 
 import { query } from '@/lib/db'
-import { getSession } from '@/lib/auth/session'
+import { auth } from '@/auth'
 import { logger } from '@/lib/logger'
 
 interface InspectionData {
@@ -19,7 +19,8 @@ interface InspectionData {
  */
 export async function getActiveTimeCardId(): Promise<number | null> {
   try {
-    const user = (await getSession())?.user ?? null
+    const session = await auth()
+    const user = session?.user ?? null
     if (!user) return null
 
     const result = await query(`
@@ -28,7 +29,7 @@ export async function getActiveTimeCardId(): Promise<number | null> {
         AND clock_out_time IS NULL
       ORDER BY clock_in_time DESC
       LIMIT 1
-    `, [user.id])
+    `, [parseInt(user.id)])
 
     return result.rows[0]?.id || null
   } catch (error) {
@@ -40,7 +41,8 @@ export async function getActiveTimeCardId(): Promise<number | null> {
 export async function savePreTripInspection(data: InspectionData) {
   try {
     // Get current user
-    const user = (await getSession())?.user ?? null
+    const preSession = await auth()
+    const user = preSession?.user ?? null
     if (!user) {
       return { success: false, error: 'Not authenticated' }
     }
@@ -64,7 +66,7 @@ export async function savePreTripInspection(data: InspectionData) {
        VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
        RETURNING id`,
       [
-        user.id,
+        parseInt(user.id),
         data.vehicleId,
         'pre_trip',
         data.mileage,
@@ -110,8 +112,9 @@ export async function saveInspectionAction(data: {
 }) {
   try {
     // Get current user
-    const user = (await getSession())?.user ?? null
-    if (!user || String(user.id) !== data.driverId) {
+    const saveSession = await auth()
+    const user = saveSession?.user ?? null
+    if (!user || user.id !== data.driverId) {
       return { success: false, error: 'Not authenticated' }
     }
 
@@ -135,7 +138,7 @@ export async function saveInspectionAction(data: {
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
        RETURNING id`,
       [
-        user.id,
+        parseInt(user.id),
         data.vehicleId,
         data.type,
         mileage,
@@ -172,7 +175,8 @@ export async function saveInspectionAction(data: {
 export async function savePostTripInspection(data: InspectionData & { signature?: string }) {
   try {
     // Get current user
-    const user = (await getSession())?.user ?? null
+    const postSession = await auth()
+    const user = postSession?.user ?? null
     if (!user) {
       return { success: false, error: 'Not authenticated' }
     }
@@ -196,7 +200,7 @@ export async function savePostTripInspection(data: InspectionData & { signature?
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
        RETURNING id`,
       [
-        user.id,
+        parseInt(user.id),
         data.vehicleId,
         'post_trip',
         data.mileage,

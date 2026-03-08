@@ -5,7 +5,7 @@
  * Shows stats, recent activity, and quick actions.
  */
 
-import { getSession } from '@/lib/auth/session';
+import { auth } from '@/auth';
 import { canAccessGeology } from '@/lib/auth/roles';
 import { redirect } from 'next/navigation';
 import { query } from '@/lib/db';
@@ -215,7 +215,7 @@ function PublishBadge({ isPublished }: { isPublished: boolean }) {
 // ============================================================================
 
 export default async function GeologyDashboardPage() {
-  const session = await getSession();
+  const session = await auth();
 
   if (!session || !canAccessGeology(session.user.role)) {
     redirect('/login');

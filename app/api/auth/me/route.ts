@@ -7,21 +7,26 @@
  * ✅ REFACTORED: Structured logging + withErrorHandling middleware
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getSessionFromRequest } from '@/lib/auth/session';
+import { NextResponse } from 'next/server';
+import { auth } from '@/auth';
 import { withErrorHandling, UnauthorizedError } from '@/lib/api/middleware/error-handler';
 
 export const dynamic = 'force-dynamic';
 
-export const GET = withErrorHandling(async (request: NextRequest) => {
-  const session = await getSessionFromRequest(request);
+export const GET = withErrorHandling(async () => {
+  const session = await auth();
 
-  if (!session) {
+  if (!session?.user) {
     throw new UnauthorizedError('Not authenticated');
   }
 
   return NextResponse.json({
-    user: session.user,
+    user: {
+      id: parseInt(session.user.id),
+      email: session.user.email,
+      name: session.user.name,
+      role: session.user.role,
+    },
   });
 });
 

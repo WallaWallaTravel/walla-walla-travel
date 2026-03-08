@@ -1,12 +1,12 @@
 import { redirect } from 'next/navigation'
-import { getSession } from '@/lib/auth/session'
+import { auth } from '@/auth'
 import { PostTripInspectionClient } from './PostTripInspectionClient'
 import { query } from '@/lib/db'
 import { formatDateForDB } from '@/app/api/utils'
 import { logger } from '@/lib/logger'
 
 export default async function PostTripInspection() {
-  const session = await getSession()
+  const session = await auth()
   
   if (!session) {
     redirect('/login')
