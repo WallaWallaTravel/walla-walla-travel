@@ -4,39 +4,29 @@
  * Credentials provider verifies against existing users table (bcrypt).
  * JWT strategy with role and userId in token/session.
  *
- * RESILIENCE: If AUTH_SECRET is missing or invalid, exports safe stubs
- * so the 50+ files importing auth() don't crash. The old JWT system
- * (middleware.ts + lib/auth/session.ts) remains the primary auth gate.
+ * RESILIENCE: If AUTH_SECRET is missing, auth() returns null and handlers
+ * return 503. The old JWT system handles auth via middleware regardless.
  *
  * COEXISTENCE: This runs alongside the existing JWT auth system.
  * Both systems are valid during migration. The old system will be
  * removed once all routes are migrated.
  */
 
-import type { NextRequest } from 'next/server'
+import NextAuth from 'next-auth'
+import Credentials from 'next-auth/providers/credentials'
+import bcrypt from 'bcryptjs'
+import { prisma } from '@/lib/prisma'
+import authConfig from './auth.config'
 
-// Only initialize NextAuth if AUTH_SECRET is available
-let _handlers: { GET: (req: NextRequest) => Promise<Response>; POST: (req: NextRequest) => Promise<Response> }
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let _auth: (() => Promise<any>)
-let _signIn: typeof Function.prototype
-let _signOut: typeof Function.prototype
+// If AUTH_SECRET is missing, export safe stubs so 50+ importing files don't crash
+if (!process.env.AUTH_SECRET) {
+  console.warn('[auth] AUTH_SECRET not set — Auth.js disabled, old JWT system is primary')
+}
 
-if (process.env.AUTH_SECRET) {
-  try {
-    // Dynamic require to avoid module-level crash when AUTH_SECRET is missing
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const NextAuth = require('next-auth').default
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const Credentials = require('next-auth/providers/credentials').default
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const bcrypt = require('bcryptjs')
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { prisma } = require('@/lib/prisma')
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const authConfig = require('./auth.config').default
+const hasSecret = !!process.env.AUTH_SECRET
 
-    const result = NextAuth({
+const nextAuthResult = hasSecret
+  ? NextAuth({
       ...authConfig,
       session: { strategy: 'jwt' },
       providers: [
@@ -46,7 +36,7 @@ if (process.env.AUTH_SECRET) {
             email: { label: 'Email', type: 'email' },
             password: { label: 'Password', type: 'password' },
           },
-          async authorize(credentials: Record<string, unknown>) {
+          async authorize(credentials) {
             if (!credentials?.email || !credentials?.password) {
               return null
             }
@@ -92,14 +82,14 @@ if (process.env.AUTH_SECRET) {
         }),
       ],
       callbacks: {
-        async jwt({ token, user }: { token: Record<string, unknown>; user?: { id?: string; role?: string } }) {
+        async jwt({ token, user }) {
           if (user) {
-            token.role = user.role
+            token.role = (user as { role?: string }).role
             token.userId = user.id
           }
           return token
         },
-        async session({ session, token }: { session: { user?: { role?: string; id?: string } }; token: Record<string, unknown> }) {
+        async session({ session, token }) {
           if (session.user) {
             session.user.role = token.role as string
             session.user.id = token.userId as string
@@ -108,34 +98,27 @@ if (process.env.AUTH_SECRET) {
         },
       },
     })
+  : null
 
-    _handlers = result.handlers
-    _auth = result.auth
-    _signIn = result.signIn
-    _signOut = result.signOut
-  } catch (e) {
-    console.error('[auth] NextAuth initialization failed:', e instanceof Error ? e.message : e)
-    // Fall through to stubs below
-  }
-}
-
-// Safe stubs if NextAuth is not initialized
-if (!_auth!) {
-  const stubResponse = () => new Response(JSON.stringify({ error: 'Auth not configured' }), {
+// Stub handlers for when Auth.js is not configured
+const stubResponse = () =>
+  new Response(JSON.stringify({ error: 'Auth not configured' }), {
     status: 503,
     headers: { 'Content-Type': 'application/json' },
   })
 
-  _handlers = {
-    GET: async () => stubResponse(),
-    POST: async () => stubResponse(),
-  }
-  _auth = async () => null
-  _signIn = async () => { throw new Error('Auth.js not configured — AUTH_SECRET missing') }
-  _signOut = async () => { throw new Error('Auth.js not configured — AUTH_SECRET missing') }
+export const handlers = nextAuthResult?.handlers ?? {
+  GET: async () => stubResponse(),
+  POST: async () => stubResponse(),
 }
 
-export const handlers = _handlers!
-export const auth = _auth!
-export const signIn = _signIn!
-export const signOut = _signOut!
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const auth: () => Promise<any> = nextAuthResult?.auth ?? (async () => null)
+
+export const signIn = nextAuthResult?.signIn ?? (async () => {
+  throw new Error('Auth.js not configured — AUTH_SECRET missing')
+})
+
+export const signOut = nextAuthResult?.signOut ?? (async () => {
+  throw new Error('Auth.js not configured — AUTH_SECRET missing')
+})
