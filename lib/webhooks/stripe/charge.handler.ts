@@ -12,6 +12,7 @@
 import Stripe from 'stripe';
 import * as Sentry from '@sentry/nextjs';
 import { query, queryOne } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 import { sendEmail } from '@/lib/email';
 import { findPaymentForDispute } from './utils';
@@ -31,12 +32,11 @@ export async function handleChargeRefunded(charge: Stripe.Charge) {
   const paymentIntentId =
     typeof payment_intent === 'string' ? payment_intent : payment_intent?.id;
 
-  await query(
-    `UPDATE payments
-     SET status = 'refunded', refunded_at = NOW(), updated_at = NOW()
-     WHERE stripe_payment_intent_id = $1`,
-    [paymentIntentId]
-  );
+  // payments is available in Prisma
+  await prisma.payments.updateMany({
+    where: { stripe_payment_intent_id: paymentIntentId },
+    data: { status: 'refunded', refunded_at: new Date(), updated_at: new Date() },
+  });
 }
 
 /**
@@ -70,6 +70,8 @@ export async function handleDisputeCreated(dispute: Stripe.Dispute) {
   });
 
   const chargeId = typeof charge === 'string' ? charge : charge?.id;
+  // dispute columns (dispute_id, dispute_reason, dispute_amount) and trip_proposal_id
+  // are not in Prisma payments model, so we use raw SQL for the lookup with join
   const payment = await queryOne<{
     id: number;
     booking_id: number | null;
@@ -116,10 +118,10 @@ export async function handleDisputeCreated(dispute: Stripe.Dispute) {
     });
 
     if (payment.booking_id) {
-      await query(
-        `UPDATE bookings SET has_dispute = true, updated_at = NOW() WHERE id = $1`,
-        [payment.booking_id]
-      ).catch((err) => {
+      // has_dispute may not be in Prisma schema — use raw SQL to be safe
+      await prisma.$executeRaw`
+        UPDATE bookings SET has_dispute = true, updated_at = NOW() WHERE id = ${payment.booking_id}
+      `.catch((err) => {
         logger.warn('[Stripe Webhook] Could not flag booking dispute', {
           bookingId: payment.booking_id,
           error: err instanceof Error ? err.message : String(err),
@@ -208,16 +210,17 @@ export async function handleDisputeClosed(dispute: Stripe.Dispute) {
   if (!payment) return;
 
   const newStatus = won ? 'succeeded' : 'dispute_lost';
-  await query(
-    `UPDATE payments SET status = $2, updated_at = NOW() WHERE id = $1`,
-    [payment.id, newStatus]
-  );
+  // Use Prisma for payment status update
+  await prisma.payments.update({
+    where: { id: payment.id },
+    data: { status: newStatus, updated_at: new Date() },
+  });
 
   if (payment.booking_id) {
-    await query(
-      `UPDATE bookings SET has_dispute = $2, updated_at = NOW() WHERE id = $1`,
-      [payment.booking_id, !won]
-    ).catch(() => {});
+    // has_dispute may not be in Prisma schema — use raw SQL
+    await prisma.$executeRaw`
+      UPDATE bookings SET has_dispute = ${!won}, updated_at = NOW() WHERE id = ${payment.booking_id}
+    `.catch(() => {});
   }
 
   const staffEmail = process.env.STAFF_NOTIFICATION_EMAIL || 'info@wallawalla.travel';
@@ -274,10 +277,10 @@ export async function handleDisputeFundsWithdrawn(dispute: Stripe.Dispute) {
   const payment = await findPaymentForDispute(dispute);
   if (!payment) return;
 
-  await query(
-    `UPDATE payments SET dispute_amount = $2, updated_at = NOW() WHERE id = $1`,
-    [payment.id, amountDollars]
-  ).catch(() => {});
+  // dispute_amount not in Prisma schema — raw SQL
+  await prisma.$executeRaw`
+    UPDATE payments SET dispute_amount = ${amountDollars}, updated_at = NOW() WHERE id = ${payment.id}
+  `.catch(() => {});
 }
 
 /**
@@ -301,10 +304,10 @@ export async function handleDisputeFundsReinstated(dispute: Stripe.Dispute) {
   const payment = await findPaymentForDispute(dispute);
   if (!payment) return;
 
-  await query(
-    `UPDATE payments SET dispute_amount = 0, updated_at = NOW() WHERE id = $1`,
-    [payment.id]
-  ).catch(() => {});
+  // dispute_amount not in Prisma schema — raw SQL
+  await prisma.$executeRaw`
+    UPDATE payments SET dispute_amount = 0, updated_at = NOW() WHERE id = ${payment.id}
+  `.catch(() => {});
 
   const staffEmail = process.env.STAFF_NOTIFICATION_EMAIL || 'info@wallawalla.travel';
   const bookingRef = payment.booking_number || `Payment #${payment.id}`;

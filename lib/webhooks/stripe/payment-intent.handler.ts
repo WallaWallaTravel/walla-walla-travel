@@ -7,6 +7,7 @@
 
 import Stripe from 'stripe';
 import { query, queryOne, withTransaction } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 import { sendBookingConfirmationEmail } from '@/lib/services/email-automation.service';
 import { sharedTourService } from '@/lib/services/shared-tour.service';
@@ -66,23 +67,20 @@ export async function handlePaymentIntentSucceeded(
     return;
   }
 
-  // Fallback: look up payment by stripe_payment_intent_id
-  const payment = await queryOne(
-    `SELECT * FROM payments WHERE stripe_payment_intent_id = $1`,
-    [id]
-  );
+  // Fallback: look up payment by stripe_payment_intent_id (Prisma — payments is not @@ignore)
+  const payment = await prisma.payments.findFirst({
+    where: { stripe_payment_intent_id: id },
+  });
 
   if (!payment) {
     logger.warn('[Stripe Webhook] No payment record found for PaymentIntent', { id });
     return;
   }
 
-  await query(
-    `UPDATE payments
-     SET status = 'succeeded', succeeded_at = NOW(), updated_at = NOW()
-     WHERE id = $1`,
-    [payment.id]
-  );
+  await prisma.payments.update({
+    where: { id: payment.id },
+    data: { status: 'succeeded', succeeded_at: new Date(), updated_at: new Date() },
+  });
 
   if (payment.booking_id) {
     await handleBookingPaymentSuccess(paymentIntent, payment.booking_id);
@@ -120,11 +118,12 @@ async function handleProposalPaymentSuccess(paymentIntent: Stripe.PaymentIntent)
     amount: amount / 100,
   });
 
-  const proposal = await queryOne(
-    `SELECT * FROM proposals WHERE id = $1`,
-    [proposalId]
-  );
+  // proposals table may not be a Prisma model — use raw SQL
+  const proposals = await prisma.$queryRaw<{ id: number; converted_to_booking_id: number | null }[]>`
+    SELECT id, converted_to_booking_id FROM proposals WHERE id = ${proposalId}
+  `;
 
+  const proposal = proposals[0];
   if (!proposal) {
     logger.warn('[Stripe Webhook] Proposal not found', { proposalId });
     return;
@@ -139,15 +138,14 @@ async function handleProposalPaymentSuccess(paymentIntent: Stripe.PaymentIntent)
   }
 
   try {
-    await query(
-      `UPDATE proposals
-       SET payment_status = 'succeeded',
-           payment_amount = $1,
-           payment_date = NOW(),
-           updated_at = NOW()
-       WHERE id = $2`,
-      [amount / 100, proposalId]
-    );
+    await prisma.$executeRaw`
+      UPDATE proposals
+      SET payment_status = 'succeeded',
+          payment_amount = ${amount / 100},
+          payment_date = NOW(),
+          updated_at = NOW()
+      WHERE id = ${proposalId}
+    `;
   } catch (err) {
     logger.warn('[Stripe Webhook] Could not update proposal payment columns', { error: err });
   }
@@ -173,56 +171,53 @@ async function handleBookingPaymentSuccess(
     amount: amount / 100,
   });
 
-  await withTransaction(async (client) => {
-    await query(
-      `UPDATE payments
-       SET status = 'succeeded', succeeded_at = NOW(), updated_at = NOW()
-       WHERE stripe_payment_intent_id = $1`,
-      [id],
-      client
-    );
+  // Use Prisma for payments & bookings (not @@ignore), raw SQL for @@ignore tables
+  await prisma.$transaction(async (tx) => {
+    // Update payment status via Prisma
+    await tx.payments.updateMany({
+      where: { stripe_payment_intent_id: id },
+      data: { status: 'succeeded', succeeded_at: new Date(), updated_at: new Date() },
+    });
 
+    // Update booking based on payment type via Prisma
     if (paymentType === 'deposit') {
-      await query(
-        `UPDATE bookings
-         SET deposit_paid = true,
-             deposit_paid_at = NOW(),
-             status = CASE WHEN status = 'pending' THEN 'confirmed' ELSE status END,
-             updated_at = NOW()
-         WHERE id = $1`,
-        [targetBookingId],
-        client
-      );
+      // Need conditional status update — use raw SQL for the CASE expression
+      await tx.$executeRaw`
+        UPDATE bookings
+        SET deposit_paid = true,
+            deposit_paid_at = NOW(),
+            status = CASE WHEN status = 'pending' THEN 'confirmed' ELSE status END,
+            updated_at = NOW()
+        WHERE id = ${targetBookingId}
+      `;
     } else if (paymentType === 'final_payment') {
-      await query(
-        `UPDATE bookings
-         SET final_payment_paid = true,
-             final_payment_paid_at = NOW(),
-             updated_at = NOW()
-         WHERE id = $1`,
-        [targetBookingId],
-        client
-      );
+      await tx.bookings.update({
+        where: { id: targetBookingId },
+        data: {
+          final_payment_paid: true,
+          final_payment_paid_at: new Date(),
+          updated_at: new Date(),
+        },
+      });
     }
 
-    await query(
-      `INSERT INTO booking_timeline (booking_id, event_type, description, created_at)
-       VALUES ($1, $2, $3, NOW())`,
-      [
-        targetBookingId,
-        `payment_${paymentType}_succeeded`,
-        `${paymentType === 'deposit' ? 'Deposit' : 'Final payment'} of $${(amount / 100).toFixed(2)} received`,
-      ],
-      client
-    ).catch(() => {});
+    // booking_timeline is @@ignore — raw SQL
+    await tx.$executeRaw`
+      INSERT INTO booking_timeline (booking_id, event_type, description, created_at)
+      VALUES (
+        ${targetBookingId},
+        ${`payment_${paymentType}_succeeded`},
+        ${`${paymentType === 'deposit' ? 'Deposit' : 'Final payment'} of $${(amount / 100).toFixed(2)} received`},
+        NOW()
+      )
+    `.catch(() => {});
 
-    await query(
-      `INSERT INTO invoices (booking_id, invoice_type, subtotal, tax_amount, total_amount, status, sent_at, due_date)
-       VALUES ($1, $2, $3, 0, $3, 'paid', NOW(), NOW())
-       ON CONFLICT DO NOTHING`,
-      [targetBookingId, paymentType, amount / 100],
-      client
-    ).catch((err) => {
+    // invoices is @@ignore — raw SQL
+    await tx.$executeRaw`
+      INSERT INTO invoices (booking_id, invoice_type, subtotal, tax_amount, total_amount, status, sent_at, due_date)
+      VALUES (${targetBookingId}, ${paymentType}, ${amount / 100}, 0, ${amount / 100}, 'paid', NOW(), NOW())
+      ON CONFLICT DO NOTHING
+    `.catch((err) => {
       logger.warn('[Stripe Webhook] Could not create invoice record', { error: String(err) });
     });
   });
@@ -243,36 +238,34 @@ async function handleGenericPaymentFailed(paymentIntent: Stripe.PaymentIntent) {
 
   const failureReason = last_payment_error?.message || 'Payment failed';
 
-  await withTransaction(async (client) => {
-    await query(
-      `UPDATE payments
-       SET status = 'failed',
-           failure_reason = $2,
-           failed_at = NOW(),
-           updated_at = NOW()
-       WHERE stripe_payment_intent_id = $1`,
-      [id, failureReason],
-      client
-    );
+  await prisma.$transaction(async (tx) => {
+    // Update payment status via Prisma
+    await tx.payments.updateMany({
+      where: { stripe_payment_intent_id: id },
+      data: {
+        status: 'failed',
+        failure_reason: failureReason,
+        failed_at: new Date(),
+        updated_at: new Date(),
+      },
+    });
 
     if (metadata.booking_id) {
       const bookingId = parseInt(metadata.booking_id);
-      await query(
-        `UPDATE bookings
-         SET payment_status = 'failed',
-             payment_failure_reason = $2,
-             updated_at = NOW()
-         WHERE id = $1`,
-        [bookingId, failureReason],
-        client
-      );
+      // payment_status and payment_failure_reason may not be in Prisma schema — use raw SQL
+      await tx.$executeRaw`
+        UPDATE bookings
+        SET payment_status = ${failureReason},
+            payment_failure_reason = ${failureReason},
+            updated_at = NOW()
+        WHERE id = ${bookingId}
+      `.catch(() => {});
 
-      await query(
-        `INSERT INTO booking_timeline (booking_id, event_type, description, created_at)
-         VALUES ($1, 'payment_failed', $2, NOW())`,
-        [bookingId, `Payment failed: ${failureReason}`],
-        client
-      ).catch(() => {});
+      // booking_timeline is @@ignore
+      await tx.$executeRaw`
+        INSERT INTO booking_timeline (booking_id, event_type, description, created_at)
+        VALUES (${bookingId}, 'payment_failed', ${`Payment failed: ${failureReason}`}, NOW())
+      `.catch(() => {});
 
       logger.warn('[Stripe Webhook] Booking payment failed', {
         bookingId,
@@ -283,13 +276,11 @@ async function handleGenericPaymentFailed(paymentIntent: Stripe.PaymentIntent) {
 
     if (metadata.proposal_id) {
       try {
-        await query(
-          `UPDATE proposals
-           SET payment_status = 'failed', updated_at = NOW()
-           WHERE id = $1`,
-          [parseInt(metadata.proposal_id)],
-          client
-        );
+        await tx.$executeRaw`
+          UPDATE proposals
+          SET payment_status = 'failed', updated_at = NOW()
+          WHERE id = ${parseInt(metadata.proposal_id)}
+        `;
       } catch (err) {
         logger.warn('[Stripe Webhook] Could not update proposal payment status', { error: err });
       }
@@ -666,10 +657,10 @@ async function handleTripProposalPaymentSuccess(paymentIntent: Stripe.PaymentInt
     amount: amount / 100,
   });
 
-  const proposal = await queryOne(
-    `SELECT id, deposit_paid, proposal_number FROM trip_proposals WHERE id = $1`,
-    [tripProposalId]
-  );
+  const proposal = await prisma.trip_proposals.findUnique({
+    where: { id: tripProposalId },
+    select: { id: true, deposit_paid: true, proposal_number: true },
+  });
 
   if (!proposal) {
     logger.warn('[Stripe Webhook] Trip proposal not found', { tripProposalId });
@@ -684,26 +675,22 @@ async function handleTripProposalPaymentSuccess(paymentIntent: Stripe.PaymentInt
     return;
   }
 
-  await withTransaction(async (client) => {
-    const updateResult = await query(
-      `UPDATE trip_proposals
-       SET deposit_paid = true, deposit_paid_at = NOW(), updated_at = NOW()
-       WHERE id = $1 AND deposit_paid = false`,
-      [tripProposalId],
-      client
-    );
+  await prisma.$transaction(async (tx) => {
+    const updateResult = await tx.trip_proposals.updateMany({
+      where: { id: tripProposalId, deposit_paid: false },
+      data: { deposit_paid: true, deposit_paid_at: new Date(), updated_at: new Date() },
+    });
 
-    if (updateResult.rowCount === 0) return;
+    if (updateResult.count === 0) return;
 
-    await query(
-      `INSERT INTO payments (
+    // payments table — trip_proposal_id column may not be in Prisma schema, use raw SQL
+    await tx.$executeRaw`
+      INSERT INTO payments (
         trip_proposal_id, amount, payment_type,
         stripe_payment_intent_id, status, created_at
-      ) VALUES ($1, $2, 'trip_proposal_deposit', $3, 'succeeded', NOW())
-      ON CONFLICT DO NOTHING`,
-      [tripProposalId, amount / 100, id],
-      client
-    );
+      ) VALUES (${tripProposalId}, ${amount / 100}, 'trip_proposal_deposit', ${id}, 'succeeded', NOW())
+      ON CONFLICT DO NOTHING
+    `;
   });
 
   try {
