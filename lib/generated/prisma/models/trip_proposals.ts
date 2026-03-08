@@ -46,6 +46,9 @@ export type Trip_proposalsAvgAggregateOutputType = {
   converted_to_booking_id: number | null
   view_count: number | null
   created_by: number | null
+  max_guests: number | null
+  min_guests: number | null
+  registration_deposit_amount: runtime.Decimal | null
 }
 
 export type Trip_proposalsSumAggregateOutputType = {
@@ -69,6 +72,9 @@ export type Trip_proposalsSumAggregateOutputType = {
   converted_to_booking_id: number | null
   view_count: number | null
   created_by: number | null
+  max_guests: number | null
+  min_guests: number | null
+  registration_deposit_amount: runtime.Decimal | null
 }
 
 export type Trip_proposalsMinAggregateOutputType = {
@@ -122,6 +128,16 @@ export type Trip_proposalsMinAggregateOutputType = {
   created_by: number | null
   created_at: Date | null
   updated_at: Date | null
+  max_guests: number | null
+  min_guests: number | null
+  min_guests_deadline: Date | null
+  dynamic_pricing_enabled: boolean | null
+  guest_approval_required: boolean | null
+  show_guest_count_to_guests: boolean | null
+  individual_billing_enabled: boolean | null
+  payment_deadline: Date | null
+  registration_deposit_amount: runtime.Decimal | null
+  registration_deposit_type: string | null
 }
 
 export type Trip_proposalsMaxAggregateOutputType = {
@@ -175,6 +191,16 @@ export type Trip_proposalsMaxAggregateOutputType = {
   created_by: number | null
   created_at: Date | null
   updated_at: Date | null
+  max_guests: number | null
+  min_guests: number | null
+  min_guests_deadline: Date | null
+  dynamic_pricing_enabled: boolean | null
+  guest_approval_required: boolean | null
+  show_guest_count_to_guests: boolean | null
+  individual_billing_enabled: boolean | null
+  payment_deadline: Date | null
+  registration_deposit_amount: runtime.Decimal | null
+  registration_deposit_type: string | null
 }
 
 export type Trip_proposalsCountAggregateOutputType = {
@@ -228,6 +254,16 @@ export type Trip_proposalsCountAggregateOutputType = {
   created_by: number
   created_at: number
   updated_at: number
+  max_guests: number
+  min_guests: number
+  min_guests_deadline: number
+  dynamic_pricing_enabled: number
+  guest_approval_required: number
+  show_guest_count_to_guests: number
+  individual_billing_enabled: number
+  payment_deadline: number
+  registration_deposit_amount: number
+  registration_deposit_type: number
   _all: number
 }
 
@@ -253,6 +289,9 @@ export type Trip_proposalsAvgAggregateInputType = {
   converted_to_booking_id?: true
   view_count?: true
   created_by?: true
+  max_guests?: true
+  min_guests?: true
+  registration_deposit_amount?: true
 }
 
 export type Trip_proposalsSumAggregateInputType = {
@@ -276,6 +315,9 @@ export type Trip_proposalsSumAggregateInputType = {
   converted_to_booking_id?: true
   view_count?: true
   created_by?: true
+  max_guests?: true
+  min_guests?: true
+  registration_deposit_amount?: true
 }
 
 export type Trip_proposalsMinAggregateInputType = {
@@ -329,6 +371,16 @@ export type Trip_proposalsMinAggregateInputType = {
   created_by?: true
   created_at?: true
   updated_at?: true
+  max_guests?: true
+  min_guests?: true
+  min_guests_deadline?: true
+  dynamic_pricing_enabled?: true
+  guest_approval_required?: true
+  show_guest_count_to_guests?: true
+  individual_billing_enabled?: true
+  payment_deadline?: true
+  registration_deposit_amount?: true
+  registration_deposit_type?: true
 }
 
 export type Trip_proposalsMaxAggregateInputType = {
@@ -382,6 +434,16 @@ export type Trip_proposalsMaxAggregateInputType = {
   created_by?: true
   created_at?: true
   updated_at?: true
+  max_guests?: true
+  min_guests?: true
+  min_guests_deadline?: true
+  dynamic_pricing_enabled?: true
+  guest_approval_required?: true
+  show_guest_count_to_guests?: true
+  individual_billing_enabled?: true
+  payment_deadline?: true
+  registration_deposit_amount?: true
+  registration_deposit_type?: true
 }
 
 export type Trip_proposalsCountAggregateInputType = {
@@ -435,6 +497,16 @@ export type Trip_proposalsCountAggregateInputType = {
   created_by?: true
   created_at?: true
   updated_at?: true
+  max_guests?: true
+  min_guests?: true
+  min_guests_deadline?: true
+  dynamic_pricing_enabled?: true
+  guest_approval_required?: true
+  show_guest_count_to_guests?: true
+  individual_billing_enabled?: true
+  payment_deadline?: true
+  registration_deposit_amount?: true
+  registration_deposit_type?: true
   _all?: true
 }
 
@@ -575,6 +647,16 @@ export type Trip_proposalsGroupByOutputType = {
   created_by: number | null
   created_at: Date | null
   updated_at: Date | null
+  max_guests: number | null
+  min_guests: number | null
+  min_guests_deadline: Date | null
+  dynamic_pricing_enabled: boolean | null
+  guest_approval_required: boolean | null
+  show_guest_count_to_guests: boolean | null
+  individual_billing_enabled: boolean | null
+  payment_deadline: Date | null
+  registration_deposit_amount: runtime.Decimal | null
+  registration_deposit_type: string | null
   _count: Trip_proposalsCountAggregateOutputType | null
   _avg: Trip_proposalsAvgAggregateOutputType | null
   _sum: Trip_proposalsSumAggregateOutputType | null
@@ -651,6 +733,16 @@ export type trip_proposalsWhereInput = {
   created_by?: Prisma.IntNullableFilter<"trip_proposals"> | number | null
   created_at?: Prisma.DateTimeNullableFilter<"trip_proposals"> | Date | string | null
   updated_at?: Prisma.DateTimeNullableFilter<"trip_proposals"> | Date | string | null
+  max_guests?: Prisma.IntNullableFilter<"trip_proposals"> | number | null
+  min_guests?: Prisma.IntNullableFilter<"trip_proposals"> | number | null
+  min_guests_deadline?: Prisma.DateTimeNullableFilter<"trip_proposals"> | Date | string | null
+  dynamic_pricing_enabled?: Prisma.BoolNullableFilter<"trip_proposals"> | boolean | null
+  guest_approval_required?: Prisma.BoolNullableFilter<"trip_proposals"> | boolean | null
+  show_guest_count_to_guests?: Prisma.BoolNullableFilter<"trip_proposals"> | boolean | null
+  individual_billing_enabled?: Prisma.BoolNullableFilter<"trip_proposals"> | boolean | null
+  payment_deadline?: Prisma.DateTimeNullableFilter<"trip_proposals"> | Date | string | null
+  registration_deposit_amount?: Prisma.DecimalNullableFilter<"trip_proposals"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: Prisma.StringNullableFilter<"trip_proposals"> | string | null
   trip_estimates?: Prisma.Trip_estimatesListRelationFilter
   trip_proposal_activity?: Prisma.Trip_proposal_activityListRelationFilter
   trip_proposal_days?: Prisma.Trip_proposal_daysListRelationFilter
@@ -715,6 +807,16 @@ export type trip_proposalsOrderByWithRelationInput = {
   created_by?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrderInput | Prisma.SortOrder
   updated_at?: Prisma.SortOrderInput | Prisma.SortOrder
+  max_guests?: Prisma.SortOrderInput | Prisma.SortOrder
+  min_guests?: Prisma.SortOrderInput | Prisma.SortOrder
+  min_guests_deadline?: Prisma.SortOrderInput | Prisma.SortOrder
+  dynamic_pricing_enabled?: Prisma.SortOrderInput | Prisma.SortOrder
+  guest_approval_required?: Prisma.SortOrderInput | Prisma.SortOrder
+  show_guest_count_to_guests?: Prisma.SortOrderInput | Prisma.SortOrder
+  individual_billing_enabled?: Prisma.SortOrderInput | Prisma.SortOrder
+  payment_deadline?: Prisma.SortOrderInput | Prisma.SortOrder
+  registration_deposit_amount?: Prisma.SortOrderInput | Prisma.SortOrder
+  registration_deposit_type?: Prisma.SortOrderInput | Prisma.SortOrder
   trip_estimates?: Prisma.trip_estimatesOrderByRelationAggregateInput
   trip_proposal_activity?: Prisma.trip_proposal_activityOrderByRelationAggregateInput
   trip_proposal_days?: Prisma.trip_proposal_daysOrderByRelationAggregateInput
@@ -782,6 +884,16 @@ export type trip_proposalsWhereUniqueInput = Prisma.AtLeast<{
   created_by?: Prisma.IntNullableFilter<"trip_proposals"> | number | null
   created_at?: Prisma.DateTimeNullableFilter<"trip_proposals"> | Date | string | null
   updated_at?: Prisma.DateTimeNullableFilter<"trip_proposals"> | Date | string | null
+  max_guests?: Prisma.IntNullableFilter<"trip_proposals"> | number | null
+  min_guests?: Prisma.IntNullableFilter<"trip_proposals"> | number | null
+  min_guests_deadline?: Prisma.DateTimeNullableFilter<"trip_proposals"> | Date | string | null
+  dynamic_pricing_enabled?: Prisma.BoolNullableFilter<"trip_proposals"> | boolean | null
+  guest_approval_required?: Prisma.BoolNullableFilter<"trip_proposals"> | boolean | null
+  show_guest_count_to_guests?: Prisma.BoolNullableFilter<"trip_proposals"> | boolean | null
+  individual_billing_enabled?: Prisma.BoolNullableFilter<"trip_proposals"> | boolean | null
+  payment_deadline?: Prisma.DateTimeNullableFilter<"trip_proposals"> | Date | string | null
+  registration_deposit_amount?: Prisma.DecimalNullableFilter<"trip_proposals"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: Prisma.StringNullableFilter<"trip_proposals"> | string | null
   trip_estimates?: Prisma.Trip_estimatesListRelationFilter
   trip_proposal_activity?: Prisma.Trip_proposal_activityListRelationFilter
   trip_proposal_days?: Prisma.Trip_proposal_daysListRelationFilter
@@ -846,6 +958,16 @@ export type trip_proposalsOrderByWithAggregationInput = {
   created_by?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrderInput | Prisma.SortOrder
   updated_at?: Prisma.SortOrderInput | Prisma.SortOrder
+  max_guests?: Prisma.SortOrderInput | Prisma.SortOrder
+  min_guests?: Prisma.SortOrderInput | Prisma.SortOrder
+  min_guests_deadline?: Prisma.SortOrderInput | Prisma.SortOrder
+  dynamic_pricing_enabled?: Prisma.SortOrderInput | Prisma.SortOrder
+  guest_approval_required?: Prisma.SortOrderInput | Prisma.SortOrder
+  show_guest_count_to_guests?: Prisma.SortOrderInput | Prisma.SortOrder
+  individual_billing_enabled?: Prisma.SortOrderInput | Prisma.SortOrder
+  payment_deadline?: Prisma.SortOrderInput | Prisma.SortOrder
+  registration_deposit_amount?: Prisma.SortOrderInput | Prisma.SortOrder
+  registration_deposit_type?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.trip_proposalsCountOrderByAggregateInput
   _avg?: Prisma.trip_proposalsAvgOrderByAggregateInput
   _max?: Prisma.trip_proposalsMaxOrderByAggregateInput
@@ -907,6 +1029,16 @@ export type trip_proposalsScalarWhereWithAggregatesInput = {
   created_by?: Prisma.IntNullableWithAggregatesFilter<"trip_proposals"> | number | null
   created_at?: Prisma.DateTimeNullableWithAggregatesFilter<"trip_proposals"> | Date | string | null
   updated_at?: Prisma.DateTimeNullableWithAggregatesFilter<"trip_proposals"> | Date | string | null
+  max_guests?: Prisma.IntNullableWithAggregatesFilter<"trip_proposals"> | number | null
+  min_guests?: Prisma.IntNullableWithAggregatesFilter<"trip_proposals"> | number | null
+  min_guests_deadline?: Prisma.DateTimeNullableWithAggregatesFilter<"trip_proposals"> | Date | string | null
+  dynamic_pricing_enabled?: Prisma.BoolNullableWithAggregatesFilter<"trip_proposals"> | boolean | null
+  guest_approval_required?: Prisma.BoolNullableWithAggregatesFilter<"trip_proposals"> | boolean | null
+  show_guest_count_to_guests?: Prisma.BoolNullableWithAggregatesFilter<"trip_proposals"> | boolean | null
+  individual_billing_enabled?: Prisma.BoolNullableWithAggregatesFilter<"trip_proposals"> | boolean | null
+  payment_deadline?: Prisma.DateTimeNullableWithAggregatesFilter<"trip_proposals"> | Date | string | null
+  registration_deposit_amount?: Prisma.DecimalNullableWithAggregatesFilter<"trip_proposals"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: Prisma.StringNullableWithAggregatesFilter<"trip_proposals"> | string | null
 }
 
 export type trip_proposalsCreateInput = {
@@ -953,6 +1085,16 @@ export type trip_proposalsCreateInput = {
   sent_at?: Date | string | null
   created_at?: Date | string | null
   updated_at?: Date | string | null
+  max_guests?: number | null
+  min_guests?: number | null
+  min_guests_deadline?: Date | string | null
+  dynamic_pricing_enabled?: boolean | null
+  guest_approval_required?: boolean | null
+  show_guest_count_to_guests?: boolean | null
+  individual_billing_enabled?: boolean | null
+  payment_deadline?: Date | string | null
+  registration_deposit_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: string | null
   trip_estimates?: Prisma.trip_estimatesCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_activity?: Prisma.trip_proposal_activityCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_days?: Prisma.trip_proposal_daysCreateNestedManyWithoutTrip_proposalsInput
@@ -1017,6 +1159,16 @@ export type trip_proposalsUncheckedCreateInput = {
   created_by?: number | null
   created_at?: Date | string | null
   updated_at?: Date | string | null
+  max_guests?: number | null
+  min_guests?: number | null
+  min_guests_deadline?: Date | string | null
+  dynamic_pricing_enabled?: boolean | null
+  guest_approval_required?: boolean | null
+  show_guest_count_to_guests?: boolean | null
+  individual_billing_enabled?: boolean | null
+  payment_deadline?: Date | string | null
+  registration_deposit_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: string | null
   trip_estimates?: Prisma.trip_estimatesUncheckedCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_activity?: Prisma.trip_proposal_activityUncheckedCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_days?: Prisma.trip_proposal_daysUncheckedCreateNestedManyWithoutTrip_proposalsInput
@@ -1068,6 +1220,16 @@ export type trip_proposalsUpdateInput = {
   sent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  max_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dynamic_pricing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  guest_approval_required?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  show_guest_count_to_guests?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  individual_billing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  registration_deposit_amount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trip_estimates?: Prisma.trip_estimatesUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_activity?: Prisma.trip_proposal_activityUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_days?: Prisma.trip_proposal_daysUpdateManyWithoutTrip_proposalsNestedInput
@@ -1132,6 +1294,16 @@ export type trip_proposalsUncheckedUpdateInput = {
   created_by?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  max_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dynamic_pricing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  guest_approval_required?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  show_guest_count_to_guests?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  individual_billing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  registration_deposit_amount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trip_estimates?: Prisma.trip_estimatesUncheckedUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_activity?: Prisma.trip_proposal_activityUncheckedUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_days?: Prisma.trip_proposal_daysUncheckedUpdateManyWithoutTrip_proposalsNestedInput
@@ -1190,6 +1362,16 @@ export type trip_proposalsCreateManyInput = {
   created_by?: number | null
   created_at?: Date | string | null
   updated_at?: Date | string | null
+  max_guests?: number | null
+  min_guests?: number | null
+  min_guests_deadline?: Date | string | null
+  dynamic_pricing_enabled?: boolean | null
+  guest_approval_required?: boolean | null
+  show_guest_count_to_guests?: boolean | null
+  individual_billing_enabled?: boolean | null
+  payment_deadline?: Date | string | null
+  registration_deposit_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: string | null
 }
 
 export type trip_proposalsUpdateManyMutationInput = {
@@ -1236,6 +1418,16 @@ export type trip_proposalsUpdateManyMutationInput = {
   sent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  max_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dynamic_pricing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  guest_approval_required?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  show_guest_count_to_guests?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  individual_billing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  registration_deposit_amount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type trip_proposalsUncheckedUpdateManyInput = {
@@ -1289,6 +1481,16 @@ export type trip_proposalsUncheckedUpdateManyInput = {
   created_by?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  max_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dynamic_pricing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  guest_approval_required?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  show_guest_count_to_guests?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  individual_billing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  registration_deposit_amount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type Trip_proposalsListRelationFilter = {
@@ -1362,6 +1564,16 @@ export type trip_proposalsCountOrderByAggregateInput = {
   created_by?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
+  max_guests?: Prisma.SortOrder
+  min_guests?: Prisma.SortOrder
+  min_guests_deadline?: Prisma.SortOrder
+  dynamic_pricing_enabled?: Prisma.SortOrder
+  guest_approval_required?: Prisma.SortOrder
+  show_guest_count_to_guests?: Prisma.SortOrder
+  individual_billing_enabled?: Prisma.SortOrder
+  payment_deadline?: Prisma.SortOrder
+  registration_deposit_amount?: Prisma.SortOrder
+  registration_deposit_type?: Prisma.SortOrder
 }
 
 export type trip_proposalsAvgOrderByAggregateInput = {
@@ -1385,6 +1597,9 @@ export type trip_proposalsAvgOrderByAggregateInput = {
   converted_to_booking_id?: Prisma.SortOrder
   view_count?: Prisma.SortOrder
   created_by?: Prisma.SortOrder
+  max_guests?: Prisma.SortOrder
+  min_guests?: Prisma.SortOrder
+  registration_deposit_amount?: Prisma.SortOrder
 }
 
 export type trip_proposalsMaxOrderByAggregateInput = {
@@ -1438,6 +1653,16 @@ export type trip_proposalsMaxOrderByAggregateInput = {
   created_by?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
+  max_guests?: Prisma.SortOrder
+  min_guests?: Prisma.SortOrder
+  min_guests_deadline?: Prisma.SortOrder
+  dynamic_pricing_enabled?: Prisma.SortOrder
+  guest_approval_required?: Prisma.SortOrder
+  show_guest_count_to_guests?: Prisma.SortOrder
+  individual_billing_enabled?: Prisma.SortOrder
+  payment_deadline?: Prisma.SortOrder
+  registration_deposit_amount?: Prisma.SortOrder
+  registration_deposit_type?: Prisma.SortOrder
 }
 
 export type trip_proposalsMinOrderByAggregateInput = {
@@ -1491,6 +1716,16 @@ export type trip_proposalsMinOrderByAggregateInput = {
   created_by?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
+  max_guests?: Prisma.SortOrder
+  min_guests?: Prisma.SortOrder
+  min_guests_deadline?: Prisma.SortOrder
+  dynamic_pricing_enabled?: Prisma.SortOrder
+  guest_approval_required?: Prisma.SortOrder
+  show_guest_count_to_guests?: Prisma.SortOrder
+  individual_billing_enabled?: Prisma.SortOrder
+  payment_deadline?: Prisma.SortOrder
+  registration_deposit_amount?: Prisma.SortOrder
+  registration_deposit_type?: Prisma.SortOrder
 }
 
 export type trip_proposalsSumOrderByAggregateInput = {
@@ -1514,6 +1749,9 @@ export type trip_proposalsSumOrderByAggregateInput = {
   converted_to_booking_id?: Prisma.SortOrder
   view_count?: Prisma.SortOrder
   created_by?: Prisma.SortOrder
+  max_guests?: Prisma.SortOrder
+  min_guests?: Prisma.SortOrder
+  registration_deposit_amount?: Prisma.SortOrder
 }
 
 export type trip_proposalsCreateNestedManyWithoutBookingsInput = {
@@ -1884,6 +2122,16 @@ export type trip_proposalsCreateWithoutBookingsInput = {
   sent_at?: Date | string | null
   created_at?: Date | string | null
   updated_at?: Date | string | null
+  max_guests?: number | null
+  min_guests?: number | null
+  min_guests_deadline?: Date | string | null
+  dynamic_pricing_enabled?: boolean | null
+  guest_approval_required?: boolean | null
+  show_guest_count_to_guests?: boolean | null
+  individual_billing_enabled?: boolean | null
+  payment_deadline?: Date | string | null
+  registration_deposit_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: string | null
   trip_estimates?: Prisma.trip_estimatesCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_activity?: Prisma.trip_proposal_activityCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_days?: Prisma.trip_proposal_daysCreateNestedManyWithoutTrip_proposalsInput
@@ -1946,6 +2194,16 @@ export type trip_proposalsUncheckedCreateWithoutBookingsInput = {
   created_by?: number | null
   created_at?: Date | string | null
   updated_at?: Date | string | null
+  max_guests?: number | null
+  min_guests?: number | null
+  min_guests_deadline?: Date | string | null
+  dynamic_pricing_enabled?: boolean | null
+  guest_approval_required?: boolean | null
+  show_guest_count_to_guests?: boolean | null
+  individual_billing_enabled?: boolean | null
+  payment_deadline?: Date | string | null
+  registration_deposit_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: string | null
   trip_estimates?: Prisma.trip_estimatesUncheckedCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_activity?: Prisma.trip_proposal_activityUncheckedCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_days?: Prisma.trip_proposal_daysUncheckedCreateNestedManyWithoutTrip_proposalsInput
@@ -2033,6 +2291,16 @@ export type trip_proposalsScalarWhereInput = {
   created_by?: Prisma.IntNullableFilter<"trip_proposals"> | number | null
   created_at?: Prisma.DateTimeNullableFilter<"trip_proposals"> | Date | string | null
   updated_at?: Prisma.DateTimeNullableFilter<"trip_proposals"> | Date | string | null
+  max_guests?: Prisma.IntNullableFilter<"trip_proposals"> | number | null
+  min_guests?: Prisma.IntNullableFilter<"trip_proposals"> | number | null
+  min_guests_deadline?: Prisma.DateTimeNullableFilter<"trip_proposals"> | Date | string | null
+  dynamic_pricing_enabled?: Prisma.BoolNullableFilter<"trip_proposals"> | boolean | null
+  guest_approval_required?: Prisma.BoolNullableFilter<"trip_proposals"> | boolean | null
+  show_guest_count_to_guests?: Prisma.BoolNullableFilter<"trip_proposals"> | boolean | null
+  individual_billing_enabled?: Prisma.BoolNullableFilter<"trip_proposals"> | boolean | null
+  payment_deadline?: Prisma.DateTimeNullableFilter<"trip_proposals"> | Date | string | null
+  registration_deposit_amount?: Prisma.DecimalNullableFilter<"trip_proposals"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: Prisma.StringNullableFilter<"trip_proposals"> | string | null
 }
 
 export type trip_proposalsCreateWithoutBrandsInput = {
@@ -2079,6 +2347,16 @@ export type trip_proposalsCreateWithoutBrandsInput = {
   sent_at?: Date | string | null
   created_at?: Date | string | null
   updated_at?: Date | string | null
+  max_guests?: number | null
+  min_guests?: number | null
+  min_guests_deadline?: Date | string | null
+  dynamic_pricing_enabled?: boolean | null
+  guest_approval_required?: boolean | null
+  show_guest_count_to_guests?: boolean | null
+  individual_billing_enabled?: boolean | null
+  payment_deadline?: Date | string | null
+  registration_deposit_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: string | null
   trip_estimates?: Prisma.trip_estimatesCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_activity?: Prisma.trip_proposal_activityCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_days?: Prisma.trip_proposal_daysCreateNestedManyWithoutTrip_proposalsInput
@@ -2141,6 +2419,16 @@ export type trip_proposalsUncheckedCreateWithoutBrandsInput = {
   created_by?: number | null
   created_at?: Date | string | null
   updated_at?: Date | string | null
+  max_guests?: number | null
+  min_guests?: number | null
+  min_guests_deadline?: Date | string | null
+  dynamic_pricing_enabled?: boolean | null
+  guest_approval_required?: boolean | null
+  show_guest_count_to_guests?: boolean | null
+  individual_billing_enabled?: boolean | null
+  payment_deadline?: Date | string | null
+  registration_deposit_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: string | null
   trip_estimates?: Prisma.trip_estimatesUncheckedCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_activity?: Prisma.trip_proposal_activityUncheckedCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_days?: Prisma.trip_proposal_daysUncheckedCreateNestedManyWithoutTrip_proposalsInput
@@ -2218,6 +2506,16 @@ export type trip_proposalsCreateWithoutCustomersInput = {
   sent_at?: Date | string | null
   created_at?: Date | string | null
   updated_at?: Date | string | null
+  max_guests?: number | null
+  min_guests?: number | null
+  min_guests_deadline?: Date | string | null
+  dynamic_pricing_enabled?: boolean | null
+  guest_approval_required?: boolean | null
+  show_guest_count_to_guests?: boolean | null
+  individual_billing_enabled?: boolean | null
+  payment_deadline?: Date | string | null
+  registration_deposit_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: string | null
   trip_estimates?: Prisma.trip_estimatesCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_activity?: Prisma.trip_proposal_activityCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_days?: Prisma.trip_proposal_daysCreateNestedManyWithoutTrip_proposalsInput
@@ -2280,6 +2578,16 @@ export type trip_proposalsUncheckedCreateWithoutCustomersInput = {
   created_by?: number | null
   created_at?: Date | string | null
   updated_at?: Date | string | null
+  max_guests?: number | null
+  min_guests?: number | null
+  min_guests_deadline?: Date | string | null
+  dynamic_pricing_enabled?: boolean | null
+  guest_approval_required?: boolean | null
+  show_guest_count_to_guests?: boolean | null
+  individual_billing_enabled?: boolean | null
+  payment_deadline?: Date | string | null
+  registration_deposit_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: string | null
   trip_estimates?: Prisma.trip_estimatesUncheckedCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_activity?: Prisma.trip_proposal_activityUncheckedCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_days?: Prisma.trip_proposal_daysUncheckedCreateNestedManyWithoutTrip_proposalsInput
@@ -2357,6 +2665,16 @@ export type trip_proposalsCreateWithoutPayments_trip_proposals_balance_payment_i
   sent_at?: Date | string | null
   created_at?: Date | string | null
   updated_at?: Date | string | null
+  max_guests?: number | null
+  min_guests?: number | null
+  min_guests_deadline?: Date | string | null
+  dynamic_pricing_enabled?: boolean | null
+  guest_approval_required?: boolean | null
+  show_guest_count_to_guests?: boolean | null
+  individual_billing_enabled?: boolean | null
+  payment_deadline?: Date | string | null
+  registration_deposit_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: string | null
   trip_estimates?: Prisma.trip_estimatesCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_activity?: Prisma.trip_proposal_activityCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_days?: Prisma.trip_proposal_daysCreateNestedManyWithoutTrip_proposalsInput
@@ -2419,6 +2737,16 @@ export type trip_proposalsUncheckedCreateWithoutPayments_trip_proposals_balance_
   created_by?: number | null
   created_at?: Date | string | null
   updated_at?: Date | string | null
+  max_guests?: number | null
+  min_guests?: number | null
+  min_guests_deadline?: Date | string | null
+  dynamic_pricing_enabled?: boolean | null
+  guest_approval_required?: boolean | null
+  show_guest_count_to_guests?: boolean | null
+  individual_billing_enabled?: boolean | null
+  payment_deadline?: Date | string | null
+  registration_deposit_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: string | null
   trip_estimates?: Prisma.trip_estimatesUncheckedCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_activity?: Prisma.trip_proposal_activityUncheckedCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_days?: Prisma.trip_proposal_daysUncheckedCreateNestedManyWithoutTrip_proposalsInput
@@ -2480,6 +2808,16 @@ export type trip_proposalsCreateWithoutPayments_trip_proposals_deposit_payment_i
   sent_at?: Date | string | null
   created_at?: Date | string | null
   updated_at?: Date | string | null
+  max_guests?: number | null
+  min_guests?: number | null
+  min_guests_deadline?: Date | string | null
+  dynamic_pricing_enabled?: boolean | null
+  guest_approval_required?: boolean | null
+  show_guest_count_to_guests?: boolean | null
+  individual_billing_enabled?: boolean | null
+  payment_deadline?: Date | string | null
+  registration_deposit_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: string | null
   trip_estimates?: Prisma.trip_estimatesCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_activity?: Prisma.trip_proposal_activityCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_days?: Prisma.trip_proposal_daysCreateNestedManyWithoutTrip_proposalsInput
@@ -2542,6 +2880,16 @@ export type trip_proposalsUncheckedCreateWithoutPayments_trip_proposals_deposit_
   created_by?: number | null
   created_at?: Date | string | null
   updated_at?: Date | string | null
+  max_guests?: number | null
+  min_guests?: number | null
+  min_guests_deadline?: Date | string | null
+  dynamic_pricing_enabled?: boolean | null
+  guest_approval_required?: boolean | null
+  show_guest_count_to_guests?: boolean | null
+  individual_billing_enabled?: boolean | null
+  payment_deadline?: Date | string | null
+  registration_deposit_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: string | null
   trip_estimates?: Prisma.trip_estimatesUncheckedCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_activity?: Prisma.trip_proposal_activityUncheckedCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_days?: Prisma.trip_proposal_daysUncheckedCreateNestedManyWithoutTrip_proposalsInput
@@ -2635,6 +2983,16 @@ export type trip_proposalsCreateWithoutUsersInput = {
   sent_at?: Date | string | null
   created_at?: Date | string | null
   updated_at?: Date | string | null
+  max_guests?: number | null
+  min_guests?: number | null
+  min_guests_deadline?: Date | string | null
+  dynamic_pricing_enabled?: boolean | null
+  guest_approval_required?: boolean | null
+  show_guest_count_to_guests?: boolean | null
+  individual_billing_enabled?: boolean | null
+  payment_deadline?: Date | string | null
+  registration_deposit_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: string | null
   trip_estimates?: Prisma.trip_estimatesCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_activity?: Prisma.trip_proposal_activityCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_days?: Prisma.trip_proposal_daysCreateNestedManyWithoutTrip_proposalsInput
@@ -2697,6 +3055,16 @@ export type trip_proposalsUncheckedCreateWithoutUsersInput = {
   sent_at?: Date | string | null
   created_at?: Date | string | null
   updated_at?: Date | string | null
+  max_guests?: number | null
+  min_guests?: number | null
+  min_guests_deadline?: Date | string | null
+  dynamic_pricing_enabled?: boolean | null
+  guest_approval_required?: boolean | null
+  show_guest_count_to_guests?: boolean | null
+  individual_billing_enabled?: boolean | null
+  payment_deadline?: Date | string | null
+  registration_deposit_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: string | null
   trip_estimates?: Prisma.trip_estimatesUncheckedCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_activity?: Prisma.trip_proposal_activityUncheckedCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_days?: Prisma.trip_proposal_daysUncheckedCreateNestedManyWithoutTrip_proposalsInput
@@ -2774,6 +3142,16 @@ export type trip_proposalsCreateWithoutTrip_estimatesInput = {
   sent_at?: Date | string | null
   created_at?: Date | string | null
   updated_at?: Date | string | null
+  max_guests?: number | null
+  min_guests?: number | null
+  min_guests_deadline?: Date | string | null
+  dynamic_pricing_enabled?: boolean | null
+  guest_approval_required?: boolean | null
+  show_guest_count_to_guests?: boolean | null
+  individual_billing_enabled?: boolean | null
+  payment_deadline?: Date | string | null
+  registration_deposit_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: string | null
   trip_proposal_activity?: Prisma.trip_proposal_activityCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_days?: Prisma.trip_proposal_daysCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_guests?: Prisma.trip_proposal_guestsCreateNestedManyWithoutTrip_proposalsInput
@@ -2837,6 +3215,16 @@ export type trip_proposalsUncheckedCreateWithoutTrip_estimatesInput = {
   created_by?: number | null
   created_at?: Date | string | null
   updated_at?: Date | string | null
+  max_guests?: number | null
+  min_guests?: number | null
+  min_guests_deadline?: Date | string | null
+  dynamic_pricing_enabled?: boolean | null
+  guest_approval_required?: boolean | null
+  show_guest_count_to_guests?: boolean | null
+  individual_billing_enabled?: boolean | null
+  payment_deadline?: Date | string | null
+  registration_deposit_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: string | null
   trip_proposal_activity?: Prisma.trip_proposal_activityUncheckedCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_days?: Prisma.trip_proposal_daysUncheckedCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_guests?: Prisma.trip_proposal_guestsUncheckedCreateNestedManyWithoutTrip_proposalsInput
@@ -2903,6 +3291,16 @@ export type trip_proposalsUpdateWithoutTrip_estimatesInput = {
   sent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  max_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dynamic_pricing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  guest_approval_required?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  show_guest_count_to_guests?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  individual_billing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  registration_deposit_amount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trip_proposal_activity?: Prisma.trip_proposal_activityUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_days?: Prisma.trip_proposal_daysUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_guests?: Prisma.trip_proposal_guestsUpdateManyWithoutTrip_proposalsNestedInput
@@ -2966,6 +3364,16 @@ export type trip_proposalsUncheckedUpdateWithoutTrip_estimatesInput = {
   created_by?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  max_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dynamic_pricing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  guest_approval_required?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  show_guest_count_to_guests?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  individual_billing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  registration_deposit_amount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trip_proposal_activity?: Prisma.trip_proposal_activityUncheckedUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_days?: Prisma.trip_proposal_daysUncheckedUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_guests?: Prisma.trip_proposal_guestsUncheckedUpdateManyWithoutTrip_proposalsNestedInput
@@ -3016,6 +3424,16 @@ export type trip_proposalsCreateWithoutTrip_proposal_activityInput = {
   sent_at?: Date | string | null
   created_at?: Date | string | null
   updated_at?: Date | string | null
+  max_guests?: number | null
+  min_guests?: number | null
+  min_guests_deadline?: Date | string | null
+  dynamic_pricing_enabled?: boolean | null
+  guest_approval_required?: boolean | null
+  show_guest_count_to_guests?: boolean | null
+  individual_billing_enabled?: boolean | null
+  payment_deadline?: Date | string | null
+  registration_deposit_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: string | null
   trip_estimates?: Prisma.trip_estimatesCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_days?: Prisma.trip_proposal_daysCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_guests?: Prisma.trip_proposal_guestsCreateNestedManyWithoutTrip_proposalsInput
@@ -3079,6 +3497,16 @@ export type trip_proposalsUncheckedCreateWithoutTrip_proposal_activityInput = {
   created_by?: number | null
   created_at?: Date | string | null
   updated_at?: Date | string | null
+  max_guests?: number | null
+  min_guests?: number | null
+  min_guests_deadline?: Date | string | null
+  dynamic_pricing_enabled?: boolean | null
+  guest_approval_required?: boolean | null
+  show_guest_count_to_guests?: boolean | null
+  individual_billing_enabled?: boolean | null
+  payment_deadline?: Date | string | null
+  registration_deposit_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: string | null
   trip_estimates?: Prisma.trip_estimatesUncheckedCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_days?: Prisma.trip_proposal_daysUncheckedCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_guests?: Prisma.trip_proposal_guestsUncheckedCreateNestedManyWithoutTrip_proposalsInput
@@ -3145,6 +3573,16 @@ export type trip_proposalsUpdateWithoutTrip_proposal_activityInput = {
   sent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  max_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dynamic_pricing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  guest_approval_required?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  show_guest_count_to_guests?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  individual_billing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  registration_deposit_amount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trip_estimates?: Prisma.trip_estimatesUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_days?: Prisma.trip_proposal_daysUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_guests?: Prisma.trip_proposal_guestsUpdateManyWithoutTrip_proposalsNestedInput
@@ -3208,6 +3646,16 @@ export type trip_proposalsUncheckedUpdateWithoutTrip_proposal_activityInput = {
   created_by?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  max_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dynamic_pricing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  guest_approval_required?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  show_guest_count_to_guests?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  individual_billing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  registration_deposit_amount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trip_estimates?: Prisma.trip_estimatesUncheckedUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_days?: Prisma.trip_proposal_daysUncheckedUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_guests?: Prisma.trip_proposal_guestsUncheckedUpdateManyWithoutTrip_proposalsNestedInput
@@ -3258,6 +3706,16 @@ export type trip_proposalsCreateWithoutTrip_proposal_daysInput = {
   sent_at?: Date | string | null
   created_at?: Date | string | null
   updated_at?: Date | string | null
+  max_guests?: number | null
+  min_guests?: number | null
+  min_guests_deadline?: Date | string | null
+  dynamic_pricing_enabled?: boolean | null
+  guest_approval_required?: boolean | null
+  show_guest_count_to_guests?: boolean | null
+  individual_billing_enabled?: boolean | null
+  payment_deadline?: Date | string | null
+  registration_deposit_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: string | null
   trip_estimates?: Prisma.trip_estimatesCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_activity?: Prisma.trip_proposal_activityCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_guests?: Prisma.trip_proposal_guestsCreateNestedManyWithoutTrip_proposalsInput
@@ -3321,6 +3779,16 @@ export type trip_proposalsUncheckedCreateWithoutTrip_proposal_daysInput = {
   created_by?: number | null
   created_at?: Date | string | null
   updated_at?: Date | string | null
+  max_guests?: number | null
+  min_guests?: number | null
+  min_guests_deadline?: Date | string | null
+  dynamic_pricing_enabled?: boolean | null
+  guest_approval_required?: boolean | null
+  show_guest_count_to_guests?: boolean | null
+  individual_billing_enabled?: boolean | null
+  payment_deadline?: Date | string | null
+  registration_deposit_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: string | null
   trip_estimates?: Prisma.trip_estimatesUncheckedCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_activity?: Prisma.trip_proposal_activityUncheckedCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_guests?: Prisma.trip_proposal_guestsUncheckedCreateNestedManyWithoutTrip_proposalsInput
@@ -3387,6 +3855,16 @@ export type trip_proposalsUpdateWithoutTrip_proposal_daysInput = {
   sent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  max_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dynamic_pricing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  guest_approval_required?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  show_guest_count_to_guests?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  individual_billing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  registration_deposit_amount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trip_estimates?: Prisma.trip_estimatesUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_activity?: Prisma.trip_proposal_activityUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_guests?: Prisma.trip_proposal_guestsUpdateManyWithoutTrip_proposalsNestedInput
@@ -3450,6 +3928,16 @@ export type trip_proposalsUncheckedUpdateWithoutTrip_proposal_daysInput = {
   created_by?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  max_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dynamic_pricing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  guest_approval_required?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  show_guest_count_to_guests?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  individual_billing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  registration_deposit_amount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trip_estimates?: Prisma.trip_estimatesUncheckedUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_activity?: Prisma.trip_proposal_activityUncheckedUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_guests?: Prisma.trip_proposal_guestsUncheckedUpdateManyWithoutTrip_proposalsNestedInput
@@ -3500,6 +3988,16 @@ export type trip_proposalsCreateWithoutTrip_proposal_guestsInput = {
   sent_at?: Date | string | null
   created_at?: Date | string | null
   updated_at?: Date | string | null
+  max_guests?: number | null
+  min_guests?: number | null
+  min_guests_deadline?: Date | string | null
+  dynamic_pricing_enabled?: boolean | null
+  guest_approval_required?: boolean | null
+  show_guest_count_to_guests?: boolean | null
+  individual_billing_enabled?: boolean | null
+  payment_deadline?: Date | string | null
+  registration_deposit_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: string | null
   trip_estimates?: Prisma.trip_estimatesCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_activity?: Prisma.trip_proposal_activityCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_days?: Prisma.trip_proposal_daysCreateNestedManyWithoutTrip_proposalsInput
@@ -3563,6 +4061,16 @@ export type trip_proposalsUncheckedCreateWithoutTrip_proposal_guestsInput = {
   created_by?: number | null
   created_at?: Date | string | null
   updated_at?: Date | string | null
+  max_guests?: number | null
+  min_guests?: number | null
+  min_guests_deadline?: Date | string | null
+  dynamic_pricing_enabled?: boolean | null
+  guest_approval_required?: boolean | null
+  show_guest_count_to_guests?: boolean | null
+  individual_billing_enabled?: boolean | null
+  payment_deadline?: Date | string | null
+  registration_deposit_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: string | null
   trip_estimates?: Prisma.trip_estimatesUncheckedCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_activity?: Prisma.trip_proposal_activityUncheckedCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_days?: Prisma.trip_proposal_daysUncheckedCreateNestedManyWithoutTrip_proposalsInput
@@ -3629,6 +4137,16 @@ export type trip_proposalsUpdateWithoutTrip_proposal_guestsInput = {
   sent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  max_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dynamic_pricing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  guest_approval_required?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  show_guest_count_to_guests?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  individual_billing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  registration_deposit_amount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trip_estimates?: Prisma.trip_estimatesUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_activity?: Prisma.trip_proposal_activityUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_days?: Prisma.trip_proposal_daysUpdateManyWithoutTrip_proposalsNestedInput
@@ -3692,6 +4210,16 @@ export type trip_proposalsUncheckedUpdateWithoutTrip_proposal_guestsInput = {
   created_by?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  max_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dynamic_pricing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  guest_approval_required?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  show_guest_count_to_guests?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  individual_billing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  registration_deposit_amount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trip_estimates?: Prisma.trip_estimatesUncheckedUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_activity?: Prisma.trip_proposal_activityUncheckedUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_days?: Prisma.trip_proposal_daysUncheckedUpdateManyWithoutTrip_proposalsNestedInput
@@ -3742,6 +4270,16 @@ export type trip_proposalsCreateWithoutTrip_proposal_inclusionsInput = {
   sent_at?: Date | string | null
   created_at?: Date | string | null
   updated_at?: Date | string | null
+  max_guests?: number | null
+  min_guests?: number | null
+  min_guests_deadline?: Date | string | null
+  dynamic_pricing_enabled?: boolean | null
+  guest_approval_required?: boolean | null
+  show_guest_count_to_guests?: boolean | null
+  individual_billing_enabled?: boolean | null
+  payment_deadline?: Date | string | null
+  registration_deposit_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: string | null
   trip_estimates?: Prisma.trip_estimatesCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_activity?: Prisma.trip_proposal_activityCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_days?: Prisma.trip_proposal_daysCreateNestedManyWithoutTrip_proposalsInput
@@ -3805,6 +4343,16 @@ export type trip_proposalsUncheckedCreateWithoutTrip_proposal_inclusionsInput = 
   created_by?: number | null
   created_at?: Date | string | null
   updated_at?: Date | string | null
+  max_guests?: number | null
+  min_guests?: number | null
+  min_guests_deadline?: Date | string | null
+  dynamic_pricing_enabled?: boolean | null
+  guest_approval_required?: boolean | null
+  show_guest_count_to_guests?: boolean | null
+  individual_billing_enabled?: boolean | null
+  payment_deadline?: Date | string | null
+  registration_deposit_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: string | null
   trip_estimates?: Prisma.trip_estimatesUncheckedCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_activity?: Prisma.trip_proposal_activityUncheckedCreateNestedManyWithoutTrip_proposalsInput
   trip_proposal_days?: Prisma.trip_proposal_daysUncheckedCreateNestedManyWithoutTrip_proposalsInput
@@ -3871,6 +4419,16 @@ export type trip_proposalsUpdateWithoutTrip_proposal_inclusionsInput = {
   sent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  max_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dynamic_pricing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  guest_approval_required?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  show_guest_count_to_guests?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  individual_billing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  registration_deposit_amount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trip_estimates?: Prisma.trip_estimatesUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_activity?: Prisma.trip_proposal_activityUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_days?: Prisma.trip_proposal_daysUpdateManyWithoutTrip_proposalsNestedInput
@@ -3934,6 +4492,16 @@ export type trip_proposalsUncheckedUpdateWithoutTrip_proposal_inclusionsInput = 
   created_by?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  max_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dynamic_pricing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  guest_approval_required?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  show_guest_count_to_guests?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  individual_billing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  registration_deposit_amount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trip_estimates?: Prisma.trip_estimatesUncheckedUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_activity?: Prisma.trip_proposal_activityUncheckedUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_days?: Prisma.trip_proposal_daysUncheckedUpdateManyWithoutTrip_proposalsNestedInput
@@ -3990,6 +4558,16 @@ export type trip_proposalsCreateManyBookingsInput = {
   created_by?: number | null
   created_at?: Date | string | null
   updated_at?: Date | string | null
+  max_guests?: number | null
+  min_guests?: number | null
+  min_guests_deadline?: Date | string | null
+  dynamic_pricing_enabled?: boolean | null
+  guest_approval_required?: boolean | null
+  show_guest_count_to_guests?: boolean | null
+  individual_billing_enabled?: boolean | null
+  payment_deadline?: Date | string | null
+  registration_deposit_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: string | null
 }
 
 export type trip_proposalsUpdateWithoutBookingsInput = {
@@ -4036,6 +4614,16 @@ export type trip_proposalsUpdateWithoutBookingsInput = {
   sent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  max_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dynamic_pricing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  guest_approval_required?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  show_guest_count_to_guests?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  individual_billing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  registration_deposit_amount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trip_estimates?: Prisma.trip_estimatesUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_activity?: Prisma.trip_proposal_activityUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_days?: Prisma.trip_proposal_daysUpdateManyWithoutTrip_proposalsNestedInput
@@ -4098,6 +4686,16 @@ export type trip_proposalsUncheckedUpdateWithoutBookingsInput = {
   created_by?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  max_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dynamic_pricing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  guest_approval_required?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  show_guest_count_to_guests?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  individual_billing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  registration_deposit_amount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trip_estimates?: Prisma.trip_estimatesUncheckedUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_activity?: Prisma.trip_proposal_activityUncheckedUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_days?: Prisma.trip_proposal_daysUncheckedUpdateManyWithoutTrip_proposalsNestedInput
@@ -4155,6 +4753,16 @@ export type trip_proposalsUncheckedUpdateManyWithoutBookingsInput = {
   created_by?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  max_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dynamic_pricing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  guest_approval_required?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  show_guest_count_to_guests?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  individual_billing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  registration_deposit_amount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type trip_proposalsCreateManyBrandsInput = {
@@ -4207,6 +4815,16 @@ export type trip_proposalsCreateManyBrandsInput = {
   created_by?: number | null
   created_at?: Date | string | null
   updated_at?: Date | string | null
+  max_guests?: number | null
+  min_guests?: number | null
+  min_guests_deadline?: Date | string | null
+  dynamic_pricing_enabled?: boolean | null
+  guest_approval_required?: boolean | null
+  show_guest_count_to_guests?: boolean | null
+  individual_billing_enabled?: boolean | null
+  payment_deadline?: Date | string | null
+  registration_deposit_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: string | null
 }
 
 export type trip_proposalsUpdateWithoutBrandsInput = {
@@ -4253,6 +4871,16 @@ export type trip_proposalsUpdateWithoutBrandsInput = {
   sent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  max_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dynamic_pricing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  guest_approval_required?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  show_guest_count_to_guests?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  individual_billing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  registration_deposit_amount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trip_estimates?: Prisma.trip_estimatesUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_activity?: Prisma.trip_proposal_activityUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_days?: Prisma.trip_proposal_daysUpdateManyWithoutTrip_proposalsNestedInput
@@ -4315,6 +4943,16 @@ export type trip_proposalsUncheckedUpdateWithoutBrandsInput = {
   created_by?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  max_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dynamic_pricing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  guest_approval_required?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  show_guest_count_to_guests?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  individual_billing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  registration_deposit_amount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trip_estimates?: Prisma.trip_estimatesUncheckedUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_activity?: Prisma.trip_proposal_activityUncheckedUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_days?: Prisma.trip_proposal_daysUncheckedUpdateManyWithoutTrip_proposalsNestedInput
@@ -4372,6 +5010,16 @@ export type trip_proposalsUncheckedUpdateManyWithoutBrandsInput = {
   created_by?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  max_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dynamic_pricing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  guest_approval_required?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  show_guest_count_to_guests?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  individual_billing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  registration_deposit_amount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type trip_proposalsCreateManyCustomersInput = {
@@ -4424,6 +5072,16 @@ export type trip_proposalsCreateManyCustomersInput = {
   created_by?: number | null
   created_at?: Date | string | null
   updated_at?: Date | string | null
+  max_guests?: number | null
+  min_guests?: number | null
+  min_guests_deadline?: Date | string | null
+  dynamic_pricing_enabled?: boolean | null
+  guest_approval_required?: boolean | null
+  show_guest_count_to_guests?: boolean | null
+  individual_billing_enabled?: boolean | null
+  payment_deadline?: Date | string | null
+  registration_deposit_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: string | null
 }
 
 export type trip_proposalsUpdateWithoutCustomersInput = {
@@ -4470,6 +5128,16 @@ export type trip_proposalsUpdateWithoutCustomersInput = {
   sent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  max_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dynamic_pricing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  guest_approval_required?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  show_guest_count_to_guests?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  individual_billing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  registration_deposit_amount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trip_estimates?: Prisma.trip_estimatesUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_activity?: Prisma.trip_proposal_activityUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_days?: Prisma.trip_proposal_daysUpdateManyWithoutTrip_proposalsNestedInput
@@ -4532,6 +5200,16 @@ export type trip_proposalsUncheckedUpdateWithoutCustomersInput = {
   created_by?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  max_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dynamic_pricing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  guest_approval_required?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  show_guest_count_to_guests?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  individual_billing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  registration_deposit_amount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trip_estimates?: Prisma.trip_estimatesUncheckedUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_activity?: Prisma.trip_proposal_activityUncheckedUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_days?: Prisma.trip_proposal_daysUncheckedUpdateManyWithoutTrip_proposalsNestedInput
@@ -4589,6 +5267,16 @@ export type trip_proposalsUncheckedUpdateManyWithoutCustomersInput = {
   created_by?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  max_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dynamic_pricing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  guest_approval_required?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  show_guest_count_to_guests?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  individual_billing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  registration_deposit_amount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type trip_proposalsCreateManyPayments_trip_proposals_balance_payment_idTopaymentsInput = {
@@ -4641,6 +5329,16 @@ export type trip_proposalsCreateManyPayments_trip_proposals_balance_payment_idTo
   created_by?: number | null
   created_at?: Date | string | null
   updated_at?: Date | string | null
+  max_guests?: number | null
+  min_guests?: number | null
+  min_guests_deadline?: Date | string | null
+  dynamic_pricing_enabled?: boolean | null
+  guest_approval_required?: boolean | null
+  show_guest_count_to_guests?: boolean | null
+  individual_billing_enabled?: boolean | null
+  payment_deadline?: Date | string | null
+  registration_deposit_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: string | null
 }
 
 export type trip_proposalsCreateManyPayments_trip_proposals_deposit_payment_idTopaymentsInput = {
@@ -4693,6 +5391,16 @@ export type trip_proposalsCreateManyPayments_trip_proposals_deposit_payment_idTo
   created_by?: number | null
   created_at?: Date | string | null
   updated_at?: Date | string | null
+  max_guests?: number | null
+  min_guests?: number | null
+  min_guests_deadline?: Date | string | null
+  dynamic_pricing_enabled?: boolean | null
+  guest_approval_required?: boolean | null
+  show_guest_count_to_guests?: boolean | null
+  individual_billing_enabled?: boolean | null
+  payment_deadline?: Date | string | null
+  registration_deposit_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: string | null
 }
 
 export type trip_proposalsUpdateWithoutPayments_trip_proposals_balance_payment_idTopaymentsInput = {
@@ -4739,6 +5447,16 @@ export type trip_proposalsUpdateWithoutPayments_trip_proposals_balance_payment_i
   sent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  max_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dynamic_pricing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  guest_approval_required?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  show_guest_count_to_guests?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  individual_billing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  registration_deposit_amount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trip_estimates?: Prisma.trip_estimatesUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_activity?: Prisma.trip_proposal_activityUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_days?: Prisma.trip_proposal_daysUpdateManyWithoutTrip_proposalsNestedInput
@@ -4801,6 +5519,16 @@ export type trip_proposalsUncheckedUpdateWithoutPayments_trip_proposals_balance_
   created_by?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  max_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dynamic_pricing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  guest_approval_required?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  show_guest_count_to_guests?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  individual_billing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  registration_deposit_amount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trip_estimates?: Prisma.trip_estimatesUncheckedUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_activity?: Prisma.trip_proposal_activityUncheckedUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_days?: Prisma.trip_proposal_daysUncheckedUpdateManyWithoutTrip_proposalsNestedInput
@@ -4858,6 +5586,16 @@ export type trip_proposalsUncheckedUpdateManyWithoutPayments_trip_proposals_bala
   created_by?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  max_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dynamic_pricing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  guest_approval_required?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  show_guest_count_to_guests?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  individual_billing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  registration_deposit_amount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type trip_proposalsUpdateWithoutPayments_trip_proposals_deposit_payment_idTopaymentsInput = {
@@ -4904,6 +5642,16 @@ export type trip_proposalsUpdateWithoutPayments_trip_proposals_deposit_payment_i
   sent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  max_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dynamic_pricing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  guest_approval_required?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  show_guest_count_to_guests?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  individual_billing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  registration_deposit_amount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trip_estimates?: Prisma.trip_estimatesUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_activity?: Prisma.trip_proposal_activityUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_days?: Prisma.trip_proposal_daysUpdateManyWithoutTrip_proposalsNestedInput
@@ -4966,6 +5714,16 @@ export type trip_proposalsUncheckedUpdateWithoutPayments_trip_proposals_deposit_
   created_by?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  max_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dynamic_pricing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  guest_approval_required?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  show_guest_count_to_guests?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  individual_billing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  registration_deposit_amount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trip_estimates?: Prisma.trip_estimatesUncheckedUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_activity?: Prisma.trip_proposal_activityUncheckedUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_days?: Prisma.trip_proposal_daysUncheckedUpdateManyWithoutTrip_proposalsNestedInput
@@ -5023,6 +5781,16 @@ export type trip_proposalsUncheckedUpdateManyWithoutPayments_trip_proposals_depo
   created_by?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  max_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dynamic_pricing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  guest_approval_required?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  show_guest_count_to_guests?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  individual_billing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  registration_deposit_amount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type trip_proposalsCreateManyUsersInput = {
@@ -5075,6 +5843,16 @@ export type trip_proposalsCreateManyUsersInput = {
   sent_at?: Date | string | null
   created_at?: Date | string | null
   updated_at?: Date | string | null
+  max_guests?: number | null
+  min_guests?: number | null
+  min_guests_deadline?: Date | string | null
+  dynamic_pricing_enabled?: boolean | null
+  guest_approval_required?: boolean | null
+  show_guest_count_to_guests?: boolean | null
+  individual_billing_enabled?: boolean | null
+  payment_deadline?: Date | string | null
+  registration_deposit_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: string | null
 }
 
 export type trip_proposalsUpdateWithoutUsersInput = {
@@ -5121,6 +5899,16 @@ export type trip_proposalsUpdateWithoutUsersInput = {
   sent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  max_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dynamic_pricing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  guest_approval_required?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  show_guest_count_to_guests?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  individual_billing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  registration_deposit_amount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trip_estimates?: Prisma.trip_estimatesUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_activity?: Prisma.trip_proposal_activityUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_days?: Prisma.trip_proposal_daysUpdateManyWithoutTrip_proposalsNestedInput
@@ -5183,6 +5971,16 @@ export type trip_proposalsUncheckedUpdateWithoutUsersInput = {
   sent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  max_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dynamic_pricing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  guest_approval_required?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  show_guest_count_to_guests?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  individual_billing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  registration_deposit_amount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trip_estimates?: Prisma.trip_estimatesUncheckedUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_activity?: Prisma.trip_proposal_activityUncheckedUpdateManyWithoutTrip_proposalsNestedInput
   trip_proposal_days?: Prisma.trip_proposal_daysUncheckedUpdateManyWithoutTrip_proposalsNestedInput
@@ -5240,6 +6038,16 @@ export type trip_proposalsUncheckedUpdateManyWithoutUsersInput = {
   sent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  max_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  min_guests_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  dynamic_pricing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  guest_approval_required?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  show_guest_count_to_guests?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  individual_billing_enabled?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  registration_deposit_amount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  registration_deposit_type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 
@@ -5360,6 +6168,16 @@ export type trip_proposalsSelect<ExtArgs extends runtime.Types.Extensions.Intern
   created_by?: boolean
   created_at?: boolean
   updated_at?: boolean
+  max_guests?: boolean
+  min_guests?: boolean
+  min_guests_deadline?: boolean
+  dynamic_pricing_enabled?: boolean
+  guest_approval_required?: boolean
+  show_guest_count_to_guests?: boolean
+  individual_billing_enabled?: boolean
+  payment_deadline?: boolean
+  registration_deposit_amount?: boolean
+  registration_deposit_type?: boolean
   trip_estimates?: boolean | Prisma.trip_proposals$trip_estimatesArgs<ExtArgs>
   trip_proposal_activity?: boolean | Prisma.trip_proposals$trip_proposal_activityArgs<ExtArgs>
   trip_proposal_days?: boolean | Prisma.trip_proposals$trip_proposal_daysArgs<ExtArgs>
@@ -5425,6 +6243,16 @@ export type trip_proposalsSelectCreateManyAndReturn<ExtArgs extends runtime.Type
   created_by?: boolean
   created_at?: boolean
   updated_at?: boolean
+  max_guests?: boolean
+  min_guests?: boolean
+  min_guests_deadline?: boolean
+  dynamic_pricing_enabled?: boolean
+  guest_approval_required?: boolean
+  show_guest_count_to_guests?: boolean
+  individual_billing_enabled?: boolean
+  payment_deadline?: boolean
+  registration_deposit_amount?: boolean
+  registration_deposit_type?: boolean
   payments_trip_proposals_balance_payment_idTopayments?: boolean | Prisma.trip_proposals$payments_trip_proposals_balance_payment_idTopaymentsArgs<ExtArgs>
   brands?: boolean | Prisma.trip_proposals$brandsArgs<ExtArgs>
   bookings?: boolean | Prisma.trip_proposals$bookingsArgs<ExtArgs>
@@ -5484,6 +6312,16 @@ export type trip_proposalsSelectUpdateManyAndReturn<ExtArgs extends runtime.Type
   created_by?: boolean
   created_at?: boolean
   updated_at?: boolean
+  max_guests?: boolean
+  min_guests?: boolean
+  min_guests_deadline?: boolean
+  dynamic_pricing_enabled?: boolean
+  guest_approval_required?: boolean
+  show_guest_count_to_guests?: boolean
+  individual_billing_enabled?: boolean
+  payment_deadline?: boolean
+  registration_deposit_amount?: boolean
+  registration_deposit_type?: boolean
   payments_trip_proposals_balance_payment_idTopayments?: boolean | Prisma.trip_proposals$payments_trip_proposals_balance_payment_idTopaymentsArgs<ExtArgs>
   brands?: boolean | Prisma.trip_proposals$brandsArgs<ExtArgs>
   bookings?: boolean | Prisma.trip_proposals$bookingsArgs<ExtArgs>
@@ -5543,9 +6381,19 @@ export type trip_proposalsSelectScalar = {
   created_by?: boolean
   created_at?: boolean
   updated_at?: boolean
+  max_guests?: boolean
+  min_guests?: boolean
+  min_guests_deadline?: boolean
+  dynamic_pricing_enabled?: boolean
+  guest_approval_required?: boolean
+  show_guest_count_to_guests?: boolean
+  individual_billing_enabled?: boolean
+  payment_deadline?: boolean
+  registration_deposit_amount?: boolean
+  registration_deposit_type?: boolean
 }
 
-export type trip_proposalsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "proposal_number" | "access_token" | "planning_phase" | "status" | "customer_name" | "customer_email" | "customer_phone" | "customer_company" | "customer_id" | "trip_type" | "trip_title" | "party_size" | "start_date" | "end_date" | "subtotal" | "discount_amount" | "discount_percentage" | "discount_reason" | "taxes" | "tax_rate" | "gratuity_percentage" | "gratuity_amount" | "total" | "deposit_percentage" | "deposit_amount" | "deposit_paid" | "deposit_paid_at" | "deposit_payment_id" | "balance_due" | "balance_paid" | "balance_paid_at" | "balance_payment_id" | "valid_until" | "brand_id" | "introduction" | "special_notes" | "internal_notes" | "converted_to_booking_id" | "converted_at" | "first_viewed_at" | "last_viewed_at" | "view_count" | "accepted_at" | "accepted_signature" | "accepted_ip" | "sent_at" | "created_by" | "created_at" | "updated_at", ExtArgs["result"]["trip_proposals"]>
+export type trip_proposalsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "proposal_number" | "access_token" | "planning_phase" | "status" | "customer_name" | "customer_email" | "customer_phone" | "customer_company" | "customer_id" | "trip_type" | "trip_title" | "party_size" | "start_date" | "end_date" | "subtotal" | "discount_amount" | "discount_percentage" | "discount_reason" | "taxes" | "tax_rate" | "gratuity_percentage" | "gratuity_amount" | "total" | "deposit_percentage" | "deposit_amount" | "deposit_paid" | "deposit_paid_at" | "deposit_payment_id" | "balance_due" | "balance_paid" | "balance_paid_at" | "balance_payment_id" | "valid_until" | "brand_id" | "introduction" | "special_notes" | "internal_notes" | "converted_to_booking_id" | "converted_at" | "first_viewed_at" | "last_viewed_at" | "view_count" | "accepted_at" | "accepted_signature" | "accepted_ip" | "sent_at" | "created_by" | "created_at" | "updated_at" | "max_guests" | "min_guests" | "min_guests_deadline" | "dynamic_pricing_enabled" | "guest_approval_required" | "show_guest_count_to_guests" | "individual_billing_enabled" | "payment_deadline" | "registration_deposit_amount" | "registration_deposit_type", ExtArgs["result"]["trip_proposals"]>
 export type trip_proposalsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   trip_estimates?: boolean | Prisma.trip_proposals$trip_estimatesArgs<ExtArgs>
   trip_proposal_activity?: boolean | Prisma.trip_proposals$trip_proposal_activityArgs<ExtArgs>
@@ -5643,6 +6491,16 @@ export type $trip_proposalsPayload<ExtArgs extends runtime.Types.Extensions.Inte
     created_by: number | null
     created_at: Date | null
     updated_at: Date | null
+    max_guests: number | null
+    min_guests: number | null
+    min_guests_deadline: Date | null
+    dynamic_pricing_enabled: boolean | null
+    guest_approval_required: boolean | null
+    show_guest_count_to_guests: boolean | null
+    individual_billing_enabled: boolean | null
+    payment_deadline: Date | null
+    registration_deposit_amount: runtime.Decimal | null
+    registration_deposit_type: string | null
   }, ExtArgs["result"]["trip_proposals"]>
   composites: {}
 }
@@ -6127,6 +6985,16 @@ export interface trip_proposalsFieldRefs {
   readonly created_by: Prisma.FieldRef<"trip_proposals", 'Int'>
   readonly created_at: Prisma.FieldRef<"trip_proposals", 'DateTime'>
   readonly updated_at: Prisma.FieldRef<"trip_proposals", 'DateTime'>
+  readonly max_guests: Prisma.FieldRef<"trip_proposals", 'Int'>
+  readonly min_guests: Prisma.FieldRef<"trip_proposals", 'Int'>
+  readonly min_guests_deadline: Prisma.FieldRef<"trip_proposals", 'DateTime'>
+  readonly dynamic_pricing_enabled: Prisma.FieldRef<"trip_proposals", 'Boolean'>
+  readonly guest_approval_required: Prisma.FieldRef<"trip_proposals", 'Boolean'>
+  readonly show_guest_count_to_guests: Prisma.FieldRef<"trip_proposals", 'Boolean'>
+  readonly individual_billing_enabled: Prisma.FieldRef<"trip_proposals", 'Boolean'>
+  readonly payment_deadline: Prisma.FieldRef<"trip_proposals", 'DateTime'>
+  readonly registration_deposit_amount: Prisma.FieldRef<"trip_proposals", 'Decimal'>
+  readonly registration_deposit_type: Prisma.FieldRef<"trip_proposals", 'String'>
 }
     
 

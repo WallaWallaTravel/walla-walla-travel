@@ -28,11 +28,17 @@ export type AggregateTrip_proposal_guests = {
 export type Trip_proposal_guestsAvgAggregateOutputType = {
   id: number | null
   trip_proposal_id: number | null
+  amount_owed: runtime.Decimal | null
+  amount_paid: runtime.Decimal | null
+  payment_group_id: number | null
 }
 
 export type Trip_proposal_guestsSumAggregateOutputType = {
   id: number | null
   trip_proposal_id: number | null
+  amount_owed: runtime.Decimal | null
+  amount_paid: runtime.Decimal | null
+  payment_group_id: number | null
 }
 
 export type Trip_proposal_guestsMinAggregateOutputType = {
@@ -48,6 +54,14 @@ export type Trip_proposal_guestsMinAggregateOutputType = {
   room_assignment: string | null
   rsvp_status: string | null
   rsvp_responded_at: Date | null
+  guest_access_token: string | null
+  is_registered: boolean | null
+  payment_status: string | null
+  amount_owed: runtime.Decimal | null
+  amount_paid: runtime.Decimal | null
+  is_sponsored: boolean | null
+  payment_group_id: number | null
+  payment_paid_at: Date | null
   created_at: Date | null
   updated_at: Date | null
 }
@@ -65,6 +79,14 @@ export type Trip_proposal_guestsMaxAggregateOutputType = {
   room_assignment: string | null
   rsvp_status: string | null
   rsvp_responded_at: Date | null
+  guest_access_token: string | null
+  is_registered: boolean | null
+  payment_status: string | null
+  amount_owed: runtime.Decimal | null
+  amount_paid: runtime.Decimal | null
+  is_sponsored: boolean | null
+  payment_group_id: number | null
+  payment_paid_at: Date | null
   created_at: Date | null
   updated_at: Date | null
 }
@@ -82,6 +104,14 @@ export type Trip_proposal_guestsCountAggregateOutputType = {
   room_assignment: number
   rsvp_status: number
   rsvp_responded_at: number
+  guest_access_token: number
+  is_registered: number
+  payment_status: number
+  amount_owed: number
+  amount_paid: number
+  is_sponsored: number
+  payment_group_id: number
+  payment_paid_at: number
   created_at: number
   updated_at: number
   _all: number
@@ -91,11 +121,17 @@ export type Trip_proposal_guestsCountAggregateOutputType = {
 export type Trip_proposal_guestsAvgAggregateInputType = {
   id?: true
   trip_proposal_id?: true
+  amount_owed?: true
+  amount_paid?: true
+  payment_group_id?: true
 }
 
 export type Trip_proposal_guestsSumAggregateInputType = {
   id?: true
   trip_proposal_id?: true
+  amount_owed?: true
+  amount_paid?: true
+  payment_group_id?: true
 }
 
 export type Trip_proposal_guestsMinAggregateInputType = {
@@ -111,6 +147,14 @@ export type Trip_proposal_guestsMinAggregateInputType = {
   room_assignment?: true
   rsvp_status?: true
   rsvp_responded_at?: true
+  guest_access_token?: true
+  is_registered?: true
+  payment_status?: true
+  amount_owed?: true
+  amount_paid?: true
+  is_sponsored?: true
+  payment_group_id?: true
+  payment_paid_at?: true
   created_at?: true
   updated_at?: true
 }
@@ -128,6 +172,14 @@ export type Trip_proposal_guestsMaxAggregateInputType = {
   room_assignment?: true
   rsvp_status?: true
   rsvp_responded_at?: true
+  guest_access_token?: true
+  is_registered?: true
+  payment_status?: true
+  amount_owed?: true
+  amount_paid?: true
+  is_sponsored?: true
+  payment_group_id?: true
+  payment_paid_at?: true
   created_at?: true
   updated_at?: true
 }
@@ -145,6 +197,14 @@ export type Trip_proposal_guestsCountAggregateInputType = {
   room_assignment?: true
   rsvp_status?: true
   rsvp_responded_at?: true
+  guest_access_token?: true
+  is_registered?: true
+  payment_status?: true
+  amount_owed?: true
+  amount_paid?: true
+  is_sponsored?: true
+  payment_group_id?: true
+  payment_paid_at?: true
   created_at?: true
   updated_at?: true
   _all?: true
@@ -249,6 +309,14 @@ export type Trip_proposal_guestsGroupByOutputType = {
   room_assignment: string | null
   rsvp_status: string | null
   rsvp_responded_at: Date | null
+  guest_access_token: string | null
+  is_registered: boolean | null
+  payment_status: string | null
+  amount_owed: runtime.Decimal | null
+  amount_paid: runtime.Decimal | null
+  is_sponsored: boolean | null
+  payment_group_id: number | null
+  payment_paid_at: Date | null
   created_at: Date | null
   updated_at: Date | null
   _count: Trip_proposal_guestsCountAggregateOutputType | null
@@ -289,6 +357,14 @@ export type trip_proposal_guestsWhereInput = {
   room_assignment?: Prisma.StringNullableFilter<"trip_proposal_guests"> | string | null
   rsvp_status?: Prisma.StringNullableFilter<"trip_proposal_guests"> | string | null
   rsvp_responded_at?: Prisma.DateTimeNullableFilter<"trip_proposal_guests"> | Date | string | null
+  guest_access_token?: Prisma.StringNullableFilter<"trip_proposal_guests"> | string | null
+  is_registered?: Prisma.BoolNullableFilter<"trip_proposal_guests"> | boolean | null
+  payment_status?: Prisma.StringNullableFilter<"trip_proposal_guests"> | string | null
+  amount_owed?: Prisma.DecimalNullableFilter<"trip_proposal_guests"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  amount_paid?: Prisma.DecimalNullableFilter<"trip_proposal_guests"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  is_sponsored?: Prisma.BoolNullableFilter<"trip_proposal_guests"> | boolean | null
+  payment_group_id?: Prisma.IntNullableFilter<"trip_proposal_guests"> | number | null
+  payment_paid_at?: Prisma.DateTimeNullableFilter<"trip_proposal_guests"> | Date | string | null
   created_at?: Prisma.DateTimeNullableFilter<"trip_proposal_guests"> | Date | string | null
   updated_at?: Prisma.DateTimeNullableFilter<"trip_proposal_guests"> | Date | string | null
   trip_proposals?: Prisma.XOR<Prisma.Trip_proposalsScalarRelationFilter, Prisma.trip_proposalsWhereInput>
@@ -307,6 +383,14 @@ export type trip_proposal_guestsOrderByWithRelationInput = {
   room_assignment?: Prisma.SortOrderInput | Prisma.SortOrder
   rsvp_status?: Prisma.SortOrderInput | Prisma.SortOrder
   rsvp_responded_at?: Prisma.SortOrderInput | Prisma.SortOrder
+  guest_access_token?: Prisma.SortOrderInput | Prisma.SortOrder
+  is_registered?: Prisma.SortOrderInput | Prisma.SortOrder
+  payment_status?: Prisma.SortOrderInput | Prisma.SortOrder
+  amount_owed?: Prisma.SortOrderInput | Prisma.SortOrder
+  amount_paid?: Prisma.SortOrderInput | Prisma.SortOrder
+  is_sponsored?: Prisma.SortOrderInput | Prisma.SortOrder
+  payment_group_id?: Prisma.SortOrderInput | Prisma.SortOrder
+  payment_paid_at?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrderInput | Prisma.SortOrder
   updated_at?: Prisma.SortOrderInput | Prisma.SortOrder
   trip_proposals?: Prisma.trip_proposalsOrderByWithRelationInput
@@ -328,6 +412,14 @@ export type trip_proposal_guestsWhereUniqueInput = Prisma.AtLeast<{
   room_assignment?: Prisma.StringNullableFilter<"trip_proposal_guests"> | string | null
   rsvp_status?: Prisma.StringNullableFilter<"trip_proposal_guests"> | string | null
   rsvp_responded_at?: Prisma.DateTimeNullableFilter<"trip_proposal_guests"> | Date | string | null
+  guest_access_token?: Prisma.StringNullableFilter<"trip_proposal_guests"> | string | null
+  is_registered?: Prisma.BoolNullableFilter<"trip_proposal_guests"> | boolean | null
+  payment_status?: Prisma.StringNullableFilter<"trip_proposal_guests"> | string | null
+  amount_owed?: Prisma.DecimalNullableFilter<"trip_proposal_guests"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  amount_paid?: Prisma.DecimalNullableFilter<"trip_proposal_guests"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  is_sponsored?: Prisma.BoolNullableFilter<"trip_proposal_guests"> | boolean | null
+  payment_group_id?: Prisma.IntNullableFilter<"trip_proposal_guests"> | number | null
+  payment_paid_at?: Prisma.DateTimeNullableFilter<"trip_proposal_guests"> | Date | string | null
   created_at?: Prisma.DateTimeNullableFilter<"trip_proposal_guests"> | Date | string | null
   updated_at?: Prisma.DateTimeNullableFilter<"trip_proposal_guests"> | Date | string | null
   trip_proposals?: Prisma.XOR<Prisma.Trip_proposalsScalarRelationFilter, Prisma.trip_proposalsWhereInput>
@@ -346,6 +438,14 @@ export type trip_proposal_guestsOrderByWithAggregationInput = {
   room_assignment?: Prisma.SortOrderInput | Prisma.SortOrder
   rsvp_status?: Prisma.SortOrderInput | Prisma.SortOrder
   rsvp_responded_at?: Prisma.SortOrderInput | Prisma.SortOrder
+  guest_access_token?: Prisma.SortOrderInput | Prisma.SortOrder
+  is_registered?: Prisma.SortOrderInput | Prisma.SortOrder
+  payment_status?: Prisma.SortOrderInput | Prisma.SortOrder
+  amount_owed?: Prisma.SortOrderInput | Prisma.SortOrder
+  amount_paid?: Prisma.SortOrderInput | Prisma.SortOrder
+  is_sponsored?: Prisma.SortOrderInput | Prisma.SortOrder
+  payment_group_id?: Prisma.SortOrderInput | Prisma.SortOrder
+  payment_paid_at?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrderInput | Prisma.SortOrder
   updated_at?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.trip_proposal_guestsCountOrderByAggregateInput
@@ -371,6 +471,14 @@ export type trip_proposal_guestsScalarWhereWithAggregatesInput = {
   room_assignment?: Prisma.StringNullableWithAggregatesFilter<"trip_proposal_guests"> | string | null
   rsvp_status?: Prisma.StringNullableWithAggregatesFilter<"trip_proposal_guests"> | string | null
   rsvp_responded_at?: Prisma.DateTimeNullableWithAggregatesFilter<"trip_proposal_guests"> | Date | string | null
+  guest_access_token?: Prisma.StringNullableWithAggregatesFilter<"trip_proposal_guests"> | string | null
+  is_registered?: Prisma.BoolNullableWithAggregatesFilter<"trip_proposal_guests"> | boolean | null
+  payment_status?: Prisma.StringNullableWithAggregatesFilter<"trip_proposal_guests"> | string | null
+  amount_owed?: Prisma.DecimalNullableWithAggregatesFilter<"trip_proposal_guests"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  amount_paid?: Prisma.DecimalNullableWithAggregatesFilter<"trip_proposal_guests"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  is_sponsored?: Prisma.BoolNullableWithAggregatesFilter<"trip_proposal_guests"> | boolean | null
+  payment_group_id?: Prisma.IntNullableWithAggregatesFilter<"trip_proposal_guests"> | number | null
+  payment_paid_at?: Prisma.DateTimeNullableWithAggregatesFilter<"trip_proposal_guests"> | Date | string | null
   created_at?: Prisma.DateTimeNullableWithAggregatesFilter<"trip_proposal_guests"> | Date | string | null
   updated_at?: Prisma.DateTimeNullableWithAggregatesFilter<"trip_proposal_guests"> | Date | string | null
 }
@@ -386,6 +494,14 @@ export type trip_proposal_guestsCreateInput = {
   room_assignment?: string | null
   rsvp_status?: string | null
   rsvp_responded_at?: Date | string | null
+  guest_access_token?: string | null
+  is_registered?: boolean | null
+  payment_status?: string | null
+  amount_owed?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  amount_paid?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  is_sponsored?: boolean | null
+  payment_group_id?: number | null
+  payment_paid_at?: Date | string | null
   created_at?: Date | string | null
   updated_at?: Date | string | null
   trip_proposals: Prisma.trip_proposalsCreateNestedOneWithoutTrip_proposal_guestsInput
@@ -404,6 +520,14 @@ export type trip_proposal_guestsUncheckedCreateInput = {
   room_assignment?: string | null
   rsvp_status?: string | null
   rsvp_responded_at?: Date | string | null
+  guest_access_token?: string | null
+  is_registered?: boolean | null
+  payment_status?: string | null
+  amount_owed?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  amount_paid?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  is_sponsored?: boolean | null
+  payment_group_id?: number | null
+  payment_paid_at?: Date | string | null
   created_at?: Date | string | null
   updated_at?: Date | string | null
 }
@@ -419,6 +543,14 @@ export type trip_proposal_guestsUpdateInput = {
   room_assignment?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   rsvp_status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   rsvp_responded_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  guest_access_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  is_registered?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  amount_owed?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  amount_paid?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  is_sponsored?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_group_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  payment_paid_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   trip_proposals?: Prisma.trip_proposalsUpdateOneRequiredWithoutTrip_proposal_guestsNestedInput
@@ -437,6 +569,14 @@ export type trip_proposal_guestsUncheckedUpdateInput = {
   room_assignment?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   rsvp_status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   rsvp_responded_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  guest_access_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  is_registered?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  amount_owed?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  amount_paid?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  is_sponsored?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_group_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  payment_paid_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
@@ -454,6 +594,14 @@ export type trip_proposal_guestsCreateManyInput = {
   room_assignment?: string | null
   rsvp_status?: string | null
   rsvp_responded_at?: Date | string | null
+  guest_access_token?: string | null
+  is_registered?: boolean | null
+  payment_status?: string | null
+  amount_owed?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  amount_paid?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  is_sponsored?: boolean | null
+  payment_group_id?: number | null
+  payment_paid_at?: Date | string | null
   created_at?: Date | string | null
   updated_at?: Date | string | null
 }
@@ -469,6 +617,14 @@ export type trip_proposal_guestsUpdateManyMutationInput = {
   room_assignment?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   rsvp_status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   rsvp_responded_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  guest_access_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  is_registered?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  amount_owed?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  amount_paid?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  is_sponsored?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_group_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  payment_paid_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
@@ -486,6 +642,14 @@ export type trip_proposal_guestsUncheckedUpdateManyInput = {
   room_assignment?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   rsvp_status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   rsvp_responded_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  guest_access_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  is_registered?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  amount_owed?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  amount_paid?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  is_sponsored?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_group_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  payment_paid_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
@@ -503,6 +667,14 @@ export type trip_proposal_guestsCountOrderByAggregateInput = {
   room_assignment?: Prisma.SortOrder
   rsvp_status?: Prisma.SortOrder
   rsvp_responded_at?: Prisma.SortOrder
+  guest_access_token?: Prisma.SortOrder
+  is_registered?: Prisma.SortOrder
+  payment_status?: Prisma.SortOrder
+  amount_owed?: Prisma.SortOrder
+  amount_paid?: Prisma.SortOrder
+  is_sponsored?: Prisma.SortOrder
+  payment_group_id?: Prisma.SortOrder
+  payment_paid_at?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
 }
@@ -510,6 +682,9 @@ export type trip_proposal_guestsCountOrderByAggregateInput = {
 export type trip_proposal_guestsAvgOrderByAggregateInput = {
   id?: Prisma.SortOrder
   trip_proposal_id?: Prisma.SortOrder
+  amount_owed?: Prisma.SortOrder
+  amount_paid?: Prisma.SortOrder
+  payment_group_id?: Prisma.SortOrder
 }
 
 export type trip_proposal_guestsMaxOrderByAggregateInput = {
@@ -525,6 +700,14 @@ export type trip_proposal_guestsMaxOrderByAggregateInput = {
   room_assignment?: Prisma.SortOrder
   rsvp_status?: Prisma.SortOrder
   rsvp_responded_at?: Prisma.SortOrder
+  guest_access_token?: Prisma.SortOrder
+  is_registered?: Prisma.SortOrder
+  payment_status?: Prisma.SortOrder
+  amount_owed?: Prisma.SortOrder
+  amount_paid?: Prisma.SortOrder
+  is_sponsored?: Prisma.SortOrder
+  payment_group_id?: Prisma.SortOrder
+  payment_paid_at?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
 }
@@ -542,6 +725,14 @@ export type trip_proposal_guestsMinOrderByAggregateInput = {
   room_assignment?: Prisma.SortOrder
   rsvp_status?: Prisma.SortOrder
   rsvp_responded_at?: Prisma.SortOrder
+  guest_access_token?: Prisma.SortOrder
+  is_registered?: Prisma.SortOrder
+  payment_status?: Prisma.SortOrder
+  amount_owed?: Prisma.SortOrder
+  amount_paid?: Prisma.SortOrder
+  is_sponsored?: Prisma.SortOrder
+  payment_group_id?: Prisma.SortOrder
+  payment_paid_at?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
 }
@@ -549,6 +740,9 @@ export type trip_proposal_guestsMinOrderByAggregateInput = {
 export type trip_proposal_guestsSumOrderByAggregateInput = {
   id?: Prisma.SortOrder
   trip_proposal_id?: Prisma.SortOrder
+  amount_owed?: Prisma.SortOrder
+  amount_paid?: Prisma.SortOrder
+  payment_group_id?: Prisma.SortOrder
 }
 
 export type Trip_proposal_guestsListRelationFilter = {
@@ -614,6 +808,14 @@ export type trip_proposal_guestsCreateWithoutTrip_proposalsInput = {
   room_assignment?: string | null
   rsvp_status?: string | null
   rsvp_responded_at?: Date | string | null
+  guest_access_token?: string | null
+  is_registered?: boolean | null
+  payment_status?: string | null
+  amount_owed?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  amount_paid?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  is_sponsored?: boolean | null
+  payment_group_id?: number | null
+  payment_paid_at?: Date | string | null
   created_at?: Date | string | null
   updated_at?: Date | string | null
 }
@@ -630,6 +832,14 @@ export type trip_proposal_guestsUncheckedCreateWithoutTrip_proposalsInput = {
   room_assignment?: string | null
   rsvp_status?: string | null
   rsvp_responded_at?: Date | string | null
+  guest_access_token?: string | null
+  is_registered?: boolean | null
+  payment_status?: string | null
+  amount_owed?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  amount_paid?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  is_sponsored?: boolean | null
+  payment_group_id?: number | null
+  payment_paid_at?: Date | string | null
   created_at?: Date | string | null
   updated_at?: Date | string | null
 }
@@ -676,6 +886,14 @@ export type trip_proposal_guestsScalarWhereInput = {
   room_assignment?: Prisma.StringNullableFilter<"trip_proposal_guests"> | string | null
   rsvp_status?: Prisma.StringNullableFilter<"trip_proposal_guests"> | string | null
   rsvp_responded_at?: Prisma.DateTimeNullableFilter<"trip_proposal_guests"> | Date | string | null
+  guest_access_token?: Prisma.StringNullableFilter<"trip_proposal_guests"> | string | null
+  is_registered?: Prisma.BoolNullableFilter<"trip_proposal_guests"> | boolean | null
+  payment_status?: Prisma.StringNullableFilter<"trip_proposal_guests"> | string | null
+  amount_owed?: Prisma.DecimalNullableFilter<"trip_proposal_guests"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  amount_paid?: Prisma.DecimalNullableFilter<"trip_proposal_guests"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  is_sponsored?: Prisma.BoolNullableFilter<"trip_proposal_guests"> | boolean | null
+  payment_group_id?: Prisma.IntNullableFilter<"trip_proposal_guests"> | number | null
+  payment_paid_at?: Prisma.DateTimeNullableFilter<"trip_proposal_guests"> | Date | string | null
   created_at?: Prisma.DateTimeNullableFilter<"trip_proposal_guests"> | Date | string | null
   updated_at?: Prisma.DateTimeNullableFilter<"trip_proposal_guests"> | Date | string | null
 }
@@ -692,6 +910,14 @@ export type trip_proposal_guestsCreateManyTrip_proposalsInput = {
   room_assignment?: string | null
   rsvp_status?: string | null
   rsvp_responded_at?: Date | string | null
+  guest_access_token?: string | null
+  is_registered?: boolean | null
+  payment_status?: string | null
+  amount_owed?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  amount_paid?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  is_sponsored?: boolean | null
+  payment_group_id?: number | null
+  payment_paid_at?: Date | string | null
   created_at?: Date | string | null
   updated_at?: Date | string | null
 }
@@ -707,6 +933,14 @@ export type trip_proposal_guestsUpdateWithoutTrip_proposalsInput = {
   room_assignment?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   rsvp_status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   rsvp_responded_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  guest_access_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  is_registered?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  amount_owed?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  amount_paid?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  is_sponsored?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_group_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  payment_paid_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
@@ -723,6 +957,14 @@ export type trip_proposal_guestsUncheckedUpdateWithoutTrip_proposalsInput = {
   room_assignment?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   rsvp_status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   rsvp_responded_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  guest_access_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  is_registered?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  amount_owed?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  amount_paid?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  is_sponsored?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_group_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  payment_paid_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
@@ -739,6 +981,14 @@ export type trip_proposal_guestsUncheckedUpdateManyWithoutTrip_proposalsInput = 
   room_assignment?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   rsvp_status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   rsvp_responded_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  guest_access_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  is_registered?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  amount_owed?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  amount_paid?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  is_sponsored?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  payment_group_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  payment_paid_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
@@ -758,6 +1008,14 @@ export type trip_proposal_guestsSelect<ExtArgs extends runtime.Types.Extensions.
   room_assignment?: boolean
   rsvp_status?: boolean
   rsvp_responded_at?: boolean
+  guest_access_token?: boolean
+  is_registered?: boolean
+  payment_status?: boolean
+  amount_owed?: boolean
+  amount_paid?: boolean
+  is_sponsored?: boolean
+  payment_group_id?: boolean
+  payment_paid_at?: boolean
   created_at?: boolean
   updated_at?: boolean
   trip_proposals?: boolean | Prisma.trip_proposalsDefaultArgs<ExtArgs>
@@ -776,6 +1034,14 @@ export type trip_proposal_guestsSelectCreateManyAndReturn<ExtArgs extends runtim
   room_assignment?: boolean
   rsvp_status?: boolean
   rsvp_responded_at?: boolean
+  guest_access_token?: boolean
+  is_registered?: boolean
+  payment_status?: boolean
+  amount_owed?: boolean
+  amount_paid?: boolean
+  is_sponsored?: boolean
+  payment_group_id?: boolean
+  payment_paid_at?: boolean
   created_at?: boolean
   updated_at?: boolean
   trip_proposals?: boolean | Prisma.trip_proposalsDefaultArgs<ExtArgs>
@@ -794,6 +1060,14 @@ export type trip_proposal_guestsSelectUpdateManyAndReturn<ExtArgs extends runtim
   room_assignment?: boolean
   rsvp_status?: boolean
   rsvp_responded_at?: boolean
+  guest_access_token?: boolean
+  is_registered?: boolean
+  payment_status?: boolean
+  amount_owed?: boolean
+  amount_paid?: boolean
+  is_sponsored?: boolean
+  payment_group_id?: boolean
+  payment_paid_at?: boolean
   created_at?: boolean
   updated_at?: boolean
   trip_proposals?: boolean | Prisma.trip_proposalsDefaultArgs<ExtArgs>
@@ -812,11 +1086,19 @@ export type trip_proposal_guestsSelectScalar = {
   room_assignment?: boolean
   rsvp_status?: boolean
   rsvp_responded_at?: boolean
+  guest_access_token?: boolean
+  is_registered?: boolean
+  payment_status?: boolean
+  amount_owed?: boolean
+  amount_paid?: boolean
+  is_sponsored?: boolean
+  payment_group_id?: boolean
+  payment_paid_at?: boolean
   created_at?: boolean
   updated_at?: boolean
 }
 
-export type trip_proposal_guestsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "trip_proposal_id" | "name" | "email" | "phone" | "is_primary" | "dietary_restrictions" | "accessibility_needs" | "special_requests" | "room_assignment" | "rsvp_status" | "rsvp_responded_at" | "created_at" | "updated_at", ExtArgs["result"]["trip_proposal_guests"]>
+export type trip_proposal_guestsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "trip_proposal_id" | "name" | "email" | "phone" | "is_primary" | "dietary_restrictions" | "accessibility_needs" | "special_requests" | "room_assignment" | "rsvp_status" | "rsvp_responded_at" | "guest_access_token" | "is_registered" | "payment_status" | "amount_owed" | "amount_paid" | "is_sponsored" | "payment_group_id" | "payment_paid_at" | "created_at" | "updated_at", ExtArgs["result"]["trip_proposal_guests"]>
 export type trip_proposal_guestsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   trip_proposals?: boolean | Prisma.trip_proposalsDefaultArgs<ExtArgs>
 }
@@ -845,6 +1127,14 @@ export type $trip_proposal_guestsPayload<ExtArgs extends runtime.Types.Extension
     room_assignment: string | null
     rsvp_status: string | null
     rsvp_responded_at: Date | null
+    guest_access_token: string | null
+    is_registered: boolean | null
+    payment_status: string | null
+    amount_owed: runtime.Decimal | null
+    amount_paid: runtime.Decimal | null
+    is_sponsored: boolean | null
+    payment_group_id: number | null
+    payment_paid_at: Date | null
     created_at: Date | null
     updated_at: Date | null
   }, ExtArgs["result"]["trip_proposal_guests"]>
@@ -1283,6 +1573,14 @@ export interface trip_proposal_guestsFieldRefs {
   readonly room_assignment: Prisma.FieldRef<"trip_proposal_guests", 'String'>
   readonly rsvp_status: Prisma.FieldRef<"trip_proposal_guests", 'String'>
   readonly rsvp_responded_at: Prisma.FieldRef<"trip_proposal_guests", 'DateTime'>
+  readonly guest_access_token: Prisma.FieldRef<"trip_proposal_guests", 'String'>
+  readonly is_registered: Prisma.FieldRef<"trip_proposal_guests", 'Boolean'>
+  readonly payment_status: Prisma.FieldRef<"trip_proposal_guests", 'String'>
+  readonly amount_owed: Prisma.FieldRef<"trip_proposal_guests", 'Decimal'>
+  readonly amount_paid: Prisma.FieldRef<"trip_proposal_guests", 'Decimal'>
+  readonly is_sponsored: Prisma.FieldRef<"trip_proposal_guests", 'Boolean'>
+  readonly payment_group_id: Prisma.FieldRef<"trip_proposal_guests", 'Int'>
+  readonly payment_paid_at: Prisma.FieldRef<"trip_proposal_guests", 'DateTime'>
   readonly created_at: Prisma.FieldRef<"trip_proposal_guests", 'DateTime'>
   readonly updated_at: Prisma.FieldRef<"trip_proposal_guests", 'DateTime'>
 }

@@ -10086,6 +10086,14 @@ export const Trip_proposal_guestsScalarFieldEnum = {
   room_assignment: 'room_assignment',
   rsvp_status: 'rsvp_status',
   rsvp_responded_at: 'rsvp_responded_at',
+  guest_access_token: 'guest_access_token',
+  is_registered: 'is_registered',
+  payment_status: 'payment_status',
+  amount_owed: 'amount_owed',
+  amount_paid: 'amount_paid',
+  is_sponsored: 'is_sponsored',
+  payment_group_id: 'payment_group_id',
+  payment_paid_at: 'payment_paid_at',
   created_at: 'created_at',
   updated_at: 'updated_at'
 } as const
@@ -10195,7 +10203,17 @@ export const Trip_proposalsScalarFieldEnum = {
   sent_at: 'sent_at',
   created_by: 'created_by',
   created_at: 'created_at',
-  updated_at: 'updated_at'
+  updated_at: 'updated_at',
+  max_guests: 'max_guests',
+  min_guests: 'min_guests',
+  min_guests_deadline: 'min_guests_deadline',
+  dynamic_pricing_enabled: 'dynamic_pricing_enabled',
+  guest_approval_required: 'guest_approval_required',
+  show_guest_count_to_guests: 'show_guest_count_to_guests',
+  individual_billing_enabled: 'individual_billing_enabled',
+  payment_deadline: 'payment_deadline',
+  registration_deposit_amount: 'registration_deposit_amount',
+  registration_deposit_type: 'registration_deposit_type'
 } as const
 
 export type Trip_proposalsScalarFieldEnum = (typeof Trip_proposalsScalarFieldEnum)[keyof typeof Trip_proposalsScalarFieldEnum]
