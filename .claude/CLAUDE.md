@@ -1,3 +1,5 @@
+**Read MISSION.md before every task.** It defines why we build and what matters most.
+
 # Walla Walla Ecosystem - Claude Code Master Context
 
 ## 🎯 CONTENT PHILOSOPHY: ACCURACY AS COMPETITIVE ADVANTAGE
