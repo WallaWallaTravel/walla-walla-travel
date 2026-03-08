@@ -10148,6 +10148,8 @@ export type Trip_proposal_stopsScalarFieldEnum = (typeof Trip_proposal_stopsScal
 export const Trip_proposalsScalarFieldEnum = {
   id: 'id',
   proposal_number: 'proposal_number',
+  access_token: 'access_token',
+  planning_phase: 'planning_phase',
   status: 'status',
   customer_name: 'customer_name',
   customer_email: 'customer_email',

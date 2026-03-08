@@ -148,7 +148,7 @@ export async function getCalendarData(
         b.id,
         b.booking_number,
         b.tour_date,
-        b.pickup_time as start_time,
+        b.start_time as start_time,
         b.party_size,
         b.status,
         b.vehicle_id,
@@ -165,7 +165,7 @@ export async function getCalendarData(
       LEFT JOIN vehicles v ON b.vehicle_id = v.id
       LEFT JOIN users d ON b.driver_id = d.id
       WHERE b.tour_date >= ${new Date(startDate)} AND b.tour_date <= ${new Date(endDate)}
-      ORDER BY b.tour_date, b.pickup_time
+      ORDER BY b.tour_date, b.start_time
     `
 
     // Availability blocks — @@ignore model, must use $queryRaw

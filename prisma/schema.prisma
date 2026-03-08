@@ -4688,6 +4688,8 @@ model trip_proposal_stops {
 model trip_proposals {
   id                                                   Int                        @id @default(autoincrement())
   proposal_number                                      String                     @unique @db.VarChar(30)
+  access_token                                         String                     @db.VarChar(128)
+  planning_phase                                       String?                    @default("proposal") @db.VarChar(30)
   status                                               String?                    @default("draft") @db.VarChar(30)
   customer_name                                        String                     @db.VarChar(255)
   customer_email                                       String?                    @db.VarChar(255)

@@ -74,6 +74,8 @@ export type Trip_proposalsSumAggregateOutputType = {
 export type Trip_proposalsMinAggregateOutputType = {
   id: number | null
   proposal_number: string | null
+  access_token: string | null
+  planning_phase: string | null
   status: string | null
   customer_name: string | null
   customer_email: string | null
@@ -125,6 +127,8 @@ export type Trip_proposalsMinAggregateOutputType = {
 export type Trip_proposalsMaxAggregateOutputType = {
   id: number | null
   proposal_number: string | null
+  access_token: string | null
+  planning_phase: string | null
   status: string | null
   customer_name: string | null
   customer_email: string | null
@@ -176,6 +180,8 @@ export type Trip_proposalsMaxAggregateOutputType = {
 export type Trip_proposalsCountAggregateOutputType = {
   id: number
   proposal_number: number
+  access_token: number
+  planning_phase: number
   status: number
   customer_name: number
   customer_email: number
@@ -275,6 +281,8 @@ export type Trip_proposalsSumAggregateInputType = {
 export type Trip_proposalsMinAggregateInputType = {
   id?: true
   proposal_number?: true
+  access_token?: true
+  planning_phase?: true
   status?: true
   customer_name?: true
   customer_email?: true
@@ -326,6 +334,8 @@ export type Trip_proposalsMinAggregateInputType = {
 export type Trip_proposalsMaxAggregateInputType = {
   id?: true
   proposal_number?: true
+  access_token?: true
+  planning_phase?: true
   status?: true
   customer_name?: true
   customer_email?: true
@@ -377,6 +387,8 @@ export type Trip_proposalsMaxAggregateInputType = {
 export type Trip_proposalsCountAggregateInputType = {
   id?: true
   proposal_number?: true
+  access_token?: true
+  planning_phase?: true
   status?: true
   customer_name?: true
   customer_email?: true
@@ -515,6 +527,8 @@ export type trip_proposalsGroupByArgs<ExtArgs extends runtime.Types.Extensions.I
 export type Trip_proposalsGroupByOutputType = {
   id: number
   proposal_number: string
+  access_token: string
+  planning_phase: string | null
   status: string | null
   customer_name: string
   customer_email: string | null
@@ -589,6 +603,8 @@ export type trip_proposalsWhereInput = {
   NOT?: Prisma.trip_proposalsWhereInput | Prisma.trip_proposalsWhereInput[]
   id?: Prisma.IntFilter<"trip_proposals"> | number
   proposal_number?: Prisma.StringFilter<"trip_proposals"> | string
+  access_token?: Prisma.StringFilter<"trip_proposals"> | string
+  planning_phase?: Prisma.StringNullableFilter<"trip_proposals"> | string | null
   status?: Prisma.StringNullableFilter<"trip_proposals"> | string | null
   customer_name?: Prisma.StringFilter<"trip_proposals"> | string
   customer_email?: Prisma.StringNullableFilter<"trip_proposals"> | string | null
@@ -651,6 +667,8 @@ export type trip_proposalsWhereInput = {
 export type trip_proposalsOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   proposal_number?: Prisma.SortOrder
+  access_token?: Prisma.SortOrder
+  planning_phase?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrderInput | Prisma.SortOrder
   customer_name?: Prisma.SortOrder
   customer_email?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -716,6 +734,8 @@ export type trip_proposalsWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.trip_proposalsWhereInput | Prisma.trip_proposalsWhereInput[]
   OR?: Prisma.trip_proposalsWhereInput[]
   NOT?: Prisma.trip_proposalsWhereInput | Prisma.trip_proposalsWhereInput[]
+  access_token?: Prisma.StringFilter<"trip_proposals"> | string
+  planning_phase?: Prisma.StringNullableFilter<"trip_proposals"> | string | null
   status?: Prisma.StringNullableFilter<"trip_proposals"> | string | null
   customer_name?: Prisma.StringFilter<"trip_proposals"> | string
   customer_email?: Prisma.StringNullableFilter<"trip_proposals"> | string | null
@@ -778,6 +798,8 @@ export type trip_proposalsWhereUniqueInput = Prisma.AtLeast<{
 export type trip_proposalsOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   proposal_number?: Prisma.SortOrder
+  access_token?: Prisma.SortOrder
+  planning_phase?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrderInput | Prisma.SortOrder
   customer_name?: Prisma.SortOrder
   customer_email?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -837,6 +859,8 @@ export type trip_proposalsScalarWhereWithAggregatesInput = {
   NOT?: Prisma.trip_proposalsScalarWhereWithAggregatesInput | Prisma.trip_proposalsScalarWhereWithAggregatesInput[]
   id?: Prisma.IntWithAggregatesFilter<"trip_proposals"> | number
   proposal_number?: Prisma.StringWithAggregatesFilter<"trip_proposals"> | string
+  access_token?: Prisma.StringWithAggregatesFilter<"trip_proposals"> | string
+  planning_phase?: Prisma.StringNullableWithAggregatesFilter<"trip_proposals"> | string | null
   status?: Prisma.StringNullableWithAggregatesFilter<"trip_proposals"> | string | null
   customer_name?: Prisma.StringWithAggregatesFilter<"trip_proposals"> | string
   customer_email?: Prisma.StringNullableWithAggregatesFilter<"trip_proposals"> | string | null
@@ -887,6 +911,8 @@ export type trip_proposalsScalarWhereWithAggregatesInput = {
 
 export type trip_proposalsCreateInput = {
   proposal_number: string
+  access_token: string
+  planning_phase?: string | null
   status?: string | null
   customer_name: string
   customer_email?: string | null
@@ -943,6 +969,8 @@ export type trip_proposalsCreateInput = {
 export type trip_proposalsUncheckedCreateInput = {
   id?: number
   proposal_number: string
+  access_token: string
+  planning_phase?: string | null
   status?: string | null
   customer_name: string
   customer_email?: string | null
@@ -998,6 +1026,8 @@ export type trip_proposalsUncheckedCreateInput = {
 
 export type trip_proposalsUpdateInput = {
   proposal_number?: Prisma.StringFieldUpdateOperationsInput | string
+  access_token?: Prisma.StringFieldUpdateOperationsInput | string
+  planning_phase?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customer_name?: Prisma.StringFieldUpdateOperationsInput | string
   customer_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1054,6 +1084,8 @@ export type trip_proposalsUpdateInput = {
 export type trip_proposalsUncheckedUpdateInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   proposal_number?: Prisma.StringFieldUpdateOperationsInput | string
+  access_token?: Prisma.StringFieldUpdateOperationsInput | string
+  planning_phase?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customer_name?: Prisma.StringFieldUpdateOperationsInput | string
   customer_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1110,6 +1142,8 @@ export type trip_proposalsUncheckedUpdateInput = {
 export type trip_proposalsCreateManyInput = {
   id?: number
   proposal_number: string
+  access_token: string
+  planning_phase?: string | null
   status?: string | null
   customer_name: string
   customer_email?: string | null
@@ -1160,6 +1194,8 @@ export type trip_proposalsCreateManyInput = {
 
 export type trip_proposalsUpdateManyMutationInput = {
   proposal_number?: Prisma.StringFieldUpdateOperationsInput | string
+  access_token?: Prisma.StringFieldUpdateOperationsInput | string
+  planning_phase?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customer_name?: Prisma.StringFieldUpdateOperationsInput | string
   customer_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1205,6 +1241,8 @@ export type trip_proposalsUpdateManyMutationInput = {
 export type trip_proposalsUncheckedUpdateManyInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   proposal_number?: Prisma.StringFieldUpdateOperationsInput | string
+  access_token?: Prisma.StringFieldUpdateOperationsInput | string
+  planning_phase?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customer_name?: Prisma.StringFieldUpdateOperationsInput | string
   customer_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1276,6 +1314,8 @@ export type Trip_proposalsScalarRelationFilter = {
 export type trip_proposalsCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   proposal_number?: Prisma.SortOrder
+  access_token?: Prisma.SortOrder
+  planning_phase?: Prisma.SortOrder
   status?: Prisma.SortOrder
   customer_name?: Prisma.SortOrder
   customer_email?: Prisma.SortOrder
@@ -1350,6 +1390,8 @@ export type trip_proposalsAvgOrderByAggregateInput = {
 export type trip_proposalsMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   proposal_number?: Prisma.SortOrder
+  access_token?: Prisma.SortOrder
+  planning_phase?: Prisma.SortOrder
   status?: Prisma.SortOrder
   customer_name?: Prisma.SortOrder
   customer_email?: Prisma.SortOrder
@@ -1401,6 +1443,8 @@ export type trip_proposalsMaxOrderByAggregateInput = {
 export type trip_proposalsMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   proposal_number?: Prisma.SortOrder
+  access_token?: Prisma.SortOrder
+  planning_phase?: Prisma.SortOrder
   status?: Prisma.SortOrder
   customer_name?: Prisma.SortOrder
   customer_email?: Prisma.SortOrder
@@ -1798,6 +1842,8 @@ export type trip_proposalsUpdateOneRequiredWithoutTrip_proposal_inclusionsNested
 
 export type trip_proposalsCreateWithoutBookingsInput = {
   proposal_number: string
+  access_token: string
+  planning_phase?: string | null
   status?: string | null
   customer_name: string
   customer_email?: string | null
@@ -1853,6 +1899,8 @@ export type trip_proposalsCreateWithoutBookingsInput = {
 export type trip_proposalsUncheckedCreateWithoutBookingsInput = {
   id?: number
   proposal_number: string
+  access_token: string
+  planning_phase?: string | null
   status?: string | null
   customer_name: string
   customer_email?: string | null
@@ -1937,6 +1985,8 @@ export type trip_proposalsScalarWhereInput = {
   NOT?: Prisma.trip_proposalsScalarWhereInput | Prisma.trip_proposalsScalarWhereInput[]
   id?: Prisma.IntFilter<"trip_proposals"> | number
   proposal_number?: Prisma.StringFilter<"trip_proposals"> | string
+  access_token?: Prisma.StringFilter<"trip_proposals"> | string
+  planning_phase?: Prisma.StringNullableFilter<"trip_proposals"> | string | null
   status?: Prisma.StringNullableFilter<"trip_proposals"> | string | null
   customer_name?: Prisma.StringFilter<"trip_proposals"> | string
   customer_email?: Prisma.StringNullableFilter<"trip_proposals"> | string | null
@@ -1987,6 +2037,8 @@ export type trip_proposalsScalarWhereInput = {
 
 export type trip_proposalsCreateWithoutBrandsInput = {
   proposal_number: string
+  access_token: string
+  planning_phase?: string | null
   status?: string | null
   customer_name: string
   customer_email?: string | null
@@ -2042,6 +2094,8 @@ export type trip_proposalsCreateWithoutBrandsInput = {
 export type trip_proposalsUncheckedCreateWithoutBrandsInput = {
   id?: number
   proposal_number: string
+  access_token: string
+  planning_phase?: string | null
   status?: string | null
   customer_name: string
   customer_email?: string | null
@@ -2122,6 +2176,8 @@ export type trip_proposalsUpdateManyWithWhereWithoutBrandsInput = {
 
 export type trip_proposalsCreateWithoutCustomersInput = {
   proposal_number: string
+  access_token: string
+  planning_phase?: string | null
   status?: string | null
   customer_name: string
   customer_email?: string | null
@@ -2177,6 +2233,8 @@ export type trip_proposalsCreateWithoutCustomersInput = {
 export type trip_proposalsUncheckedCreateWithoutCustomersInput = {
   id?: number
   proposal_number: string
+  access_token: string
+  planning_phase?: string | null
   status?: string | null
   customer_name: string
   customer_email?: string | null
@@ -2257,6 +2315,8 @@ export type trip_proposalsUpdateManyWithWhereWithoutCustomersInput = {
 
 export type trip_proposalsCreateWithoutPayments_trip_proposals_balance_payment_idTopaymentsInput = {
   proposal_number: string
+  access_token: string
+  planning_phase?: string | null
   status?: string | null
   customer_name: string
   customer_email?: string | null
@@ -2312,6 +2372,8 @@ export type trip_proposalsCreateWithoutPayments_trip_proposals_balance_payment_i
 export type trip_proposalsUncheckedCreateWithoutPayments_trip_proposals_balance_payment_idTopaymentsInput = {
   id?: number
   proposal_number: string
+  access_token: string
+  planning_phase?: string | null
   status?: string | null
   customer_name: string
   customer_email?: string | null
@@ -2376,6 +2438,8 @@ export type trip_proposalsCreateManyPayments_trip_proposals_balance_payment_idTo
 
 export type trip_proposalsCreateWithoutPayments_trip_proposals_deposit_payment_idTopaymentsInput = {
   proposal_number: string
+  access_token: string
+  planning_phase?: string | null
   status?: string | null
   customer_name: string
   customer_email?: string | null
@@ -2431,6 +2495,8 @@ export type trip_proposalsCreateWithoutPayments_trip_proposals_deposit_payment_i
 export type trip_proposalsUncheckedCreateWithoutPayments_trip_proposals_deposit_payment_idTopaymentsInput = {
   id?: number
   proposal_number: string
+  access_token: string
+  planning_phase?: string | null
   status?: string | null
   customer_name: string
   customer_email?: string | null
@@ -2527,6 +2593,8 @@ export type trip_proposalsUpdateManyWithWhereWithoutPayments_trip_proposals_depo
 
 export type trip_proposalsCreateWithoutUsersInput = {
   proposal_number: string
+  access_token: string
+  planning_phase?: string | null
   status?: string | null
   customer_name: string
   customer_email?: string | null
@@ -2582,6 +2650,8 @@ export type trip_proposalsCreateWithoutUsersInput = {
 export type trip_proposalsUncheckedCreateWithoutUsersInput = {
   id?: number
   proposal_number: string
+  access_token: string
+  planning_phase?: string | null
   status?: string | null
   customer_name: string
   customer_email?: string | null
@@ -2662,6 +2732,8 @@ export type trip_proposalsUpdateManyWithWhereWithoutUsersInput = {
 
 export type trip_proposalsCreateWithoutTrip_estimatesInput = {
   proposal_number: string
+  access_token: string
+  planning_phase?: string | null
   status?: string | null
   customer_name: string
   customer_email?: string | null
@@ -2717,6 +2789,8 @@ export type trip_proposalsCreateWithoutTrip_estimatesInput = {
 export type trip_proposalsUncheckedCreateWithoutTrip_estimatesInput = {
   id?: number
   proposal_number: string
+  access_token: string
+  planning_phase?: string | null
   status?: string | null
   customer_name: string
   customer_email?: string | null
@@ -2787,6 +2861,8 @@ export type trip_proposalsUpdateToOneWithWhereWithoutTrip_estimatesInput = {
 
 export type trip_proposalsUpdateWithoutTrip_estimatesInput = {
   proposal_number?: Prisma.StringFieldUpdateOperationsInput | string
+  access_token?: Prisma.StringFieldUpdateOperationsInput | string
+  planning_phase?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customer_name?: Prisma.StringFieldUpdateOperationsInput | string
   customer_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2842,6 +2918,8 @@ export type trip_proposalsUpdateWithoutTrip_estimatesInput = {
 export type trip_proposalsUncheckedUpdateWithoutTrip_estimatesInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   proposal_number?: Prisma.StringFieldUpdateOperationsInput | string
+  access_token?: Prisma.StringFieldUpdateOperationsInput | string
+  planning_phase?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customer_name?: Prisma.StringFieldUpdateOperationsInput | string
   customer_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2896,6 +2974,8 @@ export type trip_proposalsUncheckedUpdateWithoutTrip_estimatesInput = {
 
 export type trip_proposalsCreateWithoutTrip_proposal_activityInput = {
   proposal_number: string
+  access_token: string
+  planning_phase?: string | null
   status?: string | null
   customer_name: string
   customer_email?: string | null
@@ -2951,6 +3031,8 @@ export type trip_proposalsCreateWithoutTrip_proposal_activityInput = {
 export type trip_proposalsUncheckedCreateWithoutTrip_proposal_activityInput = {
   id?: number
   proposal_number: string
+  access_token: string
+  planning_phase?: string | null
   status?: string | null
   customer_name: string
   customer_email?: string | null
@@ -3021,6 +3103,8 @@ export type trip_proposalsUpdateToOneWithWhereWithoutTrip_proposal_activityInput
 
 export type trip_proposalsUpdateWithoutTrip_proposal_activityInput = {
   proposal_number?: Prisma.StringFieldUpdateOperationsInput | string
+  access_token?: Prisma.StringFieldUpdateOperationsInput | string
+  planning_phase?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customer_name?: Prisma.StringFieldUpdateOperationsInput | string
   customer_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3076,6 +3160,8 @@ export type trip_proposalsUpdateWithoutTrip_proposal_activityInput = {
 export type trip_proposalsUncheckedUpdateWithoutTrip_proposal_activityInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   proposal_number?: Prisma.StringFieldUpdateOperationsInput | string
+  access_token?: Prisma.StringFieldUpdateOperationsInput | string
+  planning_phase?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customer_name?: Prisma.StringFieldUpdateOperationsInput | string
   customer_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3130,6 +3216,8 @@ export type trip_proposalsUncheckedUpdateWithoutTrip_proposal_activityInput = {
 
 export type trip_proposalsCreateWithoutTrip_proposal_daysInput = {
   proposal_number: string
+  access_token: string
+  planning_phase?: string | null
   status?: string | null
   customer_name: string
   customer_email?: string | null
@@ -3185,6 +3273,8 @@ export type trip_proposalsCreateWithoutTrip_proposal_daysInput = {
 export type trip_proposalsUncheckedCreateWithoutTrip_proposal_daysInput = {
   id?: number
   proposal_number: string
+  access_token: string
+  planning_phase?: string | null
   status?: string | null
   customer_name: string
   customer_email?: string | null
@@ -3255,6 +3345,8 @@ export type trip_proposalsUpdateToOneWithWhereWithoutTrip_proposal_daysInput = {
 
 export type trip_proposalsUpdateWithoutTrip_proposal_daysInput = {
   proposal_number?: Prisma.StringFieldUpdateOperationsInput | string
+  access_token?: Prisma.StringFieldUpdateOperationsInput | string
+  planning_phase?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customer_name?: Prisma.StringFieldUpdateOperationsInput | string
   customer_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3310,6 +3402,8 @@ export type trip_proposalsUpdateWithoutTrip_proposal_daysInput = {
 export type trip_proposalsUncheckedUpdateWithoutTrip_proposal_daysInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   proposal_number?: Prisma.StringFieldUpdateOperationsInput | string
+  access_token?: Prisma.StringFieldUpdateOperationsInput | string
+  planning_phase?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customer_name?: Prisma.StringFieldUpdateOperationsInput | string
   customer_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3364,6 +3458,8 @@ export type trip_proposalsUncheckedUpdateWithoutTrip_proposal_daysInput = {
 
 export type trip_proposalsCreateWithoutTrip_proposal_guestsInput = {
   proposal_number: string
+  access_token: string
+  planning_phase?: string | null
   status?: string | null
   customer_name: string
   customer_email?: string | null
@@ -3419,6 +3515,8 @@ export type trip_proposalsCreateWithoutTrip_proposal_guestsInput = {
 export type trip_proposalsUncheckedCreateWithoutTrip_proposal_guestsInput = {
   id?: number
   proposal_number: string
+  access_token: string
+  planning_phase?: string | null
   status?: string | null
   customer_name: string
   customer_email?: string | null
@@ -3489,6 +3587,8 @@ export type trip_proposalsUpdateToOneWithWhereWithoutTrip_proposal_guestsInput =
 
 export type trip_proposalsUpdateWithoutTrip_proposal_guestsInput = {
   proposal_number?: Prisma.StringFieldUpdateOperationsInput | string
+  access_token?: Prisma.StringFieldUpdateOperationsInput | string
+  planning_phase?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customer_name?: Prisma.StringFieldUpdateOperationsInput | string
   customer_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3544,6 +3644,8 @@ export type trip_proposalsUpdateWithoutTrip_proposal_guestsInput = {
 export type trip_proposalsUncheckedUpdateWithoutTrip_proposal_guestsInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   proposal_number?: Prisma.StringFieldUpdateOperationsInput | string
+  access_token?: Prisma.StringFieldUpdateOperationsInput | string
+  planning_phase?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customer_name?: Prisma.StringFieldUpdateOperationsInput | string
   customer_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3598,6 +3700,8 @@ export type trip_proposalsUncheckedUpdateWithoutTrip_proposal_guestsInput = {
 
 export type trip_proposalsCreateWithoutTrip_proposal_inclusionsInput = {
   proposal_number: string
+  access_token: string
+  planning_phase?: string | null
   status?: string | null
   customer_name: string
   customer_email?: string | null
@@ -3653,6 +3757,8 @@ export type trip_proposalsCreateWithoutTrip_proposal_inclusionsInput = {
 export type trip_proposalsUncheckedCreateWithoutTrip_proposal_inclusionsInput = {
   id?: number
   proposal_number: string
+  access_token: string
+  planning_phase?: string | null
   status?: string | null
   customer_name: string
   customer_email?: string | null
@@ -3723,6 +3829,8 @@ export type trip_proposalsUpdateToOneWithWhereWithoutTrip_proposal_inclusionsInp
 
 export type trip_proposalsUpdateWithoutTrip_proposal_inclusionsInput = {
   proposal_number?: Prisma.StringFieldUpdateOperationsInput | string
+  access_token?: Prisma.StringFieldUpdateOperationsInput | string
+  planning_phase?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customer_name?: Prisma.StringFieldUpdateOperationsInput | string
   customer_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3778,6 +3886,8 @@ export type trip_proposalsUpdateWithoutTrip_proposal_inclusionsInput = {
 export type trip_proposalsUncheckedUpdateWithoutTrip_proposal_inclusionsInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   proposal_number?: Prisma.StringFieldUpdateOperationsInput | string
+  access_token?: Prisma.StringFieldUpdateOperationsInput | string
+  planning_phase?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customer_name?: Prisma.StringFieldUpdateOperationsInput | string
   customer_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3833,6 +3943,8 @@ export type trip_proposalsUncheckedUpdateWithoutTrip_proposal_inclusionsInput = 
 export type trip_proposalsCreateManyBookingsInput = {
   id?: number
   proposal_number: string
+  access_token: string
+  planning_phase?: string | null
   status?: string | null
   customer_name: string
   customer_email?: string | null
@@ -3882,6 +3994,8 @@ export type trip_proposalsCreateManyBookingsInput = {
 
 export type trip_proposalsUpdateWithoutBookingsInput = {
   proposal_number?: Prisma.StringFieldUpdateOperationsInput | string
+  access_token?: Prisma.StringFieldUpdateOperationsInput | string
+  planning_phase?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customer_name?: Prisma.StringFieldUpdateOperationsInput | string
   customer_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3937,6 +4051,8 @@ export type trip_proposalsUpdateWithoutBookingsInput = {
 export type trip_proposalsUncheckedUpdateWithoutBookingsInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   proposal_number?: Prisma.StringFieldUpdateOperationsInput | string
+  access_token?: Prisma.StringFieldUpdateOperationsInput | string
+  planning_phase?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customer_name?: Prisma.StringFieldUpdateOperationsInput | string
   customer_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3992,6 +4108,8 @@ export type trip_proposalsUncheckedUpdateWithoutBookingsInput = {
 export type trip_proposalsUncheckedUpdateManyWithoutBookingsInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   proposal_number?: Prisma.StringFieldUpdateOperationsInput | string
+  access_token?: Prisma.StringFieldUpdateOperationsInput | string
+  planning_phase?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customer_name?: Prisma.StringFieldUpdateOperationsInput | string
   customer_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4042,6 +4160,8 @@ export type trip_proposalsUncheckedUpdateManyWithoutBookingsInput = {
 export type trip_proposalsCreateManyBrandsInput = {
   id?: number
   proposal_number: string
+  access_token: string
+  planning_phase?: string | null
   status?: string | null
   customer_name: string
   customer_email?: string | null
@@ -4091,6 +4211,8 @@ export type trip_proposalsCreateManyBrandsInput = {
 
 export type trip_proposalsUpdateWithoutBrandsInput = {
   proposal_number?: Prisma.StringFieldUpdateOperationsInput | string
+  access_token?: Prisma.StringFieldUpdateOperationsInput | string
+  planning_phase?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customer_name?: Prisma.StringFieldUpdateOperationsInput | string
   customer_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4146,6 +4268,8 @@ export type trip_proposalsUpdateWithoutBrandsInput = {
 export type trip_proposalsUncheckedUpdateWithoutBrandsInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   proposal_number?: Prisma.StringFieldUpdateOperationsInput | string
+  access_token?: Prisma.StringFieldUpdateOperationsInput | string
+  planning_phase?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customer_name?: Prisma.StringFieldUpdateOperationsInput | string
   customer_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4201,6 +4325,8 @@ export type trip_proposalsUncheckedUpdateWithoutBrandsInput = {
 export type trip_proposalsUncheckedUpdateManyWithoutBrandsInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   proposal_number?: Prisma.StringFieldUpdateOperationsInput | string
+  access_token?: Prisma.StringFieldUpdateOperationsInput | string
+  planning_phase?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customer_name?: Prisma.StringFieldUpdateOperationsInput | string
   customer_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4251,6 +4377,8 @@ export type trip_proposalsUncheckedUpdateManyWithoutBrandsInput = {
 export type trip_proposalsCreateManyCustomersInput = {
   id?: number
   proposal_number: string
+  access_token: string
+  planning_phase?: string | null
   status?: string | null
   customer_name: string
   customer_email?: string | null
@@ -4300,6 +4428,8 @@ export type trip_proposalsCreateManyCustomersInput = {
 
 export type trip_proposalsUpdateWithoutCustomersInput = {
   proposal_number?: Prisma.StringFieldUpdateOperationsInput | string
+  access_token?: Prisma.StringFieldUpdateOperationsInput | string
+  planning_phase?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customer_name?: Prisma.StringFieldUpdateOperationsInput | string
   customer_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4355,6 +4485,8 @@ export type trip_proposalsUpdateWithoutCustomersInput = {
 export type trip_proposalsUncheckedUpdateWithoutCustomersInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   proposal_number?: Prisma.StringFieldUpdateOperationsInput | string
+  access_token?: Prisma.StringFieldUpdateOperationsInput | string
+  planning_phase?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customer_name?: Prisma.StringFieldUpdateOperationsInput | string
   customer_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4410,6 +4542,8 @@ export type trip_proposalsUncheckedUpdateWithoutCustomersInput = {
 export type trip_proposalsUncheckedUpdateManyWithoutCustomersInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   proposal_number?: Prisma.StringFieldUpdateOperationsInput | string
+  access_token?: Prisma.StringFieldUpdateOperationsInput | string
+  planning_phase?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customer_name?: Prisma.StringFieldUpdateOperationsInput | string
   customer_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4460,6 +4594,8 @@ export type trip_proposalsUncheckedUpdateManyWithoutCustomersInput = {
 export type trip_proposalsCreateManyPayments_trip_proposals_balance_payment_idTopaymentsInput = {
   id?: number
   proposal_number: string
+  access_token: string
+  planning_phase?: string | null
   status?: string | null
   customer_name: string
   customer_email?: string | null
@@ -4510,6 +4646,8 @@ export type trip_proposalsCreateManyPayments_trip_proposals_balance_payment_idTo
 export type trip_proposalsCreateManyPayments_trip_proposals_deposit_payment_idTopaymentsInput = {
   id?: number
   proposal_number: string
+  access_token: string
+  planning_phase?: string | null
   status?: string | null
   customer_name: string
   customer_email?: string | null
@@ -4559,6 +4697,8 @@ export type trip_proposalsCreateManyPayments_trip_proposals_deposit_payment_idTo
 
 export type trip_proposalsUpdateWithoutPayments_trip_proposals_balance_payment_idTopaymentsInput = {
   proposal_number?: Prisma.StringFieldUpdateOperationsInput | string
+  access_token?: Prisma.StringFieldUpdateOperationsInput | string
+  planning_phase?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customer_name?: Prisma.StringFieldUpdateOperationsInput | string
   customer_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4614,6 +4754,8 @@ export type trip_proposalsUpdateWithoutPayments_trip_proposals_balance_payment_i
 export type trip_proposalsUncheckedUpdateWithoutPayments_trip_proposals_balance_payment_idTopaymentsInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   proposal_number?: Prisma.StringFieldUpdateOperationsInput | string
+  access_token?: Prisma.StringFieldUpdateOperationsInput | string
+  planning_phase?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customer_name?: Prisma.StringFieldUpdateOperationsInput | string
   customer_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4669,6 +4811,8 @@ export type trip_proposalsUncheckedUpdateWithoutPayments_trip_proposals_balance_
 export type trip_proposalsUncheckedUpdateManyWithoutPayments_trip_proposals_balance_payment_idTopaymentsInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   proposal_number?: Prisma.StringFieldUpdateOperationsInput | string
+  access_token?: Prisma.StringFieldUpdateOperationsInput | string
+  planning_phase?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customer_name?: Prisma.StringFieldUpdateOperationsInput | string
   customer_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4718,6 +4862,8 @@ export type trip_proposalsUncheckedUpdateManyWithoutPayments_trip_proposals_bala
 
 export type trip_proposalsUpdateWithoutPayments_trip_proposals_deposit_payment_idTopaymentsInput = {
   proposal_number?: Prisma.StringFieldUpdateOperationsInput | string
+  access_token?: Prisma.StringFieldUpdateOperationsInput | string
+  planning_phase?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customer_name?: Prisma.StringFieldUpdateOperationsInput | string
   customer_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4773,6 +4919,8 @@ export type trip_proposalsUpdateWithoutPayments_trip_proposals_deposit_payment_i
 export type trip_proposalsUncheckedUpdateWithoutPayments_trip_proposals_deposit_payment_idTopaymentsInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   proposal_number?: Prisma.StringFieldUpdateOperationsInput | string
+  access_token?: Prisma.StringFieldUpdateOperationsInput | string
+  planning_phase?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customer_name?: Prisma.StringFieldUpdateOperationsInput | string
   customer_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4828,6 +4976,8 @@ export type trip_proposalsUncheckedUpdateWithoutPayments_trip_proposals_deposit_
 export type trip_proposalsUncheckedUpdateManyWithoutPayments_trip_proposals_deposit_payment_idTopaymentsInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   proposal_number?: Prisma.StringFieldUpdateOperationsInput | string
+  access_token?: Prisma.StringFieldUpdateOperationsInput | string
+  planning_phase?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customer_name?: Prisma.StringFieldUpdateOperationsInput | string
   customer_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4878,6 +5028,8 @@ export type trip_proposalsUncheckedUpdateManyWithoutPayments_trip_proposals_depo
 export type trip_proposalsCreateManyUsersInput = {
   id?: number
   proposal_number: string
+  access_token: string
+  planning_phase?: string | null
   status?: string | null
   customer_name: string
   customer_email?: string | null
@@ -4927,6 +5079,8 @@ export type trip_proposalsCreateManyUsersInput = {
 
 export type trip_proposalsUpdateWithoutUsersInput = {
   proposal_number?: Prisma.StringFieldUpdateOperationsInput | string
+  access_token?: Prisma.StringFieldUpdateOperationsInput | string
+  planning_phase?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customer_name?: Prisma.StringFieldUpdateOperationsInput | string
   customer_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4982,6 +5136,8 @@ export type trip_proposalsUpdateWithoutUsersInput = {
 export type trip_proposalsUncheckedUpdateWithoutUsersInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   proposal_number?: Prisma.StringFieldUpdateOperationsInput | string
+  access_token?: Prisma.StringFieldUpdateOperationsInput | string
+  planning_phase?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customer_name?: Prisma.StringFieldUpdateOperationsInput | string
   customer_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -5037,6 +5193,8 @@ export type trip_proposalsUncheckedUpdateWithoutUsersInput = {
 export type trip_proposalsUncheckedUpdateManyWithoutUsersInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   proposal_number?: Prisma.StringFieldUpdateOperationsInput | string
+  access_token?: Prisma.StringFieldUpdateOperationsInput | string
+  planning_phase?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   customer_name?: Prisma.StringFieldUpdateOperationsInput | string
   customer_email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -5154,6 +5312,8 @@ export type Trip_proposalsCountOutputTypeCountTrip_proposal_inclusionsArgs<ExtAr
 export type trip_proposalsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   proposal_number?: boolean
+  access_token?: boolean
+  planning_phase?: boolean
   status?: boolean
   customer_name?: boolean
   customer_email?: boolean
@@ -5217,6 +5377,8 @@ export type trip_proposalsSelect<ExtArgs extends runtime.Types.Extensions.Intern
 export type trip_proposalsSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   proposal_number?: boolean
+  access_token?: boolean
+  planning_phase?: boolean
   status?: boolean
   customer_name?: boolean
   customer_email?: boolean
@@ -5274,6 +5436,8 @@ export type trip_proposalsSelectCreateManyAndReturn<ExtArgs extends runtime.Type
 export type trip_proposalsSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   proposal_number?: boolean
+  access_token?: boolean
+  planning_phase?: boolean
   status?: boolean
   customer_name?: boolean
   customer_email?: boolean
@@ -5331,6 +5495,8 @@ export type trip_proposalsSelectUpdateManyAndReturn<ExtArgs extends runtime.Type
 export type trip_proposalsSelectScalar = {
   id?: boolean
   proposal_number?: boolean
+  access_token?: boolean
+  planning_phase?: boolean
   status?: boolean
   customer_name?: boolean
   customer_email?: boolean
@@ -5379,7 +5545,7 @@ export type trip_proposalsSelectScalar = {
   updated_at?: boolean
 }
 
-export type trip_proposalsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "proposal_number" | "status" | "customer_name" | "customer_email" | "customer_phone" | "customer_company" | "customer_id" | "trip_type" | "trip_title" | "party_size" | "start_date" | "end_date" | "subtotal" | "discount_amount" | "discount_percentage" | "discount_reason" | "taxes" | "tax_rate" | "gratuity_percentage" | "gratuity_amount" | "total" | "deposit_percentage" | "deposit_amount" | "deposit_paid" | "deposit_paid_at" | "deposit_payment_id" | "balance_due" | "balance_paid" | "balance_paid_at" | "balance_payment_id" | "valid_until" | "brand_id" | "introduction" | "special_notes" | "internal_notes" | "converted_to_booking_id" | "converted_at" | "first_viewed_at" | "last_viewed_at" | "view_count" | "accepted_at" | "accepted_signature" | "accepted_ip" | "sent_at" | "created_by" | "created_at" | "updated_at", ExtArgs["result"]["trip_proposals"]>
+export type trip_proposalsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "proposal_number" | "access_token" | "planning_phase" | "status" | "customer_name" | "customer_email" | "customer_phone" | "customer_company" | "customer_id" | "trip_type" | "trip_title" | "party_size" | "start_date" | "end_date" | "subtotal" | "discount_amount" | "discount_percentage" | "discount_reason" | "taxes" | "tax_rate" | "gratuity_percentage" | "gratuity_amount" | "total" | "deposit_percentage" | "deposit_amount" | "deposit_paid" | "deposit_paid_at" | "deposit_payment_id" | "balance_due" | "balance_paid" | "balance_paid_at" | "balance_payment_id" | "valid_until" | "brand_id" | "introduction" | "special_notes" | "internal_notes" | "converted_to_booking_id" | "converted_at" | "first_viewed_at" | "last_viewed_at" | "view_count" | "accepted_at" | "accepted_signature" | "accepted_ip" | "sent_at" | "created_by" | "created_at" | "updated_at", ExtArgs["result"]["trip_proposals"]>
 export type trip_proposalsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   trip_estimates?: boolean | Prisma.trip_proposals$trip_estimatesArgs<ExtArgs>
   trip_proposal_activity?: boolean | Prisma.trip_proposals$trip_proposal_activityArgs<ExtArgs>
@@ -5429,6 +5595,8 @@ export type $trip_proposalsPayload<ExtArgs extends runtime.Types.Extensions.Inte
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: number
     proposal_number: string
+    access_token: string
+    planning_phase: string | null
     status: string | null
     customer_name: string
     customer_email: string | null
@@ -5911,6 +6079,8 @@ export interface Prisma__trip_proposalsClient<T, Null = never, ExtArgs extends r
 export interface trip_proposalsFieldRefs {
   readonly id: Prisma.FieldRef<"trip_proposals", 'Int'>
   readonly proposal_number: Prisma.FieldRef<"trip_proposals", 'String'>
+  readonly access_token: Prisma.FieldRef<"trip_proposals", 'String'>
+  readonly planning_phase: Prisma.FieldRef<"trip_proposals", 'String'>
   readonly status: Prisma.FieldRef<"trip_proposals", 'String'>
   readonly customer_name: Prisma.FieldRef<"trip_proposals", 'String'>
   readonly customer_email: Prisma.FieldRef<"trip_proposals", 'String'>

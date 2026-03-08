@@ -3,6 +3,7 @@
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@/lib/generated/prisma/client'
+import { generateSecureString } from '@/lib/utils'
 import {
   CreateProposalSchema,
   UpdateProposalDetailsSchema,
@@ -96,9 +97,12 @@ export async function createProposal(
       validUntil = d
     }
 
+    const accessToken = generateSecureString(64)
+
     const proposal = await prisma.trip_proposals.create({
       data: {
         proposal_number: proposalNumber,
+        access_token: accessToken,
         status: 'draft',
         customer_name: v.customer_name,
         customer_email: v.customer_email || null,
