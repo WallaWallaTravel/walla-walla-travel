@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
-import { auth } from '@/auth';
+import { getSession } from '@/lib/auth/session';
 import { eventOrganizerService } from '@/lib/services/event-organizer.service';
 import { updateOrganizerProfileSchema } from '@/lib/validation/schemas/events';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const GET = withErrorHandling(async () => {
-  const session = await auth();
+  const session = await getSession();
   if (!session || (session.user.role !== 'organizer' && session.user.role !== 'admin')) {
     return NextResponse.json(
       { success: false, error: 'Unauthorized' },
@@ -14,7 +14,7 @@ export const GET = withErrorHandling(async () => {
     );
   }
 
-  const organizer = await eventOrganizerService.getByUserId(parseInt(session.user.id));
+  const organizer = await eventOrganizerService.getByUserId(session.user.id);
 
   if (!organizer) {
     return NextResponse.json(
@@ -28,7 +28,7 @@ export const GET = withErrorHandling(async () => {
 
 export const PUT = withCSRF(
   withErrorHandling(async (request: NextRequest) => {
-  const session = await auth();
+  const session = await getSession();
   if (!session || (session.user.role !== 'organizer' && session.user.role !== 'admin')) {
     return NextResponse.json(
       { success: false, error: 'Unauthorized' },
@@ -40,7 +40,7 @@ export const PUT = withCSRF(
   const validated = updateOrganizerProfileSchema.parse(body);
 
   const organizer = await eventOrganizerService.updateProfile(
-    parseInt(session.user.id),
+    session.user.id,
     validated
   );
 

@@ -1,6 +1,6 @@
 'use server'
 
-import { auth } from '@/auth'
+import { getSession } from '@/lib/auth/session'
 import { prisma } from '@/lib/prisma'
 import type { Prisma } from '@/lib/generated/prisma/client'
 import type {
@@ -85,7 +85,7 @@ export type TaskListItem = {
 // ============================================================================
 
 export async function getContacts(filters: ContactFilters) {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { contacts: [], total: 0, stageCounts: {} }
   }
@@ -140,7 +140,7 @@ export async function getContacts(filters: ContactFilters) {
 }
 
 export async function getContactById(contactId: number) {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return null
   }
@@ -183,7 +183,7 @@ export async function getContactById(contactId: number) {
 // ============================================================================
 
 export async function getDeals(filters: DealFilters) {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { deals: [], total: 0, summary: { totalValue: 0, weightedValue: 0, dealCount: 0 } }
   }
@@ -242,7 +242,7 @@ export async function getDeals(filters: DealFilters) {
 }
 
 export async function getDealById(dealId: number) {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return null
   }
@@ -298,7 +298,7 @@ export async function getDealById(dealId: number) {
 // ============================================================================
 
 export async function getTasks(filters: TaskFilters) {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { tasks: [], overdue: 0, dueToday: 0, upcoming: 0 }
   }
@@ -376,7 +376,7 @@ export async function getTasks(filters: TaskFilters) {
 }
 
 export async function getTaskById(taskId: number) {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return null
   }
@@ -397,7 +397,7 @@ export async function getTaskById(taskId: number) {
 // ============================================================================
 
 export async function getPipelineData(templateId?: number, brand?: string) {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { templates: [], stages: [], deals: [], dealTypes: [] }
   }
@@ -482,7 +482,7 @@ export async function getPipelineData(templateId?: number, brand?: string) {
 // ============================================================================
 
 export async function getCrmDashboardStats() {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return null
   }
@@ -577,7 +577,7 @@ export async function getCrmDashboardStats() {
 // ============================================================================
 
 export async function getLeadSourceStats(fromDate?: string, toDate?: string) {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return null
   }

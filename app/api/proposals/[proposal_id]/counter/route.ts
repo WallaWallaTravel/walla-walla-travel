@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { query } from '@/lib/db';
 import { withErrorHandling, BadRequestError, NotFoundError, UnauthorizedError } from '@/lib/api/middleware/error-handler';
-import { auth } from '@/auth';
+import { getSession } from '@/lib/auth/session';
 import { Pool } from 'pg';
 import { getDbConfig } from '@/lib/config/database';
 import { withCSRF } from '@/lib/api/middleware/csrf';
@@ -40,7 +40,7 @@ export const POST = withCSRF(
   const { proposal_id } = await params;
 
   // Check authentication
-  const session = await auth();
+  const session = await getSession();
   if (!session || session.user.role !== 'admin') {
     throw new UnauthorizedError('Unauthorized');
   }
@@ -187,7 +187,7 @@ export const POST = withCSRF(
         `Counter-proposal for ${original.proposal_number}. ${counter_notes || ''}`.trim(),
         validUntil.toISOString().split('T')[0],
         send_immediately ? 'sent' : 'draft',
-        parseInt(session.user.id),
+        session.user.id,
         original.parent_proposal_id || original.id, // Link to root proposal
         nextVersion,
         true,
@@ -210,7 +210,7 @@ export const POST = withCSRF(
           counter_proposal_number: proposalNumber,
           version: nextVersion,
           created_by: session.user.name,
-          created_by_id: parseInt(session.user.id),
+          created_by_id: session.user.id,
           changes_made: counter_notes,
           discount_change: discount_percentage ? `${discount_percentage}%` : null,
           timestamp: new Date().toISOString()
@@ -377,7 +377,7 @@ export const GET = withErrorHandling(async (
   const { proposal_id } = await params;
 
   // Check authentication
-  const session = await auth();
+  const session = await getSession();
   if (!session || session.user.role !== 'admin') {
     throw new UnauthorizedError('Unauthorized');
   }

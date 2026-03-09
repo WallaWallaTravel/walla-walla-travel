@@ -1,6 +1,6 @@
 'use server'
 
-import { auth } from '@/auth'
+import { getSession } from '@/lib/auth/session'
 import { prisma } from '@/lib/prisma'
 import type { Prisma } from '@/lib/generated/prisma/client'
 import {
@@ -33,7 +33,7 @@ export type ContentActionResult = {
 export async function createPageContent(
   data: CreatePageContentInput
 ): Promise<ContentActionResult> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -47,7 +47,7 @@ export async function createPageContent(
   }
 
   const v = parsed.data
-  const userId = parseInt(session.user.id ?? '0')
+  const userId = session.user.id
 
   try {
     const content = await prisma.page_content.create({
@@ -72,7 +72,7 @@ export async function createPageContent(
 export async function updatePageContent(
   data: UpdatePageContentInput
 ): Promise<ContentActionResult> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -86,7 +86,7 @@ export async function updatePageContent(
   }
 
   const v = parsed.data
-  const userId = parseInt(session.user.id ?? '0')
+  const userId = session.user.id
 
   try {
     // Get current for history tracking
@@ -145,7 +145,7 @@ export async function deletePageContent(
   pageSlug: string,
   sectionKey: string
 ): Promise<ContentActionResult> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -175,7 +175,7 @@ export async function deletePageContent(
 export async function createCollectionItem(
   data: CreateCollectionItemInput
 ): Promise<ContentActionResult> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -189,7 +189,7 @@ export async function createCollectionItem(
   }
 
   const v = parsed.data
-  const userId = parseInt(session.user.id ?? '0')
+  const userId = session.user.id
 
   try {
     // Check for duplicate slug
@@ -237,7 +237,7 @@ export async function createCollectionItem(
 export async function updateCollectionItem(
   data: UpdateCollectionItemInput
 ): Promise<ContentActionResult> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -251,7 +251,7 @@ export async function updateCollectionItem(
   }
 
   const { id, ...updates } = parsed.data
-  const userId = parseInt(session.user.id ?? '0')
+  const userId = session.user.id
 
   try {
     // Get current for history tracking
@@ -325,7 +325,7 @@ export async function deleteCollectionItem(
   id: number,
   soft = false
 ): Promise<ContentActionResult> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -353,7 +353,7 @@ export async function deleteCollectionItem(
 export async function reorderCollection(
   data: ReorderCollectionInput
 ): Promise<ContentActionResult> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }

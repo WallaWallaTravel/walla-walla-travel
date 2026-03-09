@@ -8,13 +8,13 @@
  */
 
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { getSession } from '@/lib/auth/session';
 import { withErrorHandling, UnauthorizedError } from '@/lib/api/middleware/error-handler';
 
 export const dynamic = 'force-dynamic';
 
 export const GET = withErrorHandling(async () => {
-  const session = await auth();
+  const session = await getSession();
 
   if (!session?.user) {
     throw new UnauthorizedError('Not authenticated');
@@ -22,7 +22,7 @@ export const GET = withErrorHandling(async () => {
 
   return NextResponse.json({
     user: {
-      id: parseInt(session.user.id),
+      id: session.user.id,
       email: session.user.email,
       name: session.user.name,
       role: session.user.role,

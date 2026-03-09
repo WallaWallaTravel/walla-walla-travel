@@ -1,6 +1,6 @@
 'use server'
 
-import { auth } from '@/auth'
+import { getSession } from '@/lib/auth/session'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@/lib/generated/prisma/client'
 import { logger } from '@/lib/logger'
@@ -117,7 +117,7 @@ export async function getCalendarData(
   startDate: string,
   endDate: string
 ): Promise<CalendarQueryResult<CalendarData>> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -716,7 +716,7 @@ export async function getDateDetails(
     events: CalendarEvent[]
   }>
 > {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }

@@ -1,6 +1,6 @@
 'use server'
 
-import { auth } from '@/auth'
+import { getSession } from '@/lib/auth/session'
 import { prisma } from '@/lib/prisma'
 import {
   UpdateBookingSchema,
@@ -34,7 +34,7 @@ export async function updateBooking(
   data: UpdateBookingInput
 ): Promise<BookingMutationResult> {
   // Auth check
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -118,7 +118,7 @@ export async function assignDriver(
   data: AssignDriverInput
 ): Promise<BookingMutationResult> {
   // Auth check
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -222,7 +222,7 @@ export async function updateBookingStatus(
   data: UpdateBookingStatusInput
 ): Promise<BookingMutationResult> {
   // Auth check
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -277,7 +277,7 @@ export async function updateBookingStatus(
       updateData.cancellation_reason = v.reason || null
       updateData.cancelled_at = new Date()
       if (session.user.id) {
-        updateData.cancelled_by = parseInt(session.user.id)
+        updateData.cancelled_by = session.user.id
       }
     }
 

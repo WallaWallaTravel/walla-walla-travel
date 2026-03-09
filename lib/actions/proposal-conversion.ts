@@ -1,6 +1,6 @@
 'use server'
 
-import { auth } from '@/auth'
+import { getSession } from '@/lib/auth/session'
 import { prisma } from '@/lib/prisma'
 import { AcceptProposalSchema, type AcceptProposalInput } from '@/lib/schemas/proposal-conversion'
 import { generateSecureString } from '@/lib/utils'
@@ -133,12 +133,12 @@ export async function convertToBooking(
   proposalId: number
 ): Promise<ProposalConversionResult> {
   // Auth check — only admin can convert
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
 
-  const userId = session.user.id ? parseInt(session.user.id) : undefined
+  const userId = session.user.id ? session.user.id : undefined
 
   try {
     const result = await prisma.$transaction(async (tx) => {
@@ -259,7 +259,7 @@ export async function convertToBooking(
 export async function triggerConfirmationEmail(
   bookingId: number
 ): Promise<ProposalConversionResult> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }

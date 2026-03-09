@@ -9,7 +9,7 @@
 
 import { NextRequest } from 'next/server';
 import { UnauthorizedError, ForbiddenError } from './error-handler';
-import { auth } from '@/auth';
+import { getSession } from '@/lib/auth/session';
 
 // ============================================================================
 // Types
@@ -26,11 +26,11 @@ export interface AuthenticatedSession {
 }
 
 // ============================================================================
-// requireAuth - Get and validate session via Auth.js
+// requireAuth - Get and validate session via JWT
 // ============================================================================
 
 export async function requireAuth(_request?: NextRequest): Promise<AuthenticatedSession> {
-  const session = await auth();
+  const session = await getSession();
 
   if (!session?.user) {
     throw new UnauthorizedError('Authentication required');
@@ -38,7 +38,7 @@ export async function requireAuth(_request?: NextRequest): Promise<Authenticated
 
   return {
     user: {
-      id: parseInt(session.user.id),
+      id: session.user.id,
       email: session.user.email ?? '',
       name: session.user.name ?? '',
       role: (session.user.role || 'driver') as AuthenticatedSession['user']['role'],

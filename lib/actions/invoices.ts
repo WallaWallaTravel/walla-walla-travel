@@ -1,6 +1,6 @@
 'use server'
 
-import { auth } from '@/auth'
+import { getSession } from '@/lib/auth/session'
 import { prisma } from '@/lib/prisma'
 import { logger } from '@/lib/logger'
 import {
@@ -44,7 +44,7 @@ export type PaymentActionResult = {
 export async function approveAndSendInvoice(
   data: ApproveInvoiceInput
 ): Promise<InvoiceActionResult> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -214,7 +214,7 @@ export async function approveAndSendInvoice(
 export async function recordPayment(
   data: RecordPaymentInput
 ): Promise<PaymentActionResult> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }

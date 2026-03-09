@@ -1,6 +1,6 @@
 'use server'
 
-import { auth } from '@/auth'
+import { getSession } from '@/lib/auth/session'
 import { prisma } from '@/lib/prisma'
 import { hashPassword } from '@/lib/auth/passwords'
 import {
@@ -25,7 +25,7 @@ export type UserActionResult = {
 // ============================================================================
 
 export async function createUser(data: CreateUserInput): Promise<UserActionResult> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -80,7 +80,7 @@ export async function createUser(data: CreateUserInput): Promise<UserActionResul
 }
 
 export async function updateUser(data: UpdateUserInput): Promise<UserActionResult> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -122,7 +122,7 @@ export async function updateUser(data: UpdateUserInput): Promise<UserActionResul
 }
 
 export async function deactivateUser(id: number): Promise<UserActionResult> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -150,7 +150,7 @@ export async function deactivateUser(id: number): Promise<UserActionResult> {
 }
 
 export async function activateUser(id: number): Promise<UserActionResult> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }

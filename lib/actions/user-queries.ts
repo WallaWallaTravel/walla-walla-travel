@@ -1,6 +1,6 @@
 'use server'
 
-import { auth } from '@/auth'
+import { getSession } from '@/lib/auth/session'
 import { prisma } from '@/lib/prisma'
 import type { Prisma } from '@/lib/generated/prisma/client'
 
@@ -43,7 +43,7 @@ export async function getUsers(filters?: {
   limit?: number
   offset?: number
 }): Promise<{ users: UserListItem[]; total: number }> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { users: [], total: 0 }
   }
@@ -90,7 +90,7 @@ export async function getUsers(filters?: {
 }
 
 export async function getUserById(id: number): Promise<UserDetail | null> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return null
   }

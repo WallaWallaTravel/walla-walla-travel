@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { withErrorHandling, BadRequestError, NotFoundError, UnauthorizedError } from '@/lib/api/middleware/error-handler';
-import { auth } from '@/auth';
+import { getSession } from '@/lib/auth/session';
 import { Pool } from 'pg';
 import { getDbConfig } from '@/lib/config/database';
 import { withCSRF } from '@/lib/api/middleware/csrf';
@@ -20,7 +20,7 @@ export const POST = withCSRF(
   const { proposal_id } = await params;
 
   // Check authentication
-  const session = await auth();
+  const session = await getSession();
   if (!session || session.user.role !== 'admin') {
     throw new UnauthorizedError('Unauthorized');
   }
@@ -170,7 +170,7 @@ export const POST = withCSRF(
         total - depositAmount,
         'confirmed', // Auto-confirm since proposal was accepted
         'proposal',
-        parseInt(session.user.id)
+        session.user.id
       ]
     );
     const booking = bookingResult.rows[0];
@@ -198,7 +198,7 @@ export const POST = withCSRF(
           booking_id: booking.id,
           booking_number: bookingNumber,
           converted_by: session.user.name,
-          converted_by_id: parseInt(session.user.id),
+          converted_by_id: session.user.id,
           timestamp: new Date().toISOString()
         })
       ]
@@ -217,7 +217,7 @@ export const POST = withCSRF(
           proposal_id: proposal.id,
           proposal_number: proposal.proposal_number
         }),
-        parseInt(session.user.id)
+        session.user.id
       ]
     );
 

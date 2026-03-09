@@ -1,6 +1,6 @@
 'use server'
 
-import { auth } from '@/auth'
+import { getSession } from '@/lib/auth/session'
 import { prisma } from '@/lib/prisma'
 import {
   CreateEmailCampaignSchema,
@@ -24,7 +24,7 @@ export type MarketingActionResult = {
 export async function createEmailCampaign(
   data: CreateEmailCampaignInput
 ): Promise<MarketingActionResult> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -87,13 +87,13 @@ export async function createMarketingCampaign(input: {
   target_audience?: string
   auto_generated?: boolean
 }): Promise<MarketingActionResult> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
 
   try {
-    const userId = parseInt(session.user.id ?? '0')
+    const userId = session.user.id
 
     const campaign = await prisma.marketing_campaigns.create({
       data: {
@@ -124,7 +124,7 @@ export async function updateMarketingCampaignStatus(
   id: number,
   status: string
 ): Promise<MarketingActionResult> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }

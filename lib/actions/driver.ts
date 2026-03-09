@@ -1,6 +1,6 @@
 'use server'
 
-import { auth } from '@/auth'
+import { getSession } from '@/lib/auth/session'
 import { prisma } from '@/lib/prisma'
 import type { Prisma } from '@/lib/generated/prisma/client'
 import {
@@ -24,11 +24,11 @@ export type DriverActionResult<T = unknown> = {
 // ─── Auth Helper ────────────────────────────────────────────
 
 async function requireDriverAuth(): Promise<{ userId: number; role: string } | null> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user) return null
   const role = session.user.role
   if (role !== 'driver' && role !== 'admin') return null
-  return { userId: parseInt(session.user.id), role }
+  return { userId: session.user.id, role }
 }
 
 // ─── HOS Validation Helper ─────────────────────────────────

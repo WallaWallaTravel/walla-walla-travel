@@ -1,6 +1,6 @@
 'use server'
 
-import { auth } from '@/auth'
+import { getSession } from '@/lib/auth/session'
 import { prisma } from '@/lib/prisma'
 import {
   CreateContactSchema,
@@ -34,7 +34,7 @@ export type CrmActionResult<T = unknown> = {
 }
 
 async function requireAdmin() {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return null
   }
@@ -97,7 +97,7 @@ export async function createContact(
         contact_id: contact.id,
         activity_type: 'system',
         subject: 'Contact created',
-        performed_by: parseInt(session.user.id!),
+        performed_by: session.user.id,
         source_type: 'manual',
       },
     })
@@ -275,7 +275,7 @@ export async function createDeal(
         deal_id: deal.id,
         activity_type: 'system',
         subject: `Deal created: ${v.title}`,
-        performed_by: parseInt(session.user.id!),
+        performed_by: session.user.id,
         source_type: 'manual',
       },
     })
@@ -411,7 +411,7 @@ export async function winOrLoseDeal(
           deal_id: dealId,
           activity_type: 'system',
           subject: 'Deal won',
-          performed_by: parseInt(session.user.id!),
+          performed_by: session.user.id,
           source_type: 'manual',
         },
       })
@@ -448,7 +448,7 @@ export async function winOrLoseDeal(
           activity_type: 'system',
           subject: 'Deal lost',
           body: lost_reason,
-          performed_by: parseInt(session.user.id!),
+          performed_by: session.user.id,
           source_type: 'manual',
         },
       })
@@ -496,7 +496,7 @@ export async function createTask(
         title: v.title,
         due_date: new Date(v.due_date),
         assigned_to: v.assigned_to,
-        created_by: parseInt(session.user.id!),
+        created_by: session.user.id,
         contact_id: contactId,
         deal_id: v.deal_id,
         description: v.description,
@@ -540,7 +540,7 @@ export async function updateTask(
       updateData.status = v.status
       if (v.status === 'completed') {
         updateData.completed_at = new Date()
-        updateData.completed_by = parseInt(session.user.id!)
+        updateData.completed_by = session.user.id
         if (v.completion_notes) {
           updateData.completion_notes = v.completion_notes
         }
@@ -692,7 +692,7 @@ export async function createActivity(
         call_outcome: v.call_outcome,
         email_direction: v.email_direction,
         email_status: v.email_status,
-        performed_by: parseInt(session.user.id!),
+        performed_by: session.user.id,
         source_type: v.source_type ?? 'manual',
         source_id: v.source_id,
       },

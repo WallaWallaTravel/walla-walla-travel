@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, UnauthorizedError, NotFoundError, ValidationError } from '@/lib/api/middleware/error-handler';
-import { auth } from '@/auth';
+import { getSession } from '@/lib/auth/session';
 import { partnerService } from '@/lib/services/partner.service';
 import { query } from '@/lib/db';
 import { INSIDER_TIP_TYPES } from '@/lib/config/content-types';
@@ -40,13 +40,13 @@ const VALID_TIP_TYPES = Object.values(INSIDER_TIP_TYPES);
  * Get partner's insider tips
  */
 export const GET = withErrorHandling(async (request: NextRequest) => {
-  const session = await auth();
+  const session = await getSession();
 
   if (!session || (session.user.role !== 'partner' && session.user.role !== 'admin')) {
     throw new UnauthorizedError('Partner access required');
   }
 
-  const profile = await partnerService.getProfileByUserId(parseInt(session.user.id));
+  const profile = await partnerService.getProfileByUserId(session.user.id);
 
   if (!profile) {
     throw new NotFoundError('Partner profile not found');
@@ -87,13 +87,13 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 export const POST = withCSRF(
   withRateLimit(rateLimiters.api)(
   withErrorHandling(async (request: NextRequest) => {
-  const session = await auth();
+  const session = await getSession();
 
   if (!session || (session.user.role !== 'partner' && session.user.role !== 'admin')) {
     throw new UnauthorizedError('Partner access required');
   }
 
-  const profile = await partnerService.getProfileByUserId(parseInt(session.user.id));
+  const profile = await partnerService.getProfileByUserId(session.user.id);
 
   if (!profile) {
     throw new NotFoundError('Partner profile not found');
@@ -136,7 +136,7 @@ export const POST = withCSRF(
       title || null,
       content,
       is_featured || false,
-      parseInt(session.user.id),
+      session.user.id,
     ]
   );
 
@@ -164,13 +164,13 @@ export const POST = withCSRF(
 export const PUT = withCSRF(
   withRateLimit(rateLimiters.api)(
   withErrorHandling(async (request: NextRequest) => {
-  const session = await auth();
+  const session = await getSession();
 
   if (!session || (session.user.role !== 'partner' && session.user.role !== 'admin')) {
     throw new UnauthorizedError('Partner access required');
   }
 
-  const profile = await partnerService.getProfileByUserId(parseInt(session.user.id));
+  const profile = await partnerService.getProfileByUserId(session.user.id);
 
   if (!profile) {
     throw new NotFoundError('Partner profile not found');
@@ -239,13 +239,13 @@ export const PUT = withCSRF(
 export const DELETE = withCSRF(
   withRateLimit(rateLimiters.api)(
   withErrorHandling(async (request: NextRequest) => {
-  const session = await auth();
+  const session = await getSession();
 
   if (!session || (session.user.role !== 'partner' && session.user.role !== 'admin')) {
     throw new UnauthorizedError('Partner access required');
   }
 
-  const profile = await partnerService.getProfileByUserId(parseInt(session.user.id));
+  const profile = await partnerService.getProfileByUserId(session.user.id);
 
   if (!profile) {
     throw new NotFoundError('Partner profile not found');

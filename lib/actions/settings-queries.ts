@@ -1,6 +1,6 @@
 'use server'
 
-import { auth } from '@/auth'
+import { getSession } from '@/lib/auth/session'
 import { prisma } from '@/lib/prisma'
 
 // ============================================================================
@@ -21,7 +21,7 @@ export type SystemSettingItem = {
 // ============================================================================
 
 export async function getAllSettings(): Promise<SystemSettingItem[]> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return []
   }
@@ -39,7 +39,7 @@ export async function getAllSettings(): Promise<SystemSettingItem[]> {
 }
 
 export async function getSetting(key: string): Promise<unknown> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return null
   }
@@ -54,7 +54,7 @@ export async function getSetting(key: string): Promise<unknown> {
 }
 
 export async function getSettingsByType(type: string): Promise<SystemSettingItem[]> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return []
   }

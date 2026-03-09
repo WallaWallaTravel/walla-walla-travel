@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { getSession } from '@/lib/auth/session';
 import { pool } from '@/lib/db';
 import { withErrorHandling, UnauthorizedError, ForbiddenError } from '@/lib/api/middleware/error-handler';
 
 export const GET = withErrorHandling(async () => {
-  const session = await auth();
+  const session = await getSession();
 
   if (!session) {
     throw new UnauthorizedError('Unauthorized');

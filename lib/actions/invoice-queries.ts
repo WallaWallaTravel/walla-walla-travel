@@ -1,6 +1,6 @@
 'use server'
 
-import { auth } from '@/auth'
+import { getSession } from '@/lib/auth/session'
 import { prisma } from '@/lib/prisma'
 
 // ============================================================================
@@ -72,7 +72,7 @@ export type PaymentListItem = {
 // ============================================================================
 
 export async function getPendingInvoices(): Promise<PendingInvoiceItem[]> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return []
   }
@@ -106,7 +106,7 @@ export async function getPendingInvoices(): Promise<PendingInvoiceItem[]> {
 export async function getInvoiceByBookingId(
   bookingId: number
 ): Promise<InvoiceDetail | null> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user) {
     return null
   }
@@ -233,7 +233,7 @@ export async function getInvoicesList(filters?: {
   invoiceType?: string
   bookingId?: number
 }): Promise<InvoiceDetail[]> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return []
   }
@@ -343,7 +343,7 @@ export async function getInvoicesList(filters?: {
 export async function getPaymentsForBooking(
   bookingId: number
 ): Promise<PaymentListItem[]> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user) {
     return []
   }
@@ -388,7 +388,7 @@ export async function getPaymentsForBooking(
 export async function getRecentPayments(
   limit = 50
 ): Promise<PaymentListItem[]> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return []
   }

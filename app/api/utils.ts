@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { getSession } from '@/lib/auth/session';
 import type { NextRequest } from 'next/server';
 import { logger } from '@/lib/logger';
 import { generateSecureString } from '@/lib/utils';
@@ -55,16 +55,16 @@ export function errorResponse(error: string, status: number = 400): NextResponse
   return NextResponse.json(response, { status });
 }
 
-// Auth middleware - uses Auth.js session
+// Auth middleware - uses JWT session
 // Throws UnauthorizedError on failure (caught by withErrorHandling)
 export async function requireAuth(): Promise<Session> {
   try {
-    const session = await auth();
+    const session = await getSession();
     if (!session?.user) {
       throw new UnauthorizedError('Unauthorized - Please login');
     }
     return {
-      userId: session.user.id,
+      userId: String(session.user.id),
       email: session.user.email ?? '',
       name: session.user.name ?? '',
       role: session.user.role,
@@ -78,10 +78,10 @@ export async function requireAuth(): Promise<Session> {
 // Optional auth - returns session or null, doesn't throw
 export async function getOptionalAuth(): Promise<Session | null> {
   try {
-    const session = await auth();
+    const session = await getSession();
     if (!session?.user) return null;
     return {
-      userId: session.user.id,
+      userId: String(session.user.id),
       email: session.user.email ?? '',
       name: session.user.name ?? '',
       role: session.user.role,

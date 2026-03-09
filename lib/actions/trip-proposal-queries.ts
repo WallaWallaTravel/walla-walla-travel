@@ -1,6 +1,6 @@
 'use server'
 
-import { auth } from '@/auth'
+import { getSession } from '@/lib/auth/session'
 import { prisma } from '@/lib/prisma'
 import {
   ProposalFiltersSchema,
@@ -43,7 +43,7 @@ export type ProposalListResult = {
 // ============================================================================
 
 async function requireAdmin() {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return null
   }

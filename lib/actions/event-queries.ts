@@ -1,6 +1,6 @@
 'use server'
 
-import { auth } from '@/auth'
+import { getSession } from '@/lib/auth/session'
 import { prisma } from '@/lib/prisma'
 import type {
   EventWithCategory,
@@ -317,7 +317,7 @@ export async function listAllEvents(filters: EventFiltersInput = {}): Promise<{
   data?: EventListResult
   error?: string
 }> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -393,7 +393,7 @@ export async function getEventById(id: number): Promise<{
   data?: EventWithCategory
   error?: string
 }> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -435,7 +435,7 @@ export async function getEventAnalyticsSummary(eventId: number): Promise<{
   data?: EventAnalyticsSummary
   error?: string
 }> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -481,7 +481,7 @@ export async function getAnalyticsOverview(
   data?: EventAnalyticsOverview
   error?: string
 }> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -542,7 +542,7 @@ export async function getAnalyticsTrends(days: number = 30): Promise<{
   data?: EventAnalyticsDailyTrend[]
   error?: string
 }> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -582,7 +582,7 @@ export async function getAnalyticsByEvent(
   data?: EventAnalyticsByEvent[]
   error?: string
 }> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -647,7 +647,7 @@ export async function getAnalyticsByCoordinator(
   data?: EventAnalyticsByCoordinator[]
   error?: string
 }> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -711,7 +711,7 @@ export async function getAnalyticsByCategory(
   data?: EventAnalyticsByCategory[]
   error?: string
 }> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -773,7 +773,7 @@ export async function getAnalyticsBySource(
   data?: EventAnalyticsBySource[]
   error?: string
 }> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -833,7 +833,7 @@ export async function getAllOrganizers(): Promise<{
   data?: EventOrganizerWithUser[]
   error?: string
 }> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -861,7 +861,7 @@ export async function getOrganizerById(id: number): Promise<{
   data?: EventOrganizerWithUser
   error?: string
 }> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }

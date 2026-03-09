@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
-import { auth } from '@/auth';
+import { getSession } from '@/lib/auth/session';
 import { eventOrganizerService } from '@/lib/services/event-organizer.service';
 
 export const GET = withErrorHandling(async () => {
-  const session = await auth();
+  const session = await getSession();
   if (!session || (session.user.role !== 'organizer' && session.user.role !== 'admin')) {
     return NextResponse.json(
       { success: false, error: 'Unauthorized' },
@@ -12,7 +12,7 @@ export const GET = withErrorHandling(async () => {
     );
   }
 
-  const dashboard = await eventOrganizerService.getDashboard(parseInt(session.user.id));
+  const dashboard = await eventOrganizerService.getDashboard(session.user.id);
 
   return NextResponse.json({ success: true, data: dashboard });
 });

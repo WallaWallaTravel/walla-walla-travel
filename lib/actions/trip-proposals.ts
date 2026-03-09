@@ -1,6 +1,6 @@
 'use server'
 
-import { auth } from '@/auth'
+import { getSession } from '@/lib/auth/session'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@/lib/generated/prisma/client'
 import { generateSecureString } from '@/lib/utils'
@@ -38,7 +38,7 @@ export type ActionResult<T = undefined> = {
 // ============================================================================
 
 async function requireAdmin() {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return null
   }
@@ -123,7 +123,7 @@ export async function createProposal(
         gratuity_percentage: v.gratuity_percentage ?? 0,
         tax_rate: v.tax_rate ?? 0.091,
         deposit_percentage: v.deposit_percentage ?? 50,
-        created_by: session.user.id ? parseInt(session.user.id) : null,
+        created_by: session.user.id ? session.user.id : null,
       },
     })
 
@@ -150,7 +150,7 @@ export async function createProposal(
         action: 'created',
         description: 'Trip proposal created',
         actor_type: 'staff',
-        actor_user_id: session.user.id ? parseInt(session.user.id) : null,
+        actor_user_id: session.user.id ? session.user.id : null,
       },
     })
 
@@ -923,7 +923,7 @@ export async function shareProposal(
           action: 'sent',
           description: 'Proposal shared/sent to client',
           actor_type: 'staff',
-          actor_user_id: session.user.id ? parseInt(session.user.id) : null,
+          actor_user_id: session.user.id ? session.user.id : null,
         },
       })
     }
@@ -984,7 +984,7 @@ export async function updateProposalStatus(
         action: `status_changed_to_${v.status}`,
         description: `Status changed from ${proposal.status} to ${v.status}`,
         actor_type: 'staff',
-        actor_user_id: session.user.id ? parseInt(session.user.id) : null,
+        actor_user_id: session.user.id ? session.user.id : null,
       },
     })
 

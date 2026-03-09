@@ -1,6 +1,6 @@
 'use server'
 
-import { auth } from '@/auth'
+import { getSession } from '@/lib/auth/session'
 import { prisma } from '@/lib/prisma'
 
 // ============================================================================
@@ -109,7 +109,7 @@ export async function getMarketingCampaigns(filters?: {
   start_date?: string
   end_date?: string
 }): Promise<{ campaigns: MarketingCampaignListItem[]; total: number }> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { campaigns: [], total: 0 }
   }
@@ -177,7 +177,7 @@ export async function getEmailCampaigns(filters?: {
   }
   total: number
 }> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return {
       campaigns: [],
@@ -261,7 +261,7 @@ export async function getEmailCampaigns(filters?: {
 export async function getMarketingMetrics(
   periodDays = 30
 ): Promise<MarketingMetrics> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return {
       summary: {

@@ -1,6 +1,6 @@
 'use server'
 
-import { auth } from '@/auth'
+import { getSession } from '@/lib/auth/session'
 import { prisma } from '@/lib/prisma'
 import {
   BookingFiltersSchema,
@@ -121,7 +121,7 @@ export async function getBookings(
   filters?: BookingFilters
 ): Promise<BookingListResult> {
   // Auth check
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -271,7 +271,7 @@ export async function getBookingById(
   id: number
 ): Promise<BookingDetailResult> {
   // Auth check
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -404,7 +404,7 @@ export async function getBookingById(
 
 export async function getDrivers(): Promise<DriversResult> {
   // Auth check
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -439,7 +439,7 @@ export async function getDrivers(): Promise<DriversResult> {
 
 export async function getVehicles(): Promise<VehiclesResult> {
   // Auth check
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }

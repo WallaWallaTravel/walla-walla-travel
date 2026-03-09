@@ -16,7 +16,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createBooking, type BookingActionResult } from '@/lib/actions/bookings'
 import { searchHotels } from '@/lib/actions/booking-queries'
-import { getCSRFToken } from '@/lib/utils/fetch-utils'
+import { checkAvailability } from '@/lib/actions/availability'
 import {
   getHourlyRate,
   formatCurrency,
@@ -250,22 +250,17 @@ export default function BookingConsole() {
     lunchCostPerPerson,
   })
 
-  // Fetch availability when date/time changes
+  // Fetch availability when date/time changes (Server Action — no CSRF needed)
   const fetchAvailability = useCallback(async () => {
     if (!debouncedDate || !debouncedTime || !debouncedDuration || !debouncedPartySize) return
     setIsLoadingAvailability(true)
     try {
-      const response = await fetch('/api/admin/availability/check', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
-        body: JSON.stringify({
-          date: debouncedDate,
-          startTime: debouncedTime,
-          durationHours: debouncedDuration,
-          partySize: debouncedPartySize,
-        }),
+      const result = await checkAvailability({
+        date: debouncedDate,
+        startTime: debouncedTime,
+        durationHours: debouncedDuration,
+        partySize: debouncedPartySize,
       })
-      const result = await response.json()
       if (result.success) {
         setAvailability(result.data)
         if (selectedVehicles.length === 0 && result.data.vehicles) {

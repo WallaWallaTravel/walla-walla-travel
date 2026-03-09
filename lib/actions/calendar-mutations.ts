@@ -1,6 +1,6 @@
 'use server'
 
-import { auth } from '@/auth'
+import { getSession } from '@/lib/auth/session'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@/lib/generated/prisma/client'
 import { z } from 'zod'
@@ -44,7 +44,7 @@ const MoveBookingSchema = z.object({
 export async function createBookingFromCalendar(
   data: z.infer<typeof CreateBookingFromCalendarSchema>
 ): Promise<CalendarMutationResult> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -58,7 +58,7 @@ export async function createBookingFromCalendar(
   }
 
   const v = parsed.data
-  const userId = session.user.id ? parseInt(session.user.id) : undefined
+  const userId = session.user.id ? session.user.id : undefined
 
   try {
     // Generate booking number
@@ -119,7 +119,7 @@ export async function moveBooking(
   bookingId: number,
   newDate: string
 ): Promise<CalendarMutationResult> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }

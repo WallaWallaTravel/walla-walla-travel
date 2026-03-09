@@ -1,6 +1,6 @@
 'use server'
 
-import { auth } from '@/auth'
+import { getSession } from '@/lib/auth/session'
 import { CreateBookingSchema, type CreateBookingInput } from '@/lib/schemas/booking'
 import { bookingService } from '@/lib/services/booking'
 
@@ -12,7 +12,7 @@ export type BookingActionResult = {
 
 export async function createBooking(data: CreateBookingInput): Promise<BookingActionResult> {
   // Auth check
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }

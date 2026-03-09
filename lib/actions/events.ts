@@ -1,6 +1,6 @@
 'use server'
 
-import { auth } from '@/auth'
+import { getSession } from '@/lib/auth/session'
 import { prisma } from '@/lib/prisma'
 import {
   CreateEventSchema,
@@ -63,7 +63,7 @@ async function generateEventSlug(title: string): Promise<string> {
  * Create a new event (admin)
  */
 export async function createEvent(data: CreateEventInput): Promise<EventActionResult> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -131,7 +131,7 @@ export async function createEvent(data: CreateEventInput): Promise<EventActionRe
       v.feature_priority || 0,
       v.meta_title || v.title,
       v.meta_description || v.short_description || null,
-      parseInt(session.user.id!)
+      session.user.id
     )
 
     const eventId = result[0]?.id
@@ -160,7 +160,7 @@ export async function createEvent(data: CreateEventInput): Promise<EventActionRe
  * Update an event (admin)
  */
 export async function updateEvent(id: number, data: UpdateEventInput): Promise<EventActionResult> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -262,7 +262,7 @@ export async function updateEvent(id: number, data: UpdateEventInput): Promise<E
  * Publish an event (admin)
  */
 export async function publishEvent(id: number): Promise<EventActionResult> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -283,7 +283,7 @@ export async function publishEvent(id: number): Promise<EventActionResult> {
  * Cancel an event (admin)
  */
 export async function cancelEvent(id: number): Promise<EventActionResult> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -304,7 +304,7 @@ export async function cancelEvent(id: number): Promise<EventActionResult> {
  * Delete an event (admin)
  */
 export async function deleteEvent(id: number): Promise<EventActionResult> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -337,7 +337,7 @@ export async function deleteEvent(id: number): Promise<EventActionResult> {
  * Create an event tag (admin)
  */
 export async function createEventTag(data: CreateEventTagInput): Promise<EventActionResult> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -367,7 +367,7 @@ export async function createEventTag(data: CreateEventTagInput): Promise<EventAc
  * Delete an event tag (admin)
  */
 export async function deleteEventTag(id: number): Promise<EventActionResult> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -395,7 +395,7 @@ export async function deleteEventTag(id: number): Promise<EventActionResult> {
 export async function createOrganizerInvitation(
   data: CreateOrganizerInvitationInput
 ): Promise<EventActionResult> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -448,7 +448,7 @@ export async function createOrganizerInvitation(
       v.contact_email.toLowerCase(),
       v.contact_phone || null,
       v.website || null,
-      parseInt(session.user.id!),
+      session.user.id,
       setupToken,
       setupExpires
     )
@@ -478,13 +478,13 @@ export async function updateOrganizerProfile(
   userId: number,
   data: UpdateOrganizerProfileInput
 ): Promise<EventActionResult> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user) {
     return { success: false, error: 'Unauthorized' }
   }
 
   // Organizers can only update their own profile
-  if (session.user.role === 'organizer' && parseInt(session.user.id!) !== userId) {
+  if (session.user.role === 'organizer' && session.user.id !== userId) {
     return { success: false, error: 'Unauthorized' }
   }
 
@@ -546,7 +546,7 @@ export async function updateOrganizerStatus(
   id: number,
   data: UpdateOrganizerStatusInput
 ): Promise<EventActionResult> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -612,13 +612,13 @@ export async function createEventAsOrganizer(
   userId: number,
   data: CreateEventInput
 ): Promise<EventActionResult> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user) {
     return { success: false, error: 'Unauthorized' }
   }
 
   // Organizers can only create events for themselves
-  if (session.user.role === 'organizer' && parseInt(session.user.id!) !== userId) {
+  if (session.user.role === 'organizer' && session.user.id !== userId) {
     return { success: false, error: 'Unauthorized' }
   }
 
@@ -711,12 +711,12 @@ export async function submitEventForReview(
   userId: number,
   eventId: number
 ): Promise<EventActionResult> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user) {
     return { success: false, error: 'Unauthorized' }
   }
 
-  if (session.user.role === 'organizer' && parseInt(session.user.id!) !== userId) {
+  if (session.user.role === 'organizer' && session.user.id !== userId) {
     return { success: false, error: 'Unauthorized' }
   }
 

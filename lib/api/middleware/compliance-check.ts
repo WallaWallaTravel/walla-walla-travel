@@ -25,14 +25,14 @@ import {
   AssignmentComplianceResult,
   ComplianceViolation,
 } from '@/lib/services/compliance.service';
-import { auth } from '@/auth';
+import { getSession } from '@/lib/auth/session';
 
-// Helper to get session from request (wrapper around Auth.js auth())
+// Helper to get session from request (uses JWT session)
 async function getSessionFromRequest(_request: NextRequest) {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user) return null;
   return {
-    userId: session.user.id,
+    userId: String(session.user.id),
     email: session.user.email,
     name: session.user.name,
     role: session.user.role,

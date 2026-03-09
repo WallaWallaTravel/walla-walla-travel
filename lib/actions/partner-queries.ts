@@ -1,6 +1,6 @@
 'use server'
 
-import { auth } from '@/auth'
+import { getSession } from '@/lib/auth/session'
 import { prisma } from '@/lib/prisma'
 
 // ============================================================================
@@ -64,7 +64,7 @@ export async function getAllPartners(): Promise<{
   data?: PartnerProfileListItem[]
   error?: string
 }> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -93,7 +93,7 @@ export async function getPartnerById(id: number): Promise<{
   data?: PartnerProfileListItem
   error?: string
 }> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -233,7 +233,7 @@ export async function listHotelPartners(activeOnly: boolean = false): Promise<{
   data?: HotelPartnerListItem[]
   error?: string
 }> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -328,7 +328,7 @@ export async function getHotelPartnerStats(hotelId?: number): Promise<{
   }>
   error?: string
 }> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }

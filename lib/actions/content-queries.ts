@@ -1,6 +1,6 @@
 'use server'
 
-import { auth } from '@/auth'
+import { getSession } from '@/lib/auth/session'
 import { prisma } from '@/lib/prisma'
 
 // ============================================================================
@@ -42,7 +42,7 @@ export type CollectionItem = {
 // ============================================================================
 
 export async function getPageContent(pageSlug: string): Promise<PageContentItem[]> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return []
   }
@@ -63,7 +63,7 @@ export async function getContentSection(
   pageSlug: string,
   sectionKey: string
 ): Promise<PageContentItem | null> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return null
   }
@@ -87,7 +87,7 @@ export async function getContentSection(
 }
 
 export async function getAvailablePages(): Promise<string[]> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return []
   }
@@ -109,7 +109,7 @@ export async function getCollection(
   collectionType: string,
   includeInactive = false
 ): Promise<CollectionItem[]> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return []
   }
@@ -134,7 +134,7 @@ export async function getCollectionItem(
   collectionType: string,
   slug: string
 ): Promise<CollectionItem | null> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return null
   }
@@ -158,7 +158,7 @@ export async function getCollectionItem(
 }
 
 export async function getCollectionTypes(): Promise<string[]> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return []
   }
@@ -185,7 +185,7 @@ export async function getContentHistory(
   changed_at: string | null
   changed_by: number | null
 }>> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return []
   }

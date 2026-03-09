@@ -1,6 +1,6 @@
 'use server'
 
-import { auth } from '@/auth'
+import { getSession } from '@/lib/auth/session'
 import { prisma } from '@/lib/prisma'
 import {
   UpdateSettingSchema,
@@ -21,7 +21,7 @@ export type SettingActionResult = {
 // ============================================================================
 
 export async function updateSetting(data: UpdateSettingInput): Promise<SettingActionResult> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -35,7 +35,7 @@ export async function updateSetting(data: UpdateSettingInput): Promise<SettingAc
   }
 
   const { setting_key, setting_value } = parsed.data
-  const userId = parseInt(session.user.id ?? '0')
+  const userId = session.user.id
 
   try {
     await prisma.$queryRawUnsafe(

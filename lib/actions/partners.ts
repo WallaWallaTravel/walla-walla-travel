@@ -1,6 +1,6 @@
 'use server'
 
-import { auth } from '@/auth'
+import { getSession } from '@/lib/auth/session'
 import { prisma } from '@/lib/prisma'
 import {
   UpdatePartnerProfileSchema,
@@ -35,13 +35,13 @@ export async function updatePartnerProfile(
   userId: number,
   data: UpdatePartnerProfileInput
 ): Promise<PartnerActionResult> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user) {
     return { success: false, error: 'Unauthorized' }
   }
 
   // Partners can only update their own profile
-  if (session.user.role === 'partner' && parseInt(session.user.id!) !== userId) {
+  if (session.user.role === 'partner' && session.user.id !== userId) {
     return { success: false, error: 'Unauthorized' }
   }
 
@@ -83,7 +83,7 @@ export async function updatePartnerProfile(
 export async function createPartnerInvitation(
   data: CreatePartnerInvitationInput
 ): Promise<PartnerActionResult> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -133,7 +133,7 @@ export async function createPartnerInvitation(
         business_type: v.business_type,
         winery_id: v.winery_id || null,
         status: 'pending',
-        invited_by: parseInt(session.user.id!),
+        invited_by: session.user.id,
         invited_at: new Date(),
         setup_token: setupToken,
         setup_token_expires_at: setupExpires,
@@ -168,7 +168,7 @@ export async function createPartnerInvitation(
 export async function createHotelPartner(
   data: CreateHotelPartnerInput
 ): Promise<PartnerActionResult> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
@@ -218,7 +218,7 @@ export async function updateHotelPartner(
   id: number,
   data: UpdateHotelPartnerInput
 ): Promise<PartnerActionResult> {
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     return { success: false, error: 'Unauthorized' }
   }
