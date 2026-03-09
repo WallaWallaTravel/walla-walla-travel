@@ -16,6 +16,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createBooking, type BookingActionResult } from '@/lib/actions/bookings'
 import { searchHotels } from '@/lib/actions/booking-queries'
+import { getCSRFToken } from '@/lib/utils/fetch-utils'
 import {
   getHourlyRate,
   formatCurrency,
@@ -256,7 +257,7 @@ export default function BookingConsole() {
     try {
       const response = await fetch('/api/admin/availability/check', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
         body: JSON.stringify({
           date: debouncedDate,
           startTime: debouncedTime,

@@ -10,7 +10,7 @@
  * This page is accessible at /admin/bookings/[id]/v2.
  */
 
-import { auth } from '@/auth'
+import { getSession } from '@/lib/auth/session'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { getBookingById, getDrivers, getVehicles } from '@/lib/actions/booking-queries'
@@ -85,7 +85,7 @@ export default async function BookingDetailPageV2({
   const { id } = await params
 
   // Auth check via Auth.js
-  const session = await auth()
+  const session = await getSession()
   if (!session?.user || session.user.role !== 'admin') {
     redirect('/login')
   }

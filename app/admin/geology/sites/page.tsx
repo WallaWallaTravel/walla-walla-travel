@@ -4,7 +4,7 @@
  * View and manage all geological sites/locations.
  */
 
-import { auth } from '@/auth';
+import { getSession } from '@/lib/auth/session';
 import { canAccessGeology } from '@/lib/auth/roles';
 import { redirect } from 'next/navigation';
 import { query } from '@/lib/db';
@@ -75,7 +75,7 @@ function SiteTypeBadge({ type }: { type: string | null }) {
 // ============================================================================
 
 export default async function SitesListPage() {
-  const session = await auth();
+  const session = await getSession();
 
   if (!session || !canAccessGeology(session.user.role)) {
     redirect('/login');

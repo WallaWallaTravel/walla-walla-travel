@@ -207,6 +207,7 @@ interface InternalSession {
 }
 
 async function getSessionFromRequest(): Promise<InternalSession | null> {
+  // Try Auth.js session first
   try {
     const { auth } = await import('@/auth');
     const session = await auth();
@@ -220,12 +221,33 @@ async function getSessionFromRequest(): Promise<InternalSession | null> {
         isLoggedIn: true,
       };
     }
-    return null;
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    logger.error('[Auth Wrapper] Session error', { error: errorMessage });
-    return null;
+    logger.error('[Auth Wrapper] Auth.js session error', { error: errorMessage });
   }
+
+  // Fallback: read the old JWT session cookie (set by /api/auth/login)
+  // The login flow sets the old JWT cookie but not the Auth.js cookie,
+  // so Auth.js auth() returns null for users who logged in via the old system.
+  try {
+    const { getSession } = await import('@/lib/auth/session');
+    const oldSession = await getSession();
+    if (oldSession?.user?.id) {
+      const role = (oldSession.user.role || 'customer') as InternalSession['role'];
+      return {
+        userId: String(oldSession.user.id),
+        email: oldSession.user.email ?? '',
+        role,
+        sid: oldSession.sid,
+        isLoggedIn: true,
+      };
+    }
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    logger.error('[Auth Wrapper] Legacy session error', { error: errorMessage });
+  }
+
+  return null;
 }
 
 // ============================================================================

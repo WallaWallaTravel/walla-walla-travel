@@ -4,7 +4,7 @@
  * Edit an existing geology fact.
  */
 
-import { auth } from '@/auth';
+import { getSession } from '@/lib/auth/session';
 import { canAccessGeology } from '@/lib/auth/roles';
 import { redirect, notFound } from 'next/navigation';
 import { query } from '@/lib/db';
@@ -37,7 +37,7 @@ async function getFact(id: number): Promise<FactData | null> {
 }
 
 export default async function EditFactPage({ params }: PageProps) {
-  const session = await auth();
+  const session = await getSession();
 
   if (!session || !canAccessGeology(session.user.role)) {
     redirect('/login');

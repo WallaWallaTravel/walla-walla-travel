@@ -4,7 +4,7 @@
  * Edit an existing geological site.
  */
 
-import { auth } from '@/auth';
+import { getSession } from '@/lib/auth/session';
 import { canAccessGeology } from '@/lib/auth/roles';
 import { redirect, notFound } from 'next/navigation';
 import { query } from '@/lib/db';
@@ -49,7 +49,7 @@ async function getSite(id: number): Promise<SiteData | null> {
 }
 
 export default async function EditSitePage({ params }: PageProps) {
-  const session = await auth();
+  const session = await getSession();
 
   if (!session || !canAccessGeology(session.user.role)) {
     redirect('/login');

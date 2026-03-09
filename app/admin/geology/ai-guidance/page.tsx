@@ -5,7 +5,7 @@
  * This is where the geologist can train and shape AI behavior.
  */
 
-import { auth } from '@/auth';
+import { getSession } from '@/lib/auth/session';
 import { canAccessGeology } from '@/lib/auth/roles';
 import { redirect } from 'next/navigation';
 import { query } from '@/lib/db';
@@ -77,7 +77,7 @@ function GuidanceTypeBadge({ type }: { type: string }) {
 // ============================================================================
 
 export default async function AIGuidancePage() {
-  const session = await auth();
+  const session = await getSession();
 
   if (!session || !canAccessGeology(session.user.role)) {
     redirect('/login');

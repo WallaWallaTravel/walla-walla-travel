@@ -4,13 +4,13 @@
  * Create a new geological site.
  */
 
-import { auth } from '@/auth';
+import { getSession } from '@/lib/auth/session';
 import { canAccessGeology } from '@/lib/auth/roles';
 import { redirect } from 'next/navigation';
 import { SiteEditor } from '../SiteEditor';
 
 export default async function NewSitePage() {
-  const session = await auth();
+  const session = await getSession();
 
   if (!session || !canAccessGeology(session.user.role)) {
     redirect('/login');
