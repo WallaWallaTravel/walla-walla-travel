@@ -1,5 +1,41 @@
 **Read MISSION.md before every task.** It defines why we build and what matters most.
 
+## HARD RULES — VIOLATIONS REQUIRE REVERT
+
+### Database Access
+- ONLY Prisma. No `import pool`, no `import { pool }`, no `query()` from `lib/db`, no raw SQL strings in Server Actions.
+- The ONLY exception is `prisma.$queryRaw` and you must explain WHY before using it.
+
+### Authentication
+- ONLY `getSession()` from `@/lib/auth/session`. Never import `auth` from `@/auth` except in `auth.ts`, `auth.config.ts`, and `app/api/auth/[...nextauth]/route.ts`.
+- Auth.js is DORMANT. Do not use it in any new code.
+
+### Mutations
+- ONLY Server Actions for internal mutations. No `fetch('/api/...')` to internal routes. No CSRF tokens. No `getCSRFToken()`.
+
+### Forms
+- React Hook Form + Zod only. No `useState` for form field management.
+
+### API Routes — Keep ONLY for:
+- Webhooks (Stripe, Resend, Sentry), cron jobs, iCal feeds, public GET endpoints, file uploads.
+
+### Styling
+- Tailwind only. No inline `style={{}}`.
+
+### Execution
+- No parallel agents unless explicitly told "use agents."
+- No background tasks unless explicitly told.
+- No deleting files unless explicitly told.
+- No creating new patterns — use existing patterns. If unsure, ASK.
+
+### Before Every Commit — run ALL 4 checks:
+1. `grep -rn "from '@/auth'" app/ lib/actions/ --include="*.ts" --include="*.tsx"` — ONLY in auth.ts, auth.config.ts, [...nextauth]/route.ts
+2. `grep -rn "import.*pool\|from.*lib/db" lib/actions/ --include="*.ts"` — ZERO results
+3. `grep -rn "getCSRFToken\|x-csrf-token" components/ app/admin/ --include="*.ts" --include="*.tsx"` — ZERO in new/modified code
+4. `npx next build` — PASSES
+
+### When In Doubt: ASK. Do not guess.
+
 # Walla Walla Ecosystem - Claude Code Master Context
 
 ## 🎯 CONTENT PHILOSOPHY: ACCURACY AS COMPETITIVE ADVANTAGE
