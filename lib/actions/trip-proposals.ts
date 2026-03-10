@@ -994,3 +994,69 @@ export async function updateProposalStatus(
     return { success: false, error: message }
   }
 }
+
+// ============================================================================
+// createProposalAction — useActionState wrapper for FormData
+// Collects separate firstName + lastName and combines into customer_name
+// ============================================================================
+
+export type CreateProposalActionResult = {
+  success: boolean
+  id?: number
+  proposal_number?: string
+  error?: string
+  fieldErrors?: Record<string, string[]>
+}
+
+export async function createProposalAction(
+  _prev: CreateProposalActionResult | null,
+  formData: FormData
+): Promise<CreateProposalActionResult> {
+  const session = await requireAdmin()
+  if (!session) return { success: false, error: 'Unauthorized' }
+
+  const firstName = (formData.get('firstName') as string)?.trim() || ''
+  const lastName = (formData.get('lastName') as string)?.trim() || ''
+
+  if (!firstName) {
+    return { success: false, fieldErrors: { firstName: ['First name is required'] } }
+  }
+  if (!lastName) {
+    return { success: false, fieldErrors: { lastName: ['Last name is required'] } }
+  }
+
+  const customerName = `${firstName} ${lastName}`
+
+  const input = {
+    customer_name: customerName,
+    customer_email: (formData.get('customer_email') as string) || '',
+    customer_phone: (formData.get('customer_phone') as string) || '',
+    customer_company: (formData.get('customer_company') as string) || '',
+    trip_type: (formData.get('trip_type') as string) || 'wine_tour',
+    trip_title: (formData.get('trip_title') as string) || undefined,
+    party_size: parseInt((formData.get('party_size') as string) || '2', 10),
+    start_date: (formData.get('start_date') as string) || '',
+    end_date: (formData.get('end_date') as string) || undefined,
+    introduction: (formData.get('introduction') as string) || undefined,
+    internal_notes: (formData.get('internal_notes') as string) || undefined,
+    tax_rate: parseFloat((formData.get('tax_rate') as string) || '0.091'),
+    deposit_percentage: parseInt((formData.get('deposit_percentage') as string) || '50', 10),
+    gratuity_percentage: parseInt((formData.get('gratuity_percentage') as string) || '0', 10),
+  }
+
+  const result = await createProposal(input as CreateProposalInput)
+
+  if (!result.success) {
+    const err = result.error
+    if (typeof err === 'object' && err !== null) {
+      return { success: false, fieldErrors: err as Record<string, string[]> }
+    }
+    return { success: false, error: typeof err === 'string' ? err : 'Failed to create proposal' }
+  }
+
+  return {
+    success: true,
+    id: result.data?.id,
+    proposal_number: result.data?.proposal_number,
+  }
+}
