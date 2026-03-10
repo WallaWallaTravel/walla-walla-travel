@@ -224,6 +224,20 @@ function DetailsTab({ proposal }: { proposal: SerializedProposal }) {
   const [state, action, pending] = useActionState(saveDetailsAction, null)
   const { firstName, lastName } = splitName(proposal.customer_name)
 
+  // Controlled state for date inputs — uncontrolled date inputs inside
+  // React 19 <form action={...}> don't reliably display the selected value
+  // after the browser's native date picker is used.
+  const [startDate, setStartDate] = useState(proposal.start_date)
+  const [endDate, setEndDate] = useState(proposal.end_date || '')
+
+  // Sync from server after save (proposal prop updates via revalidatePath)
+  const prevProposalRef = useRef(proposal)
+  if (prevProposalRef.current !== proposal) {
+    prevProposalRef.current = proposal
+    setStartDate(proposal.start_date)
+    setEndDate(proposal.end_date || '')
+  }
+
   return (
     <form action={action} className="space-y-8">
       <input type="hidden" name="proposalId" value={proposal.id} />
@@ -348,7 +362,8 @@ function DetailsTab({ proposal }: { proposal: SerializedProposal }) {
               id="start_date"
               name="start_date"
               type="date"
-              defaultValue={proposal.start_date}
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
               required
               className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             />
@@ -361,7 +376,8 @@ function DetailsTab({ proposal }: { proposal: SerializedProposal }) {
               id="end_date"
               name="end_date"
               type="date"
-              defaultValue={proposal.end_date || ''}
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
               className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             />
           </div>
