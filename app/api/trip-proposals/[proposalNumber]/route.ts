@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, RouteContext } from '@/lib/api/middleware/error-handler';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
+import { getSession } from '@/lib/auth/session';
 
 interface RouteParams {
   proposalNumber: string;
@@ -26,6 +27,14 @@ export const GET = withErrorHandling<unknown, RouteParams>(
       );
     }
 
+    // Admin preview mode: ?preview=true with valid admin session bypasses status filter
+    const isPreview = request.nextUrl.searchParams.get('preview') === 'true';
+    let isAdmin = false;
+    if (isPreview) {
+      const session = await getSession();
+      isAdmin = session?.user?.role === 'admin';
+    }
+
     const proposal = await tripProposalService.getByNumber(proposalNumber);
 
     if (!proposal) {
@@ -35,8 +44,8 @@ export const GET = withErrorHandling<unknown, RouteParams>(
       );
     }
 
-    // Only allow viewing of sent/viewed/accepted proposals
-    if (!['sent', 'viewed', 'accepted'].includes(proposal.status)) {
+    // Only allow viewing of sent/viewed/accepted proposals (unless admin preview)
+    if (!isAdmin && !['sent', 'viewed', 'accepted'].includes(proposal.status)) {
       return NextResponse.json(
         { success: false, error: 'Proposal not available' },
         { status: 404 }
@@ -46,8 +55,8 @@ export const GET = withErrorHandling<unknown, RouteParams>(
     // Get full details
     const fullProposal = await tripProposalService.getFullDetails(proposal.id);
 
-    // Mark as viewed if sent
-    if (proposal.status === 'sent') {
+    // Mark as viewed if sent (skip for admin preview)
+    if (!isAdmin && proposal.status === 'sent') {
       const ip =
         request.headers.get('x-forwarded-for')?.split(',')[0] ||
         request.headers.get('x-real-ip') ||
@@ -57,7 +66,7 @@ export const GET = withErrorHandling<unknown, RouteParams>(
         actor_type: 'customer',
         ip_address: ip,
       });
-    } else if (proposal.status === 'viewed') {
+    } else if (!isAdmin && proposal.status === 'viewed') {
       // Increment view count
       const { query } = await import('@/lib/db');
       await query(

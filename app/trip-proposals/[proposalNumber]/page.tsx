@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, use } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { getBrandEmailConfig } from '@/lib/email-brands';
 import BrandFooter from '@/components/BrandFooter';
@@ -106,6 +107,8 @@ export default function ClientTripProposalView({
   params: Promise<{ proposalNumber: string }>;
 }) {
   const { proposalNumber } = use(params);
+  const searchParams = useSearchParams();
+  const isPreview = searchParams.get('preview') === 'true';
   const [proposal, setProposal] = useState<TripProposal | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -117,7 +120,10 @@ export default function ClientTripProposalView({
 
   const fetchProposal = async () => {
     try {
-      const response = await fetch(`/api/trip-proposals/${proposalNumber}`);
+      const url = isPreview
+        ? `/api/trip-proposals/${proposalNumber}?preview=true`
+        : `/api/trip-proposals/${proposalNumber}`;
+      const response = await fetch(url);
 
       if (!response.ok) {
         throw new Error('Proposal not found');
@@ -217,6 +223,15 @@ export default function ClientTripProposalView({
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        {/* Preview Banner */}
+        {isPreview && (
+          <div className="mb-6 bg-indigo-50 border-l-4 border-indigo-500 p-4 rounded-r-lg">
+            <p className="text-indigo-800 font-medium">
+              Admin Preview — This is how the client will see this proposal. Status: <span className="capitalize">{proposal.status}</span>
+            </p>
+          </div>
+        )}
+
         {/* Status Banners */}
         {isExpired && (
           <div className="mb-6 bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-lg">
