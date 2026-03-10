@@ -1,7 +1,7 @@
 'use server'
 
 import { prisma } from '@/lib/prisma'
-import { Prisma } from '@/lib/generated/prisma/client'
+import { Prisma } from '@prisma/client'
 import {
   WineryFiltersSchema,
   SharedTourFiltersSchema,

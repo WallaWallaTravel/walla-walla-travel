@@ -6,7 +6,7 @@ import {
   BookingFiltersSchema,
   type BookingFilters,
 } from '@/lib/schemas/booking'
-import type { Prisma } from '@/lib/generated/prisma/client'
+import type { Prisma } from '@prisma/client'
 
 // ============================================================================
 // TYPES

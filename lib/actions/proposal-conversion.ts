@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { AcceptProposalSchema, type AcceptProposalInput } from '@/lib/schemas/proposal-conversion'
 import { generateSecureString } from '@/lib/utils'
 import { logger } from '@/lib/logger'
-import { Prisma } from '@/lib/generated/prisma/client'
+import { Prisma } from '@prisma/client'
 
 // -----------------------------------------------------------------------------
 // Types

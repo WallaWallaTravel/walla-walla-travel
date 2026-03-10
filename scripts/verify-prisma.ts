@@ -5,7 +5,7 @@
  * Queries one booking via Prisma to confirm typed client works against production DB.
  */
 
-import { PrismaClient } from '../lib/generated/prisma/client'
+import { PrismaClient } from '@prisma/client'
 
 async function main() {
   const prisma = new PrismaClient()

@@ -7,7 +7,7 @@
 import { config } from 'dotenv'
 config({ path: '.env.local' })
 
-import { PrismaClient } from '../lib/generated/prisma/client'
+import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient({
   datasourceUrl: process.env.PRISMA_DATABASE_URL || process.env.DATABASE_URL,

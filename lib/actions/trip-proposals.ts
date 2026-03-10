@@ -2,7 +2,7 @@
 
 import { getSession } from '@/lib/auth/session'
 import { prisma } from '@/lib/prisma'
-import { Prisma } from '@/lib/generated/prisma/client'
+import { Prisma } from '@prisma/client'
 import { generateSecureString } from '@/lib/utils'
 import { revalidatePath } from 'next/cache'
 import {
