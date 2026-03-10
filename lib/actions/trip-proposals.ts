@@ -4,6 +4,7 @@ import { getSession } from '@/lib/auth/session'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@/lib/generated/prisma/client'
 import { generateSecureString } from '@/lib/utils'
+import { revalidatePath } from 'next/cache'
 import {
   CreateProposalSchema,
   UpdateProposalDetailsSchema,
@@ -1059,4 +1060,219 @@ export async function createProposalAction(
     id: result.data?.id,
     proposal_number: result.data?.proposal_number,
   }
+}
+
+// ============================================================================
+// Edit Proposal Page — Server Action wrappers with revalidatePath
+// ============================================================================
+
+export type FormActionResult = {
+  success: boolean
+  error?: string
+  fieldErrors?: Record<string, string[]>
+}
+
+function revalidateProposal(proposalId: number) {
+  revalidatePath(`/admin/trip-proposals/${proposalId}`)
+}
+
+// --- Details tab (useActionState) ---
+
+export async function saveDetailsAction(
+  _prev: FormActionResult | null,
+  formData: FormData
+): Promise<FormActionResult> {
+  const session = await requireAdmin()
+  if (!session) return { success: false, error: 'Unauthorized' }
+
+  const proposalId = parseInt(formData.get('proposalId') as string, 10)
+  if (!proposalId) return { success: false, error: 'Missing proposal ID' }
+
+  const firstName = (formData.get('firstName') as string)?.trim() || ''
+  const lastName = (formData.get('lastName') as string)?.trim() || ''
+  const customerName = [firstName, lastName].filter(Boolean).join(' ')
+
+  if (!customerName) {
+    return { success: false, fieldErrors: { firstName: ['Name is required'] } }
+  }
+
+  const data: UpdateProposalDetailsInput = {
+    customer_name: customerName,
+    customer_email: (formData.get('customer_email') as string) || '',
+    customer_phone: (formData.get('customer_phone') as string) || '',
+    customer_company: (formData.get('customer_company') as string) || '',
+    trip_type: (formData.get('trip_type') as string as UpdateProposalDetailsInput['trip_type']) || undefined,
+    trip_title: (formData.get('trip_title') as string) || '',
+    party_size: parseInt(formData.get('party_size') as string, 10) || undefined,
+    start_date: (formData.get('start_date') as string) || undefined,
+    end_date: (formData.get('end_date') as string) || null,
+    introduction: (formData.get('introduction') as string) || '',
+    internal_notes: (formData.get('internal_notes') as string) || '',
+    special_notes: (formData.get('special_notes') as string) || '',
+  }
+
+  const result = await updateProposalDetails(proposalId, data)
+  revalidateProposal(proposalId)
+
+  if (!result.success) {
+    const err = result.error
+    if (typeof err === 'object') return { success: false, fieldErrors: err as Record<string, string[]> }
+    return { success: false, error: typeof err === 'string' ? err : 'Failed to update' }
+  }
+
+  return { success: true }
+}
+
+// --- Day operations (startTransition calls) ---
+
+export async function addDayToProposal(
+  proposalId: number,
+  date: string
+): Promise<ActionResult<{ id: number; day_number: number }>> {
+  const result = await addDay(proposalId, { date })
+  revalidateProposal(proposalId)
+  return result
+}
+
+export async function removeDayFromProposal(
+  dayId: number,
+  proposalId: number
+): Promise<ActionResult> {
+  const result = await removeDay(dayId)
+  revalidateProposal(proposalId)
+  return result
+}
+
+export async function updateDayInProposal(
+  dayId: number,
+  proposalId: number,
+  data: { date: string; title?: string }
+): Promise<ActionResult> {
+  const result = await updateDay(dayId, data)
+  revalidateProposal(proposalId)
+  return result
+}
+
+// --- Stop operations (startTransition calls) ---
+
+export async function addStopToDay(
+  dayId: number,
+  proposalId: number
+): Promise<ActionResult<{ id: number }>> {
+  const result = await addStop(dayId, {
+    stop_type: 'custom',
+    custom_name: '',
+    per_person_cost: 0,
+    flat_cost: 0,
+    reservation_status: 'pending',
+  })
+  revalidateProposal(proposalId)
+  return result
+}
+
+export async function removeStopFromProposal(
+  stopId: number,
+  proposalId: number
+): Promise<ActionResult> {
+  const result = await removeStop(stopId)
+  revalidateProposal(proposalId)
+  return result
+}
+
+export async function updateStopInProposal(
+  stopId: number,
+  proposalId: number,
+  data: UpsertStopInput
+): Promise<ActionResult> {
+  const result = await updateStop(stopId, data)
+  revalidateProposal(proposalId)
+  return result
+}
+
+// --- Guest operations ---
+
+export async function addGuestFormAction(
+  _prev: FormActionResult | null,
+  formData: FormData
+): Promise<FormActionResult> {
+  const session = await requireAdmin()
+  if (!session) return { success: false, error: 'Unauthorized' }
+
+  const proposalId = parseInt(formData.get('proposalId') as string, 10)
+  if (!proposalId) return { success: false, error: 'Missing proposal ID' }
+
+  const name = (formData.get('name') as string)?.trim()
+  if (!name) return { success: false, fieldErrors: { name: ['Guest name is required'] } }
+
+  const result = await addGuest(proposalId, {
+    name,
+    email: (formData.get('email') as string) || '',
+    phone: (formData.get('phone') as string) || '',
+    dietary_restrictions: (formData.get('dietary_restrictions') as string) || '',
+    rsvp_status: ((formData.get('rsvp_status') as string) || 'pending') as 'pending' | 'confirmed' | 'declined' | 'maybe',
+    is_primary: false,
+  })
+
+  revalidateProposal(proposalId)
+
+  if (!result.success) {
+    const err = result.error
+    if (typeof err === 'object') return { success: false, fieldErrors: err as Record<string, string[]> }
+    return { success: false, error: typeof err === 'string' ? err : 'Failed to add guest' }
+  }
+
+  return { success: true }
+}
+
+export async function removeGuestFromProposal(
+  guestId: number,
+  proposalId: number
+): Promise<ActionResult> {
+  const result = await removeGuest(guestId)
+  revalidateProposal(proposalId)
+  return result
+}
+
+// --- Inclusion operations ---
+
+export async function saveInclusionForProposal(
+  proposalId: number,
+  data: UpsertInclusionInput
+): Promise<ActionResult<{ id: number }>> {
+  const result = await upsertInclusion(proposalId, data)
+  // Also recalculate pricing after inclusion changes
+  await updatePricing(proposalId)
+  revalidateProposal(proposalId)
+  return result
+}
+
+export async function removeInclusionFromProposal(
+  inclusionId: number,
+  proposalId: number
+): Promise<ActionResult> {
+  const result = await removeInclusion(inclusionId)
+  await updatePricing(proposalId)
+  revalidateProposal(proposalId)
+  return result
+}
+
+// --- Pricing rates ---
+
+export async function savePricingRatesAction(
+  proposalId: number,
+  data: UpdatePricingInput
+): Promise<ActionResult> {
+  const result = await updatePricing(proposalId, data)
+  revalidateProposal(proposalId)
+  return result
+}
+
+// --- Send proposal ---
+
+export async function sendProposalToClient(
+  proposalId: number
+): Promise<ActionResult<{ url: string; proposal_number: string }>> {
+  const result = await shareProposal(proposalId)
+  revalidateProposal(proposalId)
+  return result
 }

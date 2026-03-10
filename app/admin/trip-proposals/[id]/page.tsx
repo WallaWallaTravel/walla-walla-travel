@@ -1,248 +1,146 @@
-'use client';
+import { getSession } from '@/lib/auth/session'
+import { prisma } from '@/lib/prisma'
+import { redirect } from 'next/navigation'
+import Link from 'next/link'
+import ProposalEditor from './ProposalEditor'
 
-import { useState, useEffect, use } from 'react';
-import { useToast } from '@/lib/hooks/useToast';
-import { ToastContainer } from '@/components/ui/ToastContainer';
-import { useProposalData } from '@/hooks/use-proposal-data';
-import { useProposalActions } from '@/hooks/use-proposal-actions';
-import { useGuestManagement } from '@/hooks/use-guest-management';
-import { useProposalItinerary } from '@/hooks/use-proposal-itinerary';
-import { useBilling } from '@/hooks/use-billing';
-import { useNotes } from '@/hooks/use-notes';
-import {
-  OverviewTab,
-  DaysStopsTab,
-  GuestsTab,
-  PricingTab,
-  BillingTab,
-  NotesTab,
-  SendProposalModal,
-  DeleteConfirmModal,
-  AnnounceGuestsModal,
-  ProposalHeader,
-  ProposalSidebar,
-} from './components';
-
-type TabKey = 'overview' | 'days' | 'guests' | 'pricing' | 'billing' | 'notes';
-
-const TABS: { key: TabKey; label: string }[] = [
-  { key: 'overview', label: '📋 Overview' },
-  { key: 'days', label: '📅 Days & Stops' },
-  { key: 'guests', label: '👥 Guests' },
-  { key: 'pricing', label: '💰 Pricing' },
-  { key: 'billing', label: '💳 Billing' },
-  { key: 'notes', label: '💬 Notes' },
-];
-
-export default function EditTripProposalPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
-  const { toasts, toast, dismissToast } = useToast();
-
-  // --- UI state ---
-  const [activeTab, setActiveTab] = useState<TabKey>('overview');
-  const [showSendModal, setShowSendModal] = useState(false);
-  const [showAnnounceModal, setShowAnnounceModal] = useState(false);
-  const [showMoreMenu, setShowMoreMenu] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [localLunchOrders, setLocalLunchOrders] = useState<Array<{ id: number; ordering_mode: string; day?: { day_number: number; title: string | null }; supplier?: { name: string } }>>([]);
-
-  // --- Data layer ---
-  const {
-    proposal, setProposal, wineries, restaurants, hotels, savedMenus,
-    lunchOrders, reminderHistory, loading,
-    refetchProposal, loadReminderHistory, setReminderHistory,
-  } = useProposalData(id, activeTab);
-
-  useEffect(() => {
-    if (lunchOrders.length > 0 && localLunchOrders.length === 0) setLocalLunchOrders(lunchOrders);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lunchOrders]);
-
-  // --- Hooks ---
-  const {
-    actionLoading, updateProposal, updateProposalDebounced, updateStatus,
-    recalculatePricing, convertToBooking, generateItinerary,
-    sendProposal: sendProposalAction, announceGuests,
-    archiveProposal: archiveAction,
-    unarchiveProposal: unarchiveAction, deleteProposal: deleteAction,
-    updatePlanningPhase, updateLunchOrderingMode,
-  } = useProposalActions(id, proposal, setProposal, refetchProposal, toast);
-
-  const {
-    guestLoading, addGuest: addGuestAction,
-    updateGuestField: updateGuestFieldAction, updateGuestSettings,
-    approveGuest, rejectGuest, deleteGuest: deleteGuestAction,
-  } = useGuestManagement(id, proposal, setProposal, refetchProposal, toast);
-
-  const {
-    itineraryLoading, addDay, addStop, updateStop, updateStopDebounced,
-    deleteStop, updateVendorField, logVendorInteraction,
-  } = useProposalItinerary(id, proposal, setProposal, refetchProposal, toast);
-
-  const {
-    billingLoading, updateInclusionTaxable, updateInclusionTaxIncluded,
-    recalculateBilling, verifyBilling, updateGuestSponsored, updateGuestOverride,
-    recordPayment, createPaymentGroup, pauseResumeReminders,
-    generateReminderSchedule, cancelReminder, addCustomReminder,
-  } = useBilling(id, refetchProposal, loadReminderHistory, setReminderHistory, toast);
-
-  const { notes, notesLoading, newNote, setNewNote, loadNotes, sendNote } = useNotes(id, toast);
-
-  useEffect(() => {
-    if (activeTab === 'notes' && proposal) loadNotes();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, proposal?.id]);
-
-  const saving = Object.values(actionLoading).some(Boolean) ||
-    Object.values(guestLoading).some(Boolean) ||
-    Object.values(itineraryLoading).some(Boolean) ||
-    Object.values(billingLoading).some(Boolean);
-
-  // --- Page-level handlers ---
-  const handleSendProposal = async (customMessage: string) => {
-    await sendProposalAction(customMessage);
-    setShowSendModal(false);
-  };
-
-  const handleAnnounceGuests = async (subject: string, message: string) => {
-    await announceGuests(subject, message);
-    setShowAnnounceModal(false);
-  };
-
-  const handleArchive = async () => { await archiveAction(); setShowMoreMenu(false); };
-  const handleDelete = async () => { await deleteAction(); setShowDeleteConfirm(false); setShowMoreMenu(false); };
-  const handleConvertToBooking = async () => {
-    if (!confirm('Convert this trip proposal to a booking?')) return;
-    await convertToBooking();
-  };
-  const handleUpdateLunchOrderingMode = async (orderId: number, mode: string) => {
-    const success = await updateLunchOrderingMode(orderId, mode);
-    if (success) setLocalLunchOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, ordering_mode: mode } : o)));
-  };
-
-  // --- Loading / not found ---
-  // Only show full-page loading on initial load (no data yet).
-  // During refetches (after add stop, add day, etc.), keep showing
-  // existing content to avoid a jarring flash.
-  if (loading && !proposal) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-4xl mb-4">⏳</div>
-          <p className="text-gray-600">Loading trip proposal...</p>
-        </div>
-      </div>
-    );
+// Serialize Prisma Decimal/Date fields to plain numbers/strings for client
+function serializeProposal(p: NonNullable<Awaited<ReturnType<typeof fetchProposal>>>) {
+  return {
+    id: p.id,
+    proposal_number: p.proposal_number,
+    status: p.status || 'draft',
+    customer_name: p.customer_name,
+    customer_email: p.customer_email,
+    customer_phone: p.customer_phone,
+    customer_company: p.customer_company,
+    trip_type: p.trip_type || 'wine_tour',
+    trip_title: p.trip_title,
+    party_size: p.party_size,
+    start_date: p.start_date ? p.start_date.toISOString().split('T')[0] : '',
+    end_date: p.end_date ? p.end_date.toISOString().split('T')[0] : null,
+    introduction: p.introduction,
+    special_notes: p.special_notes,
+    internal_notes: p.internal_notes,
+    discount_percentage: Number(p.discount_percentage ?? 0),
+    discount_amount: Number(p.discount_amount ?? 0),
+    tax_rate: Number(p.tax_rate ?? 0.091),
+    taxes: Number(p.taxes ?? 0),
+    gratuity_percentage: p.gratuity_percentage ?? 0,
+    gratuity_amount: Number(p.gratuity_amount ?? 0),
+    deposit_percentage: p.deposit_percentage ?? 50,
+    deposit_amount: Number(p.deposit_amount ?? 0),
+    deposit_paid: p.deposit_paid ?? false,
+    subtotal: Number(p.subtotal ?? 0),
+    total: Number(p.total ?? 0),
+    balance_due: Number(p.balance_due ?? 0),
+    days: p.trip_proposal_days.map((d) => ({
+      id: d.id,
+      day_number: d.day_number,
+      date: d.date ? d.date.toISOString().split('T')[0] : '',
+      title: d.title,
+      stops: d.trip_proposal_stops.map((s) => ({
+        id: s.id,
+        stop_order: s.stop_order,
+        stop_type: s.stop_type,
+        custom_name: s.custom_name,
+        custom_description: s.custom_description,
+        scheduled_time: s.scheduled_time
+          ? `${String(s.scheduled_time.getUTCHours()).padStart(2, '0')}:${String(s.scheduled_time.getUTCMinutes()).padStart(2, '0')}`
+          : null,
+        duration_minutes: s.duration_minutes,
+        cost_note: s.cost_note,
+      })),
+    })),
+    guests: p.trip_proposal_guests.map((g) => ({
+      id: g.id,
+      name: g.name,
+      email: g.email,
+      phone: g.phone,
+      rsvp_status: g.rsvp_status || 'pending',
+      dietary_restrictions: g.dietary_restrictions,
+      is_primary: g.is_primary ?? false,
+    })),
+    inclusions: p.trip_proposal_inclusions.map((inc) => ({
+      id: inc.id,
+      inclusion_type: inc.inclusion_type,
+      description: inc.description,
+      quantity: Number(inc.quantity ?? 1),
+      unit: inc.unit,
+      unit_price: Number(inc.unit_price ?? 0),
+      total_price: Number(inc.total_price ?? 0),
+      sort_order: inc.sort_order ?? 0,
+      show_on_proposal: inc.show_on_proposal ?? true,
+      notes: inc.notes,
+    })),
   }
+}
+
+async function fetchProposal(id: number) {
+  return prisma.trip_proposals.findUnique({
+    where: { id },
+    include: {
+      trip_proposal_days: {
+        orderBy: { day_number: 'asc' },
+        include: {
+          trip_proposal_stops: {
+            orderBy: { stop_order: 'asc' },
+          },
+        },
+      },
+      trip_proposal_guests: {
+        orderBy: { created_at: 'asc' },
+      },
+      trip_proposal_inclusions: {
+        orderBy: { sort_order: 'asc' },
+      },
+    },
+  })
+}
+
+export type SerializedProposal = ReturnType<typeof serializeProposal>
+
+export default async function EditProposalPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const session = await getSession()
+  if (!session?.user) redirect('/login')
+
+  const { id } = await params
+  const proposalId = parseInt(id, 10)
+
+  if (isNaN(proposalId)) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <h2 className="text-xl font-semibold text-gray-900 mb-2">Invalid proposal ID</h2>
+        <Link href="/admin/trip-proposals" className="text-indigo-600 hover:underline text-sm">
+          Back to proposals
+        </Link>
+      </div>
+    )
+  }
+
+  const proposal = await fetchProposal(proposalId)
 
   if (!proposal) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-4xl mb-4">❌</div>
-          <p className="text-gray-600">Trip proposal not found</p>
+      <div className="flex flex-col items-center justify-center py-20">
+        <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+          <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
         </div>
+        <h2 className="text-xl font-semibold text-gray-900 mb-2">Proposal not found</h2>
+        <Link href="/admin/trip-proposals" className="text-indigo-600 hover:underline text-sm">
+          Back to proposals
+        </Link>
       </div>
-    );
+    )
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
-      <SendProposalModal
-        show={showSendModal}
-        onClose={() => setShowSendModal(false)}
-        onSend={handleSendProposal}
-        proposalNumber={proposal.proposal_number}
-        customerEmail={proposal.customer_email}
-        total={proposal.total}
-        sending={actionLoading['sendProposal'] || false}
-      />
-      <DeleteConfirmModal
-        show={showDeleteConfirm}
-        onClose={() => setShowDeleteConfirm(false)}
-        onConfirm={handleDelete}
-        proposalNumber={proposal.proposal_number}
-        loading={saving}
-      />
-      <AnnounceGuestsModal
-        show={showAnnounceModal}
-        onClose={() => setShowAnnounceModal(false)}
-        onSend={handleAnnounceGuests}
-        proposalNumber={proposal.proposal_number}
-        guestCount={proposal.guests?.filter((g) => g.email).length || 0}
-        sending={actionLoading['announceGuests'] || false}
-      />
+  const data = serializeProposal(proposal)
 
-      <div className="max-w-7xl mx-auto">
-        <ProposalHeader
-          proposal={proposal}
-          saving={saving}
-          showMoreMenu={showMoreMenu}
-          setShowMoreMenu={setShowMoreMenu}
-          onSendClick={() => setShowSendModal(true)}
-          onAnnounceClick={() => setShowAnnounceModal(true)}
-          onArchive={handleArchive}
-          onUnarchive={unarchiveAction}
-          onDeleteClick={() => { setShowMoreMenu(false); setShowDeleteConfirm(true); }}
-          onGenerateItinerary={generateItinerary}
-          onConvertToBooking={handleConvertToBooking}
-        />
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white rounded-xl shadow-md">
-              <div className="flex border-b border-gray-200 overflow-x-auto scrollbar-hide">
-                {TABS.map((tab) => (
-                  <button
-                    key={tab.key}
-                    type="button"
-                    onClick={() => setActiveTab(tab.key)}
-                    className={`flex-shrink-0 px-4 py-3 text-sm font-bold transition-colors ${
-                      activeTab === tab.key
-                        ? 'text-brand border-b-2 border-brand bg-brand-light'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-              <div className="p-6">
-                {activeTab === 'overview' && (
-                  <OverviewTab proposal={proposal} updateProposal={updateProposal} updateProposalDebounced={updateProposalDebounced} updateStatus={updateStatus} saving={saving} />
-                )}
-                {activeTab === 'days' && (
-                  <DaysStopsTab proposal={proposal} wineries={wineries} restaurants={restaurants} hotels={hotels} savedMenus={savedMenus} addDay={addDay} addStop={addStop} updateStop={updateStop} updateStopDebounced={updateStopDebounced} deleteStop={deleteStop} updateVendorField={updateVendorField} logVendorInteraction={logVendorInteraction} setProposal={setProposal} refetchProposal={refetchProposal} saving={saving} />
-                )}
-                {activeTab === 'guests' && (
-                  <GuestsTab proposal={proposal} addGuest={addGuestAction} updateGuestField={updateGuestFieldAction} updateGuestSettings={updateGuestSettings} approveGuest={approveGuest} rejectGuest={rejectGuest} deleteGuest={deleteGuestAction} saving={saving} toast={toast} />
-                )}
-                {activeTab === 'pricing' && (
-                  <PricingTab proposal={proposal} updateProposal={updateProposal} updateProposalDebounced={updateProposalDebounced} recalculatePricing={recalculatePricing} updateInclusionTaxable={updateInclusionTaxable} updateInclusionTaxIncluded={updateInclusionTaxIncluded} saving={saving} />
-                )}
-                {activeTab === 'billing' && (
-                  <BillingTab proposal={proposal} updateProposal={updateProposal} recalculateBilling={recalculateBilling} verifyBilling={verifyBilling} updateGuestSponsored={updateGuestSponsored} updateGuestOverride={updateGuestOverride} recordPayment={recordPayment} createPaymentGroup={createPaymentGroup} pauseResumeReminders={pauseResumeReminders} generateReminderSchedule={generateReminderSchedule} cancelReminder={cancelReminder} addCustomReminder={addCustomReminder} reminderHistory={reminderHistory} loadReminderHistory={loadReminderHistory} saving={saving} toast={toast} />
-                )}
-                {activeTab === 'notes' && (
-                  <NotesTab notes={notes} notesLoading={notesLoading} newNote={newNote} setNewNote={setNewNote} loadNotes={loadNotes} sendNote={sendNote} />
-                )}
-              </div>
-            </div>
-          </div>
-
-          <ProposalSidebar
-            proposal={proposal}
-            saving={saving}
-            localLunchOrders={localLunchOrders}
-            updateProposal={updateProposal}
-            updatePlanningPhase={updatePlanningPhase}
-            onUpdateLunchOrderingMode={handleUpdateLunchOrderingMode}
-            toast={toast}
-          />
-        </div>
-      </div>
-    </div>
-  );
+  return <ProposalEditor proposal={data} />
 }
