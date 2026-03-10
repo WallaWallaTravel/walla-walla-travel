@@ -67,10 +67,10 @@ WWT represents premium Walla Walla wine country experiences. The public site, gu
 
 **One pattern for each thing.**
 - Database: Prisma (not raw SQL)
-- Auth: Auth.js v5 (not custom JWT)
+- Auth: JWT via getSession() (not Auth.js)
 - Mutations: Server Actions (not fetch + CSRF)
-- Forms: React Hook Form + Zod (not ad-hoc validation)
-- API calls: adminApi client (not raw fetch)
+- Forms: Server Actions + useActionState + Zod (not ad-hoc validation)
+- API calls: Server Actions (not raw fetch)
 - Styling: Tailwind (not inline styles)
 
 **Compile-time catches over runtime surprises.** A bug caught by TypeScript during development costs zero. A bug caught by a user during a booking call costs a customer.
