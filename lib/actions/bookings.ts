@@ -3,13 +3,20 @@
 import { getSession } from '@/lib/auth/session'
 import { CreateBookingSchema, type CreateBookingInput } from '@/lib/schemas/booking'
 import { bookingService } from '@/lib/services/booking'
+import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
+import { z } from 'zod'
 
 export type BookingActionResult = {
   success: boolean
   booking?: { id: number; booking_number: string }
   error?: string
   fieldErrors?: Record<string, string[]>
+}
+
+export type SimpleActionResult = {
+  success: boolean
+  error?: string
 }
 
 /**
@@ -129,5 +136,200 @@ export async function createBookingAction(
     const message =
       error instanceof Error ? error.message : 'Failed to create booking'
     return { success: false, error: message }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// updateBookingStatus
+// ---------------------------------------------------------------------------
+
+const StatusSchema = z.object({
+  bookingId: z.coerce.number().int().positive(),
+  status: z.enum(['pending', 'confirmed', 'completed', 'cancelled']),
+  cancellationReason: z.string().optional(),
+})
+
+export async function updateBookingStatus(
+  _prev: SimpleActionResult | null,
+  formData: FormData
+): Promise<SimpleActionResult> {
+  const session = await getSession()
+  if (!session?.user || session.user.role !== 'admin') {
+    return { success: false, error: 'Unauthorized' }
+  }
+
+  const parsed = StatusSchema.safeParse({
+    bookingId: formData.get('bookingId'),
+    status: formData.get('status'),
+    cancellationReason: formData.get('cancellationReason') || undefined,
+  })
+  if (!parsed.success) {
+    return { success: false, error: 'Invalid status data' }
+  }
+
+  const { bookingId, status, cancellationReason } = parsed.data
+
+  try {
+    const updateData: Record<string, unknown> = {
+      status,
+      updated_at: new Date(),
+    }
+
+    if (status === 'cancelled') {
+      updateData.cancelled_at = new Date()
+      updateData.cancelled_by = session.user.id
+      if (cancellationReason) updateData.cancellation_reason = cancellationReason
+    }
+    if (status === 'completed') {
+      updateData.completed_at = new Date()
+    }
+
+    await prisma.bookings.update({
+      where: { id: bookingId },
+      data: updateData,
+    })
+
+    revalidatePath(`/admin/bookings/${bookingId}`)
+    revalidatePath('/admin/bookings')
+    return { success: true }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to update status',
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// updateBookingDriver
+// ---------------------------------------------------------------------------
+
+const DriverSchema = z.object({
+  bookingId: z.coerce.number().int().positive(),
+  driverId: z.coerce.number().int().nonnegative(),
+})
+
+export async function updateBookingDriver(
+  _prev: SimpleActionResult | null,
+  formData: FormData
+): Promise<SimpleActionResult> {
+  const session = await getSession()
+  if (!session?.user || session.user.role !== 'admin') {
+    return { success: false, error: 'Unauthorized' }
+  }
+
+  const parsed = DriverSchema.safeParse({
+    bookingId: formData.get('bookingId'),
+    driverId: formData.get('driverId'),
+  })
+  if (!parsed.success) {
+    return { success: false, error: 'Invalid driver data' }
+  }
+
+  try {
+    await prisma.bookings.update({
+      where: { id: parsed.data.bookingId },
+      data: {
+        driver_id: parsed.data.driverId === 0 ? null : parsed.data.driverId,
+        updated_at: new Date(),
+      },
+    })
+
+    revalidatePath(`/admin/bookings/${parsed.data.bookingId}`)
+    return { success: true }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to update driver',
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// updateBookingVehicle
+// ---------------------------------------------------------------------------
+
+const VehicleSchema = z.object({
+  bookingId: z.coerce.number().int().positive(),
+  vehicleId: z.coerce.number().int().nonnegative(),
+})
+
+export async function updateBookingVehicle(
+  _prev: SimpleActionResult | null,
+  formData: FormData
+): Promise<SimpleActionResult> {
+  const session = await getSession()
+  if (!session?.user || session.user.role !== 'admin') {
+    return { success: false, error: 'Unauthorized' }
+  }
+
+  const parsed = VehicleSchema.safeParse({
+    bookingId: formData.get('bookingId'),
+    vehicleId: formData.get('vehicleId'),
+  })
+  if (!parsed.success) {
+    return { success: false, error: 'Invalid vehicle data' }
+  }
+
+  try {
+    await prisma.bookings.update({
+      where: { id: parsed.data.bookingId },
+      data: {
+        vehicle_id: parsed.data.vehicleId === 0 ? null : parsed.data.vehicleId,
+        updated_at: new Date(),
+      },
+    })
+
+    revalidatePath(`/admin/bookings/${parsed.data.bookingId}`)
+    return { success: true }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to update vehicle',
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// addBookingNote
+// ---------------------------------------------------------------------------
+
+const NoteSchema = z.object({
+  bookingId: z.coerce.number().int().positive(),
+  note: z.string().min(1, 'Note cannot be empty').max(2000),
+})
+
+export async function addBookingNote(
+  _prev: SimpleActionResult | null,
+  formData: FormData
+): Promise<SimpleActionResult> {
+  const session = await getSession()
+  if (!session?.user || session.user.role !== 'admin') {
+    return { success: false, error: 'Unauthorized' }
+  }
+
+  const parsed = NoteSchema.safeParse({
+    bookingId: formData.get('bookingId'),
+    note: formData.get('note'),
+  })
+  if (!parsed.success) {
+    const firstError = Object.values(parsed.error.flatten().fieldErrors)[0]?.[0]
+    return { success: false, error: firstError || 'Invalid note data' }
+  }
+
+  try {
+    // booking_timeline is @@ignore — use $executeRaw
+    await prisma.$executeRaw`
+      INSERT INTO booking_timeline (booking_id, event_type, event_description, created_by, created_at)
+      VALUES (${parsed.data.bookingId}, 'note', ${parsed.data.note}, ${session.user.id}, NOW())
+    `
+
+    revalidatePath(`/admin/bookings/${parsed.data.bookingId}`)
+    return { success: true }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to add note',
+    }
   }
 }
