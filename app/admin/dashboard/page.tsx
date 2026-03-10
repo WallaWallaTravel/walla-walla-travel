@@ -1,630 +1,308 @@
-/**
- * Admin Dashboard - Overview
- * 
- * Main landing page for administrators with key metrics and quick actions
- */
+import { getSession } from '@/lib/auth/session'
+import { redirect } from 'next/navigation'
+import { prisma } from '@/lib/prisma'
+import Link from 'next/link'
 
-import { getSession } from '@/lib/auth/session';
-import { redirect } from 'next/navigation';
-import Link from 'next/link';
-import { query } from '@/lib/db';
-import { logger } from '@/lib/logger';
-
-interface ComplianceItem {
-  type: 'driver' | 'vehicle';
-  entityId: number;
-  entityName: string;
-  field: string;
-  fieldLabel: string;
-  expiryDate: string;
-  daysUntilExpiry: number;
-  severity: 'expired' | 'critical' | 'urgent' | 'warning';
+function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount)
 }
 
-interface DashboardStats {
-  totalBookings: number;
-  pendingBookings: number;
-  activeDrivers: number;
-  totalRevenue: number;
-  recentBookings: Array<{
-    id: number;
-    booking_number: string;
-    customer_name: string;
-    tour_date: string;
-    status: string;
-    total_price: number;
-  }>;
-  pendingProposals: number;
-  acceptedProposals: number;
-  businessPortalSubmissions: number;
-  complianceIssues: ComplianceItem[];
+function formatDate(date: Date | null | undefined): string {
+  if (!date) return '—'
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+  }).format(new Date(date))
 }
 
-async function getDashboardStats(): Promise<DashboardStats> {
-  try {
-    const bookingsCount = await query(
-      `SELECT COUNT(*) as count FROM bookings WHERE status NOT IN ('cancelled', 'abandoned')`
-    );
-    
-    const pendingCount = await query(
-      `SELECT COUNT(*) as count FROM bookings WHERE status = 'pending'`
-    );
-    
-    const driversCount = await query(
-      `SELECT COUNT(*) as count FROM users WHERE role = 'driver' AND is_active = true`
-    );
-    
-    const revenueResult = await query(
-      `SELECT COALESCE(SUM(total_price), 0) as revenue 
-       FROM bookings 
-       WHERE status IN ('confirmed', 'completed')`
-    );
-    
-    const recentBookings = await query<{
-      id: number;
-      booking_number: string;
-      customer_name: string;
-      tour_date: string;
-      status: string;
-      total_price: number;
-    }>(
-      `SELECT id, booking_number, customer_name, tour_date, status, total_price
-       FROM bookings
-       WHERE status NOT IN ('cancelled', 'abandoned')
-       ORDER BY created_at DESC
-       LIMIT 5`
-    );
-    
-    const proposalsCount = await query(
-      `SELECT COUNT(*) as count FROM trip_proposals WHERE status IN ('draft', 'sent', 'viewed') AND archived_at IS NULL`
-    ).catch((err) => { logger.error('[Dashboard] Failed to fetch proposals count', { error: err }); return { rows: [{ count: 0 }] }; });
-
-    const acceptedProposalsCount = await query(
-      `SELECT COUNT(*) as count FROM trip_proposals WHERE status = 'accepted' AND planning_phase IN ('proposal', 'active_planning') AND archived_at IS NULL`
-    ).catch((err) => { logger.error('[Dashboard] Failed to fetch accepted proposals count', { error: err }); return { rows: [{ count: 0 }] }; });
-    
-    const businessCount = await query(
-      `SELECT COUNT(*) as count FROM businesses WHERE status = 'imported'`
-    ).catch((err) => { logger.error('[Dashboard] Failed to fetch business count', { error: err }); return { rows: [{ count: 0 }] }; });
-
-    // Fetch compliance issues (40 days warning window)
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const warningDate = new Date(today);
-    warningDate.setDate(warningDate.getDate() + 40);
-    const warningDateStr = warningDate.toISOString().split('T')[0];
-
-    const complianceIssues: ComplianceItem[] = [];
-
-    // Check driver compliance
-    const driversCompliance = await query(
-      `SELECT id, name, license_expiry, medical_cert_expiry
-       FROM users
-       WHERE role = 'driver' AND is_active = true
-         AND (license_expiry <= $1 OR medical_cert_expiry <= $1)`,
-      [warningDateStr]
-    ).catch(() => ({ rows: [] }));
-
-    // Severity thresholds: expired (<=0), critical (1-5 days), urgent (6-10 days), warning (11-40 days)
-    const getSeverity = (daysUntil: number): 'expired' | 'critical' | 'urgent' | 'warning' => {
-      if (daysUntil <= 0) return 'expired';
-      if (daysUntil <= 5) return 'critical';
-      if (daysUntil <= 10) return 'urgent';
-      return 'warning';
-    };
-
-    for (const driver of driversCompliance.rows) {
-      if (driver.license_expiry) {
-        const expiry = new Date(driver.license_expiry);
-        const daysUntil = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-        if (daysUntil <= 40) {
-          complianceIssues.push({
-            type: 'driver',
-            entityId: driver.id,
-            entityName: driver.name,
-            field: 'license_expiry',
-            fieldLabel: 'Driver License',
-            expiryDate: expiry.toISOString().split('T')[0],
-            daysUntilExpiry: daysUntil,
-            severity: getSeverity(daysUntil),
-          });
-        }
-      }
-      if (driver.medical_cert_expiry) {
-        const expiry = new Date(driver.medical_cert_expiry);
-        const daysUntil = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-        if (daysUntil <= 40) {
-          complianceIssues.push({
-            type: 'driver',
-            entityId: driver.id,
-            entityName: driver.name,
-            field: 'medical_cert_expiry',
-            fieldLabel: 'Medical Certificate',
-            expiryDate: expiry.toISOString().split('T')[0],
-            daysUntilExpiry: daysUntil,
-            severity: getSeverity(daysUntil),
-          });
-        }
-      }
-    }
-
-    // Check vehicle compliance
-    const vehiclesCompliance = await query(
-      `SELECT id, name, insurance_expiry, registration_expiry
-       FROM vehicles
-       WHERE is_active = true
-         AND (insurance_expiry <= $1 OR registration_expiry <= $1)`,
-      [warningDateStr]
-    ).catch(() => ({ rows: [] }));
-
-    for (const vehicle of vehiclesCompliance.rows) {
-      if (vehicle.insurance_expiry) {
-        const expiry = new Date(vehicle.insurance_expiry);
-        const daysUntil = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-        if (daysUntil <= 40) {
-          complianceIssues.push({
-            type: 'vehicle',
-            entityId: vehicle.id,
-            entityName: vehicle.name,
-            field: 'insurance_expiry',
-            fieldLabel: 'Insurance',
-            expiryDate: expiry.toISOString().split('T')[0],
-            daysUntilExpiry: daysUntil,
-            severity: getSeverity(daysUntil),
-          });
-        }
-      }
-      if (vehicle.registration_expiry) {
-        const expiry = new Date(vehicle.registration_expiry);
-        const daysUntil = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-        if (daysUntil <= 40) {
-          complianceIssues.push({
-            type: 'vehicle',
-            entityId: vehicle.id,
-            entityName: vehicle.name,
-            field: 'registration_expiry',
-            fieldLabel: 'Registration',
-            expiryDate: expiry.toISOString().split('T')[0],
-            daysUntilExpiry: daysUntil,
-            severity: getSeverity(daysUntil),
-          });
-        }
-      }
-    }
-
-    // Sort by severity (expired first, then critical, then urgent, then warning)
-    const severityOrder: Record<string, number> = { expired: 0, critical: 1, urgent: 2, warning: 3 };
-    complianceIssues.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
-
-    return {
-      totalBookings: parseInt(bookingsCount.rows[0]?.count || '0'),
-      pendingBookings: parseInt(pendingCount.rows[0]?.count || '0'),
-      activeDrivers: parseInt(driversCount.rows[0]?.count || '0'),
-      totalRevenue: parseFloat(revenueResult.rows[0]?.revenue || '0'),
-      recentBookings: recentBookings.rows.map(booking => ({
-        ...booking,
-        total_price: parseFloat(String(booking.total_price) || '0')
-      })),
-      pendingProposals: parseInt(proposalsCount.rows[0]?.count || '0'),
-      acceptedProposals: parseInt(acceptedProposalsCount.rows[0]?.count || '0'),
-      businessPortalSubmissions: parseInt(businessCount.rows[0]?.count || '0'),
-      complianceIssues,
-    };
-  } catch (error) {
-    logger.error('[Dashboard] Error fetching stats', { error });
-    return {
-      totalBookings: 0,
-      pendingBookings: 0,
-      activeDrivers: 0,
-      totalRevenue: 0,
-      recentBookings: [],
-      pendingProposals: 0,
-      acceptedProposals: 0,
-      businessPortalSubmissions: 0,
-      complianceIssues: [],
-    };
+function StatusBadge({ status }: { status: string }) {
+  const colors: Record<string, string> = {
+    confirmed: 'bg-emerald-100 text-emerald-700',
+    pending: 'bg-amber-100 text-amber-700',
+    draft: 'bg-slate-100 text-slate-700',
+    sent: 'bg-blue-100 text-blue-700',
+    accepted: 'bg-emerald-100 text-emerald-700',
+    cancelled: 'bg-red-100 text-red-700',
+    completed: 'bg-slate-100 text-slate-600',
   }
+  const colorClass = colors[status] || 'bg-slate-100 text-slate-700'
+
+  return (
+    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium capitalize ${colorClass}`}>
+      {status.replace('_', ' ')}
+    </span>
+  )
 }
 
 export default async function AdminDashboardPage() {
-  const session = await getSession();
+  const session = await getSession()
+  if (!session) redirect('/login')
 
-  if (!session || session.user.role !== 'admin') {
-    redirect('/login');
-  }
-  
-  const stats = await getDashboardStats();
-  
+  const now = new Date()
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+
+  // Fetch all data in parallel
+  const [
+    totalBookings,
+    activeProposals,
+    upcomingTours,
+    revenueResult,
+    recentBookings,
+    recentProposals,
+    todaysTasks,
+  ] = await Promise.all([
+    // Total bookings
+    prisma.bookings.count(),
+
+    // Active proposals (draft or sent)
+    prisma.trip_proposals.count({
+      where: { status: { in: ['draft', 'sent'] } },
+    }),
+
+    // Upcoming tours
+    prisma.bookings.count({
+      where: { tour_date: { gte: now } },
+    }),
+
+    // Revenue this month (successful payments)
+    prisma.payments.aggregate({
+      _sum: { amount: true },
+      where: {
+        status: 'succeeded',
+        created_at: { gte: monthStart },
+      },
+    }),
+
+    // Recent bookings
+    prisma.bookings.findMany({
+      select: {
+        id: true,
+        customer_name: true,
+        status: true,
+        created_at: true,
+        tour_date: true,
+      },
+      orderBy: { created_at: 'desc' },
+      take: 6,
+    }),
+
+    // Recent proposals
+    prisma.trip_proposals.findMany({
+      select: {
+        id: true,
+        customer_name: true,
+        status: true,
+        created_at: true,
+        start_date: true,
+      },
+      orderBy: { created_at: 'desc' },
+      take: 6,
+    }),
+
+    // Today's tasks for this user
+    prisma.crm_tasks.findMany({
+      where: {
+        assigned_to: session.user.id,
+        status: { in: ['pending', 'in_progress'] },
+      },
+      select: {
+        id: true,
+        title: true,
+        due_date: true,
+        priority: true,
+        status: true,
+      },
+      orderBy: { due_date: 'asc' },
+      take: 10,
+    }),
+  ])
+
+  const monthlyRevenue = Number(revenueResult._sum.amount ?? 0)
+
+  // Merge recent bookings + proposals into a single activity feed, sorted by date
+  const recentActivity = [
+    ...recentBookings.map((b) => ({
+      id: b.id,
+      name: b.customer_name,
+      type: 'booking' as const,
+      status: b.status,
+      date: b.created_at,
+      href: `/admin/bookings/${b.id}`,
+    })),
+    ...recentProposals.map((p) => ({
+      id: p.id,
+      name: p.customer_name,
+      type: 'proposal' as const,
+      status: p.status ?? 'draft',
+      date: p.created_at ?? new Date(),
+      href: `/admin/trip-proposals/${p.id}`,
+    })),
+  ]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 10)
+
+  const stats = [
+    {
+      label: 'Total Bookings',
+      value: totalBookings.toLocaleString(),
+      href: '/admin/bookings',
+      iconPath: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
+    },
+    {
+      label: 'Active Proposals',
+      value: activeProposals.toLocaleString(),
+      href: '/admin/trip-proposals',
+      iconPath: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
+    },
+    {
+      label: 'Upcoming Tours',
+      value: upcomingTours.toLocaleString(),
+      href: '/admin/calendar',
+      iconPath: 'M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z M15 11a3 3 0 11-6 0 3 3 0 016 0z',
+    },
+    {
+      label: 'Revenue This Month',
+      value: formatCurrency(monthlyRevenue),
+      href: '/admin/invoices',
+      iconPath: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+    },
+  ]
+
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-900">
-          Welcome back, {session.user.name}
-        </h1>
-        <p className="text-slate-500 mt-1">
-          Here&apos;s what&apos;s happening with your business today
-        </p>
-      </div>
-      
-      {/* Action Required Alert - Trips in Planning */}
-      {stats.acceptedProposals > 0 && (
-        <Link
-          href="/admin/bookings?tab=planning"
-          className="block mb-6 bg-emerald-50 border border-emerald-200 rounded-lg p-4 hover:shadow-soft hover:border-emerald-300 transition-all"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="bg-emerald-600 text-white rounded-full p-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    <div>
+      <h1 className="text-2xl font-bold text-slate-900 mb-6">Dashboard</h1>
+
+      {/* Stat Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+        {stats.map((stat) => (
+          <Link
+            key={stat.label}
+            href={stat.href}
+            className="block bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
+                <svg
+                  className="w-5 h-5 text-slate-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d={stat.iconPath}
+                  />
                 </svg>
               </div>
-              <div>
-                <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wide">Active Planning</p>
-                <p className="text-base font-semibold text-slate-900">
-                  {stats.acceptedProposals} Trip{stats.acceptedProposals !== 1 ? 's' : ''} Need Itinerary Planning
-                </p>
-              </div>
+              <p className="text-sm font-medium text-slate-600">{stat.label}</p>
             </div>
-            <div className="flex items-center gap-1 text-emerald-600 font-medium text-sm">
-              <span>View Trips</span>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </div>
-          </div>
-        </Link>
-      )}
+            <p className="text-2xl font-bold text-slate-900">{stat.value}</p>
+          </Link>
+        ))}
+      </div>
 
-      {/* Compliance Alert Widget */}
-      {stats.complianceIssues.length > 0 && (
-        <div className="mb-6 bg-white border border-slate-200 rounded-lg overflow-hidden">
-          <div className={`px-4 py-3 flex items-center justify-between ${
-            stats.complianceIssues.some(i => i.severity === 'expired')
-              ? 'bg-red-50 border-b border-red-200'
-              : stats.complianceIssues.some(i => i.severity === 'critical')
-              ? 'bg-red-50 border-b border-red-200'
-              : stats.complianceIssues.some(i => i.severity === 'urgent')
-              ? 'bg-orange-50 border-b border-orange-200'
-              : 'bg-yellow-50 border-b border-yellow-200'
-          }`}>
-            <div className="flex items-center gap-3">
-              <span className="text-xl">
-                {stats.complianceIssues.some(i => i.severity === 'expired') ? '🔴' :
-                 stats.complianceIssues.some(i => i.severity === 'critical') ? '🔴' :
-                 stats.complianceIssues.some(i => i.severity === 'urgent') ? '🟠' : '🟡'}
-              </span>
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
-                  Compliance Attention Needed
-                </p>
-                <p className="text-sm text-slate-700">
-                  {stats.complianceIssues.filter(i => i.severity === 'expired').length > 0 && (
-                    <span className="text-red-600 font-semibold mr-2">
-                      {stats.complianceIssues.filter(i => i.severity === 'expired').length} expired
-                    </span>
-                  )}
-                  {stats.complianceIssues.filter(i => i.severity === 'critical').length > 0 && (
-                    <span className="text-red-500 font-semibold mr-2">
-                      {stats.complianceIssues.filter(i => i.severity === 'critical').length} critical
-                    </span>
-                  )}
-                  {stats.complianceIssues.filter(i => i.severity === 'urgent').length > 0 && (
-                    <span className="text-orange-600 font-semibold mr-2">
-                      {stats.complianceIssues.filter(i => i.severity === 'urgent').length} urgent
-                    </span>
-                  )}
-                  {stats.complianceIssues.filter(i => i.severity === 'warning').length > 0 && (
-                    <span className="text-yellow-700 font-semibold">
-                      {stats.complianceIssues.filter(i => i.severity === 'warning').length} warning
-                    </span>
-                  )}
-                </p>
-              </div>
-            </div>
-            <Link
-              href="/admin/calendar"
-              className="text-sm text-slate-600 hover:text-slate-800 font-medium flex items-center gap-1"
-            >
-              View Calendar
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
+      {/* Two-column section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Recent Activity */}
+        <div className="bg-white border border-slate-200 rounded-xl shadow-sm">
+          <div className="px-5 py-4 border-b border-slate-100">
+            <h2 className="text-lg font-semibold text-slate-900">Recent Activity</h2>
           </div>
-          <div className="p-4">
-            <div className="space-y-2 max-h-48 overflow-y-auto">
-              {stats.complianceIssues.slice(0, 5).map((issue, _idx) => (
-                <div
-                  key={`${issue.type}-${issue.entityId}-${issue.field}`}
-                  className="flex items-center justify-between py-2 px-3 rounded-lg bg-slate-50"
+          <div className="divide-y divide-slate-100">
+            {recentActivity.length === 0 ? (
+              <div className="px-5 py-8 text-center">
+                <p className="text-sm text-slate-600">No recent activity yet.</p>
+              </div>
+            ) : (
+              recentActivity.map((item) => (
+                <Link
+                  key={`${item.type}-${item.id}`}
+                  href={item.href}
+                  className="flex items-center justify-between px-5 py-3 hover:bg-slate-50 transition-colors"
                 >
-                  <div className="flex items-center gap-3">
-                    <span className={`px-2 py-0.5 text-xs font-medium rounded ${
-                      issue.severity === 'expired' ? 'bg-red-100 text-red-700' :
-                      issue.severity === 'critical' ? 'bg-red-100 text-red-600' :
-                      issue.severity === 'urgent' ? 'bg-orange-100 text-orange-700' :
-                      'bg-yellow-100 text-yellow-700'
-                    }`}>
-                      {issue.severity === 'expired' ? 'EXPIRED' :
-                       issue.severity === 'critical' ? 'CRITICAL' :
-                       issue.severity === 'urgent' ? 'URGENT' : 'WARNING'}
-                    </span>
-                    <div>
-                      <p className="text-sm font-medium text-slate-900">
-                        {issue.type === 'driver' ? '👤' : '🚐'} {issue.entityName}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-slate-900 truncate">
+                      {item.name}
+                    </p>
+                    <p className="text-xs text-slate-600 mt-0.5">
+                      {item.type === 'booking' ? 'Booking' : 'Proposal'} &middot; {formatDate(item.date)}
+                    </p>
+                  </div>
+                  <StatusBadge status={item.status} />
+                </Link>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Today's Tasks */}
+        <div className="bg-white border border-slate-200 rounded-xl shadow-sm">
+          <div className="px-5 py-4 border-b border-slate-100">
+            <h2 className="text-lg font-semibold text-slate-900">Today&apos;s Tasks</h2>
+          </div>
+          <div className="divide-y divide-slate-100">
+            {todaysTasks.length === 0 ? (
+              <div className="px-5 py-8 text-center">
+                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-3">
+                  <svg
+                    className="w-5 h-5 text-emerald-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                </div>
+                <p className="text-sm font-medium text-slate-900">All caught up!</p>
+                <p className="text-xs text-slate-600 mt-1">No open tasks assigned to you.</p>
+              </div>
+            ) : (
+              todaysTasks.map((task) => {
+                const isOverdue = new Date(task.due_date) < now
+                return (
+                  <Link
+                    key={task.id}
+                    href={`/admin/crm/tasks`}
+                    className="flex items-center justify-between px-5 py-3 hover:bg-slate-50 transition-colors"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-slate-900 truncate">
+                        {task.title}
                       </p>
-                      <p className="text-xs text-slate-500">
-                        {issue.fieldLabel} {issue.severity === 'expired' ? 'expired' : `expires ${issue.expiryDate}`}
+                      <p className={`text-xs mt-0.5 ${isOverdue ? 'text-red-600 font-medium' : 'text-slate-600'}`}>
+                        Due {formatDate(task.due_date)}
+                        {isOverdue && ' (overdue)'}
                       </p>
                     </div>
-                  </div>
-                  <Link
-                    href={issue.type === 'driver' ? `/admin/users/${issue.entityId}` : `/admin/vehicles`}
-                    className="text-xs text-slate-500 hover:text-slate-700"
-                  >
-                    View →
-                  </Link>
-                </div>
-              ))}
-              {stats.complianceIssues.length > 5 && (
-                <p className="text-center text-sm text-slate-500 pt-2">
-                  +{stats.complianceIssues.length - 5} more items
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Stats Grid - Clickable Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-        {/* Total Bookings */}
-        <Link
-          href="/admin/bookings"
-          className="bg-white rounded-lg border border-slate-200 p-5 hover:shadow-soft hover:border-[#9FB3C8] transition-all"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Total Bookings</p>
-              <p className="text-2xl font-bold text-slate-900 mt-1">
-                {stats.totalBookings}
-              </p>
-              <p className="text-xs text-slate-400 mt-0.5">Confirmed &amp; paid</p>
-            </div>
-            <div className="bg-[#D9E2EC] rounded-lg p-2.5">
-              <svg className="w-5 h-5 text-[#334E68]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-            </div>
-          </div>
-        </Link>
-
-        {/* Proposals */}
-        <Link
-          href="/admin/trip-proposals"
-          className="bg-white rounded-lg border border-slate-200 p-5 hover:shadow-soft hover:border-violet-300 transition-all"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Proposals</p>
-              <p className="text-2xl font-bold text-slate-900 mt-1">
-                {stats.pendingProposals + stats.acceptedProposals}
-              </p>
-              <p className="text-xs text-slate-400 mt-0.5">
-                {stats.pendingProposals} pending, {stats.acceptedProposals} accepted
-              </p>
-            </div>
-            <div className="bg-violet-100 rounded-lg p-2.5">
-              <svg className="w-5 h-5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-            </div>
-          </div>
-        </Link>
-
-        {/* Pending Bookings */}
-        <Link 
-          href="/admin/bookings?status=pending"
-          className="bg-white rounded-lg border border-slate-200 p-5 hover:shadow-soft hover:border-[#E8BA8F] transition-all"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Pending</p>
-              <p className="text-2xl font-bold text-[#A5632B] mt-1">
-                {stats.pendingBookings}
-              </p>
-              <p className="text-xs text-[#B87333] mt-0.5">View all →</p>
-            </div>
-            <div className="bg-[#FAEDE0] rounded-lg p-2.5">
-              <svg className="w-5 h-5 text-[#A5632B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </div>
-        </Link>
-        
-        {/* Active Drivers */}
-        <Link 
-          href="/admin/users?role=driver"
-          className="bg-white rounded-lg border border-slate-200 p-5 hover:shadow-soft hover:border-emerald-300 transition-all"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Active Drivers</p>
-              <p className="text-2xl font-bold text-slate-900 mt-1">
-                {stats.activeDrivers}
-              </p>
-            </div>
-            <div className="bg-emerald-100 rounded-lg p-2.5">
-              <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-            </div>
-          </div>
-        </Link>
-        
-        {/* Total Revenue */}
-        <Link 
-          href="/admin/bookings?status=completed"
-          className="bg-white rounded-lg border border-slate-200 p-5 hover:shadow-soft hover:border-emerald-300 transition-all"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Total Revenue</p>
-              <p className="text-2xl font-bold text-emerald-600 mt-1">
-                ${Number(stats.totalRevenue || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-              </p>
-            </div>
-            <div className="bg-emerald-100 rounded-lg p-2.5">
-              <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </div>
-        </Link>
-      </div>
-      
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <Link 
-          href="/admin/bookings" 
-          className="bg-[#1E3A5F] hover:bg-[#1A3354] transition-colors rounded-lg p-5 text-white"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-[#BCCCDC]">Manage</p>
-              <p className="text-lg font-semibold mt-0.5">Trips</p>
-            </div>
-            <svg className="w-6 h-6 text-[#BCCCDC]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </div>
-        </Link>
-        
-        <Link 
-          href="/admin/users" 
-          className="bg-slate-700 hover:bg-slate-800 transition-colors rounded-lg p-5 text-white"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-300">Manage</p>
-              <p className="text-lg font-semibold mt-0.5">Users</p>
-            </div>
-            <svg className="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </div>
-        </Link>
-        
-        <Link 
-          href="/admin/business-portal" 
-          className="bg-[#A5632B] hover:bg-[#8B5225] transition-colors rounded-lg p-5 text-white"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-[#FAEDE0]">Review</p>
-              <p className="text-lg font-semibold mt-0.5">Business Portal</p>
-              {stats.businessPortalSubmissions > 0 && (
-                <span className="inline-block bg-white text-[#A5632B] text-xs font-bold px-2 py-0.5 rounded mt-1">
-                  {stats.businessPortalSubmissions} pending
-                </span>
-              )}
-            </div>
-            <svg className="w-6 h-6 text-[#FAEDE0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </div>
-        </Link>
-      </div>
-      
-      {/* Recent Bookings */}
-      <div className="bg-white rounded-lg border border-slate-200">
-        <div className="px-5 py-4 border-b border-slate-100">
-          <h2 className="text-lg font-semibold text-slate-900">Recent Bookings</h2>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-slate-50">
-              <tr>
-                <th className="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                  Booking #
-                </th>
-                <th className="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                  Customer
-                </th>
-                <th className="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                  Tour Date
-                </th>
-                <th className="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                  Amount
-                </th>
-                <th className="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                  
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-slate-100">
-              {stats.recentBookings.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-5 py-10 text-center text-slate-500">
-                    No confirmed bookings yet. Proposals convert to bookings when customers pay.
-                  </td>
-                </tr>
-              ) : (
-                stats.recentBookings.map((booking) => (
-                  <tr key={booking.id} className="hover:bg-slate-50">
-                    <td className="px-5 py-3 whitespace-nowrap text-sm font-medium text-[#1E3A5F]">
-                      #{booking.booking_number}
-                    </td>
-                    <td className="px-5 py-3 whitespace-nowrap text-sm text-slate-900">
-                      {booking.customer_name}
-                    </td>
-                    <td className="px-5 py-3 whitespace-nowrap text-sm text-slate-500">
-                      {new Date(booking.tour_date).toLocaleDateString()}
-                    </td>
-                    <td className="px-5 py-3 whitespace-nowrap">
-                      <span className={`px-2 py-1 inline-flex text-xs font-medium rounded ${
-                        booking.status === 'confirmed' ? 'bg-emerald-100 text-emerald-700' :
-                        booking.status === 'pending' ? 'bg-amber-100 text-amber-700' :
-                        booking.status === 'completed' ? 'bg-[#D9E2EC] text-[#1E3A5F]' :
-                        'bg-slate-100 text-slate-600'
-                      }`}>
-                        {booking.status}
+                    {task.priority === 'high' && (
+                      <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                        High
                       </span>
-                    </td>
-                    <td className="px-5 py-3 whitespace-nowrap text-sm font-medium text-slate-900">
-                      ${parseFloat(String(booking.total_price || 0)).toFixed(2)}
-                    </td>
-                    <td className="px-5 py-3 whitespace-nowrap text-sm">
-                      <Link 
-                        href={`/admin/bookings/${booking.id}`}
-                        className="text-[#334E68] hover:text-[#1A3354] font-medium"
-                      >
-                        View →
-                      </Link>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-        {stats.recentBookings.length > 0 && (
-          <div className="px-5 py-3 border-t border-slate-100">
-            <Link 
-              href="/admin/bookings"
-              className="text-sm text-[#334E68] hover:text-[#1A3354] font-medium"
-            >
-              View all bookings →
-            </Link>
+                    )}
+                    {task.priority === 'urgent' && (
+                      <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-red-200 text-red-800">
+                        Urgent
+                      </span>
+                    )}
+                  </Link>
+                )
+              })
+            )}
           </div>
-        )}
+        </div>
       </div>
     </div>
-  );
+  )
 }
