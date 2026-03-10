@@ -1,3 +1,4 @@
+// Force redeploy 2026-03-10
 import type { NextConfig } from 'next'
 import { withSentryConfig } from '@sentry/nextjs'
 import { securityHeaders, getCSPHeader } from './lib/config/security'
