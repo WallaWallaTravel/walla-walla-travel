@@ -33,6 +33,7 @@ export const CreateBookingSchema = z.object({
   customerEmail: z.string().email('Valid email required'),
   customerPhone: z.string().min(1, 'Phone required'),
   tripDate: z.string().min(1, 'Date required'),
+  startTime: z.string().optional(),
   tourType: z.enum(TOUR_TYPES, {
     error: 'Select a tour type',
   }),
@@ -47,7 +48,10 @@ export const CreateBookingSchema = z.object({
   totalPrice: z.coerce.number().min(0).optional(),
   depositAmount: z.coerce.number().optional(),
   driverId: z.coerce.number().optional(),
+  vehicleId: z.coerce.number().optional(),
   notes: z.string().optional(),
+  specialRequests: z.string().optional(),
+  winePreferences: z.string().optional(),
 })
 
 export type CreateBookingInput = z.infer<typeof CreateBookingSchema>
