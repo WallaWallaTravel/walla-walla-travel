@@ -118,18 +118,46 @@ ALL must show PASS. If any fail, fix before committing.
 
 ## Execution Rules
 
-- One page per prompt. Build, test, verify, then next.
-- No parallel agents unless explicitly told.
-- No improvising. Use the patterns above. If something doesn't fit: ASK.
-- No keeping old code. This is a fresh build. Old patterns don't exist.
-- Report check results before every commit.
-- When in doubt: ASK. Do not guess.
+1. **One page per prompt.** Build, test, verify, then next.
+2. **No parallel agents** unless explicitly told.
+3. **No improvising.** Use the patterns above. If something doesn't fit: ASK.
+4. **No keeping old code.** This is a fresh build. Old patterns don't exist.
+5. **Report check results** before every commit.
+6. **When in doubt: ASK.** Do not guess.
+7. **Every commit MUST be followed by `git push origin main`.** Code that isn't pushed doesn't exist.
+8. **After every push: verify production.** Wait 2 min, then curl the affected pages. If they return 500, fix before moving on.
+
+## Production Safety Rules (NON-NEGOTIABLE)
+
+**The #1 rule: NEVER make the site worse than it currently is.** A page that crashes is bad. A site that is completely down is catastrophic. Always preserve what's working while fixing what's broken.
+
+### NEVER do these without EXPLICIT permission from Ryan:
+- **Never remove, delete, or redeploy a production deployment** — `vercel rm`, `vercel rollback`, removing deployments from the dashboard. The existing deployment stays until a new one replaces it naturally via git push.
+- **Never modify Vercel environment variables** — `vercel env add`, `vercel env rm`, changing env vars in the dashboard. Environment changes affect the LIVE site immediately.
+- **Never modify DNS, domains, or routing** — domain settings, redirects, rewrites that affect production traffic.
+- **Never modify the database schema in production** — `prisma migrate deploy`, direct SQL DDL. Schema changes require explicit approval.
+- **Never modify Stripe keys, webhook secrets, or payment configuration.**
+- **Never modify cron job schedules** in vercel.json without explicit approval.
+
+### ALWAYS do these:
+- **Diagnose FIRST, fix SECOND.** Get the actual error message before proposing a fix. "Probably X" is not a diagnosis.
+- **Show the evidence before acting.** Show the error log, the failing query, the wrong env var. Then propose the fix. Then wait for approval.
+- **When debugging production errors:** reproduce locally first. Start the dev server, hit the page, read the error in the terminal. Production error messages are redacted — local ones aren't.
+- **If a fix requires infrastructure changes** (env vars, deployments, etc.), DESCRIBE what you want to do and ASK. Do not execute.
+- **If you're unsure whether something will affect the live site:** it will. ASK.
+
+### The escalation ladder:
+1. **Code-only changes** (app/, lib/, components/) — You can make these freely within the prompt scope.
+2. **Git push** — Required after every commit. This triggers a deploy.
+3. **Config changes** (vercel.json, next.config.ts, prisma/schema.prisma) — Make the change, but explain what it does before pushing.
+4. **Infrastructure changes** (Vercel env vars, deployment commands, DNS) — **STOP. Describe what you want to do. Wait for Ryan to approve.**
+5. **Destructive actions** (removing deployments, deleting env vars, dropping tables) — **NEVER. Tell Ryan what needs to happen and let him do it.**
 
 ## Business Context
 
-- Ryan is the sole operator. No development team.
-- Tax rate: 9.1% (Walla Walla)
-- Stripe: dual brand — WWT + NW Touring (lib/stripe-brands.ts)
-- Email: Resend (transactional + inbound via in.wallawalla.travel)
-- Crons: 24+ registered in vercel.json
-- The test: "Can Ryan create a booking while on the phone at 7am?"
+- **Ryan** is the sole operator. No development team. Everything must be maintainable by Ryan + Claude.
+- **Tax rate:** 9.1% (Walla Walla)
+- **Stripe:** dual brand — WWT + NW Touring (`lib/stripe-brands.ts`)
+- **Email:** Resend (transactional + inbound via `in.wallawalla.travel`)
+- **Crons:** 24+ registered in `vercel.json`
+- **The test:** "Can Ryan create a booking while on the phone at 7am?"
