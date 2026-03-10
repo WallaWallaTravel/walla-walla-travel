@@ -2,7 +2,7 @@
 
 import { useActionState, useState, useEffect, useCallback, useRef } from 'react'
 import Link from 'next/link'
-import { createBookingAction, type BookingActionResult } from '@/lib/actions/bookings'
+import { createBookingAction } from '@/lib/actions/bookings'
 import { checkAvailability, type AvailabilityActionResult } from '@/lib/actions/availability'
 import { searchHotels, type HotelResult } from '@/lib/actions/hotels'
 import { TOUR_TYPES } from '@/lib/schemas/booking'
