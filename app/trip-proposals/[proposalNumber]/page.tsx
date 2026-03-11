@@ -276,11 +276,11 @@ export default async function ProposalPage({
             <span className="bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium min-h-[36px] flex items-center">
               {partySize} Guest{partySize !== 1 ? 's' : ''}
             </span>
-            <span className="bg-[#C4A35A]/20 border border-[#C4A35A]/30 px-4 py-2 rounded-full text-sm font-medium text-[#C4A35A] min-h-[36px] flex items-center">
+            <span className="bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium min-h-[36px] flex items-center">
               {tripTypeLabel}
             </span>
             {hasMultipleDays && (
-              <span className="bg-[#C4A35A]/20 border border-[#C4A35A]/30 px-4 py-2 rounded-full text-sm font-medium text-[#C4A35A] min-h-[36px] flex items-center">
+              <span className="bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium min-h-[36px] flex items-center">
                 {dayCount}-Day Experience
               </span>
             )}
@@ -677,15 +677,15 @@ export default async function ProposalPage({
       {/* Footer */}
       {/* ================================================================= */}
       <footer className="bg-[#2C1215] text-white">
-        <div className="max-w-3xl mx-auto px-5 sm:px-8 py-12 sm:py-16">
-          <div className="text-center mb-8">
+        <div className="max-w-3xl mx-auto px-5 sm:px-8 py-8 sm:py-12">
+          <div className="text-center mb-6">
             <p className={`${playfair.className} text-2xl font-bold text-[#C4A35A] mb-2`}>
               {brandConfig.name}
             </p>
             <p className="text-white/50 text-sm">{brandConfig.tagline}</p>
           </div>
 
-          <div className="flex flex-col sm:flex-row justify-center items-center gap-3 sm:gap-8 mb-8 text-sm">
+          <div className="flex flex-col sm:flex-row justify-center items-center gap-3 sm:gap-8 mb-5 text-sm">
             <a
               href={`tel:${brandConfig.phone.replace(/[^+\d]/g, '')}`}
               className="text-white/70 hover:text-white transition-colors min-h-[44px] flex items-center"
@@ -713,7 +713,7 @@ export default async function ProposalPage({
             </Link>
           </div>
 
-          <p className="text-center text-white/25 text-xs mt-8">
+          <p className="text-center text-white/25 text-xs mt-5">
             &copy; {new Date().getFullYear()} {brandConfig.name}. All rights reserved.
           </p>
         </div>

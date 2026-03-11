@@ -53,8 +53,8 @@ export async function generateMetadata({ params }: LayoutProps): Promise<Metadat
   });
 
   const title = proposal.trip_title
-    ? `${proposal.trip_title} | Walla Walla Travel`
-    : `${tripLabel} for ${proposal.party_size} | Walla Walla Travel`;
+    ? proposal.trip_title
+    : `${tripLabel} for ${proposal.party_size}`;
 
   const description = `${tripLabel} for ${proposal.party_size} guests — ${dateStr}. Your personalized Walla Walla wine country itinerary.`;
 
@@ -64,7 +64,7 @@ export async function generateMetadata({ params }: LayoutProps): Promise<Metadat
     title,
     description,
     openGraph: {
-      title,
+      title: `${title} | Walla Walla Travel`,
       description,
       type: 'website',
       siteName: 'Walla Walla Travel',
@@ -73,7 +73,7 @@ export async function generateMetadata({ params }: LayoutProps): Promise<Metadat
     },
     twitter: {
       card: 'summary_large_image',
-      title,
+      title: `${title} | Walla Walla Travel`,
       description,
       images: [`${baseUrl}/og-wine-country.jpg`],
     },
