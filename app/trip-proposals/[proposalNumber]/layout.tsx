@@ -1,17 +1,9 @@
 import { Metadata } from 'next';
-import { queryOne } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 
 interface LayoutProps {
   children: React.ReactNode;
   params: Promise<{ proposalNumber: string }>;
-}
-
-interface ProposalRow {
-  customer_name: string;
-  trip_type: string;
-  trip_title: string | null;
-  party_size: number;
-  start_date: string;
 }
 
 const TRIP_TYPE_LABELS: Record<string, string> = {
@@ -34,12 +26,16 @@ function formatTripType(raw: string): string {
 export async function generateMetadata({ params }: LayoutProps): Promise<Metadata> {
   const { proposalNumber } = await params;
 
-  const proposal = await queryOne<ProposalRow>(
-    `SELECT customer_name, trip_type, trip_title, party_size, start_date
-     FROM trip_proposals
-     WHERE proposal_number = $1`,
-    [proposalNumber]
-  );
+  const proposal = await prisma.trip_proposals.findUnique({
+    where: { proposal_number: proposalNumber },
+    select: {
+      customer_name: true,
+      trip_type: true,
+      trip_title: true,
+      party_size: true,
+      start_date: true,
+    },
+  });
 
   if (!proposal) {
     return {
@@ -48,11 +44,12 @@ export async function generateMetadata({ params }: LayoutProps): Promise<Metadat
     };
   }
 
-  const tripLabel = formatTripType(proposal.trip_type);
-  const dateStr = new Date(proposal.start_date).toLocaleDateString('en-US', {
+  const tripLabel = formatTripType(proposal.trip_type || 'other');
+  const dateStr = proposal.start_date.toLocaleDateString('en-US', {
     month: 'long',
     day: 'numeric',
     year: 'numeric',
+    timeZone: 'UTC',
   });
 
   const title = proposal.trip_title
