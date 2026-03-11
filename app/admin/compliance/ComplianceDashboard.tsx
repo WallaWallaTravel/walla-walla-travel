@@ -176,7 +176,7 @@ export default function ComplianceDashboard({ data }: { data: ComplianceData }) 
   const [timelineFilter, setTimelineFilter] = useState<'all' | 'expired' | 'critical' | 'warning'>('all')
   const [dqFilter, setDqFilter] = useState<'all' | 'incomplete' | 'complete'>('all')
 
-  const { summary, drivers, expirations, vehicles, vehicle_alerts, inspections } = data
+  const { summary, drivers, expirations, vehicle_alerts, inspections } = data
 
   const filteredExpirations = expirations.filter((e) => {
     if (timelineFilter === 'all') return true
