@@ -65,17 +65,17 @@ export default function HistoricalTimeCardEntryPage() {
 
         if (driversRes.ok) {
           const driversData = await driversRes.json();
-          setDrivers(driversData.data || []);
+          setDrivers(driversData.data?.users || []);
         }
 
         if (vehiclesRes.ok) {
           const vehiclesData = await vehiclesRes.json();
-          setVehicles(vehiclesData.data || []);
+          setVehicles(vehiclesData.data?.vehicles || []);
         }
 
         if (bookingsRes.ok) {
           const bookingsData = await bookingsRes.json();
-          setBookings(bookingsData.data || []);
+          setBookings(bookingsData.data?.bookings || []);
         }
       } catch (err) {
         console.error('Error loading data:', err);

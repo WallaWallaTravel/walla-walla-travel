@@ -106,12 +106,12 @@ export default function HistoricalInspectionEntryPage() {
 
         if (driversRes.ok) {
           const driversData = await driversRes.json();
-          setDrivers(driversData.data || []);
+          setDrivers(driversData.data?.users || []);
         }
 
         if (vehiclesRes.ok) {
           const vehiclesData = await vehiclesRes.json();
-          setVehicles(vehiclesData.data || []);
+          setVehicles(vehiclesData.data?.vehicles || []);
         }
       } catch (err) {
         console.error('Error loading data:', err);

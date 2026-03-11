@@ -65,6 +65,13 @@ const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
+    title: 'COMPLIANCE',
+    items: [
+      { label: 'Drivers', href: '/admin/drivers' },
+      { label: 'Vehicles', href: '/admin/vehicles' },
+    ],
+  },
+  {
     title: 'CONTENT',
     items: [
       { label: 'Page Content', href: '/admin/content' },
