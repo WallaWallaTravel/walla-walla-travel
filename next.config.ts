@@ -4,7 +4,9 @@ import { securityHeaders, getCSPHeader } from './lib/config/security'
 
 const nextConfig: NextConfig = {
   eslint: {
-    ignoreDuringBuilds: false,
+    // ESLint runs in pre-commit hooks + verify.sh — skip during build
+    // to save ~1GB memory and ~30s on Vercel
+    ignoreDuringBuilds: true,
   },
   typescript: {
     ignoreBuildErrors: false,
