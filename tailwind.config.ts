@@ -8,6 +8,11 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        display: ['"Playfair Display"', 'Georgia', 'serif'],
+        body: ['"Source Sans 3"', 'system-ui', 'sans-serif'],
+        lora: ['"Lora"', 'Georgia', 'serif'],
+      },
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",

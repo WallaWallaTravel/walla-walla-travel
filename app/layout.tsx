@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { ConditionalNavigation, ConditionalNavSpacer } from "@/components/navigation/ConditionalNav";
@@ -11,16 +10,6 @@ import ErrorBoundary from "@/components/ui/ErrorBoundary";
 
 // GA4 Measurement ID - set in environment variables
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://wallawalla.travel'),
@@ -98,7 +87,7 @@ export default function RootLayout({
         <OrganizationJsonLd />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className="antialiased"
       >
         {/* Skip link for accessibility - keyboard users can bypass navigation */}
         <a

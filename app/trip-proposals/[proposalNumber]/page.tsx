@@ -2,25 +2,8 @@ import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth/session'
 import { getBrandEmailConfig } from '@/lib/email-brands'
-import { Playfair_Display, Source_Sans_3 } from 'next/font/google'
 import Link from 'next/link'
 import AcceptButton from './AcceptButton'
-
-// ---------------------------------------------------------------------------
-// Fonts
-// ---------------------------------------------------------------------------
-
-const playfair = Playfair_Display({
-  subsets: ['latin'],
-  display: 'swap',
-  weight: ['400', '700'],
-})
-
-const sourceSans = Source_Sans_3({
-  subsets: ['latin'],
-  display: 'swap',
-  weight: ['400', '600', '700'],
-})
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -98,12 +81,12 @@ function formatCurrency(amount: number): string {
 
 function ProposalNotAvailable() {
   return (
-    <div className={`${sourceSans.className} min-h-screen bg-[#FAF8F5] flex items-center justify-center p-6`}>
+    <div className="font-body min-h-screen bg-[#FAF8F5] flex items-center justify-center p-6">
       <div className="max-w-md text-center">
-        <p className={`${playfair.className} text-4xl text-[#C4A35A] mb-6`}>
+        <p className="font-display text-4xl text-[#C4A35A] mb-6">
           Walla Walla Travel
         </p>
-        <h1 className={`${playfair.className} text-2xl font-bold text-stone-900 mb-3`}>
+        <h1 className="font-display text-2xl font-bold text-stone-900 mb-3">
           Proposal Not Available
         </h1>
         <p className="text-stone-600 mb-8 leading-relaxed">
@@ -216,7 +199,7 @@ export default async function ProposalPage({
   // ---------------------------------------------------------------------------
 
   return (
-    <div className={`${sourceSans.className} min-h-screen bg-[#FAF8F5]`}>
+    <div className="font-body min-h-screen bg-[#FAF8F5]">
 
       {/* ================================================================= */}
       {/* Admin Preview Banner */}
@@ -250,12 +233,12 @@ export default async function ProposalPage({
 
         <div className="relative max-w-3xl mx-auto px-5 sm:px-8 py-16 sm:py-20 lg:py-24">
           {/* Brand wordmark */}
-          <p className={`${playfair.className} text-base sm:text-lg tracking-[0.2em] text-[#C4A35A] mb-10 uppercase`}>
+          <p className="font-display text-base sm:text-lg tracking-[0.2em] text-[#C4A35A] mb-10 uppercase">
             {brandConfig.name}
           </p>
 
           {/* Title */}
-          <h1 className={`${playfair.className} text-3xl sm:text-4xl lg:text-5xl font-bold mb-5 leading-tight`}>
+          <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold mb-5 leading-tight">
             {proposal.trip_title || 'Your Walla Walla Wine Country Experience'}
           </h1>
 
@@ -294,7 +277,7 @@ export default async function ProposalPage({
       {proposal.introduction && (
         <section className="max-w-3xl mx-auto px-5 sm:px-8 py-12 sm:py-16">
           <div className="border-l-4 border-[#C4A35A] pl-6 sm:pl-8">
-            <p className={`${playfair.className} text-stone-700 text-lg sm:text-xl leading-[1.8]`}>
+            <p className="font-display text-stone-700 text-lg sm:text-xl leading-[1.8]">
               {proposal.introduction}
             </p>
           </div>
@@ -306,7 +289,7 @@ export default async function ProposalPage({
       {/* ================================================================= */}
       {days.length > 0 && (
         <section className="max-w-3xl mx-auto px-5 sm:px-8 pb-12">
-          <h2 className={`${playfair.className} text-2xl sm:text-3xl font-bold text-stone-900 mb-8`}>
+          <h2 className="font-display text-2xl sm:text-3xl font-bold text-stone-900 mb-8">
             Your Itinerary
           </h2>
 
@@ -323,7 +306,7 @@ export default async function ProposalPage({
                     <p className="text-xs font-bold text-[#C4A35A] uppercase tracking-widest mb-1">
                       Day {day.day_number}
                     </p>
-                    <h3 className={`${playfair.className} text-xl font-bold text-stone-900`}>
+                    <h3 className="font-display text-xl font-bold text-stone-900">
                       {day.title || formatDate(day.date)}
                     </h3>
                     {day.title && (
@@ -407,7 +390,7 @@ export default async function ProposalPage({
       {/* ================================================================= */}
       {guests.length > 0 && (
         <section className="max-w-3xl mx-auto px-5 sm:px-8 pb-12">
-          <h2 className={`${playfair.className} text-2xl sm:text-3xl font-bold text-stone-900 mb-8`}>
+          <h2 className="font-display text-2xl sm:text-3xl font-bold text-stone-900 mb-8">
             Your Party
           </h2>
 
@@ -449,7 +432,7 @@ export default async function ProposalPage({
       {/* ================================================================= */}
       {(inclusions.length > 0 || total > 0) && (
         <section className="max-w-3xl mx-auto px-5 sm:px-8 pb-12">
-          <h2 className={`${playfair.className} text-2xl sm:text-3xl font-bold text-stone-900 mb-8`}>
+          <h2 className="font-display text-2xl sm:text-3xl font-bold text-stone-900 mb-8">
             Your Investment
           </h2>
 
@@ -532,7 +515,7 @@ export default async function ProposalPage({
                 {/* Total */}
                 <div className="border-t-2 border-stone-300 pt-4 flex justify-between items-baseline">
                   <span className="text-lg font-bold text-stone-900">Total</span>
-                  <span className={`${playfair.className} text-2xl sm:text-3xl font-bold text-[#722F37]`}>
+                  <span className="font-display text-2xl sm:text-3xl font-bold text-[#722F37]">
                     {formatCurrency(total)}
                   </span>
                 </div>
@@ -566,7 +549,7 @@ export default async function ProposalPage({
         {/* Sent/Viewed — accept + contact */}
         {canAccept && (
           <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-8 sm:p-10 text-center">
-            <h2 className={`${playfair.className} text-2xl sm:text-3xl font-bold text-stone-900 mb-3`}>
+            <h2 className="font-display text-2xl sm:text-3xl font-bold text-stone-900 mb-3">
               Ready to Book Your Experience?
             </h2>
             {proposal.valid_until && (
@@ -607,7 +590,7 @@ export default async function ProposalPage({
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h2 className={`${playfair.className} text-2xl font-bold text-emerald-800 mb-2`}>
+              <h2 className="font-display text-2xl font-bold text-emerald-800 mb-2">
                 You&apos;ve accepted this proposal!
               </h2>
               <p className="text-emerald-700 mb-6">
@@ -679,7 +662,7 @@ export default async function ProposalPage({
       <footer className="bg-[#2C1215] text-white">
         <div className="max-w-3xl mx-auto px-5 sm:px-8 py-8 sm:py-12">
           <div className="text-center mb-6">
-            <p className={`${playfair.className} text-2xl font-bold text-[#C4A35A] mb-2`}>
+            <p className="font-display text-2xl font-bold text-[#C4A35A] mb-2">
               {brandConfig.name}
             </p>
             <p className="text-white/50 text-sm">{brandConfig.tagline}</p>

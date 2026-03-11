@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./fonts.css";
 @config "../tailwind.config.ts";
 
 /*
@@ -45,8 +46,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: 'Geist', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, monospace;
 }
 
 body {
