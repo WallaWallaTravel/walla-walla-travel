@@ -55,7 +55,7 @@ export function DailyWorkflowClient({ user, userEmail }: Props) {
       title: 'Clock In', 
       description: 'Start your shift and record arrival time',
       icon: '⏰',
-      path: '/time-clock/clock-in',
+      path: '/driver-portal/dashboard',
       estimatedMinutes: 2
     },
     { 
@@ -103,7 +103,7 @@ export function DailyWorkflowClient({ user, userEmail }: Props) {
       title: 'Clock Out', 
       description: 'End your shift and submit hours',
       icon: '🏁',
-      path: '/time-clock/clock-out',
+      path: '/driver-portal/dashboard',
       estimatedMinutes: 2
     }
   ]

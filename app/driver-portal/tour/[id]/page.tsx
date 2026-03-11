@@ -371,7 +371,7 @@ export default function DriverTourDetailPage() {
         </div>
 
         <Link
-          href={`/time-clock/clock-in?booking_id=${tour.booking_id}`}
+          href={`/driver-portal/dashboard?booking_id=${tour.booking_id}`}
           className="flex items-center justify-center gap-2 p-4 bg-[#1E3A5F] hover:bg-[#1A3354] text-white rounded-xl font-semibold transition-colors"
         >
           <span>⏰</span>
@@ -408,7 +408,7 @@ export default function DriverTourDetailPage() {
             <span className="text-xs font-medium mt-1">Schedule</span>
           </button>
           <button
-            onClick={() => router.push('/time-clock/dashboard')}
+            onClick={() => router.push('/driver-portal/dashboard')}
             className="flex flex-col items-center justify-center min-w-[64px] h-full px-2 text-slate-500 hover:text-slate-700"
           >
             <span className="text-xl">⏰</span>

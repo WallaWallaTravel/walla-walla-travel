@@ -30,10 +30,8 @@ export function ConditionalNavigation() {
   const _isPublicRoute = 
     pathname.startsWith('/book') ||
     pathname.startsWith('/client-portal') ||
-    pathname.startsWith('/customer-portal') ||
     pathname.startsWith('/contribute') ||
     pathname.startsWith('/corporate-request') ||
-    pathname.startsWith('/proposals') ||
     pathname.startsWith('/payment') ||
     pathname.startsWith('/herding-cats') ||
     pathname.startsWith('/nw-touring') ||
@@ -74,7 +72,7 @@ export function ConditionalNavigation() {
             {
               label: 'Clock',
               icon: '⏰',
-              href: '/time-clock/clock-in'
+              href: '/driver-portal/dashboard'
             },
             {
               label: 'Inspect',
