@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { query } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError } from '@/lib/api/middleware/error-handler'
 import { withCSRF } from '@/lib/api/middleware/csrf'
@@ -71,12 +71,12 @@ async function postHandler(request: NextRequest) {
     }
 
     // Check for duplicate email in crm_contacts
-    const existing = await query(
+    const existing: Record<string, unknown>[] = await prisma.$queryRawUnsafe(
       'SELECT id FROM crm_contacts WHERE email = $1',
-      [lead.email.toLowerCase()]
+      lead.email.toLowerCase()
     )
 
-    if (existing.rows.length > 0) {
+    if (existing.length > 0) {
       skipped++
       errors.push(`Row ${i + 1}: Duplicate email ${lead.email}`)
       continue
@@ -108,7 +108,7 @@ async function postHandler(request: NextRequest) {
     const fullName = [lead.first_name, lead.last_name].filter(Boolean).join(' ')
 
     try {
-      const result = await query(`
+      const resultRows: { id: number }[] = await prisma.$queryRawUnsafe(`
         INSERT INTO crm_contacts (
           email, name, phone, company, contact_type, lifecycle_stage,
           lead_score, lead_temperature, source, source_detail, notes,
@@ -116,7 +116,7 @@ async function postHandler(request: NextRequest) {
         ) VALUES (
           $1, $2, $3, $4, $5, 'lead', $6, $7, $8, $9, $10, 1, NOW(), NOW()
         ) RETURNING id
-      `, [
+      `,
         lead.email.toLowerCase(),
         fullName,
         lead.phone || null,
@@ -127,13 +127,13 @@ async function postHandler(request: NextRequest) {
         lead.source || 'import',
         servicesStr,
         lead.notes || null,
-      ])
+      )
 
-      const contactId = result.rows[0].id
+      const contactId = resultRows[0].id
 
       // If party size, estimated date, or budget provided, create a deal (same pattern as POST in leads/route.ts)
       if (lead.party_size_estimate || lead.estimated_date || lead.budget_range) {
-        const stageResult = await query(`
+        const stageRows: Record<string, unknown>[] = await prisma.$queryRawUnsafe(`
           SELECT ps.id
           FROM crm_pipeline_stages ps
           JOIN crm_pipeline_templates pt ON ps.template_id = pt.id
@@ -143,7 +143,7 @@ async function postHandler(request: NextRequest) {
           LIMIT 1
         `)
 
-        if (stageResult.rows.length > 0) {
+        if (stageRows.length > 0) {
           let estimatedValue: number | null = null
           if (lead.budget_range) {
             const match = String(lead.budget_range).match(/\$?([\d,]+)/)
@@ -152,20 +152,20 @@ async function postHandler(request: NextRequest) {
             }
           }
 
-          await query(`
+          await prisma.$queryRawUnsafe(`
             INSERT INTO crm_deals (
               contact_id, stage_id, brand, title, description,
               party_size, expected_tour_date, estimated_value, brand_id
             ) VALUES ($1, $2, 'walla_walla_travel', $3, $4, $5, $6, $7, 1)
-          `, [
+          `,
             contactId,
-            stageResult.rows[0].id,
+            stageRows[0].id,
             `Lead - ${fullName}`,
             servicesStr || lead.notes || 'Imported lead',
             lead.party_size_estimate ? parseInt(String(lead.party_size_estimate)) : null,
             lead.estimated_date || null,
             estimatedValue
-          ])
+          )
         }
       }
 

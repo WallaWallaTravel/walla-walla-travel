@@ -14,7 +14,7 @@
  * - Learned preferences from content approvals
  */
 
-import { query } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 import { logger } from '@/lib/logger'
 import Anthropic from '@anthropic-ai/sdk'
 
@@ -120,7 +120,7 @@ class SocialIntelligenceService {
    */
   async getUpcomingEvents(): Promise<WineryEvent[]> {
     try {
-      const result = await query<WineryEvent>(`
+      const result = await prisma.$queryRaw<WineryEvent[]>`
         SELECT
           e.id,
           e.winery_id,
@@ -136,8 +136,8 @@ class SocialIntelligenceService {
           AND e.is_active = true
         ORDER BY e.event_date ASC
         LIMIT 10
-      `)
-      return result.rows
+      `
+      return result
     } catch (error) {
       logger.warn('Failed to fetch winery events (table may not exist)', { error })
       return []
@@ -149,7 +149,7 @@ class SocialIntelligenceService {
    */
   async getRecentCompetitorChanges(): Promise<CompetitorChange[]> {
     try {
-      const result = await query<CompetitorChange>(`
+      const result = await prisma.$queryRaw<CompetitorChange[]>`
         SELECT
           cc.id,
           c.name as competitor_name,
@@ -164,8 +164,8 @@ class SocialIntelligenceService {
           AND cc.significance IN ('high', 'medium')
         ORDER BY cc.detected_at DESC
         LIMIT 5
-      `)
-      return result.rows
+      `
+      return result
     } catch (error) {
       logger.warn('Failed to fetch competitor changes', { error })
       return []
@@ -206,14 +206,14 @@ class SocialIntelligenceService {
 
       queryText += ` ORDER BY ml.is_hero DESC, ml.created_at DESC LIMIT 20`
 
-      const result = await query<MediaAsset>(queryText, params)
+      const result = await prisma.$queryRawUnsafe<MediaAsset[]>(queryText, ...params)
 
       // If tag filtering returned nothing, try again without tag filter
-      if (result.rows.length === 0 && tagKeywords.length > 0) {
+      if (result.length === 0 && tagKeywords.length > 0) {
         return this.getAvailableMedia(wineryId, category, undefined)
       }
 
-      return result.rows
+      return result
     } catch (error) {
       logger.warn('Failed to fetch media assets', { error })
       return []
@@ -252,7 +252,7 @@ class SocialIntelligenceService {
    */
   async getContentGaps(): Promise<ContentGap[]> {
     try {
-      const result = await query<ContentGap>(`
+      const result = await prisma.$queryRaw<ContentGap[]>`
         WITH platform_stats AS (
           SELECT
             platform,
@@ -280,8 +280,8 @@ class SocialIntelligenceService {
         SELECT p.platform, 30, NULL, 0
         FROM (VALUES ('instagram'), ('facebook'), ('linkedin')) AS p(platform)
         WHERE p.platform NOT IN (SELECT platform FROM platform_stats)
-      `)
-      return result.rows
+      `
+      return result
     } catch (error) {
       logger.warn('Failed to analyze content gaps', { error })
       return [
@@ -357,7 +357,7 @@ class SocialIntelligenceService {
    */
   async getTopPerformingContent(): Promise<TopPerformingPost[]> {
     try {
-      const result = await query<TopPerformingPost>(`
+      const result = await prisma.$queryRaw<TopPerformingPost[]>`
         SELECT
           id,
           platform,
@@ -373,8 +373,8 @@ class SocialIntelligenceService {
           AND engagement > 0
         ORDER BY engagement DESC
         LIMIT 10
-      `)
-      return result.rows
+      `
+      return result
     } catch (error) {
       logger.warn('Failed to fetch top performing content', { error })
       return []
@@ -387,7 +387,7 @@ class SocialIntelligenceService {
    */
   async getLearnedPreferences(): Promise<LearnedPreference[]> {
     try {
-      const result = await query<LearnedPreference>(`
+      const result = await prisma.$queryRaw<LearnedPreference[]>`
         SELECT
           preference_type,
           platform,
@@ -398,8 +398,8 @@ class SocialIntelligenceService {
           AND confidence_score >= 0.60
         ORDER BY confidence_score DESC
         LIMIT 15
-      `)
-      return result.rows
+      `
+      return result
     } catch (error) {
       logger.warn('Failed to fetch learned preferences (table may not exist yet)', { error })
       return []
@@ -422,7 +422,7 @@ class SocialIntelligenceService {
     try {
       const [byContentType, byPlatform, byLengthBucket] = await Promise.all([
         // Avg engagement by content_type
-        query<PerformanceBenchmark>(`
+        prisma.$queryRaw<PerformanceBenchmark[]>`
           SELECT
             'content_type' AS dimension,
             COALESCE(content_type, 'uncategorized') AS dimension_value,
@@ -437,9 +437,9 @@ class SocialIntelligenceService {
           GROUP BY content_type
           HAVING COUNT(*) >= 2
           ORDER BY avg_engagement DESC
-        `),
+        `,
         // Avg engagement by platform
-        query<PerformanceBenchmark>(`
+        prisma.$queryRaw<PerformanceBenchmark[]>`
           SELECT
             'platform' AS dimension,
             platform AS dimension_value,
@@ -453,9 +453,9 @@ class SocialIntelligenceService {
             AND engagement IS NOT NULL
           GROUP BY platform
           ORDER BY avg_engagement DESC
-        `),
+        `,
         // Avg engagement by content length bucket
-        query<PerformanceBenchmark>(`
+        prisma.$queryRaw<PerformanceBenchmark[]>`
           SELECT
             'length_bucket' AS dimension,
             CASE
@@ -480,13 +480,13 @@ class SocialIntelligenceService {
             END
           HAVING COUNT(*) >= 2
           ORDER BY avg_engagement DESC
-        `),
+        `,
       ])
 
       return {
-        byContentType: byContentType.rows,
-        byPlatform: byPlatform.rows,
-        byLengthBucket: byLengthBucket.rows,
+        byContentType,
+        byPlatform,
+        byLengthBucket,
       }
     } catch (error) {
       logger.warn('Failed to fetch performance benchmarks', { error })
@@ -503,7 +503,7 @@ class SocialIntelligenceService {
 
     try {
       // Find published posts with NULL content_type
-      const uncategorized = await query<{ id: number; content: string; platform: string }>(`
+      const uncategorized = await prisma.$queryRaw<Array<{ id: number; content: string; platform: string }>>`
         SELECT id, LEFT(content, 300) AS content, platform
         FROM scheduled_posts
         WHERE status = 'published'
@@ -512,16 +512,16 @@ class SocialIntelligenceService {
           AND LENGTH(content) > 10
         ORDER BY published_at DESC NULLS LAST
         LIMIT 20
-      `)
+      `
 
-      if (uncategorized.rows.length === 0) {
+      if (uncategorized.length === 0) {
         return results
       }
 
       const anthropic = this.getAnthropic()
 
       // Batch classify all posts in one call
-      const postsForClassification = uncategorized.rows.map((p, i) => (
+      const postsForClassification = uncategorized.map((p, i) => (
         `Post ${i + 1} (ID: ${p.id}, Platform: ${p.platform}):\n${p.content}`
       )).join('\n\n---\n\n')
 
@@ -551,9 +551,9 @@ Respond with ONLY a JSON array of objects with "id" (number) and "content_type" 
         if (!validTypes.includes(item.content_type)) continue
 
         try {
-          await query(
+          await prisma.$queryRawUnsafe(
             'UPDATE scheduled_posts SET content_type = $1, updated_at = NOW() WHERE id = $2 AND content_type IS NULL',
-            [item.content_type, item.id]
+            item.content_type, item.id
           )
           results.categorized++
         } catch {
@@ -695,12 +695,12 @@ Respond with a JSON array of suggestions in this exact format:
             // Find matching winery ID if winery name provided
             let wineryId: number | null = null
             if (item.winery_name) {
-              const wineryResult = await query<{ id: number }>(
+              const wineryResult = await prisma.$queryRawUnsafe<Array<{ id: number }>>(
                 'SELECT id FROM wineries WHERE name ILIKE $1 LIMIT 1',
-                [`%${item.winery_name}%`]
+                `%${item.winery_name}%`
               )
-              if (wineryResult.rows.length > 0) {
-                wineryId = wineryResult.rows[0].id
+              if (wineryResult.length > 0) {
+                wineryId = wineryResult[0].id
               }
             }
 
@@ -823,13 +823,13 @@ Respond with a JSON array of suggestions in this exact format:
     opportunity_type: string;
   }>> {
     try {
-      const result = await query<{
+      const result = await prisma.$queryRaw<Array<{
         query: string;
         avg_position: number;
         impressions: number;
         clicks: number;
         opportunity_type: string;
-      }>(`
+      }>>`
         WITH keyword_stats AS (
           SELECT
             query,
@@ -863,10 +863,10 @@ Respond with a JSON array of suggestions in this exact format:
           END,
           impressions DESC
         LIMIT 50
-      `)
+      `
 
       // Tag question-based queries separately
-      const opportunities = result.rows.map(row => {
+      const opportunities = result.map(row => {
         const lowerQuery = row.query.toLowerCase()
         const isQuestion = /^(how|what|where|when|why|which|who|can|do|does|is|are)\b/.test(lowerQuery)
         return {
@@ -893,12 +893,12 @@ Respond with a JSON array of suggestions in this exact format:
     growth_pct: number;
   }>> {
     try {
-      const result = await query<{
+      const result = await prisma.$queryRaw<Array<{
         query: string;
         current_impressions: number;
         previous_impressions: number;
         growth_pct: number;
-      }>(`
+      }>>`
         WITH recent AS (
           SELECT
             query,
@@ -935,9 +935,9 @@ Respond with a JSON array of suggestions in this exact format:
         WHERE r.current_impressions > COALESCE(p.previous_impressions, 0)
         ORDER BY growth_pct DESC
         LIMIT 30
-      `)
+      `
 
-      return result.rows
+      return result
     } catch (error) {
       logger.warn('Failed to fetch seasonal keyword trends', { error })
       return []
@@ -951,7 +951,7 @@ Respond with a JSON array of suggestions in this exact format:
     const ids: number[] = []
 
     for (const suggestion of suggestions) {
-      const result = await query<{ id: number }>(`
+      const result = await prisma.$queryRawUnsafe<Array<{ id: number }>>(`
         INSERT INTO content_suggestions (
           suggestion_date,
           platform,
@@ -973,7 +973,7 @@ Respond with a JSON array of suggestions in this exact format:
           CURRENT_DATE, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'pending', NOW()
         )
         RETURNING id
-      `, [
+      `,
         suggestion.platform,
         suggestion.content_type,
         suggestion.winery_id,
@@ -987,9 +987,9 @@ Respond with a JSON array of suggestions in this exact format:
         suggestion.suggested_media_urls,
         suggestion.media_source,
         suggestion.image_search_query,
-      ])
+      )
 
-      ids.push(result.rows[0].id)
+      ids.push(result[0].id)
     }
 
     return ids

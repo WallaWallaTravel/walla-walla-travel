@@ -9,7 +9,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { query } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 import { bufferService, BufferCreateUpdatePayload } from '@/lib/services/buffer.service'
 import { withCronAuth } from '@/lib/api/middleware/cron-auth'
 import { withCronLock } from '@/lib/api/middleware/cron-lock'
@@ -35,7 +35,7 @@ export const GET = withCronAuth('publish-social-posts', async (_request: NextReq
   logger.info('Starting social post publishing cron')
 
   // Find posts ready to publish
-  const postsResult = await query<PostToPublish>(`
+  const posts = await prisma.$queryRaw<PostToPublish[]>`
     SELECT
       sp.id,
       sp.content,
@@ -54,9 +54,7 @@ export const GET = withCronAuth('publish-social-posts', async (_request: NextReq
       AND sp.retry_count < 3
     ORDER BY sp.scheduled_for ASC
     LIMIT 20
-  `)
-
-  const posts = postsResult.rows
+  `
   logger.info(`Found ${posts.length} posts to publish`)
 
   const results = {
@@ -69,22 +67,19 @@ export const GET = withCronAuth('publish-social-posts', async (_request: NextReq
   for (const post of posts) {
     try {
       // Mark as publishing
-      await query(
-        'UPDATE scheduled_posts SET status = $1, updated_at = NOW() WHERE id = $2',
-        ['publishing', post.id]
-      )
+      await prisma.$executeRaw`UPDATE scheduled_posts SET status = 'publishing', updated_at = NOW() WHERE id = ${post.id}`
 
       // Check if we have a valid Buffer connection
       if (!post.buffer_profile_id || !post.access_token_encrypted) {
         // No Buffer connection - mark as failed with helpful message
-        await query(`
+        await prisma.$executeRaw`
           UPDATE scheduled_posts SET
             status = 'failed',
-            error_message = $1,
+            error_message = ${'No Buffer account connected for this platform. Connect Buffer in Marketing Settings.'},
             retry_count = retry_count + 1,
             updated_at = NOW()
-          WHERE id = $2
-        `, ['No Buffer account connected for this platform. Connect Buffer in Marketing Settings.', post.id])
+          WHERE id = ${post.id}
+        `
 
         results.skipped++
         logger.warn(`Post ${post.id}: No Buffer connection`, { platform: post.platform })
@@ -93,14 +88,14 @@ export const GET = withCronAuth('publish-social-posts', async (_request: NextReq
 
       // Check connection status
       if (post.connection_status !== 'connected') {
-        await query(`
+        await prisma.$executeRaw`
           UPDATE scheduled_posts SET
             status = 'failed',
-            error_message = $1,
+            error_message = ${`Buffer connection status: ${post.connection_status}. Please reconnect.`},
             retry_count = retry_count + 1,
             updated_at = NOW()
-          WHERE id = $2
-        `, [`Buffer connection status: ${post.connection_status}. Please reconnect.`, post.id])
+          WHERE id = ${post.id}
+        `
 
         results.skipped++
         continue
@@ -128,16 +123,16 @@ export const GET = withCronAuth('publish-social-posts', async (_request: NextReq
       const update = await bufferService.createUpdate(post.access_token_encrypted, payload)
 
       // Mark as published
-      await query(`
+      await prisma.$executeRaw`
         UPDATE scheduled_posts SET
           status = 'published',
-          buffer_post_id = $1,
-          buffer_update_id = $1,
+          buffer_post_id = ${update.id},
+          buffer_update_id = ${update.id},
           published_at = NOW(),
           error_message = NULL,
           updated_at = NOW()
-        WHERE id = $2
-      `, [update.id, post.id])
+        WHERE id = ${post.id}
+      `
 
       results.published++
       logger.info(`Post ${post.id} published to Buffer`, { bufferId: update.id, platform: post.platform })
@@ -146,14 +141,14 @@ export const GET = withCronAuth('publish-social-posts', async (_request: NextReq
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
 
       // Update post with error
-      await query(`
+      await prisma.$executeRaw`
         UPDATE scheduled_posts SET
           status = 'failed',
-          error_message = $1,
+          error_message = ${errorMessage.substring(0, 500)},
           retry_count = retry_count + 1,
           updated_at = NOW()
-        WHERE id = $2
-      `, [errorMessage.substring(0, 500), post.id])
+        WHERE id = ${post.id}
+      `
 
       results.failed++
       results.errors.push(`Post ${post.id}: ${errorMessage}`)

@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 
 export interface Visitor {
   id: number;
@@ -48,7 +48,7 @@ const VISITOR_COOKIE_MAX_AGE = 90 * 24 * 60 * 60; // 90 days
  */
 export async function getOrCreateVisitor(request: NextRequest): Promise<Visitor> {
   const cookieData = getVisitorCookie(request);
-  
+
   if (cookieData?.visitor_uuid) {
     // Try to find existing visitor
     const visitor = await getVisitorByUUID(cookieData.visitor_uuid);
@@ -58,7 +58,7 @@ export async function getOrCreateVisitor(request: NextRequest): Promise<Visitor>
       return visitor;
     }
   }
-  
+
   // Create new visitor
   return await createNewVisitor(request);
 }
@@ -70,7 +70,7 @@ function getVisitorCookie(request: NextRequest): VisitorCookieData | null {
   try {
     const cookie = request.cookies.get(VISITOR_COOKIE_NAME);
     if (!cookie) return null;
-    
+
     return JSON.parse(cookie.value);
   } catch {
     return null;
@@ -86,7 +86,7 @@ export function setVisitorCookie(response: NextResponse, visitor: Visitor): void
     visit_count: visitor.visit_count,
     last_visit: new Date().toISOString(),
   };
-  
+
   response.cookies.set(VISITOR_COOKIE_NAME, JSON.stringify(cookieData), {
     httpOnly: false, // Allow JavaScript access for cross-tab sync
     secure: process.env.NODE_ENV === 'production',
@@ -100,24 +100,24 @@ export function setVisitorCookie(response: NextResponse, visitor: Visitor): void
  * Get visitor by UUID
  */
 export async function getVisitorByUUID(visitor_uuid: string): Promise<Visitor | null> {
-  const result = await query(
+  const result = await prisma.$queryRawUnsafe<Visitor[]>(
     'SELECT * FROM visitors WHERE visitor_uuid = $1',
-    [visitor_uuid]
+    visitor_uuid
   );
-  
-  return result.rows[0] || null;
+
+  return result[0] || null;
 }
 
 /**
  * Get visitor by email
  */
 export async function getVisitorByEmail(email: string): Promise<Visitor | null> {
-  const result = await query(
+  const result = await prisma.$queryRawUnsafe<Visitor[]>(
     'SELECT * FROM visitors WHERE email = $1',
-    [email]
+    email
   );
-  
-  return result.rows[0] || null;
+
+  return result[0] || null;
 }
 
 /**
@@ -127,7 +127,7 @@ async function createNewVisitor(request: NextRequest): Promise<Visitor> {
   const visitor_uuid = uuidv4();
   const userAgent = request.headers.get('user-agent') || '';
   const deviceInfo = parseUserAgent(userAgent);
-  
+
   // Get attribution from URL params
   const url = new URL(request.url);
   const attribution = {
@@ -137,40 +137,38 @@ async function createNewVisitor(request: NextRequest): Promise<Visitor> {
     utm_campaign: url.searchParams.get('utm_campaign'),
     landing_page: url.pathname,
   };
-  
-  const result = await query(
+
+  const result = await prisma.$queryRawUnsafe<Visitor[]>(
     `INSERT INTO visitors (
       visitor_uuid, user_agent, device_type, browser, os,
       referral_source, utm_source, utm_medium, utm_campaign, landing_page
     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
     RETURNING *`,
-    [
-      visitor_uuid,
-      userAgent,
-      deviceInfo.deviceType,
-      deviceInfo.browser,
-      deviceInfo.os,
-      attribution.referral_source,
-      attribution.utm_source,
-      attribution.utm_medium,
-      attribution.utm_campaign,
-      attribution.landing_page,
-    ]
+    visitor_uuid,
+    userAgent,
+    deviceInfo.deviceType,
+    deviceInfo.browser,
+    deviceInfo.os,
+    attribution.referral_source,
+    attribution.utm_source,
+    attribution.utm_medium,
+    attribution.utm_campaign,
+    attribution.landing_page,
   );
-  
-  return result.rows[0];
+
+  return result[0];
 }
 
 /**
  * Update visitor visit tracking
  */
 async function updateVisitorVisit(visitorId: number): Promise<void> {
-  await query(
-    `UPDATE visitors 
+  await prisma.$queryRawUnsafe(
+    `UPDATE visitors
      SET visit_count = visit_count + 1,
          last_visit_at = NOW()
      WHERE id = $1`,
-    [visitorId]
+    visitorId
   );
 }
 
@@ -183,18 +181,18 @@ export async function captureVisitorEmail(
   name?: string,
   phone?: string
 ): Promise<Visitor> {
-  const result = await query(
-    `UPDATE visitors 
-     SET email = $1, 
+  const result = await prisma.$queryRawUnsafe<Visitor[]>(
+    `UPDATE visitors
+     SET email = $1,
          name = COALESCE($2, name),
          phone = COALESCE($3, phone),
          updated_at = NOW()
      WHERE id = $4
      RETURNING *`,
-    [email, name, phone, visitorId]
+    email, name, phone, visitorId
   );
-  
-  return result.rows[0];
+
+  return result[0];
 }
 
 /**
@@ -207,11 +205,11 @@ export async function logEmailCaptureAttempt(
   captured: boolean,
   email?: string
 ): Promise<void> {
-  await query(
-    `INSERT INTO email_capture_attempts 
+  await prisma.$queryRawUnsafe(
+    `INSERT INTO email_capture_attempts
      (visitor_id, trigger_type, query_count_at_prompt, captured, email, captured_at)
      VALUES ($1, $2, $3, $4, $5, $6)`,
-    [visitorId, triggerType, queryCount, captured, email, captured ? new Date() : null]
+    visitorId, triggerType, queryCount, captured, email, captured ? new Date() : null
   );
 }
 
@@ -222,8 +220,8 @@ export async function getVisitorConversationHistory(
   visitorId: number,
   limit: number = 20
 ): Promise<Array<{ id: number; query_text: string; response_text: string; model: string; user_rating: number | null; created_at: Date }>> {
-  const result = await query(
-    `SELECT 
+  const result = await prisma.$queryRawUnsafe<Array<{ id: number; query_text: string; response_text: string; model: string; user_rating: number | null; created_at: Date }>>(
+    `SELECT
       id,
       query_text,
       response_text,
@@ -234,10 +232,10 @@ export async function getVisitorConversationHistory(
      WHERE visitor_id = $1
      ORDER BY created_at DESC
      LIMIT $2`,
-    [visitorId, limit]
+    visitorId, limit
   );
-  
-  return result.rows;
+
+  return result;
 }
 
 /**
@@ -247,12 +245,12 @@ export async function updateVisitorPreferences(
   visitorId: number,
   preferences: Record<string, unknown>
 ): Promise<void> {
-  await query(
-    `UPDATE visitors 
+  await prisma.$queryRawUnsafe(
+    `UPDATE visitors
      SET preferences = preferences || $1::jsonb,
          updated_at = NOW()
      WHERE id = $2`,
-    [JSON.stringify(preferences), visitorId]
+    JSON.stringify(preferences), visitorId
   );
 }
 
@@ -265,7 +263,7 @@ function parseUserAgent(userAgent: string): {
   os: string;
 } {
   const ua = userAgent.toLowerCase();
-  
+
   // Device type
   let deviceType = 'desktop';
   if (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(userAgent)) {
@@ -273,14 +271,14 @@ function parseUserAgent(userAgent: string): {
   } else if (/mobile|iphone|ipod|blackberry|iemobile|opera mini/i.test(userAgent)) {
     deviceType = 'mobile';
   }
-  
+
   // Browser
   let browser = 'unknown';
   if (ua.includes('chrome')) browser = 'Chrome';
   else if (ua.includes('safari')) browser = 'Safari';
   else if (ua.includes('firefox')) browser = 'Firefox';
   else if (ua.includes('edge')) browser = 'Edge';
-  
+
   // OS
   let os = 'unknown';
   if (ua.includes('windows')) os = 'Windows';
@@ -288,7 +286,7 @@ function parseUserAgent(userAgent: string): {
   else if (ua.includes('linux')) os = 'Linux';
   else if (ua.includes('android')) os = 'Android';
   else if (ua.includes('ios') || ua.includes('iphone') || ua.includes('ipad')) os = 'iOS';
-  
+
   return { deviceType, browser, os };
 }
 
@@ -300,15 +298,14 @@ export async function trackVisitorConversion(
   bookingId: number,
   amount: number
 ): Promise<void> {
-  await query(
-    `UPDATE visitors 
+  await prisma.$queryRawUnsafe(
+    `UPDATE visitors
      SET converted_to_booking = TRUE,
          first_booking_id = COALESCE(first_booking_id, $2),
          total_bookings = total_bookings + 1,
          total_revenue = total_revenue + $3,
          updated_at = NOW()
      WHERE id = $1`,
-    [visitorId, bookingId, amount]
+    visitorId, bookingId, amount
   );
 }
-

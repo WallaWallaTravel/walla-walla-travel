@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { query } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper'
 import { withCSRF } from '@/lib/api/middleware/csrf';
 
@@ -81,35 +81,35 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const fullCountQuery = countQuery + filterClause
 
   const [suggestionsResult, countResult] = await Promise.all([
-    query(queryText, params),
-    query<{ total: number }>(fullCountQuery, countParams),
+    prisma.$queryRawUnsafe<Array<Record<string, unknown>>>(queryText, ...params),
+    prisma.$queryRawUnsafe<Array<{ total: number }>>(fullCountQuery, ...countParams),
   ])
 
-  const total = countResult.rows[0]?.total || 0
+  const total = countResult[0]?.total || 0
 
-  const statsResult = await query<{
+  const statsResult = await prisma.$queryRaw<Array<{
     status: string
     urgency: string
     count: number
-  }>(`
+  }>>`
     SELECT status, urgency, COUNT(*)::int as count
     FROM content_refresh_suggestions
     GROUP BY status, urgency
     ORDER BY status, urgency
-  `)
+  `
 
   const stats = {
     by_status: {} as Record<string, number>,
     by_urgency: {} as Record<string, number>,
   }
 
-  for (const row of statsResult.rows) {
+  for (const row of statsResult) {
     stats.by_status[row.status] = (stats.by_status[row.status] || 0) + row.count
     stats.by_urgency[row.urgency] = (stats.by_urgency[row.urgency] || 0) + row.count
   }
 
   return NextResponse.json({
-    suggestions: suggestionsResult.rows,
+    suggestions: suggestionsResult,
     pagination: {
       page,
       limit,
@@ -156,20 +156,21 @@ export const PUT = withCSRF(
     setClauses.push('applied_by = NULL')
   }
 
-  const result = await query(`
-    UPDATE content_refresh_suggestions
+  const result = await prisma.$queryRawUnsafe<Array<Record<string, unknown>>>(
+    `UPDATE content_refresh_suggestions
     SET ${setClauses.join(', ')}
     WHERE id = $1
-    RETURNING *
-  `, params)
+    RETURNING *`,
+    ...params
+  )
 
-  if (result.rows.length === 0) {
+  if (result.length === 0) {
     return NextResponse.json({ error: 'Content refresh suggestion not found' }, { status: 404 })
   }
 
   return NextResponse.json({
     success: true,
-    suggestion: result.rows[0],
+    suggestion: result[0],
   })
 })
 );

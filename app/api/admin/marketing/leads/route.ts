@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { query } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError } from '@/lib/api/middleware/error-handler'
 import { withCSRF } from '@/lib/api/middleware/csrf'
@@ -79,7 +79,7 @@ async function getHandler(request: NextRequest) {
     ) d ON true
     WHERE c.lifecycle_stage IN ('lead', 'qualified', 'opportunity')
   `
-  const params: (string | number)[] = []
+  const params: (string | number | string[])[] = []
   let paramIndex = 1
 
   // Map legacy status filter to lifecycle_stage
@@ -95,7 +95,7 @@ async function getHandler(request: NextRequest) {
     }
     const stages = lifecycleMapping[status] || ['lead']
     queryText += ` AND c.lifecycle_stage = ANY($${paramIndex++}::text[])`
-    params.push(stages as unknown as string)
+    params.push(stages as unknown as string[])
   }
 
   if (temperature) {
@@ -119,12 +119,12 @@ async function getHandler(request: NextRequest) {
     c.created_at DESC
   `
 
-  const result = await query(queryText, params)
+  const result: Record<string, unknown>[] = await prisma.$queryRawUnsafe(queryText, ...params)
 
   // Transform results to match the expected Lead format
-  const leads = result.rows.map(row => {
+  const leads = result.map(row => {
     // Split name into first_name and last_name
-    const nameParts = (row.name || '').split(' ')
+    const nameParts = ((row.name as string) || '').split(' ')
     const firstName = nameParts[0] || ''
     const lastName = nameParts.slice(1).join(' ') || ''
 
@@ -135,10 +135,10 @@ async function getHandler(request: NextRequest) {
       email: row.email,
       phone: row.phone,
       company: row.company,
-      source: row.source || 'website',
-      status: mapLifecycleToStatus(row.lifecycle_stage),
-      temperature: row.temperature || 'cold',
-      score: row.score || 0,
+      source: (row.source as string) || 'website',
+      status: mapLifecycleToStatus(row.lifecycle_stage as string),
+      temperature: (row.temperature as string) || 'cold',
+      score: (row.score as number) || 0,
       interested_services: [], // Not stored in CRM contacts - would need separate table
       party_size_estimate: row.party_size_estimate,
       estimated_date: row.estimated_date,
@@ -204,7 +204,7 @@ async function postHandler(request: NextRequest) {
   const fullName = [first_name, last_name].filter(Boolean).join(' ')
 
   // Create CRM contact
-  const contactResult = await query(`
+  const contactRows: Record<string, unknown>[] = await prisma.$queryRawUnsafe(`
     INSERT INTO crm_contacts (
       email, name, phone, company, contact_type, lifecycle_stage,
       lead_score, lead_temperature, source, source_detail, notes, assigned_to, brand_id
@@ -223,7 +223,7 @@ async function postHandler(request: NextRequest) {
       notes = COALESCE(EXCLUDED.notes, crm_contacts.notes),
       updated_at = NOW()
     RETURNING *
-  `, [
+  `,
     email,
     fullName,
     phone || null,
@@ -235,14 +235,14 @@ async function postHandler(request: NextRequest) {
     interested_services?.join(', ') || null,
     notes || null,
     assigned_to || null
-  ])
+  )
 
-  const contact = contactResult.rows[0]
+  const contact = contactRows[0]
 
   // If party size or estimated date provided, create a deal
   if (party_size_estimate || estimated_date || budget_range) {
     // Get default pipeline stage
-    const stageResult = await query(`
+    const stageRows: Record<string, unknown>[] = await prisma.$queryRawUnsafe(`
       SELECT ps.id
       FROM crm_pipeline_stages ps
       JOIN crm_pipeline_templates pt ON ps.template_id = pt.id
@@ -252,7 +252,7 @@ async function postHandler(request: NextRequest) {
       LIMIT 1
     `)
 
-    if (stageResult.rows.length > 0) {
+    if (stageRows.length > 0) {
       // Parse budget range to get estimated value
       let estimatedValue: number | null = null
       if (budget_range) {
@@ -262,20 +262,20 @@ async function postHandler(request: NextRequest) {
         }
       }
 
-      await query(`
+      await prisma.$queryRawUnsafe(`
         INSERT INTO crm_deals (
           contact_id, stage_id, brand, title, description,
           party_size, expected_tour_date, estimated_value, brand_id
         ) VALUES ($1, $2, 'walla_walla_travel', $3, $4, $5, $6, $7, 1)
-      `, [
+      `,
         contact.id,
-        stageResult.rows[0].id,
+        stageRows[0].id,
         `Lead - ${fullName}`,
         interested_services?.join(', ') || notes || 'New lead',
         party_size_estimate || null,
         estimated_date || null,
         estimatedValue
-      ])
+      )
     }
   }
 

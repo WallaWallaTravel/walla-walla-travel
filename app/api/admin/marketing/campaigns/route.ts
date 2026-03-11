@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { query } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 import { logger } from '@/lib/logger'
 import { socialIntelligenceService } from '@/lib/services/social-intelligence.service'
 import Anthropic from '@anthropic-ai/sdk'
@@ -62,11 +62,11 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
 
   queryText += ` ORDER BY mc.created_at DESC`
 
-  const result = await query(queryText, params)
+  const rows: Record<string, unknown>[] = await prisma.$queryRawUnsafe(queryText, ...params)
 
   return NextResponse.json({
-    campaigns: result.rows,
-    total: result.rows.length,
+    campaigns: rows,
+    total: rows.length,
   })
 });
 
@@ -108,7 +108,7 @@ export const POST = withCSRF(
   }
 
   // Create the campaign
-  const campaignResult = await query(`
+  const campaignRows: Record<string, unknown>[] = await prisma.$queryRawUnsafe(`
     INSERT INTO marketing_campaigns (
       name, description, theme, status, start_date, end_date,
       channels, target_audience, auto_generated, created_by,
@@ -116,7 +116,7 @@ export const POST = withCSRF(
     ) VALUES (
       $1, $2, $3, 'draft', $4, $5, $6, $7, true, $8, NOW(), NOW()
     ) RETURNING *
-  `, [
+  `,
     name,
     `AI-generated campaign: ${theme}`,
     theme,
@@ -125,9 +125,9 @@ export const POST = withCSRF(
     channels,
     targetAudience || null,
     parseInt(session.userId) || null,
-  ])
+  )
 
-  const campaign = campaignResult.rows[0]
+  const campaign = campaignRows[0]
 
   // Generate content items with AI
   const socialChannels = channels.filter((c: string) => ['instagram', 'facebook', 'linkedin'].includes(c))
@@ -147,14 +147,14 @@ export const POST = withCSRF(
     // Gather performance intelligence for smarter campaign content
     const [benchmarks, pastCampaigns] = await Promise.all([
       socialIntelligenceService.getPerformanceBenchmarks(),
-      query<{ name: string; theme: string; performance: string }>(`
+      prisma.$queryRawUnsafe<{ name: string; theme: string; performance: string }[]>(`
         SELECT name, theme, performance::text
         FROM marketing_campaigns
         WHERE status = 'completed'
           AND performance != '{}'::jsonb
         ORDER BY end_date DESC
         LIMIT 3
-      `).then(r => r.rows).catch(() => []),
+      `).catch(() => [] as { name: string; theme: string; performance: string }[]),
     ])
 
     let campaignIntelligence = ''
@@ -314,20 +314,20 @@ Return ONLY JSON object, no other text.`
 
     // Insert all content items
     for (const item of contentItems) {
-      await query(`
+      await prisma.$queryRawUnsafe(`
         INSERT INTO campaign_items (
           campaign_id, channel, item_type, content,
           subject_line, scheduled_for, status,
           created_at, updated_at
         ) VALUES ($1, $2, $3, $4, $5, $6, 'draft', NOW(), NOW())
-      `, [
+      `,
         campaign.id,
         item.channel,
         item.item_type,
         item.content,
         item.subject_line,
         item.scheduled_for,
-      ])
+      )
     }
 
     logger.info('Campaign created with AI-generated content', {
@@ -342,16 +342,16 @@ Return ONLY JSON object, no other text.`
   }
 
   // Fetch the campaign with items count
-  const finalResult = await query(`
+  const finalRows: Record<string, unknown>[] = await prisma.$queryRawUnsafe(`
     SELECT mc.*,
       (SELECT COUNT(*) FROM campaign_items ci WHERE ci.campaign_id = mc.id) AS items_count
     FROM marketing_campaigns mc
     WHERE mc.id = $1
-  `, [campaign.id])
+  `, campaign.id)
 
   return NextResponse.json({
     success: true,
-    campaign: finalResult.rows[0],
+    campaign: finalRows[0],
     itemsGenerated: contentItems.length,
   })
 })

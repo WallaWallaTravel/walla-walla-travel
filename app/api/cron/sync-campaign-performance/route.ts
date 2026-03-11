@@ -10,7 +10,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { query } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 import { logger } from '@/lib/logger'
 import { withCronAuth } from '@/lib/api/middleware/cron-auth'
 import { withCronLock } from '@/lib/api/middleware/cron-lock'
@@ -43,15 +43,13 @@ export const GET = withCronAuth('sync-campaign-performance', async (_request: Ne
 
   try {
     // Find campaigns that are scheduled, active, or completed (not draft/cancelled)
-    const campaignsResult = await query<CampaignToSync>(`
+    const campaigns = await prisma.$queryRaw<CampaignToSync[]>`
       SELECT id, name, start_date::text, end_date::text, status
       FROM marketing_campaigns
       WHERE status IN ('scheduled', 'active', 'completed')
       ORDER BY start_date DESC
       LIMIT 50
-    `)
-
-    const campaigns = campaignsResult.rows
+    `
     if (campaigns.length === 0) {
       return NextResponse.json({
         success: true,
@@ -66,7 +64,7 @@ export const GET = withCronAuth('sync-campaign-performance', async (_request: Ne
 
     for (const campaign of campaigns) {
       // Get all social post items for this campaign that have linked scheduled_posts
-      const itemsResult = await query<ItemWithMetrics>(`
+      const itemsResult = await prisma.$queryRaw<ItemWithMetrics[]>`
         SELECT
           ci.id,
           ci.campaign_id,
@@ -79,34 +77,32 @@ export const GET = withCronAuth('sync-campaign-performance', async (_request: Ne
           sp.status AS post_status
         FROM campaign_items ci
         LEFT JOIN scheduled_posts sp ON ci.scheduled_post_id = sp.id
-        WHERE ci.campaign_id = $1
+        WHERE ci.campaign_id = ${campaign.id}
           AND ci.item_type = 'social_post'
-      `, [campaign.id])
+      `
 
       // Update individual campaign item performance
-      for (const item of itemsResult.rows) {
+      for (const item of itemsResult) {
         if (item.scheduled_post_id && item.engagement !== null) {
-          await query(`
+          const perfJson = JSON.stringify({
+            engagement: item.engagement || 0,
+            impressions: item.impressions || 0,
+            clicks: item.clicks || 0,
+            shares: item.shares || 0,
+            post_status: item.post_status,
+            synced_at: new Date().toISOString(),
+          })
+          await prisma.$executeRaw`
             UPDATE campaign_items
-            SET performance = $1, updated_at = NOW()
-            WHERE id = $2
-          `, [
-            JSON.stringify({
-              engagement: item.engagement || 0,
-              impressions: item.impressions || 0,
-              clicks: item.clicks || 0,
-              shares: item.shares || 0,
-              post_status: item.post_status,
-              synced_at: new Date().toISOString(),
-            }),
-            item.id,
-          ])
+            SET performance = ${perfJson}::jsonb, updated_at = NOW()
+            WHERE id = ${item.id}
+          `
           itemsUpdated++
         }
       }
 
       // Aggregate campaign-level performance
-      const publishedItems = itemsResult.rows.filter(i => i.post_status === 'published')
+      const publishedItems = itemsResult.filter(i => i.post_status === 'published')
       const totalEngagement = publishedItems.reduce((sum, i) => sum + (i.engagement || 0), 0)
       const totalImpressions = publishedItems.reduce((sum, i) => sum + (i.impressions || 0), 0)
       const totalClicks = publishedItems.reduce((sum, i) => sum + (i.clicks || 0), 0)
@@ -123,7 +119,7 @@ export const GET = withCronAuth('sync-campaign-performance', async (_request: Ne
       }
 
       const campaignPerformance = {
-        total_items: itemsResult.rows.length,
+        total_items: itemsResult.length,
         published_items: publishedItems.length,
         total_engagement: totalEngagement,
         total_impressions: totalImpressions,
@@ -133,21 +129,22 @@ export const GET = withCronAuth('sync-campaign-performance', async (_request: Ne
         synced_at: new Date().toISOString(),
       }
 
-      await query(`
+      const campPerfJson = JSON.stringify(campaignPerformance)
+      await prisma.$executeRaw`
         UPDATE marketing_campaigns
-        SET performance = $1, updated_at = NOW()
-        WHERE id = $2
-      `, [JSON.stringify(campaignPerformance), campaign.id])
+        SET performance = ${campPerfJson}::jsonb, updated_at = NOW()
+        WHERE id = ${campaign.id}
+      `
 
       // Auto-complete campaigns past their end date with published posts
       if (campaign.status === 'active' || campaign.status === 'scheduled') {
         const endDate = new Date(campaign.end_date)
         if (endDate < new Date() && publishedItems.length > 0) {
-          await query(`
+          await prisma.$executeRaw`
             UPDATE marketing_campaigns
             SET status = 'completed', updated_at = NOW()
-            WHERE id = $1 AND status IN ('active', 'scheduled')
-          `, [campaign.id])
+            WHERE id = ${campaign.id} AND status IN ('active', 'scheduled')
+          `
         }
       }
 

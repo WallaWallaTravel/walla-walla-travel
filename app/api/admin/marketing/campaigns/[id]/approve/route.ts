@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { query } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 import { logger } from '@/lib/logger'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import type { AuthSession } from '@/lib/api/middleware/auth-wrapper'
@@ -20,16 +20,16 @@ export const POST = withCSRF(
   }
 
   // Get the campaign
-  const campaignResult = await query(
+  const campaignRows: Record<string, unknown>[] = await prisma.$queryRawUnsafe(
     'SELECT * FROM marketing_campaigns WHERE id = $1',
-    [campaignId]
+    campaignId
   )
 
-  if (campaignResult.rows.length === 0) {
+  if (campaignRows.length === 0) {
     return NextResponse.json({ error: 'Campaign not found' }, { status: 404 })
   }
 
-  const campaign = campaignResult.rows[0]
+  const campaign = campaignRows[0]
   if (campaign.status !== 'draft') {
     return NextResponse.json(
       { error: `Campaign must be in "draft" status to approve, currently "${campaign.status}"` },
@@ -38,20 +38,19 @@ export const POST = withCSRF(
   }
 
   // Get all draft social post items for this campaign
-  const itemsResult = await query(`
+  const socialItems: Record<string, unknown>[] = await prisma.$queryRawUnsafe(`
     SELECT * FROM campaign_items
     WHERE campaign_id = $1
       AND item_type = 'social_post'
       AND status = 'draft'
     ORDER BY scheduled_for ASC
-  `, [campaignId])
+  `, campaignId)
 
-  const socialItems = itemsResult.rows
   let scheduledCount = 0
 
   // Create scheduled_posts from each social campaign item
   for (const item of socialItems) {
-    const postResult = await query(`
+    const postRows: { id: number }[] = await prisma.$queryRawUnsafe(`
       INSERT INTO scheduled_posts (
         content, media_urls, hashtags, platform,
         scheduled_for, timezone, status,
@@ -60,42 +59,42 @@ export const POST = withCSRF(
         $1, $2, $3, $4, $5, 'America/Los_Angeles', 'scheduled',
         $6, NOW(), NOW()
       ) RETURNING id
-    `, [
+    `,
       item.content,
-      item.media_urls || [],
+      (item.media_urls as string[]) || [],
       [],
       item.channel,
       item.scheduled_for,
       parseInt(session.userId) || null,
-    ])
+    )
 
-    const scheduledPostId = postResult.rows[0].id
+    const scheduledPostId = postRows[0].id
 
     // Link campaign item to scheduled post and mark as scheduled
-    await query(`
+    await prisma.$queryRawUnsafe(`
       UPDATE campaign_items
       SET scheduled_post_id = $1, status = 'scheduled', updated_at = NOW()
       WHERE id = $2
-    `, [scheduledPostId, item.id])
+    `, scheduledPostId, item.id)
 
     scheduledCount++
   }
 
   // Mark email items as approved (they get sent through a different pipeline)
-  await query(`
+  await prisma.$queryRawUnsafe(`
     UPDATE campaign_items
     SET status = 'approved', updated_at = NOW()
     WHERE campaign_id = $1
       AND item_type = 'email_blast'
       AND status = 'draft'
-  `, [campaignId])
+  `, campaignId)
 
   // Update campaign status to scheduled
-  await query(`
+  await prisma.$queryRawUnsafe(`
     UPDATE marketing_campaigns
     SET status = 'scheduled', updated_at = NOW()
     WHERE id = $1
-  `, [campaignId])
+  `, campaignId)
 
   logger.info('Campaign approved', {
     campaignId,

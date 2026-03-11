@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { query } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 import { logger } from '@/lib/logger'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { withCSRF } from '@/lib/api/middleware/csrf';
@@ -43,11 +43,11 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   queryText += ` ORDER BY relevance_score DESC, detected_at DESC LIMIT $${paramIndex++}`
   params.push(limit)
 
-  const result = await query(queryText, params)
+  const rows: any[] = await prisma.$queryRawUnsafe(queryText, ...params)
 
   return NextResponse.json({
-    topics: result.rows,
-    total: result.rows.length,
+    topics: rows,
+    total: rows.length,
   })
 });
 
@@ -68,14 +68,14 @@ export const PUT = withCSRF(
     )
   }
 
-  const result = await query(`
+  const rows: any[] = await prisma.$queryRawUnsafe(`
     UPDATE trending_topics
     SET status = $1, updated_at = NOW()
     WHERE id = $2
     RETURNING *
-  `, [status, id])
+  `, status, id)
 
-  if (result.rows.length === 0) {
+  if (rows.length === 0) {
     return NextResponse.json({ error: 'Trending topic not found' }, { status: 404 })
   }
 
@@ -83,7 +83,7 @@ export const PUT = withCSRF(
 
   return NextResponse.json({
     success: true,
-    topic: result.rows[0],
+    topic: rows[0],
   })
 })
 );

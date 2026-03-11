@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { query } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 
 // Allow up to 60s for large exports on Vercel
@@ -93,7 +93,7 @@ async function getHandler(request: NextRequest) {
     ) d ON true
     WHERE c.lifecycle_stage IN ('lead', 'qualified', 'opportunity')
   `
-  const params: string[] = []
+  const params: (string | string[])[] = []
   let paramIndex = 1
 
   // Map legacy status filter to lifecycle_stage
@@ -109,7 +109,7 @@ async function getHandler(request: NextRequest) {
     }
     const stages = lifecycleMapping[status] || ['lead']
     queryText += ` AND c.lifecycle_stage = ANY($${paramIndex++}::text[])`
-    params.push(stages as unknown as string)
+    params.push(stages as unknown as string[])
   }
 
   if (temperature) {
@@ -125,11 +125,11 @@ async function getHandler(request: NextRequest) {
   // Safety cap: fetch at most EXPORT_LIMIT + 1 to detect truncation
   queryText += ` ORDER BY c.created_at DESC LIMIT ${EXPORT_LIMIT + 1}`
 
-  const result = await query(queryText, params)
+  const rows: Record<string, unknown>[] = await prisma.$queryRawUnsafe(queryText, ...params)
 
-  const truncated = result.rows.length > EXPORT_LIMIT
-  const rows = truncated ? result.rows.slice(0, EXPORT_LIMIT) : result.rows
-  const leads = rows.map(transformRow)
+  const truncated = rows.length > EXPORT_LIMIT
+  const limitedRows = truncated ? rows.slice(0, EXPORT_LIMIT) : rows
+  const leads = limitedRows.map(transformRow)
 
   if (format === 'json') {
     return NextResponse.json({

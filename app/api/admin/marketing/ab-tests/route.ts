@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { query } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError } from '@/lib/api/middleware/error-handler'
 import { withCSRF } from '@/lib/api/middleware/csrf'
@@ -72,10 +72,10 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
 
   queryText += ` GROUP BY t.id ORDER BY t.created_at DESC`
 
-  const result = await query(queryText, params)
+  const rows: any[] = await prisma.$queryRawUnsafe(queryText, ...params)
 
   // Transform results
-  const tests = result.rows.map(row => ({
+  const tests = rows.map(row => ({
     ...row,
     variant_a: row.variants?.find((v: { variant_letter: string }) => v.variant_letter === 'a') || null,
     variant_b: row.variants?.find((v: { variant_letter: string }) => v.variant_letter === 'b') || null,
@@ -111,7 +111,7 @@ export const POST = withCSRF(
   }
 
   // Create test
-  const testResult = await query(`
+  const testRows: any[] = await prisma.$queryRawUnsafe(`
     INSERT INTO ab_tests (
       name, description, hypothesis, test_type,
       variable_tested, platform, sample_size_target,
@@ -119,7 +119,7 @@ export const POST = withCSRF(
     ) VALUES (
       $1, $2, $3, $4, $5, $6, $7, 'draft', $8, NOW(), NOW()
     ) RETURNING *
-  `, [
+  `,
     name,
     description || null,
     hypothesis || null,
@@ -128,13 +128,13 @@ export const POST = withCSRF(
     platform || 'all',
     sample_size_target || null,
     created_by || null
-  ])
+  )
 
-  const testId = testResult.rows[0].id
+  const testId = testRows[0].id
 
   // Create variant A
   if (variant_a) {
-    await query(`
+    await prisma.$queryRawUnsafe(`
       INSERT INTO test_variants (
         test_id, variant_letter, name, description,
         caption, image_url, video_url, hashtags,
@@ -142,7 +142,7 @@ export const POST = withCSRF(
       ) VALUES (
         $1, 'a', $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW()
       )
-    `, [
+    `,
       testId,
       variant_a.name || 'Variant A',
       variant_a.description || null,
@@ -153,12 +153,12 @@ export const POST = withCSRF(
       variant_a.cta || null,
       variant_a.post_time || null,
       variant_a.post_days || []
-    ])
+    )
   }
 
   // Create variant B
   if (variant_b) {
-    await query(`
+    await prisma.$queryRawUnsafe(`
       INSERT INTO test_variants (
         test_id, variant_letter, name, description,
         caption, image_url, video_url, hashtags,
@@ -166,7 +166,7 @@ export const POST = withCSRF(
       ) VALUES (
         $1, 'b', $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW()
       )
-    `, [
+    `,
       testId,
       variant_b.name || 'Variant B',
       variant_b.description || null,
@@ -177,12 +177,12 @@ export const POST = withCSRF(
       variant_b.cta || null,
       variant_b.post_time || null,
       variant_b.post_days || []
-    ])
+    )
   }
 
   return NextResponse.json({
     success: true,
-    test: testResult.rows[0]
+    test: testRows[0]
   })
 })
 )

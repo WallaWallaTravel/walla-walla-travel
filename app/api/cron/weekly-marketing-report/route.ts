@@ -9,7 +9,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { query } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 import { logger } from '@/lib/logger'
 import { sendEmail } from '@/lib/email'
 import { withCronAuth } from '@/lib/api/middleware/cron-auth'
@@ -79,7 +79,7 @@ async function gatherWeeklyData(): Promise<WeeklyData> {
   const endISO = periodEnd.toISOString()
 
   // 1. Aggregate post metrics for the period
-  const metricsResult = await query<PostMetrics>(`
+  const metricsResult = await prisma.$queryRaw<PostMetrics[]>`
     SELECT
       COUNT(*)::int AS total_posts,
       COALESCE(SUM(engagement), 0)::int AS total_engagement,
@@ -87,60 +87,60 @@ async function gatherWeeklyData(): Promise<WeeklyData> {
       COALESCE(SUM(clicks), 0)::int AS total_clicks
     FROM scheduled_posts
     WHERE status = 'published'
-      AND published_at >= $1
-      AND published_at <= $2
-  `, [startISO, endISO])
+      AND published_at >= ${startISO}::timestamptz
+      AND published_at <= ${endISO}::timestamptz
+  `
 
-  const metrics = metricsResult.rows[0]
+  const metrics = metricsResult[0]
 
   // 2. Top performing post (highest engagement)
-  const topPostResult = await query<TopPost>(`
+  const topPostResult = await prisma.$queryRaw<TopPost[]>`
     SELECT id, platform, content, published_at,
            engagement, impressions, clicks
     FROM scheduled_posts
     WHERE status = 'published'
-      AND published_at >= $1
-      AND published_at <= $2
+      AND published_at >= ${startISO}::timestamptz
+      AND published_at <= ${endISO}::timestamptz
     ORDER BY engagement DESC
     LIMIT 1
-  `, [startISO, endISO])
+  `
 
-  const topPost = topPostResult.rows[0] || null
+  const topPost = topPostResult[0] || null
 
   // 3. Platform activity breakdown
-  const platformResult = await query<PlatformActivity>(`
+  const platformResult = await prisma.$queryRaw<PlatformActivity[]>`
     SELECT platform, COUNT(*)::int AS post_count
     FROM scheduled_posts
     WHERE status = 'published'
-      AND published_at >= $1
-      AND published_at <= $2
+      AND published_at >= ${startISO}::timestamptz
+      AND published_at <= ${endISO}::timestamptz
     GROUP BY platform
     ORDER BY post_count DESC
-  `, [startISO, endISO])
+  `
 
   // 4. Find content gaps (platforms with zero posts)
   const allPlatforms = ['instagram', 'facebook', 'linkedin']
-  const activePlatforms = platformResult.rows.map(r => r.platform)
+  const activePlatforms = platformResult.map(r => r.platform)
   const contentGaps = allPlatforms.filter(p => !activePlatforms.includes(p))
 
   // 5. Content suggestions generated vs accepted this period
-  const suggestionsResult = await query<SuggestionMetrics>(`
+  const suggestionsResult = await prisma.$queryRaw<SuggestionMetrics[]>`
     SELECT
       COUNT(*)::int AS generated,
       COUNT(*) FILTER (WHERE status IN ('accepted', 'modified'))::int AS accepted
     FROM content_suggestions
-    WHERE suggestion_date >= $1::date
-      AND suggestion_date <= $2::date
-  `, [startISO, endISO])
+    WHERE suggestion_date >= ${startISO}::date
+      AND suggestion_date <= ${endISO}::date
+  `
 
-  const suggestions = suggestionsResult.rows[0]
+  const suggestions = suggestionsResult[0]
 
   return {
     periodStart: periodStart.toISOString().split('T')[0],
     periodEnd: periodEnd.toISOString().split('T')[0],
     metrics,
     topPost,
-    platformActivity: platformResult.rows,
+    platformActivity: platformResult,
     contentGaps,
     suggestions,
   }
@@ -395,26 +395,21 @@ export const GET = withCronAuth('weekly-marketing-report', async (_request: Next
     })
 
     // 6. Log the report in marketing_report_logs
-    await query(`
+    const metricsJson = JSON.stringify({
+      total_posts: weeklyData.metrics.total_posts,
+      total_engagement: weeklyData.metrics.total_engagement,
+      total_impressions: weeklyData.metrics.total_impressions,
+      total_clicks: weeklyData.metrics.total_clicks,
+      suggestions_generated: weeklyData.suggestions.generated,
+      suggestions_accepted: weeklyData.suggestions.accepted,
+      content_gaps: weeklyData.contentGaps,
+      top_post_id: weeklyData.topPost?.id || null,
+    })
+    const sentAt = emailSent ? new Date().toISOString() : null
+    await prisma.$executeRaw`
       INSERT INTO marketing_report_logs (report_type, report_date, report_content, metrics, sent_to, sent_at)
-      VALUES ($1, $2, $3, $4, $5, $6)
-    `, [
-      'weekly_summary',
-      weeklyData.periodStart,
-      aiSummary,
-      JSON.stringify({
-        total_posts: weeklyData.metrics.total_posts,
-        total_engagement: weeklyData.metrics.total_engagement,
-        total_impressions: weeklyData.metrics.total_impressions,
-        total_clicks: weeklyData.metrics.total_clicks,
-        suggestions_generated: weeklyData.suggestions.generated,
-        suggestions_accepted: weeklyData.suggestions.accepted,
-        content_gaps: weeklyData.contentGaps,
-        top_post_id: weeklyData.topPost?.id || null,
-      }),
-      [adminEmail],
-      emailSent ? new Date().toISOString() : null,
-    ])
+      VALUES (${'weekly_summary'}, ${weeklyData.periodStart}, ${aiSummary}, ${metricsJson}::jsonb, ${[adminEmail]}, ${sentAt}::timestamptz)
+    `
 
     logger.info('Weekly marketing report completed', {
       emailSent,

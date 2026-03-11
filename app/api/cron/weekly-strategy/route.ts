@@ -11,7 +11,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { query } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 import { socialIntelligenceService } from '@/lib/services/social-intelligence.service'
 import { logger } from '@/lib/logger'
 import { withCronAuth } from '@/lib/api/middleware/cron-auth'
@@ -100,7 +100,7 @@ interface StrategyOutput {
 
 async function getSocialPerformance(): Promise<SocialPerformance[]> {
   try {
-    const result = await query<SocialPerformance>(`
+    const result = await prisma.$queryRaw<SocialPerformance[]>`
       SELECT
         platform,
         COUNT(*)::int AS post_count,
@@ -113,8 +113,8 @@ async function getSocialPerformance(): Promise<SocialPerformance[]> {
         AND published_at >= NOW() - INTERVAL '7 days'
       GROUP BY platform
       ORDER BY total_engagement DESC
-    `)
-    return result.rows
+    `
+    return result
   } catch (error) {
     logger.warn('Failed to fetch social performance', { error })
     return []
@@ -123,7 +123,7 @@ async function getSocialPerformance(): Promise<SocialPerformance[]> {
 
 async function getSearchConsoleTrends(): Promise<SearchTrend[]> {
   try {
-    const result = await query<SearchTrend>(`
+    const result = await prisma.$queryRaw<SearchTrend[]>`
       WITH current_week AS (
         SELECT
           query,
@@ -160,8 +160,8 @@ async function getSearchConsoleTrends(): Promise<SearchTrend[]> {
       LEFT JOIN previous_week p ON c.query = p.query
       ORDER BY c.current_impressions DESC
       LIMIT 20
-    `)
-    return result.rows
+    `
+    return result
   } catch (error) {
     logger.warn('Failed to fetch search console trends', { error })
     return []
@@ -170,7 +170,7 @@ async function getSearchConsoleTrends(): Promise<SearchTrend[]> {
 
 async function getCompetitorActivity(): Promise<CompetitorActivity[]> {
   try {
-    const result = await query<CompetitorActivity>(`
+    const result = await prisma.$queryRaw<CompetitorActivity[]>`
       SELECT
         c.name AS competitor_name,
         cc.change_type,
@@ -183,8 +183,8 @@ async function getCompetitorActivity(): Promise<CompetitorActivity[]> {
       WHERE cc.detected_at >= NOW() - INTERVAL '7 days'
       ORDER BY cc.detected_at DESC
       LIMIT 10
-    `)
-    return result.rows
+    `
+    return result
   } catch (error) {
     logger.warn('Failed to fetch competitor activity', { error })
     return []
@@ -193,7 +193,7 @@ async function getCompetitorActivity(): Promise<CompetitorActivity[]> {
 
 async function getTopPerformingPosts(): Promise<TopPost[]> {
   try {
-    const result = await query<TopPost>(`
+    const result = await prisma.$queryRaw<TopPost[]>`
       SELECT
         id,
         platform,
@@ -208,8 +208,8 @@ async function getTopPerformingPosts(): Promise<TopPost[]> {
         AND engagement > 0
       ORDER BY engagement DESC
       LIMIT 5
-    `)
-    return result.rows
+    `
+    return result
   } catch (error) {
     logger.warn('Failed to fetch top posts', { error })
     return []
@@ -218,7 +218,7 @@ async function getTopPerformingPosts(): Promise<TopPost[]> {
 
 async function getContentGaps(): Promise<ContentGapData[]> {
   try {
-    const result = await query<ContentGapData>(`
+    const result = await prisma.$queryRaw<ContentGapData[]>`
       WITH platform_stats AS (
         SELECT
           platform,
@@ -237,8 +237,8 @@ async function getContentGaps(): Promise<ContentGapData[]> {
       SELECT p.platform, 30, 0
       FROM (VALUES ('instagram'), ('facebook'), ('linkedin')) AS p(platform)
       WHERE p.platform NOT IN (SELECT platform FROM platform_stats)
-    `)
-    return result.rows
+    `
+    return result
   } catch (error) {
     logger.warn('Failed to fetch content gaps', { error })
     return []
@@ -247,12 +247,12 @@ async function getContentGaps(): Promise<ContentGapData[]> {
 
 async function checkExistingStrategy(weekStart: string): Promise<boolean> {
   try {
-    const result = await query<{ count: number }>(`
+    const result = await prisma.$queryRaw<Array<{ count: number }>>`
       SELECT COUNT(*)::int AS count
       FROM marketing_strategies
-      WHERE week_start = $1
-    `, [weekStart])
-    return result.rows[0].count > 0
+      WHERE week_start = ${weekStart}::date
+    `
+    return result[0].count > 0
   } catch {
     return false
   }
@@ -273,22 +273,22 @@ interface ExecutionStats {
 async function getLastWeekExecutionStats(): Promise<ExecutionStats | null> {
   try {
     // Find last week's strategy
-    const stratResult = await query<{
+    const stratResult = await prisma.$queryRaw<Array<{
       id: number
       recommended_posts: string
       week_start: string
       week_end: string
-    }>(`
+    }>>`
       SELECT id, recommended_posts, week_start::text, week_end::text
       FROM marketing_strategies
       WHERE week_start < CURRENT_DATE
       ORDER BY week_start DESC
       LIMIT 1
-    `)
+    `
 
-    if (stratResult.rows.length === 0) return null
+    if (stratResult.length === 0) return null
 
-    const prevStrategy = stratResult.rows[0]
+    const prevStrategy = stratResult[0]
     const recommendedPosts = typeof prevStrategy.recommended_posts === 'string'
       ? JSON.parse(prevStrategy.recommended_posts)
       : prevStrategy.recommended_posts
@@ -296,30 +296,30 @@ async function getLastWeekExecutionStats(): Promise<ExecutionStats | null> {
     const recommendedPostCount = Array.isArray(recommendedPosts) ? recommendedPosts.length : 0
 
     // Count posts linked to this strategy
-    const linkedResult = await query<{ count: number; avg_engagement: number }>(`
+    const linkedResult = await prisma.$queryRaw<Array<{ count: number; avg_engagement: number }>>`
       SELECT
         COUNT(*)::int AS count,
         ROUND(COALESCE(AVG(engagement), 0))::int AS avg_engagement
       FROM scheduled_posts
-      WHERE strategy_id = $1
+      WHERE strategy_id = ${prevStrategy.id}
         AND status = 'published'
-    `, [prevStrategy.id])
+    `
 
-    const publishedFromStrategy = linkedResult.rows[0]?.count || 0
-    const strategyPostAvgEngagement = linkedResult.rows[0]?.avg_engagement || 0
+    const publishedFromStrategy = linkedResult[0]?.count || 0
+    const strategyPostAvgEngagement = linkedResult[0]?.avg_engagement || 0
 
     // Get avg engagement of ad-hoc posts in the same period
-    const adHocResult = await query<{ avg_engagement: number }>(`
+    const adHocResult = await prisma.$queryRaw<Array<{ avg_engagement: number }>>`
       SELECT ROUND(COALESCE(AVG(engagement), 0))::int AS avg_engagement
       FROM scheduled_posts
       WHERE strategy_id IS NULL
         AND status = 'published'
-        AND published_at >= $1::date
-        AND published_at <= $2::date + INTERVAL '1 day'
+        AND published_at >= ${prevStrategy.week_start}::date
+        AND published_at <= ${prevStrategy.week_end}::date + INTERVAL '1 day'
         AND engagement > 0
-    `, [prevStrategy.week_start, prevStrategy.week_end])
+    `
 
-    const adHocPostAvgEngagement = adHocResult.rows[0]?.avg_engagement || 0
+    const adHocPostAvgEngagement = adHocResult[0]?.avg_engagement || 0
 
     const executionRate = recommendedPostCount > 0
       ? Math.round((publishedFromStrategy / recommendedPostCount) * 100)
@@ -330,22 +330,20 @@ async function getLastWeekExecutionStats(): Promise<ExecutionStats | null> {
       : null
 
     // Save execution summary back to the previous strategy
-    await query(`
+    const execSummaryJson = JSON.stringify({
+      recommended_post_count: recommendedPostCount,
+      published_from_strategy: publishedFromStrategy,
+      execution_rate_pct: executionRate,
+      strategy_avg_engagement: strategyPostAvgEngagement,
+      ad_hoc_avg_engagement: adHocPostAvgEngagement,
+      performance_lift_pct: performanceLift,
+      computed_at: new Date().toISOString(),
+    })
+    await prisma.$executeRaw`
       UPDATE marketing_strategies
-      SET execution_summary = $1, updated_at = NOW()
-      WHERE id = $2
-    `, [
-      JSON.stringify({
-        recommended_post_count: recommendedPostCount,
-        published_from_strategy: publishedFromStrategy,
-        execution_rate_pct: executionRate,
-        strategy_avg_engagement: strategyPostAvgEngagement,
-        ad_hoc_avg_engagement: adHocPostAvgEngagement,
-        performance_lift_pct: performanceLift,
-        computed_at: new Date().toISOString(),
-      }),
-      prevStrategy.id,
-    ])
+      SET execution_summary = ${execSummaryJson}::jsonb, updated_at = NOW()
+      WHERE id = ${prevStrategy.id}
+    `
 
     return {
       previousStrategyId: prevStrategy.id,
@@ -498,7 +496,15 @@ async function saveStrategy(
   strategy: StrategyOutput,
   dataInputs: Record<string, unknown>
 ): Promise<number> {
-  const result = await query<{ id: number }>(`
+  const dataInputsJson = JSON.stringify(dataInputs)
+  const recommendedPostsJson = JSON.stringify(strategy.recommended_posts)
+  const keywordOppsJson = JSON.stringify(strategy.keyword_focus)
+  const contentGapsJson = JSON.stringify(strategy.content_gaps)
+  const perfSummaryJson = JSON.stringify({
+    content_refresh_priorities: strategy.content_refresh_priorities,
+  })
+
+  const result = await prisma.$queryRaw<Array<{ id: number }>>`
     INSERT INTO marketing_strategies (
       week_start, week_end, theme, summary,
       data_inputs, recommended_posts,
@@ -506,24 +512,15 @@ async function saveStrategy(
       performance_summary, status,
       created_at, updated_at
     ) VALUES (
-      $1, $2, $3, $4, $5, $6, $7, $8, $9, 'draft', NOW(), NOW()
+      ${weekStart}::date, ${weekEnd}::date, ${strategy.theme}, ${strategy.summary},
+      ${dataInputsJson}::jsonb, ${recommendedPostsJson}::jsonb,
+      ${keywordOppsJson}::jsonb, ${contentGapsJson}::jsonb,
+      ${perfSummaryJson}::jsonb, 'draft', NOW(), NOW()
     )
     RETURNING id
-  `, [
-    weekStart,
-    weekEnd,
-    strategy.theme,
-    strategy.summary,
-    JSON.stringify(dataInputs),
-    JSON.stringify(strategy.recommended_posts),
-    JSON.stringify(strategy.keyword_focus),
-    JSON.stringify(strategy.content_gaps),
-    JSON.stringify({
-      content_refresh_priorities: strategy.content_refresh_priorities,
-    }),
-  ])
+  `
 
-  return result.rows[0].id
+  return result[0].id
 }
 
 async function createSuggestionsFromStrategy(
@@ -557,7 +554,14 @@ async function createSuggestionsFromStrategy(
     postDate.setHours(hour, 0, 0, 0)
 
     try {
-      const result = await query<{ id: number }>(`
+      const suggestionDate = postDate.toISOString().split('T')[0]
+      const hashtags = post.hashtags || []
+      const suggestedTime = postDate.toISOString()
+      const dataSourcesJson = JSON.stringify([{ type: 'strategy', id: strategyId, detail: 'Generated from weekly strategy' }])
+      const priority = post.priority || 5
+      const imageQuery = `walla walla ${post.content_type.replace(/_/g, ' ')}`
+
+      const result = await prisma.$queryRaw<Array<{ id: number }>>`
         INSERT INTO content_suggestions (
           suggestion_date, platform, content_type,
           winery_id, winery_name,
@@ -567,23 +571,12 @@ async function createSuggestionsFromStrategy(
           suggested_media_urls, media_source,
           image_search_query, status, created_at
         ) VALUES (
-          $1, $2, $3, NULL, NULL, $4, $5, $6, $7,
-          $8, $9, '{}', 'unsplash', $10, 'pending', NOW()
+          ${suggestionDate}::date, ${post.platform}, ${post.content_type}, NULL, NULL, ${post.content}, ${hashtags}, ${suggestedTime}::timestamptz, ${post.reasoning},
+          ${dataSourcesJson}::jsonb, ${priority}, '{}', 'unsplash', ${imageQuery}, 'pending', NOW()
         )
         RETURNING id
-      `, [
-        postDate.toISOString().split('T')[0],
-        post.platform,
-        post.content_type,
-        post.content,
-        post.hashtags || [],
-        postDate.toISOString(),
-        post.reasoning,
-        JSON.stringify([{ type: 'strategy', id: strategyId, detail: 'Generated from weekly strategy' }]),
-        post.priority || 5,
-        `walla walla ${post.content_type.replace(/_/g, ' ')}`,
-      ])
-      ids.push(result.rows[0].id)
+      `
+      ids.push(result[0].id)
     } catch (error) {
       logger.warn('Failed to create suggestion from strategy post', { error, post: post.day_of_week })
     }

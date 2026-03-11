@@ -9,7 +9,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { query } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 import { bufferService } from '@/lib/services/buffer.service'
 import { socialIntelligenceService } from '@/lib/services/social-intelligence.service'
 import { logger } from '@/lib/logger'
@@ -34,7 +34,7 @@ export const GET = withCronAuth('sync-post-metrics', async (_request: NextReques
   try {
     // Find published posts with buffer_update_id that need analytics sync
     // Either never synced (analytics_synced_at IS NULL) or not synced in last 24 hours
-    const postsResult = await query<PostToSync>(`
+    const posts = await prisma.$queryRaw<PostToSync[]>`
       SELECT
         sp.id,
         sp.buffer_update_id,
@@ -54,9 +54,7 @@ export const GET = withCronAuth('sync-post-metrics', async (_request: NextReques
         )
       ORDER BY sp.published_at DESC NULLS LAST
       LIMIT 50
-    `)
-
-    const posts = postsResult.rows
+    `
     logger.info(`Found ${posts.length} posts to sync metrics for`)
 
     if (posts.length === 0) {
@@ -82,16 +80,16 @@ export const GET = withCronAuth('sync-post-metrics', async (_request: NextReques
           post.buffer_update_id
         )
 
-        await query(`
+        await prisma.$executeRaw`
           UPDATE scheduled_posts SET
-            impressions = $1,
-            engagement = $2,
-            clicks = $3,
-            shares = $4,
+            impressions = ${metrics.impressions},
+            engagement = ${metrics.engagement},
+            clicks = ${metrics.clicks},
+            shares = ${metrics.shares},
             analytics_synced_at = NOW(),
             updated_at = NOW()
-          WHERE id = $5
-        `, [metrics.impressions, metrics.engagement, metrics.clicks, metrics.shares, post.id])
+          WHERE id = ${post.id}
+        `
 
         results.synced++
         logger.info(`Synced metrics for post ${post.id}`, {

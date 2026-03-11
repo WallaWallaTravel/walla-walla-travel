@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import Anthropic from '@anthropic-ai/sdk'
-import { query } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { socialIntelligenceService } from '@/lib/services/social-intelligence.service'
@@ -79,28 +79,25 @@ export const POST = withCSRF(
     // For general content, winery is optional
     if (wineryId) {
       // Fetch winery data
-      const wineryResult = await query(
-        `SELECT id, name, description, short_description, specialties,
+      const wineryResult = await prisma.$queryRaw<Array<{ id: number; name: string; description: string | null; short_description: string | null; specialties: string[] | null; winemaker: string | null; owner: string | null; founded_year: number | null; production_volume: string | null; price_range: string | null }>>`
+        SELECT id, name, description, short_description, specialties,
                 winemaker, owner, founded_year, production_volume, price_range
-         FROM wineries WHERE id = $1`,
-        [wineryId]
-      )
+         FROM wineries WHERE id = ${wineryId}
+      `
 
-      winery = wineryResult.rows[0]
+      winery = wineryResult[0]
 
       if (!winery) {
         return NextResponse.json({ error: 'Winery not found' }, { status: 404 })
       }
 
       // Fetch winery content for context
-      const contentResult = await query<{content_type: string, content: string}>(
-        `SELECT content_type, content
+      wineryContent = await prisma.$queryRaw<Array<{content_type: string, content: string}>>`
+        SELECT content_type, content
          FROM winery_content
-         WHERE winery_id = $1
-         LIMIT 5`,
-        [wineryId]
-      )
-      wineryContent = contentResult.rows
+         WHERE winery_id = ${wineryId}
+         LIMIT 5
+      `
 
       // Build context from winery data
       wineryContext = `

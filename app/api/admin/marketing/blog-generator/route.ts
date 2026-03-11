@@ -9,7 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import Anthropic from '@anthropic-ai/sdk'
-import { query } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 import { logger } from '@/lib/logger'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { withCSRF } from '@/lib/api/middleware/csrf';
@@ -223,31 +223,20 @@ The article should be well-structured, informative, and optimized for the target
   }
 
   // Store in database
-  const result = await query(`
+  const result = await prisma.$queryRaw<Array<Record<string, unknown>>>`
     INSERT INTO blog_drafts (
       title, slug, meta_description, target_keywords, content,
       word_count, estimated_read_time, json_ld, category,
       status, seo_score, created_at, updated_at
     ) VALUES (
-      $1, $2, $3, $4, $5,
-      $6, $7, $8, $9,
-      'draft', $10, NOW(), NOW()
+      ${title}, ${slug}, ${metaDescription}, ${targetKeywords}, ${articleContent},
+      ${wordCount}, ${readTime}, ${JSON.stringify(jsonLd)}::jsonb, ${category},
+      'draft', ${seoScore}, NOW(), NOW()
     ) RETURNING *
-  `, [
-    title,
-    slug,
-    metaDescription,
-    targetKeywords,
-    articleContent,
-    wordCount,
-    readTime,
-    JSON.stringify(jsonLd),
-    category,
-    seoScore,
-  ])
+  `
 
   logger.info('Blog article generated', {
-    id: result.rows[0].id,
+    id: result[0].id,
     title,
     wordCount,
     seoScore,
@@ -255,7 +244,7 @@ The article should be well-structured, informative, and optimized for the target
 
   return NextResponse.json({
     success: true,
-    draft: result.rows[0],
+    draft: result[0],
   })
 })
 );
@@ -269,18 +258,18 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
 
   // Single draft by ID
   if (id) {
-    const result = await query(`
+    const result = await prisma.$queryRaw<Array<Record<string, unknown>>>`
       SELECT bd.*, u.name as created_by_name
       FROM blog_drafts bd
       LEFT JOIN users u ON bd.created_by = u.id
-      WHERE bd.id = $1
-    `, [parseInt(id)])
+      WHERE bd.id = ${parseInt(id)}
+    `
 
-    if (result.rows.length === 0) {
+    if (result.length === 0) {
       return NextResponse.json({ error: 'Blog draft not found' }, { status: 404 })
     }
 
-    return NextResponse.json({ draft: result.rows[0] })
+    return NextResponse.json({ draft: result[0] })
   }
 
   // List drafts
@@ -311,11 +300,11 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   queryText += ` ORDER BY bd.created_at DESC LIMIT $${paramIndex++}`
   params.push(limit)
 
-  const result = await query(queryText, params)
+  const result = await prisma.$queryRawUnsafe<Array<Record<string, unknown>>>(queryText, ...params)
 
   return NextResponse.json({
-    drafts: result.rows,
-    total: result.rows.length,
+    drafts: result,
+    total: result.length,
   })
 });
 
@@ -343,14 +332,15 @@ export const PATCH = withCSRF(
     updates.push('published_at = NOW()')
   }
 
-  const result = await query(`
-    UPDATE blog_drafts
+  const result = await prisma.$queryRawUnsafe<Array<Record<string, unknown>>>(
+    `UPDATE blog_drafts
     SET ${updates.join(', ')}
     WHERE id = $1
-    RETURNING *
-  `, params)
+    RETURNING *`,
+    ...params
+  )
 
-  if (result.rows.length === 0) {
+  if (result.length === 0) {
     return NextResponse.json({ error: 'Blog draft not found' }, { status: 404 })
   }
 
@@ -358,7 +348,7 @@ export const PATCH = withCSRF(
 
   return NextResponse.json({
     success: true,
-    draft: result.rows[0],
+    draft: result[0],
   })
 })
 );

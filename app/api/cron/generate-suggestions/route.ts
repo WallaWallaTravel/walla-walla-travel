@@ -9,7 +9,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { query } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 import { socialIntelligenceService } from '@/lib/services/social-intelligence.service'
 import { logger } from '@/lib/logger'
 import { withCronAuth } from '@/lib/api/middleware/cron-auth'
@@ -23,30 +23,30 @@ export const GET = withCronAuth('generate-suggestions', async (_request: NextReq
 
   try {
     // Check if suggestions already exist for today
-    const existingResult = await query<{ count: number }>(`
+    const existingResult = await prisma.$queryRaw<Array<{ count: number }>>`
       SELECT COUNT(*)::int as count
       FROM content_suggestions
       WHERE suggestion_date = CURRENT_DATE
         AND status = 'pending'
-    `)
+    `
 
-    if (existingResult.rows[0].count > 0) {
-      logger.info('Suggestions already generated for today', { count: existingResult.rows[0].count })
+    if (existingResult[0].count > 0) {
+      logger.info('Suggestions already generated for today', { count: existingResult[0].count })
       return NextResponse.json({
         success: true,
-        message: `Suggestions already exist for today (${existingResult.rows[0].count} pending)`,
+        message: `Suggestions already exist for today (${existingResult[0].count} pending)`,
         skipped: true,
         timestamp: new Date().toISOString(),
       })
     }
 
     // Expire old pending suggestions (older than 7 days)
-    await query(`
+    await prisma.$executeRaw`
       UPDATE content_suggestions
       SET status = 'expired', updated_at = NOW()
       WHERE status = 'pending'
         AND suggestion_date < CURRENT_DATE - INTERVAL '7 days'
-    `)
+    `
 
     // Generate new suggestions
     const suggestions = await socialIntelligenceService.generateDailySuggestions()

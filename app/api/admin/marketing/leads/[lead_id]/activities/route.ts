@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { query } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError } from '@/lib/api/middleware/error-handler'
 import { withCSRF } from '@/lib/api/middleware/csrf'
@@ -29,7 +29,7 @@ async function getHandler(
   const limit = parseInt(searchParams.get('limit') || '50')
   const offset = parseInt(searchParams.get('offset') || '0')
 
-  const result = await query(`
+  const activities: Record<string, unknown>[] = await prisma.$queryRawUnsafe(`
     SELECT
       a.*,
       u.name as performed_by_name
@@ -38,16 +38,16 @@ async function getHandler(
     WHERE a.contact_id = $1
     ORDER BY a.created_at DESC
     LIMIT $2 OFFSET $3
-  `, [id, limit, offset])
+  `, id, limit, offset)
 
-  const countResult = await query(
+  const countRows: { count: bigint }[] = await prisma.$queryRawUnsafe(
     'SELECT COUNT(*) FROM crm_activities WHERE contact_id = $1',
-    [id]
+    id
   )
 
   return NextResponse.json({
-    activities: result.rows,
-    total: parseInt(countResult.rows[0].count),
+    activities,
+    total: Number(countRows[0].count),
     limit,
     offset
   })
@@ -82,32 +82,32 @@ async function postHandler(
     throw new BadRequestError('Invalid or missing activity type')
   }
 
-  const result = await query(`
+  const resultRows: Record<string, unknown>[] = await prisma.$queryRawUnsafe(`
     INSERT INTO crm_activities (
       contact_id, activity_type, description, metadata, performed_by, created_at
     ) VALUES ($1, $2, $3, $4, $5, NOW())
     RETURNING *
-  `, [
+  `,
     id,
     activity_type,
     description || null,
     metadata ? JSON.stringify(metadata) : null,
     performed_by || null
-  ])
+  )
 
   // Update last_contacted_at on the CRM contact for certain activities
   const contactActivities = ['email_sent', 'call_made', 'call_received', 'meeting']
   if (contactActivities.includes(activity_type)) {
-    await query(`
+    await prisma.$queryRawUnsafe(`
       UPDATE crm_contacts
       SET last_contacted_at = NOW(), updated_at = NOW()
       WHERE id = $1
-    `, [id])
+    `, id)
   }
 
   return NextResponse.json({
     success: true,
-    activity: result.rows[0]
+    activity: resultRows[0]
   })
 }
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { query } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler'
 import { withCSRF } from '@/lib/api/middleware/csrf'
@@ -74,11 +74,11 @@ const getHandler = withAdminAuth(async (request: NextRequest, _session) => {
 
   queryText += ` ORDER BY sp.scheduled_for ASC`
 
-  const result = await query(queryText, params)
+  const rows: any[] = await prisma.$queryRawUnsafe(queryText, ...params)
 
   return NextResponse.json({
-    posts: result.rows,
-    total: result.rows.length
+    posts: rows,
+    total: rows.length
   })
 })
 
@@ -107,7 +107,7 @@ const postHandler = withAdminAuth(async (request: NextRequest, _session) => {
     throw new BadRequestError('Content, platform, and scheduled time are required')
   }
 
-  const result = await query(`
+  const rows: any[] = await prisma.$queryRawUnsafe(`
     INSERT INTO scheduled_posts (
       content, media_urls, hashtags, link_url,
       platform, account_id, scheduled_for, timezone,
@@ -117,7 +117,7 @@ const postHandler = withAdminAuth(async (request: NextRequest, _session) => {
     ) VALUES (
       $1, $2, $3, $4, $5, $6, $7, $8, 'scheduled', $9, $10, $11, $12, $13, NOW(), NOW()
     ) RETURNING *
-  `, [
+  `,
     content,
     media_urls || [],
     hashtags || [],
@@ -131,11 +131,11 @@ const postHandler = withAdminAuth(async (request: NextRequest, _session) => {
     created_by || null,
     strategy_id || null,
     content_type || null,
-  ])
+  )
 
   return NextResponse.json({
     success: true,
-    post: result.rows[0]
+    post: rows[0]
   })
 })
 
@@ -170,20 +170,20 @@ const patchHandler = withAdminAuth(async (request: NextRequest, _session) => {
 
   setClause.push(`updated_at = NOW()`)
 
-  const result = await query(`
+  const rows: any[] = await prisma.$queryRawUnsafe(`
     UPDATE scheduled_posts
     SET ${setClause.join(', ')}
     WHERE id = $1
     RETURNING *
-  `, params)
+  `, ...params)
 
-  if (result.rows.length === 0) {
+  if (rows.length === 0) {
     throw new NotFoundError('Post not found')
   }
 
   return NextResponse.json({
     success: true,
-    post: result.rows[0]
+    post: rows[0]
   })
 })
 

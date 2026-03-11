@@ -11,7 +11,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
-import { query } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 import { logger } from '@/lib/logger'
 import { withCronAuth } from '@/lib/api/middleware/cron-auth'
 import { withCronLock } from '@/lib/api/middleware/cron-lock'
@@ -54,21 +54,21 @@ export const GET = withCronAuth('trending-topics', async (_request: NextRequest)
 
   try {
     // 1. Expire old topics (older than 30 days)
-    const expireResult = await query(`
+    const expiredCount = await prisma.$executeRaw`
       UPDATE trending_topics
       SET status = 'expired', updated_at = NOW()
       WHERE status IN ('new')
         AND detected_at < NOW() - INTERVAL '30 days'
-    `)
-    logger.info(`Expired ${expireResult.rowCount} old trending topics`)
+    `
+    logger.info(`Expired ${expiredCount} old trending topics`)
 
     // 2. Get recently detected topics to avoid duplicates
-    const recentResult = await query<{ topic: string }>(`
+    const recentResult = await prisma.$queryRaw<Array<{ topic: string }>>`
       SELECT topic FROM trending_topics
       WHERE detected_at > NOW() - INTERVAL '14 days'
         AND status IN ('new', 'actioned')
-    `)
-    const recentTopics = recentResult.rows.map(r => r.topic)
+    `
+    const recentTopics = recentResult.map(r => r.topic)
 
     // 3. Use Claude to research trending topics
     const anthropic = getAnthropicClient()
@@ -155,23 +155,16 @@ Respond with ONLY a JSON array, no markdown formatting:
         const category = validCategories.includes(topic.category) ? topic.category : 'wine'
         const score = Math.min(10, Math.max(1, Math.round(topic.relevance_score)))
 
-        await query(`
+        await prisma.$executeRaw`
           INSERT INTO trending_topics (
             topic, category, summary, relevance_score,
             suggested_content, suggested_angle,
             detected_at, expires_at, status, created_at, updated_at
           ) VALUES (
-            $1, $2, $3, $4, $5, $6,
+            ${topic.topic.substring(0, 500)}, ${category}, ${topic.summary.substring(0, 2000)}, ${score}, ${topic.suggested_content?.substring(0, 2000) || null}, ${topic.suggested_angle?.substring(0, 2000) || null},
             NOW(), NOW() + INTERVAL '30 days', 'new', NOW(), NOW()
           )
-        `, [
-          topic.topic.substring(0, 500),
-          category,
-          topic.summary.substring(0, 2000),
-          score,
-          topic.suggested_content?.substring(0, 2000) || null,
-          topic.suggested_angle?.substring(0, 2000) || null,
-        ])
+        `
         inserted++
       } catch (err) {
         logger.error('Failed to insert trending topic', { error: err, topic: topic.topic })
@@ -181,12 +174,12 @@ Respond with ONLY a JSON array, no markdown formatting:
     logger.info('Trending topics detection complete', {
       detected: topics.length,
       inserted,
-      expired: expireResult.rowCount,
+      expired: expiredCount,
     })
 
     return NextResponse.json({
       success: true,
-      message: `Detected ${topics.length} topics, inserted ${inserted}, expired ${expireResult.rowCount}`,
+      message: `Detected ${topics.length} topics, inserted ${inserted}, expired ${expiredCount}`,
       topics: topics.map(t => ({ topic: t.topic, category: t.category, score: t.relevance_score })),
       timestamp: new Date().toISOString(),
     })

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { query } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler'
 import { withCSRF } from '@/lib/api/middleware/csrf'
@@ -66,7 +66,7 @@ async function getHandler(
   const id = parseInt(lead_id)
 
   // Get lead details from crm_contacts
-  const leadResult = await query(`
+  const leadRows: Record<string, unknown>[] = await prisma.$queryRawUnsafe(`
     SELECT
       c.id,
       c.name,
@@ -100,16 +100,16 @@ async function getHandler(
       LIMIT 1
     ) d ON true
     WHERE c.id = $1
-  `, [id])
+  `, id)
 
-  if (leadResult.rows.length === 0) {
+  if (leadRows.length === 0) {
     throw new NotFoundError('Lead not found')
   }
 
-  const row = leadResult.rows[0]
+  const row = leadRows[0]
 
   // Split name into first_name and last_name for API compatibility
-  const nameParts = (row.name || '').split(' ')
+  const nameParts = ((row.name as string) || '').split(' ')
   const firstName = nameParts[0] || ''
   const lastName = nameParts.slice(1).join(' ') || ''
 
@@ -120,10 +120,10 @@ async function getHandler(
     email: row.email,
     phone: row.phone,
     company: row.company,
-    source: row.source || 'website',
-    status: mapLifecycleToStatus(row.lifecycle_stage),
-    temperature: row.temperature || 'cold',
-    score: row.score || 0,
+    source: (row.source as string) || 'website',
+    status: mapLifecycleToStatus(row.lifecycle_stage as string),
+    temperature: (row.temperature as string) || 'cold',
+    score: (row.score as number) || 0,
     interested_services: [],
     party_size_estimate: row.party_size_estimate,
     estimated_date: row.estimated_date,
@@ -141,7 +141,7 @@ async function getHandler(
   }
 
   // Get activities from crm_activities
-  const activitiesResult = await query(`
+  const activities: Record<string, unknown>[] = await prisma.$queryRawUnsafe(`
     SELECT
       a.*,
       u.name as performed_by_name
@@ -150,11 +150,11 @@ async function getHandler(
     WHERE a.contact_id = $1
     ORDER BY a.created_at DESC
     LIMIT 50
-  `, [id])
+  `, id)
 
   return NextResponse.json({
     lead,
-    activities: activitiesResult.rows
+    activities
   })
 }
 
@@ -195,11 +195,13 @@ async function patchHandler(
   // Handle name: combine first_name + last_name into name
   if (body.first_name !== undefined || body.last_name !== undefined) {
     // We need the current name to merge partial updates
-    const currentResult = await query('SELECT name FROM crm_contacts WHERE id = $1', [id])
-    if (currentResult.rows.length === 0) {
+    const currentRows: Record<string, unknown>[] = await prisma.$queryRawUnsafe(
+      'SELECT name FROM crm_contacts WHERE id = $1', id
+    )
+    if (currentRows.length === 0) {
       throw new NotFoundError('Lead not found')
     }
-    const currentParts = (currentResult.rows[0].name || '').split(' ')
+    const currentParts = ((currentRows[0].name as string) || '').split(' ')
     const currentFirst = currentParts[0] || ''
     const currentLast = currentParts.slice(1).join(' ') || ''
 
@@ -237,21 +239,21 @@ async function patchHandler(
   updates.push(`updated_at = NOW()`)
   values.push(id)
 
-  const result = await query(`
+  const resultRows: Record<string, unknown>[] = await prisma.$queryRawUnsafe(`
     UPDATE crm_contacts
     SET ${updates.join(', ')}
     WHERE id = $${paramIndex}
     RETURNING *
-  `, values)
+  `, ...values)
 
-  if (result.rows.length === 0) {
+  if (resultRows.length === 0) {
     throw new NotFoundError('Lead not found')
   }
 
-  const row = result.rows[0]
+  const row = resultRows[0]
 
   // Transform to legacy format for API response
-  const nameParts = (row.name || '').split(' ')
+  const nameParts = ((row.name as string) || '').split(' ')
   const lead = {
     id: row.id,
     first_name: nameParts[0] || '',
@@ -259,10 +261,10 @@ async function patchHandler(
     email: row.email,
     phone: row.phone,
     company: row.company,
-    source: row.source || 'website',
-    status: mapLifecycleToStatus(row.lifecycle_stage),
-    temperature: row.lead_temperature || 'cold',
-    score: row.lead_score || 0,
+    source: (row.source as string) || 'website',
+    status: mapLifecycleToStatus(row.lifecycle_stage as string),
+    temperature: (row.lead_temperature as string) || 'cold',
+    score: (row.lead_score as number) || 0,
     notes: row.notes,
     assigned_to: row.assigned_to,
     next_followup_at: row.next_follow_up_at,
@@ -273,15 +275,15 @@ async function patchHandler(
 
   // Log status change activity if status was updated
   if (body.status) {
-    await query(`
+    await prisma.$queryRawUnsafe(`
       INSERT INTO crm_activities (
         contact_id, activity_type, description, metadata, created_at
       ) VALUES ($1, 'status_changed', $2, $3, NOW())
-    `, [
+    `,
       id,
       `Status changed to ${body.status}`,
       JSON.stringify({ new_status: body.status, new_lifecycle_stage: mapStatusToLifecycle(body.status) })
-    ])
+    )
   }
 
   return NextResponse.json({
@@ -299,7 +301,7 @@ async function deleteHandler(
   const { lead_id } = await context!.params;
   const id = parseInt(lead_id)
 
-  await query('DELETE FROM crm_contacts WHERE id = $1', [id])
+  await prisma.$queryRawUnsafe('DELETE FROM crm_contacts WHERE id = $1', id)
 
   await auditService.logFromRequest(request, parseInt(session.userId), 'resource_deleted', {
     entityType: 'lead',

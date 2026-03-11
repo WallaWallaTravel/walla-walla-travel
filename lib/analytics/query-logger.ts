@@ -1,7 +1,7 @@
 // Query Logger
 // Logs all AI queries for analytics and review
 
-import { pool } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 
 export interface LogQueryParams {
   sessionId: string
@@ -37,7 +37,7 @@ export interface QueryLog {
  * Log an AI query to the database
  */
 export async function logQuery(params: LogQueryParams): Promise<number> {
-  const result = await pool.query(
+  const result = await prisma.$queryRawUnsafe<Array<{ id: number }>>(
     `INSERT INTO ai_queries (
       session_id, user_id, query_text, query_intent, query_hash,
       provider, model, model_version, system_prompt_hash,
@@ -45,27 +45,25 @@ export async function logQuery(params: LogQueryParams): Promise<number> {
       response_time_ms, api_cost, ab_test_group
     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
     RETURNING id`,
-    [
-      params.sessionId,
-      params.userId || null,
-      params.queryText,
-      params.queryIntent || null,
-      params.queryHash || null,
-      params.provider,
-      params.model,
-      params.modelVersion || null,
-      params.systemPromptHash || null,
-      params.responseText,
-      params.inputTokens,
-      params.outputTokens,
-      params.totalTokens,
-      params.responseTimeMs,
-      params.apiCost,
-      params.abTestGroup || null
-    ]
+    params.sessionId,
+    params.userId || null,
+    params.queryText,
+    params.queryIntent || null,
+    params.queryHash || null,
+    params.provider,
+    params.model,
+    params.modelVersion || null,
+    params.systemPromptHash || null,
+    params.responseText,
+    params.inputTokens,
+    params.outputTokens,
+    params.totalTokens,
+    params.responseTimeMs,
+    params.apiCost,
+    params.abTestGroup || null
   )
 
-  return result.rows[0].id
+  return result[0].id
 }
 
 /**
@@ -76,11 +74,11 @@ export async function updateQueryRating(
   rating: number,
   feedbackText?: string | null
 ): Promise<void> {
-  await pool.query(
-    `UPDATE ai_queries 
+  await prisma.$queryRawUnsafe(
+    `UPDATE ai_queries
      SET user_rating = $1, user_feedback_text = $2
      WHERE id = $3`,
-    [rating, feedbackText || null, queryId]
+    rating, feedbackText || null, queryId
   )
 }
 
@@ -92,13 +90,13 @@ export async function trackResultClick(
   itemId: number,
   itemType: 'winery' | 'tour'
 ): Promise<void> {
-  await pool.query(
-    `UPDATE ai_queries 
+  await prisma.$queryRawUnsafe(
+    `UPDATE ai_queries
      SET user_clicked_result = true,
          clicked_item_id = $1,
          clicked_item_type = $2
      WHERE id = $3`,
-    [itemId, itemType, queryId]
+    itemId, itemType, queryId
   )
 }
 
@@ -111,13 +109,13 @@ export async function linkQueryToBooking(
   bookingValue: number
 ): Promise<void> {
   // Update all queries in this session
-  await pool.query(
-    `UPDATE ai_queries 
+  await prisma.$queryRawUnsafe(
+    `UPDATE ai_queries
      SET resulted_in_booking = true,
          booking_id = $1,
          booking_value = $2
      WHERE session_id = $3`,
-    [bookingId, bookingValue, sessionId]
+    bookingId, bookingValue, sessionId
   )
 }
 
@@ -128,16 +126,16 @@ export async function getSessionQueries(
   sessionId: string,
   limit: number = 10
 ): Promise<QueryLog[]> {
-  const result = await pool.query<QueryLog>(
+  const result = await prisma.$queryRawUnsafe<QueryLog[]>(
     `SELECT id, session_id, query_text, response_text, model, provider, api_cost, created_at
      FROM ai_queries
      WHERE session_id = $1
      ORDER BY created_at DESC
      LIMIT $2`,
-    [sessionId, limit]
+    sessionId, limit
   )
 
-  return result.rows
+  return result
 }
 
 /**
@@ -152,8 +150,15 @@ export async function getQueryStats(days: number = 30): Promise<{
   conversions: number
   conversionRate: number
 }> {
-  const result = await pool.query(`
-    SELECT 
+  const result = await prisma.$queryRawUnsafe<Array<{
+    total_queries: bigint
+    total_cost: string | null
+    avg_cost: string | null
+    avg_response_time: string | null
+    unique_sessions: bigint
+    conversions: bigint
+  }>>(`
+    SELECT
       COUNT(*) as total_queries,
       SUM(api_cost) as total_cost,
       AVG(api_cost) as avg_cost,
@@ -164,16 +169,16 @@ export async function getQueryStats(days: number = 30): Promise<{
     WHERE created_at > NOW() - INTERVAL '${days} days'
   `)
 
-  const row = result.rows[0]
-  const totalQueries = parseInt(row.total_queries) || 0
-  const conversions = parseInt(row.conversions) || 0
+  const row = result[0]
+  const totalQueries = Number(row.total_queries) || 0
+  const conversions = Number(row.conversions) || 0
 
   return {
     totalQueries,
-    totalCost: parseFloat(row.total_cost) || 0,
-    avgCost: parseFloat(row.avg_cost) || 0,
-    avgResponseTime: parseFloat(row.avg_response_time) || 0,
-    uniqueSessions: parseInt(row.unique_sessions) || 0,
+    totalCost: parseFloat(row.total_cost ?? '0') || 0,
+    avgCost: parseFloat(row.avg_cost ?? '0') || 0,
+    avgResponseTime: parseFloat(row.avg_response_time ?? '0') || 0,
+    uniqueSessions: Number(row.unique_sessions) || 0,
     conversions,
     conversionRate: totalQueries > 0 ? (conversions / totalQueries) * 100 : 0
   }
@@ -206,4 +211,3 @@ export function classifyQueryIntent(query: string): string {
 
   return 'general'
 }
-

@@ -16,7 +16,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { query } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 import { logger } from '@/lib/logger'
 import { withCronAuth } from '@/lib/api/middleware/cron-auth'
 import { withCronLock } from '@/lib/api/middleware/cron-lock'
@@ -91,12 +91,12 @@ async function getSearchConsoleData(): Promise<Map<string, { lastDate: string; i
   const dataMap = new Map<string, { lastDate: string; impressionsTrend: string }>()
 
   try {
-    const result = await query<{
+    const result = await prisma.$queryRaw<Array<{
       page_url: string
       latest_date: string
       recent_impressions: number
       older_impressions: number
-    }>(`
+    }>>`
       WITH recent AS (
         SELECT page_url, SUM(impressions) as impressions
         FROM search_console_data
@@ -117,9 +117,9 @@ async function getSearchConsoleData(): Promise<Map<string, { lastDate: string; i
         COALESCE(o.impressions, 0)::int as older_impressions
       FROM recent r
       FULL OUTER JOIN older o ON r.page_url = o.page_url
-    `)
+    `
 
-    for (const row of result.rows) {
+    for (const row of result) {
       let trend = 'stable'
       if (row.older_impressions > 0) {
         const change = (row.recent_impressions - row.older_impressions) / row.older_impressions
@@ -304,12 +304,12 @@ async function checkStalePages(): Promise<ContentIssue[]> {
   try {
     // Check for pages with old content_refresh_suggestions that were applied long ago
     // or pages that haven't had any suggestions in a while
-    const result = await query<{
+    const result = await prisma.$queryRaw<Array<{
       page_path: string
       page_title: string
       last_update: string
       days_ago: number
-    }>(`
+    }>>`
       SELECT DISTINCT ON (page_path)
         page_path,
         page_title,
@@ -318,9 +318,9 @@ async function checkStalePages(): Promise<ContentIssue[]> {
       FROM content_refresh_suggestions
       WHERE status = 'applied'
       ORDER BY page_path, COALESCE(applied_at, created_at) DESC
-    `)
+    `
 
-    for (const row of result.rows) {
+    for (const row of result) {
       if (row.days_ago > 90) {
         issues.push({
           page_path: row.page_path,
@@ -345,45 +345,38 @@ async function saveSuggestions(issues: ContentIssue[]): Promise<number[]> {
   for (const issue of issues) {
     try {
       // Check for duplicate pending suggestions for the same page and reason
-      const existing = await query<{ id: number }>(`
+      const existing = await prisma.$queryRaw<Array<{ id: number }>>`
         SELECT id FROM content_refresh_suggestions
-        WHERE page_path = $1
-          AND reason = $2
+        WHERE page_path = ${issue.page_path}
+          AND reason = ${issue.reason}
           AND status = 'pending'
         LIMIT 1
-      `, [issue.page_path, issue.reason])
+      `
 
-      if (existing.rows.length > 0) {
+      if (existing.length > 0) {
         // Update existing suggestion instead of creating a duplicate
-        await query(`
+        await prisma.$executeRaw`
           UPDATE content_refresh_suggestions
-          SET current_content = $1,
-              suggested_update = $2,
-              urgency = $3,
+          SET current_content = ${issue.current_content},
+              suggested_update = ${issue.suggested_update},
+              urgency = ${issue.urgency},
               updated_at = NOW()
-          WHERE id = $4
-        `, [issue.current_content, issue.suggested_update, issue.urgency, existing.rows[0].id])
-        savedIds.push(existing.rows[0].id)
+          WHERE id = ${existing[0].id}
+        `
+        savedIds.push(existing[0].id)
         continue
       }
 
-      const result = await query<{ id: number }>(`
+      const result = await prisma.$queryRaw<Array<{ id: number }>>`
         INSERT INTO content_refresh_suggestions (
           page_path, page_title, reason, current_content, suggested_update,
           urgency, status
-        ) VALUES ($1, $2, $3, $4, $5, $6, 'pending')
+        ) VALUES (${issue.page_path}, ${issue.page_title}, ${issue.reason}, ${issue.current_content}, ${issue.suggested_update}, ${issue.urgency}, 'pending')
         RETURNING id
-      `, [
-        issue.page_path,
-        issue.page_title,
-        issue.reason,
-        issue.current_content,
-        issue.suggested_update,
-        issue.urgency,
-      ])
+      `
 
-      if (result.rows[0]) {
-        savedIds.push(result.rows[0].id)
+      if (result[0]) {
+        savedIds.push(result[0].id)
       }
     } catch (error) {
       logger.error('Failed to save content refresh suggestion', {

@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { query } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 import { logger } from '@/lib/logger'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { withCSRF } from '@/lib/api/middleware/csrf';
@@ -53,15 +53,10 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   params.push(limit)
   queryText += ` ORDER BY ca.created_at DESC LIMIT $${params.length}`
 
-  const result = await query(queryText, params)
+  const rows: any[] = await prisma.$queryRawUnsafe(queryText, ...params)
 
   // Get approval stats
-  const statsResult = await query<{
-    total: number
-    approved: number
-    edited: number
-    rejected: number
-  }>(`
+  const statsRows: any[] = await prisma.$queryRawUnsafe(`
     SELECT
       COUNT(*)::int as total,
       COUNT(*) FILTER (WHERE action = 'approved')::int as approved,
@@ -72,8 +67,8 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   `)
 
   return NextResponse.json({
-    approvals: result.rows,
-    stats: statsResult.rows[0] || { total: 0, approved: 0, edited: 0, rejected: 0 },
+    approvals: rows,
+    stats: statsRows[0] || { total: 0, approved: 0, edited: 0, rejected: 0 },
   })
 });
 
@@ -106,7 +101,7 @@ export const POST = withCSRF(
   }
 
   // Record the approval
-  const result = await query<{ id: number }>(`
+  const rows: any[] = await prisma.$queryRawUnsafe(`
     INSERT INTO content_approvals (
       content_type, content_id, action,
       original_content, final_content, edit_diff,
@@ -114,7 +109,7 @@ export const POST = withCSRF(
       notes, created_at
     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
     RETURNING id
-  `, [
+  `,
     contentType,
     contentId,
     action,
@@ -125,13 +120,13 @@ export const POST = withCSRF(
     contentCategory || null,
     tone || null,
     notes || null,
-  ])
+  )
 
   // Update learning preferences based on this approval
   await updateLearningPreferences(action, originalContent, finalContent, platform, contentCategory)
 
   logger.info('Content approval recorded', {
-    id: result.rows[0].id,
+    id: rows[0].id,
     contentType,
     contentId,
     action,
@@ -139,7 +134,7 @@ export const POST = withCSRF(
 
   return NextResponse.json({
     success: true,
-    id: result.rows[0].id,
+    id: rows[0].id,
     message: `Content ${action} recorded`,
   })
 })
@@ -222,34 +217,34 @@ async function upsertPreference(
   pattern: string
 ): Promise<void> {
   // Check if this preference already exists
-  const existing = await query<{ id: number; learned_from_count: number; confidence_score: number }>(`
+  const existing: any[] = await prisma.$queryRawUnsafe(`
     SELECT id, learned_from_count, confidence_score
     FROM ai_learning_preferences
     WHERE preference_type = $1
       AND COALESCE(platform, '') = COALESCE($2, '')
       AND pattern = $3
     LIMIT 1
-  `, [preferenceType, platform, pattern])
+  `, preferenceType, platform, pattern)
 
-  if (existing.rows.length > 0) {
-    const row = existing.rows[0]
+  if (existing.length > 0) {
+    const row = existing[0]
     const newCount = row.learned_from_count + 1
     // Increase confidence as we see more examples (caps at 0.95)
     const newConfidence = Math.min(0.95, row.confidence_score + 0.05)
-    await query(`
+    await prisma.$queryRawUnsafe(`
       UPDATE ai_learning_preferences
       SET learned_from_count = $1,
           confidence_score = $2,
           updated_at = NOW()
       WHERE id = $3
-    `, [newCount, newConfidence, row.id])
+    `, newCount, newConfidence, row.id)
   } else {
-    await query(`
+    await prisma.$queryRawUnsafe(`
       INSERT INTO ai_learning_preferences (
         preference_type, platform, pattern,
         confidence_score, learned_from_count,
         is_active, created_at, updated_at
       ) VALUES ($1, $2, $3, 0.50, 1, true, NOW(), NOW())
-    `, [preferenceType, platform, pattern])
+    `, preferenceType, platform, pattern)
   }
 }

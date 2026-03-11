@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { query } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler'
 import { withCSRF } from '@/lib/api/middleware/csrf'
@@ -62,11 +62,11 @@ const getHandler = withAdminAuth(async (request: NextRequest, _session) => {
   queryText += ` ORDER BY priority DESC, suggestion_date DESC LIMIT $${paramIndex++}`
   params.push(limit)
 
-  const result = await query(queryText, params)
+  const rows: any[] = await prisma.$queryRawUnsafe(queryText, ...params)
 
   return NextResponse.json({
-    suggestions: result.rows,
-    total: result.rows.length
+    suggestions: rows,
+    total: rows.length
   })
 })
 
@@ -111,20 +111,20 @@ const patchHandler = withAdminAuth(async (request: NextRequest, _session) => {
     setClause.push(`media_source = $${params.length}`)
   }
 
-  const result = await query(`
+  const rows: any[] = await prisma.$queryRawUnsafe(`
     UPDATE content_suggestions
     SET ${setClause.join(', ')}
     WHERE id = $1
     RETURNING *
-  `, params)
+  `, ...params)
 
-  if (result.rows.length === 0) {
+  if (rows.length === 0) {
     throw new NotFoundError('Suggestion not found')
   }
 
   return NextResponse.json({
     success: true,
-    suggestion: result.rows[0]
+    suggestion: rows[0]
   })
 })
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { query } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 import { logger } from '@/lib/logger'
 import { generateAuthUrl, getIntegration } from '@/lib/services/search-console.service'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
@@ -26,16 +26,16 @@ export const GET = withAdminAuth(async (_request: NextRequest, _session) => {
   }
 
   // Page Performance — latest data per page
-  const pagePerformance = await query(`
+  const pagePerformance = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(`
     SELECT DISTINCT ON (page_url)
       page_url, impressions, clicks, ctr, position, data_date
     FROM search_console_data
     WHERE query IS NULL
     ORDER BY page_url, data_date DESC
-  `).catch(() => ({ rows: [] }))
+  `).catch(() => [] as Record<string, unknown>[])
 
   // Content freshness — stale content from content_refresh_suggestions
-  const contentFreshness = await query(`
+  const contentFreshness = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(`
     SELECT
       id, page_path, page_title, reason, suggested_update, urgency, status,
       EXTRACT(DAY FROM NOW() - created_at)::int AS days_since_detected
@@ -44,10 +44,10 @@ export const GET = withAdminAuth(async (_request: NextRequest, _session) => {
     ORDER BY
       CASE urgency WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END,
       created_at ASC
-  `).catch(() => ({ rows: [] }))
+  `).catch(() => [] as Record<string, unknown>[])
 
   // Keyword opportunities — queries ranking position 5-20 with decent impressions
-  const keywordOpportunities = await query(`
+  const keywordOpportunities = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(`
     SELECT DISTINCT ON (query)
       query, page_url, impressions, clicks, ctr, position, data_date
     FROM search_console_data
@@ -56,15 +56,15 @@ export const GET = withAdminAuth(async (_request: NextRequest, _session) => {
       AND position <= 20
       AND impressions >= 5
     ORDER BY query, data_date DESC
-  `).catch(() => ({ rows: [] }))
+  `).catch(() => [] as Record<string, unknown>[])
 
   // Sort keyword opportunities by impressions desc (best opportunities first)
-  const sortedKeywords = keywordOpportunities.rows.sort(
-    (a: { impressions: number }, b: { impressions: number }) => b.impressions - a.impressions
+  const sortedKeywords = keywordOpportunities.sort(
+    (a, b) => (b.impressions as number) - (a.impressions as number)
   )
 
   // Declining pages — compare last 7 days vs previous 7 days
-  const decliningPages = await query(`
+  const decliningPages = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(`
     WITH recent AS (
       SELECT page_url, SUM(impressions) as total_impressions
       FROM search_console_data
@@ -94,21 +94,21 @@ export const GET = withAdminAuth(async (_request: NextRequest, _session) => {
       AND r.total_impressions < p.total_impressions
     ORDER BY change_pct ASC
     LIMIT 20
-  `).catch(() => ({ rows: [] }))
+  `).catch(() => [] as Record<string, unknown>[])
 
   logger.info('SEO dashboard data fetched', {
-    pages: pagePerformance.rows.length,
-    staleContent: contentFreshness.rows.length,
+    pages: pagePerformance.length,
+    staleContent: contentFreshness.length,
     keywords: sortedKeywords.length,
-    declining: decliningPages.rows.length,
+    declining: decliningPages.length,
   })
 
   return NextResponse.json({
     connectionStatus,
     authUrl,
-    pagePerformance: pagePerformance.rows,
-    contentFreshness: contentFreshness.rows,
+    pagePerformance,
+    contentFreshness,
     keywordOpportunities: sortedKeywords,
-    decliningPages: decliningPages.rows,
+    decliningPages,
   })
 });

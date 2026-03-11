@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { query } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 import { logger } from '@/lib/logger'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { withCSRF } from '@/lib/api/middleware/csrf';
@@ -27,30 +27,30 @@ export const GET = withAdminAuth(async (
     return NextResponse.json({ error: 'Invalid campaign ID' }, { status: 400 })
   }
 
-  const campaignResult = await query(`
+  const campaignRows: Record<string, unknown>[] = await prisma.$queryRawUnsafe(`
     SELECT mc.*,
       u.name AS created_by_name
     FROM marketing_campaigns mc
     LEFT JOIN users u ON mc.created_by = u.id
     WHERE mc.id = $1
-  `, [campaignId])
+  `, campaignId)
 
-  if (campaignResult.rows.length === 0) {
+  if (campaignRows.length === 0) {
     return NextResponse.json({ error: 'Campaign not found' }, { status: 404 })
   }
 
-  const itemsResult = await query(`
+  const itemsRows: Record<string, unknown>[] = await prisma.$queryRawUnsafe(`
     SELECT ci.*,
       sp.status AS scheduled_post_status
     FROM campaign_items ci
     LEFT JOIN scheduled_posts sp ON ci.scheduled_post_id = sp.id
     WHERE ci.campaign_id = $1
     ORDER BY ci.scheduled_for ASC, ci.channel ASC
-  `, [campaignId])
+  `, campaignId)
 
   return NextResponse.json({
-    campaign: campaignResult.rows[0],
-    items: itemsResult.rows,
+    campaign: campaignRows[0],
+    items: itemsRows,
   })
 });
 
@@ -81,16 +81,16 @@ export const PUT = withCSRF(
       cancelled: [],
     }
 
-    const current = await query(
+    const currentRows: Record<string, unknown>[] = await prisma.$queryRawUnsafe(
       'SELECT status FROM marketing_campaigns WHERE id = $1',
-      [campaignId]
+      campaignId
     )
 
-    if (current.rows.length === 0) {
+    if (currentRows.length === 0) {
       return NextResponse.json({ error: 'Campaign not found' }, { status: 404 })
     }
 
-    const currentStatus = current.rows[0].status
+    const currentStatus = currentRows[0].status as string
     if (!validTransitions[currentStatus]?.includes(status)) {
       return NextResponse.json(
         { error: `Cannot transition from "${currentStatus}" to "${status}"` },
@@ -128,14 +128,14 @@ export const PUT = withCSRF(
     queryParams.push(targetAudience)
   }
 
-  const result = await query(`
+  const resultRows: Record<string, unknown>[] = await prisma.$queryRawUnsafe(`
     UPDATE marketing_campaigns
     SET ${setClauses.join(', ')}
     WHERE id = $1
     RETURNING *
-  `, queryParams)
+  `, ...queryParams)
 
-  if (result.rows.length === 0) {
+  if (resultRows.length === 0) {
     return NextResponse.json({ error: 'Campaign not found' }, { status: 404 })
   }
 
@@ -146,7 +146,7 @@ export const PUT = withCSRF(
 
   return NextResponse.json({
     success: true,
-    campaign: result.rows[0],
+    campaign: resultRows[0],
   })
 })
 );
@@ -164,14 +164,14 @@ export const DELETE = withCSRF(
     return NextResponse.json({ error: 'Invalid campaign ID' }, { status: 400 })
   }
 
-  const result = await query(`
+  const resultRows: Record<string, unknown>[] = await prisma.$queryRawUnsafe(`
     UPDATE marketing_campaigns
     SET status = 'cancelled', updated_at = NOW()
     WHERE id = $1 AND status NOT IN ('completed', 'cancelled')
     RETURNING *
-  `, [campaignId])
+  `, campaignId)
 
-  if (result.rows.length === 0) {
+  if (resultRows.length === 0) {
     return NextResponse.json(
       { error: 'Campaign not found or already completed/cancelled' },
       { status: 404 }
@@ -179,23 +179,23 @@ export const DELETE = withCSRF(
   }
 
   // Cancel all draft/scheduled items
-  await query(`
+  await prisma.$queryRawUnsafe(`
     UPDATE campaign_items
     SET status = 'cancelled', updated_at = NOW()
     WHERE campaign_id = $1 AND status IN ('draft', 'approved', 'scheduled')
-  `, [campaignId])
+  `, campaignId)
 
   logger.info('Campaign cancelled', { campaignId })
 
   await auditService.logFromRequest(request, parseInt(session.userId), 'resource_deleted', {
     entityType: 'campaign',
     entityId: campaignId,
-    previousStatus: result.rows[0].status,
+    previousStatus: resultRows[0].status,
   });
 
   return NextResponse.json({
     success: true,
-    campaign: result.rows[0],
+    campaign: resultRows[0],
   })
 })
 );

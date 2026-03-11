@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { query } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 import { logger } from '@/lib/logger'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { withCSRF } from '@/lib/api/middleware/csrf';
@@ -37,11 +37,11 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   queryText += ` ORDER BY week_start DESC LIMIT $${paramIndex++}`
   params.push(limit)
 
-  const result = await query(queryText, params)
+  const rows: any[] = await prisma.$queryRawUnsafe(queryText, ...params)
 
   return NextResponse.json({
-    strategies: result.rows,
-    total: result.rows.length,
+    strategies: rows,
+    total: rows.length,
   })
 });
 
@@ -94,14 +94,14 @@ export const PATCH = withCSRF(
     )
   }
 
-  const result = await query(`
+  const rows: any[] = await prisma.$queryRawUnsafe(`
     UPDATE marketing_strategies
     SET status = $2, updated_at = NOW()
     WHERE id = $1
     RETURNING *
-  `, [id, status])
+  `, id, status)
 
-  if (result.rows.length === 0) {
+  if (rows.length === 0) {
     return NextResponse.json(
       { error: 'Strategy not found' },
       { status: 404 }
@@ -110,7 +110,7 @@ export const PATCH = withCSRF(
 
   return NextResponse.json({
     success: true,
-    strategy: result.rows[0],
+    strategy: rows[0],
   })
 })
 );

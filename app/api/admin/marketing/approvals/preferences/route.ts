@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { query } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { auditService } from '@/lib/services/audit.service';
@@ -40,15 +40,15 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
 
   queryText += ` ORDER BY confidence_score DESC, learned_from_count DESC`
 
-  const result = await query(queryText, params)
+  const rows: any[] = await prisma.$queryRawUnsafe(queryText, ...params)
 
   // Get trust level based on total approvals
-  const approvalCount = await query<{ count: number }>(`
+  const approvalCountRows: any[] = await prisma.$queryRawUnsafe(`
     SELECT COUNT(*)::int as count
     FROM content_approvals
   `)
 
-  const totalApprovals = approvalCount.rows[0]?.count || 0
+  const totalApprovals = approvalCountRows[0]?.count || 0
   let trustLevel: string
   let trustDescription: string
 
@@ -67,7 +67,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   }
 
   return NextResponse.json({
-    preferences: result.rows,
+    preferences: rows,
     trustLevel,
     trustDescription,
     totalApprovals,
@@ -90,11 +90,11 @@ export const PUT = withCSRF(
     )
   }
 
-  await query(`
+  await prisma.$queryRawUnsafe(`
     UPDATE ai_learning_preferences
     SET is_active = $1, updated_at = NOW()
     WHERE id = $2
-  `, [isActive, id])
+  `, isActive, id)
 
   return NextResponse.json({ success: true })
 })
@@ -112,7 +112,7 @@ export const DELETE = withCSRF(
     )
   }
 
-  await query('DELETE FROM ai_learning_preferences WHERE id = $1', [parseInt(id)])
+  await prisma.$queryRawUnsafe('DELETE FROM ai_learning_preferences WHERE id = $1', parseInt(id))
 
   await auditService.logFromRequest(request, parseInt(session.userId), 'resource_deleted', {
     entityType: 'ai_learning_preference',

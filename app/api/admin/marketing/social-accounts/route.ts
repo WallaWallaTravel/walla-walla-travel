@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { query } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler'
 import { withCSRF } from '@/lib/api/middleware/csrf'
@@ -17,7 +17,7 @@ const PatchBodySchema = z.object({
 
 // GET - Fetch connected social accounts
 async function getHandler(_request: NextRequest) {
-  const result = await query(`
+  const rows: any[] = await prisma.$queryRawUnsafe(`
     SELECT
       id,
       platform,
@@ -36,8 +36,8 @@ async function getHandler(_request: NextRequest) {
   `)
 
   return NextResponse.json({
-    accounts: result.rows,
-    total: result.rows.length
+    accounts: rows,
+    total: rows.length
   })
 }
 
@@ -51,7 +51,7 @@ async function deleteHandler(request: NextRequest, userId: number) {
   }
 
   // Soft delete - mark as inactive
-  const result = await query(`
+  const rows: any[] = await prisma.$queryRawUnsafe(`
     UPDATE social_accounts
     SET is_active = false,
         connection_status = 'disconnected',
@@ -60,9 +60,9 @@ async function deleteHandler(request: NextRequest, userId: number) {
         updated_at = NOW()
     WHERE id = $1
     RETURNING id
-  `, [id])
+  `, id)
 
-  if (result.rows.length === 0) {
+  if (rows.length === 0) {
     throw new NotFoundError('Account not found')
   }
 
@@ -86,15 +86,15 @@ async function patchHandler(request: NextRequest, userId: number) {
     throw new BadRequestError('Account ID is required')
   }
 
-  const result = await query(`
+  const rows: any[] = await prisma.$queryRawUnsafe(`
     UPDATE social_accounts
     SET is_active = COALESCE($2, is_active),
         updated_at = NOW()
     WHERE id = $1
     RETURNING *
-  `, [id, is_active])
+  `, id, is_active)
 
-  if (result.rows.length === 0) {
+  if (rows.length === 0) {
     throw new NotFoundError('Account not found')
   }
 
@@ -106,7 +106,7 @@ async function patchHandler(request: NextRequest, userId: number) {
 
   return NextResponse.json({
     success: true,
-    account: result.rows[0]
+    account: rows[0]
   })
 }
 

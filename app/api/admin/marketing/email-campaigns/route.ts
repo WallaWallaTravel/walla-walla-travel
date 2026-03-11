@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { query } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError } from '@/lib/api/middleware/error-handler'
 import { withCSRF } from '@/lib/api/middleware/csrf'
@@ -51,15 +51,15 @@ async function getHandler(request: NextRequest) {
 
   queryText += ` ORDER BY created_at DESC`
 
-  const result = await query(queryText, params)
+  const rows: any[] = await prisma.$queryRawUnsafe(queryText, ...params)
 
   // Calculate aggregate stats
   const stats = {
-    total_sent: result.rows
+    total_sent: rows
       .filter(c => c.status === 'sent')
       .reduce((sum, c) => sum + (c.recipients_count || 0), 0),
-    total_opened: result.rows.reduce((sum, c) => sum + (c.opened_count || 0), 0),
-    total_clicked: result.rows.reduce((sum, c) => sum + (c.clicked_count || 0), 0),
+    total_opened: rows.reduce((sum, c) => sum + (c.opened_count || 0), 0),
+    total_clicked: rows.reduce((sum, c) => sum + (c.clicked_count || 0), 0),
     avg_open_rate: 0,
     avg_click_rate: 0
   }
@@ -72,9 +72,9 @@ async function getHandler(request: NextRequest) {
   }
 
   return NextResponse.json({
-    campaigns: result.rows,
+    campaigns: rows,
     stats,
-    total: result.rows.length
+    total: rows.length
   })
 }
 
@@ -100,7 +100,7 @@ async function postHandler(request: NextRequest) {
     throw new BadRequestError('Name and subject are required')
   }
 
-  const result = await query(`
+  const rows: any[] = await prisma.$queryRawUnsafe(`
     INSERT INTO email_campaigns (
       name, subject, preview_text, campaign_type,
       template_id, content_html, content_json,
@@ -112,7 +112,7 @@ async function postHandler(request: NextRequest) {
       $1, $2, $3, $4, $5, $6, $7, 'draft', $8, $9,
       0, 0, 0, 0, 0, $10, NOW(), NOW()
     ) RETURNING *
-  `, [
+  `,
     name,
     subject,
     preview_text || null,
@@ -123,11 +123,11 @@ async function postHandler(request: NextRequest) {
     scheduled_for || null,
     recipient_list_ids || [],
     created_by || null
-  ])
+  )
 
   return NextResponse.json({
     success: true,
-    campaign: result.rows[0]
+    campaign: rows[0]
   })
 }
 
