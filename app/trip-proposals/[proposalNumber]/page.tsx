@@ -13,13 +13,13 @@ import AcceptButton from './AcceptButton'
 const playfair = Playfair_Display({
   subsets: ['latin'],
   display: 'swap',
-  weight: ['400', '600', '700'],
+  weight: ['400', '700'],
 })
 
 const sourceSans = Source_Sans_3({
   subsets: ['latin'],
   display: 'swap',
-  weight: ['300', '400', '600', '700'],
+  weight: ['400', '600', '700'],
 })
 
 // ---------------------------------------------------------------------------
