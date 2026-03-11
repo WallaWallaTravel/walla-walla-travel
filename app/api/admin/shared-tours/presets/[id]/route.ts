@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
-import { Prisma } from '@prisma/client';
 
 const PutBodySchema = z.object({
   name: z.string().min(1).max(255).optional(),
