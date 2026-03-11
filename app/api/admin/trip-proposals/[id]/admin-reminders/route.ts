@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth, AuthSession, RouteContext } from '@/lib/api/middleware/auth-wrapper';
 import { adminReminderService } from '@/lib/services/admin-reminder.service';
-import { queryOne } from '@/lib/db-helpers';
-import { withCSRF } from '@/lib/api/middleware/csrf';
+import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 
 interface RouteParams { id: string; }
@@ -54,8 +53,7 @@ export const GET = withAdminAuth(
  *   OR  { action: 'dismiss', reminder_id }
  *   OR  { action: 'snooze', reminder_id, days }
  */
-export const POST = withCSRF(
-  withAdminAuth(
+export const POST = withAdminAuth(
   async (request: NextRequest, _session: AuthSession, context?) => {
     const { id } = await (context as RouteContext<RouteParams>).params;
     const proposalId = parseInt(id, 10);
@@ -102,11 +100,9 @@ export const POST = withCSRF(
           );
         }
         // C3 FIX: Verify reminder belongs to this proposal
-        const reminder = await queryOne(
-          'SELECT id FROM admin_reminders WHERE id = $1 AND trip_proposal_id = $2',
-          [body.reminder_id, proposalId]
-        );
-        if (!reminder) {
+        const reminderRows = await prisma.$queryRaw<{ id: number }[]>`
+          SELECT id FROM admin_reminders WHERE id = ${body.reminder_id} AND trip_proposal_id = ${proposalId}`;
+        if (reminderRows.length === 0) {
           return NextResponse.json(
             { success: false, error: 'Reminder not found in this proposal' },
             { status: 404 }
@@ -126,11 +122,9 @@ export const POST = withCSRF(
         // C4: Validate snooze days (already validated by Zod: 1-365)
         const days = body.days;
         // C3 FIX: Verify reminder belongs to this proposal
-        const snoozedReminder = await queryOne(
-          'SELECT id FROM admin_reminders WHERE id = $1 AND trip_proposal_id = $2',
-          [body.reminder_id, proposalId]
-        );
-        if (!snoozedReminder) {
+        const snoozedReminderRows = await prisma.$queryRaw<{ id: number }[]>`
+          SELECT id FROM admin_reminders WHERE id = ${body.reminder_id} AND trip_proposal_id = ${proposalId}`;
+        if (snoozedReminderRows.length === 0) {
           return NextResponse.json(
             { success: false, error: 'Reminder not found in this proposal' },
             { status: 404 }
@@ -149,5 +143,4 @@ export const POST = withCSRF(
       }
     }
   }
-)
 );

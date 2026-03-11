@@ -7,8 +7,8 @@
 import { getSession } from '@/lib/auth/session';
 import { canAccessGeology } from '@/lib/auth/roles';
 import { redirect, notFound } from 'next/navigation';
-import { query } from '@/lib/db';
 import { SiteEditor } from '../SiteEditor';
+import { prisma } from '@/lib/prisma';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -35,14 +35,12 @@ interface SiteData {
 
 async function getSite(id: number): Promise<SiteData | null> {
   try {
-    const result = await query<SiteData>(
+    const result = await prisma.$queryRawUnsafe<SiteData[]>(
       `SELECT id, name, slug, description, site_type, latitude, longitude,
               address, directions, is_public_access, requires_appointment,
               best_time_to_visit, photos, related_topic_ids, nearby_winery_ids, is_published
-       FROM geology_sites WHERE id = $1`,
-      [id]
-    );
-    return result.rows[0] || null;
+       FROM geology_sites WHERE id = $1`, id);
+    return result[0] || null;
   } catch {
     return null;
   }

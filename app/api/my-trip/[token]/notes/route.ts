@@ -11,7 +11,6 @@ import { proposalNotesService } from '@/lib/services/proposal-notes.service';
 import { ClientNoteSchema } from '@/lib/types/proposal-notes';
 import type { NoteContextType } from '@/lib/types/proposal-notes';
 import { sendEmail } from '@/lib/email';
-import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface RouteParams {
   token: string;
@@ -64,8 +63,7 @@ export const GET = withErrorHandling<unknown, RouteParams>(
  * POST /api/my-trip/[token]/notes
  * Create a new note from the client. Sends email notification to staff.
  */
-export const POST = withCSRF(
-  withErrorHandling<unknown, RouteParams>(
+export const POST = withErrorHandling<unknown, RouteParams>(
   async (request: NextRequest, context: RouteContext<RouteParams>) => {
     const { token } = await context.params;
 
@@ -124,5 +122,4 @@ export const POST = withCSRF(
       { status: 201 }
     );
   }
-)
 );

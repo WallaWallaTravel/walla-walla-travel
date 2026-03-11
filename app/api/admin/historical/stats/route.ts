@@ -9,7 +9,7 @@ import { z } from 'zod';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { inspectionService } from '@/lib/services/inspection.service';
 import { timeCardService } from '@/lib/services/timecard.service';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 
 // =============================================================================
 // Validation Schema
@@ -48,20 +48,18 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   });
 
   // Get booking stats
-  const bookingStatsResult = await query(
-    `SELECT
+  const bookingStatsRows = await prisma.$queryRaw<Array<Record<string, unknown>>>`
+    SELECT
       COUNT(*)::int as total_bookings,
       COUNT(*) FILTER (WHERE booking_source = 'calendar_import')::int as calendar_imports,
       COUNT(*) FILTER (WHERE time_card_id IS NOT NULL)::int as linked_to_time_cards,
       COUNT(*) FILTER (WHERE driver_id IS NOT NULL)::int as has_driver_assigned
     FROM bookings
-    WHERE ($1::int IS NULL OR driver_id = $1)
-      AND ($2::date IS NULL OR tour_date >= $2)
-      AND ($3::date IS NULL OR tour_date <= $3)`,
-    [filters.driverId || null, filters.startDate || null, filters.endDate || null]
-  );
+    WHERE (${filters.driverId || null}::int IS NULL OR driver_id = ${filters.driverId || null})
+      AND (${filters.startDate || null}::date IS NULL OR tour_date >= ${filters.startDate || null})
+      AND (${filters.endDate || null}::date IS NULL OR tour_date <= ${filters.endDate || null})`;
 
-  const bookingStats = bookingStatsResult.rows[0] || {
+  const bookingStats = bookingStatsRows[0] || {
     total_bookings: 0,
     calendar_imports: 0,
     linked_to_time_cards: 0,
@@ -69,62 +67,59 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   };
 
   // Get compliance gaps
-  const gapsResult = await query(
-    `WITH booking_dates AS (
+  const gapsRows = await prisma.$queryRaw<Array<Record<string, unknown>>>`
+    WITH booking_dates AS (
       SELECT DISTINCT tour_date, driver_id
       FROM bookings
       WHERE driver_id IS NOT NULL
         AND status = 'completed'
-        AND ($1::int IS NULL OR driver_id = $1)
-        AND ($2::date IS NULL OR tour_date >= $2)
-        AND ($3::date IS NULL OR tour_date <= $3)
+        AND (${filters.driverId || null}::int IS NULL OR driver_id = ${filters.driverId || null})
+        AND (${filters.startDate || null}::date IS NULL OR tour_date >= ${filters.startDate || null})
+        AND (${filters.endDate || null}::date IS NULL OR tour_date <= ${filters.endDate || null})
     ),
     inspection_dates AS (
       SELECT DISTINCT
         COALESCE(original_document_date, DATE(created_at)) as inspection_date,
         driver_id
       FROM inspections
-      WHERE ($1::int IS NULL OR driver_id = $1)
+      WHERE (${filters.driverId || null}::int IS NULL OR driver_id = ${filters.driverId || null})
     ),
     time_card_dates AS (
       SELECT DISTINCT
         COALESCE(original_document_date, DATE(clock_in_time)) as tc_date,
         driver_id
       FROM time_cards
-      WHERE ($1::int IS NULL OR driver_id = $1)
+      WHERE (${filters.driverId || null}::int IS NULL OR driver_id = ${filters.driverId || null})
     )
     SELECT
       COUNT(*) FILTER (WHERE id.inspection_date IS NULL)::int as bookings_missing_inspections,
       COUNT(*) FILTER (WHERE td.tc_date IS NULL)::int as bookings_missing_time_cards
     FROM booking_dates bd
     LEFT JOIN inspection_dates id ON bd.tour_date = id.inspection_date AND bd.driver_id = id.driver_id
-    LEFT JOIN time_card_dates td ON bd.tour_date = td.tc_date AND bd.driver_id = td.driver_id`,
-    [filters.driverId || null, filters.startDate || null, filters.endDate || null]
-  );
+    LEFT JOIN time_card_dates td ON bd.tour_date = td.tc_date AND bd.driver_id = td.driver_id`;
 
-  const complianceGaps = gapsResult.rows[0] || {
+  const complianceGaps = gapsRows[0] || {
     bookings_missing_inspections: 0,
     bookings_missing_time_cards: 0,
   };
 
   // Get date range of historical data
-  const dateRangeResult = await query(
-    `SELECT
+  const dateRangeRows = await prisma.$queryRaw<Array<Record<string, unknown>>>`
+    SELECT
       MIN(COALESCE(original_document_date, DATE(created_at)))::text as earliest_inspection,
       MAX(COALESCE(original_document_date, DATE(created_at)))::text as latest_inspection,
       (SELECT MIN(COALESCE(original_document_date, DATE(clock_in_time)))::text FROM time_cards WHERE is_historical_entry = true) as earliest_time_card,
       (SELECT MAX(COALESCE(original_document_date, DATE(clock_in_time)))::text FROM time_cards WHERE is_historical_entry = true) as latest_time_card
     FROM inspections
-    WHERE is_historical_entry = true`
-  );
+    WHERE is_historical_entry = true`;
 
-  const dateRange = dateRangeResult.rows[0] || {};
+  const dateRange = dateRangeRows[0] || {};
 
   // Calculate compliance score (percentage of bookings with full documentation)
-  const totalBookings = bookingStats.total_bookings || 1; // Avoid division by zero
+  const totalBookings = (bookingStats.total_bookings as number) || 1; // Avoid division by zero
   const fullyDocumented = Math.min(
-    bookingStats.linked_to_time_cards,
-    totalBookings - complianceGaps.bookings_missing_inspections
+    bookingStats.linked_to_time_cards as number,
+    totalBookings - (complianceGaps.bookings_missing_inspections as number)
   );
   const complianceScore = Math.round((fullyDocumented / totalBookings) * 100);
 

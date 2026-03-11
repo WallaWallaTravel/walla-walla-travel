@@ -3,7 +3,8 @@
  * Handles document, photo, and video uploads for business portal
  */
 
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
+
 
 export interface BusinessFile {
   id: number;
@@ -34,7 +35,7 @@ export async function createFileRecord(data: {
   mimeType: string;
   category?: string;
 }): Promise<number> {
-  const result = await query(`
+  const result = await prisma.$queryRawUnsafe<{ id: number }[]>(`
     INSERT INTO business_files (
       business_id,
       file_type,
@@ -47,7 +48,7 @@ export async function createFileRecord(data: {
     )
     VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')
     RETURNING id
-  `, [
+  `,
     data.businessId,
     data.fileType,
     data.originalFilename,
@@ -55,9 +56,9 @@ export async function createFileRecord(data: {
     data.fileSizeBytes,
     data.mimeType,
     data.category || null
-  ]);
-  
-  return result.rows[0].id;
+  );
+
+  return result[0].id;
 }
 
 /**
@@ -67,11 +68,12 @@ export async function updateFileStatus(
   fileId: number,
   status: 'processing' | 'completed' | 'failed'
 ): Promise<void> {
-  await query(`
+  await prisma.$queryRawUnsafe<Record<string, unknown>[]>(`
     UPDATE business_files
     SET processing_status = $2, processed_at = NOW()
     WHERE id = $1
-  `, [fileId, status]);
+  `,
+    fileId, status);
 }
 
 /**
@@ -81,11 +83,12 @@ export async function updateFileExtractedText(
   fileId: number,
   extractedText: string
 ): Promise<void> {
-  await query(`
+  await prisma.$queryRawUnsafe<Record<string, unknown>[]>(`
     UPDATE business_files
     SET extracted_text = $2
     WHERE id = $1
-  `, [fileId, extractedText]);
+  `,
+    fileId, extractedText);
 }
 
 /**
@@ -96,11 +99,12 @@ export async function updateFileAIAnalysis(
   description: string,
   tags: string[]
 ): Promise<void> {
-  await query(`
+  await prisma.$queryRawUnsafe<Record<string, unknown>[]>(`
     UPDATE business_files
     SET ai_description = $2, ai_tags = $3
     WHERE id = $1
-  `, [fileId, description, tags]);
+  `,
+    fileId, description, tags);
 }
 
 /**
@@ -112,11 +116,12 @@ export async function updateFileThumbnail(
   width?: number,
   height?: number
 ): Promise<void> {
-  await query(`
+  await prisma.$queryRawUnsafe<Record<string, unknown>[]>(`
     UPDATE business_files
     SET thumbnail_url = $2, width = $3, height = $4
     WHERE id = $1
-  `, [fileId, thumbnailUrl, width || null, height || null]);
+  `,
+    fileId, thumbnailUrl, width || null, height || null);
 }
 
 /**
@@ -128,14 +133,15 @@ export async function updateVideoMetadata(
   thumbnailUrl?: string,
   transcription?: string
 ): Promise<void> {
-  await query(`
+  await prisma.$queryRawUnsafe<Record<string, unknown>[]>(`
     UPDATE business_files
     SET 
       video_duration_seconds = $2,
       video_thumbnail_url = $3,
       video_transcription = $4
     WHERE id = $1
-  `, [fileId, durationSeconds, thumbnailUrl || null, transcription || null]);
+  `,
+    fileId, durationSeconds, thumbnailUrl || null, transcription || null);
 }
 
 /**
@@ -155,27 +161,27 @@ export async function getBusinessFiles(
   
   sql += ' ORDER BY uploaded_at DESC';
   
-  const result = await query(sql, params);
-  return result.rows;
+  const result = await prisma.$queryRawUnsafe<BusinessFile[]>(sql, ...params);
+  return result;
 }
 
 /**
  * Get file by ID
  */
 export async function getFileById(fileId: number): Promise<BusinessFile | null> {
-  const result = await query(
+  const result = await prisma.$queryRawUnsafe<BusinessFile[]>(
     'SELECT * FROM business_files WHERE id = $1',
-    [fileId]
+    fileId
   );
-  
-  return result.rows[0] || null;
+
+  return result[0] || null;
 }
 
 /**
  * Delete file
  */
 export async function deleteFile(fileId: number): Promise<void> {
-  await query('DELETE FROM business_files WHERE id = $1', [fileId]);
+  await prisma.$queryRawUnsafe<Record<string, unknown>[]>('DELETE FROM business_files WHERE id = $1', fileId);
 }
 
 /**
@@ -184,15 +190,16 @@ export async function deleteFile(fileId: number): Promise<void> {
 export async function getFileCountsByType(businessId: number): Promise<{
   [key: string]: number;
 }> {
-  const result = await query(`
+  const result = await prisma.$queryRawUnsafe<{ file_type: string; count: string }[]>(`
     SELECT file_type, COUNT(*) as count
     FROM business_files
     WHERE business_id = $1
     GROUP BY file_type
-  `, [businessId]);
-  
+  `,
+    businessId);
+
   const counts: { [key: string]: number } = {};
-  result.rows.forEach(row => {
+  result.forEach(row => {
     counts[row.file_type] = parseInt(row.count);
   });
   
@@ -203,14 +210,15 @@ export async function getFileCountsByType(businessId: number): Promise<{
  * Get pending files for processing
  */
 export async function getPendingFiles(limit: number = 10): Promise<BusinessFile[]> {
-  const result = await query(`
+  const result = await prisma.$queryRawUnsafe<BusinessFile[]>(`
     SELECT * FROM business_files
     WHERE processing_status = 'pending'
     ORDER BY uploaded_at ASC
     LIMIT $1
-  `, [limit]);
-  
-  return result.rows;
+  `,
+    limit);
+
+  return result;
 }
 
 /**

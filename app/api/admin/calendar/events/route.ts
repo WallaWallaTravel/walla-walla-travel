@@ -10,7 +10,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 
 // Calendar event types
@@ -59,8 +59,16 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const events: CalendarEvent[] = [];
 
   // 1. Fetch proposals with service_items containing dates
-  const proposalsResult = await query(
-    `SELECT
+  const proposalsRows = await prisma.$queryRaw<Array<{
+    id: number;
+    proposal_number: string;
+    uuid: string;
+    client_name: string;
+    client_company: string;
+    status: string;
+    service_items: unknown;
+  }>>`
+    SELECT
       id,
       proposal_number,
       uuid,
@@ -71,12 +79,10 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
     FROM proposals
     WHERE status IN ('sent', 'viewed', 'accepted')
       AND service_items IS NOT NULL
-    ORDER BY created_at DESC`,
-    []
-  );
+    ORDER BY created_at DESC`;
 
   // Extract dates from service_items for each proposal
-  for (const proposal of proposalsResult.rows) {
+  for (const proposal of proposalsRows) {
     const serviceItems = proposal.service_items;
     if (!Array.isArray(serviceItems)) continue;
 
@@ -117,8 +123,17 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   }
 
   // 2. Fetch corporate requests with preferred_dates
-  const corporateResult = await query(
-    `SELECT
+  const corporateRows = await prisma.$queryRaw<Array<{
+    id: number;
+    request_number: string;
+    company_name: string;
+    contact_name: string;
+    party_size: number;
+    event_type: string;
+    preferred_dates: unknown;
+    status: string;
+  }>>`
+    SELECT
       id,
       request_number,
       company_name,
@@ -130,12 +145,10 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
     FROM corporate_requests
     WHERE status NOT IN ('won', 'lost', 'cancelled')
       AND preferred_dates IS NOT NULL
-    ORDER BY created_at DESC`,
-    []
-  );
+    ORDER BY created_at DESC`;
 
-  for (const request of corporateResult.rows) {
-    const preferredDates = request.preferred_dates;
+  for (const request of corporateRows) {
+    const preferredDates = request.preferred_dates as Record<string, unknown>;
 
     // Handle different formats for preferred_dates (can be array or object)
     let datesToProcess: string[] = [];
@@ -144,10 +157,10 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
       datesToProcess = preferredDates.filter((d: unknown) => typeof d === 'string');
     } else if (preferredDates && typeof preferredDates === 'object') {
       // Could be { start: 'date', end: 'date' } or { dates: ['date1', 'date2'] }
-      if (preferredDates.start) datesToProcess.push(preferredDates.start);
-      if (preferredDates.end) datesToProcess.push(preferredDates.end);
-      if (Array.isArray(preferredDates.dates)) {
-        datesToProcess = [...datesToProcess, ...preferredDates.dates];
+      if ((preferredDates as Record<string, string>).start) datesToProcess.push((preferredDates as Record<string, string>).start);
+      if ((preferredDates as Record<string, string>).end) datesToProcess.push((preferredDates as Record<string, string>).end);
+      if (Array.isArray((preferredDates as Record<string, unknown>).dates)) {
+        datesToProcess = [...datesToProcess, ...((preferredDates as Record<string, string[]>).dates)];
       }
     }
 
@@ -173,8 +186,19 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   }
 
   // 3. Fetch reservations with preferred dates (not yet converted to bookings)
-  const reservationsResult = await query(
-    `SELECT
+  const reservationsRows = await prisma.$queryRaw<Array<{
+    id: number;
+    reservation_number: string;
+    party_size: number;
+    preferred_date: Date | null;
+    alternate_date: Date | null;
+    tour_start_date: Date | null;
+    tour_end_date: Date | null;
+    status: string;
+    event_type: string;
+    customer_name: string;
+  }>>`
+    SELECT
       r.id,
       r.reservation_number,
       r.party_size,
@@ -190,16 +214,14 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
     WHERE r.status NOT IN ('booked', 'cancelled', 'expired')
       AND r.booking_id IS NULL
       AND (
-        (r.preferred_date >= $1 AND r.preferred_date <= $2)
-        OR (r.alternate_date >= $1 AND r.alternate_date <= $2)
-        OR (r.tour_start_date >= $1 AND r.tour_start_date <= $2)
-        OR (r.tour_end_date >= $1 AND r.tour_end_date <= $2)
+        (r.preferred_date >= ${startDateStr} AND r.preferred_date <= ${endDateStr})
+        OR (r.alternate_date >= ${startDateStr} AND r.alternate_date <= ${endDateStr})
+        OR (r.tour_start_date >= ${startDateStr} AND r.tour_start_date <= ${endDateStr})
+        OR (r.tour_end_date >= ${startDateStr} AND r.tour_end_date <= ${endDateStr})
       )
-    ORDER BY r.preferred_date`,
-    [startDateStr, endDateStr]
-  );
+    ORDER BY r.preferred_date`;
 
-  for (const reservation of reservationsResult.rows) {
+  for (const reservation of reservationsRows) {
     // Collect all relevant dates
     const dates = new Set<string>();
 
@@ -239,17 +261,25 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
 
   // 4. Fetch shared tours with spots remaining
   try {
-    const sharedToursResult = await query(
-      `SELECT id, tour_code, title, tour_date, start_time, max_guests,
+    const sharedToursRows = await prisma.$queryRaw<Array<{
+      id: number;
+      tour_code: string;
+      title: string;
+      tour_date: Date;
+      start_time: string | null;
+      max_guests: number;
+      current_guests: number;
+      status: string;
+      driver_id: number | null;
+    }>>`
+      SELECT id, tour_code, title, tour_date, start_time, max_guests,
               current_guests, status, driver_id
        FROM shared_tours
-       WHERE tour_date >= $1 AND tour_date <= $2
+       WHERE tour_date >= ${startDateStr} AND tour_date <= ${endDateStr}
          AND status NOT IN ('cancelled', 'completed')
-       ORDER BY tour_date, start_time`,
-      [startDateStr, endDateStr]
-    );
+       ORDER BY tour_date, start_time`;
 
-    for (const tour of sharedToursResult.rows) {
+    for (const tour of sharedToursRows) {
       const date = tour.tour_date instanceof Date
         ? tour.tour_date.toISOString().split('T')[0]
         : String(tour.tour_date).split('T')[0];
@@ -275,21 +305,28 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
 
   // 5. Fetch trip proposals (new system) with dates in range
   try {
-    const tripProposalsResult = await query(
-      `SELECT id, proposal_number, trip_title, customer_name, start_date, end_date,
+    const tripProposalsRows = await prisma.$queryRaw<Array<{
+      id: number;
+      proposal_number: string;
+      trip_title: string;
+      customer_name: string;
+      start_date: Date;
+      end_date: Date | null;
+      party_size: number;
+      status: string;
+    }>>`
+      SELECT id, proposal_number, trip_title, customer_name, start_date, end_date,
               party_size, status
        FROM trip_proposals
        WHERE status NOT IN ('expired', 'declined', 'converted')
          AND (
-           (start_date >= $1 AND start_date <= $2)
-           OR (end_date >= $1 AND end_date <= $2)
-           OR (start_date <= $1 AND COALESCE(end_date, start_date) >= $2)
+           (start_date >= ${startDateStr} AND start_date <= ${endDateStr})
+           OR (end_date >= ${startDateStr} AND end_date <= ${endDateStr})
+           OR (start_date <= ${startDateStr} AND COALESCE(end_date, start_date) >= ${endDateStr})
          )
-       ORDER BY start_date`,
-      [startDateStr, endDateStr]
-    );
+       ORDER BY start_date`;
 
-    for (const tp of tripProposalsResult.rows) {
+    for (const tp of tripProposalsRows) {
       const startDt = tp.start_date instanceof Date
         ? tp.start_date : new Date(tp.start_date);
       const endDt = tp.end_date

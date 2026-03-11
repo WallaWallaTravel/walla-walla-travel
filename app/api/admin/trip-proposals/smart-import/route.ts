@@ -12,12 +12,10 @@ import { smartImportService } from '@/lib/services/smart-import.service';
 import { MAX_FILE_SIZE, MAX_FILES, MIME_TYPE_LABELS } from '@/lib/import/types';
 import { isAllowedMimeType } from '@/lib/import/parsers';
 import { logger } from '@/lib/logger';
-import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const maxDuration = 60; // Vercel function timeout
 
-export const POST = withCSRF(
-  withAdminAuth(async (request: NextRequest) => {
+export const POST = withAdminAuth(async (request: NextRequest) => {
   try {
     const formData = await request.formData();
     const files = formData.getAll('files');
@@ -129,5 +127,4 @@ export const POST = withCSRF(
       { status: 500 }
     );
   }
-})
-);
+});

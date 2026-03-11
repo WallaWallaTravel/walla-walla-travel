@@ -1,7 +1,7 @@
 // Query Logger
 // Logs all AI queries for analytics and review
 
-import { pool } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 
 export interface LogQueryParams {
   sessionId: string
@@ -37,35 +37,17 @@ export interface QueryLog {
  * Log an AI query to the database
  */
 export async function logQuery(params: LogQueryParams): Promise<number> {
-  const result = await pool.query(
-    `INSERT INTO ai_queries (
+  const rows = await prisma.$queryRaw<Array<{ id: number }>>`
+    INSERT INTO ai_queries (
       session_id, user_id, query_text, query_intent, query_hash,
       provider, model, model_version, system_prompt_hash,
       response_text, input_tokens, output_tokens, total_tokens,
       response_time_ms, api_cost, ab_test_group
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
-    RETURNING id`,
-    [
-      params.sessionId,
-      params.userId || null,
-      params.queryText,
-      params.queryIntent || null,
-      params.queryHash || null,
-      params.provider,
-      params.model,
-      params.modelVersion || null,
-      params.systemPromptHash || null,
-      params.responseText,
-      params.inputTokens,
-      params.outputTokens,
-      params.totalTokens,
-      params.responseTimeMs,
-      params.apiCost,
-      params.abTestGroup || null
-    ]
-  )
+    ) VALUES (${params.sessionId}, ${params.userId || null}, ${params.queryText}, ${params.queryIntent || null}, ${params.queryHash || null}, ${params.provider}, ${params.model}, ${params.modelVersion || null}, ${params.systemPromptHash || null}, ${params.responseText}, ${params.inputTokens}, ${params.outputTokens}, ${params.totalTokens}, ${params.responseTimeMs}, ${params.apiCost}, ${params.abTestGroup || null})
+    RETURNING id
+  `
 
-  return result.rows[0].id
+  return rows[0].id
 }
 
 /**
@@ -76,12 +58,11 @@ export async function updateQueryRating(
   rating: number,
   feedbackText?: string | null
 ): Promise<void> {
-  await pool.query(
-    `UPDATE ai_queries 
-     SET user_rating = $1, user_feedback_text = $2
-     WHERE id = $3`,
-    [rating, feedbackText || null, queryId]
-  )
+  await prisma.$executeRaw`
+    UPDATE ai_queries
+     SET user_rating = ${rating}, user_feedback_text = ${feedbackText || null}
+     WHERE id = ${queryId}
+  `
 }
 
 /**
@@ -92,14 +73,13 @@ export async function trackResultClick(
   itemId: number,
   itemType: 'winery' | 'tour'
 ): Promise<void> {
-  await pool.query(
-    `UPDATE ai_queries 
+  await prisma.$executeRaw`
+    UPDATE ai_queries
      SET user_clicked_result = true,
-         clicked_item_id = $1,
-         clicked_item_type = $2
-     WHERE id = $3`,
-    [itemId, itemType, queryId]
-  )
+         clicked_item_id = ${itemId},
+         clicked_item_type = ${itemType}
+     WHERE id = ${queryId}
+  `
 }
 
 /**
@@ -111,14 +91,13 @@ export async function linkQueryToBooking(
   bookingValue: number
 ): Promise<void> {
   // Update all queries in this session
-  await pool.query(
-    `UPDATE ai_queries 
+  await prisma.$executeRaw`
+    UPDATE ai_queries
      SET resulted_in_booking = true,
-         booking_id = $1,
-         booking_value = $2
-     WHERE session_id = $3`,
-    [bookingId, bookingValue, sessionId]
-  )
+         booking_id = ${bookingId},
+         booking_value = ${bookingValue}
+     WHERE session_id = ${sessionId}
+  `
 }
 
 /**
@@ -128,16 +107,13 @@ export async function getSessionQueries(
   sessionId: string,
   limit: number = 10
 ): Promise<QueryLog[]> {
-  const result = await pool.query<QueryLog>(
-    `SELECT id, session_id, query_text, response_text, model, provider, api_cost, created_at
+  return await prisma.$queryRaw<QueryLog[]>`
+    SELECT id, session_id, query_text, response_text, model, provider, api_cost, created_at
      FROM ai_queries
-     WHERE session_id = $1
+     WHERE session_id = ${sessionId}
      ORDER BY created_at DESC
-     LIMIT $2`,
-    [sessionId, limit]
-  )
-
-  return result.rows
+     LIMIT ${limit}
+  `
 }
 
 /**
@@ -152,8 +128,8 @@ export async function getQueryStats(days: number = 30): Promise<{
   conversions: number
   conversionRate: number
 }> {
-  const result = await pool.query(`
-    SELECT 
+  const rows = await prisma.$queryRawUnsafe<Array<{ total_queries: string; total_cost: string; avg_cost: string; avg_response_time: string; unique_sessions: string; conversions: string }>>(
+    `SELECT
       COUNT(*) as total_queries,
       SUM(api_cost) as total_cost,
       AVG(api_cost) as avg_cost,
@@ -161,10 +137,10 @@ export async function getQueryStats(days: number = 30): Promise<{
       COUNT(DISTINCT session_id) as unique_sessions,
       COUNT(DISTINCT CASE WHEN resulted_in_booking THEN session_id END) as conversions
     FROM ai_queries
-    WHERE created_at > NOW() - INTERVAL '${days} days'
-  `)
+    WHERE created_at > NOW() - INTERVAL '${days} days'`
+  )
 
-  const row = result.rows[0]
+  const row = rows[0]
   const totalQueries = parseInt(row.total_queries) || 0
   const conversions = parseInt(row.conversions) || 0
 

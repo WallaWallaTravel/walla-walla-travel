@@ -4,10 +4,9 @@ import { withErrorHandling, BadRequestError, NotFoundError, RouteContext } from 
 import { getBrandStripeClient } from '@/lib/stripe-brands';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import { tripProposalEmailService } from '@/lib/services/trip-proposal-email.service';
-import { query, withTransaction } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
-import { withCSRF } from '@/lib/api/middleware/csrf';
 
 const ConfirmPaymentSchema = z.object({
   payment_intent_id: z.string().min(1, 'payment_intent_id is required'),
@@ -22,8 +21,7 @@ interface RouteParams {
   token: string;
 }
 
-export const POST = withCSRF(
-  withErrorHandling<unknown, RouteParams>(
+export const POST = withErrorHandling<unknown, RouteParams>(
   async (request: NextRequest, context) => {
     const { token } = await (context as RouteContext<RouteParams>).params;
     const body = await request.json();
@@ -77,43 +75,34 @@ export const POST = withCSRF(
     }
 
     // Update proposal and create payment record in a transaction
-    await withTransaction(async (client) => {
+    await prisma.$transaction(async (tx) => {
       // Mark deposit as paid and unlock planning phase
       // (AND deposit_paid = false prevents TOCTOU race)
-      const updateResult = await query(
-        `UPDATE trip_proposals
-         SET deposit_paid = true,
-             deposit_paid_at = NOW(),
-             planning_phase = 'active_planning',
-             updated_at = NOW()
-         WHERE id = $1 AND deposit_paid = false`,
-        [proposal.id],
-        client
-      );
+      const updateResult = await tx.$queryRaw<{ id: number }[]>`
+        UPDATE trip_proposals
+        SET deposit_paid = true,
+            deposit_paid_at = NOW(),
+            planning_phase = 'active_planning',
+            updated_at = NOW()
+        WHERE id = ${proposal.id} AND deposit_paid = false
+        RETURNING id`;
 
       // If no rows updated, another request already processed this payment
-      if (updateResult.rowCount === 0) {
+      if (updateResult.length === 0) {
         return;
       }
 
       // Insert payment record (wrapped in try/catch since payments table schema may vary)
       try {
-        await query(
-          `INSERT INTO payments (
+        await tx.$executeRaw`
+          INSERT INTO payments (
             trip_proposal_id,
             amount,
             payment_type,
             stripe_payment_intent_id,
             status,
             created_at
-          ) VALUES ($1, $2, 'trip_proposal_deposit', $3, 'succeeded', NOW())`,
-          [
-            proposal.id,
-            paymentIntent.amount / 100,
-            payment_intent_id,
-          ],
-          client
-        );
+          ) VALUES (${proposal.id}, ${paymentIntent.amount / 100}, 'trip_proposal_deposit', ${payment_intent_id}, 'succeeded', NOW())`;
       } catch (paymentErr) {
         logger.warn('[My Trip Payment] Could not insert payment record', {
           error: paymentErr instanceof Error ? paymentErr.message : String(paymentErr),
@@ -154,5 +143,4 @@ export const POST = withCSRF(
       },
     });
   }
-)
 );

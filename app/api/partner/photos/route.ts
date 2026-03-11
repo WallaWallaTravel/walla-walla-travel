@@ -7,10 +7,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, UnauthorizedError, NotFoundError, ValidationError } from '@/lib/api/middleware/error-handler';
 import { getSession } from '@/lib/auth/session';
 import { partnerService } from '@/lib/services/partner.service';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
-import { withCSRF } from '@/lib/api/middleware/csrf';
 import { stripExif } from '@/lib/utils/image-processing';
 
 // Lazy import supabase admin to avoid initialization errors when key is missing
@@ -62,8 +61,8 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   }
 
   // Get photos with media library info, grouped by section/category
-  const result = await query(
-    `SELECT
+  const rows = await prisma.$queryRaw<Array<Record<string, unknown>>>`
+    SELECT
       wm.id,
       wm.section as category,
       wm.display_order,
@@ -76,12 +75,10 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
       ml.file_name
      FROM winery_media wm
      JOIN media_library ml ON wm.media_id = ml.id
-     WHERE wm.winery_id = $1
+     WHERE wm.winery_id = ${profile.winery_id}
        AND ml.file_type = 'image'
        AND ml.is_active = true
-     ORDER BY wm.section, wm.display_order`,
-    [profile.winery_id]
-  );
+     ORDER BY wm.section, wm.display_order`;
 
   // Group photos by category
   const photosByCategory: Record<string, Array<{
@@ -94,19 +91,19 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     created_at: string;
   }>> = {};
 
-  for (const row of result.rows) {
-    const category = row.category || 'gallery';
+  for (const row of rows) {
+    const category = (row.category as string) || 'gallery';
     if (!photosByCategory[category]) {
       photosByCategory[category] = [];
     }
     photosByCategory[category].push({
-      id: row.id,
-      media_id: row.media_id,
-      url: row.url,
-      alt_text: row.alt_text,
-      display_order: row.display_order || 0,
-      is_primary: row.is_primary || false,
-      created_at: row.created_at,
+      id: row.id as number,
+      media_id: row.media_id as number,
+      url: row.url as string,
+      alt_text: row.alt_text as string | null,
+      display_order: (row.display_order as number) || 0,
+      is_primary: (row.is_primary as boolean) || false,
+      created_at: row.created_at as string,
     });
   }
 
@@ -122,7 +119,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
  * POST /api/partner/photos
  * Upload a new photo
  */
-export const POST = withCSRF(
+export const POST =
   withRateLimit(rateLimiters.api)(
   withErrorHandling(async (request: NextRequest) => {
   const session = await getSession();
@@ -166,17 +163,15 @@ export const POST = withCSRF(
   }
 
   // Check current photo count for this category
-  const countResult = await query(
-    `SELECT COUNT(*) as count
+  const countRows = await prisma.$queryRaw<Array<{ count: string }>>`
+    SELECT COUNT(*) as count
      FROM winery_media wm
      JOIN media_library ml ON wm.media_id = ml.id
-     WHERE wm.winery_id = $1
-       AND wm.section = $2
-       AND ml.is_active = true`,
-    [profile.winery_id, category]
-  );
+     WHERE wm.winery_id = ${profile.winery_id}
+       AND wm.section = ${category}
+       AND ml.is_active = true`;
 
-  const currentCount = parseInt(countResult.rows[0]?.count || '0', 10);
+  const currentCount = parseInt(countRows[0]?.count || '0', 10);
   const maxAllowed = MAX_PHOTOS[category] || 5;
 
   if (currentCount >= maxAllowed) {
@@ -239,51 +234,30 @@ export const POST = withCSRF(
   logger.debug('[PHOTO UPLOAD] Final URL type', { type: publicUrl.startsWith('data:') ? 'base64' : 'storage' });
 
   // Get next display order
-  const orderResult = await query(
-    `SELECT COALESCE(MAX(wm.display_order), -1) + 1 as next_order
+  const orderRows = await prisma.$queryRaw<Array<{ next_order: number }>>`
+    SELECT COALESCE(MAX(wm.display_order), -1) + 1 as next_order
      FROM winery_media wm
-     WHERE wm.winery_id = $1 AND wm.section = $2`,
-    [profile.winery_id, category]
-  );
-  const displayOrder = orderResult.rows[0]?.next_order || 0;
+     WHERE wm.winery_id = ${profile.winery_id} AND wm.section = ${category}`;
+  const displayOrder = orderRows[0]?.next_order || 0;
 
   // Create media_library record
-  const mediaResult = await query(
-    `INSERT INTO media_library (
+  const mediaRows = await prisma.$queryRaw<Array<{ id: number }>>`
+    INSERT INTO media_library (
       file_name, file_path, file_type, file_size, mime_type,
       category, alt_text, is_hero, display_order, is_active,
       created_at, updated_at
-    ) VALUES ($1, $2, 'image', $3, $4, $5, $6, $7, $8, true, NOW(), NOW())
-    RETURNING id`,
-    [
-      file.name,
-      publicUrl,
-      file.size,
-      file.type,
-      category,
-      altText,
-      category === 'hero',
-      displayOrder,
-    ]
-  );
+    ) VALUES (${file.name}, ${publicUrl}, 'image', ${file.size}, ${file.type}, ${category}, ${altText}, ${category === 'hero'}, ${displayOrder}, true, NOW(), NOW())
+    RETURNING id`;
 
-  const mediaId = mediaResult.rows[0].id;
+  const mediaId = mediaRows[0].id;
   logger.info('[PHOTO UPLOAD] media_library record created', { mediaId });
 
   // Create winery_media link
-  const wmResult = await query(
-    `INSERT INTO winery_media (winery_id, media_id, section, display_order, is_primary, created_at)
-     VALUES ($1, $2, $3, $4, $5, NOW())
-     RETURNING id`,
-    [
-      profile.winery_id,
-      mediaId,
-      category,
-      displayOrder,
-      category === 'hero' && currentCount === 0,
-    ]
-  );
-  logger.info('[PHOTO UPLOAD] winery_media link created', { id: wmResult.rows[0].id });
+  const wmRows = await prisma.$queryRaw<Array<{ id: number }>>`
+    INSERT INTO winery_media (winery_id, media_id, section, display_order, is_primary, created_at)
+     VALUES (${profile.winery_id}, ${mediaId}, ${category}, ${displayOrder}, ${category === 'hero' && currentCount === 0}, NOW())
+     RETURNING id`;
+  logger.info('[PHOTO UPLOAD] winery_media link created', { id: wmRows[0].id });
 
   // Log activity
   await partnerService.logActivity(
@@ -302,7 +276,7 @@ export const POST = withCSRF(
   return NextResponse.json({
     success: true,
     photo: {
-      id: wmResult.rows[0].id,
+      id: wmRows[0].id,
       media_id: mediaId,
       url: publicUrl,
       category,
@@ -312,14 +286,13 @@ export const POST = withCSRF(
     message: 'Photo uploaded successfully',
     timestamp: new Date().toISOString(),
   });
-}))
-);
+}));
 
 /**
  * DELETE /api/partner/photos
  * Delete a photo
  */
-export const DELETE = withCSRF(
+export const DELETE =
   withRateLimit(rateLimiters.api)(
   withErrorHandling(async (request: NextRequest) => {
   const session = await getSession();
@@ -346,35 +319,24 @@ export const DELETE = withCSRF(
   }
 
   // Verify photo belongs to this winery
-  const photoResult = await query(
-    `SELECT wm.id, wm.media_id, ml.file_path
+  const photoRows = await prisma.$queryRaw<Array<{ id: number; media_id: number; file_path: string }>>`
+    SELECT wm.id, wm.media_id, ml.file_path
      FROM winery_media wm
      JOIN media_library ml ON wm.media_id = ml.id
-     WHERE wm.id = $1 AND wm.winery_id = $2`,
-    [photoId, profile.winery_id]
-  );
+     WHERE wm.id = ${parseInt(photoId)} AND wm.winery_id = ${profile.winery_id}`;
 
-  if (photoResult.rows.length === 0) {
+  if (photoRows.length === 0) {
     throw new NotFoundError('Photo not found');
   }
 
-  const photo = photoResult.rows[0];
+  const photo = photoRows[0];
 
   // Soft delete in media_library
-  await query(
-    `UPDATE media_library SET is_active = false, updated_at = NOW() WHERE id = $1`,
-    [photo.media_id]
-  );
+  await prisma.$executeRaw`
+    UPDATE media_library SET is_active = false, updated_at = NOW() WHERE id = ${photo.media_id}`;
 
   // Delete winery_media link
-  await query(
-    `DELETE FROM winery_media WHERE id = $1`,
-    [photoId]
-  );
-
-  // Optionally delete from storage (keeping for now for recovery)
-  // const filePath = photo.file_path.split('/winery-photos/')[1];
-  // await supabaseAdmin.storage.from('winery-photos').remove([filePath]);
+  await prisma.$executeRaw`DELETE FROM winery_media WHERE id = ${parseInt(photoId)}`;
 
   // Log activity
   await partnerService.logActivity(
@@ -389,5 +351,4 @@ export const DELETE = withCSRF(
     message: 'Photo deleted successfully',
     timestamp: new Date().toISOString(),
   });
-}))
-);
+}));

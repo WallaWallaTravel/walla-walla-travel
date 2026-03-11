@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, BadRequestError } from '@/lib/api-errors';
-import { queryOne, query } from '@/lib/db-helpers';
-import { withCSRF } from '@/lib/api/middleware/csrf';
+import { prisma } from '@/lib/prisma';
+
 import { z } from 'zod';
 
 const OrderItemSchema = z.object({
@@ -55,11 +55,7 @@ interface LunchOrderRequest {
   estimated_arrival_time: string;
 }
 
-interface LunchOrderResult {
-  id: number;
-}
-
-export const POST = withCSRF(
+export const POST =
   withErrorHandling(async (request: NextRequest) => {
   const body: LunchOrderRequest = BodySchema.parse(await request.json());
   const {
@@ -86,24 +82,22 @@ export const POST = withCSRF(
   const total = subtotal + tax;
 
   // Get restaurant details for email
-  const restaurant = await queryOne<Restaurant>(
-    'SELECT name, email, phone, contact_name FROM restaurants WHERE id = $1',
-    [restaurant_id]
-  );
+  const restaurantRows = await prisma.$queryRaw<Restaurant[]>`
+    SELECT name, email, phone, contact_name FROM restaurants WHERE id = ${restaurant_id}`;
 
-  if (!restaurant) {
+  if (restaurantRows.length === 0) {
     throw new BadRequestError('Restaurant not found');
   }
+  const restaurant = restaurantRows[0];
 
   // Get booking details
-  const booking = await queryOne<Booking>(
-    'SELECT customer_name, customer_email, tour_date FROM bookings WHERE id = $1',
-    [booking_id]
-  );
+  const bookingRows = await prisma.$queryRaw<Booking[]>`
+    SELECT customer_name, customer_email, tour_date FROM bookings WHERE id = ${booking_id}`;
 
-  if (!booking) {
+  if (bookingRows.length === 0) {
     throw new BadRequestError('Booking not found');
   }
+  const booking = bookingRows[0];
 
   // Generate email body for admin approval
   const emailBody = generateOrderEmail({
@@ -120,8 +114,13 @@ export const POST = withCSRF(
   });
 
   // Insert lunch order
-  const insertResult = await query<LunchOrderResult>(
-    `INSERT INTO lunch_orders (
+  const itemsJson = JSON.stringify(items);
+  const dietaryVal = dietary_restrictions || null;
+  const specialVal = special_requests || null;
+  const statusVal = 'pending_approval';
+
+  const insertResult = await prisma.$queryRaw<{ id: number }[]>`
+    INSERT INTO lunch_orders (
       booking_id,
       restaurant_id,
       customer_id,
@@ -137,35 +136,19 @@ export const POST = withCSRF(
       email_body,
       created_at,
       updated_at
-    ) VALUES ($1, $2,
-      (SELECT id FROM customers WHERE email = $3 LIMIT 1),
-      $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW()
-    ) RETURNING id`,
-    [
-      booking_id,
-      restaurant_id,
-      booking.customer_email,
-      JSON.stringify(items),
-      subtotal,
-      tax,
-      total,
-      estimated_arrival_time,
-      estimated_arrival_time, // requested_ready_time same as arrival
-      dietary_restrictions || null,
-      special_requests || null,
-      'pending_approval', // Status
-      emailBody,
-    ]
-  );
-  const result = insertResult.rows[0];
+    ) VALUES (${booking_id}, ${restaurant_id},
+      (SELECT id FROM customers WHERE email = ${booking.customer_email} LIMIT 1),
+      ${itemsJson}::jsonb, ${subtotal}, ${tax}, ${total}, ${estimated_arrival_time}, ${estimated_arrival_time}, ${dietaryVal}, ${specialVal}, ${statusVal}, ${emailBody}, NOW(), NOW()
+    ) RETURNING id`;
+
+  const result = insertResult[0];
 
   return NextResponse.json({
     success: true,
     order_id: result.id,
     message: 'Lunch order submitted for admin approval',
   });
-})
-);
+});
 
 function generateOrderEmail(data: {
   booking: Booking;
@@ -194,7 +177,7 @@ function generateOrderEmail(data: {
 
   let email = `
 LUNCH ORDER REQUEST
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501
 
 CUSTOMER INFORMATION:
   Name: ${booking.customer_name}
@@ -210,7 +193,7 @@ RESTAURANT:
   ${restaurant.contact_name ? `Contact: ${restaurant.contact_name}` : ''}
 
 ORDER DETAILS:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501
 `;
 
   items.forEach((item: OrderItem) => {
@@ -225,11 +208,11 @@ ORDER DETAILS:
   });
 
   email += `
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501
   Subtotal: $${subtotal.toFixed(2)}
   Tax (9.1%): $${tax.toFixed(2)}
   TOTAL: $${total.toFixed(2)}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501
 `;
 
   if (dietary_restrictions) {
@@ -241,14 +224,14 @@ ORDER DETAILS:
   }
 
   email += `
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501
 
 TO APPROVE AND SEND:
 1. Review order details above
 2. Click "Approve & Send to Restaurant"
 3. Email will be sent to ${restaurant.email}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501
 `;
 
   return email;

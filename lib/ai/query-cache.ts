@@ -1,7 +1,7 @@
 // Query Cache Service
 // Caches AI responses to reduce API costs and improve response time
 
-import { pool } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 import crypto from 'crypto'
 
 export interface CachedQuery {
@@ -42,27 +42,25 @@ export async function getCachedQuery(
 ): Promise<CachedQuery | null> {
   const queryHash = generateQueryHash(query, model, systemPromptHash)
   
-  const result = await pool.query<CachedQuery>(
-    `SELECT * FROM ai_query_cache 
-     WHERE query_hash = $1 
+  const rows = await prisma.$queryRaw<CachedQuery[]>`
+    SELECT * FROM ai_query_cache
+     WHERE query_hash = ${queryHash}
      AND expires_at > NOW()
-     LIMIT 1`,
-    [queryHash]
-  )
+     LIMIT 1
+  `
 
-  if (result.rows.length === 0) {
+  if (rows.length === 0) {
     return null
   }
 
   // Update hit count and last_hit_at
-  await pool.query(
-    `UPDATE ai_query_cache 
+  await prisma.$executeRaw`
+    UPDATE ai_query_cache
      SET hit_count = hit_count + 1, last_hit_at = NOW()
-     WHERE id = $1`,
-    [result.rows[0].id]
-  )
+     WHERE id = ${rows[0].id}
+  `
 
-  return result.rows[0]
+  return rows[0]
 }
 
 /**
@@ -79,36 +77,26 @@ export async function cacheQueryResponse(
   const queryHash = generateQueryHash(query, model, systemPromptHash)
   const expiresAt = new Date(Date.now() + ttlHours * 60 * 60 * 1000)
 
-  await pool.query(
-    `INSERT INTO ai_query_cache (
+  const responseDataJson = responseData ? JSON.stringify(responseData) : null
+
+  await prisma.$executeRaw`
+    INSERT INTO ai_query_cache (
       query_hash, query_text, model, system_prompt_hash,
       response_text, response_data, expires_at
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+    ) VALUES (${queryHash}, ${query}, ${model}, ${systemPromptHash ?? null}, ${response}, ${responseDataJson}::jsonb, ${expiresAt})
     ON CONFLICT (query_hash) DO UPDATE SET
-      response_text = $5,
-      response_data = $6,
-      expires_at = $7,
-      last_hit_at = NOW()`,
-    [
-      queryHash,
-      query,
-      model,
-      systemPromptHash,
-      response,
-      responseData ? JSON.stringify(responseData) : null,
-      expiresAt
-    ]
-  )
+      response_text = ${response},
+      response_data = ${responseDataJson}::jsonb,
+      expires_at = ${expiresAt},
+      last_hit_at = NOW()
+  `
 }
 
 /**
  * Clear expired cache entries
  */
 export async function clearExpiredCache(): Promise<number> {
-  const result = await pool.query(
-    'DELETE FROM ai_query_cache WHERE expires_at < NOW()'
-  )
-  return result.rowCount || 0
+  return await prisma.$executeRaw`DELETE FROM ai_query_cache WHERE expires_at < NOW()`
 }
 
 /**
@@ -121,8 +109,8 @@ export async function getCacheStats(): Promise<{
   oldestEntry: Date | null
   newestEntry: Date | null
 }> {
-  const result = await pool.query(`
-    SELECT 
+  const rows = await prisma.$queryRaw<Array<{ total_entries: string; total_hits: string; avg_hit_count: string; oldest_entry: Date | null; newest_entry: Date | null }>>`
+    SELECT
       COUNT(*) as total_entries,
       SUM(hit_count) as total_hits,
       AVG(hit_count) as avg_hit_count,
@@ -130,9 +118,9 @@ export async function getCacheStats(): Promise<{
       MAX(created_at) as newest_entry
     FROM ai_query_cache
     WHERE expires_at > NOW()
-  `)
+  `
 
-  const row = result.rows[0]
+  const row = rows[0]
 
   return {
     totalEntries: parseInt(row.total_entries) || 0,
@@ -147,7 +135,6 @@ export async function getCacheStats(): Promise<{
  * Clear entire cache (use with caution!)
  */
 export async function clearAllCache(): Promise<number> {
-  const result = await pool.query('DELETE FROM ai_query_cache')
-  return result.rowCount || 0
+  return await prisma.$executeRaw`DELETE FROM ai_query_cache`
 }
 

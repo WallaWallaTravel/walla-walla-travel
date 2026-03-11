@@ -8,8 +8,8 @@
 import { getSession } from '@/lib/auth/session';
 import { canAccessGeology } from '@/lib/auth/roles';
 import { redirect } from 'next/navigation';
-import { query } from '@/lib/db';
 import Link from 'next/link';
+import { prisma } from '@/lib/prisma';
 
 // ============================================================================
 // Types
@@ -32,12 +32,12 @@ interface Guidance {
 
 async function getGuidance(): Promise<Guidance[]> {
   try {
-    const result = await query<Guidance>(`
+    const result = await prisma.$queryRawUnsafe<Guidance[]>(`
       SELECT id, guidance_type, title, content, priority, is_active, created_at, updated_at
       FROM geology_ai_guidance
       ORDER BY priority DESC, created_at ASC
     `);
-    return result.rows;
+    return result;
   } catch {
     return [];
   }

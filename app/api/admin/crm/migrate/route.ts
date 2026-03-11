@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
-import { query } from '@/lib/db';
-import { queryOne } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
-import { withCSRF } from '@/lib/api/middleware/csrf';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 
 interface Customer {
@@ -32,21 +30,20 @@ interface MigrationResult {
  */
 export const GET = withAdminAuth(async (_request: NextRequest, _session): Promise<NextResponse> => {
   // Count total customers
-  const totalCustomers = await queryOne<{ count: string }>(
-    `SELECT COUNT(*) as count FROM customers`
-  );
+  const totalRows = await prisma.$queryRaw<{ count: string }[]>`SELECT COUNT(*) as count FROM customers`;
+  const totalCustomers = totalRows[0];
 
   // Count customers already linked to CRM contacts
-  const linkedCustomers = await queryOne<{ count: string }>(
-    `SELECT COUNT(*) as count FROM customers c
-     WHERE EXISTS (SELECT 1 FROM crm_contacts cc WHERE cc.customer_id = c.id)`
-  );
+  const linkedRows = await prisma.$queryRaw<{ count: string }[]>`
+    SELECT COUNT(*) as count FROM customers c
+     WHERE EXISTS (SELECT 1 FROM crm_contacts cc WHERE cc.customer_id = c.id)`;
+  const linkedCustomers = linkedRows[0];
 
   // Count CRM contacts that exist but aren't linked
-  const unlinkedContacts = await queryOne<{ count: string }>(
-    `SELECT COUNT(*) as count FROM crm_contacts
-     WHERE customer_id IS NULL`
-  );
+  const unlinkedRows = await prisma.$queryRaw<{ count: string }[]>`
+    SELECT COUNT(*) as count FROM crm_contacts
+     WHERE customer_id IS NULL`;
+  const unlinkedContacts = unlinkedRows[0];
 
   const total = parseInt(totalCustomers?.count || '0');
   const linked = parseInt(linkedCustomers?.count || '0');
@@ -73,8 +70,7 @@ const BodySchema = z.object({
  * POST /api/admin/crm/migrate
  * Migrate all existing customers to CRM contacts
  */
-export const POST = withCSRF(
-  withRateLimit(rateLimiters.api)(
+export const POST = withRateLimit(rateLimiters.api)(
     withAdminAuth(async (request: NextRequest, _session): Promise<NextResponse> => {
       const body = BodySchema.parse(await request.json().catch(() => ({})));
       const { dryRun = false, batchSize = 100 } = body;
@@ -90,8 +86,8 @@ export const POST = withCSRF(
       };
 
       // Get all customers with their booking stats
-      const customersResult = await query<Customer>(
-        `SELECT
+      const customers = await prisma.$queryRaw<Customer[]>`
+        SELECT
           c.id,
           c.email,
           c.name,
@@ -103,10 +99,8 @@ export const POST = withCSRF(
         FROM customers c
         LEFT JOIN bookings b ON b.customer_id = c.id AND b.status != 'cancelled'
         GROUP BY c.id
-        ORDER BY c.id`
-      );
+        ORDER BY c.id`;
 
-      const customers = customersResult.rows;
       result.total_customers = customers.length;
 
       logger.info('[CRM Migration] Found customers to process', { count: customers.length });
@@ -118,21 +112,17 @@ export const POST = withCSRF(
         for (const customer of batch) {
           try {
             // Check if CRM contact already exists for this customer
-            const existingContact = await queryOne<{ id: number }>(
-              `SELECT id FROM crm_contacts WHERE customer_id = $1`,
-              [customer.id]
-            );
+            const existingRows = await prisma.$queryRaw<{ id: number }[]>`
+              SELECT id FROM crm_contacts WHERE customer_id = ${customer.id}`;
 
-            if (existingContact) {
+            if (existingRows.length > 0) {
               result.already_exists++;
               continue;
             }
 
             // Check if contact exists by email (created manually or from other source)
-            const emailContact = await queryOne<{ id: number }>(
-              `SELECT id FROM crm_contacts WHERE LOWER(email) = LOWER($1)`,
-              [customer.email]
-            );
+            const emailRows = await prisma.$queryRaw<{ id: number }[]>`
+              SELECT id FROM crm_contacts WHERE LOWER(email) = LOWER(${customer.email})`;
 
             if (dryRun) {
               // In dry run, just count what would be migrated
@@ -140,34 +130,24 @@ export const POST = withCSRF(
               continue;
             }
 
-            if (emailContact) {
+            if (emailRows.length > 0) {
               // Link existing contact to customer and update stats
-              await query(
-                `UPDATE crm_contacts
+              await prisma.$executeRaw`
+                UPDATE crm_contacts
                 SET
-                  customer_id = $1,
-                  name = $2,
-                  phone = COALESCE(phone, $3),
+                  customer_id = ${customer.id},
+                  name = ${customer.name},
+                  phone = COALESCE(phone, ${customer.phone}),
                   lifecycle_stage = CASE
-                    WHEN $4::int > 1 THEN 'repeat_customer'
-                    WHEN $4::int = 1 THEN 'customer'
+                    WHEN ${customer.total_bookings}::int > 1 THEN 'repeat_customer'
+                    WHEN ${customer.total_bookings}::int = 1 THEN 'customer'
                     ELSE lifecycle_stage
                   END,
-                  total_bookings = $4,
-                  total_revenue = $5,
-                  last_booking_date = $6,
+                  total_bookings = ${customer.total_bookings},
+                  total_revenue = ${parseFloat(customer.total_spent)},
+                  last_booking_date = ${customer.last_booking_date},
                   updated_at = NOW()
-                WHERE id = $7`,
-                [
-                  customer.id,
-                  customer.name,
-                  customer.phone,
-                  customer.total_bookings,
-                  parseFloat(customer.total_spent),
-                  customer.last_booking_date,
-                  emailContact.id,
-                ]
-              );
+                WHERE id = ${emailRows[0].id}`;
               result.migrated++;
             } else {
               // Create new CRM contact
@@ -175,26 +155,15 @@ export const POST = withCSRF(
                 customer.total_bookings > 1 ? 'repeat_customer' :
                 customer.total_bookings === 1 ? 'customer' : 'lead';
 
-              await query(
-                `INSERT INTO crm_contacts (
+              await prisma.$executeRaw`
+                INSERT INTO crm_contacts (
                   email, name, phone, customer_id, contact_type, lifecycle_stage,
                   lead_temperature, source, source_detail,
                   total_bookings, total_revenue, last_booking_date,
                   brand_id, created_at, updated_at
-                ) VALUES ($1, $2, $3, $4, 'individual', $5, 'warm', 'migration', 'customer_migration',
-                  $6, $7, $8, 1, $9, NOW())`,
-                [
-                  customer.email,
-                  customer.name,
-                  customer.phone,
-                  customer.id,
-                  lifecycleStage,
-                  customer.total_bookings,
-                  parseFloat(customer.total_spent),
-                  customer.last_booking_date,
-                  customer.created_at,
-                ]
-              );
+                ) VALUES (${customer.email}, ${customer.name}, ${customer.phone}, ${customer.id}, 'individual', ${lifecycleStage}, 'warm', 'migration', 'customer_migration',
+                  ${customer.total_bookings}, ${parseFloat(customer.total_spent)}, ${customer.last_booking_date},
+                  1, ${customer.created_at}::timestamptz, NOW())`;
               result.migrated++;
             }
           } catch (error) {
@@ -228,5 +197,4 @@ export const POST = withCSRF(
           : `Migration completed. ${result.migrated} customers migrated, ${result.already_exists} already existed, ${result.errors} errors.`,
       });
     })
-  )
-);
+  );

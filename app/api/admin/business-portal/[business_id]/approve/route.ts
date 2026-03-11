@@ -5,12 +5,11 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
-import { query } from '@/lib/db';
 import { z } from 'zod';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
-import { withCSRF } from '@/lib/api/middleware/csrf';
 import { auditService } from '@/lib/services/audit.service';
+import { prisma } from '@/lib/prisma';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -24,8 +23,7 @@ const BodySchema = z.object({
   notes: z.string().max(5000).optional(),
 });
 
-export const POST = withCSRF(
-  withAdminAuth(async (
+export const POST = withAdminAuth(async (
   request: NextRequest, session, context
 ) => {
   const { business_id } = await context!.params;
@@ -43,7 +41,7 @@ export const POST = withCSRF(
   logger.info('Setting business status', { businessId, status });
 
   // Update business status
-  const result = await query(
+  const result = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
     `UPDATE businesses
      SET
        status = $1,
@@ -54,26 +52,24 @@ export const POST = withCSRF(
     [status, status === 'approved', businessId]
   );
 
-  if (result.rows.length === 0) {
+  if (result.length === 0) {
     throw new NotFoundError('Business not found');
   }
 
-  const business = result.rows[0];
+  const business = result[0];
 
   // Log activity
-  await query(
+  await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
     `INSERT INTO business_activity_log (
       business_id,
       activity_type,
       activity_description,
       metadata
     ) VALUES ($1, $2, $3, $4)`,
-    [
       businessId,
       status === 'approved' ? 'business_approved' : 'business_rejected',
       `Business ${status === 'approved' ? 'approved' : 'rejected'} for directory`,
       JSON.stringify({ notes })
-    ]
   );
 
   logger.info('Business status updated successfully', { businessId });
@@ -91,5 +87,4 @@ export const POST = withCSRF(
     business,
     message: `Business ${status === 'approved' ? 'approved' : 'rejected'} successfully`
   });
-})
-);
+});

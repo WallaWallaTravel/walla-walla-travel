@@ -3,7 +3,8 @@ import {
   successResponse,
   requireAuth,
 } from '@/app/api/utils';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { userService } from '@/lib/services/user.service';
 import { validate, profileUpdateSchema } from '@/lib/validation';
 import { logApiRequest } from '@/lib/logger';
@@ -13,11 +14,10 @@ import {
   BadRequestError,
   ValidationError
 } from '@/lib/api/middleware/error-handler';
-import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * User profile API
- * ✅ REFACTORED: Structured logging + withErrorHandling middleware
+ * REFACTORED: Structured logging + withErrorHandling middleware
  */
 export const GET = withErrorHandling(async () => {
   // Check authentication
@@ -43,8 +43,7 @@ export const GET = withErrorHandling(async () => {
   });
 });
 
-export const PUT = withCSRF(
-  withErrorHandling(async (request: NextRequest) => {
+export const PUT = withErrorHandling(async (request: NextRequest) => {
   // Check authentication
   const session = await requireAuth();
 
@@ -58,42 +57,42 @@ export const PUT = withCSRF(
 
   const updates = validation.data;
 
-  // Build update query
-  const updateFields: string[] = [];
+  // Build update query dynamically
+  const setClauses: string[] = [];
   const values: unknown[] = [];
   let paramCount = 1;
 
   if (updates.name !== undefined) {
-    updateFields.push(`name = $${paramCount}`);
+    setClauses.push(`name = $${paramCount}`);
     values.push(updates.name);
     paramCount++;
   }
 
   if (updates.email !== undefined) {
-    updateFields.push(`email = $${paramCount}`);
+    setClauses.push(`email = $${paramCount}`);
     values.push(updates.email);
     paramCount++;
   }
 
   if (updates.phone !== undefined) {
-    updateFields.push(`phone = $${paramCount}`);
+    setClauses.push(`phone = $${paramCount}`);
     values.push(updates.phone || null);
     paramCount++;
   }
 
   if (updates.emergency_contact_name !== undefined) {
-    updateFields.push(`emergency_contact_name = $${paramCount}`);
+    setClauses.push(`emergency_contact_name = $${paramCount}`);
     values.push(updates.emergency_contact_name || null);
     paramCount++;
   }
 
   if (updates.emergency_contact_phone !== undefined) {
-    updateFields.push(`emergency_contact_phone = $${paramCount}`);
+    setClauses.push(`emergency_contact_phone = $${paramCount}`);
     values.push(updates.emergency_contact_phone || null);
     paramCount++;
   }
 
-  if (updateFields.length === 0) {
+  if (setClauses.length === 0) {
     throw new BadRequestError('No fields to update');
   }
 
@@ -102,18 +101,18 @@ export const PUT = withCSRF(
 
   const updateQuery = `
     UPDATE users
-    SET ${updateFields.join(', ')}, updated_at = CURRENT_TIMESTAMP
+    SET ${setClauses.join(', ')}, updated_at = CURRENT_TIMESTAMP
     WHERE id = $${paramCount}
     RETURNING id, email, name, phone, role, created_at, last_login, emergency_contact_name, emergency_contact_phone
   `;
 
-  const result = await query(updateQuery, values);
+  const rows = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(updateQuery, ...values);
 
-  if (result.rowCount === 0) {
+  if (rows.length === 0) {
     throw new NotFoundError('User not found');
   }
 
-  const updatedUser = result.rows[0];
+  const updatedUser = rows[0];
 
   return successResponse({
     id: updatedUser.id,
@@ -126,8 +125,7 @@ export const PUT = withCSRF(
     emergency_contact_name: updatedUser.emergency_contact_name,
     emergency_contact_phone: updatedUser.emergency_contact_phone,
   }, 'Profile updated successfully');
-})
-);
+});
 
 export async function OPTIONS() {
   return new Response(null, {

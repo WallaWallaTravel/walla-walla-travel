@@ -14,7 +14,7 @@ import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 import { logger } from '@/lib/logger';
 import { verifyResendWebhookSignature } from '@/lib/webhooks/resend/verify';
 import { partnerRequestService } from '@/lib/services/partner-request.service';
-import { query } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 
 interface ResendInboundPayload {
   from: string;
@@ -80,21 +80,16 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
           : content;
 
         // Insert vendor interaction
-        await query(
-          `INSERT INTO vendor_interactions (
+        const interactionContent = `From: ${fromAddress}\nSubject: ${subject || '(no subject)'}\n\n${truncatedContent}`;
+        await prisma.$executeRaw`INSERT INTO vendor_interactions (
             trip_proposal_stop_id, interaction_type, content
-          ) VALUES ($1, 'email_received', $2)`,
-          [stopId, `From: ${fromAddress}\nSubject: ${subject || '(no subject)'}\n\n${truncatedContent}`]
-        );
+          ) VALUES (${stopId}, 'email_received', ${interactionContent})`;
 
         // Insert inbound_email_log (auto-routed)
-        await query(
-          `INSERT INTO inbound_email_log (
+        await prisma.$executeRaw`INSERT INTO inbound_email_log (
             from_address, to_address, subject, body_text, body_html,
             routed_to_stop_id, routing_method, routed_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, 'auto_address', NOW())`,
-          [fromAddress, toAddress, subject, bodyText, bodyHtml, stopId]
-        );
+          ) VALUES (${fromAddress}, ${toAddress}, ${subject}, ${bodyText}, ${bodyHtml}, ${stopId}, 'auto_address', NOW())`;
 
         logger.info('[Resend Inbound] Auto-routed to stop', { stopId, from: fromAddress });
         return NextResponse.json({ received: true, routed: true, stopId });
@@ -102,13 +97,10 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     }
 
     // ── Unmatched: log for admin review ─────────────────────────────
-    await query(
-      `INSERT INTO inbound_email_log (
+    await prisma.$executeRaw`INSERT INTO inbound_email_log (
         from_address, to_address, subject, body_text, body_html,
         routing_method
-      ) VALUES ($1, $2, $3, $4, $5, 'unmatched')`,
-      [fromAddress, toAddress, subject, bodyText, bodyHtml]
-    );
+      ) VALUES (${fromAddress}, ${toAddress}, ${subject}, ${bodyText}, ${bodyHtml}, 'unmatched')`;
 
     logger.info('[Resend Inbound] Logged as unmatched', { from: fromAddress, to: toAddress });
     return NextResponse.json({ received: true, routed: false });

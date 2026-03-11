@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { query } from '@/lib/db'
+import { query } from '@/lib/prisma-query'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler'
-import { withCSRF } from '@/lib/api/middleware/csrf'
 import { auditService } from '@/lib/services/audit.service'
 import { z } from 'zod'
 
@@ -111,9 +110,7 @@ async function patchHandler(request: NextRequest, userId: number) {
 }
 
 export const GET = withAdminAuth(getHandler)
-export const DELETE = withCSRF(
-  withAdminAuth(async (request, session) => deleteHandler(request, parseInt(session.userId)))
+export const DELETE = withAdminAuth(async (request, session) => deleteHandler(request, parseInt(session.userId))
 )
-export const PATCH = withCSRF(
-  withAdminAuth(async (request, session) => patchHandler(request, parseInt(session.userId)))
+export const PATCH = withAdminAuth(async (request, session) => patchHandler(request, parseInt(session.userId))
 )

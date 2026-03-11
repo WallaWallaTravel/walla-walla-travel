@@ -8,9 +8,9 @@
 import { getSession } from '@/lib/auth/session';
 import { canAccessGeology } from '@/lib/auth/roles';
 import { redirect } from 'next/navigation';
-import { query } from '@/lib/db';
 import Link from 'next/link';
 import { logger } from '@/lib/logger';
+import { prisma } from '@/lib/prisma';
 
 // ============================================================================
 // Types
@@ -57,33 +57,23 @@ async function getGeologyStats(): Promise<GeologyStats> {
       guidanceResult,
       chatResult,
     ] = await Promise.all([
-      query('SELECT COUNT(*) as count FROM geology_topics').catch(() => ({ rows: [{ count: 0 }] })),
-      query('SELECT COUNT(*) as count FROM geology_topics WHERE is_published = true').catch(() => ({
-        rows: [{ count: 0 }],
-      })),
-      query('SELECT COUNT(*) as count FROM geology_facts').catch(() => ({ rows: [{ count: 0 }] })),
-      query('SELECT COUNT(*) as count FROM geology_sites WHERE is_published = true').catch(() => ({
-        rows: [{ count: 0 }],
-      })),
-      query('SELECT COUNT(*) as count FROM geology_tours WHERE is_active = true').catch(() => ({
-        rows: [{ count: 0 }],
-      })),
-      query('SELECT COUNT(*) as count FROM geology_ai_guidance WHERE is_active = true').catch(
-        () => ({ rows: [{ count: 0 }] })
-      ),
-      query('SELECT COUNT(*) as count FROM geology_chat_messages').catch(() => ({
-        rows: [{ count: 0 }],
-      })),
+      prisma.$queryRawUnsafe<{ count: number }[]>('SELECT COUNT(*) as count FROM geology_topics').catch(() => [{ count: 0 }]),
+      prisma.$queryRawUnsafe<{ count: number }[]>('SELECT COUNT(*) as count FROM geology_topics WHERE is_published = true').catch(() => [{ count: 0 }]),
+      prisma.$queryRawUnsafe<{ count: number }[]>('SELECT COUNT(*) as count FROM geology_facts').catch(() => [{ count: 0 }]),
+      prisma.$queryRawUnsafe<{ count: number }[]>('SELECT COUNT(*) as count FROM geology_sites WHERE is_published = true').catch(() => [{ count: 0 }]),
+      prisma.$queryRawUnsafe<{ count: number }[]>('SELECT COUNT(*) as count FROM geology_tours WHERE is_active = true').catch(() => [{ count: 0 }]),
+      prisma.$queryRawUnsafe<{ count: number }[]>('SELECT COUNT(*) as count FROM geology_ai_guidance WHERE is_active = true').catch(() => [{ count: 0 }]),
+      prisma.$queryRawUnsafe<{ count: number }[]>('SELECT COUNT(*) as count FROM geology_chat_messages').catch(() => [{ count: 0 }]),
     ]);
 
     return {
-      totalTopics: parseInt(topicsResult.rows[0]?.count || '0'),
-      publishedTopics: parseInt(publishedResult.rows[0]?.count || '0'),
-      totalFacts: parseInt(factsResult.rows[0]?.count || '0'),
-      totalSites: parseInt(sitesResult.rows[0]?.count || '0'),
-      totalTours: parseInt(toursResult.rows[0]?.count || '0'),
-      totalGuidance: parseInt(guidanceResult.rows[0]?.count || '0'),
-      chatMessages: parseInt(chatResult.rows[0]?.count || '0'),
+      totalTopics: Number(topicsResult[0]?.count ?? 0),
+      publishedTopics: Number(publishedResult[0]?.count ?? 0),
+      totalFacts: Number(factsResult[0]?.count ?? 0),
+      totalSites: Number(sitesResult[0]?.count ?? 0),
+      totalTours: Number(toursResult[0]?.count ?? 0),
+      totalGuidance: Number(guidanceResult[0]?.count ?? 0),
+      chatMessages: Number(chatResult[0]?.count ?? 0),
     };
   } catch (error) {
     logger.error('[Geology Dashboard] Error fetching stats', { error });
@@ -101,13 +91,13 @@ async function getGeologyStats(): Promise<GeologyStats> {
 
 async function getRecentTopics(): Promise<RecentTopic[]> {
   try {
-    const result = await query<RecentTopic>(`
+    const result = await prisma.$queryRawUnsafe<RecentTopic[]>(`
       SELECT id, title, topic_type, is_published, updated_at
       FROM geology_topics
       ORDER BY updated_at DESC
       LIMIT 5
     `);
-    return result.rows;
+    return result;
   } catch {
     return [];
   }
@@ -115,13 +105,13 @@ async function getRecentTopics(): Promise<RecentTopic[]> {
 
 async function getRecentFacts(): Promise<RecentFact[]> {
   try {
-    const result = await query<RecentFact>(`
+    const result = await prisma.$queryRawUnsafe<RecentFact[]>(`
       SELECT id, fact_text, fact_type, is_featured, created_at
       FROM geology_facts
       ORDER BY created_at DESC
       LIMIT 5
     `);
-    return result.rows;
+    return result;
   } catch {
     return [];
   }

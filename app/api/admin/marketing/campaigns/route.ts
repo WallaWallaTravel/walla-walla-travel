@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { query } from '@/lib/db'
+import { query } from '@/lib/prisma-query'
 import { logger } from '@/lib/logger'
 import { socialIntelligenceService } from '@/lib/services/social-intelligence.service'
 import Anthropic from '@anthropic-ai/sdk'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import type { AuthSession } from '@/lib/api/middleware/auth-wrapper'
-import { withCSRF } from '@/lib/api/middleware/csrf';
 
 const BodySchema = z.object({
   name: z.string().min(1).max(255),
@@ -71,8 +70,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
 });
 
 // POST - Create campaign with AI-generated content items
-export const POST = withCSRF(
-  withAdminAuth(async (request: NextRequest, session: AuthSession) => {
+export const POST = withAdminAuth(async (request: NextRequest, session: AuthSession) => {
   const body = BodySchema.parse(await request.json())
   const { name, theme, channels, startDate, endDate, targetAudience } = body
 
@@ -355,4 +353,3 @@ Return ONLY JSON object, no other text.`
     itemsGenerated: contentItems.length,
   })
 })
-);

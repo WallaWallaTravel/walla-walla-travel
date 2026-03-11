@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { query } from '@/lib/db'
+import { query } from '@/lib/prisma-query'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler'
-import { withCSRF } from '@/lib/api/middleware/csrf'
 import { z } from 'zod'
 
 const PatchBodySchema = z.object({
@@ -129,4 +128,4 @@ const patchHandler = withAdminAuth(async (request: NextRequest, _session) => {
 })
 
 export const GET = getHandler
-export const PATCH = withCSRF(patchHandler)
+export const PATCH = patchHandler

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
-import { withCSRF } from '@/lib/api/middleware/csrf';
+
 import { z } from 'zod';
 
 const BodySchema = z.object({
@@ -19,22 +19,24 @@ export const GET = withErrorHandling(async (request: NextRequest): Promise<NextR
   const { searchParams } = new URL(request.url);
   const activeOnly = searchParams.get('active') === 'true';
 
-  let sqlQuery = `
-    SELECT id, name, description, price, is_active, display_order, icon, created_at, updated_at
-    FROM additional_services
-  `;
+  let rows: Record<string, unknown>[];
 
   if (activeOnly) {
-    sqlQuery += ' WHERE is_active = TRUE';
+    rows = await prisma.$queryRaw<Record<string, unknown>[]>`
+      SELECT id, name, description, price, is_active, display_order, icon, created_at, updated_at
+      FROM additional_services
+      WHERE is_active = TRUE
+      ORDER BY display_order ASC, name ASC`;
+  } else {
+    rows = await prisma.$queryRaw<Record<string, unknown>[]>`
+      SELECT id, name, description, price, is_active, display_order, icon, created_at, updated_at
+      FROM additional_services
+      ORDER BY display_order ASC, name ASC`;
   }
-
-  sqlQuery += ' ORDER BY display_order ASC, name ASC';
-
-  const result = await query(sqlQuery);
 
   return NextResponse.json({
     success: true,
-    data: result.rows
+    data: rows
   });
 });
 
@@ -42,10 +44,10 @@ export const GET = withErrorHandling(async (request: NextRequest): Promise<NextR
  * POST /api/additional-services
  * Create a new additional service
  */
-export const POST = withCSRF(
+export const POST =
   withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
   const body = BodySchema.parse(await request.json());
-  const { name, description, price, icon = '✨' } = body;
+  const { name, description, price, icon = '\u2728' } = body;
 
   // Validation
   if (!name || !price) {
@@ -57,23 +59,21 @@ export const POST = withCSRF(
   }
 
   // Get next display order
-  const orderResult = await query(
-    'SELECT COALESCE(MAX(display_order), 0) + 1 as next_order FROM additional_services'
-  );
-  const displayOrder = orderResult.rows[0].next_order;
+  const orderResult = await prisma.$queryRaw<{ next_order: number }[]>`
+    SELECT COALESCE(MAX(display_order), 0) + 1 as next_order FROM additional_services`;
+  const displayOrder = orderResult[0].next_order;
+
+  const descValue = description || null;
 
   // Insert
-  const result = await query(
-    `INSERT INTO additional_services (name, description, price, icon, display_order)
-     VALUES ($1, $2, $3, $4, $5)
-     RETURNING *`,
-    [name, description || null, price, icon, displayOrder]
-  );
+  const result = await prisma.$queryRaw<Record<string, unknown>[]>`
+    INSERT INTO additional_services (name, description, price, icon, display_order)
+    VALUES (${name}, ${descValue}, ${price}, ${icon}, ${displayOrder})
+    RETURNING *`;
 
   return NextResponse.json({
     success: true,
-    data: result.rows[0],
+    data: result[0],
     message: 'Additional service created successfully'
   }, { status: 201 });
-})
-);
+});

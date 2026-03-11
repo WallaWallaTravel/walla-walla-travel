@@ -9,7 +9,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { query } from '@/lib/prisma-query'
 import { logger } from '@/lib/logger';
 import { sendEmail } from '@/lib/email';
 import { withCronAuth } from '@/lib/api/middleware/cron-auth';

@@ -4,9 +4,8 @@ import { withErrorHandling, BadRequestError, NotFoundError, RouteContext } from 
 import { getBrandStripeClient, getBrandStripePublishableKey } from '@/lib/stripe-brands';
 import { getBrandEmailConfig } from '@/lib/email-brands';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
-import { queryOne } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
-import { withCSRF } from '@/lib/api/middleware/csrf';
 import { handleStripeError } from '@/lib/stripe/error-handler';
 
 interface RouteParams { token: string; guestToken: string; }
@@ -15,8 +14,7 @@ interface RouteParams { token: string; guestToken: string; }
  * POST /api/my-trip/[token]/guest/[guestToken]/create-payment
  * Create Stripe PaymentIntent for one guest's share
  */
-export const POST = withCSRF(
-  withErrorHandling<unknown, RouteParams>(
+export const POST = withErrorHandling<unknown, RouteParams>(
   async (request: NextRequest, context) => {
     const { token, guestToken } = await (context as RouteContext<RouteParams>).params;
 
@@ -27,15 +25,14 @@ export const POST = withCSRF(
       throw new BadRequestError('Individual billing is not enabled for this trip');
     }
 
-    const guest = await queryOne<{
+    const guestRows = await prisma.$queryRaw<{
       id: number; name: string; email: string | null;
       amount_owed: string; amount_paid: string; payment_status: string; is_sponsored: boolean;
-    }>(
-      `SELECT id, name, email, amount_owed, amount_paid, payment_status, is_sponsored
-       FROM trip_proposal_guests
-       WHERE trip_proposal_id = $1 AND guest_access_token = $2`,
-      [proposal.id, guestToken]
-    );
+    }[]>`
+      SELECT id, name, email, amount_owed, amount_paid, payment_status, is_sponsored
+      FROM trip_proposal_guests
+      WHERE trip_proposal_id = ${proposal.id} AND guest_access_token = ${guestToken}`;
+    const guest = guestRows[0] ?? null;
 
     if (!guest) throw new NotFoundError('Guest not found');
     if (guest.is_sponsored) throw new BadRequestError('This guest is sponsored — no payment required');
@@ -104,5 +101,4 @@ export const POST = withCSRF(
       },
     });
   }
-)
 );

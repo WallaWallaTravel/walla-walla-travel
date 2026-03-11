@@ -1,7 +1,7 @@
 // AI Model Manager
 // Manages active model configuration and provider instantiation
 
-import { pool } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 import { createAIProvider, getProviderAPIKey, ProviderType } from './providers/factory'
 import { AIModelProvider } from './providers/base'
 
@@ -24,26 +24,26 @@ export interface AISettingsRow {
  * Get the active AI model configuration from database
  */
 export async function getActiveModelConfig(): Promise<AISettingsRow> {
-  const result = await pool.query<AISettingsRow>(
-    'SELECT * FROM ai_settings WHERE is_active = true ORDER BY id DESC LIMIT 1'
-  )
+  const rows = await prisma.$queryRaw<AISettingsRow[]>`
+    SELECT * FROM ai_settings WHERE is_active = true ORDER BY id DESC LIMIT 1
+  `
 
-  if (result.rows.length === 0) {
+  if (rows.length === 0) {
     throw new Error('No active AI model configured')
   }
 
-  return result.rows[0]
+  return rows[0]
 }
 
 /**
  * Get the fallback AI model configuration
  */
 export async function getFallbackModelConfig(): Promise<AISettingsRow | null> {
-  const result = await pool.query<AISettingsRow>(
-    'SELECT * FROM ai_settings WHERE is_fallback = true ORDER BY id DESC LIMIT 1'
-  )
+  const rows = await prisma.$queryRaw<AISettingsRow[]>`
+    SELECT * FROM ai_settings WHERE is_fallback = true ORDER BY id DESC LIMIT 1
+  `
 
-  return result.rows[0] || null
+  return rows[0] || null
 }
 
 /**
@@ -53,16 +53,16 @@ export async function getABTestModels(): Promise<{
   modelA: AISettingsRow | null
   modelB: AISettingsRow | null
 }> {
-  const result = await pool.query<AISettingsRow>(
-    `SELECT * FROM ai_settings 
-     WHERE ab_test_enabled = true 
+  const rows = await prisma.$queryRaw<AISettingsRow[]>`
+    SELECT * FROM ai_settings
+     WHERE ab_test_enabled = true
      AND ab_test_group IN ('A', 'B')
-     ORDER BY ab_test_group`
-  )
+     ORDER BY ab_test_group
+  `
 
   return {
-    modelA: result.rows.find(r => r.ab_test_group === 'A') || null,
-    modelB: result.rows.find(r => r.ab_test_group === 'B') || null
+    modelA: rows.find(r => r.ab_test_group === 'A') || null,
+    modelB: rows.find(r => r.ab_test_group === 'B') || null
   }
 }
 

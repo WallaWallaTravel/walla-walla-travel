@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { query } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler'
-import { withCSRF } from '@/lib/api/middleware/csrf'
 import { auditService } from '@/lib/services/audit.service'
 import { z } from 'zod'
 import { invalidateCache } from '@/lib/api/middleware/redis-cache'
@@ -50,33 +49,39 @@ export const GET = withAdminAuth(async (
 
   const id = parseInt(winery_id)
 
-  const result = await query(`
-    SELECT * FROM wineries WHERE id = $1
-  `, [id])
+  const rows = await prisma.$queryRaw<Array<Record<string, unknown>>>`
+    SELECT * FROM wineries WHERE id = ${id}
+  `
 
-  if (result.rows.length === 0) {
+  if (rows.length === 0) {
     throw new NotFoundError('Winery not found')
   }
 
   // Get wines for this winery
-  const winesResult = await query(`
-    SELECT * FROM wines WHERE winery_id = $1 ORDER BY name
-  `, [id]).catch(() => ({ rows: [] }))
+  let winesRows: Array<Record<string, unknown>> = []
+  try {
+    winesRows = await prisma.$queryRaw<Array<Record<string, unknown>>>`
+      SELECT * FROM wines WHERE winery_id = ${id} ORDER BY name
+    `
+  } catch { /* table may not exist */ }
 
   // Get content chunks
-  const contentResult = await query(`
-    SELECT * FROM winery_content WHERE winery_id = $1 ORDER BY content_type
-  `, [id]).catch(() => ({ rows: [] }))
+  let contentRows: Array<Record<string, unknown>> = []
+  try {
+    contentRows = await prisma.$queryRaw<Array<Record<string, unknown>>>`
+      SELECT * FROM winery_content WHERE winery_id = ${id} ORDER BY content_type
+    `
+  } catch { /* table may not exist */ }
 
   return NextResponse.json({
-    winery: result.rows[0],
-    wines: winesResult.rows,
-    content: contentResult.rows
+    winery: rows[0],
+    wines: winesRows,
+    content: contentRows
   })
 })
 
 // PATCH - Update winery
-export const PATCH = withCSRF(
+export const PATCH =
   withAdminAuth(async (
   request: NextRequest,
   _session,
@@ -123,14 +128,15 @@ export const PATCH = withCSRF(
   updates.push(`updated_at = NOW()`)
   values.push(id)
 
-  const result = await query(`
-    UPDATE wineries
+  const rows = await prisma.$queryRawUnsafe<Array<Record<string, unknown>>>(
+    `UPDATE wineries
     SET ${updates.join(', ')}
     WHERE id = $${paramIndex}
-    RETURNING *
-  `, values)
+    RETURNING *`,
+    ...values
+  )
 
-  if (result.rows.length === 0) {
+  if (rows.length === 0) {
     throw new NotFoundError('Winery not found')
   }
 
@@ -138,13 +144,12 @@ export const PATCH = withCSRF(
 
   return NextResponse.json({
     success: true,
-    winery: result.rows[0]
+    winery: rows[0]
   })
 })
-)
 
 // DELETE - Delete winery
-export const DELETE = withCSRF(
+export const DELETE =
   withAdminAuth(async (
   request: NextRequest,
   session,
@@ -154,7 +159,7 @@ export const DELETE = withCSRF(
 
   const id = parseInt(winery_id)
 
-  await query('DELETE FROM wineries WHERE id = $1', [id])
+  await prisma.$executeRaw`DELETE FROM wineries WHERE id = ${id}`
 
   await auditService.logFromRequest(request, parseInt(session.userId), 'resource_deleted', {
     entityType: 'winery',
@@ -168,4 +173,3 @@ export const DELETE = withCSRF(
     message: 'Winery deleted successfully'
   })
 })
-)

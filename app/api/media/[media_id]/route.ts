@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { withErrorHandling, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 
@@ -34,59 +34,47 @@ export const GET = withErrorHandling(async (
   { params }: { params: Promise<{ media_id: string }> }
 ) => {
   const { media_id } = await params;
+  const mediaIdNum = parseInt(media_id, 10);
 
-  const result = await query(
-    `SELECT * FROM media_library WHERE id = $1 AND is_active = TRUE`,
-    [media_id]
-  );
+  const rows = await prisma.$queryRaw<Array<Record<string, unknown>>>`
+    SELECT * FROM media_library WHERE id = ${mediaIdNum} AND is_active = TRUE`;
 
-  if (result.rows.length === 0) {
+  if (rows.length === 0) {
     throw new NotFoundError('Media not found');
   }
 
-  const media = result.rows[0];
+  const media = rows[0];
 
   // Get usage information
-  const usageQueries = await Promise.all([
-    // Proposals using this media
-    query(
-      `SELECT p.id, p.proposal_number, p.title, p.client_name, p.status
+  const [proposalRows, wineryRows, vehicleRows] = await Promise.all([
+    prisma.$queryRaw<Array<Record<string, unknown>>>`
+      SELECT p.id, p.proposal_number, p.title, p.client_name, p.status
        FROM proposals p
        JOIN proposal_media pm ON pm.proposal_id = p.id
-       WHERE pm.media_id = $1
+       WHERE pm.media_id = ${mediaIdNum}
        ORDER BY p.created_at DESC`,
-      [media_id]
-    ),
-    // Wineries linked to this media
-    query(
-      `SELECT w.id, w.name, w.slug
+    prisma.$queryRaw<Array<Record<string, unknown>>>`
+      SELECT w.id, w.name, w.slug
        FROM wineries w
        JOIN winery_media wm ON wm.winery_id = w.id
-       WHERE wm.media_id = $1`,
-      [media_id]
-    ),
-    // Vehicles linked to this media
-    query(
-      `SELECT v.id, v.name, v.license_plate
+       WHERE wm.media_id = ${mediaIdNum}`,
+    prisma.$queryRaw<Array<Record<string, unknown>>>`
+      SELECT v.id, v.name, v.license_plate
        FROM vehicles v
        JOIN vehicle_media vm ON vm.vehicle_id = v.id
-       WHERE vm.media_id = $1`,
-      [media_id]
-    )
+       WHERE vm.media_id = ${mediaIdNum}`,
   ]);
 
   const usage = {
-    proposals: usageQueries[0].rows,
-    wineries: usageQueries[1].rows,
-    vehicles: usageQueries[2].rows,
-    total_uses: usageQueries[0].rows.length + usageQueries[1].rows.length + usageQueries[2].rows.length
+    proposals: proposalRows,
+    wineries: wineryRows,
+    vehicles: vehicleRows,
+    total_uses: proposalRows.length + wineryRows.length + vehicleRows.length
   };
 
   // Increment view count
-  await query(
-    `UPDATE media_library SET view_count = view_count + 1 WHERE id = $1`,
-    [media_id]
-  );
+  await prisma.$executeRaw`
+    UPDATE media_library SET view_count = view_count + 1 WHERE id = ${mediaIdNum}`;
 
   return NextResponse.json({
     success: true,
@@ -107,6 +95,7 @@ export const PUT = withCSRF(
   { params }: { params: Promise<{ media_id: string }> }
 ) => {
   const { media_id } = await params;
+  const mediaIdNum = parseInt(media_id, 10);
   const body = PutBodySchema.parse(await request.json());
 
   const {
@@ -120,40 +109,28 @@ export const PUT = withCSRF(
     display_order
   } = body;
 
-  const result = await query(
-    `UPDATE media_library
+  const result = await prisma.$queryRaw<Array<Record<string, unknown>>>`
+    UPDATE media_library
      SET
-       title = COALESCE($1, title),
-       description = COALESCE($2, description),
-       alt_text = COALESCE($3, alt_text),
-       tags = COALESCE($4, tags),
-       category = COALESCE($5, category),
-       subcategory = COALESCE($6, subcategory),
-       is_hero = COALESCE($7, is_hero),
-       display_order = COALESCE($8, display_order),
+       title = COALESCE(${title ?? null}, title),
+       description = COALESCE(${description ?? null}, description),
+       alt_text = COALESCE(${alt_text ?? null}, alt_text),
+       tags = COALESCE(${tags ?? null}, tags),
+       category = COALESCE(${category ?? null}, category),
+       subcategory = COALESCE(${subcategory ?? null}, subcategory),
+       is_hero = COALESCE(${is_hero ?? null}, is_hero),
+       display_order = COALESCE(${display_order ?? null}, display_order),
        updated_at = NOW()
-     WHERE id = $9 AND is_active = TRUE
-     RETURNING *`,
-    [
-      title,
-      description,
-      alt_text,
-      tags,
-      category,
-      subcategory,
-      is_hero,
-      display_order,
-      media_id
-    ]
-  );
+     WHERE id = ${mediaIdNum} AND is_active = TRUE
+     RETURNING *`;
 
-  if (result.rows.length === 0) {
+  if (result.length === 0) {
     throw new NotFoundError('Media not found');
   }
 
   return NextResponse.json({
     success: true,
-    data: result.rows[0]
+    data: result[0]
   });
 })
 );
@@ -168,6 +145,7 @@ export const PATCH = withCSRF(
   { params }: { params: Promise<{ media_id: string }> }
 ) => {
   const { media_id } = await params;
+  const mediaIdNum = parseInt(media_id, 10);
   const body = PatchBodySchema.parse(await request.json());
 
   const {
@@ -180,38 +158,27 @@ export const PATCH = withCSRF(
     is_hero
   } = body;
 
-  const result = await query(
-    `UPDATE media_library
+  const result = await prisma.$queryRaw<Array<Record<string, unknown>>>`
+    UPDATE media_library
      SET
-       title = COALESCE($1, title),
-       description = COALESCE($2, description),
-       alt_text = COALESCE($3, alt_text),
-       tags = COALESCE($4, tags),
-       category = COALESCE($5, category),
-       subcategory = COALESCE($6, subcategory),
-       is_hero = COALESCE($7, is_hero),
+       title = COALESCE(${title ?? null}, title),
+       description = COALESCE(${description ?? null}, description),
+       alt_text = COALESCE(${alt_text ?? null}, alt_text),
+       tags = COALESCE(${tags ?? null}, tags),
+       category = COALESCE(${category ?? null}, category),
+       subcategory = COALESCE(${subcategory ?? null}, subcategory),
+       is_hero = COALESCE(${is_hero ?? null}, is_hero),
        updated_at = NOW()
-     WHERE id = $8 AND is_active = TRUE
-     RETURNING *`,
-    [
-      title,
-      description,
-      alt_text,
-      tags,
-      category,
-      subcategory,
-      is_hero,
-      media_id
-    ]
-  );
+     WHERE id = ${mediaIdNum} AND is_active = TRUE
+     RETURNING *`;
 
-  if (result.rows.length === 0) {
+  if (result.length === 0) {
     throw new NotFoundError('Media not found');
   }
 
   return NextResponse.json({
     success: true,
-    data: result.rows[0]
+    data: result[0]
   });
 })
 );
@@ -226,16 +193,15 @@ export const DELETE = withCSRF(
   { params }: { params: Promise<{ media_id: string }> }
 ) => {
   const { media_id } = await params;
+  const mediaIdNum = parseInt(media_id, 10);
 
-  const result = await query(
-    `UPDATE media_library
+  const result = await prisma.$queryRaw<Array<{ id: number }>>`
+    UPDATE media_library
      SET is_active = FALSE, updated_at = NOW()
-     WHERE id = $1
-     RETURNING id`,
-    [media_id]
-  );
+     WHERE id = ${mediaIdNum}
+     RETURNING id`;
 
-  if (result.rows.length === 0) {
+  if (result.length === 0) {
     throw new NotFoundError('Media not found');
   }
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { query } from '@/lib/db'
+import { query } from '@/lib/prisma-query'
 import { logger } from '@/lib/logger'
 import { generateAuthUrl, getIntegration } from '@/lib/services/search-console.service'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
@@ -47,7 +47,7 @@ export const GET = withAdminAuth(async (_request: NextRequest, _session) => {
   `).catch(() => ({ rows: [] }))
 
   // Keyword opportunities — queries ranking position 5-20 with decent impressions
-  const keywordOpportunities = await query(`
+  const keywordOpportunities = await query<{ query: string; page_url: string; impressions: number; clicks: number; ctr: number; position: number; data_date: string }>(`
     SELECT DISTINCT ON (query)
       query, page_url, impressions, clicks, ctr, position, data_date
     FROM search_console_data
@@ -60,7 +60,7 @@ export const GET = withAdminAuth(async (_request: NextRequest, _session) => {
 
   // Sort keyword opportunities by impressions desc (best opportunities first)
   const sortedKeywords = keywordOpportunities.rows.sort(
-    (a: { impressions: number }, b: { impressions: number }) => b.impressions - a.impressions
+    (a, b) => b.impressions - a.impressions
   )
 
   // Declining pages — compare last 7 days vs previous 7 days

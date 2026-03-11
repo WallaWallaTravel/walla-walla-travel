@@ -4,7 +4,7 @@ import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper';
 import { NotFoundError, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { competitorMonitoringService } from '@/lib/services/competitor-monitoring.service';
 import type { UpdateChangeStatusInput } from '@/types/competitors';
-import { withCSRF } from '@/lib/api/middleware/csrf';
+
 
 const BodySchema = z.object({
   status: z.enum(['new', 'reviewed', 'actioned', 'dismissed', 'archived']),
@@ -46,6 +46,4 @@ async function putHandler(request: NextRequest, session: AuthSession) {
   });
 }
 
-export const PUT = withCSRF(
-  withAdminAuth(async (request, session) => putHandler(request, session))
-);
+export const PUT = withAdminAuth(async (request, session) => putHandler(request, session));

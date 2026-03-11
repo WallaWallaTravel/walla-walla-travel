@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth, AuthSession, RouteContext } from '@/lib/api/middleware/auth-wrapper';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
-import { queryOne } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
-import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface RouteParams { id: string; guestId: string; }
 
@@ -16,8 +15,7 @@ const RecordPaymentSchema = z.object({
  * POST /api/admin/trip-proposals/[id]/guests/[guestId]/record-payment
  * Record a manual payment for a guest
  */
-export const POST = withCSRF(
-  withAdminAuth(
+export const POST = withAdminAuth(
   async (request: NextRequest, _session: AuthSession, context?) => {
     const { id, guestId } = await (context as RouteContext<RouteParams>).params;
     const proposalId = parseInt(id);
@@ -26,16 +24,12 @@ export const POST = withCSRF(
     const validated = RecordPaymentSchema.parse(body);
 
     // B6 FIX: Verify guest belongs to this proposal
-    const guest = await queryOne(
-      'SELECT id FROM trip_proposal_guests WHERE id = $1 AND trip_proposal_id = $2',
-      [gId, proposalId]
-    );
-    if (!guest) {
+    const guest = await prisma.$queryRaw<{ id: number }[]>`SELECT id FROM trip_proposal_guests WHERE id = ${gId} AND trip_proposal_id = ${proposalId}`;
+    if (guest.length === 0) {
       return NextResponse.json({ success: false, error: 'Guest not found in this proposal' }, { status: 404 });
     }
 
     await tripProposalService.recordManualPayment(gId, validated.amount, validated.notes);
     return NextResponse.json({ success: true });
   }
-)
 );

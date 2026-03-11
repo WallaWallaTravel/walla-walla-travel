@@ -2,10 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { NotFoundError, InternalServerError, BadRequestError } from '@/lib/api-errors';
 import { withAuth } from '@/lib/api/middleware/auth-wrapper';
-import { queryOne, query } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 import { validateBody, CreatePaymentIntentSchema } from '@/lib/api/middleware/validation';
 import { auditService } from '@/lib/services/audit.service';
-import { withCSRF } from '@/lib/api/middleware/csrf';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 import { logger } from '@/lib/logger';
 import { getBrandStripeClient, getBrandStripePublishableKey } from '@/lib/stripe-brands';
@@ -30,26 +29,24 @@ interface Booking {
 /**
  * POST /api/payments/create-intent
  * Create a Stripe payment intent for booking deposit or final payment
- * 
+ *
  * Body: {
  *   booking_number: string,
  *   amount: number,
  *   payment_type: 'deposit' | 'final_payment'
  * }
  */
-export const POST = withCSRF(
-  withRateLimit(rateLimiters.payment)(
+export const POST = withRateLimit(rateLimiters.payment)(
     withAuth(async (request: NextRequest, _session) => {
   // Validate input with Zod schema
   const { booking_number, amount, payment_type } = await validateBody(request, CreatePaymentIntentSchema);
 
   // Get booking details (including brand_id for brand-specific Stripe routing)
-  const booking = await queryOne<Booking>(
-    `SELECT id, booking_number, customer_email, customer_name, total_price, deposit_amount, final_payment_amount, brand_id
-     FROM bookings
-     WHERE booking_number = $1`,
-    [booking_number]
-  );
+  const rows = await prisma.$queryRaw<Booking[]>`
+    SELECT id, booking_number, customer_email, customer_name, total_price, deposit_amount, final_payment_amount, brand_id
+    FROM bookings
+    WHERE booking_number = ${booking_number}`;
+  const booking = rows[0] ?? null;
 
   if (!booking) {
     throw new NotFoundError('Booking');
@@ -109,8 +106,8 @@ export const POST = withCSRF(
   }
 
   // Store payment intent in database
-  await query(
-    `INSERT INTO payments (
+  await prisma.$queryRaw`
+    INSERT INTO payments (
       booking_id,
       customer_id,
       amount,
@@ -123,21 +120,10 @@ export const POST = withCSRF(
       created_at,
       updated_at
     ) VALUES (
-      $1,
-      (SELECT id FROM customers WHERE email = $2 LIMIT 1),
-      $3, $4, $5, 'card', $6, $7, $8, NOW(), NOW()
-    ) RETURNING id`,
-    [
-      booking.id,
-      booking.customer_email,
-      amount,
-      'USD',
-      payment_type,
-      paymentIntent.id,
-      paymentIntent.status,
-      booking.brand_id,
-    ]
-  );
+      ${booking.id},
+      (SELECT id FROM customers WHERE email = ${booking.customer_email} LIMIT 1),
+      ${amount}, ${'USD'}, ${payment_type}, 'card', ${paymentIntent.id}, ${paymentIntent.status}, ${booking.brand_id}, NOW(), NOW()
+    ) RETURNING id`;
 
   // Audit log: payment intent created
   auditService.logFromRequest(request, 0, 'payment_intent_created', {
@@ -160,4 +146,4 @@ export const POST = withCSRF(
     },
     message: 'Payment intent created successfully'
   });
-})));
+}));

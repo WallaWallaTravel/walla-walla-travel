@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { query } from '@/lib/db'
+import { query } from '@/lib/prisma-query'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 
 // GET - Fetch marketing metrics
@@ -27,7 +27,7 @@ async function getHandler(request: NextRequest) {
   `).catch(() => ({ rows: [{ total_leads: '0', new_leads: '0', qualified_leads: '0', converted_leads: '0', hot_leads: '0', leads_this_period: '0' }] }))
 
   // Get booking inquiry metrics (if bookings table exists)
-  const bookingsQuery = await query(`
+  const bookingsQuery = await query<{ total_bookings: string; pending_bookings: string; confirmed_bookings: string; total_revenue: string; bookings_this_period: string }>(`
     SELECT
       COUNT(*) as total_bookings,
       COUNT(*) FILTER (WHERE status = 'pending') as pending_bookings,
@@ -35,55 +35,55 @@ async function getHandler(request: NextRequest) {
       COALESCE(SUM(total_price), 0) as total_revenue,
       COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '${parseInt(period)} days') as bookings_this_period
     FROM bookings
-  `).catch(() => ({ rows: [{ total_bookings: 0, pending_bookings: 0, confirmed_bookings: 0, total_revenue: 0, bookings_this_period: 0 }] }))
+  `).catch(() => ({ rows: [{ total_bookings: '0', pending_bookings: '0', confirmed_bookings: '0', total_revenue: '0', bookings_this_period: '0' }] }))
 
   // Get A/B test metrics
-  const abTestsQuery = await query(`
+  const abTestsQuery = await query<{ total_tests: string; active_tests: string; completed_tests: string }>(`
     SELECT
       COUNT(*) as total_tests,
       COUNT(*) FILTER (WHERE status = 'running') as active_tests,
       COUNT(*) FILTER (WHERE status = 'completed') as completed_tests
     FROM ab_tests
-  `).catch(() => ({ rows: [{ total_tests: 0, active_tests: 0, completed_tests: 0 }] }))
+  `).catch(() => ({ rows: [{ total_tests: '0', active_tests: '0', completed_tests: '0' }] }))
 
   // Get competitor change metrics
-  const competitorQuery = await query(`
+  const competitorQuery = await query<{ unreviewed_changes: string; high_priority_changes: string }>(`
     SELECT
       COUNT(*) FILTER (WHERE status = 'new') as unreviewed_changes,
       COUNT(*) FILTER (WHERE significance = 'high' AND status = 'new') as high_priority_changes
     FROM competitor_changes
-  `).catch(() => ({ rows: [{ unreviewed_changes: 0, high_priority_changes: 0 }] }))
+  `).catch(() => ({ rows: [{ unreviewed_changes: '0', high_priority_changes: '0' }] }))
 
   // Get content suggestion metrics
-  const suggestionsQuery = await query(`
+  const suggestionsQuery = await query<{ pending: string; today: string }>(`
     SELECT
       COUNT(*) FILTER (WHERE status = 'pending') as pending,
       COUNT(*) FILTER (WHERE status = 'pending' AND suggestion_date = CURRENT_DATE) as today
     FROM content_suggestions
-  `).catch(() => ({ rows: [{ pending: 0, today: 0 }] }))
+  `).catch(() => ({ rows: [{ pending: '0', today: '0' }] }))
 
   // Get marketing strategy metrics
-  const strategiesQuery = await query(`
+  const strategiesQuery = await query<{ draft: string; active: string }>(`
     SELECT
       COUNT(*) FILTER (WHERE status = 'draft') as draft,
       COUNT(*) FILTER (WHERE status = 'active') as active
     FROM marketing_strategies
-  `).catch(() => ({ rows: [{ draft: 0, active: 0 }] }))
+  `).catch(() => ({ rows: [{ draft: '0', active: '0' }] }))
 
   // Get campaign metrics
-  const campaignsQuery = await query(`
+  const campaignsQuery = await query<{ draft: string }>(`
     SELECT
       COUNT(*) FILTER (WHERE status = 'draft') as draft
     FROM marketing_campaigns
-  `).catch(() => ({ rows: [{ draft: 0 }] }))
+  `).catch(() => ({ rows: [{ draft: '0' }] }))
 
   // Get scheduled posts count
-  const socialQuery = await query(`
+  const socialQuery = await query<{ scheduled_posts: string; published_this_week: string }>(`
     SELECT
       COUNT(*) FILTER (WHERE status = 'scheduled') as scheduled_posts,
       COUNT(*) FILTER (WHERE status = 'published' AND published_at > NOW() - INTERVAL '7 days') as published_this_week
     FROM scheduled_posts
-  `).catch(() => ({ rows: [{ scheduled_posts: 0, published_this_week: 0 }] }))
+  `).catch(() => ({ rows: [{ scheduled_posts: '0', published_this_week: '0' }] }))
 
   // Calculate conversion rate
   const leads = leadsQuery.rows[0] || { total_leads: '0', converted_leads: '0' }
@@ -92,7 +92,7 @@ async function getHandler(request: NextRequest) {
   const conversionRate = ((convertedLeads / totalLeads) * 100).toFixed(1)
 
   // Daily lead trend (last 7 days)
-  const leadTrendQuery = await query(`
+  const leadTrendQuery = await query<{ date: string; count: string }>(`
     SELECT
       DATE(created_at) as date,
       COUNT(*) as count
@@ -100,10 +100,10 @@ async function getHandler(request: NextRequest) {
     WHERE created_at > NOW() - INTERVAL '7 days'
     GROUP BY DATE(created_at)
     ORDER BY date
-  `).catch(() => ({ rows: [] }))
+  `).catch(() => ({ rows: [] as { date: string; count: string }[] }))
 
   // Lead source breakdown
-  const sourceBreakdownQuery = await query(`
+  const sourceBreakdownQuery = await query<{ source: string; count: string }>(`
     SELECT
       source,
       COUNT(*) as count
@@ -111,7 +111,7 @@ async function getHandler(request: NextRequest) {
     GROUP BY source
     ORDER BY count DESC
     LIMIT 5
-  `).catch(() => ({ rows: [] }))
+  `).catch(() => ({ rows: [] as { source: string; count: string }[] }))
 
   return NextResponse.json({
     summary: {

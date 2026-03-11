@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { query } from '@/lib/db'
+import { query } from '@/lib/prisma-query'
 import { logger } from '@/lib/logger'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import type { AuthSession } from '@/lib/api/middleware/auth-wrapper'
-import { withCSRF } from '@/lib/api/middleware/csrf';
 import { auditService } from '@/lib/services/audit.service';
 
 // POST - Approve campaign: creates scheduled_posts from social items, marks items as scheduled
-export const POST = withCSRF(
-  withAdminAuth(async (
+export const POST = withAdminAuth(async (
   request: NextRequest,
   session: AuthSession,
   context
@@ -115,4 +113,3 @@ export const POST = withCSRF(
     message: `Campaign approved. ${scheduledCount} social posts scheduled.`,
   })
 })
-);

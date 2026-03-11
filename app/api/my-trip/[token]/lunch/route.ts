@@ -14,7 +14,6 @@ import {
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import { lunchSupplierService } from '@/lib/services/lunch-supplier.service';
 import { SubmitLunchOrderSchema } from '@/lib/types/lunch-supplier';
-import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface RouteParams {
   token: string;
@@ -77,8 +76,7 @@ export const GET = withErrorHandling<unknown, RouteParams>(
  * Submit or update a lunch order.
  * Body: { order_id: number, guest_orders: [...], special_requests?: string }
  */
-export const POST = withCSRF(
-  withErrorHandling<unknown, RouteParams>(
+export const POST = withErrorHandling<unknown, RouteParams>(
   async (request: NextRequest, context: RouteContext<RouteParams>) => {
     const { token } = await context.params;
 
@@ -132,5 +130,4 @@ export const POST = withCSRF(
       message: 'Lunch order submitted successfully',
     });
   }
-)
 );

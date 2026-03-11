@@ -5,7 +5,7 @@
 
 import { NextResponse } from 'next/server';
 import { withErrorHandling } from '@/lib/api-errors';
-import { queryMany } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 import { withRedisCache } from '@/lib/api/middleware/redis-cache';
 
 interface Restaurant {
@@ -23,8 +23,8 @@ interface Restaurant {
 
 export const GET = withErrorHandling(async () => {
   const data = await withRedisCache('restaurants:list', 300, async () => {
-    const restaurants = await queryMany<Restaurant>(`
-      SELECT 
+    const restaurants = await prisma.$queryRaw<Restaurant[]>`
+      SELECT
         id,
         name,
         cuisine_type,
@@ -38,7 +38,7 @@ export const GET = withErrorHandling(async () => {
       FROM restaurants
       WHERE is_active = true
       ORDER BY name
-    `);
+    `;
 
     return {
       version: 'v1',

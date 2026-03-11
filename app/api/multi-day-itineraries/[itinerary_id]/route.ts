@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { withErrorHandling, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 
@@ -54,22 +54,21 @@ export const GET = withErrorHandling(async (
   { params }: { params: Promise<{ itinerary_id: string }> }
 ) => {
   const { itinerary_id } = await params;
+  const itineraryId = parseInt(itinerary_id);
 
   // Get itinerary
-  const itineraryResult = await query(
-    'SELECT * FROM itineraries WHERE id = $1',
-    [itinerary_id]
-  );
+  const itineraryRows = await prisma.$queryRaw<Record<string, unknown>[]>`
+    SELECT * FROM itineraries WHERE id = ${itineraryId}`;
 
-  if (itineraryResult.rows.length === 0) {
+  if (itineraryRows.length === 0) {
     throw new NotFoundError('Itinerary not found');
   }
 
-  const itinerary = itineraryResult.rows[0];
+  const itinerary = itineraryRows[0];
 
   // Get days with activities
-  const daysResult = await query(
-    `SELECT
+  const days = await prisma.$queryRaw<Record<string, unknown>[]>`
+    SELECT
       d.*,
       json_agg(
         json_build_object(
@@ -97,13 +96,9 @@ export const GET = withErrorHandling(async (
       ) FILTER (WHERE a.id IS NOT NULL) as activities
     FROM itinerary_days d
     LEFT JOIN itinerary_activities a ON d.id = a.itinerary_day_id
-    WHERE d.itinerary_id = $1
+    WHERE d.itinerary_id = ${itineraryId}
     GROUP BY d.id
-    ORDER BY d.display_order`,
-    [itinerary_id]
-  );
-
-  const days = daysResult.rows;
+    ORDER BY d.display_order`;
 
   return NextResponse.json({
     itinerary,
@@ -118,112 +113,95 @@ export const PUT = withCSRF(
   { params }: { params: Promise<{ itinerary_id: string }> }
 ) => {
   const { itinerary_id } = await params;
+  const itineraryId = parseInt(itinerary_id);
 
   const body = PutBodySchema.parse(await request.json());
   const { itinerary, days } = body;
 
-  await query('BEGIN');
+  await prisma.$transaction(async (tx) => {
+    // Update itinerary
+    if (itinerary) {
+      const clientName = itinerary.client_name ?? null;
+      const clientEmail = itinerary.client_email ?? null;
+      const partySize = itinerary.party_size ?? null;
+      const startDate = itinerary.start_date ?? null;
+      const endDate = itinerary.end_date ?? null;
+      const status = itinerary.status ?? null;
+      const internalNotes = itinerary.internal_notes ?? null;
+      const clientNotes = itinerary.client_notes ?? null;
 
-  // Update itinerary
-  if (itinerary) {
-    await query(
-      `UPDATE itineraries
-       SET title = $1,
-           client_name = $2,
-           client_email = $3,
-           party_size = $4,
-           start_date = $5,
-           end_date = $6,
-           status = $7,
-           internal_notes = $8,
-           client_notes = $9,
-           updated_at = NOW()
-       WHERE id = $10`,
-      [
-        itinerary.title,
-        itinerary.client_name,
-        itinerary.client_email,
-        itinerary.party_size,
-        itinerary.start_date,
-        itinerary.end_date,
-        itinerary.status,
-        itinerary.internal_notes,
-        itinerary.client_notes,
-        itinerary_id
-      ]
-    );
-  }
+      await tx.$executeRaw`
+        UPDATE itineraries
+        SET title = ${itinerary.title},
+            client_name = ${clientName},
+            client_email = ${clientEmail},
+            party_size = ${partySize},
+            start_date = ${startDate},
+            end_date = ${endDate},
+            status = ${status},
+            internal_notes = ${internalNotes},
+            client_notes = ${clientNotes},
+            updated_at = NOW()
+        WHERE id = ${itineraryId}`;
+    }
 
-  // Update days and activities
-  if (days && Array.isArray(days)) {
-    for (const day of days) {
-      // Upsert day
-      const dayResult = await query(
-        `INSERT INTO itinerary_days
-         (id, itinerary_id, day_number, date, title, description, display_order)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
-         ON CONFLICT (id) DO UPDATE SET
-           day_number = $3,
-           date = $4,
-           title = $5,
-           description = $6,
-           display_order = $7,
-           updated_at = NOW()
-         RETURNING id`,
-        [
-          (day.id && day.id > 1000000000000) ? null : (day.id ?? null), // Temp IDs are timestamps
-          itinerary_id,
-          day.day_number,
-          day.date,
-          day.title,
-          day.description,
-          day.display_order
-        ]
-      );
+    // Update days and activities
+    if (days && Array.isArray(days)) {
+      for (const day of days) {
+        // Upsert day
+        const dayIdValue = (day.id && day.id > 1000000000000) ? null : (day.id ?? null);
+        const dayDate = day.date ?? null;
+        const dayTitle = day.title ?? null;
+        const dayDescription = day.description ?? null;
 
-      const dayId = dayResult.rows[0].id;
+        const dayResult = await tx.$queryRaw<{ id: number }[]>`
+          INSERT INTO itinerary_days
+          (id, itinerary_id, day_number, date, title, description, display_order)
+          VALUES (${dayIdValue}, ${itineraryId}, ${day.day_number}, ${dayDate}, ${dayTitle}, ${dayDescription}, ${day.display_order})
+          ON CONFLICT (id) DO UPDATE SET
+            day_number = ${day.day_number},
+            date = ${dayDate},
+            title = ${dayTitle},
+            description = ${dayDescription},
+            display_order = ${day.display_order},
+            updated_at = NOW()
+          RETURNING id`;
 
-      // Delete existing activities for this day
-      await query(
-        'DELETE FROM itinerary_activities WHERE itinerary_day_id = $1',
-        [dayId]
-      );
+        const dayId = dayResult[0].id;
 
-      // Insert activities
-      if (day.activities && Array.isArray(day.activities)) {
-        for (const activity of day.activities) {
-          await query(
-            `INSERT INTO itinerary_activities
-             (itinerary_day_id, activity_type, start_time, end_time, duration_minutes,
-              location_name, location_address, location_type, pickup_location, dropoff_location,
-              winery_id, tasting_included, tasting_fee, title, description, notes, display_order)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
-            [
-              dayId,
-              activity.activity_type,
-              activity.start_time,
-              activity.end_time,
-              activity.duration_minutes,
-              activity.location_name,
-              activity.location_address,
-              activity.location_type,
-              activity.pickup_location,
-              activity.dropoff_location,
-              activity.winery_id,
-              activity.tasting_included,
-              activity.tasting_fee,
-              activity.title,
-              activity.description,
-              activity.notes,
-              activity.display_order
-            ]
-          );
+        // Delete existing activities for this day
+        await tx.$executeRaw`DELETE FROM itinerary_activities WHERE itinerary_day_id = ${dayId}`;
+
+        // Insert activities
+        if (day.activities && Array.isArray(day.activities)) {
+          for (const activity of day.activities) {
+            const startTime = activity.start_time ?? null;
+            const endTime = activity.end_time ?? null;
+            const durationMinutes = activity.duration_minutes ?? null;
+            const locationName = activity.location_name ?? null;
+            const locationAddress = activity.location_address ?? null;
+            const locationType = activity.location_type ?? null;
+            const pickupLocation = activity.pickup_location ?? null;
+            const dropoffLocation = activity.dropoff_location ?? null;
+            const wineryId = activity.winery_id ?? null;
+            const tastingIncluded = activity.tasting_included ?? null;
+            const tastingFee = activity.tasting_fee ?? null;
+            const actTitle = activity.title ?? null;
+            const actDescription = activity.description ?? null;
+            const actNotes = activity.notes ?? null;
+            const displayOrder = activity.display_order ?? null;
+
+            await tx.$executeRaw`
+              INSERT INTO itinerary_activities
+              (itinerary_day_id, activity_type, start_time, end_time, duration_minutes,
+               location_name, location_address, location_type, pickup_location, dropoff_location,
+               winery_id, tasting_included, tasting_fee, title, description, notes, display_order)
+              VALUES (${dayId}, ${activity.activity_type}, ${startTime}, ${endTime}, ${durationMinutes}, ${locationName}, ${locationAddress}, ${locationType}, ${pickupLocation}, ${dropoffLocation}, ${wineryId}, ${tastingIncluded}, ${tastingFee}, ${actTitle}, ${actDescription}, ${actNotes}, ${displayOrder})`;
+          }
         }
       }
     }
-  }
-
-  await query('COMMIT');
+  });
 
   return NextResponse.json({ success: true });
 })
@@ -236,8 +214,9 @@ export const DELETE = withCSRF(
   { params }: { params: Promise<{ itinerary_id: string }> }
 ) => {
   const { itinerary_id } = await params;
+  const itineraryId = parseInt(itinerary_id);
 
-  await query('DELETE FROM itineraries WHERE id = $1', [itinerary_id]);
+  await prisma.$executeRaw`DELETE FROM itineraries WHERE id = ${itineraryId}`;
   return NextResponse.json({ success: true });
 })
 );

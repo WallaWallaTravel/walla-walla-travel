@@ -7,8 +7,8 @@
 import { getSession } from '@/lib/auth/session';
 import { canAccessGeology } from '@/lib/auth/roles';
 import { redirect, notFound } from 'next/navigation';
-import { query } from '@/lib/db';
 import { FactEditor } from '../FactEditor';
+import { prisma } from '@/lib/prisma';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -26,11 +26,9 @@ interface FactData {
 
 async function getFact(id: number): Promise<FactData | null> {
   try {
-    const result = await query<FactData>(
-      'SELECT id, fact_text, context, fact_type, topic_id, display_order, is_featured FROM geology_facts WHERE id = $1',
-      [id]
-    );
-    return result.rows[0] || null;
+    const result = await prisma.$queryRawUnsafe<FactData[]>(
+      'SELECT id, fact_text, context, fact_type, topic_id, display_order, is_featured FROM geology_facts WHERE id = $1', id);
+    return result[0] || null;
   } catch {
     return null;
   }

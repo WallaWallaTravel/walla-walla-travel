@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth, AuthSession, RouteContext } from '@/lib/api/middleware/auth-wrapper';
-import { withCSRF } from '@/lib/api/middleware/csrf';
-import { queryOne } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 import { sendEmail } from '@/lib/email';
 import { renderPartnerRequestEmail } from '@/lib/email/templates/partner-request';
 import { partnerRequestService } from '@/lib/services/partner-request.service';
@@ -16,8 +15,7 @@ interface RouteParams { id: string; stopId: string; }
  * Compose and send a partner booking request email.
  * Creates a token, sends branded email via Resend, logs the interaction.
  */
-export const POST = withCSRF(
-  withAdminAuth(
+export const POST = withAdminAuth(
     async (request: NextRequest, session: AuthSession, context?) => {
       const { id, stopId } = await (context as RouteContext<RouteParams>).params;
       const proposalId = parseInt(id, 10);
@@ -36,7 +34,7 @@ export const POST = withCSRF(
       }
 
       // Get stop + proposal details for email template
-      const stopDetails = await queryOne<{
+      const stopDetailsRows = await prisma.$queryRaw<{
         venue_name: string;
         stop_type: string;
         date: string | null;
@@ -44,8 +42,7 @@ export const POST = withCSRF(
         party_size: number;
         duration_minutes: number | null;
         customer_name: string;
-      }>(
-        `SELECT
+      }[]>`SELECT
           COALESCE(s.custom_name, w.name, r.name, h.name, 'Venue') as venue_name,
           s.stop_type,
           d.date::text as date,
@@ -59,9 +56,9 @@ export const POST = withCSRF(
          LEFT JOIN wineries w ON w.id = s.winery_id
          LEFT JOIN restaurants r ON r.id = s.restaurant_id
          LEFT JOIN hotels h ON h.id = s.hotel_id
-         WHERE s.id = $1 AND d.trip_proposal_id = $2`,
-        [stopIdNum, proposalId]
-      );
+         WHERE s.id = ${stopIdNum} AND d.trip_proposal_id = ${proposalId}`;
+
+      const stopDetails = stopDetailsRows[0] ?? null;
 
       if (!stopDetails) {
         return NextResponse.json(
@@ -172,5 +169,4 @@ export const POST = withCSRF(
         },
       });
     }
-  )
 );

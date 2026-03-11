@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { NotFoundError, BadRequestError } from '@/lib/api/middleware/error-handler';
-import { query } from '@/lib/db';
 import { z } from 'zod';
 import type { CrmDealWithRelations, UpdateDealData } from '@/types/crm';
-import { withCSRF } from '@/lib/api/middleware/csrf';
+import { prisma } from '@/lib/prisma';
 
 /**
  * GET /api/admin/crm/deals/[id]
@@ -21,7 +20,7 @@ export const GET = withAdminAuth(async (
   }
 
   // Get deal with relations
-  const result = await query<CrmDealWithRelations>(
+  const result = await prisma.$queryRawUnsafe<CrmDealWithRelations[]>(
     `SELECT
       d.*,
       c.name as contact_name,
@@ -38,16 +37,14 @@ export const GET = withAdminAuth(async (
     JOIN crm_pipeline_stages ps ON d.stage_id = ps.id
     LEFT JOIN crm_deal_types dt ON d.deal_type_id = dt.id
     LEFT JOIN users u ON d.assigned_to = u.id
-    WHERE d.id = $1`,
-    [dealId]
-  );
+    WHERE d.id = $1`, dealId);
 
-  if (result.rows.length === 0) {
+  if (result.length === 0) {
     throw new NotFoundError('Deal not found');
   }
 
   // Get activities for this deal
-  const activitiesResult = await query(
+  const activitiesResult = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
     `SELECT
       a.*,
       u.name as performed_by_name
@@ -60,7 +57,7 @@ export const GET = withAdminAuth(async (
   );
 
   // Get tasks for this deal
-  const tasksResult = await query(
+  const tasksResult = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
     `SELECT
       t.*,
       u.name as assigned_user_name
@@ -74,7 +71,7 @@ export const GET = withAdminAuth(async (
   );
 
   // Get available pipeline stages for this deal's template
-  const stagesResult = await query(
+  const stagesResult = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
     `SELECT ps.*
      FROM crm_pipeline_stages ps
      WHERE ps.template_id = (
@@ -83,15 +80,15 @@ export const GET = withAdminAuth(async (
        WHERE ps2.id = $1
      )
      ORDER BY ps.sort_order`,
-    [result.rows[0].stage_id]
+    [result[0].stage_id]
   );
 
   return NextResponse.json({
     success: true,
-    deal: result.rows[0],
-    activities: activitiesResult.rows,
-    tasks: tasksResult.rows,
-    availableStages: stagesResult.rows,
+    deal: result[0],
+    activities: activitiesResult,
+    tasks: tasksResult,
+    availableStages: stagesResult,
     timestamp: new Date().toISOString(),
   });
 });
@@ -121,8 +118,7 @@ const PostBodySchema = z.object({
  * PATCH /api/admin/crm/deals/[id]
  * Update a deal
  */
-export const PATCH = withCSRF(
-  withAdminAuth(async (
+export const PATCH = withAdminAuth(async (
   request: NextRequest, _session, context
 ) => {
   const { id } = await context!.params;
@@ -159,32 +155,30 @@ export const PATCH = withCSRF(
 
   params.push(dealId);
 
-  const result = await query(
+  const result = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
     `UPDATE crm_deals
      SET ${updates.join(', ')}, updated_at = NOW()
      WHERE id = $${paramIndex}
      RETURNING *`,
-    params
+    ...params
   );
 
-  if (result.rows.length === 0) {
+  if (result.length === 0) {
     throw new NotFoundError('Deal not found');
   }
 
   return NextResponse.json({
     success: true,
-    deal: result.rows[0],
+    deal: result[0],
     timestamp: new Date().toISOString(),
   });
-})
-);
+});
 
 /**
  * POST /api/admin/crm/deals/[id]/win
  * Mark a deal as won
  */
-export const POST = withCSRF(
-  withAdminAuth(async (
+export const POST = withAdminAuth(async (
   request: NextRequest, session, context
 ) => {
   const { id } = await context!.params;
@@ -199,7 +193,7 @@ export const POST = withCSRF(
 
   if (action === 'win') {
     // Get won stage ID
-    const wonStageResult = await query<{ id: number }>(
+    const wonStageResult = await prisma.$queryRawUnsafe<{ id: number }[]>(
       `SELECT ps.id
        FROM crm_pipeline_stages ps
        WHERE ps.template_id = (
@@ -212,45 +206,45 @@ export const POST = withCSRF(
       [dealId]
     );
 
-    if (wonStageResult.rows.length === 0) {
+    if (wonStageResult.length === 0) {
       throw new BadRequestError('No won stage found for this pipeline');
     }
 
-    const result = await query(
+    const result = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
       `UPDATE crm_deals
        SET stage_id = $1, won_at = NOW(), actual_value = COALESCE($2, estimated_value), updated_at = NOW()
        WHERE id = $3
        RETURNING *`,
-      [wonStageResult.rows[0].id, actual_value, dealId]
+      [wonStageResult[0].id, actual_value, dealId]
     );
 
-    if (result.rows.length === 0) {
+    if (result.length === 0) {
       throw new NotFoundError('Deal not found');
     }
 
     // Update contact lifecycle to customer
-    await query(
+    await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
       `UPDATE crm_contacts
        SET lifecycle_stage = 'customer', updated_at = NOW()
        WHERE id = $1`,
-      [result.rows[0].contact_id]
+      [result[0].contact_id]
     );
 
     // Log activity
-    await query(
+    await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
       `INSERT INTO crm_activities (contact_id, deal_id, activity_type, subject, performed_by, source_type)
        VALUES ($1, $2, 'system', 'Deal won', $3, 'manual')`,
-      [result.rows[0].contact_id, dealId, parseInt(session.userId)]
+      [result[0].contact_id, dealId, parseInt(session.userId)]
     );
 
     return NextResponse.json({
       success: true,
-      deal: result.rows[0],
+      deal: result[0],
       timestamp: new Date().toISOString(),
     });
   } else if (action === 'lose') {
     // Get lost stage ID
-    const lostStageResult = await query<{ id: number }>(
+    const lostStageResult = await prisma.$queryRawUnsafe<{ id: number }[]>(
       `SELECT ps.id
        FROM crm_pipeline_stages ps
        WHERE ps.template_id = (
@@ -263,36 +257,35 @@ export const POST = withCSRF(
       [dealId]
     );
 
-    if (lostStageResult.rows.length === 0) {
+    if (lostStageResult.length === 0) {
       throw new BadRequestError('No lost stage found for this pipeline');
     }
 
-    const result = await query(
+    const result = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
       `UPDATE crm_deals
        SET stage_id = $1, lost_at = NOW(), lost_reason = $2, updated_at = NOW()
        WHERE id = $3
        RETURNING *`,
-      [lostStageResult.rows[0].id, lost_reason, dealId]
+      [lostStageResult[0].id, lost_reason, dealId]
     );
 
-    if (result.rows.length === 0) {
+    if (result.length === 0) {
       throw new NotFoundError('Deal not found');
     }
 
     // Log activity
-    await query(
+    await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
       `INSERT INTO crm_activities (contact_id, deal_id, activity_type, subject, body, performed_by, source_type)
        VALUES ($1, $2, 'system', 'Deal lost', $3, $4, 'manual')`,
-      [result.rows[0].contact_id, dealId, lost_reason, parseInt(session.userId)]
+      [result[0].contact_id, dealId, lost_reason, parseInt(session.userId)]
     );
 
     return NextResponse.json({
       success: true,
-      deal: result.rows[0],
+      deal: result[0],
       timestamp: new Date().toISOString(),
     });
   }
 
   throw new BadRequestError('Invalid action. Use "win" or "lose"');
-})
-);
+});

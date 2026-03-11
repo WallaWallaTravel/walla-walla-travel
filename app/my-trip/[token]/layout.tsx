@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import { queryOne } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 import MyTripClientLayout from './MyTripClientLayout';
 
 interface LayoutProps {
@@ -24,12 +24,11 @@ export async function generateMetadata({ params }: LayoutProps): Promise<Metadat
     };
   }
 
-  const proposal = await queryOne<ProposalRow>(
-    `SELECT customer_name, trip_type, party_size, trip_title
-     FROM trip_proposals
-     WHERE access_token = $1`,
-    [token]
-  );
+  const rows = await prisma.$queryRaw<ProposalRow[]>`
+    SELECT customer_name, trip_type, party_size, trip_title
+    FROM trip_proposals
+    WHERE access_token = ${token}`;
+  const proposal = rows[0] ?? null;
 
   if (!proposal) {
     return {

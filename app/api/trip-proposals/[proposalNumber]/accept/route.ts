@@ -9,7 +9,6 @@ import { withErrorHandling, RouteContext } from '@/lib/api/middleware/error-hand
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import { tripProposalEmailService } from '@/lib/services/trip-proposal-email.service';
 import { z } from 'zod';
-import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface RouteParams {
   proposalNumber: string;
@@ -26,8 +25,7 @@ const AcceptSchema = z.object({
  * POST /api/trip-proposals/[proposalNumber]/accept
  * Client accepts the proposal with signature
  */
-export const POST = withCSRF(
-  withErrorHandling<unknown, RouteParams>(
+export const POST = withErrorHandling<unknown, RouteParams>(
   async (request: NextRequest, context: RouteContext<RouteParams>) => {
     const { proposalNumber } = await context.params;
 
@@ -123,5 +121,4 @@ export const POST = withCSRF(
       message: 'Proposal accepted successfully',
     });
   }
-)
 );

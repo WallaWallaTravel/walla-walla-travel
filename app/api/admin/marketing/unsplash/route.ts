@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { unsplashService, UnsplashPhoto } from '@/lib/services/unsplash.service'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError } from '@/lib/api/middleware/error-handler'
-import { withCSRF } from '@/lib/api/middleware/csrf'
+
 import { z } from 'zod'
 
 const PostBodySchema = z.object({
@@ -83,4 +83,4 @@ const postHandler = withAdminAuth(async (request: NextRequest, _session) => {
 })
 
 export const GET = getHandler
-export const POST = withCSRF(postHandler)
+export const POST = postHandler

@@ -7,9 +7,8 @@ import {
   logApiRequest,
   formatDateForDB
 } from '@/app/api/utils';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
-import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface BreakRequest {
   action: 'start' | 'end';
@@ -17,8 +16,7 @@ interface BreakRequest {
   notes?: string;
 }
 
-export const POST = withCSRF(
-  withErrorHandling(async (request: NextRequest) => {
+export const POST = withErrorHandling(async (request: NextRequest) => {
   // Check authentication
   const session = await requireAuth();
 
@@ -39,28 +37,28 @@ export const POST = withCSRF(
   const today = formatDateForDB(new Date());
 
   // Get active time card
-  const timeCardResult = await query(`
+  const timeCardRows = await prisma.$queryRaw<Record<string, unknown>[]>`
     SELECT * FROM time_cards
-    WHERE driver_id = $1
-      AND DATE(clock_in_time) = $2
+    WHERE driver_id = ${driverId}
+      AND DATE(clock_in_time) = ${today}
       AND clock_out_time IS NULL
-  `, [driverId, today]);
+  `;
 
-  if ((timeCardResult.rowCount ?? 0) === 0) {
+  if (timeCardRows.length === 0) {
     return errorResponse('Not clocked in. Please clock in before taking a break.', 400);
   }
 
-  const timeCard = timeCardResult.rows[0];
+  const timeCard = timeCardRows[0];
 
   if (body.action === 'start') {
     // Check if already on break
-    const activeBreak = await query(`
+    const activeBreakRows = await prisma.$queryRaw<Record<string, unknown>[]>`
       SELECT * FROM break_records
-      WHERE time_card_id = $1
+      WHERE time_card_id = ${timeCard.id}
         AND break_end IS NULL
-    `, [timeCard.id]);
+    `;
 
-    if ((activeBreak.rowCount ?? 0) > 0) {
+    if (activeBreakRows.length > 0) {
       return errorResponse('Already on break. Please end current break first.', 400);
     }
 
@@ -71,82 +69,76 @@ export const POST = withCSRF(
     }
 
     // Create new break record
-    const result = await query(`
+    const rows = await prisma.$queryRaw<Record<string, unknown>[]>`
       INSERT INTO break_records (
         time_card_id,
         driver_id,
         break_start,
         break_type,
         notes
-      ) VALUES ($1, $2, CURRENT_TIMESTAMP, $3, $4)
+      ) VALUES (${timeCard.id}, ${driverId}, CURRENT_TIMESTAMP, ${breakType}, ${body.notes || null})
       RETURNING *
-    `, [
-      timeCard.id,
-      driverId,
-      breakType,
-      body.notes || null,
-    ]);
+    `;
 
     // Update time card status
-    await query(`
+    await prisma.$executeRaw`
       UPDATE time_cards
       SET status = 'on_break', updated_at = CURRENT_TIMESTAMP
-      WHERE id = $1
-    `, [timeCard.id]);
+      WHERE id = ${timeCard.id as number}
+    `;
 
-    return successResponse(result.rows[0], 'Break started successfully');
+    return successResponse(rows[0], 'Break started successfully');
 
   } else { // end break
     // Find active break
-    const activeBreak = await query(`
+    const activeBreakRows = await prisma.$queryRaw<Record<string, unknown>[]>`
       SELECT * FROM break_records
-      WHERE time_card_id = $1
-        AND driver_id = $2
+      WHERE time_card_id = ${timeCard.id}
+        AND driver_id = ${driverId}
         AND break_end IS NULL
-    `, [timeCard.id, driverId]);
+    `;
 
-    if ((activeBreak.rowCount ?? 0) === 0) {
+    if (activeBreakRows.length === 0) {
       return errorResponse('No active break found.', 400);
     }
 
-    const breakRecord = activeBreak.rows[0];
+    const breakRecord = activeBreakRows[0];
 
     // Calculate break duration
-    const breakStart = new Date(breakRecord.break_start);
+    const breakStart = new Date(breakRecord.break_start as string);
     const breakEnd = new Date();
     const durationMinutes = Math.round((breakEnd.getTime() - breakStart.getTime()) / (1000 * 60));
 
     // Update break record
-    const result = await query(`
+    const rows = await prisma.$queryRaw<Record<string, unknown>[]>`
       UPDATE break_records
       SET
         break_end = CURRENT_TIMESTAMP,
-        duration_minutes = $2,
+        duration_minutes = ${durationMinutes},
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $1
+      WHERE id = ${breakRecord.id as number}
       RETURNING *
-    `, [breakRecord.id, durationMinutes]);
+    `;
 
     // Update time card status back to on_duty
-    await query(`
+    await prisma.$executeRaw`
       UPDATE time_cards
       SET status = 'on_duty', updated_at = CURRENT_TIMESTAMP
-      WHERE id = $1
-    `, [timeCard.id]);
+      WHERE id = ${timeCard.id as number}
+    `;
 
     // Update total break time on time card
-    await query(`
+    await prisma.$executeRaw`
       UPDATE time_cards
       SET
-        total_break_minutes = COALESCE(total_break_minutes, 0) + $2,
+        total_break_minutes = COALESCE(total_break_minutes, 0) + ${durationMinutes},
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $1
-    `, [timeCard.id, durationMinutes]);
+      WHERE id = ${timeCard.id as number}
+    `;
 
-    return successResponse(result.rows[0], 'Break ended successfully');
+    return successResponse(rows[0], 'Break ended successfully');
   }
-})
-);
+});
 
 export const GET = withErrorHandling(async (request: NextRequest) => {
   // Check authentication
@@ -159,29 +151,29 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   const date = searchParams.get('date') || formatDateForDB(new Date());
 
   // Get breaks for specified date
-  const result = await query(`
+  const rows = await prisma.$queryRaw<Record<string, unknown>[]>`
     SELECT
       br.*,
       tc.clock_in_time,
       tc.clock_out_time
     FROM break_records br
     JOIN time_cards tc ON br.time_card_id = tc.id
-    WHERE br.driver_id = $1
-      AND DATE(br.break_start) = $2
+    WHERE br.driver_id = ${driverId}
+      AND DATE(br.break_start) = ${date}
     ORDER BY br.break_start DESC
-  `, [driverId, date]);
+  `;
 
   // Calculate summary statistics
-  const totalBreaks = result.rows.length;
-  const totalBreakTime = result.rows.reduce((sum, br) => {
-    return sum + (br.duration_minutes || 0);
+  const totalBreaks = rows.length;
+  const totalBreakTime = rows.reduce((sum, br) => {
+    return sum + ((br.duration_minutes as number) || 0);
   }, 0);
 
-  const activeBreak = result.rows.find(br => !br.break_end) || null;
+  const activeBreak = rows.find(br => !br.break_end) || null;
 
   return successResponse({
     date,
-    breaks: result.rows,
+    breaks: rows,
     summary: {
       total_breaks: totalBreaks,
       total_break_time_minutes: totalBreakTime,

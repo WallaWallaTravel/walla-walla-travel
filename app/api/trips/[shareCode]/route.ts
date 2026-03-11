@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, NotFoundError, RouteContext } from '@/lib/api/middleware/error-handler';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { updateTripSchema } from '@/lib/validation/schemas/trip';
-import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface RouteParams {
   shareCode: string;
@@ -17,30 +17,27 @@ export const GET = withErrorHandling<unknown, RouteParams>(
     const { shareCode } = await context.params;
 
     // Get trip
-    const tripResult = await query(
-      `SELECT * FROM trips WHERE share_code = $1`,
-      [shareCode]
-    );
+    const tripRows = await prisma.$queryRaw<Record<string, unknown>[]>`
+      SELECT * FROM trips WHERE share_code = ${shareCode}
+    `;
 
-    if (tripResult.rows.length === 0) {
+    if (tripRows.length === 0) {
       throw new NotFoundError('Trip not found');
     }
 
-    const trip = tripResult.rows[0];
+    const trip = tripRows[0];
 
     // Get stops and guests in parallel
-    const [stopsResult, guestsResult] = await Promise.all([
-      query(
-        `SELECT * FROM trip_stops WHERE trip_id = $1 ORDER BY day_number, stop_order`,
-        [trip.id]
-      ),
-      query(
-        `SELECT * FROM trip_guests WHERE trip_id = $1 ORDER BY is_organizer DESC, name ASC`,
-        [trip.id]
-      ),
+    const [stopsRows, guestsRows] = await Promise.all([
+      prisma.$queryRaw<Record<string, unknown>[]>`
+        SELECT * FROM trip_stops WHERE trip_id = ${trip.id} ORDER BY day_number, stop_order
+      `,
+      prisma.$queryRaw<Record<string, unknown>[]>`
+        SELECT * FROM trip_guests WHERE trip_id = ${trip.id} ORDER BY is_organizer DESC, name ASC
+      `,
     ]);
 
-    const stops = stopsResult.rows.map(row => ({
+    const stops = stopsRows.map(row => ({
       id: row.id,
       trip_id: row.trip_id,
       stop_type: row.stop_type,
@@ -56,13 +53,13 @@ export const GET = withErrorHandling<unknown, RouteParams>(
       booking_confirmation: row.booking_confirmation,
       notes: row.notes,
       special_requests: row.special_requests,
-      estimated_cost_per_person: row.estimated_cost_per_person ? parseFloat(row.estimated_cost_per_person) : null,
+      estimated_cost_per_person: row.estimated_cost_per_person ? parseFloat(row.estimated_cost_per_person as string) : null,
       added_by: row.added_by,
       created_at: row.created_at,
       updated_at: row.updated_at,
     }));
 
-    const guests = guestsResult.rows.map(row => ({
+    const guests = guestsRows.map(row => ({
       id: row.id,
       trip_id: row.trip_id,
       name: row.name,
@@ -130,104 +127,85 @@ export const GET = withErrorHandling<unknown, RouteParams>(
 // PATCH /api/trips/[shareCode] - Update trip
 // ============================================================================
 
-export const PATCH = withCSRF(
-  withErrorHandling<unknown, RouteParams>(
+export const PATCH = withErrorHandling<unknown, RouteParams>(
   async (request: NextRequest, context: RouteContext<RouteParams>) => {
     const { shareCode } = await context.params;
     const body = await request.json();
     const validated = updateTripSchema.parse(body);
 
     // Build dynamic update query
-    const updates: string[] = [];
+    const updates: Prisma.Sql[] = [];
     const values: unknown[] = [];
-    let paramIndex = 1;
 
     if (validated.title !== undefined) {
-      updates.push(`title = $${paramIndex++}`);
-      values.push(validated.title);
+      updates.push(Prisma.sql`title = ${validated.title}`);
     }
     if (validated.description !== undefined) {
-      updates.push(`description = $${paramIndex++}`);
-      values.push(validated.description);
+      updates.push(Prisma.sql`description = ${validated.description}`);
     }
     if (validated.trip_type !== undefined) {
-      updates.push(`trip_type = $${paramIndex++}`);
-      values.push(validated.trip_type);
+      updates.push(Prisma.sql`trip_type = ${validated.trip_type}`);
     }
     if (validated.start_date !== undefined) {
-      updates.push(`start_date = $${paramIndex++}`);
-      values.push(validated.start_date);
+      updates.push(Prisma.sql`start_date = ${validated.start_date}`);
     }
     if (validated.end_date !== undefined) {
-      updates.push(`end_date = $${paramIndex++}`);
-      values.push(validated.end_date);
+      updates.push(Prisma.sql`end_date = ${validated.end_date}`);
     }
     if (validated.dates_flexible !== undefined) {
-      updates.push(`dates_flexible = $${paramIndex++}`);
-      values.push(validated.dates_flexible);
+      updates.push(Prisma.sql`dates_flexible = ${validated.dates_flexible}`);
     }
     if (validated.expected_guests !== undefined) {
-      updates.push(`expected_guests = $${paramIndex++}`);
-      values.push(validated.expected_guests);
+      updates.push(Prisma.sql`expected_guests = ${validated.expected_guests}`);
     }
     if (validated.owner_name !== undefined) {
-      updates.push(`owner_name = $${paramIndex++}`);
-      values.push(validated.owner_name);
+      updates.push(Prisma.sql`owner_name = ${validated.owner_name}`);
     }
     if (validated.owner_email !== undefined) {
-      updates.push(`owner_email = $${paramIndex++}`);
-      values.push(validated.owner_email);
+      updates.push(Prisma.sql`owner_email = ${validated.owner_email}`);
     }
     if (validated.owner_phone !== undefined) {
-      updates.push(`owner_phone = $${paramIndex++}`);
-      values.push(validated.owner_phone);
+      updates.push(Prisma.sql`owner_phone = ${validated.owner_phone}`);
     }
     if (validated.is_public !== undefined) {
-      updates.push(`is_public = $${paramIndex++}`);
-      values.push(validated.is_public);
+      updates.push(Prisma.sql`is_public = ${validated.is_public}`);
     }
     if (validated.allow_guest_suggestions !== undefined) {
-      updates.push(`allow_guest_suggestions = $${paramIndex++}`);
-      values.push(validated.allow_guest_suggestions);
+      updates.push(Prisma.sql`allow_guest_suggestions = ${validated.allow_guest_suggestions}`);
     }
     if (validated.allow_guest_rsvp !== undefined) {
-      updates.push(`allow_guest_rsvp = $${paramIndex++}`);
-      values.push(validated.allow_guest_rsvp);
+      updates.push(Prisma.sql`allow_guest_rsvp = ${validated.allow_guest_rsvp}`);
     }
     if (validated.preferences !== undefined) {
-      updates.push(`preferences = $${paramIndex++}`);
-      values.push(JSON.stringify(validated.preferences));
+      updates.push(Prisma.sql`preferences = ${JSON.stringify(validated.preferences)}`);
     }
     if (validated.status !== undefined) {
-      updates.push(`status = $${paramIndex++}`);
-      values.push(validated.status);
+      updates.push(Prisma.sql`status = ${validated.status}`);
     }
 
     if (updates.length === 0) {
       throw new Error('No valid fields to update');
     }
 
-    values.push(shareCode);
+    const setClause = Prisma.join(updates, ', ');
 
-    const result = await query(
-      `UPDATE trips SET ${updates.join(', ')}, updated_at = NOW()
-       WHERE share_code = $${paramIndex}
-       RETURNING *`,
-      values
-    );
+    const rows = await prisma.$queryRaw<Record<string, unknown>[]>`
+      UPDATE trips SET ${setClause}, updated_at = NOW()
+       WHERE share_code = ${shareCode}
+       RETURNING *
+    `;
 
-    if (result.rows.length === 0) {
+    if (rows.length === 0) {
       throw new NotFoundError('Trip not found');
     }
 
-    const trip = result.rows[0];
+    const trip = rows[0];
 
     // Log activity
-    await query(
-      `INSERT INTO trip_activity_log (trip_id, activity_type, description, actor_name)
-       VALUES ($1, 'trip_updated', 'Trip updated', $2)`,
-      [trip.id, trip.owner_name || 'Anonymous']
-    );
+    await prisma.$executeRaw`
+      INSERT INTO trip_activity_log (trip_id, activity_type, description, actor_name)
+       VALUES (${trip.id as number}, 'trip_updated', 'Trip updated', ${(trip.owner_name as string) || 'Anonymous'})
+    `;
 
     return NextResponse.json({
       success: true,
@@ -255,5 +233,4 @@ export const PATCH = withCSRF(
       },
     });
   }
-)
 );

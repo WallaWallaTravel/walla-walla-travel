@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
-import { query } from '@/lib/db';
 import { z } from 'zod';
-import { withCSRF } from '@/lib/api/middleware/csrf';
+import { prisma } from '@/lib/prisma';
 
 // ============================================================================
 // Validation
@@ -54,13 +53,13 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
 
   sql += ' ORDER BY display_order ASC, created_at DESC';
 
-  const result = await query(sql);
+  const result = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(sql);
 
   return NextResponse.json({
     success: true,
     data: {
-      topics: result.rows,
-      count: result.rows.length,
+      topics: result,
+      count: result.length,
     },
   });
 });
@@ -69,19 +68,17 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
 // POST /api/admin/geology/topics - Create a new topic
 // ============================================================================
 
-export const POST = withCSRF(
-  withAdminAuth(async (request: NextRequest, _session) => {
+export const POST = withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json();
   const validated = createTopicSchema.parse(body);
 
-  const result = await query(
+  const result = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
     `INSERT INTO geology_topics (
       slug, title, subtitle, content, excerpt, topic_type, difficulty,
       hero_image_url, display_order, is_featured, is_published,
       related_winery_ids, related_topic_ids, author_name, sources
     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
     RETURNING *`,
-    [
       validated.slug,
       validated.title,
       validated.subtitle || null,
@@ -97,12 +94,10 @@ export const POST = withCSRF(
       validated.related_topic_ids || null,
       validated.author_name || null,
       validated.sources || null,
-    ]
   );
 
   return NextResponse.json({
     success: true,
-    data: result.rows[0],
+    data: result[0],
   });
-})
-);
+});

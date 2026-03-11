@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 
 /**
@@ -20,15 +20,14 @@ export async function GET(
 
   try {
     // Look up lodging property by slug
-    const propertyResult = await query(
-      `SELECT id, name, slug, booking_url, booking_platform, is_active
+    const propertyRows = await prisma.$queryRaw<Array<{ id: number; name: string; slug: string; booking_url: string | null; booking_platform: string | null; is_active: boolean }>>`
+      SELECT id, name, slug, booking_url, booking_platform, is_active
        FROM lodging_properties
-       WHERE slug = $1
-       LIMIT 1`,
-      [slug]
-    );
+       WHERE slug = ${slug}
+       LIMIT 1
+    `;
 
-    const property = propertyResult.rows[0];
+    const property = propertyRows[0];
 
     if (!property) {
       logger.warn(`[Lodging Redirect] Property not found: ${slug}`);
@@ -48,12 +47,11 @@ export async function GET(
 
     // Log the click for analytics (non-blocking)
     try {
-      await query(
-        `INSERT INTO lodging_clicks (
+      await prisma.$executeRaw`
+        INSERT INTO lodging_clicks (
           property_id, property_slug, platform, referrer, user_agent, ip_address, created_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
-        [property.id, property.slug, property.booking_platform || null, referrer, userAgent, ip]
-      );
+        ) VALUES (${property.id}, ${property.slug}, ${property.booking_platform || null}, ${referrer}, ${userAgent}, ${ip}, NOW())
+      `;
     } catch (logError) {
       // Don't block redirect if logging fails - table might not exist yet
       logger.warn(`[Lodging Redirect] Failed to log click: ${logError}`);

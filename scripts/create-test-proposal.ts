@@ -1,9 +1,17 @@
-import { pool } from '../lib/db';
+import { prisma } from '../lib/prisma';
 
 async function createTestProposal() {
   const proposalNumber = `PRO-NWT-TEST${Date.now().toString().slice(-4)}`;
 
-  const result = await pool.query(`
+  const serviceItems = JSON.stringify([{
+    description: 'Full Day Wine Tour',
+    quantity: 1,
+    unit_price: 850,
+    total: 850
+  }]);
+  const validUntil = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+  const rows = await prisma.$queryRaw<Array<{ id: number; proposal_number: string; uuid: string }>>`
     INSERT INTO proposals (
       proposal_number,
       brand_id,
@@ -23,37 +31,19 @@ async function createTestProposal() {
       cancellation_policy,
       terms_and_conditions
     ) VALUES (
-      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17
+      ${proposalNumber}, ${3}, ${'Test Customer'}, ${'test@example.com'}, ${'(555) 123-4567'},
+      ${'Wine Country Experience - Test'}, ${serviceItems}::jsonb, ${850}, ${850},
+      ${validUntil}::timestamptz, ${'sent'}, ${true}, ${18}, ${true},
+      ${'Thank you for your interest in NW Touring & Concierge.'},
+      ${'Standard cancellation policy applies.'},
+      ${'Standard terms and conditions apply.'}
     ) RETURNING id, proposal_number, uuid
-  `, [
-    proposalNumber,
-    3, // NW Touring brand
-    'Test Customer',
-    'test@example.com',
-    '(555) 123-4567',
-    'Wine Country Experience - Test',
-    JSON.stringify([{
-      description: 'Full Day Wine Tour',
-      quantity: 1,
-      unit_price: 850,
-      total: 850
-    }]),
-    850,
-    850,
-    new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    'sent',
-    true,
-    18,
-    true,
-    'Thank you for your interest in NW Touring & Concierge.',
-    'Standard cancellation policy applies.',
-    'Standard terms and conditions apply.'
-  ]);
+  `;
 
-  console.log('Created proposal:', result.rows[0]);
-  console.log(`View at: http://localhost:3002/proposals/${result.rows[0].uuid}`);
+  console.log('Created proposal:', rows[0]);
+  console.log(`View at: http://localhost:3002/proposals/${rows[0].uuid}`);
 
-  await pool.end();
+  await prisma.$disconnect();
 }
 
 createTestProposal().catch(console.error);

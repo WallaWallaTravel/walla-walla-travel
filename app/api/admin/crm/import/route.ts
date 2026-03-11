@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
-import { withCSRF } from '@/lib/api/middleware/csrf';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 
 // ============================================================================
@@ -275,8 +275,7 @@ function mapRowToImport(
  * POST /api/admin/crm/import/preview
  * Preview import - validates data and detects duplicates without importing
  */
-export const POST = withCSRF(
-  withRateLimit(rateLimiters.api)(
+export const POST = withRateLimit(rateLimiters.api)(
     withAdminAuth(async (request: NextRequest, _session): Promise<NextResponse> => {
       const formData = await request.formData();
       const file = formData.get('file') as File | null;
@@ -327,12 +326,12 @@ export const POST = withCSRF(
       if (emails.length > 0) {
         // Build parameterized query for all emails
         const placeholders = emails.map((_, i) => `$${i + 1}`).join(', ');
-        const existingContacts = await query<{ id: number; email: string; name: string }>(
+        const existingContacts = await prisma.$queryRawUnsafe<{ id: number; email: string; name: string }[]>(
           `SELECT id, email, name FROM crm_contacts WHERE LOWER(email) IN (${placeholders})`,
-          emails
+          ...emails
         );
 
-        const existingMap = new Map(existingContacts.rows.map(c => [c.email.toLowerCase(), c]));
+        const existingMap = new Map(existingContacts.map(c => [c.email.toLowerCase(), c]));
 
         validRows.forEach((row, index) => {
           const existing = existingMap.get(row.email);
@@ -412,20 +411,24 @@ export const POST = withCSRF(
 
         try {
           if (duplicateAction === 'skip') {
-            const insertResult = await query(
-              `INSERT INTO crm_contacts (
-                email, name, phone, company, contact_type, lifecycle_stage,
-                lead_temperature, source, source_detail, notes,
-                total_bookings, total_revenue, brand_id, created_at, updated_at
-              ) VALUES ${valueClauses.join(', ')}
-              ON CONFLICT (email) DO NOTHING`,
-              values
+            const insertResult = await prisma.$queryRawUnsafe<{ count: bigint }[]>(
+              `WITH inserted AS (
+                INSERT INTO crm_contacts (
+                  email, name, phone, company, contact_type, lifecycle_stage,
+                  lead_temperature, source, source_detail, notes,
+                  total_bookings, total_revenue, brand_id, created_at, updated_at
+                ) VALUES ${valueClauses.join(', ')}
+                ON CONFLICT (email) DO NOTHING
+                RETURNING 1
+              ) SELECT COUNT(*) as count FROM inserted`,
+              ...values
             );
-            result.imported += insertResult.rowCount || 0;
-            result.skipped += chunk.length - (insertResult.rowCount || 0);
+            const insertedCount = Number(insertResult[0]?.count ?? 0);
+            result.imported += insertedCount;
+            result.skipped += chunk.length - insertedCount;
           } else {
             // update or merge — upsert with RETURNING to distinguish inserts from updates
-            const upsertResult = await query<{ is_new: boolean }>(
+            const upsertResult = await prisma.$queryRawUnsafe<{ is_new: boolean }[]>(
               `INSERT INTO crm_contacts (
                 email, name, phone, company, contact_type, lifecycle_stage,
                 lead_temperature, source, source_detail, notes,
@@ -442,9 +445,9 @@ export const POST = withCSRF(
                 source_detail = COALESCE(crm_contacts.source_detail, EXCLUDED.source_detail),
                 updated_at = NOW()
               RETURNING (xmax = 0) as is_new`,
-              values
+              ...values
             );
-            for (const row of upsertResult.rows) {
+            for (const row of upsertResult) {
               if (row.is_new) {
                 result.imported++;
               } else {
@@ -471,8 +474,7 @@ export const POST = withCSRF(
         message: `Import completed: ${result.imported} new contacts, ${result.updated} updated, ${result.skipped} skipped.`,
       });
     })
-  )
-);
+  );
 
 /**
  * GET /api/admin/crm/import

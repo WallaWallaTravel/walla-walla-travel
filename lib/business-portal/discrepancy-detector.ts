@@ -3,8 +3,8 @@
  * Finds conflicts, missing info, and inconsistencies in business submissions
  */
 
-import { query } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { prisma } from '@/lib/prisma';
 
 export interface Discrepancy {
   id: string;
@@ -85,38 +85,41 @@ interface BusinessData {
  */
 async function getBusinessData(businessId: number): Promise<BusinessData> {
   // Get business info
-  const businessResult = await query(
+  const businessResult = await prisma.$queryRawUnsafe<{ id: number; name: string }[]>(
     'SELECT id, name FROM businesses WHERE id = $1',
-    [businessId]
+    businessId
   );
 
   // Get voice entries
-  const voiceResult = await query(`
+  const voiceResult = await prisma.$queryRawUnsafe<VoiceEntry[]>(`
     SELECT id, question_id, question_number, question_text, transcription, extracted_data
     FROM business_voice_entries
     WHERE business_id = $1 AND transcription IS NOT NULL
     ORDER BY question_number
-  `, [businessId]);
+  `,
+    businessId);
 
   // Get text entries
-  const textResult = await query(`
+  const textResult = await prisma.$queryRawUnsafe<TextEntryData[]>(`
     SELECT id, question_id, question_number, question_text, response_text, extracted_data
     FROM business_text_entries
     WHERE business_id = $1
     ORDER BY question_number
-  `, [businessId]);
+  `,
+    businessId);
 
   // Get files
-  const filesResult = await query(`
+  const filesResult = await prisma.$queryRawUnsafe<FileData[]>(`
     SELECT id, file_type, original_filename, ai_description, ai_tags, category
     FROM business_files
     WHERE business_id = $1
-  `, [businessId]);
+  `,
+    businessId);
 
   // Organize extracted data by category
   const extractedData = new Map<string, Record<string, unknown>[]>();
-  
-  [...voiceResult.rows, ...textResult.rows].forEach(entry => {
+
+  [...voiceResult, ...textResult].forEach(entry => {
     if (entry.extracted_data) {
       const category = entry.question_text || 'general';
       if (!extractedData.has(category)) {
@@ -128,10 +131,10 @@ async function getBusinessData(businessId: number): Promise<BusinessData> {
 
   return {
     business_id: businessId,
-    business_name: businessResult.rows[0]?.name || 'Unknown',
-    voiceEntries: voiceResult.rows,
-    textEntries: textResult.rows,
-    files: filesResult.rows,
+    business_name: businessResult[0]?.name || 'Unknown',
+    voiceEntries: voiceResult,
+    textEntries: textResult,
+    files: filesResult,
     extractedData
   };
 }
@@ -361,7 +364,7 @@ Walla Walla Travel`;
  */
 export async function saveDiscrepancies(discrepancies: Discrepancy[]): Promise<void> {
   for (const discrepancy of discrepancies) {
-    await query(`
+    await prisma.$queryRawUnsafe<Record<string, unknown>[]>(`
       INSERT INTO business_discrepancies (
         business_id,
         discrepancy_id,
@@ -381,7 +384,7 @@ export async function saveDiscrepancies(discrepancies: Discrepancy[]): Promise<v
         description = $6,
         sources = $7,
         updated_at = NOW()
-    `, [
+    `,
       discrepancy.business_id,
       discrepancy.id,
       discrepancy.type,
@@ -391,7 +394,7 @@ export async function saveDiscrepancies(discrepancies: Discrepancy[]): Promise<v
       JSON.stringify(discrepancy.sources),
       discrepancy.suggestedResolution,
       discrepancy.draftMessage
-    ]);
+  );
   }
 }
 

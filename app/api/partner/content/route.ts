@@ -2,10 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, UnauthorizedError, NotFoundError, ValidationError } from '@/lib/api/middleware/error-handler';
 import { getSession } from '@/lib/auth/session';
 import { partnerService } from '@/lib/services/partner.service';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { WINERY_CONTENT_TYPES } from '@/lib/config/content-types';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
-import { withCSRF } from '@/lib/api/middleware/csrf';
 import { z } from 'zod';
 
 const BodySchema = z.object({
@@ -54,14 +53,14 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   }> = [];
 
   if (profile.winery_id) {
-    const result = await query<{
+    content = await prisma.$queryRaw<Array<{
       id: number;
       content_type: string;
       content: string;
       status: string;
       updated_at: string;
-    }>(
-      `SELECT id, content_type, content,
+    }>>`
+      SELECT id, content_type, content,
         CASE
           WHEN verified = true THEN 'approved'
           WHEN verified = false AND id IS NOT NULL THEN 'pending'
@@ -69,11 +68,8 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
         END as status,
         updated_at
        FROM winery_content
-       WHERE winery_id = $1 AND content_type = ANY($2)
-       ORDER BY content_type`,
-      [profile.winery_id, STORY_CONTENT_TYPES]
-    );
-    content = result.rows;
+       WHERE winery_id = ${profile.winery_id} AND content_type = ANY(${STORY_CONTENT_TYPES})
+       ORDER BY content_type`;
   }
 
   return NextResponse.json({
@@ -87,7 +83,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
  * POST /api/partner/content
  * Create or update partner's narrative content
  */
-export const POST = withCSRF(
+export const POST =
   withRateLimit(rateLimiters.api)(
   withErrorHandling(async (request: NextRequest) => {
   const session = await getSession();
@@ -128,36 +124,30 @@ export const POST = withCSRF(
   }
 
   // Check if content already exists for this type
-  const existingResult = await query(
-    `SELECT id FROM winery_content
-     WHERE winery_id = $1 AND content_type = $2`,
-    [profile.winery_id, content_type]
-  );
+  const existingRows = await prisma.$queryRaw<Array<{ id: number }>>`
+    SELECT id FROM winery_content
+     WHERE winery_id = ${profile.winery_id} AND content_type = ${content_type}`;
 
   let contentId: number;
 
-  if (existingResult.rows.length > 0) {
+  if (existingRows.length > 0) {
     // Update existing content
-    const updateResult = await query(
-      `UPDATE winery_content
-       SET content = $1,
+    const updateRows = await prisma.$queryRaw<Array<{ id: number }>>`
+      UPDATE winery_content
+       SET content = ${content},
            verified = false,
            data_source = 'partner_portal',
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $2
-       RETURNING id`,
-      [content, existingResult.rows[0].id]
-    );
-    contentId = updateResult.rows[0].id;
+       WHERE id = ${existingRows[0].id}
+       RETURNING id`;
+    contentId = updateRows[0].id;
   } else {
     // Insert new content
-    const insertResult = await query(
-      `INSERT INTO winery_content (winery_id, content_type, content, data_source, verified, created_at, updated_at)
-       VALUES ($1, $2, $3, 'partner_portal', false, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-       RETURNING id`,
-      [profile.winery_id, content_type, content]
-    );
-    contentId = insertResult.rows[0].id;
+    const insertRows = await prisma.$queryRaw<Array<{ id: number }>>`
+      INSERT INTO winery_content (winery_id, content_type, content, data_source, verified, created_at, updated_at)
+       VALUES (${profile.winery_id}, ${content_type}, ${content}, 'partner_portal', false, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+       RETURNING id`;
+    contentId = insertRows[0].id;
   }
 
   // Log the activity
@@ -174,5 +164,4 @@ export const POST = withCSRF(
     message: 'Content saved and submitted for review',
     timestamp: new Date().toISOString(),
   });
-}))
-);
+}));

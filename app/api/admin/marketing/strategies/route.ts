@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { query } from '@/lib/db'
+import { query } from '@/lib/prisma-query'
 import { logger } from '@/lib/logger'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
-import { withCSRF } from '@/lib/api/middleware/csrf';
 import { z } from 'zod'
 
 const PatchBodySchema = z.object({
@@ -46,8 +45,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
 });
 
 // POST - Manually trigger strategy generation
-export const POST = withCSRF(
-  withAdminAuth(async (_request: NextRequest, _session) => {
+export const POST = withAdminAuth(async (_request: NextRequest, _session) => {
   logger.info('Manual strategy generation triggered via admin API')
 
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL
@@ -70,12 +68,10 @@ export const POST = withCSRF(
   }
 
   return NextResponse.json(cronData)
-})
-);
+});
 
 // PATCH - Update strategy status (activate, archive, etc.)
-export const PATCH = withCSRF(
-  withAdminAuth(async (request: NextRequest, _session) => {
+export const PATCH = withAdminAuth(async (request: NextRequest, _session) => {
   const body = PatchBodySchema.parse(await request.json())
   const { id, status } = body
 
@@ -113,4 +109,3 @@ export const PATCH = withCSRF(
     strategy: result.rows[0],
   })
 })
-);

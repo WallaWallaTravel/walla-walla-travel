@@ -7,18 +7,16 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { confirmPaymentSuccess } from '@/lib/stripe';
 import { sendReservationConfirmation } from '@/lib/email';
 import { validateBody, ConfirmReservationPaymentSchema } from '@/lib/api/middleware/validation';
-import { withCSRF } from '@/lib/api/middleware/csrf';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 import { crmSyncService } from '@/lib/services/crm-sync.service';
 import { logger } from '@/lib/logger';
 
-export const POST = withCSRF(
-  withRateLimit(rateLimiters.payment)(
+export const POST = withRateLimit(rateLimiters.payment)(
     withErrorHandling(async (request: NextRequest) => {
   // Validate input with Zod schema
   const { paymentIntentId, reservationId } = await validateBody(request, ConfirmReservationPaymentSchema);
@@ -31,55 +29,50 @@ export const POST = withCSRF(
   }
 
   // Update reservation with payment info
-  const updateResult = await query(
-    `UPDATE reservations
-     SET deposit_paid = true,
-         payment_method = 'card',
-         updated_at = CURRENT_TIMESTAMP
-     WHERE id = $1
-     RETURNING *`,
-    [reservationId]
-  );
+  const updateRows = await prisma.$queryRaw<Record<string, unknown>[]>`
+    UPDATE reservations
+    SET deposit_paid = true,
+        payment_method = 'card',
+        updated_at = CURRENT_TIMESTAMP
+    WHERE id = ${reservationId}
+    RETURNING *`;
 
-  if (updateResult.rows.length === 0) {
+  if (updateRows.length === 0) {
     throw new NotFoundError('Reservation not found');
   }
 
-  const reservation = updateResult.rows[0];
+  const reservation = updateRows[0];
 
   // Get customer info
-  const customerResult = await query(
-    'SELECT * FROM customers WHERE id = $1',
-    [reservation.customer_id]
-  );
-
-  const customer = customerResult.rows[0];
+  const customerRows = await prisma.$queryRaw<Record<string, unknown>[]>`
+    SELECT * FROM customers WHERE id = ${reservation.customer_id}`;
+  const customer = customerRows[0] ?? null;
 
   // Send confirmation email with payment receipt
   if (customer) {
     await sendReservationConfirmation(
       {
-        customer_name: customer.name,
-        customer_email: customer.email,
-        reservation_number: reservation.reservation_number,
-        party_size: reservation.party_size,
-        preferred_date: reservation.preferred_date,
-        alternate_date: reservation.alternate_date,
-        event_type: reservation.event_type || 'Wine Tour',
-        special_requests: reservation.special_requests,
-        deposit_amount: parseFloat(reservation.deposit_amount),
+        customer_name: customer.name as string,
+        customer_email: customer.email as string,
+        reservation_number: reservation.reservation_number as string,
+        party_size: reservation.party_size as number,
+        preferred_date: reservation.preferred_date as string,
+        alternate_date: reservation.alternate_date as string,
+        event_type: (reservation.event_type as string) || 'Wine Tour',
+        special_requests: reservation.special_requests as string,
+        deposit_amount: parseFloat(reservation.deposit_amount as string),
         payment_method: 'card',
         consultation_hours: 24,
         confirmation_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/book/reserve/confirmation?id=${reservation.id}`
       },
-      customer.email,
-      reservation.brand_id
+      customer.email as string,
+      reservation.brand_id as number
     );
 
     // Log payment to CRM (async, don't block)
     crmSyncService.logPaymentReceived(
-      customer.id,
-      parseFloat(reservation.deposit_amount),
+      customer.id as number,
+      parseFloat(reservation.deposit_amount as string),
       'Deposit'
     ).catch(err => {
       logger.error('Failed to log payment to CRM', { error: err, customerId: customer.id });
@@ -91,4 +84,4 @@ export const POST = withCSRF(
     reservationId: reservation.id,
     reservationNumber: reservation.reservation_number,
   });
-})));
+}));

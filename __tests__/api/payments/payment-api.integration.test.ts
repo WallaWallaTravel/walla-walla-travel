@@ -25,13 +25,16 @@ jest.mock('stripe', () => {
   }));
 });
 
-// Mock database helpers
-jest.mock('@/lib/db-helpers', () => ({
-  queryOne: jest.fn(),
-  query: jest.fn(),
-  withTransaction: jest.fn((callback) => callback({
-    query: jest.fn().mockResolvedValue({ rows: [], rowCount: 1, command: '', oid: 0, fields: [] }),
-  })),
+// Mock Prisma
+jest.mock('@/lib/prisma', () => ({
+  prisma: {
+    $queryRaw: jest.fn().mockResolvedValue([]),
+    $executeRaw: jest.fn().mockResolvedValue(0),
+    $transaction: jest.fn((callback: (tx: unknown) => unknown) => callback({
+      $queryRaw: jest.fn().mockResolvedValue([]),
+      $executeRaw: jest.fn().mockResolvedValue(0),
+    })),
+  },
 }));
 
 // Mock logger
@@ -80,7 +83,7 @@ jest.mock('@/lib/api/middleware/auth-wrapper', () => ({
 }));
 
 import Stripe from 'stripe';
-import { queryOne, query, withTransaction } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 import { healthService } from '@/lib/services/health.service';
 
 // Helper to create mock NextRequest (kept for future E2E tests)
@@ -98,9 +101,7 @@ function _createMockRequest(body: object, headers: Record<string, string> = {}):
 describe('Payment API Integration', () => {
   // Mock instances kept for future E2E tests when skipped tests are implemented
   const _mockStripe = new Stripe('test_key') as jest.Mocked<Stripe>;
-  const _mockQueryOne = queryOne as jest.MockedFunction<typeof queryOne>;
-  const _mockQuery = query as jest.MockedFunction<typeof query>;
-  const _mockWithTransaction = withTransaction as jest.MockedFunction<typeof withTransaction>;
+  const _mockPrisma = prisma as jest.Mocked<typeof prisma>;
   const _mockHealthService = healthService as jest.Mocked<typeof healthService>;
 
   beforeEach(() => {
@@ -287,13 +288,13 @@ describe('Payment API Edge Cases', () => {
 
   describe('Concurrent payments', () => {
     it('should use transactions for atomic updates', async () => {
-      const { withTransaction } = await import('@/lib/db-helpers');
+      const { prisma: prismaMod } = await import('@/lib/prisma');
 
-      // The confirm route uses withTransaction
+      // The confirm route uses prisma.$transaction
       await import('@/app/api/payments/confirm/route');
 
-      // Verify withTransaction is available for atomic operations
-      expect(withTransaction).toBeDefined();
+      // Verify prisma.$transaction is available for atomic operations
+      expect(prismaMod.$transaction).toBeDefined();
     });
   });
 });

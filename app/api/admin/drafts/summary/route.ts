@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 
 /**
  * GET /api/admin/drafts/summary
  * Returns aggregate counts for draft proposals by age.
  */
 export const GET = withAdminAuth(async (_request: NextRequest) => {
-  const result = await query(`
+  const rows = await prisma.$queryRaw<Array<Record<string, unknown>>>`
     SELECT
       COUNT(*) as total,
       COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '7 days') as recent,
@@ -15,17 +15,17 @@ export const GET = withAdminAuth(async (_request: NextRequest) => {
       COUNT(*) FILTER (WHERE created_at <= NOW() - INTERVAL '30 days') as stale
     FROM trip_proposals
     WHERE status = 'draft'
-  `);
+  `;
 
-  const row = result.rows[0] || { total: 0, recent: 0, aging: 0, stale: 0 };
+  const row = rows[0] || { total: 0, recent: 0, aging: 0, stale: 0 };
 
   return NextResponse.json({
     success: true,
     data: {
-      total: parseInt(row.total) || 0,
-      recent: parseInt(row.recent) || 0,
-      aging: parseInt(row.aging) || 0,
-      stale: parseInt(row.stale) || 0,
+      total: parseInt(String(row.total)) || 0,
+      recent: parseInt(String(row.recent)) || 0,
+      aging: parseInt(String(row.aging)) || 0,
+      stale: parseInt(String(row.stale)) || 0,
     },
   });
 });

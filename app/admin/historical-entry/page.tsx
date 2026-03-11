@@ -8,7 +8,7 @@
 import { getSession } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 
 interface Stats {
@@ -22,13 +22,13 @@ interface Stats {
 
 async function getStats(): Promise<Stats> {
   try {
-    const result = await query<{
+    const rows = await prisma.$queryRaw<Array<{
       total_inspections: number;
       historical_inspections: number;
       total_time_cards: number;
       historical_time_cards: number;
       bookings_with_gaps: number;
-    }>(`
+    }>>`
       SELECT
         (SELECT COUNT(*)::int FROM inspections) as total_inspections,
         (SELECT COUNT(*)::int FROM inspections WHERE is_historical_entry = true) as historical_inspections,
@@ -45,17 +45,17 @@ async function getStats(): Promise<Stats> {
                 AND DATE(i.created_at) = b.tour_date
             )
         ) as bookings_with_gaps
-    `);
+    `;
 
-    const stats = result.rows[0];
-    const totalBookings = await query<{ count: number }>(
-      `SELECT COUNT(*)::int as count FROM bookings WHERE status = 'completed' AND driver_id IS NOT NULL`
-    );
+    const stats = rows[0];
+    const totalBookingsRows = await prisma.$queryRaw<Array<{ count: number }>>`
+      SELECT COUNT(*)::int as count FROM bookings WHERE status = 'completed' AND driver_id IS NOT NULL
+    `;
 
-    const bookingsWithDocs = totalBookings.rows[0].count - stats.bookings_with_gaps;
+    const bookingsWithDocs = totalBookingsRows[0].count - stats.bookings_with_gaps;
     const complianceScore =
-      totalBookings.rows[0].count > 0
-        ? Math.round((bookingsWithDocs / totalBookings.rows[0].count) * 100)
+      totalBookingsRows[0].count > 0
+        ? Math.round((bookingsWithDocs / totalBookingsRows[0].count) * 100)
         : 100;
 
     return {
@@ -90,7 +90,7 @@ interface RecentEntry {
 
 async function getRecentEntries(): Promise<RecentEntry[]> {
   try {
-    const result = await query<RecentEntry>(`
+    return await prisma.$queryRaw<RecentEntry[]>`
       (
         SELECT
           i.id,
@@ -122,8 +122,7 @@ async function getRecentEntries(): Promise<RecentEntry[]> {
       )
       ORDER BY entered_at DESC
       LIMIT 10
-    `);
-    return result.rows;
+    `;
   } catch (error) {
     logger.error('[HistoricalEntry] Error fetching recent entries', { error });
     return [];

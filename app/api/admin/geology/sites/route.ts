@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
-import { query } from '@/lib/db';
 import { z } from 'zod';
-import { withCSRF } from '@/lib/api/middleware/csrf';
+import { prisma } from '@/lib/prisma';
 
 // ============================================================================
 // Validation
@@ -34,7 +33,7 @@ const createSiteSchema = z.object({
 // ============================================================================
 
 export const GET = withAdminAuth(async (_request: NextRequest, _session) => {
-  const result = await query(`
+  const result = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(`
     SELECT id, name, slug, description, site_type, latitude, longitude,
            address, is_public_access, requires_appointment, is_published, created_at
     FROM geology_sites
@@ -44,8 +43,8 @@ export const GET = withAdminAuth(async (_request: NextRequest, _session) => {
   return NextResponse.json({
     success: true,
     data: {
-      sites: result.rows,
-      count: result.rows.length,
+      sites: result,
+      count: result.length,
     },
   });
 });
@@ -54,19 +53,17 @@ export const GET = withAdminAuth(async (_request: NextRequest, _session) => {
 // POST /api/admin/geology/sites - Create new site
 // ============================================================================
 
-export const POST = withCSRF(
-  withAdminAuth(async (request: NextRequest, _session) => {
+export const POST = withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json();
   const validated = createSiteSchema.parse(body);
 
-  const result = await query(
+  const result = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
     `INSERT INTO geology_sites (
       name, slug, description, site_type, latitude, longitude, address, directions,
       is_public_access, requires_appointment, best_time_to_visit, photos,
       related_topic_ids, nearby_winery_ids, is_published
     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
     RETURNING *`,
-    [
       validated.name,
       validated.slug,
       validated.description || null,
@@ -82,12 +79,10 @@ export const POST = withCSRF(
       validated.related_topic_ids || null,
       validated.nearby_winery_ids || null,
       validated.is_published,
-    ]
   );
 
   return NextResponse.json({
     success: true,
-    data: result.rows[0],
+    data: result[0],
   });
-})
-);
+});

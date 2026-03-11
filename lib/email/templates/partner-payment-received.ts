@@ -10,7 +10,7 @@ import { sendEmail } from '@/lib/email';
 import { logger } from '@/lib/logger';
 import { emailDarkModeStyles } from '@/lib/email/dark-mode-styles';
 import { emailPreferencesService } from '@/lib/services/email-preferences.service';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 
 const COMPANY_NAME = 'Walla Walla Travel';
 const COMPANY_PHONE = '(509) 200-8000';
@@ -39,8 +39,8 @@ export async function sendPartnerPaymentReceivedEmail(
 ): Promise<boolean> {
   try {
     // Fetch ticket + hotel details in one query (base tables, not views)
-    const result = await query<TicketWithHotel>(
-      `SELECT
+    const rows = await prisma.$queryRaw<TicketWithHotel[]>`
+      SELECT
          t.ticket_number,
          t.primary_guest_name AS customer_name,
          t.primary_guest_email AS customer_email,
@@ -55,11 +55,10 @@ export async function sendPartnerPaymentReceivedEmail(
        FROM shared_tours_tickets t
        JOIN shared_tours st ON t.shared_tour_id = st.id
        JOIN hotel_partners hp ON t.hotel_partner_id = hp.id
-       WHERE t.id = $1 AND t.hotel_partner_id IS NOT NULL`,
-      [ticketId]
-    );
+       WHERE t.id = ${ticketId} AND t.hotel_partner_id IS NOT NULL
+    `;
 
-    const ticket = result.rows[0];
+    const ticket = rows[0];
     if (!ticket) {
       // Not a partner booking or ticket not found — skip silently
       logger.debug('Skipping partner payment notification: not a partner booking', { ticketId });

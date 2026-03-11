@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth, AuthSession, RouteContext } from '@/lib/api/middleware/auth-wrapper';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
-import { queryOne } from '@/lib/db-helpers';
-import { withCSRF } from '@/lib/api/middleware/csrf';
+import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 
 interface RouteParams { id: string; guestId: string; }
@@ -16,8 +15,7 @@ const BodySchema = z.object({
  * PATCH /api/admin/trip-proposals/[id]/guests/[guestId]/billing
  * Update guest billing: sponsor toggle, amount override, group assignment
  */
-export const PATCH = withCSRF(
-  withAdminAuth(
+export const PATCH = withAdminAuth(
   async (request: NextRequest, _session: AuthSession, context?) => {
     const { id, guestId } = await (context as RouteContext<RouteParams>).params;
     const body = BodySchema.parse(await request.json());
@@ -25,11 +23,8 @@ export const PATCH = withCSRF(
     const proposalId = parseInt(id);
 
     // B6 FIX: Verify guest belongs to this proposal before any action
-    const guest = await queryOne(
-      'SELECT id FROM trip_proposal_guests WHERE id = $1 AND trip_proposal_id = $2',
-      [gId, proposalId]
-    );
-    if (!guest) {
+    const guest = await prisma.$queryRaw<{ id: number }[]>`SELECT id FROM trip_proposal_guests WHERE id = ${gId} AND trip_proposal_id = ${proposalId}`;
+    if (guest.length === 0) {
       return NextResponse.json({ success: false, error: 'Guest not found in this proposal' }, { status: 404 });
     }
 
@@ -48,5 +43,4 @@ export const PATCH = withCSRF(
 
     return NextResponse.json({ success: false, error: 'No valid billing action specified' }, { status: 400 });
   }
-)
 );

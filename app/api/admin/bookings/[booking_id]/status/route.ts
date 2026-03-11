@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
-import { query, queryOne } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 import { auditService } from '@/lib/services/audit.service';
 import { z } from 'zod';
 import { logger } from '@/lib/logger';
-import { withCSRF } from '@/lib/api/middleware/csrf';
 
 const UpdateStatusSchema = z.object({
   status: z.enum(['pending', 'confirmed', 'assigned', 'in_progress', 'completed', 'cancelled']),
@@ -16,8 +15,7 @@ const UpdateStatusSchema = z.object({
  * PATCH /api/admin/bookings/[booking_id]/status
  * Update booking status (confirm, complete, etc.)
  */
-export const PATCH = withCSRF(
-  withAdminAuth(async (
+export const PATCH = withAdminAuth(async (
   request: NextRequest,
   session: AuthSession,
   context
@@ -39,10 +37,9 @@ export const PATCH = withCSRF(
   const { status, reason } = parsed.data;
 
   // Get current booking
-  const booking = await queryOne(
-    `SELECT id, status, booking_number FROM bookings WHERE id = $1`,
-    [bookingId]
-  );
+  const bookingRows = await prisma.$queryRaw<{ id: number; status: string; booking_number: string }[]>`
+    SELECT id, status, booking_number FROM bookings WHERE id = ${bookingId}`;
+  const booking = bookingRows[0] ?? null;
 
   if (!booking) {
     throw new NotFoundError('Booking not found');
@@ -66,14 +63,12 @@ export const PATCH = withCSRF(
   }
 
   // Update the status
-  const result = await query(
-    `UPDATE bookings
-     SET status = $1,
-         updated_at = NOW()
-     WHERE id = $2
-     RETURNING *`,
-    [status, bookingId]
-  );
+  const resultRows = await prisma.$queryRaw<Record<string, unknown>[]>`
+    UPDATE bookings
+    SET status = ${status},
+        updated_at = NOW()
+    WHERE id = ${bookingId}
+    RETURNING *`;
 
   // Log the status change
   logger.info('[Booking] Status updated', {
@@ -96,23 +91,17 @@ export const PATCH = withCSRF(
 
   // Create timeline entry
   // Column is event_description (not description) per Prisma schema
-  await query(
-    `INSERT INTO booking_timeline (booking_id, event_type, event_description, created_at)
-     VALUES ($1, $2, $3, NOW())`,
-    [
-      bookingId,
-      `status_${status}`,
-      reason || `Status changed to ${status}`,
-    ]
-  ).catch(err => {
+  await prisma.$executeRaw`
+    INSERT INTO booking_timeline (booking_id, event_type, event_description, created_at)
+    VALUES (${bookingId}, ${`status_${status}`}, ${reason || `Status changed to ${status}`}, NOW())`
+  .catch(err => {
     logger.warn('[Booking] Failed to create timeline entry', { error: err });
   });
 
   return NextResponse.json({
     success: true,
     message: `Booking status updated to '${status}'`,
-    data: result.rows[0],
+    data: resultRows[0],
     timestamp: new Date().toISOString(),
   });
-})
-);
+});

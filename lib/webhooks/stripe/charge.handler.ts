@@ -11,7 +11,6 @@
 
 import Stripe from 'stripe';
 import * as Sentry from '@sentry/nextjs';
-import { query, queryOne } from '@/lib/db-helpers';
 import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 import { sendEmail } from '@/lib/email';
@@ -72,21 +71,21 @@ export async function handleDisputeCreated(dispute: Stripe.Dispute) {
   const chargeId = typeof charge === 'string' ? charge : charge?.id;
   // dispute columns (dispute_id, dispute_reason, dispute_amount) and trip_proposal_id
   // are not in Prisma payments model, so we use raw SQL for the lookup with join
-  const payment = await queryOne<{
+  const paymentRows = await prisma.$queryRaw<Array<{
     id: number;
     booking_id: number | null;
     booking_number: string | null;
     trip_proposal_id: number | null;
     customer_email: string | null;
     amount: number;
-  }>(
-    `SELECT p.id, p.booking_id, p.trip_proposal_id, p.amount,
+  }>>`
+    SELECT p.id, p.booking_id, p.trip_proposal_id, p.amount,
             b.booking_number, b.customer_email
      FROM payments p
      LEFT JOIN bookings b ON p.booking_id = b.id
-     WHERE p.stripe_charge_id = $1 OR p.stripe_payment_intent_id = $1`,
-    [chargeId]
-  );
+     WHERE p.stripe_charge_id = ${chargeId} OR p.stripe_payment_intent_id = ${chargeId}
+  `;
+  const payment = paymentRows[0] ?? null;
 
   if (payment) {
     logger.error('[Stripe Webhook] Dispute linked to payment', {
@@ -97,24 +96,22 @@ export async function handleDisputeCreated(dispute: Stripe.Dispute) {
       reason,
     });
 
-    await query(
-      `UPDATE payments
+    await prisma.$executeRaw`
+      UPDATE payments
        SET status = 'disputed',
-           dispute_id = $2,
-           dispute_reason = $3,
-           dispute_amount = $4,
+           dispute_id = ${id},
+           dispute_reason = ${reason || 'unknown'},
+           dispute_amount = ${amountDollars},
            updated_at = NOW()
-       WHERE id = $1`,
-      [payment.id, id, reason || 'unknown', amountDollars]
-    ).catch((err) => {
+       WHERE id = ${payment.id}
+    `.catch((err) => {
       logger.warn('[Stripe Webhook] Could not update all dispute columns on payment', {
         paymentId: payment.id,
         error: err instanceof Error ? err.message : String(err),
       });
-      return query(
-        `UPDATE payments SET status = 'disputed', updated_at = NOW() WHERE id = $1`,
-        [payment.id]
-      );
+      return prisma.$executeRaw`
+        UPDATE payments SET status = 'disputed', updated_at = NOW() WHERE id = ${payment.id}
+      `;
     });
 
     if (payment.booking_id) {
@@ -177,12 +174,11 @@ export async function handleDisputeUpdated(dispute: Stripe.Dispute) {
   const payment = await findPaymentForDispute(dispute);
   if (!payment) return;
 
-  await query(
-    `UPDATE payments
-     SET dispute_reason = COALESCE($2, dispute_reason), updated_at = NOW()
-     WHERE id = $1`,
-    [payment.id, reason || null]
-  ).catch(() => {});
+  await prisma.$executeRaw`
+    UPDATE payments
+     SET dispute_reason = COALESCE(${reason || null}, dispute_reason), updated_at = NOW()
+     WHERE id = ${payment.id}
+  `.catch(() => {});
 }
 
 /**

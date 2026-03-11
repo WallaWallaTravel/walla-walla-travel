@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth, AuthSession, RouteContext } from '@/lib/api/middleware/auth-wrapper';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import { z } from 'zod';
-import { withCSRF } from '@/lib/api/middleware/csrf';
 import { auditService } from '@/lib/services/audit.service';
 
 interface RouteParams { id: string; }
@@ -16,8 +15,7 @@ const CreateGroupSchema = z.object({
  * POST /api/admin/trip-proposals/[id]/payment-groups
  * Create a payment group (couples/subgroups)
  */
-export const POST = withCSRF(
-  withAdminAuth(
+export const POST = withAdminAuth(
   async (request: NextRequest, _session: AuthSession, context?) => {
     const { id } = await (context as RouteContext<RouteParams>).params;
     const body = await request.json();
@@ -31,15 +29,13 @@ export const POST = withCSRF(
 
     return NextResponse.json({ success: true, data: group });
   }
-)
 );
 
 /**
  * DELETE /api/admin/trip-proposals/[id]/payment-groups?groupId=xxx
  * Remove a payment group
  */
-export const DELETE = withCSRF(
-  withAdminAuth(
+export const DELETE = withAdminAuth(
   async (request: NextRequest, session: AuthSession, _context?) => {
     const url = new URL(request.url);
     const groupId = url.searchParams.get('groupId');
@@ -56,5 +52,4 @@ export const DELETE = withCSRF(
 
     return NextResponse.json({ success: true });
   }
-)
 );

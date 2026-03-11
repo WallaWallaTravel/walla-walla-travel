@@ -3,11 +3,10 @@ import { z } from 'zod';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { validateBody } from '@/lib/api/middleware/validation';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { hashPassword, validatePasswordStrength } from '@/lib/auth/passwords';
 import { logAuthEvent } from '@/lib/services/auth-audit.service';
 import crypto from 'crypto';
-import { withCSRF } from '@/lib/api/middleware/csrf';
 
 const ResetConfirmSchema = z.object({
   token: z.string().min(1, 'Reset token is required'),
@@ -19,7 +18,7 @@ const ResetConfirmSchema = z.object({
  * POST /api/partner/auth/reset-password
  * Validates token and sets new password for partners (hotel or business)
  */
-export const POST = withCSRF(
+export const POST =
   withRateLimit(rateLimiters.passwordReset)(
   withErrorHandling(async (request: NextRequest) => {
     const { token, password, type } = await validateBody(request, ResetConfirmSchema);
@@ -53,42 +52,35 @@ export const POST = withCSRF(
       timestamp: new Date().toISOString(),
     });
   })
-)
 );
 
 /**
  * Reset password for hotel partners (hotel_partners table)
  */
 async function resetHotelPartnerPassword(hashedToken: string, password: string): Promise<number> {
-  const result = await query<{ id: number; reset_token_expires_at: string }>(
-    `SELECT id, reset_token_expires_at FROM hotel_partners
-     WHERE reset_token = $1 AND is_active = true
-     FOR UPDATE`,
-    [hashedToken]
-  );
+  const rows = await prisma.$queryRaw<Array<{ id: number; reset_token_expires_at: string }>>`
+    SELECT id, reset_token_expires_at FROM hotel_partners
+     WHERE reset_token = ${hashedToken} AND is_active = true
+     FOR UPDATE`;
 
-  if (result.rows.length === 0) {
+  if (rows.length === 0) {
     throw new BadRequestError('Invalid or expired reset link');
   }
 
-  const hotel = result.rows[0];
+  const hotel = rows[0];
 
   if (new Date(hotel.reset_token_expires_at) < new Date()) {
-    await query(
-      `UPDATE hotel_partners SET reset_token = NULL, reset_token_expires_at = NULL WHERE id = $1`,
-      [hotel.id]
-    );
+    await prisma.$executeRaw`
+      UPDATE hotel_partners SET reset_token = NULL, reset_token_expires_at = NULL WHERE id = ${hotel.id}`;
     throw new BadRequestError('Reset link has expired. Please request a new one.');
   }
 
   const passwordHash = await hashPassword(password);
 
-  await query(
-    `UPDATE hotel_partners
-     SET password_hash = $1, reset_token = NULL, reset_token_expires_at = NULL, updated_at = CURRENT_TIMESTAMP
-     WHERE id = $2`,
-    [passwordHash, hotel.id]
-  );
+  await prisma.$executeRaw`
+    UPDATE hotel_partners
+     SET password_hash = ${passwordHash}, reset_token = NULL, reset_token_expires_at = NULL, updated_at = CURRENT_TIMESTAMP
+     WHERE id = ${hotel.id}`;
 
   return hotel.id;
 }
@@ -97,35 +89,29 @@ async function resetHotelPartnerPassword(hashedToken: string, password: string):
  * Reset password for business partners (users table)
  */
 async function resetBusinessPartnerPassword(hashedToken: string, password: string): Promise<number> {
-  const result = await query<{ id: number; reset_token_expires_at: string }>(
-    `SELECT id, reset_token_expires_at FROM users
-     WHERE reset_token = $1 AND is_active = true AND role = 'partner'
-     FOR UPDATE`,
-    [hashedToken]
-  );
+  const rows = await prisma.$queryRaw<Array<{ id: number; reset_token_expires_at: string }>>`
+    SELECT id, reset_token_expires_at FROM users
+     WHERE reset_token = ${hashedToken} AND is_active = true AND role = 'partner'
+     FOR UPDATE`;
 
-  if (result.rows.length === 0) {
+  if (rows.length === 0) {
     throw new BadRequestError('Invalid or expired reset link');
   }
 
-  const user = result.rows[0];
+  const user = rows[0];
 
   if (new Date(user.reset_token_expires_at) < new Date()) {
-    await query(
-      `UPDATE users SET reset_token = NULL, reset_token_expires_at = NULL WHERE id = $1`,
-      [user.id]
-    );
+    await prisma.$executeRaw`
+      UPDATE users SET reset_token = NULL, reset_token_expires_at = NULL WHERE id = ${user.id}`;
     throw new BadRequestError('Reset link has expired. Please request a new one.');
   }
 
   const passwordHash = await hashPassword(password);
 
-  await query(
-    `UPDATE users
-     SET password_hash = $1, reset_token = NULL, reset_token_expires_at = NULL, updated_at = CURRENT_TIMESTAMP
-     WHERE id = $2`,
-    [passwordHash, user.id]
-  );
+  await prisma.$executeRaw`
+    UPDATE users
+     SET password_hash = ${passwordHash}, reset_token = NULL, reset_token_expires_at = NULL, updated_at = CURRENT_TIMESTAMP
+     WHERE id = ${user.id}`;
 
   // Revoke all sessions — forces re-login with new password
   const { sessionStoreService } = await import('@/lib/services/session-store.service');

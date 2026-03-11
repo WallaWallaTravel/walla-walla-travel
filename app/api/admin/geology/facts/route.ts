@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
-import { query } from '@/lib/db';
 import { z } from 'zod';
-import { withCSRF } from '@/lib/api/middleware/csrf';
+import { prisma } from '@/lib/prisma';
 
 // ============================================================================
 // Validation
@@ -50,13 +49,13 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
 
   sql += ' ORDER BY f.is_featured DESC, f.display_order ASC, f.created_at DESC';
 
-  const result = await query(sql, params);
+  const result = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(sql, ...params);
 
   return NextResponse.json({
     success: true,
     data: {
-      facts: result.rows,
-      count: result.rows.length,
+      facts: result,
+      count: result.length,
     },
   });
 });
@@ -65,28 +64,24 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
 // POST /api/admin/geology/facts - Create a new fact
 // ============================================================================
 
-export const POST = withCSRF(
-  withAdminAuth(async (request: NextRequest, _session) => {
+export const POST = withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json();
   const validated = createFactSchema.parse(body);
 
-  const result = await query(
+  const result = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
     `INSERT INTO geology_facts (fact_text, context, fact_type, topic_id, display_order, is_featured)
      VALUES ($1, $2, $3, $4, $5, $6)
      RETURNING *`,
-    [
       validated.fact_text,
       validated.context || null,
       validated.fact_type || null,
       validated.topic_id || null,
       validated.display_order,
       validated.is_featured,
-    ]
   );
 
   return NextResponse.json({
     success: true,
-    data: result.rows[0],
+    data: result[0],
   });
-})
-);
+});

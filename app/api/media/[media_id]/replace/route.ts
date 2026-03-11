@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import {
   uploadFile,
@@ -28,16 +28,15 @@ export const POST = withCSRF(
   const { media_id } = await params;
 
   // Check if media exists
-  const existingMedia = await query(
-    `SELECT * FROM media_library WHERE id = $1 AND is_active = TRUE`,
-    [media_id]
-  );
+  const existingMediaRows = await prisma.$queryRaw<Record<string, unknown>[]>`
+    SELECT * FROM media_library WHERE id = ${parseInt(media_id)} AND is_active = TRUE
+  `;
 
-  if (existingMedia.rows.length === 0) {
+  if (existingMediaRows.length === 0) {
     throw new NotFoundError('Media not found');
   }
 
-  const media = existingMedia.rows[0];
+  const media = existingMediaRows[0];
 
   // Ensure the storage bucket exists
   await ensureMediaBucket();
@@ -58,8 +57,8 @@ export const POST = withCSRF(
 
   // Upload to Supabase Storage (use existing category/subcategory)
   const uploadResult = await uploadFile(file, file.type, {
-    category: media.category,
-    subcategory: media.subcategory || undefined,
+    category: media.category as string,
+    subcategory: (media.subcategory as string) || undefined,
     fileName: file.name,
   });
 
@@ -67,30 +66,23 @@ export const POST = withCSRF(
   const fileType = ALLOWED_IMAGE_TYPES.includes(file.type) ? 'image' : 'video';
 
   // Update database with new file info
-  const result = await query(
-    `UPDATE media_library
+  const mediaIdNum = parseInt(media_id);
+  const updatedRows = await prisma.$queryRaw<Record<string, unknown>[]>`
+    UPDATE media_library
      SET
-       file_name = $1,
-       file_path = $2,
-       file_type = $3,
-       file_size = $4,
-       mime_type = $5,
+       file_name = ${file.name},
+       file_path = ${uploadResult.publicUrl},
+       file_type = ${fileType},
+       file_size = ${file.size},
+       mime_type = ${file.type},
        updated_at = NOW()
-     WHERE id = $6 AND is_active = TRUE
-     RETURNING *`,
-    [
-      file.name,
-      uploadResult.publicUrl,
-      fileType,
-      file.size,
-      file.type,
-      media_id
-    ]
-  );
+     WHERE id = ${mediaIdNum} AND is_active = TRUE
+     RETURNING *
+  `;
 
   return NextResponse.json({
     success: true,
-    data: result.rows[0],
+    data: updatedRows[0],
     message: 'File replaced successfully',
   });
 })

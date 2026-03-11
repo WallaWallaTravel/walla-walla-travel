@@ -3,11 +3,10 @@ import { z } from 'zod';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 import { validateBody } from '@/lib/api/middleware/validation';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { sendEmail } from '@/lib/email';
 import { logAuthEvent } from '@/lib/services/auth-audit.service';
 import crypto from 'crypto';
-import { withCSRF } from '@/lib/api/middleware/csrf';
 import { emailDarkModeStyles } from '@/lib/email/dark-mode-styles';
 
 const ForgotPasswordSchema = z.object({
@@ -19,36 +18,30 @@ const ForgotPasswordSchema = z.object({
  * Request a password reset email for partners (hotel partners AND business partners)
  * Always returns success to prevent email enumeration
  */
-export const POST = withCSRF(
+export const POST =
   withRateLimit(rateLimiters.passwordReset)(
   withErrorHandling(async (request: NextRequest) => {
     const { email } = await validateBody(request, ForgotPasswordSchema);
     const normalizedEmail = email.toLowerCase();
 
     // Try hotel partner first, then business partner (users table)
-    const hotelResult = await query<{ id: number; name: string }>(
-      `SELECT id, name FROM hotel_partners WHERE email = $1 AND is_active = true`,
-      [normalizedEmail]
-    );
+    const hotelRows = await prisma.$queryRaw<Array<{ id: number; name: string }>>`
+      SELECT id, name FROM hotel_partners WHERE email = ${normalizedEmail} AND is_active = true`;
 
-    const businessResult = await query<{ id: number; name: string }>(
-      `SELECT id, name FROM users WHERE email = $1 AND is_active = true AND role = 'partner'`,
-      [normalizedEmail]
-    );
+    const businessRows = await prisma.$queryRaw<Array<{ id: number; name: string }>>`
+      SELECT id, name FROM users WHERE email = ${normalizedEmail} AND is_active = true AND role = 'partner'`;
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
     // Handle hotel partner reset
-    if (hotelResult.rows.length > 0) {
-      const hotel = hotelResult.rows[0];
+    if (hotelRows.length > 0) {
+      const hotel = hotelRows[0];
       const rawToken = crypto.randomBytes(32).toString('hex');
       const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
       const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
 
-      await query(
-        `UPDATE hotel_partners SET reset_token = $1, reset_token_expires_at = $2 WHERE id = $3`,
-        [hashedToken, expiresAt, hotel.id]
-      );
+      await prisma.$executeRaw`
+        UPDATE hotel_partners SET reset_token = ${hashedToken}, reset_token_expires_at = ${expiresAt} WHERE id = ${hotel.id}`;
 
       const resetUrl = `${appUrl}/partner-portal/reset-password?token=${rawToken}&type=hotel`;
       await sendPartnerResetEmail(normalizedEmail, hotel.name, resetUrl);
@@ -63,16 +56,14 @@ export const POST = withCSRF(
     }
 
     // Handle business partner reset
-    if (businessResult.rows.length > 0) {
-      const user = businessResult.rows[0];
+    if (businessRows.length > 0) {
+      const user = businessRows[0];
       const rawToken = crypto.randomBytes(32).toString('hex');
       const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
       const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
 
-      await query(
-        `UPDATE users SET reset_token = $1, reset_token_expires_at = $2 WHERE id = $3`,
-        [hashedToken, expiresAt, user.id]
-      );
+      await prisma.$executeRaw`
+        UPDATE users SET reset_token = ${hashedToken}, reset_token_expires_at = ${expiresAt} WHERE id = ${user.id}`;
 
       const resetUrl = `${appUrl}/partner-portal/reset-password?token=${rawToken}&type=business`;
       await sendPartnerResetEmail(normalizedEmail, user.name, resetUrl);
@@ -93,7 +84,6 @@ export const POST = withCSRF(
       timestamp: new Date().toISOString(),
     });
   })
-)
 );
 
 /**

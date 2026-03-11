@@ -7,8 +7,8 @@
 import { getSession } from '@/lib/auth/session';
 import { canAccessGeology } from '@/lib/auth/roles';
 import { redirect, notFound } from 'next/navigation';
-import { query } from '@/lib/db';
 import { GuidanceEditor } from '../GuidanceEditor';
+import { prisma } from '@/lib/prisma';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -25,11 +25,9 @@ interface GuidanceData {
 
 async function getGuidance(id: number): Promise<GuidanceData | null> {
   try {
-    const result = await query<GuidanceData>(
-      'SELECT id, guidance_type, title, content, priority, is_active FROM geology_ai_guidance WHERE id = $1',
-      [id]
-    );
-    return result.rows[0] || null;
+    const result = await prisma.$queryRawUnsafe<GuidanceData[]>(
+      'SELECT id, guidance_type, title, content, priority, is_active FROM geology_ai_guidance WHERE id = $1', id);
+    return result[0] || null;
   } catch {
     return null;
   }

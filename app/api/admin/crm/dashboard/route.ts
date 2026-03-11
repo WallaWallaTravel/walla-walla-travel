@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
-import { query } from '@/lib/db';
 import type { CrmDashboardStats, CrmActivityWithUser } from '@/types/crm';
+import { prisma } from '@/lib/prisma';
 
 /**
  * GET /api/admin/crm/dashboard
@@ -9,11 +9,11 @@ import type { CrmDashboardStats, CrmActivityWithUser } from '@/types/crm';
  */
 export const GET = withAdminAuth(async (_request: NextRequest, _session) => {
   // Get contact stats
-  const contactStatsResult = await query<{
+  const contactStatsResult = await prisma.$queryRawUnsafe<{
     total_contacts: string;
     new_leads_this_month: string;
     hot_leads: string;
-  }>(
+  }[]>(
     `SELECT
       COUNT(*) as total_contacts,
       COUNT(*) FILTER (WHERE created_at >= DATE_TRUNC('month', CURRENT_DATE)) as new_leads_this_month,
@@ -22,17 +22,17 @@ export const GET = withAdminAuth(async (_request: NextRequest, _session) => {
     []
   );
 
-  const contactStats = contactStatsResult.rows[0];
+  const contactStats = contactStatsResult[0];
 
   // Get deal stats
-  const dealStatsResult = await query<{
+  const dealStatsResult = await prisma.$queryRawUnsafe<{
     total_deals: string;
     open_deals: string;
     pipeline_value: string;
     weighted_pipeline_value: string;
     won_this_month: string;
     won_value_this_month: string;
-  }>(
+  }[]>(
     `SELECT
       COUNT(*) as total_deals,
       COUNT(*) FILTER (WHERE won_at IS NULL AND lost_at IS NULL) as open_deals,
@@ -45,14 +45,14 @@ export const GET = withAdminAuth(async (_request: NextRequest, _session) => {
     []
   );
 
-  const dealStats = dealStatsResult.rows[0];
+  const dealStats = dealStatsResult[0];
 
   // Get task stats
-  const taskStatsResult = await query<{
+  const taskStatsResult = await prisma.$queryRawUnsafe<{
     overdue_tasks: string;
     tasks_due_today: string;
     upcoming_tasks: string;
-  }>(
+  }[]>(
     `SELECT
       COUNT(*) FILTER (WHERE due_date < CURRENT_DATE AND status IN ('pending', 'in_progress')) as overdue_tasks,
       COUNT(*) FILTER (WHERE due_date = CURRENT_DATE AND status IN ('pending', 'in_progress')) as tasks_due_today,
@@ -61,10 +61,10 @@ export const GET = withAdminAuth(async (_request: NextRequest, _session) => {
     []
   );
 
-  const taskStats = taskStatsResult.rows[0];
+  const taskStats = taskStatsResult[0];
 
   // Get pipeline overview by stage
-  const pipelineOverviewResult = await query<{
+  const pipelineOverviewResult = await prisma.$queryRawUnsafe<{
     stage_id: number;
     stage_name: string;
     stage_color: string;
@@ -73,7 +73,7 @@ export const GET = withAdminAuth(async (_request: NextRequest, _session) => {
     total_value: string;
     is_won: boolean;
     is_lost: boolean;
-  }>(
+  }[]>(
     `SELECT
       ps.id as stage_id,
       ps.name as stage_name,
@@ -91,7 +91,7 @@ export const GET = withAdminAuth(async (_request: NextRequest, _session) => {
   );
 
   // Get recent activities
-  const recentActivitiesResult = await query<CrmActivityWithUser>(
+  const recentActivitiesResult = await prisma.$queryRawUnsafe<CrmActivityWithUser[]>(
     `SELECT
       a.*,
       u.name as performed_by_name,
@@ -102,12 +102,10 @@ export const GET = withAdminAuth(async (_request: NextRequest, _session) => {
     LEFT JOIN crm_contacts c ON a.contact_id = c.id
     LEFT JOIN crm_deals d ON a.deal_id = d.id
     ORDER BY a.performed_at DESC
-    LIMIT 20`,
-    []
-  );
+    LIMIT 20`, );
 
   // Get upcoming tasks
-  const upcomingTasksResult = await query(
+  const upcomingTasksResult = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
     `SELECT
       t.*,
       c.name as contact_name,
@@ -142,13 +140,13 @@ export const GET = withAdminAuth(async (_request: NextRequest, _session) => {
   return NextResponse.json({
     success: true,
     stats,
-    pipelineOverview: pipelineOverviewResult.rows.map(row => ({
+    pipelineOverview: pipelineOverviewResult.map(row => ({
       ...row,
       deal_count: parseInt(String(row.deal_count)),
       total_value: parseFloat(String(row.total_value)),
     })),
-    recentActivities: recentActivitiesResult.rows,
-    upcomingTasks: upcomingTasksResult.rows,
+    recentActivities: recentActivitiesResult,
+    upcomingTasks: upcomingTasksResult,
     timestamp: new Date().toISOString(),
   });
 });

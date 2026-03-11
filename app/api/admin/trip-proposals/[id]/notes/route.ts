@@ -9,7 +9,6 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { proposalNotesService } from '@/lib/services/proposal-notes.service';
 import { StaffNoteSchema } from '@/lib/types/proposal-notes';
 import type { NoteContextType } from '@/lib/types/proposal-notes';
-import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -62,8 +61,7 @@ export const GET = withAdminAuth(async (request: NextRequest, session, context) 
  * POST /api/admin/trip-proposals/[id]/notes
  * Create a new note from staff.
  */
-export const POST = withCSRF(
-  withAdminAuth(async (request: NextRequest, session, context) => {
+export const POST = withAdminAuth(async (request: NextRequest, session, context) => {
   const { id } = await (context as unknown as RouteParams).params;
   const proposalId = parseInt(id, 10);
 
@@ -101,5 +99,4 @@ export const POST = withCSRF(
     },
     { status: 201 }
   );
-})
-);
+});

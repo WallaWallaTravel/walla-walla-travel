@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { query } from '@/lib/db'
+import { query } from '@/lib/prisma-query'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError } from '@/lib/api/middleware/error-handler'
-import { withCSRF } from '@/lib/api/middleware/csrf'
 import { z } from 'zod'
 
 const ImportedLeadSchema = z.object({
@@ -108,7 +107,7 @@ async function postHandler(request: NextRequest) {
     const fullName = [lead.first_name, lead.last_name].filter(Boolean).join(' ')
 
     try {
-      const result = await query(`
+      const result = await query<{ id: number }>(`
         INSERT INTO crm_contacts (
           email, name, phone, company, contact_type, lifecycle_stage,
           lead_score, lead_temperature, source, source_detail, notes,
@@ -247,6 +246,4 @@ function parseCSVLine(line: string): string[] {
   return result
 }
 
-export const POST = withCSRF(
-  withAdminAuth(postHandler)
-)
+export const POST = withAdminAuth(postHandler)

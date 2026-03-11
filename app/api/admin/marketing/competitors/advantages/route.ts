@@ -4,7 +4,7 @@ import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { competitorMonitoringService } from '@/lib/services/competitor-monitoring.service';
 import type { CreateAdvantageInput } from '@/types/competitors';
-import { withCSRF } from '@/lib/api/middleware/csrf';
+
 
 const PostBodySchema = z.object({
   title: z.string().min(1).max(255),
@@ -96,9 +96,5 @@ async function putHandler(request: NextRequest) {
 }
 
 export const GET = withAdminAuth(async (request, _session) => getHandler(request));
-export const POST = withCSRF(
-  withAdminAuth(async (request, session) => postHandler(request, session))
-);
-export const PUT = withCSRF(
-  withAdminAuth(async (request, _session) => putHandler(request))
-);
+export const POST = withAdminAuth(async (request, session) => postHandler(request, session));
+export const PUT = withAdminAuth(async (request, _session) => putHandler(request));

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, NotFoundError, RouteContext } from '@/lib/api/middleware/error-handler';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
-import { queryOne, queryMany } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 
 interface RouteParams { token: string; groupToken: string; }
 
@@ -17,25 +17,22 @@ export const GET = withErrorHandling<unknown, RouteParams>(
     if (!proposal) throw new NotFoundError('Trip not found');
 
     // Verify group belongs to this proposal
-    const group = await queryOne<{ id: string; trip_proposal_id: number; group_name: string }>(
-      'SELECT id, trip_proposal_id, group_name FROM guest_payment_groups WHERE group_access_token = $1',
-      [groupToken]
-    );
+    const groupRows = await prisma.$queryRaw<{ id: string; trip_proposal_id: number; group_name: string }[]>`
+      SELECT id, trip_proposal_id, group_name FROM guest_payment_groups WHERE group_access_token = ${groupToken}`;
+    const group = groupRows[0] ?? null;
 
     if (!group || group.trip_proposal_id !== proposal.id) {
       throw new NotFoundError('Payment group not found');
     }
 
     // Get all members in this group
-    const members = await queryMany<{
+    const members = await prisma.$queryRaw<{
       id: number; name: string; amount_owed: string; amount_paid: string; payment_status: string;
-    }>(
-      `SELECT id, name, amount_owed, amount_paid, payment_status
-       FROM trip_proposal_guests
-       WHERE payment_group_id = $1
-       ORDER BY name ASC`,
-      [group.id]
-    );
+    }[]>`
+      SELECT id, name, amount_owed, amount_paid, payment_status
+      FROM trip_proposal_guests
+      WHERE payment_group_id = ${group.id}
+      ORDER BY name ASC`;
 
     return NextResponse.json({
       success: true,

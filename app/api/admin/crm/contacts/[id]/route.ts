@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { NotFoundError, BadRequestError } from '@/lib/api/middleware/error-handler';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import type { CrmContactSummary, UpdateContactData } from '@/types/crm';
-import { withCSRF } from '@/lib/api/middleware/csrf';
 import { auditService } from '@/lib/services/audit.service';
 
 /**
@@ -22,8 +21,8 @@ export const GET = withAdminAuth(async (
   }
 
   // Get contact with summary data
-  const result = await query<CrmContactSummary>(
-    `SELECT
+  const rows = await prisma.$queryRaw<CrmContactSummary[]>`
+    SELECT
       c.*,
       u.name as assigned_user_name,
       COUNT(DISTINCT d.id) FILTER (WHERE d.won_at IS NULL AND d.lost_at IS NULL) as active_deals,
@@ -35,18 +34,16 @@ export const GET = withAdminAuth(async (
     FROM crm_contacts c
     LEFT JOIN users u ON c.assigned_to = u.id
     LEFT JOIN crm_deals d ON d.contact_id = c.id
-    WHERE c.id = $1
-    GROUP BY c.id, u.name`,
-    [contactId]
-  );
+    WHERE c.id = ${contactId}
+    GROUP BY c.id, u.name`;
 
-  if (result.rows.length === 0) {
+  if (rows.length === 0) {
     throw new NotFoundError('Contact not found');
   }
 
   // Get deals for this contact
-  const dealsResult = await query(
-    `SELECT
+  const deals = await prisma.$queryRaw`
+    SELECT
       d.*,
       ps.name as stage_name,
       ps.color as stage_color,
@@ -54,44 +51,38 @@ export const GET = withAdminAuth(async (
     FROM crm_deals d
     JOIN crm_pipeline_stages ps ON d.stage_id = ps.id
     LEFT JOIN crm_deal_types dt ON d.deal_type_id = dt.id
-    WHERE d.contact_id = $1
-    ORDER BY d.created_at DESC`,
-    [contactId]
-  );
+    WHERE d.contact_id = ${contactId}
+    ORDER BY d.created_at DESC`;
 
   // Get recent activities for this contact
-  const activitiesResult = await query(
-    `SELECT
+  const activities = await prisma.$queryRaw`
+    SELECT
       a.*,
       u.name as performed_by_name
     FROM crm_activities a
     LEFT JOIN users u ON a.performed_by = u.id
-    WHERE a.contact_id = $1
+    WHERE a.contact_id = ${contactId}
     ORDER BY a.performed_at DESC
-    LIMIT 20`,
-    [contactId]
-  );
+    LIMIT 20`;
 
   // Get tasks for this contact
-  const tasksResult = await query(
-    `SELECT
+  const tasks = await prisma.$queryRaw`
+    SELECT
       t.*,
       u.name as assigned_user_name
     FROM crm_tasks t
     LEFT JOIN users u ON t.assigned_to = u.id
-    WHERE t.contact_id = $1
+    WHERE t.contact_id = ${contactId}
     ORDER BY
       CASE WHEN t.status IN ('pending', 'in_progress') THEN 0 ELSE 1 END,
-      t.due_date ASC`,
-    [contactId]
-  );
+      t.due_date ASC`;
 
   return NextResponse.json({
     success: true,
-    contact: result.rows[0],
-    deals: dealsResult.rows,
-    activities: activitiesResult.rows,
-    tasks: tasksResult.rows,
+    contact: rows[0],
+    deals,
+    activities,
+    tasks,
     timestamp: new Date().toISOString(),
   });
 });
@@ -121,8 +112,7 @@ const BodySchema = z.object({
  * PATCH /api/admin/crm/contacts/[id]
  * Update a contact
  */
-export const PATCH = withCSRF(
-  withAdminAuth(async (
+export const PATCH = withAdminAuth(async (
   request: NextRequest, _session, context
 ) => {
   const { id } = await context!.params;
@@ -160,32 +150,30 @@ export const PATCH = withCSRF(
 
   params.push(contactId);
 
-  const result = await query(
+  const rows = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
     `UPDATE crm_contacts
      SET ${updates.join(', ')}, updated_at = NOW()
      WHERE id = $${paramIndex}
      RETURNING *`,
-    params
+    ...params
   );
 
-  if (result.rows.length === 0) {
+  if (rows.length === 0) {
     throw new NotFoundError('Contact not found');
   }
 
   return NextResponse.json({
     success: true,
-    contact: result.rows[0],
+    contact: rows[0],
     timestamp: new Date().toISOString(),
   });
-})
-);
+});
 
 /**
  * DELETE /api/admin/crm/contacts/[id]
  * Delete a contact (soft delete by setting lifecycle_stage to 'lost')
  */
-export const DELETE = withCSRF(
-  withAdminAuth(async (
+export const DELETE = withAdminAuth(async (
   request: NextRequest, session, context
 ) => {
   const { id } = await context!.params;
@@ -196,25 +184,21 @@ export const DELETE = withCSRF(
   }
 
   // Check if contact has active deals
-  const activeDealsResult = await query<{ count: string }>(
-    `SELECT COUNT(*) as count FROM crm_deals WHERE contact_id = $1 AND won_at IS NULL AND lost_at IS NULL`,
-    [contactId]
-  );
+  const activeDealsResult = await prisma.$queryRaw<{ count: string }[]>`
+    SELECT COUNT(*) as count FROM crm_deals WHERE contact_id = ${contactId} AND won_at IS NULL AND lost_at IS NULL`;
 
-  if (parseInt(activeDealsResult.rows[0]?.count || '0') > 0) {
+  if (parseInt(activeDealsResult[0]?.count || '0') > 0) {
     throw new BadRequestError('Cannot delete contact with active deals. Close or reassign deals first.');
   }
 
   // Soft delete - mark as lost
-  const result = await query(
-    `UPDATE crm_contacts
+  const rows = await prisma.$queryRaw<{ id: number }[]>`
+    UPDATE crm_contacts
      SET lifecycle_stage = 'lost', updated_at = NOW()
-     WHERE id = $1
-     RETURNING id`,
-    [contactId]
-  );
+     WHERE id = ${contactId}
+     RETURNING id`;
 
-  if (result.rows.length === 0) {
+  if (rows.length === 0) {
     throw new NotFoundError('Contact not found');
   }
 
@@ -228,5 +212,4 @@ export const DELETE = withCSRF(
     message: 'Contact marked as lost',
     timestamp: new Date().toISOString(),
   });
-})
-);
+});

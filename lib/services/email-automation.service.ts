@@ -5,8 +5,7 @@ import { logger } from '@/lib/logger';
  */
 
 import { sendEmail, EmailTemplates } from '@/lib/email';
-import { query } from '@/lib/db';
-import { queryOne, queryMany } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 import { crmSyncService } from './crm-sync.service';
 
 interface BookingData {
@@ -46,15 +45,16 @@ interface PaymentData {
  */
 export async function sendBookingConfirmationEmail(bookingId: number): Promise<boolean> {
   try {
-    const booking = await queryOne<BookingData>(`
-      SELECT 
+    const bookingRows = await prisma.$queryRawUnsafe<BookingData[]>(`
+      SELECT
         b.*,
         u.name as driver_name,
         u.email as driver_email
       FROM bookings b
       LEFT JOIN users u ON b.driver_id = u.id
       WHERE b.id = $1
-    `, [bookingId]);
+    `, bookingId);
+    const booking = bookingRows[0] ?? null;
 
     if (!booking || !booking.customer_email) {
       logger.error('[EmailAutomation] Booking not found or no email', { bookingId });
@@ -62,13 +62,13 @@ export async function sendBookingConfirmationEmail(bookingId: number): Promise<b
     }
 
     // Get wineries for this booking
-    const wineries = await queryMany<{ name: string; city: string }>(`
+    const wineries = await prisma.$queryRawUnsafe<{ name: string; city: string }[]>(`
       SELECT w.name, w.city
       FROM itinerary_stops its
       JOIN wineries w ON its.winery_id = w.id
       WHERE its.booking_id = $1
       ORDER BY its.stop_order
-    `, [bookingId]);
+    `, bookingId);
 
     const template = EmailTemplates.bookingConfirmation({
       customer_name: booking.customer_name,
@@ -92,7 +92,7 @@ export async function sendBookingConfirmationEmail(bookingId: number): Promise<b
 
     if (result) {
       // Log email sent
-      await query(`
+      await prisma.$executeRawUnsafe(`
         INSERT INTO email_logs (
           booking_id,
           email_type,
@@ -101,7 +101,7 @@ export async function sendBookingConfirmationEmail(bookingId: number): Promise<b
           sent_at,
           status
         ) VALUES ($1, $2, $3, $4, NOW(), 'sent')
-      `, [bookingId, 'booking_confirmation', booking.customer_email, template.subject]);
+      `, bookingId, 'booking_confirmation', booking.customer_email, template.subject);
 
       // Log to CRM (async, non-blocking)
       crmSyncService.logEmailSent({
@@ -113,7 +113,7 @@ export async function sendBookingConfirmationEmail(bookingId: number): Promise<b
       });
     } else {
       // Log failed send for retry (next_retry_at = NOW for immediate first retry)
-      await query(`
+      await prisma.$executeRawUnsafe(`
         INSERT INTO email_logs (
           booking_id,
           email_type,
@@ -124,7 +124,7 @@ export async function sendBookingConfirmationEmail(bookingId: number): Promise<b
           retry_count,
           next_retry_at
         ) VALUES ($1, $2, $3, $4, NOW(), 'failed', 0, NOW())
-      `, [bookingId, 'booking_confirmation', booking.customer_email, template.subject]).catch(() => {});
+      `, bookingId, 'booking_confirmation', booking.customer_email, template.subject).catch(() => {});
 
       logger.warn('[EmailAutomation] Booking confirmation send failed, logged for retry', {
         bookingId,
@@ -139,7 +139,7 @@ export async function sendBookingConfirmationEmail(bookingId: number): Promise<b
     logger.error('[EmailAutomation] Error sending booking confirmation', { error, bookingId });
 
     // Log error for retry (next_retry_at = NOW for immediate first retry)
-    await query(`
+    await prisma.$executeRawUnsafe(`
       INSERT INTO email_logs (
         booking_id,
         email_type,
@@ -151,7 +151,7 @@ export async function sendBookingConfirmationEmail(bookingId: number): Promise<b
         retry_count,
         next_retry_at
       ) VALUES ($1, 'booking_confirmation', 'unknown', 'Booking Confirmation', NOW(), 'error', $2, 0, NOW())
-    `, [bookingId, error instanceof Error ? error.message : 'Unknown error']).catch(() => {});
+    `, bookingId, error instanceof Error ? error.message : 'Unknown error').catch(() => {});
 
     return false;
   }
@@ -163,8 +163,8 @@ export async function sendBookingConfirmationEmail(bookingId: number): Promise<b
  */
 export async function sendPaymentReceiptEmail(paymentId: number): Promise<boolean> {
   try {
-    const payment = await queryOne<PaymentData>(`
-      SELECT 
+    const paymentRows = await prisma.$queryRawUnsafe<PaymentData[]>(`
+      SELECT
         p.*,
         b.customer_name,
         b.customer_email,
@@ -172,7 +172,8 @@ export async function sendPaymentReceiptEmail(paymentId: number): Promise<boolea
       FROM payments p
       JOIN bookings b ON p.booking_id = b.id
       WHERE p.id = $1
-    `, [paymentId]);
+    `, paymentId);
+    const payment = paymentRows[0] ?? null;
 
     if (!payment || !payment.customer_email) {
       logger.error('[EmailAutomation] Payment not found or no email', { paymentId });
@@ -181,19 +182,18 @@ export async function sendPaymentReceiptEmail(paymentId: number): Promise<boolea
 
     const result = await sendEmail({
       to: payment.customer_email,
-      subject: `✅ Payment Received - ${payment.booking_number}`,
+      subject: `Payment Received - ${payment.booking_number}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: #10b981; color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-            <div style="font-size: 48px; margin-bottom: 10px;">✅</div>
             <h1 style="margin: 0;">Payment Received!</h1>
           </div>
-          
+
           <div style="background: #f9fafb; padding: 30px; border: 1px solid #e5e7eb; border-radius: 0 0 10px 10px;">
             <p>Hi ${payment.customer_name},</p>
-            
+
             <p>Thank you! We've received your ${payment.payment_type === 'deposit' ? 'deposit' : 'payment'}.</p>
-            
+
             <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981;">
               <p style="margin: 5px 0;"><strong>Booking:</strong> ${payment.booking_number}</p>
               <p style="margin: 5px 0;"><strong>Amount:</strong> $${payment.amount.toFixed(2)}</p>
@@ -201,9 +201,9 @@ export async function sendPaymentReceiptEmail(paymentId: number): Promise<boolea
               <p style="margin: 5px 0;"><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
               ${payment.stripe_payment_intent_id ? `<p style="margin: 5px 0;"><strong>Transaction ID:</strong> ${payment.stripe_payment_intent_id}</p>` : ''}
             </div>
-            
+
             <p>If you have any questions, please don't hesitate to reach out.</p>
-            
+
             <p>Cheers!<br>Walla Walla Travel Team</p>
           </div>
         </div>
@@ -211,7 +211,7 @@ export async function sendPaymentReceiptEmail(paymentId: number): Promise<boolea
     });
 
     if (result) {
-      await query(`
+      await prisma.$executeRawUnsafe(`
         INSERT INTO email_logs (
           booking_id,
           email_type,
@@ -220,7 +220,7 @@ export async function sendPaymentReceiptEmail(paymentId: number): Promise<boolea
           sent_at,
           status
         ) VALUES ($1, $2, $3, $4, NOW(), 'sent')
-      `, [payment.booking_id, 'payment_receipt', payment.customer_email, 'Payment Received']);
+      `, payment.booking_id, 'payment_receipt', payment.customer_email, 'Payment Received');
 
       // Log to CRM (async, non-blocking)
       crmSyncService.logEmailSent({
@@ -247,15 +247,16 @@ export async function sendPaymentReceiptEmail(paymentId: number): Promise<boolea
  */
 export async function sendTourReminderEmail(bookingId: number): Promise<boolean> {
   try {
-    const booking = await queryOne<BookingData>(`
-      SELECT 
+    const bookingRows = await prisma.$queryRawUnsafe<BookingData[]>(`
+      SELECT
         b.*,
         u.name as driver_name,
         u.phone as driver_phone
       FROM bookings b
       LEFT JOIN users u ON b.driver_id = u.id
       WHERE b.id = $1
-    `, [bookingId]);
+    `, bookingId);
+    const booking = bookingRows[0] ?? null;
 
     if (!booking || !booking.customer_email) {
       logger.error('[EmailAutomation] Booking not found or no email', { bookingId });
@@ -263,82 +264,81 @@ export async function sendTourReminderEmail(bookingId: number): Promise<boolean>
     }
 
     // Get itinerary
-    const stops = await queryMany<{ name: string; arrival_time: string; city: string }>(`
+    const stops = await prisma.$queryRawUnsafe<{ name: string; arrival_time: string; city: string }[]>(`
       SELECT w.name, its.arrival_time::text, w.city
       FROM itinerary_stops its
       JOIN wineries w ON its.winery_id = w.id
       WHERE its.booking_id = $1
       ORDER BY its.stop_order
-    `, [bookingId]);
+    `, bookingId);
 
     const tourDate = new Date(booking.tour_date);
-    const formattedDate = tourDate.toLocaleDateString('en-US', { 
-      weekday: 'long', 
-      month: 'long', 
-      day: 'numeric', 
-      year: 'numeric' 
+    const formattedDate = tourDate.toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
     });
 
     const result = await sendEmail({
       to: booking.customer_email,
-      subject: `🍷 Your Tour is Coming Up! ${formattedDate}`,
+      subject: `Your Tour is Coming Up! ${formattedDate}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background-color: #7c3aed; background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-            <div style="font-size: 48px; margin-bottom: 10px;">🍷</div>
+          <div style="background-color: #7c3aed; color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
             <h1 style="margin: 0;">Your Tour is Almost Here!</h1>
             <p style="margin: 10px 0 0 0; color: #d9d9d9;">${formattedDate}</p>
           </div>
-          
+
           <div style="background: #f9fafb; padding: 30px; border: 1px solid #e5e7eb; border-radius: 0 0 10px 10px;">
             <p>Hi ${booking.customer_name},</p>
-            
+
             <p>We're excited for your upcoming wine tour! Here's everything you need to know:</p>
-            
+
             <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #7c3aed;">
-              <h2 style="margin-top: 0; color: #7c3aed;">📋 Tour Details</h2>
-              <p style="margin: 5px 0;"><strong>📅 Date:</strong> ${formattedDate}</p>
-              <p style="margin: 5px 0;"><strong>🕐 Pickup Time:</strong> ${booking.start_time}</p>
-              <p style="margin: 5px 0;"><strong>📍 Pickup Location:</strong> ${booking.pickup_location || 'TBD'}</p>
-              <p style="margin: 5px 0;"><strong>👥 Party Size:</strong> ${booking.party_size} guests</p>
-              ${booking.driver_name ? `<p style="margin: 5px 0;"><strong>🚗 Driver:</strong> ${booking.driver_name}</p>` : ''}
+              <h2 style="margin-top: 0; color: #7c3aed;">Tour Details</h2>
+              <p style="margin: 5px 0;"><strong>Date:</strong> ${formattedDate}</p>
+              <p style="margin: 5px 0;"><strong>Pickup Time:</strong> ${booking.start_time}</p>
+              <p style="margin: 5px 0;"><strong>Pickup Location:</strong> ${booking.pickup_location || 'TBD'}</p>
+              <p style="margin: 5px 0;"><strong>Party Size:</strong> ${booking.party_size} guests</p>
+              ${booking.driver_name ? `<p style="margin: 5px 0;"><strong>Driver:</strong> ${booking.driver_name}</p>` : ''}
             </div>
-            
+
             ${stops.length > 0 ? `
             <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <h3 style="margin-top: 0; color: #1f2937;">🗺️ Your Itinerary</h3>
+              <h3 style="margin-top: 0; color: #1f2937;">Your Itinerary</h3>
               ${stops.map((stop: { name: string; city: string; arrival_time?: string }, i: number) => `
                 <p style="margin: 8px 0; padding-left: 20px; border-left: 2px solid #e5e7eb;">
                   <strong>${i + 1}. ${stop.name}</strong><br>
-                  <span style="color: #6b7280; font-size: 14px;">${stop.city} • ${stop.arrival_time || 'Time TBD'}</span>
+                  <span style="color: #6b7280; font-size: 14px;">${stop.city} - ${stop.arrival_time || 'Time TBD'}</span>
                 </p>
               `).join('')}
             </div>
             ` : ''}
-            
+
             <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <h3 style="margin-top: 0; color: #92400e;">📝 Reminders</h3>
+              <h3 style="margin-top: 0; color: #92400e;">Reminders</h3>
               <ul style="margin: 0; padding-left: 20px; color: #78350f;">
                 <li>Wear comfortable shoes for walking through vineyards</li>
                 <li>Bring a light jacket - wine caves can be cool</li>
                 <li>Have a light breakfast before tasting</li>
                 <li>Bring water to stay hydrated</li>
-                <li>Camera for those vineyard views! 📸</li>
+                <li>Camera for those vineyard views!</li>
               </ul>
             </div>
-            
+
             <p>We can't wait to show you the best of Walla Walla wine country!</p>
-            
+
             <p>Questions? Reply to this email or call us at (509) 555-0199.</p>
-            
-            <p>Cheers! 🥂<br>Walla Walla Travel Team</p>
+
+            <p>Cheers!<br>Walla Walla Travel Team</p>
           </div>
         </div>
       `,
     });
 
     if (result) {
-      await query(`
+      await prisma.$executeRawUnsafe(`
         INSERT INTO email_logs (
           booking_id,
           email_type,
@@ -347,12 +347,12 @@ export async function sendTourReminderEmail(bookingId: number): Promise<boolean>
           sent_at,
           status
         ) VALUES ($1, $2, $3, $4, NOW(), 'sent')
-      `, [bookingId, 'tour_reminder', booking.customer_email, 'Your Tour is Coming Up']);
+      `, bookingId, 'tour_reminder', booking.customer_email, 'Your Tour is Coming Up');
 
       // Mark reminder as sent
-      await query(`
+      await prisma.$executeRawUnsafe(`
         UPDATE bookings SET reminder_sent = true WHERE id = $1
-      `, [bookingId]);
+      `, bookingId);
 
       // Log to CRM (async, non-blocking)
       crmSyncService.logEmailSent({
@@ -383,7 +383,7 @@ export async function processTourReminders(): Promise<{ sent: number; failed: nu
 
   try {
     // Find bookings needing reminders (48 hours before tour)
-    const bookings = await queryMany<{ id: number; booking_number: string }>(`
+    const bookings = await prisma.$queryRawUnsafe<{ id: number; booking_number: string }[]>(`
       SELECT id, booking_number
       FROM bookings
       WHERE status IN ('confirmed', 'pending')
@@ -402,7 +402,7 @@ export async function processTourReminders(): Promise<{ sent: number; failed: nu
       } else {
         failed++;
       }
-      
+
       // Small delay between emails
       await new Promise(resolve => setTimeout(resolve, 500));
     }
@@ -419,13 +419,13 @@ export async function processTourReminders(): Promise<{ sent: number; failed: nu
  */
 export async function sendDriverAssignmentToCustomer(bookingId: number): Promise<boolean> {
   try {
-    const booking = await queryOne<BookingData & { 
+    const bookingRows = await prisma.$queryRawUnsafe<(BookingData & {
       driver_phone: string;
       vehicle_number: string;
       vehicle_make: string;
       vehicle_model: string;
-    }>(`
-      SELECT 
+    })[]>(`
+      SELECT
         b.*,
         u.name as driver_name,
         u.phone as driver_phone,
@@ -437,7 +437,8 @@ export async function sendDriverAssignmentToCustomer(bookingId: number): Promise
       LEFT JOIN vehicle_assignments va ON va.booking_id = b.id
       LEFT JOIN vehicles v ON va.vehicle_id = v.id
       WHERE b.id = $1
-    `, [bookingId]);
+    `, bookingId);
+    const booking = bookingRows[0] ?? null;
 
     if (!booking || !booking.customer_email || !booking.driver_name) {
       logger.error('[EmailAutomation] Booking, email, or driver not found', { bookingId });
@@ -445,33 +446,31 @@ export async function sendDriverAssignmentToCustomer(bookingId: number): Promise
     }
 
     const tourDate = new Date(booking.tour_date);
-    const formattedDate = tourDate.toLocaleDateString('en-US', { 
-      weekday: 'long', 
-      month: 'long', 
-      day: 'numeric' 
+    const formattedDate = tourDate.toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric'
     });
 
     const result = await sendEmail({
       to: booking.customer_email,
-      subject: `🚗 Your Driver is Confirmed - ${booking.booking_number}`,
+      subject: `Your Driver is Confirmed - ${booking.booking_number}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background-color: #3b82f6; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-            <div style="font-size: 48px; margin-bottom: 10px;">🚗</div>
+          <div style="background-color: #3b82f6; color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
             <h1 style="margin: 0;">Driver Confirmed!</h1>
           </div>
-          
+
           <div style="background: #f9fafb; padding: 30px; border: 1px solid #e5e7eb; border-radius: 0 0 10px 10px;">
             <p>Hi ${booking.customer_name},</p>
-            
+
             <p>Great news! Your driver has been assigned for your ${formattedDate} tour.</p>
-            
+
             <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
-              <div style="font-size: 48px; margin-bottom: 10px;">👨‍✈️</div>
               <h2 style="margin: 0; color: #1f2937;">${booking.driver_name}</h2>
               ${booking.driver_phone ? `<p style="color: #6b7280; margin: 10px 0;">${booking.driver_phone}</p>` : ''}
             </div>
-            
+
             ${booking.vehicle_number ? `
             <div style="background: white; padding: 15px; border-radius: 8px; margin: 20px 0;">
               <p style="margin: 0; color: #6b7280; font-size: 14px;">Your Vehicle</p>
@@ -480,24 +479,24 @@ export async function sendDriverAssignmentToCustomer(bookingId: number): Promise
               </p>
             </div>
             ` : ''}
-            
+
             <div style="background: #dbeafe; padding: 15px; border-radius: 8px; margin: 20px 0;">
               <p style="margin: 0; color: #1e40af;">
-                <strong>📅 ${formattedDate}</strong><br>
-                🕐 ${booking.start_time} pickup at ${booking.pickup_location || 'TBD'}
+                <strong>${formattedDate}</strong><br>
+                ${booking.start_time} pickup at ${booking.pickup_location || 'TBD'}
               </p>
             </div>
-            
+
             <p>Your driver will be in touch closer to your tour date with any final details.</p>
-            
-            <p>See you soon! 🍷<br>Walla Walla Travel Team</p>
+
+            <p>See you soon!<br>Walla Walla Travel Team</p>
           </div>
         </div>
       `,
     });
 
     if (result) {
-      await query(`
+      await prisma.$executeRawUnsafe(`
         INSERT INTO email_logs (
           booking_id,
           email_type,
@@ -506,7 +505,7 @@ export async function sendDriverAssignmentToCustomer(bookingId: number): Promise
           sent_at,
           status
         ) VALUES ($1, $2, $3, $4, NOW(), 'sent')
-      `, [bookingId, 'driver_assignment_customer', booking.customer_email, 'Driver Confirmed']);
+      `, bookingId, 'driver_assignment_customer', booking.customer_email, 'Driver Confirmed');
 
       // Log to CRM (async, non-blocking)
       crmSyncService.logEmailSent({
@@ -548,12 +547,12 @@ export async function retryFailedEmails(): Promise<{ retried: number; succeeded:
   let failed = 0;
 
   try {
-    const failedEmails = await queryMany<{
+    const failedEmails = await prisma.$queryRawUnsafe<{
       id: number;
       booking_id: number;
       email_type: string;
       retry_count: number;
-    }>(`
+    }[]>(`
       SELECT id, booking_id, email_type, COALESCE(retry_count, 0) as retry_count
       FROM email_logs
       WHERE status IN ('failed', 'error')
@@ -563,7 +562,7 @@ export async function retryFailedEmails(): Promise<{ retried: number; succeeded:
         AND sent_at > NOW() - INTERVAL '24 hours'
       ORDER BY next_retry_at ASC
       LIMIT 10
-    `, [MAX_RETRIES]);
+    `, MAX_RETRIES);
 
     for (const email of failedEmails) {
       retried++;
@@ -576,9 +575,9 @@ export async function retryFailedEmails(): Promise<{ retried: number; succeeded:
       if (success) {
         succeeded++;
         // Mark original as superseded
-        await query(
+        await prisma.$executeRawUnsafe(
           `UPDATE email_logs SET status = 'superseded', next_retry_at = NULL, updated_at = NOW() WHERE id = $1`,
-          [email.id]
+          email.id
         );
       } else {
         failed++;
@@ -588,13 +587,13 @@ export async function retryFailedEmails(): Promise<{ retried: number; succeeded:
           ? `NOW() + INTERVAL '${RETRY_BACKOFF_MINUTES[newRetryCount]} minutes'`
           : 'NULL';
 
-        await query(
+        await prisma.$executeRawUnsafe(
           `UPDATE email_logs
            SET retry_count = $1,
                next_retry_at = ${nextRetryAt},
                updated_at = NOW()
            WHERE id = $2`,
-          [newRetryCount, email.id]
+          newRetryCount, email.id
         );
       }
     }
@@ -616,4 +615,3 @@ export const EmailAutomation = {
   processTourReminders,
   retryFailedEmails,
 };
-

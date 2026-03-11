@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { query } from '@/lib/db'
+import { query } from '@/lib/prisma-query'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError } from '@/lib/api/middleware/error-handler'
-import { withCSRF } from '@/lib/api/middleware/csrf'
 import { z } from 'zod'
 
 const PostBodySchema = z.object({
@@ -119,12 +118,12 @@ async function getHandler(request: NextRequest) {
     c.created_at DESC
   `
 
-  const result = await query(queryText, params)
+  const result = await query<Record<string, string | number | null>>(queryText, params)
 
   // Transform results to match the expected Lead format
   const leads = result.rows.map(row => {
     // Split name into first_name and last_name
-    const nameParts = (row.name || '').split(' ')
+    const nameParts = String(row.name || '').split(' ')
     const firstName = nameParts[0] || ''
     const lastName = nameParts.slice(1).join(' ') || ''
 
@@ -136,7 +135,7 @@ async function getHandler(request: NextRequest) {
       phone: row.phone,
       company: row.company,
       source: row.source || 'website',
-      status: mapLifecycleToStatus(row.lifecycle_stage),
+      status: mapLifecycleToStatus(String(row.lifecycle_stage || 'lead')),
       temperature: row.temperature || 'cold',
       score: row.score || 0,
       interested_services: [], // Not stored in CRM contacts - would need separate table
@@ -309,6 +308,4 @@ async function postHandler(request: NextRequest) {
 }
 
 export const GET = withAdminAuth(getHandler)
-export const POST = withCSRF(
-  withAdminAuth(postHandler)
-)
+export const POST = withAdminAuth(postHandler)

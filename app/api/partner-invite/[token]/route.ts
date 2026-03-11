@@ -8,8 +8,7 @@ import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-h
 import { businessDirectoryService } from '@/lib/services/business-directory.service';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
-import { query } from '@/lib/db';
-import { withCSRF } from '@/lib/api/middleware/csrf';
+import { prisma } from '@/lib/prisma';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -72,7 +71,7 @@ const AcceptInvitationSchema = z.object({
  *   password: string
  * }
  */
-export const POST = withCSRF(
+export const POST =
   withErrorHandling(async (request: NextRequest, { params }: RouteParams) => {
   const { token } = await params;
 
@@ -98,12 +97,10 @@ export const POST = withCSRF(
   const business = validation.business!;
 
   // Check if email already exists
-  const existingUser = await query<{ id: number }>(
-    'SELECT id FROM users WHERE email = $1',
-    [email.toLowerCase()]
-  );
+  const existingUser = await prisma.$queryRaw<Array<{ id: number }>>`
+    SELECT id FROM users WHERE email = ${email.toLowerCase()}`;
 
-  if (existingUser.rows.length > 0) {
+  if (existingUser.length > 0) {
     throw new BadRequestError('An account with this email already exists. Please log in instead.');
   }
 
@@ -111,43 +108,34 @@ export const POST = withCSRF(
   const passwordHash = await bcrypt.hash(password, 10);
 
   // Create user with partner role
-  const userResult = await query<{ id: number }>(
-    `INSERT INTO users (email, name, password_hash, role, is_active)
-     VALUES ($1, $2, $3, 'partner', true)
-     RETURNING id`,
-    [email.toLowerCase(), name, passwordHash]
-  );
+  const userRows = await prisma.$queryRaw<Array<{ id: number }>>`
+    INSERT INTO users (email, name, password_hash, role, is_active)
+     VALUES (${email.toLowerCase()}, ${name}, ${passwordHash}, 'partner', true)
+     RETURNING id`;
 
-  if (userResult.rows.length === 0) {
+  if (userRows.length === 0) {
     throw new Error('Failed to create user');
   }
 
-  const userId = userResult.rows[0].id;
+  const userId = userRows[0].id;
 
   // Revoke any existing sessions (defensive — new user unlikely to have sessions)
   const { sessionStoreService } = await import('@/lib/services/session-store.service');
   await sessionStoreService.revokeAllUserSessions(userId);
 
   // Create partner profile linked to the business
-  const profileResult = await query<{ id: number }>(
-    `INSERT INTO partner_profiles (
+  const profileRows = await prisma.$queryRaw<Array<{ id: number }>>`
+    INSERT INTO partner_profiles (
       user_id, business_name, business_type, winery_id, status,
       setup_completed_at, notes
-    ) VALUES ($1, $2, $3, $4, 'active', CURRENT_TIMESTAMP, 'Joined via business directory invitation')
-    RETURNING id`,
-    [
-      userId,
-      business.name,
-      business.business_type,
-      business.winery_id || null,
-    ]
-  );
+    ) VALUES (${userId}, ${business.name}, ${business.business_type}, ${business.winery_id || null}, 'active', CURRENT_TIMESTAMP, 'Joined via business directory invitation')
+    RETURNING id`;
 
-  if (profileResult.rows.length === 0) {
+  if (profileRows.length === 0) {
     throw new Error('Failed to create partner profile');
   }
 
-  const partnerProfileId = profileResult.rows[0].id;
+  const partnerProfileId = profileRows[0].id;
 
   // Accept the invitation (updates business record)
   await businessDirectoryService.acceptInvitation(token, userId, partnerProfileId);
@@ -159,5 +147,4 @@ export const POST = withCSRF(
     partnerProfileId,
     businessId: business.id,
   });
-})
-);
+});

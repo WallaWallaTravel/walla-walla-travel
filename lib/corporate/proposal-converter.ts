@@ -3,7 +3,7 @@
  * Converts AI-extracted itinerary data into proposal format
  */
 
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 import { generateSecureString } from '@/lib/utils';
 import { ParsedItinerary } from './itinerary-parser';
@@ -39,16 +39,15 @@ export async function convertCorporateRequestToProposal(
   requestId: number
 ): Promise<ConversionResult> {
   // Get the corporate request
-  const requestResult = await query(
-    'SELECT * FROM corporate_requests WHERE id = $1',
-    [requestId]
-  );
-  
-  if (requestResult.rows.length === 0) {
+  const requestRows = await prisma.$queryRaw<Array<Record<string, unknown>>>`
+    SELECT * FROM corporate_requests WHERE id = ${requestId}
+  `;
+
+  if (requestRows.length === 0) {
     throw new Error(`Corporate request ${requestId} not found`);
   }
-  
-  const request = requestResult.rows[0];
+
+  const request = requestRows[0] as Record<string, any>;
   const aiData: ParsedItinerary = request.ai_extracted_data;
   
   // Generate proposal number
@@ -150,7 +149,9 @@ export async function convertCorporateRequestToProposal(
   }
   
   // Create proposal in database
-  const proposalResult = await query(`
+  const serviceItemsJson = JSON.stringify(serviceItems);
+  const notesStr = notes.join('\n');
+  const proposalRows = await prisma.$queryRaw<Array<{ id: number; proposal_number: string }>>`
     INSERT INTO proposals (
       proposal_number,
       customer_name,
@@ -163,30 +164,18 @@ export async function convertCorporateRequestToProposal(
       notes,
       created_from_corporate_request,
       corporate_request_id
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+    ) VALUES (${proposalNumber}, ${request.contact_name}, ${request.contact_email}, ${request.contact_phone}, ${request.party_size}, ${primaryDate}, 'draft', ${serviceItemsJson}::jsonb, ${notesStr}, true, ${requestId})
     RETURNING id, proposal_number
-  `, [
-    proposalNumber,
-    request.contact_name,
-    request.contact_email,
-    request.contact_phone,
-    request.party_size,
-    primaryDate,
-    'draft',
-    JSON.stringify(serviceItems),
-    notes.join('\n'),
-    true,
-    requestId
-  ]);
-  
-  const proposal = proposalResult.rows[0];
-  
+  `;
+
+  const proposal = proposalRows[0];
+
   // Update corporate request status
-  await query(`
+  await prisma.$executeRaw`
     UPDATE corporate_requests
-    SET status = 'converted', proposal_id = $1, converted_to_proposal_at = NOW()
-    WHERE id = $2
-  `, [proposal.id, requestId]);
+    SET status = 'converted', proposal_id = ${proposal.id}, converted_to_proposal_at = NOW()
+    WHERE id = ${requestId}
+  `;
   
   return {
     proposalId: proposal.id,
@@ -204,28 +193,28 @@ export async function convertCorporateRequestToProposal(
 export async function ensureProposalColumns(): Promise<void> {
   try {
     // Check if columns exist
-    const checkResult = await query(`
-      SELECT column_name 
-      FROM information_schema.columns 
-      WHERE table_name = 'proposals' 
+    const checkRows = await prisma.$queryRaw<Array<{ column_name: string }>>`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_name = 'proposals'
         AND column_name IN ('created_from_corporate_request', 'corporate_request_id')
-    `);
-    
-    const existingColumns = checkResult.rows.map(r => r.column_name);
-    
+    `;
+
+    const existingColumns = checkRows.map(r => r.column_name);
+
     // Add missing columns
     if (!existingColumns.includes('created_from_corporate_request')) {
-      await query(`
-        ALTER TABLE proposals 
+      await prisma.$executeRaw`
+        ALTER TABLE proposals
         ADD COLUMN IF NOT EXISTS created_from_corporate_request BOOLEAN DEFAULT FALSE
-      `);
+      `;
     }
-    
+
     if (!existingColumns.includes('corporate_request_id')) {
-      await query(`
-        ALTER TABLE proposals 
+      await prisma.$executeRaw`
+        ALTER TABLE proposals
         ADD COLUMN IF NOT EXISTS corporate_request_id INTEGER REFERENCES corporate_requests(id)
-      `);
+      `;
     }
   } catch (error) {
     logger.warn('Proposal Converter: Error ensuring columns', { error });

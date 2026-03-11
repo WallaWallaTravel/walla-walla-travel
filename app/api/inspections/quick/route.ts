@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { withErrorHandling, UnauthorizedError } from '@/lib/api/middleware/error-handler';
 import { withAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper';
-import { query } from '@/lib/db';
-import { withCSRF } from '@/lib/api/middleware/csrf';
+import { prisma } from '@/lib/prisma';
 
 const BodySchema = z.object({
   vehicleId: z.number().int().positive(),
@@ -19,11 +18,8 @@ const BodySchema = z.object({
 /**
  * POST /api/inspections/quick
  * Quick inspection endpoint for emergency use
- *
- * Uses withErrorHandling middleware for consistent error handling
  */
-export const POST = withCSRF(
-  withErrorHandling(
+export const POST = withErrorHandling(
   withAuth(async (request: NextRequest, session: AuthSession) => {
     const body = BodySchema.parse(await request.json());
     const { vehicleId, startMileage, type, inspectionData } = body;
@@ -36,8 +32,8 @@ export const POST = withCSRF(
     }
 
     // Save inspection to database using correct column names
-    const result = await query(
-      `INSERT INTO inspections (
+    const rows = await prisma.$queryRaw<{ id: number; created_at: string }[]>`
+      INSERT INTO inspections (
         vehicle_id,
         driver_id,
         type,
@@ -46,22 +42,15 @@ export const POST = withCSRF(
         status,
         created_at,
         updated_at
-      ) VALUES ($1, $2, $3, $4, $5, 'completed', NOW(), NOW())
-      RETURNING id, created_at`,
-      [
-        vehicleId,
-        userId,
-        type || 'pre_trip',
-        startMileage || 0,
-        JSON.stringify({
-          items: inspectionData?.items || {},
-          notes: inspectionData?.notes || '',
-          signature: inspectionData?.signature ? 'captured' : null
-        })
-      ]
-    );
+      ) VALUES (${vehicleId}, ${userId}, ${type || 'pre_trip'}, ${startMileage || 0}, ${JSON.stringify({
+        items: inspectionData?.items || {},
+        notes: inspectionData?.notes || '',
+        signature: inspectionData?.signature ? 'captured' : null
+      })}, 'completed', NOW(), NOW())
+      RETURNING id, created_at
+    `;
 
-    const inspection = result.rows[0];
+    const inspection = rows[0];
 
     return NextResponse.json({
       success: true,
@@ -74,5 +63,4 @@ export const POST = withCSRF(
       message: 'Inspection saved successfully'
     });
   })
-)
 );

@@ -1,7 +1,7 @@
 // Analytics Event Tracking
 // Generic event tracking system for all user interactions
 
-import { pool } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 import { logger } from '@/lib/logger'
 
 export type EventType =
@@ -38,15 +38,14 @@ export async function trackEvent(params: TrackEventParams): Promise<void> {
   
   // If this is a booking event, link it to AI queries
   if (params.eventType === 'booking_completed' && params.bookingId && params.revenueAttributed) {
-    await pool.query(
-      `UPDATE ai_queries 
+    await prisma.$executeRaw`
+      UPDATE ai_queries
        SET resulted_in_booking = true,
-           booking_id = $1,
-           booking_value = $2
-       WHERE session_id = $3
-       AND resulted_in_booking = false`,
-      [params.bookingId, params.revenueAttributed, params.sessionId]
-    )
+           booking_id = ${params.bookingId},
+           booking_value = ${params.revenueAttributed}
+       WHERE session_id = ${params.sessionId}
+       AND resulted_in_booking = false
+    `
   }
 }
 
@@ -94,16 +93,16 @@ export async function getConversionFunnel(days: number = 30): Promise<{
   // This is a simplified version
   // You'd want more sophisticated tracking in production
   
-  const queriesResult = await pool.query(`
-    SELECT 
+  const queriesResult = await prisma.$queryRawUnsafe<Array<{ sessions_with_queries: string; sessions_with_clicks: string; sessions_with_bookings: string }>>(
+    `SELECT
       COUNT(DISTINCT session_id) as sessions_with_queries,
       COUNT(DISTINCT CASE WHEN user_clicked_result THEN session_id END) as sessions_with_clicks,
       COUNT(DISTINCT CASE WHEN resulted_in_booking THEN session_id END) as sessions_with_bookings
     FROM ai_queries
-    WHERE created_at > NOW() - INTERVAL '${days} days'
-  `)
+    WHERE created_at > NOW() - INTERVAL '${days} days'`
+  )
 
-  const row = queriesResult.rows[0]
+  const row = queriesResult[0]
 
   return {
     visits: parseInt(row.sessions_with_queries) || 0,

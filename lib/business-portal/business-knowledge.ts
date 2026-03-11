@@ -3,7 +3,8 @@
  * Aggregates all business data for AI Travel Guide queries
  */
 
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
+
 
 export interface BusinessKnowledge {
   id: number;
@@ -47,70 +48,70 @@ export interface BusinessKnowledge {
  */
 export async function getBusinessKnowledge(businessId: number): Promise<BusinessKnowledge | null> {
   // Get business
-  const bizResult = await query(
+  const bizResult = await prisma.$queryRawUnsafe<{ id: number; name: string; business_type: string; business_types: string[]; contact_email: string; status: 'approved' | 'pending' | 'draft' }[]>(
     `SELECT id, name, business_type, business_types, contact_email, status
      FROM businesses WHERE id = $1 AND status = 'approved'`,
-    [businessId]
+    businessId
   );
 
-  if (bizResult.rows.length === 0) return null;
-  const business = bizResult.rows[0];
-  
+  if (bizResult.length === 0) return null;
+  const business = bizResult[0];
+
   // Get photos with AI analysis
-  const photosResult = await query(
-    `SELECT id, storage_url, ai_description, ai_tags, category, 
+  const photosResult = await prisma.$queryRawUnsafe<{ id: number; storage_url: string; ai_description: string | null; ai_tags: string[] | null; category: string | null; quality_rating: string | null; detected_elements: Record<string, unknown> | null }[]>(
+    `SELECT id, storage_url, ai_description, ai_tags, category,
             quality_rating, detected_elements, suitable_for_directory
-     FROM business_files 
-     WHERE business_id = $1 
-       AND file_type = 'photo' 
+     FROM business_files
+     WHERE business_id = $1
+       AND file_type = 'photo'
        AND approved = true
        AND suitable_for_directory = true
      ORDER BY quality_rating DESC`,
-    [businessId]
+    businessId
   );
-  
-  const photos = photosResult.rows.map(row => ({
+
+  const photos = photosResult.map(row => ({
     id: row.id,
     url: row.storage_url,
     description: row.ai_description || '',
-    tags: row.ai_tags || [],
+    tags: row.ai_tags || [] as string[],
     category: row.category || 'general',
     quality_rating: row.quality_rating || 'good',
-    detected_elements: row.detected_elements || {}
+    detected_elements: row.detected_elements || {} as Record<string, unknown>
   }));
-  
+
   // Get insights
-  const insightsResult = await query(
+  const insightsResult = await prisma.$queryRawUnsafe<{ id: number; insight_type: string; title: string; content: string; priority: number; best_for: string[] | null; is_public: boolean }[]>(
     `SELECT id, insight_type, title, content, priority, best_for, is_public
      FROM business_insights
      WHERE business_id = $1 AND is_public = true
      ORDER BY priority DESC`,
-    [businessId]
+    businessId
   );
-  
-  const insights = insightsResult.rows.map(row => ({
+
+  const insights = insightsResult.map(row => ({
     id: row.id,
     type: row.insight_type,
     title: row.title,
     content: row.content,
     priority: row.priority,
-    best_for: row.best_for || [],
+    best_for: row.best_for || [] as string[],
     is_public: row.is_public
   }));
   
   // Get structured data from answers
-  const answersResult = await query(
+  const answersResult = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
     `SELECT extracted_data FROM business_voice_entries 
      WHERE business_id = $1 AND extracted_data IS NOT NULL
      UNION ALL
      SELECT extracted_data FROM business_text_entries 
      WHERE business_id = $1 AND extracted_data IS NOT NULL`,
-    [businessId, businessId]
+    businessId, businessId
   );
   
   // Merge all extracted data
   const structured_data: Record<string, unknown> = {};
-  answersResult.rows.forEach(row => {
+  answersResult.forEach(row => {
     if (row.extracted_data) {
       Object.assign(structured_data, row.extracted_data);
     }
@@ -125,14 +126,16 @@ export async function getBusinessKnowledge(businessId: number): Promise<Business
   // From photos
   photos.forEach(photo => {
     photo.tags.forEach((tag: string) => all_tags.add(tag.toLowerCase()));
-    if (photo.detected_elements?.venue) {
-      photo.detected_elements.venue.forEach((v: string) => amenities.add(v.toLowerCase()));
+    const venue = photo.detected_elements?.venue as string[] | undefined;
+    if (venue) {
+      venue.forEach((v: string) => amenities.add(v.toLowerCase()));
     }
-    if (photo.detected_elements?.features) {
-      photo.detected_elements.features.forEach((f: string) => features.add(f.toLowerCase()));
+    const feat = photo.detected_elements?.features as string[] | undefined;
+    if (feat) {
+      feat.forEach((f: string) => features.add(f.toLowerCase()));
     }
   });
-  
+
   // From insights
   insights.forEach(insight => {
     insight.best_for.forEach((bf: string) => best_for.add(bf.toLowerCase()));
@@ -174,13 +177,13 @@ export async function searchBusinesses(criteria: {
   query?: string;
 }): Promise<BusinessKnowledge[]> {
   // Get all approved businesses
-  const bizResult = await query(
+  const bizResult = await prisma.$queryRawUnsafe<{ id: number }[]>(
     `SELECT id FROM businesses WHERE status = 'approved'`
   );
-  
+
   const businesses: BusinessKnowledge[] = [];
-  
-  for (const row of bizResult.rows) {
+
+  for (const row of bizResult) {
     const knowledge = await getBusinessKnowledge(row.id);
     if (!knowledge) continue;
     

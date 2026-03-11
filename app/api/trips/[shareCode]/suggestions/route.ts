@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, NotFoundError, RouteContext } from '@/lib/api/middleware/error-handler';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { tripAIService } from '@/lib/services/trip-ai.service';
-import { Trip, TripStop, TripGuest } from '@/lib/types/trip-planner';
+import { Trip, TripStop, TripGuest, TripType, StopType, RsvpStatus } from '@/lib/types/trip-planner';
 import { z } from 'zod';
-import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface RouteParams {
   shareCode: string;
@@ -29,53 +28,50 @@ const suggestionsRequestSchema = z.object({
 
 async function loadTripWithRelations(shareCode: string): Promise<Trip | null> {
   // Get trip
-  const tripResult = await query(
-    `SELECT * FROM trips WHERE share_code = $1`,
-    [shareCode]
-  );
+  const tripRows = await prisma.$queryRaw<Record<string, unknown>[]>`
+    SELECT * FROM trips WHERE share_code = ${shareCode}
+  `;
 
-  if (tripResult.rows.length === 0) {
+  if (tripRows.length === 0) {
     return null;
   }
 
-  const trip = tripResult.rows[0];
+  const trip = tripRows[0];
 
   // Get stops and guests in parallel
-  const [stopsResult, guestsResult] = await Promise.all([
-    query(
-      `SELECT * FROM trip_stops WHERE trip_id = $1 ORDER BY day_number, stop_order`,
-      [trip.id]
-    ),
-    query(
-      `SELECT * FROM trip_guests WHERE trip_id = $1 ORDER BY is_organizer DESC, name ASC`,
-      [trip.id]
-    ),
+  const [stopsRows, guestsRows] = await Promise.all([
+    prisma.$queryRaw<Record<string, unknown>[]>`
+      SELECT * FROM trip_stops WHERE trip_id = ${trip.id} ORDER BY day_number, stop_order
+    `,
+    prisma.$queryRaw<Record<string, unknown>[]>`
+      SELECT * FROM trip_guests WHERE trip_id = ${trip.id} ORDER BY is_organizer DESC, name ASC
+    `,
   ]);
 
-  const stops: TripStop[] = stopsResult.rows.map((row) => ({
-    id: row.id,
-    trip_id: row.trip_id,
-    stop_type: row.stop_type,
-    name: row.name,
-    winery_id: row.winery_id,
-    winery_name: row.winery_name,
-    day_number: row.day_number,
-    stop_order: row.stop_order,
-    planned_arrival: row.planned_arrival,
-    planned_departure: row.planned_departure,
-    notes: row.notes,
-    created_at: row.created_at,
+  const stops: TripStop[] = stopsRows.map((row) => ({
+    id: row.id as number,
+    trip_id: row.trip_id as number,
+    stop_type: row.stop_type as StopType,
+    name: row.name as string,
+    winery_id: (row.winery_id as number | null) ?? undefined,
+    winery_name: (row.winery_name as string | null) ?? undefined,
+    day_number: row.day_number as number,
+    stop_order: row.stop_order as number,
+    planned_arrival: (row.planned_arrival as string | null) ?? undefined,
+    planned_departure: (row.planned_departure as string | null) ?? undefined,
+    notes: (row.notes as string | null) ?? undefined,
+    created_at: row.created_at as string,
   }));
 
-  const guests: TripGuest[] = guestsResult.rows.map((row) => ({
-    id: row.id,
-    trip_id: row.trip_id,
-    name: row.name,
-    email: row.email,
-    dietary_restrictions: row.dietary_restrictions,
-    is_organizer: row.is_organizer,
-    rsvp_status: row.rsvp_status,
-    created_at: row.created_at,
+  const guests: TripGuest[] = guestsRows.map((row) => ({
+    id: row.id as number,
+    trip_id: row.trip_id as number,
+    name: row.name as string,
+    email: (row.email as string | null) ?? undefined,
+    dietary_restrictions: (row.dietary_restrictions as string | null) ?? undefined,
+    is_organizer: row.is_organizer as boolean,
+    rsvp_status: row.rsvp_status as RsvpStatus,
+    created_at: row.created_at as string,
   }));
 
   // Calculate stats
@@ -85,23 +81,23 @@ async function loadTripWithRelations(shareCode: string): Promise<Trip | null> {
   ).length;
 
   return {
-    id: trip.id,
-    share_code: trip.share_code,
-    title: trip.title,
-    description: trip.description,
-    trip_type: trip.trip_type,
-    start_date: trip.start_date,
-    end_date: trip.end_date,
-    dates_flexible: trip.dates_flexible,
-    expected_guests: trip.expected_guests,
-    owner_name: trip.owner_name,
-    owner_email: trip.owner_email,
-    owner_phone: trip.owner_phone,
-    preferences: trip.preferences || { transportation: 'undecided', pace: 'moderate', budget: 'moderate' },
-    status: trip.status,
-    is_public: trip.is_public,
-    created_at: trip.created_at,
-    updated_at: trip.updated_at,
+    id: trip.id as number,
+    share_code: trip.share_code as string,
+    title: trip.title as string,
+    description: (trip.description as string | null) ?? undefined,
+    trip_type: trip.trip_type as TripType,
+    start_date: (trip.start_date as string | null) ?? undefined,
+    end_date: (trip.end_date as string | null) ?? undefined,
+    dates_flexible: trip.dates_flexible as boolean,
+    expected_guests: trip.expected_guests as number,
+    owner_name: (trip.owner_name as string | null) ?? undefined,
+    owner_email: (trip.owner_email as string | null) ?? undefined,
+    owner_phone: (trip.owner_phone as string | null) ?? undefined,
+    preferences: (trip.preferences || { transportation: 'undecided', pace: 'moderate', budget: 'moderate' }) as Trip['preferences'],
+    status: trip.status as Trip['status'],
+    is_public: trip.is_public as boolean,
+    created_at: trip.created_at as string,
+    updated_at: trip.updated_at as string,
     stops,
     guests,
     stats: {
@@ -116,8 +112,7 @@ async function loadTripWithRelations(shareCode: string): Promise<Trip | null> {
 // POST /api/trips/[shareCode]/suggestions - Get AI stop suggestions
 // ============================================================================
 
-export const POST = withCSRF(
-  withErrorHandling<unknown, RouteParams>(
+export const POST = withErrorHandling<unknown, RouteParams>(
   async (request: NextRequest, context: RouteContext<RouteParams>) => {
     const { shareCode } = await context.params;
     const body = await request.json();
@@ -147,5 +142,4 @@ export const POST = withCSRF(
       },
     });
   }
-)
 );

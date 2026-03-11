@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
-import { query } from '@/lib/db';
-import { withCSRF } from '@/lib/api/middleware/csrf';
+import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 
 const PatchBodySchema = z.object({
@@ -19,17 +19,17 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const { searchParams } = new URL(request.url);
   const status = searchParams.get('status') || 'all'; // 'pending', 'in_progress', 'completed', 'all'
 
-  let statusFilter = '';
+  let statusFilter = Prisma.sql``;
   if (status === 'pending') {
-    statusFilter = "AND t.status = 'handed_off' AND t.assigned_staff_id IS NULL";
+    statusFilter = Prisma.sql`AND t.status = 'handed_off' AND t.assigned_staff_id IS NULL`;
   } else if (status === 'in_progress') {
-    statusFilter = "AND t.status = 'handed_off' AND t.assigned_staff_id IS NOT NULL";
+    statusFilter = Prisma.sql`AND t.status = 'handed_off' AND t.assigned_staff_id IS NOT NULL`;
   } else if (status === 'completed') {
-    statusFilter = "AND (t.status = 'booked' OR t.converted_to_booking_id IS NOT NULL)";
+    statusFilter = Prisma.sql`AND (t.status = 'booked' OR t.converted_to_booking_id IS NOT NULL)`;
   }
 
-  const result = await query(
-    `SELECT
+  const rows = await prisma.$queryRaw<Array<Record<string, unknown>>>(
+    Prisma.sql`SELECT
       t.id,
       t.share_code,
       t.title,
@@ -58,32 +58,29 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
     ORDER BY
       CASE WHEN t.status = 'handed_off' AND t.assigned_staff_id IS NULL THEN 0 ELSE 1 END,
       t.handoff_requested_at DESC
-    LIMIT 100`,
-    []
+    LIMIT 100`
   );
 
   // Get counts for tabs
-  const countsResult = await query(
-    `SELECT
+  const countsRows = await prisma.$queryRaw<Array<Record<string, unknown>>>`
+    SELECT
       COUNT(*) FILTER (WHERE status = 'handed_off' AND assigned_staff_id IS NULL) as pending,
       COUNT(*) FILTER (WHERE status = 'handed_off' AND assigned_staff_id IS NOT NULL) as in_progress,
       COUNT(*) FILTER (WHERE status = 'booked' OR converted_to_booking_id IS NOT NULL) as completed,
       COUNT(*) as total
     FROM trips
-    WHERE handoff_requested_at IS NOT NULL`,
-    []
-  );
+    WHERE handoff_requested_at IS NOT NULL`;
 
-  const counts = countsResult.rows[0] || { pending: 0, in_progress: 0, completed: 0, total: 0 };
+  const counts = countsRows[0] || { pending: 0, in_progress: 0, completed: 0, total: 0 };
 
   return NextResponse.json({
     success: true,
-    consultations: result.rows,
+    consultations: rows,
     counts: {
-      pending: parseInt(counts.pending) || 0,
-      in_progress: parseInt(counts.in_progress) || 0,
-      completed: parseInt(counts.completed) || 0,
-      total: parseInt(counts.total) || 0,
+      pending: parseInt(String(counts.pending)) || 0,
+      in_progress: parseInt(String(counts.in_progress)) || 0,
+      completed: parseInt(String(counts.completed)) || 0,
+      total: parseInt(String(counts.total)) || 0,
     },
     timestamp: new Date().toISOString(),
   });
@@ -93,7 +90,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
  * PATCH /api/admin/consultations
  * Update consultation (assign staff, change status)
  */
-export const PATCH = withCSRF(
+export const PATCH =
   withAdminAuth(async (request: NextRequest, _session) => {
   const body = PatchBodySchema.parse(await request.json());
   const { tripId, assignedStaffId, status, notes } = body;
@@ -129,22 +126,21 @@ export const PATCH = withCSRF(
   }
 
   values.push(tripId);
-  const result = await query(
+  const rows = await prisma.$queryRawUnsafe<Array<Record<string, unknown>>>(
     `UPDATE trips
      SET ${updates.join(', ')}, updated_at = NOW()
      WHERE id = $${paramIndex}
      RETURNING *`,
-    values
+    ...values
   );
 
-  if (result.rows.length === 0) {
+  if (rows.length === 0) {
     return NextResponse.json({ error: 'Trip not found' }, { status: 404 });
   }
 
   return NextResponse.json({
     success: true,
-    trip: result.rows[0],
+    trip: rows[0],
     timestamp: new Date().toISOString(),
   });
-})
-);
+});

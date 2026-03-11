@@ -8,8 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { withErrorHandling, RouteContext } from '@/lib/api/middleware/error-handler';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
-import { query } from '@/lib/db';
-import { withCSRF } from '@/lib/api/middleware/csrf';
+import { prisma } from '@/lib/prisma';
 
 const BodySchema = z.object({
   dietary_restrictions: z.string().max(1000).nullable().optional(),
@@ -22,8 +21,7 @@ interface RouteParams {
   guestId: string;
 }
 
-export const PATCH = withCSRF(
-  withErrorHandling<unknown, RouteParams>(
+export const PATCH = withErrorHandling<unknown, RouteParams>(
   async (request: NextRequest, context: RouteContext<RouteParams>) => {
     const { token, guestId } = await context.params;
 
@@ -84,15 +82,15 @@ export const PATCH = withCSRF(
 
     setClauses.push(`updated_at = NOW()`);
 
-    const result = await query(
+    const rows = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
       `UPDATE trip_proposal_guests
        SET ${setClauses.join(', ')}
        WHERE id = $${paramIndex} AND trip_proposal_id = $${paramIndex + 1}
        RETURNING *`,
-      [...values, guestIdNum, proposal.id]
+      ...values, guestIdNum, proposal.id
     );
 
-    if (!result.rows[0]) {
+    if (!rows[0]) {
       return NextResponse.json(
         { success: false, error: 'Guest not found' },
         { status: 404 }
@@ -101,8 +99,7 @@ export const PATCH = withCSRF(
 
     return NextResponse.json({
       success: true,
-      data: result.rows[0],
+      data: rows[0],
     });
   }
-)
 );

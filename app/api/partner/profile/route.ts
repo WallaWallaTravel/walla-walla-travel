@@ -5,8 +5,7 @@ import { getHotelSessionFromRequest } from '@/lib/auth/hotel-session';
 import { partnerService } from '@/lib/services/partner.service';
 import { hotelPartnerService } from '@/lib/services/hotel-partner.service';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
-import { pool } from '@/lib/db';
-import { withCSRF } from '@/lib/api/middleware/csrf';
+import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 
 const BusinessBodySchema = z.object({
@@ -52,17 +51,15 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     };
 
     if (profile?.winery_id) {
-      const wineryResult = await pool.query(
-        `SELECT address, city, website, phone FROM wineries WHERE id = $1`,
-        [profile.winery_id]
-      );
-      if (wineryResult.rows[0]) {
-        const winery = wineryResult.rows[0];
+      const wineryRows = await prisma.$queryRaw<Array<Record<string, unknown>>>`
+        SELECT address, city, website, phone FROM wineries WHERE id = ${profile.winery_id}`;
+      if (wineryRows[0]) {
+        const winery = wineryRows[0];
         businessData = {
-          contact_phone: winery.phone || '',
-          address: winery.address || '',
-          city: winery.city || '',
-          website: winery.website || '',
+          contact_phone: (winery.phone as string) || '',
+          address: (winery.address as string) || '',
+          city: (winery.city as string) || '',
+          website: (winery.website as string) || '',
         };
       }
     }
@@ -113,7 +110,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
  * Update partner profile
  * Supports both JWT session (business partners) and hotel session cookie (hotel partners)
  */
-export const PUT = withCSRF(
+export const PUT =
   withRateLimit(rateLimiters.api)(
   withErrorHandling(async (request: NextRequest) => {
   // 1. Try JWT session first (business partners)
@@ -156,5 +153,4 @@ export const PUT = withCSRF(
     } : null,
     timestamp: new Date().toISOString(),
   });
-}))
-);
+}));

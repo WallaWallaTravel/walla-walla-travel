@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import Anthropic from '@anthropic-ai/sdk'
-import { query } from '@/lib/db'
+import { query } from '@/lib/prisma-query'
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { socialIntelligenceService } from '@/lib/services/social-intelligence.service'
-import { withCSRF } from '@/lib/api/middleware/csrf'
-
 const BodySchema = z.object({
   wineryId: z.number().int().positive().optional(),
   platform: z.enum(['instagram', 'facebook', 'linkedin']),
@@ -67,8 +65,7 @@ const TONE_DESCRIPTIONS: Record<string, string> = {
   educational: 'Informative, teaching-focused, accessible',
 }
 
-export const POST = withCSRF(
-  withRateLimit(rateLimiters.aiGeneration)(withAdminAuth(async (request: NextRequest, _session) => {
+export const POST = withRateLimit(rateLimiters.aiGeneration)(withAdminAuth(async (request: NextRequest, _session) => {
     const body = BodySchema.parse(await request.json()) as GenerateRequest
     const { wineryId, platform, contentType, tone, customPrompt } = body
 
@@ -79,7 +76,18 @@ export const POST = withCSRF(
     // For general content, winery is optional
     if (wineryId) {
       // Fetch winery data
-      const wineryResult = await query(
+      const wineryResult = await query<{
+        id: number;
+        name: string;
+        description: string | null;
+        short_description: string | null;
+        specialties: string[] | null;
+        winemaker: string | null;
+        owner: string | null;
+        founded_year: number | null;
+        production_volume: string | null;
+        price_range: string | null;
+      }>(
         `SELECT id, name, description, short_description, specialties,
                 winemaker, owner, founded_year, production_volume, price_range
          FROM wineries WHERE id = $1`,
@@ -268,4 +276,4 @@ Respond in this exact JSON format:
       bestTimeToPost: platformGuideline.bestTimes,
       imagePrompt: parsedResponse.imagePrompt,
     })
-})));
+}));
