@@ -7,7 +7,7 @@
 import { getSession } from '@/lib/auth/session';
 import { canAccessGeology } from '@/lib/auth/roles';
 import { redirect } from 'next/navigation';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 
 // ============================================================================
@@ -23,10 +23,10 @@ interface Site {
   latitude: number | null;
   longitude: number | null;
   address: string | null;
-  is_public_access: boolean;
-  requires_appointment: boolean;
-  is_published: boolean;
-  created_at: string;
+  is_public_access: boolean | null;
+  requires_appointment: boolean | null;
+  is_published: boolean | null;
+  created_at: string | null;
 }
 
 // ============================================================================
@@ -35,13 +35,9 @@ interface Site {
 
 async function getSites(): Promise<Site[]> {
   try {
-    const result = await query<Site>(`
-      SELECT id, name, slug, description, site_type, latitude, longitude,
-             address, is_public_access, requires_appointment, is_published, created_at
-      FROM geology_sites
-      ORDER BY name ASC
-    `);
-    return result.rows;
+    return await prisma.geology_sites.findMany({
+      orderBy: { name: 'asc' },
+    }) as unknown as Site[];
   } catch {
     return [];
   }

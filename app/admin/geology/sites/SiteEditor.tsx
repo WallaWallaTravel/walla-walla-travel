@@ -25,13 +25,13 @@ interface SiteData {
   longitude: number | null;
   address: string | null;
   directions: string | null;
-  is_public_access: boolean;
-  requires_appointment: boolean;
+  is_public_access: boolean | null;
+  requires_appointment: boolean | null;
   best_time_to_visit: string | null;
   photos: string[] | null;
   related_topic_ids: number[] | null;
   nearby_winery_ids: number[] | null;
-  is_published: boolean;
+  is_published: boolean | null;
 }
 
 interface SiteEditorProps {

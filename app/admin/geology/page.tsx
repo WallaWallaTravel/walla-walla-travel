@@ -8,7 +8,7 @@
 import { getSession } from '@/lib/auth/session';
 import { canAccessGeology } from '@/lib/auth/roles';
 import { redirect } from 'next/navigation';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { logger } from '@/lib/logger';
 
@@ -30,16 +30,16 @@ interface RecentTopic {
   id: number;
   title: string;
   topic_type: string;
-  is_published: boolean;
-  updated_at: string;
+  is_published: boolean | null;
+  updated_at: string | null;
 }
 
 interface RecentFact {
   id: number;
   fact_text: string;
   fact_type: string | null;
-  is_featured: boolean;
-  created_at: string;
+  is_featured: boolean | null;
+  created_at: string | null;
 }
 
 // ============================================================================
@@ -49,41 +49,31 @@ interface RecentFact {
 async function getGeologyStats(): Promise<GeologyStats> {
   try {
     const [
-      topicsResult,
-      publishedResult,
-      factsResult,
-      sitesResult,
-      toursResult,
-      guidanceResult,
-      chatResult,
+      totalTopics,
+      publishedTopics,
+      totalFacts,
+      totalSites,
+      totalTours,
+      totalGuidance,
+      chatMessages,
     ] = await Promise.all([
-      query('SELECT COUNT(*) as count FROM geology_topics').catch(() => ({ rows: [{ count: 0 }] })),
-      query('SELECT COUNT(*) as count FROM geology_topics WHERE is_published = true').catch(() => ({
-        rows: [{ count: 0 }],
-      })),
-      query('SELECT COUNT(*) as count FROM geology_facts').catch(() => ({ rows: [{ count: 0 }] })),
-      query('SELECT COUNT(*) as count FROM geology_sites WHERE is_published = true').catch(() => ({
-        rows: [{ count: 0 }],
-      })),
-      query('SELECT COUNT(*) as count FROM geology_tours WHERE is_active = true').catch(() => ({
-        rows: [{ count: 0 }],
-      })),
-      query('SELECT COUNT(*) as count FROM geology_ai_guidance WHERE is_active = true').catch(
-        () => ({ rows: [{ count: 0 }] })
-      ),
-      query('SELECT COUNT(*) as count FROM geology_chat_messages').catch(() => ({
-        rows: [{ count: 0 }],
-      })),
+      prisma.geology_topics.count().catch(() => 0),
+      prisma.geology_topics.count({ where: { is_published: true } }).catch(() => 0),
+      prisma.geology_facts.count().catch(() => 0),
+      prisma.geology_sites.count({ where: { is_published: true } }).catch(() => 0),
+      prisma.geology_tours.count({ where: { is_active: true } }).catch(() => 0),
+      prisma.geology_ai_guidance.count({ where: { is_active: true } }).catch(() => 0),
+      prisma.geology_chat_messages.count().catch(() => 0),
     ]);
 
     return {
-      totalTopics: parseInt(topicsResult.rows[0]?.count || '0'),
-      publishedTopics: parseInt(publishedResult.rows[0]?.count || '0'),
-      totalFacts: parseInt(factsResult.rows[0]?.count || '0'),
-      totalSites: parseInt(sitesResult.rows[0]?.count || '0'),
-      totalTours: parseInt(toursResult.rows[0]?.count || '0'),
-      totalGuidance: parseInt(guidanceResult.rows[0]?.count || '0'),
-      chatMessages: parseInt(chatResult.rows[0]?.count || '0'),
+      totalTopics,
+      publishedTopics,
+      totalFacts,
+      totalSites,
+      totalTours,
+      totalGuidance,
+      chatMessages,
     };
   } catch (error) {
     logger.error('[Geology Dashboard] Error fetching stats', { error });
@@ -101,13 +91,11 @@ async function getGeologyStats(): Promise<GeologyStats> {
 
 async function getRecentTopics(): Promise<RecentTopic[]> {
   try {
-    const result = await query<RecentTopic>(`
-      SELECT id, title, topic_type, is_published, updated_at
-      FROM geology_topics
-      ORDER BY updated_at DESC
-      LIMIT 5
-    `);
-    return result.rows;
+    return await prisma.geology_topics.findMany({
+      orderBy: { updated_at: 'desc' },
+      take: 5,
+      select: { id: true, title: true, topic_type: true, is_published: true, updated_at: true },
+    }) as unknown as RecentTopic[];
   } catch {
     return [];
   }
@@ -115,13 +103,11 @@ async function getRecentTopics(): Promise<RecentTopic[]> {
 
 async function getRecentFacts(): Promise<RecentFact[]> {
   try {
-    const result = await query<RecentFact>(`
-      SELECT id, fact_text, fact_type, is_featured, created_at
-      FROM geology_facts
-      ORDER BY created_at DESC
-      LIMIT 5
-    `);
-    return result.rows;
+    return await prisma.geology_facts.findMany({
+      orderBy: { created_at: 'desc' },
+      take: 5,
+      select: { id: true, fact_text: true, fact_type: true, is_featured: true, created_at: true },
+    }) as unknown as RecentFact[];
   } catch {
     return [];
   }
@@ -198,7 +184,7 @@ function TopicTypeBadge({ type }: { type: string }) {
   );
 }
 
-function PublishBadge({ isPublished }: { isPublished: boolean }) {
+function PublishBadge({ isPublished }: { isPublished: boolean | null }) {
   return isPublished ? (
     <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
       Published
@@ -374,7 +360,7 @@ export default async function GeologyDashboardPage() {
                       <div className="mt-1 flex items-center gap-2">
                         <TopicTypeBadge type={topic.topic_type} />
                         <span className="text-xs text-gray-400">
-                          {new Date(topic.updated_at).toLocaleDateString()}
+                          {topic.updated_at ? new Date(topic.updated_at).toLocaleDateString() : '—'}
                         </span>
                       </div>
                     </div>
@@ -426,7 +412,7 @@ export default async function GeologyDashboardPage() {
                       <span className="text-xs text-gray-500 capitalize">{fact.fact_type}</span>
                     )}
                     <span className="text-xs text-gray-400">
-                      {new Date(fact.created_at).toLocaleDateString()}
+                      {fact.created_at ? new Date(fact.created_at).toLocaleDateString() : '—'}
                     </span>
                   </div>
                 </Link>

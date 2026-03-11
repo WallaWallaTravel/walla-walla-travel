@@ -3,7 +3,7 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import {
   NotFoundError,
 } from '@/lib/api/middleware/error-handler';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { auditService } from '@/lib/services/audit.service';
@@ -46,15 +46,17 @@ export const GET = withAdminAuth(
       throw new NotFoundError('Invalid site ID');
     }
 
-    const result = await query('SELECT * FROM geology_sites WHERE id = $1', [siteId]);
+    const site = await prisma.geology_sites.findFirst({
+      where: { id: siteId },
+    });
 
-    if (result.rows.length === 0) {
+    if (!site) {
       throw new NotFoundError('Site not found');
     }
 
     return NextResponse.json({
       success: true,
-      data: result.rows[0],
+      data: site,
     });
   }
 );
@@ -103,7 +105,7 @@ export const PUT = withCSRF(
       if (field in validated) {
         updates.push(`${field} = $${paramIndex}`);
         let value = (validated as Record<string, unknown>)[field];
-        // JSON stringify arrays
+        // JSON stringify arrays for raw SQL
         if (field === 'photos' && Array.isArray(value)) {
           value = JSON.stringify(value);
         }
@@ -118,18 +120,18 @@ export const PUT = withCSRF(
 
     values.push(siteId);
 
-    const result = await query(
+    const result = await prisma.$queryRawUnsafe<any[]>(
       `UPDATE geology_sites SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
-      values
+      ...values
     );
 
-    if (result.rows.length === 0) {
+    if (result.length === 0) {
       throw new NotFoundError('Site not found');
     }
 
     return NextResponse.json({
       success: true,
-      data: result.rows[0],
+      data: result[0],
     });
   }
 )
@@ -149,9 +151,9 @@ export const DELETE = withCSRF(
       throw new NotFoundError('Invalid site ID');
     }
 
-    const result = await query('DELETE FROM geology_sites WHERE id = $1 RETURNING id', [siteId]);
+    const result = await prisma.$queryRaw<{id: number}[]>`DELETE FROM geology_sites WHERE id = ${siteId} RETURNING id`;
 
-    if (result.rows.length === 0) {
+    if (result.length === 0) {
       throw new NotFoundError('Site not found');
     }
 

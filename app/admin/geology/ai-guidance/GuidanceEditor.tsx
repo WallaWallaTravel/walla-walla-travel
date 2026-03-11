@@ -20,8 +20,8 @@ interface GuidanceData {
   guidance_type: string;
   title: string | null;
   content: string;
-  priority: number;
-  is_active: boolean;
+  priority: number | null;
+  is_active: boolean | null;
 }
 
 interface GuidanceEditorProps {
@@ -94,7 +94,7 @@ export function GuidanceEditor({ initialData, isEditing = false }: GuidanceEdito
   const [guidanceType, setGuidanceType] = useState(initialData?.guidance_type || 'personality');
   const [title, setTitle] = useState(initialData?.title || '');
   const [content, setContent] = useState(initialData?.content || '');
-  const [priority, setPriority] = useState(initialData?.priority || 0);
+  const [priority, setPriority] = useState(initialData?.priority ?? 0);
   const [isActive, setIsActive] = useState(initialData?.is_active ?? true);
 
   const selectedType = GUIDANCE_TYPES.find((t) => t.value === guidanceType) || GUIDANCE_TYPES[0];

@@ -7,7 +7,7 @@
 import { getSession } from '@/lib/auth/session';
 import { canAccessGeology } from '@/lib/auth/roles';
 import { redirect, notFound } from 'next/navigation';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { FactEditor } from '../FactEditor';
 
 interface PageProps {
@@ -20,17 +20,16 @@ interface FactData {
   context: string | null;
   fact_type: string | null;
   topic_id: number | null;
-  display_order: number;
-  is_featured: boolean;
+  display_order: number | null;
+  is_featured: boolean | null;
 }
 
 async function getFact(id: number): Promise<FactData | null> {
   try {
-    const result = await query<FactData>(
-      'SELECT id, fact_text, context, fact_type, topic_id, display_order, is_featured FROM geology_facts WHERE id = $1',
-      [id]
-    );
-    return result.rows[0] || null;
+    return await prisma.geology_facts.findFirst({
+      where: { id },
+      select: { id: true, fact_text: true, context: true, fact_type: true, topic_id: true, display_order: true, is_featured: true },
+    });
   } catch {
     return null;
   }

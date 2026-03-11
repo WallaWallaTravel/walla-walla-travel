@@ -10,7 +10,7 @@
  * Built on top of geologyContextService for data aggregation.
  */
 
-import { BaseService } from './base.service';
+import { prisma } from '@/lib/prisma';
 import { geologyContextService } from './geology-context.service';
 import {
   GeologyChatMessage,
@@ -91,11 +91,7 @@ When visitors want deeper exploration:
 // Service Class
 // ============================================================================
 
-class GeologyAIService extends BaseService {
-  protected get serviceName(): string {
-    return 'GeologyAIService';
-  }
-
+class GeologyAIService {
   private client: Anthropic | null = null;
 
   private getClient(): Anthropic {
@@ -121,73 +117,60 @@ class GeologyAIService extends BaseService {
     history: GeologyChatMessage[] = [],
     contextTopicId?: number
   ): Promise<GeologyChatResponse> {
-    try {
-      // Get full geology context
-      const geologyContext = await geologyContextService.getFullContext();
+    // Get full geology context
+    const geologyContext = await geologyContextService.getFullContext();
 
-      // Build the full system prompt
-      const contextPrompt = geologyContextService.formatForAIPrompt(geologyContext);
+    // Build the full system prompt
+    const contextPrompt = geologyContextService.formatForAIPrompt(geologyContext);
 
-      // If on a specific topic page, add focused context
-      let topicContext = '';
-      if (contextTopicId) {
-        topicContext = await geologyContextService.getTopicContext(contextTopicId);
-      }
+    // If on a specific topic page, add focused context
+    let topicContext = '';
+    if (contextTopicId) {
+      topicContext = await geologyContextService.getTopicContext(contextTopicId);
+    }
 
-      const systemPrompt = `${GEOLOGY_CHAT_SYSTEM_PROMPT}
+    const systemPrompt = `${GEOLOGY_CHAT_SYSTEM_PROMPT}
 
 ${contextPrompt}
 
 ${topicContext ? `\n## CURRENT PAGE CONTEXT\n${topicContext}` : ''}`;
 
-      // Convert history to Anthropic message format
-      const chatHistory: Anthropic.MessageParam[] = history.map((m) => ({
-        role: m.role === 'assistant' ? 'assistant' : 'user',
-        content: m.content,
-      }));
+    // Convert history to Anthropic message format
+    const chatHistory: Anthropic.MessageParam[] = history.map((m) => ({
+      role: m.role === 'assistant' ? 'assistant' : 'user',
+      content: m.content,
+    }));
 
-      // Call Anthropic
-      const client = this.getClient();
-      const messages: Anthropic.MessageParam[] = [
-        ...chatHistory,
-        { role: 'user', content: message },
-      ];
+    // Call Anthropic
+    const client = this.getClient();
+    const messages: Anthropic.MessageParam[] = [
+      ...chatHistory,
+      { role: 'user', content: message },
+    ];
 
-      const completion = await client.messages.create({
-        model: 'claude-sonnet-4-20250514',
-        system: systemPrompt,
-        messages,
-        max_tokens: 1024,
-      });
+    const completion = await client.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      system: systemPrompt,
+      messages,
+      max_tokens: 1024,
+    });
 
-      // Extract text from response
-      const responseText = completion.content
-        .filter((block): block is Anthropic.TextBlock => block.type === 'text')
-        .map((block) => block.text)
-        .join('');
+    // Extract text from response
+    const responseText = completion.content
+      .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+      .map((block) => block.text)
+      .join('');
 
-      // Parse suggestions from response
-      const { cleanMessage, suggestedTopics, suggestedSites, suggestedTours } =
-        this.parseSuggestionsFromResponse(responseText, geologyContext);
+    // Parse suggestions from response
+    const { cleanMessage, suggestedTopics, suggestedSites, suggestedTours } =
+      this.parseSuggestionsFromResponse(responseText, geologyContext);
 
-      this.log('Geology chat response', {
-        messageLength: message.length,
-        responseLength: cleanMessage.length,
-        suggestedTopics: suggestedTopics.length,
-        suggestedSites: suggestedSites.length,
-        suggestedTours: suggestedTours.length,
-      });
-
-      return {
-        message: cleanMessage,
-        suggestedTopics: suggestedTopics.length > 0 ? suggestedTopics : undefined,
-        suggestedSites: suggestedSites.length > 0 ? suggestedSites : undefined,
-        suggestedTours: suggestedTours.length > 0 ? suggestedTours : undefined,
-      };
-    } catch (error) {
-      this.handleError(error, 'chat');
-      throw error;
-    }
+    return {
+      message: cleanMessage,
+      suggestedTopics: suggestedTopics.length > 0 ? suggestedTopics : undefined,
+      suggestedSites: suggestedSites.length > 0 ? suggestedSites : undefined,
+      suggestedTours: suggestedTours.length > 0 ? suggestedTours : undefined,
+    };
   }
 
   /**
@@ -291,16 +274,18 @@ ${topicContext ? `\n## CURRENT PAGE CONTEXT\n${topicContext}` : ''}`;
     ipHash?: string
   ): Promise<void> {
     try {
-      await this.insert('geology_chat_messages', {
-        session_id: sessionId,
-        role,
-        content,
-        context_topic_id: contextTopicId,
-        context_site_id: contextSiteId,
-        ip_hash: ipHash,
+      await prisma.geology_chat_messages.create({
+        data: {
+          session_id: sessionId,
+          role,
+          content,
+          context_topic_id: contextTopicId ?? null,
+          context_site_id: contextSiteId ?? null,
+          ip_hash: ipHash ?? null,
+        },
       });
     } catch (error) {
-      this.handleError(error, 'saveChatMessage');
+      console.error('GeologyAIService Error [saveChatMessage]:', error);
       // Don't throw - saving chat history shouldn't break the chat
     }
   }
@@ -310,21 +295,19 @@ ${topicContext ? `\n## CURRENT PAGE CONTEXT\n${topicContext}` : ''}`;
    */
   async getChatHistory(sessionId: string, limit: number = 20): Promise<GeologyChatMessage[]> {
     try {
-      const rows = await this.queryMany<{
+      const rows = await prisma.$queryRaw<Array<{
         id: number;
         role: 'user' | 'assistant';
         content: string;
         created_at: string;
         context_topic_id: number | null;
         context_site_id: number | null;
-      }>(
-        `SELECT id, role, content, created_at, context_topic_id, context_site_id
-         FROM geology_chat_messages
-         WHERE session_id = $1
-         ORDER BY created_at DESC
-         LIMIT $2`,
-        [sessionId, limit]
-      );
+      }>>`
+        SELECT id, role, content, created_at, context_topic_id, context_site_id
+        FROM geology_chat_messages
+        WHERE session_id = ${sessionId}
+        ORDER BY created_at DESC
+        LIMIT ${limit}`;
 
       // Reverse to get chronological order and format
       return rows.reverse().map((row) => ({
@@ -340,7 +323,7 @@ ${topicContext ? `\n## CURRENT PAGE CONTEXT\n${topicContext}` : ''}`;
           : undefined,
       }));
     } catch (error) {
-      this.handleError(error, 'getChatHistory');
+      console.error('GeologyAIService Error [getChatHistory]:', error);
       return [];
     }
   }
@@ -360,7 +343,7 @@ ${topicContext ? `\n## CURRENT PAGE CONTEXT\n${topicContext}` : ''}`;
       const randomIndex = Math.floor(Math.random() * facts.length);
       return facts[randomIndex].fact_text;
     } catch (error) {
-      this.handleError(error, 'getRandomFact');
+      console.error('GeologyAIService Error [getRandomFact]:', error);
       return null;
     }
   }

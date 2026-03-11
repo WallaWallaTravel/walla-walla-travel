@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 
 interface TopicRow {
@@ -73,10 +73,10 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   sql += ` ORDER BY display_order ASC, title ASC LIMIT $${paramIndex}`;
   params.push(limit);
 
-  const result = await query<TopicRow>(sql, params);
+  const result = await prisma.$queryRawUnsafe<TopicRow[]>(sql, ...params);
 
   // Format results for GPT-friendly response
-  const topics: TopicResult[] = result.rows.map(row => ({
+  const topics: TopicResult[] = result.map(row => ({
     slug: row.slug,
     title: row.title,
     subtitle: row.subtitle || '',

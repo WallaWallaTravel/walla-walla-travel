@@ -66,19 +66,19 @@ export interface GeologyTopic {
   content: string;
   excerpt?: string;
   topic_type: TopicType;
-  difficulty: DifficultyLevel;
+  difficulty: DifficultyLevel | null;
   hero_image_url?: string;
-  display_order: number;
-  is_featured: boolean;
-  is_published: boolean;
+  display_order: number | null;
+  is_featured: boolean | null;
+  is_published: boolean | null;
   related_winery_ids?: number[];
   related_topic_ids?: number[];
   author_name?: string;
   sources?: string;
-  verified: boolean;
+  verified: boolean | null;
   verified_at?: string;
-  created_at: string;
-  updated_at: string;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 export interface GeologyFact {
@@ -87,9 +87,9 @@ export interface GeologyFact {
   context?: string;
   fact_type?: FactType;
   topic_id?: number;
-  display_order: number;
-  is_featured: boolean;
-  created_at: string;
+  display_order: number | null;
+  is_featured: boolean | null;
+  created_at: string | null;
 }
 
 export interface GeologySite {
@@ -102,16 +102,16 @@ export interface GeologySite {
   longitude?: number;
   address?: string;
   directions?: string;
-  is_public_access: boolean;
-  requires_appointment: boolean;
+  is_public_access: boolean | null;
+  requires_appointment: boolean | null;
   best_time_to_visit?: string;
   accessibility_notes?: string;
   photos: string[];
   related_topic_ids?: number[];
   nearby_winery_ids?: number[];
-  is_published: boolean;
-  created_at: string;
-  updated_at: string;
+  is_published: boolean | null;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 export interface GeologyMedia {
@@ -127,8 +127,8 @@ export interface GeologyMedia {
   caption?: string;
   topic_ids?: number[];
   site_ids?: number[];
-  is_featured: boolean;
-  created_at: string;
+  is_featured: boolean | null;
+  created_at: string | null;
 }
 
 export interface GeologyAIGuidance {
@@ -136,10 +136,10 @@ export interface GeologyAIGuidance {
   guidance_type: GuidanceType;
   title?: string;
   content: string;
-  priority: number;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
+  priority: number | null;
+  is_active: boolean | null;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 export interface GeologyTour {
@@ -162,12 +162,12 @@ export interface GeologyTour {
   site_ids?: number[];
   partner_winery_ids?: number[];
   hero_image_url?: string;
-  is_featured: boolean;
-  is_active: boolean;
+  is_featured: boolean | null;
+  is_active: boolean | null;
   booking_url?: string;
   booking_notes?: string;
-  created_at: string;
-  updated_at: string;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 // ============================================================================
@@ -320,10 +320,10 @@ export interface TopicSummary {
   subtitle?: string;
   excerpt?: string;
   topic_type: TopicType;
-  difficulty: DifficultyLevel;
+  difficulty: DifficultyLevel | null;
   hero_image_url?: string;
-  is_featured: boolean;
-  is_published: boolean;
+  is_featured: boolean | null;
+  is_published: boolean | null;
 }
 
 export interface SiteSummary {
@@ -334,7 +334,7 @@ export interface SiteSummary {
   site_type?: SiteType;
   latitude?: number;
   longitude?: number;
-  is_public_access: boolean;
+  is_public_access: boolean | null;
 }
 
 export interface TourSummary {
@@ -345,7 +345,7 @@ export interface TourSummary {
   duration_hours?: number;
   price_per_person?: number;
   hero_image_url?: string;
-  is_featured: boolean;
+  is_featured: boolean | null;
 }
 
 // ============================================================================

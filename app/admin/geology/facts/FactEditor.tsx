@@ -26,8 +26,8 @@ interface FactData {
   context: string | null;
   fact_type: string | null;
   topic_id: number | null;
-  display_order: number;
-  is_featured: boolean;
+  display_order: number | null;
+  is_featured: boolean | null;
 }
 
 interface FactEditorProps {
@@ -60,8 +60,8 @@ export function FactEditor({ initialData, isEditing = false }: FactEditorProps) 
   const [context, setContext] = useState(initialData?.context || '');
   const [factType, setFactType] = useState(initialData?.fact_type || '');
   const [topicId, setTopicId] = useState<string>(initialData?.topic_id?.toString() || '');
-  const [displayOrder, setDisplayOrder] = useState(initialData?.display_order || 0);
-  const [isFeatured, setIsFeatured] = useState(initialData?.is_featured || false);
+  const [displayOrder, setDisplayOrder] = useState(initialData?.display_order ?? 0);
+  const [isFeatured, setIsFeatured] = useState(initialData?.is_featured ?? false);
 
   // Fetch topics for dropdown
   useEffect(() => {

@@ -14,7 +14,7 @@
  * - Formats data for AI system prompt injection
  */
 
-import { BaseService } from './base.service';
+import { prisma } from '@/lib/prisma';
 import {
   GeologyTopic,
   GeologyFact,
@@ -31,11 +31,7 @@ import {
 // Service
 // ============================================================================
 
-class GeologyContextService extends BaseService {
-  protected get serviceName(): string {
-    return 'GeologyContextService';
-  }
-
+class GeologyContextService {
   // ============================================================================
   // Public Methods - Data Fetching
   // ============================================================================
@@ -44,8 +40,6 @@ class GeologyContextService extends BaseService {
    * Get full geology context for AI - topics, facts, sites, guidance
    */
   async getFullContext(): Promise<GeologyContext> {
-    this.log('Fetching full geology context');
-
     const [topics, facts, sites, tours, guidance] = await Promise.all([
       this.getPublishedTopics(),
       this.getFeaturedFacts(),
@@ -67,51 +61,47 @@ class GeologyContextService extends BaseService {
    * Get published topics for public display
    */
   async getPublishedTopics(): Promise<GeologyTopic[]> {
-    return this.queryMany<GeologyTopic>(
-      `SELECT *
-       FROM geology_topics
-       WHERE is_published = true
-       ORDER BY display_order ASC, created_at DESC`
-    );
+    return prisma.$queryRaw<GeologyTopic[]>`
+      SELECT *
+      FROM geology_topics
+      WHERE is_published = true
+      ORDER BY display_order ASC, created_at DESC`;
   }
 
   /**
    * Get topic summaries for listing pages
    */
   async getTopicSummaries(): Promise<TopicSummary[]> {
-    return this.queryMany<TopicSummary>(
-      `SELECT
+    return prisma.$queryRaw<TopicSummary[]>`
+      SELECT
         id, slug, title, subtitle, excerpt,
         topic_type, difficulty, hero_image_url,
         is_featured, is_published
-       FROM geology_topics
-       WHERE is_published = true
-       ORDER BY is_featured DESC, display_order ASC`
-    );
+      FROM geology_topics
+      WHERE is_published = true
+      ORDER BY is_featured DESC, display_order ASC`;
   }
 
   /**
    * Get a single topic by slug
    */
   async getTopicBySlug(slug: string): Promise<GeologyTopic | null> {
-    return this.queryOne<GeologyTopic>(
-      `SELECT *
-       FROM geology_topics
-       WHERE slug = $1 AND is_published = true`,
-      [slug]
-    );
+    const result = await prisma.$queryRaw<GeologyTopic[]>`
+      SELECT *
+      FROM geology_topics
+      WHERE slug = ${slug} AND is_published = true`;
+    return result[0] || null;
   }
 
   /**
    * Get featured facts for carousel/highlights
    */
   async getFeaturedFacts(): Promise<GeologyFact[]> {
-    return this.queryMany<GeologyFact>(
-      `SELECT *
-       FROM geology_facts
-       WHERE is_featured = true
-       ORDER BY display_order ASC`
-    );
+    return prisma.$queryRaw<GeologyFact[]>`
+      SELECT *
+      FROM geology_facts
+      WHERE is_featured = true
+      ORDER BY display_order ASC`;
   }
 
   /**
@@ -119,109 +109,99 @@ class GeologyContextService extends BaseService {
    */
   async getFactsByTopic(topicId?: number): Promise<GeologyFact[]> {
     if (topicId) {
-      return this.queryMany<GeologyFact>(
-        `SELECT *
-         FROM geology_facts
-         WHERE topic_id = $1
-         ORDER BY display_order ASC`,
-        [topicId]
-      );
+      return prisma.$queryRaw<GeologyFact[]>`
+        SELECT *
+        FROM geology_facts
+        WHERE topic_id = ${topicId}
+        ORDER BY display_order ASC`;
     }
 
-    return this.queryMany<GeologyFact>(
-      `SELECT *
-       FROM geology_facts
-       ORDER BY is_featured DESC, display_order ASC`
-    );
+    return prisma.$queryRaw<GeologyFact[]>`
+      SELECT *
+      FROM geology_facts
+      ORDER BY is_featured DESC, display_order ASC`;
   }
 
   /**
    * Get published sites for map
    */
   async getPublishedSites(): Promise<GeologySite[]> {
-    return this.queryMany<GeologySite>(
-      `SELECT *
-       FROM geology_sites
-       WHERE is_published = true
-       ORDER BY name ASC`
-    );
+    return prisma.$queryRaw<GeologySite[]>`
+      SELECT *
+      FROM geology_sites
+      WHERE is_published = true
+      ORDER BY name ASC`;
   }
 
   /**
    * Get site summaries for map display
    */
   async getSiteSummaries(): Promise<SiteSummary[]> {
-    return this.queryMany<SiteSummary>(
-      `SELECT
+    return prisma.$queryRaw<SiteSummary[]>`
+      SELECT
         id, slug, name, description, site_type,
         latitude, longitude, is_public_access
-       FROM geology_sites
-       WHERE is_published = true
-       ORDER BY name ASC`
-    );
+      FROM geology_sites
+      WHERE is_published = true
+      ORDER BY name ASC`;
   }
 
   /**
    * Get a single site by slug
    */
   async getSiteBySlug(slug: string): Promise<GeologySite | null> {
-    return this.queryOne<GeologySite>(
-      `SELECT *
-       FROM geology_sites
-       WHERE slug = $1 AND is_published = true`,
-      [slug]
-    );
+    const result = await prisma.$queryRaw<GeologySite[]>`
+      SELECT *
+      FROM geology_sites
+      WHERE slug = ${slug} AND is_published = true`;
+    return result[0] || null;
   }
 
   /**
    * Get active geology tours
    */
   async getActiveTours(): Promise<GeologyTour[]> {
-    return this.queryMany<GeologyTour>(
-      `SELECT *
-       FROM geology_tours
-       WHERE is_active = true
-       ORDER BY is_featured DESC, name ASC`
-    );
+    return prisma.$queryRaw<GeologyTour[]>`
+      SELECT *
+      FROM geology_tours
+      WHERE is_active = true
+      ORDER BY is_featured DESC, name ASC`;
   }
 
   /**
    * Get tour summaries for listing
    */
   async getTourSummaries(): Promise<TourSummary[]> {
-    return this.queryMany<TourSummary>(
-      `SELECT
+    return prisma.$queryRaw<TourSummary[]>`
+      SELECT
         id, slug, name, tagline,
         duration_hours, price_per_person,
         hero_image_url, is_featured
-       FROM geology_tours
-       WHERE is_active = true
-       ORDER BY is_featured DESC, name ASC`
-    );
+      FROM geology_tours
+      WHERE is_active = true
+      ORDER BY is_featured DESC, name ASC`;
   }
 
   /**
    * Get a single tour by slug
    */
   async getTourBySlug(slug: string): Promise<GeologyTour | null> {
-    return this.queryOne<GeologyTour>(
-      `SELECT *
-       FROM geology_tours
-       WHERE slug = $1 AND is_active = true`,
-      [slug]
-    );
+    const result = await prisma.$queryRaw<GeologyTour[]>`
+      SELECT *
+      FROM geology_tours
+      WHERE slug = ${slug} AND is_active = true`;
+    return result[0] || null;
   }
 
   /**
    * Get active AI guidance from the geologist
    */
   async getActiveGuidance(): Promise<GeologyAIGuidance[]> {
-    return this.queryMany<GeologyAIGuidance>(
-      `SELECT *
-       FROM geology_ai_guidance
-       WHERE is_active = true
-       ORDER BY priority DESC, created_at ASC`
-    );
+    return prisma.$queryRaw<GeologyAIGuidance[]>`
+      SELECT *
+      FROM geology_ai_guidance
+      WHERE is_active = true
+      ORDER BY priority DESC, created_at ASC`;
   }
 
   // ============================================================================
@@ -429,14 +409,14 @@ class GeologyContextService extends BaseService {
    * Get context focused on a specific topic (for topic page chat)
    */
   async getTopicContext(topicId: number): Promise<string> {
-    const [topic, relatedFacts, allGuidance] = await Promise.all([
-      this.queryOne<GeologyTopic>(
-        `SELECT * FROM geology_topics WHERE id = $1`,
-        [topicId]
-      ),
+    const [topicResult, relatedFacts, allGuidance] = await Promise.all([
+      prisma.$queryRaw<GeologyTopic[]>`
+        SELECT * FROM geology_topics WHERE id = ${topicId}`,
       this.getFactsByTopic(topicId),
       this.getActiveGuidance(),
     ]);
+
+    const topic = topicResult[0] || null;
 
     if (!topic) {
       return '';

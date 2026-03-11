@@ -8,7 +8,7 @@
 import { getSession } from '@/lib/auth/session';
 import { canAccessGeology } from '@/lib/auth/roles';
 import { redirect } from 'next/navigation';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 
 // ============================================================================
@@ -20,10 +20,10 @@ interface Guidance {
   guidance_type: string;
   title: string | null;
   content: string;
-  priority: number;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
+  priority: number | null;
+  is_active: boolean | null;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 // ============================================================================
@@ -32,12 +32,9 @@ interface Guidance {
 
 async function getGuidance(): Promise<Guidance[]> {
   try {
-    const result = await query<Guidance>(`
-      SELECT id, guidance_type, title, content, priority, is_active, created_at, updated_at
-      FROM geology_ai_guidance
-      ORDER BY priority DESC, created_at ASC
-    `);
-    return result.rows;
+    return await prisma.geology_ai_guidance.findMany({
+      orderBy: [{ priority: 'desc' }, { created_at: 'asc' }],
+    }) as unknown as Guidance[];
   } catch {
     return [];
   }
@@ -174,7 +171,7 @@ export default async function AIGuidancePage() {
                             </span>
                           )}
                           <span className="text-xs text-gray-500">
-                            Priority: {item.priority}
+                            Priority: {item.priority ?? 0}
                           </span>
                         </div>
                         <p className="text-sm text-gray-600 line-clamp-2 whitespace-pre-wrap">

@@ -4,7 +4,7 @@
  * Public page displaying a single geology topic/article.
  */
 
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import type { Metadata } from 'next';
@@ -30,13 +30,13 @@ interface Topic {
   content: string;
   excerpt: string | null;
   topic_type: string;
-  difficulty: string;
+  difficulty: string | null;
   hero_image_url: string | null;
   sources: string | null;
   author_name: string | null;
-  verified: boolean;
-  created_at: string;
-  updated_at: string;
+  verified: boolean | null;
+  created_at: Date | null;
+  updated_at: Date | null;
 }
 
 interface RelatedTopic {
@@ -62,14 +62,25 @@ interface PageProps {
 
 async function getTopic(slug: string): Promise<Topic | null> {
   try {
-    const result = await query<Topic>(
-      `SELECT id, slug, title, subtitle, content, excerpt, topic_type, difficulty,
-              hero_image_url, sources, author_name, verified, created_at, updated_at
-       FROM geology_topics
-       WHERE slug = $1 AND is_published = true`,
-      [slug]
-    );
-    return result.rows[0] || null;
+    return await prisma.geology_topics.findFirst({
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        subtitle: true,
+        content: true,
+        excerpt: true,
+        topic_type: true,
+        difficulty: true,
+        hero_image_url: true,
+        sources: true,
+        author_name: true,
+        verified: true,
+        created_at: true,
+        updated_at: true,
+      },
+      where: { slug, is_published: true },
+    });
   } catch {
     return null;
   }
@@ -77,17 +88,14 @@ async function getTopic(slug: string): Promise<Topic | null> {
 
 async function getRelatedTopics(topicId: number, topicType: string): Promise<RelatedTopic[]> {
   try {
-    const result = await query<RelatedTopic>(
-      `SELECT id, slug, title, topic_type
-       FROM geology_topics
-       WHERE is_published = true AND id != $1
-       ORDER BY
-         CASE WHEN topic_type = $2 THEN 0 ELSE 1 END,
-         display_order ASC
-       LIMIT 3`,
-      [topicId, topicType]
-    );
-    return result.rows;
+    return await prisma.$queryRaw<RelatedTopic[]>`
+      SELECT id, slug, title, topic_type
+      FROM geology_topics
+      WHERE is_published = true AND id != ${topicId}
+      ORDER BY
+        CASE WHEN topic_type = ${topicType} THEN 0 ELSE 1 END,
+        display_order ASC
+      LIMIT 3`;
   } catch {
     return [];
   }
@@ -95,14 +103,15 @@ async function getRelatedTopics(topicId: number, topicType: string): Promise<Rel
 
 async function getTopicFacts(topicId: number): Promise<Fact[]> {
   try {
-    const result = await query<Fact>(
-      `SELECT id, fact_text, fact_type
-       FROM geology_facts
-       WHERE topic_id = $1
-       ORDER BY display_order ASC`,
-      [topicId]
-    );
-    return result.rows;
+    return await prisma.geology_facts.findMany({
+      select: {
+        id: true,
+        fact_text: true,
+        fact_type: true,
+      },
+      where: { topic_id: topicId },
+      orderBy: { display_order: 'asc' },
+    });
   } catch {
     return [];
   }
@@ -198,8 +207,8 @@ function ArticleJsonLd({ topic, faqItems }: { topic: Topic; faqItems: FaqItem[] 
       name: 'Walla Walla Travel',
       url: 'https://wallawalla.travel',
     },
-    datePublished: topic.created_at,
-    dateModified: topic.updated_at,
+    datePublished: topic.created_at?.toISOString() ?? '',
+    dateModified: topic.updated_at?.toISOString() ?? '',
     mainEntityOfPage: {
       '@type': 'WebPage',
       '@id': `https://wallawalla.travel/geology/${topic.slug}`,
@@ -396,7 +405,7 @@ export default async function GeologyTopicPage({ params }: PageProps) {
 
           <div className="flex flex-wrap items-center gap-3 mb-4">
             <TopicTypeBadge type={topic.topic_type} />
-            <DifficultyIndicator level={topic.difficulty} />
+            <DifficultyIndicator level={topic.difficulty || 'general'} />
             {topic.verified && (
               <span className="text-green-400 text-sm flex items-center gap-1">
                 <span>✓</span> Verified

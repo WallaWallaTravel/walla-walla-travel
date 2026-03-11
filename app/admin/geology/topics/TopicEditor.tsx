@@ -17,16 +17,16 @@ interface Topic {
   content: string;
   excerpt: string;
   topic_type: string;
-  difficulty: string;
+  difficulty: string | null;
   hero_image_url: string;
-  display_order: number;
-  is_featured: boolean;
-  is_published: boolean;
+  display_order: number | null;
+  is_featured: boolean | null;
+  is_published: boolean | null;
   related_winery_ids: number[];
   related_topic_ids: number[];
   author_name: string;
   sources: string;
-  verified: boolean;
+  verified: boolean | null;
 }
 
 interface TopicEditorProps {
@@ -406,14 +406,14 @@ export function TopicEditor({ initialData, isEditing = false }: TopicEditorProps
     topic_type: initialData?.topic_type || 'overview',
     difficulty: initialData?.difficulty || 'general',
     hero_image_url: initialData?.hero_image_url || '',
-    display_order: initialData?.display_order || 0,
-    is_featured: initialData?.is_featured || false,
-    is_published: initialData?.is_published || false,
+    display_order: initialData?.display_order ?? 0,
+    is_featured: initialData?.is_featured ?? false,
+    is_published: initialData?.is_published ?? false,
     related_winery_ids: initialData?.related_winery_ids || [],
     related_topic_ids: initialData?.related_topic_ids || [],
     author_name: initialData?.author_name || '',
     sources: initialData?.sources || '',
-    verified: initialData?.verified || false,
+    verified: initialData?.verified ?? false,
     ...(initialData?.id && { id: initialData.id }),
   });
 
@@ -772,7 +772,7 @@ The effects of these cataclysmic events are still visible in the **basalt cliffs
                   Difficulty Level
                 </label>
                 <select
-                  value={formData.difficulty}
+                  value={formData.difficulty ?? 'general'}
                   onChange={(e) => setFormData({ ...formData, difficulty: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#722F37] focus:border-transparent"
                 >
@@ -819,7 +819,7 @@ The effects of these cataclysmic events are still visible in the **basalt cliffs
                 </label>
                 <input
                   type="number"
-                  value={formData.display_order}
+                  value={formData.display_order ?? 0}
                   onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) || 0 })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#722F37] focus:border-transparent"
                 />
@@ -845,7 +845,7 @@ The effects of these cataclysmic events are still visible in the **basalt cliffs
               <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
-                  checked={formData.is_featured}
+                  checked={formData.is_featured ?? false}
                   onChange={(e) => setFormData({ ...formData, is_featured: e.target.checked })}
                   className="rounded border-gray-300 text-[#722F37] focus:ring-[#722F37]"
                 />

@@ -3,7 +3,7 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import {
   NotFoundError,
 } from '@/lib/api/middleware/error-handler';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { auditService } from '@/lib/services/audit.service';
@@ -37,21 +37,19 @@ export const GET = withAdminAuth(
       throw new NotFoundError('Invalid fact ID');
     }
 
-    const result = await query(
-      `SELECT f.*, t.title as topic_title
-       FROM geology_facts f
-       LEFT JOIN geology_topics t ON f.topic_id = t.id
-       WHERE f.id = $1`,
-      [factId]
-    );
+    const result = await prisma.$queryRaw<any[]>`
+      SELECT f.*, t.title as topic_title
+      FROM geology_facts f
+      LEFT JOIN geology_topics t ON f.topic_id = t.id
+      WHERE f.id = ${factId}`;
 
-    if (result.rows.length === 0) {
+    if (result.length === 0) {
       throw new NotFoundError('Fact not found');
     }
 
     return NextResponse.json({
       success: true,
-      data: result.rows[0],
+      data: result[0],
     });
   }
 );
@@ -94,18 +92,18 @@ export const PUT = withCSRF(
 
     values.push(factId);
 
-    const result = await query(
+    const result = await prisma.$queryRawUnsafe<any[]>(
       `UPDATE geology_facts SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
-      values
+      ...values
     );
 
-    if (result.rows.length === 0) {
+    if (result.length === 0) {
       throw new NotFoundError('Fact not found');
     }
 
     return NextResponse.json({
       success: true,
-      data: result.rows[0],
+      data: result[0],
     });
   }
 )
@@ -125,9 +123,9 @@ export const DELETE = withCSRF(
       throw new NotFoundError('Invalid fact ID');
     }
 
-    const result = await query('DELETE FROM geology_facts WHERE id = $1 RETURNING id', [factId]);
+    const result = await prisma.$queryRaw<{id: number}[]>`DELETE FROM geology_facts WHERE id = ${factId} RETURNING id`;
 
-    if (result.rows.length === 0) {
+    if (result.length === 0) {
       throw new NotFoundError('Fact not found');
     }
 

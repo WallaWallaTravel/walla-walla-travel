@@ -3,7 +3,7 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import {
   NotFoundError,
 } from '@/lib/api/middleware/error-handler';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { auditService } from '@/lib/services/audit.service';
@@ -60,23 +60,25 @@ export const GET = withAdminAuth(
       throw new NotFoundError('Invalid topic ID');
     }
 
-    const result = await query('SELECT * FROM geology_topics WHERE id = $1', [topicId]);
+    const topic = await prisma.geology_topics.findFirst({
+      where: { id: topicId },
+    });
 
-    if (result.rows.length === 0) {
+    if (!topic) {
       throw new NotFoundError('Topic not found');
     }
 
     // Also get related facts
-    const factsResult = await query(
-      'SELECT * FROM geology_facts WHERE topic_id = $1 ORDER BY display_order ASC',
-      [topicId]
-    );
+    const relatedFacts = await prisma.geology_facts.findMany({
+      where: { topic_id: topicId },
+      orderBy: { display_order: 'asc' },
+    });
 
     return NextResponse.json({
       success: true,
       data: {
-        topic: result.rows[0],
-        relatedFacts: factsResult.rows,
+        topic,
+        relatedFacts,
       },
     });
   }
@@ -142,18 +144,18 @@ export const PUT = withCSRF(
 
     values.push(topicId);
 
-    const result = await query(
+    const result = await prisma.$queryRawUnsafe<any[]>(
       `UPDATE geology_topics SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
-      values
+      ...values
     );
 
-    if (result.rows.length === 0) {
+    if (result.length === 0) {
       throw new NotFoundError('Topic not found');
     }
 
     return NextResponse.json({
       success: true,
-      data: result.rows[0],
+      data: result[0],
     });
   }
 )
@@ -173,9 +175,9 @@ export const DELETE = withCSRF(
       throw new NotFoundError('Invalid topic ID');
     }
 
-    const result = await query('DELETE FROM geology_topics WHERE id = $1 RETURNING id', [topicId]);
+    const result = await prisma.$queryRaw<{id: number}[]>`DELETE FROM geology_topics WHERE id = ${topicId} RETURNING id`;
 
-    if (result.rows.length === 0) {
+    if (result.length === 0) {
       throw new NotFoundError('Topic not found');
     }
 

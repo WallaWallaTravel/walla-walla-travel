@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 
@@ -43,24 +43,24 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const { searchParams } = new URL(request.url);
   const publishedOnly = searchParams.get('published') === 'true';
 
-  let sql = `
-    SELECT *
-    FROM geology_topics
-  `;
-
+  const where: any = {};
   if (publishedOnly) {
-    sql += ' WHERE is_published = true';
+    where.is_published = true;
   }
 
-  sql += ' ORDER BY display_order ASC, created_at DESC';
-
-  const result = await query(sql);
+  const topics = await prisma.geology_topics.findMany({
+    where,
+    orderBy: [
+      { display_order: 'asc' },
+      { created_at: 'desc' },
+    ],
+  });
 
   return NextResponse.json({
     success: true,
     data: {
-      topics: result.rows,
-      count: result.rows.length,
+      topics,
+      count: topics.length,
     },
   });
 });
@@ -74,35 +74,29 @@ export const POST = withCSRF(
   const body = await request.json();
   const validated = createTopicSchema.parse(body);
 
-  const result = await query(
-    `INSERT INTO geology_topics (
-      slug, title, subtitle, content, excerpt, topic_type, difficulty,
-      hero_image_url, display_order, is_featured, is_published,
-      related_winery_ids, related_topic_ids, author_name, sources
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-    RETURNING *`,
-    [
-      validated.slug,
-      validated.title,
-      validated.subtitle || null,
-      validated.content,
-      validated.excerpt || null,
-      validated.topic_type,
-      validated.difficulty,
-      validated.hero_image_url || null,
-      validated.display_order,
-      validated.is_featured,
-      validated.is_published,
-      validated.related_winery_ids || null,
-      validated.related_topic_ids || null,
-      validated.author_name || null,
-      validated.sources || null,
-    ]
-  );
+  const topic = await prisma.geology_topics.create({
+    data: {
+      slug: validated.slug,
+      title: validated.title,
+      subtitle: validated.subtitle || null,
+      content: validated.content,
+      excerpt: validated.excerpt || null,
+      topic_type: validated.topic_type,
+      difficulty: validated.difficulty,
+      hero_image_url: validated.hero_image_url || null,
+      display_order: validated.display_order,
+      is_featured: validated.is_featured,
+      is_published: validated.is_published,
+      related_winery_ids: validated.related_winery_ids || [],
+      related_topic_ids: validated.related_topic_ids || [],
+      author_name: validated.author_name || null,
+      sources: validated.sources || null,
+    },
+  });
 
   return NextResponse.json({
     success: true,
-    data: result.rows[0],
+    data: topic,
   });
 })
 );

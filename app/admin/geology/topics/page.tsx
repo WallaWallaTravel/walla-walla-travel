@@ -7,7 +7,7 @@
 import { getSession } from '@/lib/auth/session';
 import { canAccessGeology } from '@/lib/auth/roles';
 import { redirect } from 'next/navigation';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 
 // ============================================================================
@@ -20,12 +20,12 @@ interface Topic {
   title: string;
   subtitle: string | null;
   topic_type: string;
-  difficulty: string;
-  is_featured: boolean;
-  is_published: boolean;
-  verified: boolean;
-  created_at: string;
-  updated_at: string;
+  difficulty: string | null;
+  is_featured: boolean | null;
+  is_published: boolean | null;
+  verified: boolean | null;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 // ============================================================================
@@ -34,13 +34,9 @@ interface Topic {
 
 async function getTopics(): Promise<Topic[]> {
   try {
-    const result = await query<Topic>(`
-      SELECT id, slug, title, subtitle, topic_type, difficulty,
-             is_featured, is_published, verified, created_at, updated_at
-      FROM geology_topics
-      ORDER BY display_order ASC, created_at DESC
-    `);
-    return result.rows;
+    return await prisma.geology_topics.findMany({
+      orderBy: [{ display_order: 'asc' }, { created_at: 'desc' }],
+    }) as unknown as Topic[];
   } catch {
     return [];
   }
@@ -71,16 +67,17 @@ function TopicTypeBadge({ type }: { type: string }) {
   );
 }
 
-function DifficultyBadge({ difficulty }: { difficulty: string }) {
+function DifficultyBadge({ difficulty }: { difficulty: string | null }) {
   const colors: Record<string, string> = {
     general: 'bg-green-100 text-green-800',
     intermediate: 'bg-yellow-100 text-yellow-800',
     advanced: 'bg-red-100 text-red-800',
   };
 
+  const level = difficulty || 'general';
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${colors[difficulty] || 'bg-gray-100 text-gray-800'}`}>
-      {difficulty}
+    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${colors[level] || 'bg-gray-100 text-gray-800'}`}>
+      {level}
     </span>
   );
 }
@@ -180,7 +177,7 @@ export default async function TopicsListPage() {
                     <TopicTypeBadge type={topic.topic_type} />
                   </td>
                   <td className="px-6 py-4">
-                    <DifficultyBadge difficulty={topic.difficulty} />
+                    <DifficultyBadge difficulty={topic.difficulty ?? 'general'} />
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
@@ -201,7 +198,7 @@ export default async function TopicsListPage() {
                     </div>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500">
-                    {new Date(topic.updated_at).toLocaleDateString()}
+                    {topic.updated_at ? new Date(topic.updated_at).toLocaleDateString() : '—'}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <Link

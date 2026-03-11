@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 
@@ -32,21 +32,24 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const { searchParams } = new URL(request.url);
   const activeOnly = searchParams.get('active') === 'true';
 
-  let sql = 'SELECT * FROM geology_ai_guidance';
-
+  const where: any = {};
   if (activeOnly) {
-    sql += ' WHERE is_active = true';
+    where.is_active = true;
   }
 
-  sql += ' ORDER BY priority DESC, created_at ASC';
-
-  const result = await query(sql);
+  const guidance = await prisma.geology_ai_guidance.findMany({
+    where,
+    orderBy: [
+      { priority: 'desc' },
+      { created_at: 'asc' },
+    ],
+  });
 
   return NextResponse.json({
     success: true,
     data: {
-      guidance: result.rows,
-      count: result.rows.length,
+      guidance,
+      count: guidance.length,
     },
   });
 });
@@ -60,22 +63,19 @@ export const POST = withCSRF(
   const body = await request.json();
   const validated = createGuidanceSchema.parse(body);
 
-  const result = await query(
-    `INSERT INTO geology_ai_guidance (guidance_type, title, content, priority, is_active)
-     VALUES ($1, $2, $3, $4, $5)
-     RETURNING *`,
-    [
-      validated.guidance_type,
-      validated.title || null,
-      validated.content,
-      validated.priority,
-      validated.is_active,
-    ]
-  );
+  const record = await prisma.geology_ai_guidance.create({
+    data: {
+      guidance_type: validated.guidance_type,
+      title: validated.title || null,
+      content: validated.content,
+      priority: validated.priority,
+      is_active: validated.is_active,
+    },
+  });
 
   return NextResponse.json({
     success: true,
-    data: result.rows[0],
+    data: record,
   });
 })
 );

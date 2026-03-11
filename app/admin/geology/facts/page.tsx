@@ -7,7 +7,7 @@
 import { getSession } from '@/lib/auth/session';
 import { canAccessGeology } from '@/lib/auth/roles';
 import { redirect } from 'next/navigation';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 
 // ============================================================================
@@ -21,9 +21,9 @@ interface Fact {
   fact_type: string | null;
   topic_id: number | null;
   topic_title: string | null;
-  display_order: number;
-  is_featured: boolean;
-  created_at: string;
+  display_order: number | null;
+  is_featured: boolean | null;
+  created_at: string | null;
 }
 
 // ============================================================================
@@ -32,15 +32,14 @@ interface Fact {
 
 async function getFacts(): Promise<Fact[]> {
   try {
-    const result = await query<Fact>(`
+    const result = await prisma.$queryRaw<Fact[]>`
       SELECT f.id, f.fact_text, f.context, f.fact_type, f.topic_id,
              f.display_order, f.is_featured, f.created_at,
              t.title as topic_title
       FROM geology_facts f
       LEFT JOIN geology_topics t ON f.topic_id = t.id
-      ORDER BY f.is_featured DESC, f.display_order ASC, f.created_at DESC
-    `);
-    return result.rows;
+      ORDER BY f.is_featured DESC, f.display_order ASC, f.created_at DESC`;
+    return result;
   } catch {
     return [];
   }

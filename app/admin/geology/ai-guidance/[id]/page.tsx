@@ -7,7 +7,7 @@
 import { getSession } from '@/lib/auth/session';
 import { canAccessGeology } from '@/lib/auth/roles';
 import { redirect, notFound } from 'next/navigation';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { GuidanceEditor } from '../GuidanceEditor';
 
 interface PageProps {
@@ -19,17 +19,16 @@ interface GuidanceData {
   guidance_type: string;
   title: string | null;
   content: string;
-  priority: number;
-  is_active: boolean;
+  priority: number | null;
+  is_active: boolean | null;
 }
 
 async function getGuidance(id: number): Promise<GuidanceData | null> {
   try {
-    const result = await query<GuidanceData>(
-      'SELECT id, guidance_type, title, content, priority, is_active FROM geology_ai_guidance WHERE id = $1',
-      [id]
-    );
-    return result.rows[0] || null;
+    return await prisma.geology_ai_guidance.findFirst({
+      where: { id },
+      select: { id: true, guidance_type: true, title: true, content: true, priority: true, is_active: true },
+    });
   } catch {
     return null;
   }

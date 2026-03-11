@@ -7,7 +7,7 @@
 import { getSession } from '@/lib/auth/session';
 import { canAccessGeology } from '@/lib/auth/roles';
 import { redirect, notFound } from 'next/navigation';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { SiteEditor } from '../SiteEditor';
 
 interface PageProps {
@@ -24,25 +24,20 @@ interface SiteData {
   longitude: number | null;
   address: string | null;
   directions: string | null;
-  is_public_access: boolean;
-  requires_appointment: boolean;
+  is_public_access: boolean | null;
+  requires_appointment: boolean | null;
   best_time_to_visit: string | null;
   photos: string[] | null;
   related_topic_ids: number[] | null;
   nearby_winery_ids: number[] | null;
-  is_published: boolean;
+  is_published: boolean | null;
 }
 
 async function getSite(id: number): Promise<SiteData | null> {
   try {
-    const result = await query<SiteData>(
-      `SELECT id, name, slug, description, site_type, latitude, longitude,
-              address, directions, is_public_access, requires_appointment,
-              best_time_to_visit, photos, related_topic_ids, nearby_winery_ids, is_published
-       FROM geology_sites WHERE id = $1`,
-      [id]
-    );
-    return result.rows[0] || null;
+    return await prisma.geology_sites.findFirst({
+      where: { id },
+    }) as unknown as SiteData | null;
   } catch {
     return null;
   }

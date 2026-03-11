@@ -3,7 +3,7 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import {
   NotFoundError,
 } from '@/lib/api/middleware/error-handler';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { auditService } from '@/lib/services/audit.service';
@@ -43,15 +43,17 @@ export const GET = withAdminAuth(
       throw new NotFoundError('Invalid guidance ID');
     }
 
-    const result = await query('SELECT * FROM geology_ai_guidance WHERE id = $1', [guidanceId]);
+    const guidance = await prisma.geology_ai_guidance.findFirst({
+      where: { id: guidanceId },
+    });
 
-    if (result.rows.length === 0) {
+    if (!guidance) {
       throw new NotFoundError('Guidance not found');
     }
 
     return NextResponse.json({
       success: true,
-      data: result.rows[0],
+      data: guidance,
     });
   }
 );
@@ -94,18 +96,18 @@ export const PUT = withCSRF(
 
     values.push(guidanceId);
 
-    const result = await query(
+    const result = await prisma.$queryRawUnsafe<any[]>(
       `UPDATE geology_ai_guidance SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
-      values
+      ...values
     );
 
-    if (result.rows.length === 0) {
+    if (result.length === 0) {
       throw new NotFoundError('Guidance not found');
     }
 
     return NextResponse.json({
       success: true,
-      data: result.rows[0],
+      data: result[0],
     });
   }
 )
@@ -125,11 +127,9 @@ export const DELETE = withCSRF(
       throw new NotFoundError('Invalid guidance ID');
     }
 
-    const result = await query('DELETE FROM geology_ai_guidance WHERE id = $1 RETURNING id', [
-      guidanceId,
-    ]);
+    const result = await prisma.$queryRaw<{id: number}[]>`DELETE FROM geology_ai_guidance WHERE id = ${guidanceId} RETURNING id`;
 
-    if (result.rows.length === 0) {
+    if (result.length === 0) {
       throw new NotFoundError('Guidance not found');
     }
 

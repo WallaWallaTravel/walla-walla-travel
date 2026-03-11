@@ -7,7 +7,7 @@
 import { getSession } from '@/lib/auth/session';
 import { canAccessGeology } from '@/lib/auth/roles';
 import { redirect, notFound } from 'next/navigation';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { TopicEditor } from '../TopicEditor';
 import type { GeologyTopic } from '@/lib/types/geology';
 
@@ -17,11 +17,9 @@ interface PageProps {
 
 async function getTopic(id: number): Promise<GeologyTopic | null> {
   try {
-    const result = await query<GeologyTopic>(
-      'SELECT * FROM geology_topics WHERE id = $1',
-      [id]
-    );
-    return result.rows[0] || null;
+    return await prisma.geology_topics.findFirst({
+      where: { id },
+    }) as unknown as GeologyTopic | null;
   } catch {
     return null;
   }

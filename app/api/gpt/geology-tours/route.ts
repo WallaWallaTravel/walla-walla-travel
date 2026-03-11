@@ -6,7 +6,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { query } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 
 interface TourRow {
@@ -41,7 +41,7 @@ const corsHeaders = {
 };
 
 export const GET = withErrorHandling(async () => {
-  const sql = `
+  const result = await prisma.$queryRaw<TourRow[]>`
     SELECT
       slug, name, tagline, description, duration_hours,
       price_per_person, highlights, what_included, is_featured
@@ -50,10 +50,8 @@ export const GET = withErrorHandling(async () => {
     ORDER BY is_featured DESC, name ASC
   `;
 
-  const result = await query<TourRow>(sql);
-
   // Format results for GPT-friendly response
-  const tours: TourResult[] = result.rows.map(row => ({
+  const tours: TourResult[] = result.map(row => ({
     slug: row.slug,
     name: row.name,
     tagline: row.tagline || '',
