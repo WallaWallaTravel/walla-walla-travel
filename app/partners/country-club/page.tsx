@@ -15,7 +15,7 @@ export default function WWCCPartnerPage() {
         <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
           <div>
             <p
-              className="font-displaytext-wwcc-cream"
+              className="font-display text-wwcc-cream"
               style={{ fontSize: '18px', letterSpacing: '0.03em', fontWeight: 400 }}
             >
               Walla Walla Country Club
@@ -41,7 +41,7 @@ export default function WWCCPartnerPage() {
               Exclusive Member Experiences
             </p>
             <h1
-              className="font-displaytext-wwcc-cream mb-6"
+              className="font-display text-wwcc-cream mb-6"
               style={{ fontSize: '42px', lineHeight: 1.1, letterSpacing: '-0.02em', fontWeight: 400 }}
             >
               Wine, Golf &amp; Adventure — Starting at the Club
@@ -155,7 +155,7 @@ export default function WWCCPartnerPage() {
               Wine Tours
             </p>
             <h2
-              className="font-displaytext-wwcc-dark"
+              className="font-display text-wwcc-dark"
               style={{ fontSize: '32px', lineHeight: 1.1, letterSpacing: '-0.02em', fontWeight: 400 }}
             >
               Wine Tour Packages
@@ -170,7 +170,7 @@ export default function WWCCPartnerPage() {
             <div className="rounded-xl bg-wwcc-warm border border-stone-200 shadow-sm overflow-hidden flex flex-col">
               <div className="bg-wwcc-dark px-6 py-5">
                 <h3
-                  className="font-displaytext-wwcc-cream"
+                  className="font-display text-wwcc-cream"
                   style={{ fontSize: '22px', lineHeight: 1.1, letterSpacing: '-0.02em', fontWeight: 400 }}
                 >
                   Wine &amp; Dine
@@ -214,7 +214,7 @@ export default function WWCCPartnerPage() {
                   Most Popular
                 </p>
                 <h3
-                  className="font-displaytext-wwcc-cream"
+                  className="font-display text-wwcc-cream"
                   style={{ fontSize: '22px', lineHeight: 1.1, letterSpacing: '-0.02em', fontWeight: 400 }}
                 >
                   The Walla Walla Experience
@@ -256,7 +256,7 @@ export default function WWCCPartnerPage() {
             <div className="rounded-xl bg-wwcc-warm border border-stone-200 shadow-sm overflow-hidden flex flex-col">
               <div className="bg-wwcc-dark px-6 py-5">
                 <h3
-                  className="font-displaytext-wwcc-cream"
+                  className="font-display text-wwcc-cream"
                   style={{ fontSize: '22px', lineHeight: 1.1, letterSpacing: '-0.02em', fontWeight: 400 }}
                 >
                   Custom Wine &amp; Dine
@@ -304,7 +304,7 @@ export default function WWCCPartnerPage() {
               Geology Tours
             </p>
             <h2
-              className="font-displaytext-wwcc-cream"
+              className="font-display text-wwcc-cream"
               style={{ fontSize: '32px', lineHeight: 1.1, letterSpacing: '-0.02em', fontWeight: 400 }}
             >
               Explore the Story Beneath the Vines
@@ -320,7 +320,7 @@ export default function WWCCPartnerPage() {
             <div className="rounded-xl bg-wwcc-warm border border-stone-200 shadow-sm overflow-hidden flex flex-col">
               <div className="bg-wwcc-dark px-6 py-5 border-b border-wwcc-cream/10">
                 <h3
-                  className="font-displaytext-wwcc-cream"
+                  className="font-display text-wwcc-cream"
                   style={{ fontSize: '22px', lineHeight: 1.1, letterSpacing: '-0.02em', fontWeight: 400 }}
                 >
                   Geology Tour + Club Lunch
@@ -362,7 +362,7 @@ export default function WWCCPartnerPage() {
             <div className="rounded-xl bg-wwcc-warm border border-stone-200 shadow-sm overflow-hidden flex flex-col">
               <div className="bg-wwcc-dark px-6 py-5 border-b border-wwcc-cream/10">
                 <h3
-                  className="font-displaytext-wwcc-cream"
+                  className="font-display text-wwcc-cream"
                   style={{ fontSize: '22px', lineHeight: 1.1, letterSpacing: '-0.02em', fontWeight: 400 }}
                 >
                   Geology &amp; Wine Combo
@@ -414,7 +414,7 @@ export default function WWCCPartnerPage() {
               Golf
             </p>
             <h2
-              className="font-displaytext-wwcc-dark"
+              className="font-display text-wwcc-dark"
               style={{ fontSize: '32px', lineHeight: 1.1, letterSpacing: '-0.02em', fontWeight: 400 }}
             >
               Golf Excursions
@@ -430,7 +430,7 @@ export default function WWCCPartnerPage() {
             <div className="rounded-xl bg-wwcc-warm border border-stone-200 shadow-sm overflow-hidden flex flex-col">
               <div className="bg-wwcc-dark px-6 py-5">
                 <h3
-                  className="font-displaytext-wwcc-cream"
+                  className="font-display text-wwcc-cream"
                   style={{ fontSize: '22px', lineHeight: 1.1, letterSpacing: '-0.02em', fontWeight: 400 }}
                 >
                   Day Golf Excursion
@@ -478,7 +478,7 @@ export default function WWCCPartnerPage() {
                   Most Popular
                 </p>
                 <h3
-                  className="font-displaytext-wwcc-cream"
+                  className="font-display text-wwcc-cream"
                   style={{ fontSize: '22px', lineHeight: 1.1, letterSpacing: '-0.02em', fontWeight: 400 }}
                 >
                   Weekend Golf &amp; Wine Getaway
@@ -519,7 +519,7 @@ export default function WWCCPartnerPage() {
             <div className="rounded-xl bg-wwcc-warm border border-stone-200 shadow-sm overflow-hidden flex flex-col">
               <div className="bg-wwcc-dark px-6 py-5">
                 <h3
-                  className="font-displaytext-wwcc-cream"
+                  className="font-display text-wwcc-cream"
                   style={{ fontSize: '22px', lineHeight: 1.1, letterSpacing: '-0.02em', fontWeight: 400 }}
                 >
                   The Ultimate Experience
@@ -573,7 +573,7 @@ export default function WWCCPartnerPage() {
             Dining
           </p>
           <h2
-            className="font-displaytext-wwcc-cream mb-6"
+            className="font-display text-wwcc-cream mb-6"
             style={{ fontSize: '32px', lineHeight: 1.1, letterSpacing: '-0.02em', fontWeight: 400 }}
           >
             A Curated Dining Experience at the Club
@@ -595,7 +595,7 @@ export default function WWCCPartnerPage() {
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-8 md:mb-10">
             <h2
-              className="font-displaytext-wwcc-dark"
+              className="font-display text-wwcc-dark"
               style={{ fontSize: '32px', lineHeight: 1.1, letterSpacing: '-0.02em', fontWeight: 400 }}
             >
               How It Works
@@ -611,7 +611,7 @@ export default function WWCCPartnerPage() {
                 1
               </div>
               <h3
-                className="font-displaytext-wwcc-dark mb-2"
+                className="font-display text-wwcc-dark mb-2"
                 style={{ fontSize: '20px', lineHeight: 1.1, letterSpacing: '-0.02em', fontWeight: 400 }}
               >
                 Choose Your Experience
@@ -629,7 +629,7 @@ export default function WWCCPartnerPage() {
                 2
               </div>
               <h3
-                className="font-displaytext-wwcc-dark mb-2"
+                className="font-display text-wwcc-dark mb-2"
                 style={{ fontSize: '20px', lineHeight: 1.1, letterSpacing: '-0.02em', fontWeight: 400 }}
               >
                 We Plan Every Detail
@@ -647,7 +647,7 @@ export default function WWCCPartnerPage() {
                 3
               </div>
               <h3
-                className="font-displaytext-wwcc-dark mb-2"
+                className="font-display text-wwcc-dark mb-2"
                 style={{ fontSize: '20px', lineHeight: 1.1, letterSpacing: '-0.02em', fontWeight: 400 }}
               >
                 Enjoy Your Day
@@ -665,7 +665,7 @@ export default function WWCCPartnerPage() {
       <section className="bg-wwcc-dark py-12 md:py-16">
         <div className="max-w-3xl mx-auto px-6 text-center">
           <h2
-            className="font-displaytext-wwcc-cream mb-4"
+            className="font-display text-wwcc-cream mb-4"
             style={{ fontSize: '32px', lineHeight: 1.1, letterSpacing: '-0.02em', fontWeight: 400 }}
           >
             Invite Your Friends &amp; Family
@@ -706,7 +706,7 @@ export default function WWCCPartnerPage() {
           <div className="grid md:grid-cols-3 gap-8 mb-10">
             <div>
               <p
-                className="font-displaytext-wwcc-cream mb-1"
+                className="font-display text-wwcc-cream mb-1"
                 style={{ fontSize: '18px', letterSpacing: '0.03em', fontWeight: 400 }}
               >
                 Walla Walla Country Club
