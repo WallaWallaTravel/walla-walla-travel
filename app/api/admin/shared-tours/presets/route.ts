@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper';
-import { query } from '@/lib/db';
-import { withCSRF } from '@/lib/api/middleware/csrf';
+import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 
 const PostBodySchema = z.object({
@@ -39,7 +38,7 @@ interface SharedTourPreset {
  * Get all shared tour presets
  */
 export const GET = withAdminAuth(async (_request: NextRequest, _session: AuthSession) => {
-  const result = await query<SharedTourPreset>(`
+  const rows = await prisma.$queryRaw<SharedTourPreset[]>`
     SELECT
       id,
       name,
@@ -57,12 +56,12 @@ export const GET = withAdminAuth(async (_request: NextRequest, _session: AuthSes
       updated_at
     FROM shared_tour_presets
     ORDER BY sort_order ASC, name ASC
-  `);
+  `;
 
   return NextResponse.json({
     success: true,
-    data: result.rows,
-    count: result.rows.length,
+    data: rows,
+    count: rows.length,
   });
 });
 
@@ -70,8 +69,7 @@ export const GET = withAdminAuth(async (_request: NextRequest, _session: AuthSes
  * POST /api/admin/shared-tours/presets
  * Create a new preset
  */
-export const POST = withCSRF(
-  withAdminAuth(async (request: NextRequest, _session: AuthSession) => {
+export const POST = withAdminAuth(async (request: NextRequest, _session: AuthSession) => {
   const body = PostBodySchema.parse(await request.json());
 
   // Validate required fields
@@ -83,12 +81,11 @@ export const POST = withCSRF(
   }
 
   // Check for duplicate name
-  const existing = await query<{ id: number }>(
-    'SELECT id FROM shared_tour_presets WHERE LOWER(name) = LOWER($1)',
-    [body.name]
-  );
+  const existing = await prisma.$queryRaw<{ id: number }[]>`
+    SELECT id FROM shared_tour_presets WHERE LOWER(name) = LOWER(${body.name})
+  `;
 
-  if (existing.rows.length > 0) {
+  if (existing.length > 0) {
     return NextResponse.json(
       { success: false, error: 'A preset with this name already exists' },
       { status: 409 }
@@ -96,12 +93,12 @@ export const POST = withCSRF(
   }
 
   // Get next sort order
-  const sortResult = await query<{ max_sort: number }>(
-    'SELECT COALESCE(MAX(sort_order), 0) + 1 as max_sort FROM shared_tour_presets'
-  );
-  const nextSortOrder = sortResult.rows[0]?.max_sort || 1;
+  const sortRows = await prisma.$queryRaw<{ max_sort: number }[]>`
+    SELECT COALESCE(MAX(sort_order), 0) + 1 as max_sort FROM shared_tour_presets
+  `;
+  const nextSortOrder = sortRows[0]?.max_sort || 1;
 
-  const result = await query<SharedTourPreset>(`
+  const rows = await prisma.$queryRaw<SharedTourPreset[]>`
     INSERT INTO shared_tour_presets (
       name,
       start_time,
@@ -114,7 +111,19 @@ export const POST = withCSRF(
       min_guests,
       is_default,
       sort_order
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+    ) VALUES (
+      ${body.name},
+      ${body.start_time || '11:00'},
+      ${body.duration_hours || 6},
+      ${body.base_price_per_person || 95},
+      ${body.lunch_price_per_person || 115},
+      ${body.title || null},
+      ${body.description || null},
+      ${body.max_guests || 14},
+      ${body.min_guests || 2},
+      ${body.is_default || false},
+      ${nextSortOrder}
+    )
     RETURNING
       id,
       name,
@@ -130,24 +139,11 @@ export const POST = withCSRF(
       sort_order,
       created_at,
       updated_at
-  `, [
-    body.name,
-    body.start_time || '11:00',
-    body.duration_hours || 6,
-    body.base_price_per_person || 95,
-    body.lunch_price_per_person || 115,
-    body.title || null,
-    body.description || null,
-    body.max_guests || 14,
-    body.min_guests || 2,
-    body.is_default || false,
-    nextSortOrder,
-  ]);
+  `;
 
   return NextResponse.json({
     success: true,
-    data: result.rows[0],
+    data: rows[0],
     message: 'Preset created successfully',
   });
-})
-);
+});

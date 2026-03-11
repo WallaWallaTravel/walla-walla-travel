@@ -16,16 +16,13 @@
  * - Ticket sales and availability tracking
  * - Lunch upgrade options
  * - Guest manifest generation
- *
- * @see migrations/038-shared-tours-system.sql - Database schema
  */
 
-import { query } from '@/lib/db';
-import { withTransaction } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { SHARED_TOUR_RATES } from '@/lib/types/pricing-models';
 import { logger } from '@/lib/logger';
 import { vehicleAvailabilityService } from './vehicle-availability.service';
-import type { PoolClient } from 'pg';
 import { getBrandStripeClient, getBrandStripePublishableKey } from '@/lib/stripe-brands';
 
 // Shared tours use the default Stripe account (NW Touring)
@@ -35,6 +32,40 @@ function getStripe() {
     throw new Error('STRIPE_SECRET_KEY is not configured');
   }
   return client;
+}
+
+// ============================================================================
+// SERIALIZATION HELPERS
+// ============================================================================
+
+/**
+ * Serialize raw query results: Date → ISO string, Decimal → number, BigInt → number
+ * Ensures compatibility with existing interfaces that expect string dates and numeric values.
+ */
+function serialize<T>(rows: Record<string, unknown>[]): T[] {
+  return rows.map(row => {
+    const result: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(row)) {
+      if (value === null || value === undefined) {
+        result[key] = value;
+      } else if (value instanceof Date) {
+        result[key] = value.toISOString();
+      } else if (typeof value === 'bigint') {
+        result[key] = Number(value);
+      } else if (typeof value === 'object' && value !== null && 'toFixed' in value) {
+        // Prisma Decimal
+        result[key] = Number(String(value));
+      } else {
+        result[key] = value;
+      }
+    }
+    return result as T;
+  });
+}
+
+function serializeOne<T>(rows: Record<string, unknown>[]): T | null {
+  const serialized = serialize<T>(rows);
+  return serialized[0] || null;
 }
 
 // ============================================================================
@@ -183,45 +214,45 @@ export const sharedTourService = {
    * Get all upcoming shared tours with availability info
    */
   async getUpcomingTours(): Promise<SharedTourWithAvailability[]> {
-    const result = await query<SharedTourWithAvailability>(`
+    const rows = await prisma.$queryRaw<Record<string, unknown>[]>`
       SELECT * FROM shared_tours_availability_view
       ORDER BY tour_date, start_time
-    `);
-    return result.rows;
+    `;
+    return serialize<SharedTourWithAvailability>(rows);
   },
 
   /**
    * Get a single tour by ID
    */
   async getTourById(tourId: string): Promise<SharedTourSchedule | null> {
-    const result = await query<SharedTourSchedule>(`
+    const rows = await prisma.$queryRaw<Record<string, unknown>[]>`
       SELECT * FROM shared_tour_schedule
-      WHERE id = $1
-    `, [tourId]);
-    return result.rows[0] || null;
+      WHERE id = ${parseInt(tourId)}
+    `;
+    return serializeOne<SharedTourSchedule>(rows);
   },
 
   /**
    * Get a tour with availability info
    */
   async getTourWithAvailability(tourId: string): Promise<SharedTourWithAvailability | null> {
-    const result = await query<SharedTourWithAvailability>(`
-      SELECT * FROM shared_tours_availability
-      WHERE id = $1
-    `, [tourId]);
-    return result.rows[0] || null;
+    const rows = await prisma.$queryRaw<Record<string, unknown>[]>`
+      SELECT * FROM shared_tours_availability_view
+      WHERE id = ${parseInt(tourId)}
+    `;
+    return serializeOne<SharedTourWithAvailability>(rows);
   },
 
   /**
    * Get tours for a specific date range
    */
   async getToursInRange(startDate: string, endDate: string): Promise<SharedTourWithAvailability[]> {
-    const result = await query<SharedTourWithAvailability>(`
+    const rows = await prisma.$queryRaw<Record<string, unknown>[]>`
       SELECT * FROM shared_tours_availability_view
-      WHERE tour_date >= $1 AND tour_date <= $2
+      WHERE tour_date >= ${startDate}::date AND tour_date <= ${endDate}::date
       ORDER BY tour_date, start_time
-    `, [startDate, endDate]);
-    return result.rows;
+    `;
+    return serialize<SharedTourWithAvailability>(rows);
   },
 
   /**
@@ -319,79 +350,61 @@ export const sharedTourService = {
     const tourCode = `ST-${data.tour_date.replace(/-/g, '')}-${Date.now().toString(36).toUpperCase()}`;
 
     // Step 3: Create tour and vehicle block atomically in a transaction
-    // This prevents orphaned tours if vehicle block creation fails
-    return withTransaction(async (client: PoolClient) => {
-      // Create the tour record (insert into actual table, not view)
-      // Note: The shared_tour_schedule view remaps column names, so we use actual table columns
-      const result = await client.query<SharedTourSchedule>(`
-        INSERT INTO shared_tours (
-          tour_code,
-          tour_date,
-          start_time,
-          duration_hours,
-          max_guests,
-          min_guests,
-          price_per_person,
-          lunch_included,
-          title,
-          description,
-          pickup_location,
-          planned_wineries,
-          published,
-          notes,
-          vehicle_id,
-          driver_id,
-          status
-        ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17
-        )
-        RETURNING *,
-          price_per_person AS base_price_per_person,
-          (price_per_person + 20.00) AS lunch_price_per_person,
-          lunch_included AS lunch_included_default,
-          pickup_location AS meeting_location,
-          planned_wineries AS wineries_preview,
-          published AS is_published,
-          48 AS booking_cutoff_hours,
-          24 AS cancellation_cutoff_hours
-      `, [
-        tourCode,
-        data.tour_date,
-        startTime,
-        durationHours,
-        maxGuests, // Use possibly-capped max_guests
-        data.min_guests || 2,
-        data.base_price_per_person || SHARED_TOUR_RATES.base.perPersonRate,
-        data.lunch_included_default ?? true,
-        data.title || 'Walla Walla Wine Tour Experience',
-        data.description || null,
-        data.meeting_location || 'Downtown Walla Walla - exact location provided upon booking',
-        data.wineries_preview || null,
-        data.is_published ?? true,
-        data.notes || null,
-        assignedVehicle?.id || null,
-        data.driver_id || null,
-        'scheduled', // Default status
-      ]);
-
-      const tour = result.rows[0];
+    return prisma.$transaction(async (tx) => {
+      // Create the tour record
+      const tourRow = await tx.shared_tours.create({
+        data: {
+          tour_code: tourCode,
+          tour_date: new Date(data.tour_date),
+          start_time: new Date(`1970-01-01T${startTime}`),
+          duration_hours: durationHours,
+          max_guests: maxGuests,
+          min_guests: data.min_guests || 2,
+          price_per_person: data.base_price_per_person || SHARED_TOUR_RATES.base.perPersonRate,
+          lunch_included: data.lunch_included_default ?? true,
+          title: data.title || 'Walla Walla Wine Tour Experience',
+          description: data.description || null,
+          pickup_location: data.meeting_location || 'Downtown Walla Walla - exact location provided upon booking',
+          planned_wineries: data.wineries_preview || [],
+          published: data.is_published ?? true,
+          notes: data.notes || null,
+          vehicle_id: assignedVehicle?.id || null,
+          driver_id: data.driver_id || null,
+          status: 'scheduled',
+        },
+      });
 
       // Create vehicle availability block if vehicle assigned (still in transaction)
       if (assignedVehicle) {
         try {
-          // Create vehicle block - uses its own query but we're in a transaction
-          // so if this fails, the tour INSERT is rolled back
-          await this.createVehicleBlockWithClient(tour, client);
+          const endTime = this.addHoursToTime(startTime, durationHours);
+          await tx.$executeRaw`
+            INSERT INTO vehicle_availability_blocks (
+              vehicle_id, block_date, start_time, end_time, block_type, notes
+            ) VALUES (
+              ${assignedVehicle.id},
+              ${data.tour_date}::date,
+              ${startTime}::time,
+              ${endTime}::time,
+              'maintenance',
+              ${'Shared Tour: ' + (data.title || 'Walla Walla Wine Tour Experience')}
+            )
+          `;
         } catch (blockError) {
-          // Log and rethrow - transaction will be rolled back automatically
           logger.error('Failed to create vehicle block, transaction will rollback', {
-            tourId: tour.id,
+            tourId: tourRow.id,
             vehicleId: assignedVehicle.id,
             error: blockError,
           });
           throw new Error('Failed to reserve vehicle for tour. The vehicle may have just been booked by another tour.');
         }
       }
+
+      // Query via view to get the properly mapped result
+      const tourResult = await tx.$queryRaw<Record<string, unknown>[]>`
+        SELECT * FROM shared_tour_schedule WHERE id = ${tourRow.id}
+      `;
+      const tour = serializeOne<SharedTourSchedule>(tourResult)!;
 
       logger.info('Tour and vehicle block created atomically', {
         tourId: tour.id,
@@ -450,41 +463,6 @@ export const sharedTourService = {
   },
 
   /**
-   * Create a vehicle availability block within an existing transaction
-   * This version accepts a PoolClient for transaction safety
-   */
-  async createVehicleBlockWithClient(tour: SharedTourSchedule, client: PoolClient): Promise<void> {
-    if (!tour.vehicle_id) return;
-
-    const endTime = this.addHoursToTime(tour.start_time, tour.duration_hours);
-
-    // Insert directly into vehicle_availability_blocks within the transaction
-    await client.query(`
-      INSERT INTO vehicle_availability_blocks (
-        vehicle_id,
-        block_date,
-        start_time,
-        end_time,
-        block_type,
-        notes
-      ) VALUES ($1, $2, $3, $4, $5, $6)
-    `, [
-      parseInt(tour.vehicle_id),
-      tour.tour_date,
-      tour.start_time,
-      endTime,
-      'maintenance', // Using 'maintenance' type for shared tour blocks
-      `Shared Tour: ${tour.title}`,
-    ]);
-
-    logger.info('Created vehicle availability block (in transaction) for shared tour', {
-      tourId: tour.id,
-      vehicleId: tour.vehicle_id,
-      date: tour.tour_date,
-    });
-  },
-
-  /**
    * Helper to add hours to a time string
    */
   addHoursToTime(time: string, hours: number): string {
@@ -499,119 +477,100 @@ export const sharedTourService = {
    * Update a tour
    */
   async updateTour(tourId: string, data: Partial<CreateTourRequest>): Promise<SharedTourSchedule | null> {
-    const updates: string[] = [];
-    const values: unknown[] = [];
-    let paramCount = 1;
+    const id = parseInt(tourId);
+
+    // Build Prisma update data, mapping view column names to actual table columns
+    const updateData: Prisma.shared_toursUpdateInput = {};
+    let hasUpdates = false;
 
     if (data.tour_date !== undefined) {
-      updates.push(`tour_date = $${paramCount++}`);
-      values.push(data.tour_date);
+      updateData.tour_date = new Date(data.tour_date);
+      hasUpdates = true;
     }
     if (data.start_time !== undefined) {
-      updates.push(`start_time = $${paramCount++}`);
-      values.push(data.start_time);
+      updateData.start_time = new Date(`1970-01-01T${data.start_time}`);
+      hasUpdates = true;
     }
     if (data.duration_hours !== undefined) {
-      updates.push(`duration_hours = $${paramCount++}`);
-      values.push(data.duration_hours);
+      updateData.duration_hours = data.duration_hours;
+      hasUpdates = true;
     }
     if (data.max_guests !== undefined) {
-      updates.push(`max_guests = $${paramCount++}`);
-      values.push(data.max_guests);
+      updateData.max_guests = data.max_guests;
+      hasUpdates = true;
     }
     if (data.min_guests !== undefined) {
-      updates.push(`min_guests = $${paramCount++}`);
-      values.push(data.min_guests);
+      updateData.min_guests = data.min_guests;
+      hasUpdates = true;
     }
     if (data.base_price_per_person !== undefined) {
-      updates.push(`base_price_per_person = $${paramCount++}`);
-      values.push(data.base_price_per_person);
-    }
-    if (data.lunch_price_per_person !== undefined) {
-      updates.push(`lunch_price_per_person = $${paramCount++}`);
-      values.push(data.lunch_price_per_person);
+      updateData.price_per_person = data.base_price_per_person;
+      hasUpdates = true;
     }
     if (data.lunch_included_default !== undefined) {
-      updates.push(`lunch_included_default = $${paramCount++}`);
-      values.push(data.lunch_included_default);
+      updateData.lunch_included = data.lunch_included_default;
+      hasUpdates = true;
     }
     if (data.title !== undefined) {
-      updates.push(`title = $${paramCount++}`);
-      values.push(data.title);
+      updateData.title = data.title;
+      hasUpdates = true;
     }
     if (data.description !== undefined) {
-      updates.push(`description = $${paramCount++}`);
-      values.push(data.description);
+      updateData.description = data.description;
+      hasUpdates = true;
     }
     if (data.meeting_location !== undefined) {
-      updates.push(`meeting_location = $${paramCount++}`);
-      values.push(data.meeting_location);
+      updateData.pickup_location = data.meeting_location;
+      hasUpdates = true;
     }
     if (data.wineries_preview !== undefined) {
-      updates.push(`wineries_preview = $${paramCount++}`);
-      values.push(data.wineries_preview);
-    }
-    if (data.booking_cutoff_hours !== undefined) {
-      updates.push(`booking_cutoff_hours = $${paramCount++}`);
-      values.push(data.booking_cutoff_hours);
+      updateData.planned_wineries = data.wineries_preview;
+      hasUpdates = true;
     }
     if (data.is_published !== undefined) {
-      updates.push(`is_published = $${paramCount++}`);
-      values.push(data.is_published);
+      updateData.published = data.is_published;
+      hasUpdates = true;
     }
     if (data.notes !== undefined) {
-      updates.push(`notes = $${paramCount++}`);
-      values.push(data.notes);
+      updateData.notes = data.notes;
+      hasUpdates = true;
     }
     if (data.vehicle_id !== undefined) {
-      updates.push(`vehicle_id = $${paramCount++}`);
-      values.push(data.vehicle_id);
+      updateData.vehicle_id = data.vehicle_id;
+      hasUpdates = true;
     }
     if (data.driver_id !== undefined) {
-      updates.push(`driver_id = $${paramCount++}`);
-      values.push(data.driver_id);
+      updateData.driver_id = data.driver_id;
+      hasUpdates = true;
     }
 
-    // Handle trip_proposal_id separately (not in the shared_tour_schedule view)
+    // Handle trip_proposal_id separately (not in CreateTourRequest type)
     const tripProposalIdValue = (data as Record<string, unknown>).trip_proposal_id;
-    const hasTripProposalUpdate = tripProposalIdValue !== undefined;
+    if (tripProposalIdValue !== undefined) {
+      updateData.trip_proposal_id = tripProposalIdValue as number | null;
+      hasUpdates = true;
+    }
 
-    if (updates.length === 0 && !hasTripProposalUpdate) {
+    if (!hasUpdates) {
       return this.getTourById(tourId);
     }
 
-    // Get current tour state before update
+    // Get current tour state before update (for vehicle change handling)
     const currentTour = await this.getTourById(tourId);
 
-    // Update trip_proposal_id directly on the base table (not available in the view)
-    if (hasTripProposalUpdate) {
-      await query(
-        'UPDATE shared_tours SET trip_proposal_id = $1, updated_at = NOW() WHERE id = $2',
-        [tripProposalIdValue, tourId]
-      );
-    }
+    updateData.updated_at = new Date();
 
-    // If no other fields to update via the view, return early
-    if (updates.length === 0) {
-      return this.getTourById(tourId);
-    }
+    await prisma.shared_tours.update({
+      where: { id },
+      data: updateData,
+    });
 
-    updates.push(`updated_at = NOW()`);
-    values.push(tourId);
-
-    const result = await query<SharedTourSchedule>(`
-      UPDATE shared_tour_schedule
-      SET ${updates.join(', ')}
-      WHERE id = $${paramCount}
-      RETURNING *
-    `, values);
-
-    const updatedTour = result.rows[0];
+    // Re-query via view
+    const updatedTour = await this.getTourById(tourId);
     if (!updatedTour) return null;
 
     // Handle vehicle assignment changes
     if (data.vehicle_id !== undefined && currentTour) {
-      // If vehicle changed, update availability blocks
       if (currentTour.vehicle_id !== String(data.vehicle_id)) {
         // Remove old block if existed
         if (currentTour.vehicle_id) {
@@ -671,24 +630,25 @@ export const sharedTourService = {
    * Also removes the vehicle availability block if a vehicle was assigned
    */
   async cancelTour(tourId: string): Promise<SharedTourSchedule | null> {
+    const id = parseInt(tourId);
+
     // Get tour before cancelling to remove vehicle block
     const tour = await this.getTourById(tourId);
 
-    const result = await query<SharedTourSchedule>(`
-      UPDATE shared_tour_schedule
-      SET status = 'cancelled', updated_at = NOW()
-      WHERE id = $1
-      RETURNING *
-    `, [tourId]);
-
-    const cancelledTour = result.rows[0];
+    await prisma.shared_tours.update({
+      where: { id },
+      data: {
+        status: 'cancelled',
+        updated_at: new Date(),
+      },
+    });
 
     // Remove vehicle availability block if vehicle was assigned
     if (tour?.vehicle_id) {
       await this.removeVehicleBlock(tour);
     }
 
-    return cancelledTour;
+    return this.getTourById(tourId);
   },
 
   /**
@@ -696,18 +656,22 @@ export const sharedTourService = {
    * Creates/updates vehicle availability block
    */
   async assignResources(tourId: string, driverId: string | null, vehicleId: string | null): Promise<SharedTourSchedule | null> {
+    const id = parseInt(tourId);
+
     // Get current tour state
     const currentTour = await this.getTourById(tourId);
     if (!currentTour) return null;
 
-    const result = await query<SharedTourSchedule>(`
-      UPDATE shared_tour_schedule
-      SET driver_id = $2, vehicle_id = $3, updated_at = NOW()
-      WHERE id = $1
-      RETURNING *
-    `, [tourId, driverId, vehicleId]);
+    await prisma.shared_tours.update({
+      where: { id },
+      data: {
+        driver_id: driverId ? parseInt(driverId) : null,
+        vehicle_id: vehicleId ? parseInt(vehicleId) : null,
+        updated_at: new Date(),
+      },
+    });
 
-    const updatedTour = result.rows[0];
+    const updatedTour = await this.getTourById(tourId);
     if (!updatedTour) return null;
 
     // Handle vehicle assignment changes
@@ -733,19 +697,15 @@ export const sharedTourService = {
     const endTime = this.addHoursToTime(startTime, durationHours);
 
     // Get all active vehicles with reasonable capacity for shared tours
-    const vehiclesResult = await query<{
-      id: number;
-      make: string;
-      model: string;
-      capacity: number;
-    }>(`
-      SELECT id, make, model, capacity
-      FROM vehicles
-      WHERE status = 'active' AND capacity >= 2
-      ORDER BY capacity DESC
-    `);
+    const vehicles = await prisma.vehicles.findMany({
+      where: {
+        status: 'active',
+        capacity: { gte: 2 },
+      },
+      orderBy: { capacity: 'desc' },
+      select: { id: true, make: true, model: true, capacity: true },
+    });
 
-    const vehicles = vehiclesResult.rows;
     if (vehicles.length === 0) return [];
 
     // Check availability for each vehicle
@@ -761,7 +721,7 @@ export const sharedTourService = {
       availableVehicles.push({
         id: vehicle.id,
         name: `${vehicle.make} ${vehicle.model}`,
-        capacity: vehicle.capacity,
+        capacity: vehicle.capacity ?? 0,
         available,
       });
     }
@@ -817,10 +777,6 @@ export const sharedTourService = {
    *
    * CRITICAL: Uses atomic transaction to prevent partial failures.
    * All operations (remove old block, update tour, create new block) succeed or fail together.
-   *
-   * @param tourId - The tour to reassign
-   * @param newVehicleId - Optional specific vehicle to assign, or auto-select if not provided
-   * @returns Updated tour and vehicle info, or throws if no suitable vehicle available
    */
   async reassignVehicle(tourId: string, newVehicleId?: number): Promise<{
     tour: SharedTourSchedule;
@@ -875,25 +831,22 @@ export const sharedTourService = {
       );
     }
 
+    const id = parseInt(tourId);
+
     // Use transaction to ensure all operations succeed or fail together
-    return withTransaction(async (client: PoolClient) => {
+    return prisma.$transaction(async (tx) => {
       // Step 1: Remove old vehicle block (if exists)
       if (previousVehicleId) {
         const endTime = this.addHoursToTime(currentTour.start_time, currentTour.duration_hours);
-        await client.query(`
+        await tx.$executeRaw`
           DELETE FROM vehicle_availability_blocks
-          WHERE vehicle_id = $1
-            AND block_date = $2
-            AND start_time = $3
-            AND end_time = $4
+          WHERE vehicle_id = ${parseInt(previousVehicleId)}
+            AND block_date = ${currentTour.tour_date}::date
+            AND start_time = ${currentTour.start_time}::time
+            AND end_time = ${endTime}::time
             AND block_type = 'maintenance'
             AND notes LIKE 'Shared Tour:%'
-        `, [
-          parseInt(previousVehicleId),
-          currentTour.tour_date,
-          currentTour.start_time,
-          endTime,
-        ]);
+        `;
 
         logger.info('Removed old vehicle block in transaction', {
           tourId,
@@ -902,41 +855,47 @@ export const sharedTourService = {
       }
 
       // Step 2: Update tour with new vehicle and max_guests
-      const updateResult = await client.query<SharedTourSchedule>(`
-        UPDATE shared_tours
-        SET vehicle_id = $2, max_guests = $3, updated_at = NOW()
-        WHERE id = $1
-        RETURNING *,
-          price_per_person AS base_price_per_person,
-          (price_per_person + 20.00) AS lunch_price_per_person,
-          lunch_included AS lunch_included_default,
-          pickup_location AS meeting_location,
-          planned_wineries AS wineries_preview,
-          published AS is_published,
-          48 AS booking_cutoff_hours,
-          24 AS cancellation_cutoff_hours
-      `, [tourId, selectedVehicle.id, newMaxGuests]);
-
-      const updatedTour = updateResult.rows[0];
-      if (!updatedTour) {
-        throw new Error('Failed to update tour with new vehicle');
-      }
+      await tx.shared_tours.update({
+        where: { id },
+        data: {
+          vehicle_id: selectedVehicle!.id,
+          max_guests: newMaxGuests,
+          updated_at: new Date(),
+        },
+      });
 
       // Step 3: Create new vehicle block
-      await this.createVehicleBlockWithClient(updatedTour, client);
+      const updatedTourRows = await tx.$queryRaw<Record<string, unknown>[]>`
+        SELECT * FROM shared_tour_schedule WHERE id = ${id}
+      `;
+      const updatedTour = serializeOne<SharedTourSchedule>(updatedTourRows)!;
+
+      const endTime = this.addHoursToTime(updatedTour.start_time, updatedTour.duration_hours);
+      await tx.$executeRaw`
+        INSERT INTO vehicle_availability_blocks (
+          vehicle_id, block_date, start_time, end_time, block_type, notes
+        ) VALUES (
+          ${selectedVehicle!.id},
+          ${updatedTour.tour_date}::date,
+          ${updatedTour.start_time}::time,
+          ${endTime}::time,
+          'maintenance',
+          ${'Shared Tour: ' + updatedTour.title}
+        )
+      `;
 
       logger.info('Reassigned vehicle for shared tour (atomic transaction)', {
         tourId,
         previousVehicleId,
-        newVehicleId: selectedVehicle.id,
-        newVehicleName: selectedVehicle.name,
+        newVehicleId: selectedVehicle!.id,
+        newVehicleName: selectedVehicle!.name,
         maxGuestsUpdated,
         newMaxGuests,
       });
 
       return {
         tour: updatedTour,
-        vehicle_info: selectedVehicle,
+        vehicle_info: selectedVehicle!,
         max_guests_updated: maxGuestsUpdated,
         previous_vehicle_id: previousVehicleId,
       };
@@ -955,10 +914,10 @@ export const sharedTourService = {
     spots_remaining: number;
     reason: string;
   }> {
-    const result = await query<{ available: boolean; spots_remaining: number; reason: string }>(`
-      SELECT * FROM check_shared_tour_availability($1, $2)
-    `, [tourId, requestedTickets]);
-    return result.rows[0];
+    const rows = await prisma.$queryRaw<Record<string, unknown>[]>`
+      SELECT * FROM check_shared_tour_availability(${parseInt(tourId)}, ${requestedTickets})
+    `;
+    return serializeOne<{ available: boolean; spots_remaining: number; reason: string }>(rows)!;
   },
 
   /**
@@ -970,15 +929,10 @@ export const sharedTourService = {
     tax_amount: number;
     total_amount: number;
   }> {
-    const result = await query<{
-      price_per_person: number;
-      subtotal: number;
-      tax_amount: number;
-      total_amount: number;
-    }>(`
-      SELECT * FROM calculate_ticket_price($1, $2, $3)
-    `, [tourId, ticketCount, includesLunch]);
-    return result.rows[0];
+    const rows = await prisma.$queryRaw<Record<string, unknown>[]>`
+      SELECT * FROM calculate_ticket_price(${parseInt(tourId)}, ${ticketCount}, ${includesLunch})
+    `;
+    return serializeOne<{ price_per_person: number; subtotal: number; tax_amount: number; total_amount: number }>(rows)!;
   },
 
   /**
@@ -989,27 +943,20 @@ export const sharedTourService = {
    */
   async createTicket(data: CreateTicketRequest): Promise<SharedTourTicket> {
     const includesLunch = data.includes_lunch ?? true;
+    const tourId = parseInt(data.tour_id);
 
     // Use atomic transaction to prevent race conditions (overbooking)
-    return withTransaction(async (client: PoolClient) => {
+    return prisma.$transaction(async (tx) => {
       // Step 1: Lock the tour row and get current availability atomically
-      // This prevents concurrent requests from both passing availability check
-      const tourLock = await client.query<{
-        id: string;
-        max_guests: number;
-        status: string;
-        tour_date: string;
-        start_time: string;
-        booking_cutoff_hours: number;
-      }>(`
-        SELECT id, max_guests, status, tour_date, start_time,
+      const tourLock = await tx.$queryRaw<Record<string, unknown>[]>`
+        SELECT id, max_guests, status, tour_date::text, start_time::text,
                COALESCE(booking_cutoff_hours, 48) as booking_cutoff_hours
         FROM shared_tours
-        WHERE id = $1
+        WHERE id = ${tourId}
         FOR UPDATE
-      `, [data.tour_id]);
+      `;
 
-      const tour = tourLock.rows[0];
+      const tour = tourLock[0] as { id: number; max_guests: number; status: string; tour_date: string; start_time: string; booking_cutoff_hours: number } | undefined;
       if (!tour) {
         throw new Error('Tour not found');
       }
@@ -1030,13 +977,13 @@ export const sharedTourService = {
       }
 
       // Step 3: Count current tickets (locked reads prevent phantom reads)
-      const ticketCount = await client.query<{ total: number }>(`
-        SELECT COALESCE(SUM(ticket_count), 0)::INTEGER as total
-        FROM shared_tour_tickets
-        WHERE tour_id = $1 AND status != 'cancelled'
-      `, [data.tour_id]);
+      const ticketCountResult = await tx.$queryRaw<{ total: number }[]>`
+        SELECT COALESCE(SUM(guest_count), 0)::INTEGER as total
+        FROM shared_tours_tickets
+        WHERE shared_tour_id = ${tourId} AND status != 'cancelled'
+      `;
 
-      const currentTickets = ticketCount.rows[0]?.total || 0;
+      const currentTickets = ticketCountResult[0]?.total || 0;
       const spotsRemaining = tour.max_guests - currentTickets;
 
       if (data.ticket_count > spotsRemaining) {
@@ -1047,71 +994,51 @@ export const sharedTourService = {
       }
 
       // Step 4: Calculate price (read-only, safe in transaction)
-      const pricingResult = await client.query<{
-        price_per_person: number;
-        subtotal: number;
-        tax_amount: number;
-        total_amount: number;
-      }>(`
-        SELECT * FROM calculate_ticket_price($1, $2, $3)
-      `, [data.tour_id, data.ticket_count, includesLunch]);
+      const pricingResult = await tx.$queryRaw<Record<string, unknown>[]>`
+        SELECT * FROM calculate_ticket_price(${tourId}, ${data.ticket_count}, ${includesLunch})
+      `;
+      const pricing = serializeOne<{ price_per_person: number; subtotal: number; tax_amount: number; total_amount: number }>(pricingResult)!;
 
-      const pricing = pricingResult.rows[0];
+      // Step 5: Insert ticket into actual table (not view)
+      // ticket_number is auto-generated by database trigger (set_ticket_number)
+      const guestNamesJson = data.guest_names ? JSON.stringify(data.guest_names) : null;
+      const lunchSelectionsJson = data.guest_lunch_selections ? JSON.stringify(data.guest_lunch_selections) : null;
 
-      // Step 5: Insert ticket (still within transaction, atomically)
-      const result = await client.query<SharedTourTicket>(`
-        INSERT INTO shared_tour_tickets (
-          tour_id,
-          ticket_count,
-          customer_name,
-          customer_email,
-          customer_phone,
-          guest_names,
-          includes_lunch,
-          price_per_person,
-          subtotal,
-          tax_amount,
-          total_amount,
-          dietary_restrictions,
-          special_requests,
-          referral_source,
-          promo_code,
-          hotel_partner_id,
-          booked_by_hotel
+      const insertedRows = await tx.$queryRaw<{ id: number }[]>`
+        INSERT INTO shared_tours_tickets (
+          shared_tour_id, guest_count, primary_guest_name, primary_guest_email,
+          primary_guest_phone, additional_guests, lunch_included, price_per_person,
+          total_price, tax_amount, final_total, dietary_restrictions, special_requests,
+          referral_source, promo_code, hotel_partner_id, booked_by_hotel,
+          lunch_selection, guest_lunch_selections
         ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17
+          ${tourId}, ${data.ticket_count}, ${data.customer_name}, ${data.customer_email},
+          ${data.customer_phone || null}, ${guestNamesJson}::jsonb, ${includesLunch}, ${pricing.price_per_person},
+          ${pricing.subtotal}, ${pricing.tax_amount}, ${pricing.total_amount},
+          ${data.dietary_restrictions || null}, ${data.special_requests || null},
+          ${data.referral_source || null}, ${data.promo_code || null},
+          ${data.hotel_partner_id ? parseInt(data.hotel_partner_id) : null},
+          ${data.booked_by_hotel || false},
+          ${data.lunch_selection || null}, ${lunchSelectionsJson}::jsonb
         )
-        RETURNING *
-      `, [
-        data.tour_id,
-        data.ticket_count,
-        data.customer_name,
-        data.customer_email,
-        data.customer_phone || null,
-        data.guest_names || null,
-        includesLunch,
-        pricing.price_per_person,
-        pricing.subtotal,
-        pricing.tax_amount,
-        pricing.total_amount,
-        data.dietary_restrictions || null,
-        data.special_requests || null,
-        data.referral_source || null,
-        data.promo_code || null,
-        data.hotel_partner_id || null,
-        data.booked_by_hotel || false,
-      ]);
-
-      const ticket = result.rows[0];
+        RETURNING id
+      `;
+      const ticketRow = insertedRows[0];
 
       // Step 6: Update tour status if now full (still in transaction)
       const newTotal = currentTickets + data.ticket_count;
       if (newTotal >= tour.max_guests) {
-        await client.query(`
-          UPDATE shared_tours SET status = 'full', updated_at = NOW()
-          WHERE id = $1
-        `, [data.tour_id]);
+        await tx.shared_tours.update({
+          where: { id: tourId },
+          data: { status: 'full', updated_at: new Date() },
+        });
       }
+
+      // Query via view to get the properly mapped result
+      const ticketResult = await tx.$queryRaw<Record<string, unknown>[]>`
+        SELECT * FROM shared_tour_tickets WHERE id = ${ticketRow.id}
+      `;
+      const ticket = serializeOne<SharedTourTicket>(ticketResult)!;
 
       logger.info('Ticket created atomically', {
         ticketId: ticket.id,
@@ -1128,121 +1055,119 @@ export const sharedTourService = {
    * Link a guest profile to a ticket
    */
   async linkGuestProfile(ticketId: string, guestProfileId: number): Promise<void> {
-    await query(
-      `UPDATE shared_tour_tickets SET guest_profile_id = $1 WHERE id = $2`,
-      [guestProfileId, ticketId]
-    );
+    // guest_profile_id may not be in the Prisma model, use raw SQL
+    await prisma.$executeRaw`
+      UPDATE shared_tours_tickets SET guest_profile_id = ${guestProfileId} WHERE id = ${parseInt(ticketId)}
+    `;
   },
 
   /**
    * Get tickets for a tour
    */
   async getTicketsForTour(tourId: string): Promise<SharedTourTicket[]> {
-    const result = await query<SharedTourTicket>(`
+    const rows = await prisma.$queryRaw<Record<string, unknown>[]>`
       SELECT * FROM shared_tour_tickets
-      WHERE tour_id = $1
+      WHERE tour_id = ${parseInt(tourId)}
       ORDER BY created_at
-    `, [tourId]);
-    return result.rows;
+    `;
+    return serialize<SharedTourTicket>(rows);
   },
 
   /**
    * Get a ticket by ID
    */
   async getTicketById(ticketId: string): Promise<SharedTourTicket | null> {
-    const result = await query<SharedTourTicket>(`
+    const rows = await prisma.$queryRaw<Record<string, unknown>[]>`
       SELECT * FROM shared_tour_tickets
-      WHERE id = $1
-    `, [ticketId]);
-    return result.rows[0] || null;
+      WHERE id = ${parseInt(ticketId)}
+    `;
+    return serializeOne<SharedTourTicket>(rows);
   },
 
   /**
    * Get a ticket by ticket number
    */
   async getTicketByNumber(ticketNumber: string): Promise<SharedTourTicket | null> {
-    const result = await query<SharedTourTicket>(`
+    const rows = await prisma.$queryRaw<Record<string, unknown>[]>`
       SELECT * FROM shared_tour_tickets
-      WHERE ticket_number = $1
-    `, [ticketNumber]);
-    return result.rows[0] || null;
+      WHERE ticket_number = ${ticketNumber}
+    `;
+    return serializeOne<SharedTourTicket>(rows);
   },
 
   /**
    * Get tickets by customer email
    */
   async getTicketsByEmail(email: string): Promise<SharedTourTicket[]> {
-    const result = await query<SharedTourTicket>(`
+    const rows = await prisma.$queryRaw<Record<string, unknown>[]>`
       SELECT * FROM shared_tour_tickets
-      WHERE customer_email = $1
+      WHERE customer_email = ${email}
       ORDER BY created_at DESC
-    `, [email]);
-    return result.rows;
+    `;
+    return serialize<SharedTourTicket>(rows);
   },
 
   /**
    * Mark ticket as paid
    */
   async markTicketPaid(ticketId: string, paymentMethod: string, stripePaymentIntentId?: string): Promise<SharedTourTicket | null> {
-    const result = await query<SharedTourTicket>(`
-      UPDATE shared_tour_tickets
-      SET
-        payment_status = 'paid',
-        payment_method = $2,
-        stripe_payment_intent_id = $3,
-        paid_at = NOW(),
-        updated_at = NOW()
-      WHERE id = $1
-      RETURNING *
-    `, [ticketId, paymentMethod, stripePaymentIntentId || null]);
-    return result.rows[0] || null;
+    const id = parseInt(ticketId);
+    await prisma.shared_tours_tickets.update({
+      where: { id },
+      data: {
+        payment_status: 'paid',
+        payment_intent_id: stripePaymentIntentId || null,
+        updated_at: new Date(),
+      },
+    });
+    return this.getTicketById(ticketId);
   },
 
   /**
    * Cancel a ticket
    */
   async cancelTicket(ticketId: string, reason: string, refundAmount?: number): Promise<SharedTourTicket | null> {
-    const result = await query<SharedTourTicket>(`
-      UPDATE shared_tour_tickets
-      SET
-        status = 'cancelled',
-        payment_status = CASE WHEN $3 IS NOT NULL THEN 'refunded' ELSE payment_status END,
-        cancelled_at = NOW(),
-        cancellation_reason = $2,
-        refund_amount = $3,
-        updated_at = NOW()
-      WHERE id = $1
-      RETURNING *
-    `, [ticketId, reason, refundAmount || null]);
-    return result.rows[0] || null;
+    const id = parseInt(ticketId);
+    await prisma.shared_tours_tickets.update({
+      where: { id },
+      data: {
+        status: 'cancelled',
+        payment_status: refundAmount != null ? 'refunded' : undefined,
+        cancelled_at: new Date(),
+        cancellation_reason: reason,
+        refund_amount: refundAmount ?? undefined,
+        updated_at: new Date(),
+      },
+    });
+    return this.getTicketById(ticketId);
   },
 
   /**
    * Check in a ticket
    */
   async checkInTicket(ticketId: string): Promise<SharedTourTicket | null> {
-    const result = await query<SharedTourTicket>(`
-      UPDATE shared_tour_tickets
-      SET
-        status = 'attended',
-        check_in_at = NOW(),
-        updated_at = NOW()
-      WHERE id = $1
-      RETURNING *
-    `, [ticketId]);
-    return result.rows[0] || null;
+    const id = parseInt(ticketId);
+    await prisma.shared_tours_tickets.update({
+      where: { id },
+      data: {
+        status: 'attended',
+        checked_in_at: new Date(),
+        updated_at: new Date(),
+      },
+    });
+    return this.getTicketById(ticketId);
   },
 
   /**
    * Get guest manifest for a tour
    */
   async getTourManifest(tourId: string): Promise<Record<string, unknown>[]> {
-    const result = await query(`
+    const rows = await prisma.$queryRaw<Record<string, unknown>[]>`
       SELECT * FROM shared_tour_manifest
-      WHERE tour_id = $1
+      WHERE tour_id = ${parseInt(tourId)}
       ORDER BY customer_name
-    `, [tourId]);
-    return result.rows;
+    `;
+    return serialize<Record<string, unknown>>(rows);
   },
 
   // ============================================================================
@@ -1260,26 +1185,33 @@ export const sharedTourService = {
     tours_that_ran: number;
     cancelled_tours: number;
   }> {
-    const result = await query(`
+    const rows = await prisma.$queryRaw<Record<string, unknown>[]>`
       SELECT
         COUNT(*)::INTEGER as total_tours,
         COALESCE(SUM(
-          (SELECT COALESCE(SUM(ticket_count), 0) FROM shared_tour_tickets WHERE tour_id = st.id AND status = 'confirmed' AND payment_status = 'paid')
+          (SELECT COALESCE(SUM(guest_count), 0) FROM shared_tours_tickets WHERE shared_tour_id = st.id AND status = 'confirmed' AND payment_status = 'paid')
         ), 0)::INTEGER as total_tickets_sold,
         COALESCE(SUM(
-          (SELECT COALESCE(SUM(total_amount), 0) FROM shared_tour_tickets WHERE tour_id = st.id AND payment_status = 'paid')
+          (SELECT COALESCE(SUM(total_price), 0) FROM shared_tours_tickets WHERE shared_tour_id = st.id AND payment_status = 'paid')
         ), 0)::DECIMAL as total_revenue,
         ROUND(
           COALESCE(AVG(
-            (SELECT COALESCE(SUM(ticket_count), 0) FROM shared_tour_tickets WHERE tour_id = st.id AND status = 'confirmed' AND payment_status = 'paid')
+            (SELECT COALESCE(SUM(guest_count), 0) FROM shared_tours_tickets WHERE shared_tour_id = st.id AND status = 'confirmed' AND payment_status = 'paid')
           ), 0), 1
         )::DECIMAL as average_guests_per_tour,
         COUNT(*) FILTER (WHERE st.status = 'completed')::INTEGER as tours_that_ran,
         COUNT(*) FILTER (WHERE st.status = 'cancelled')::INTEGER as cancelled_tours
-      FROM shared_tour_schedule st
-      WHERE st.tour_date >= $1 AND st.tour_date <= $2
-    `, [startDate, endDate]);
-    return result.rows[0];
+      FROM shared_tours st
+      WHERE st.tour_date >= ${startDate}::date AND st.tour_date <= ${endDate}::date
+    `;
+    return serializeOne<{
+      total_tours: number;
+      total_tickets_sold: number;
+      total_revenue: number;
+      average_guests_per_tour: number;
+      tours_that_ran: number;
+      cancelled_tours: number;
+    }>(rows)!;
   },
 
   // ============================================================================
@@ -1313,7 +1245,6 @@ export const sharedTourService = {
     const amountInCents = Math.round(ticket.total_amount * 100);
 
     // Generate idempotency key based on ticket ID and amount
-    // This ensures retries get the same payment intent, preventing double-charges
     const idempotencyKey = `shared_tour_ticket_${ticketId}_${amountInCents}`;
 
     try {
@@ -1339,11 +1270,13 @@ export const sharedTourService = {
       });
 
       // Update ticket with payment intent ID
-      await query(`
-        UPDATE shared_tour_tickets
-        SET stripe_payment_intent_id = $2, updated_at = NOW()
-        WHERE id = $1
-      `, [ticketId, paymentIntent.id]);
+      await prisma.shared_tours_tickets.update({
+        where: { id: parseInt(ticketId) },
+        data: {
+          payment_intent_id: paymentIntent.id,
+          updated_at: new Date(),
+        },
+      });
 
       logger.info('Payment intent created for shared tour ticket', {
         ticketId,
@@ -1406,19 +1339,18 @@ export const sharedTourService = {
    */
   async confirmPayment(paymentIntentId: string): Promise<SharedTourTicket | null> {
     // Find ticket by payment intent ID
-    const result = await query<SharedTourTicket>(`
+    const rows = await prisma.$queryRaw<Record<string, unknown>[]>`
       SELECT * FROM shared_tour_tickets
-      WHERE stripe_payment_intent_id = $1
-    `, [paymentIntentId]);
+      WHERE stripe_payment_intent_id = ${paymentIntentId}
+    `;
+    const ticket = serializeOne<SharedTourTicket>(rows);
 
-    const ticket = result.rows[0];
     if (!ticket) {
       logger.warn('No ticket found for payment intent', { paymentIntentId });
       return null;
     }
 
     // IDEMPOTENCY CHECK: If already paid, return existing ticket
-    // This prevents duplicate emails on webhook retries
     if (ticket.payment_status === 'paid') {
       logger.info('Payment already confirmed (idempotent), skipping re-confirmation', {
         ticketId: ticket.id,
@@ -1436,12 +1368,12 @@ export const sharedTourService = {
    * Handle failed payment (called by webhook)
    */
   async handlePaymentFailed(paymentIntentId: string, errorMessage?: string): Promise<void> {
-    const result = await query<SharedTourTicket>(`
+    const rows = await prisma.$queryRaw<Record<string, unknown>[]>`
       SELECT * FROM shared_tour_tickets
-      WHERE stripe_payment_intent_id = $1
-    `, [paymentIntentId]);
+      WHERE stripe_payment_intent_id = ${paymentIntentId}
+    `;
+    const ticket = serializeOne<SharedTourTicket>(rows);
 
-    const ticket = result.rows[0];
     if (!ticket) {
       logger.warn('No ticket found for failed payment', { paymentIntentId });
       return;
@@ -1453,8 +1385,6 @@ export const sharedTourService = {
       paymentIntentId,
       errorMessage,
     });
-
-    // Could send notification email here
   },
 
   /**
@@ -1473,15 +1403,16 @@ export const sharedTourService = {
    * Get lunch menu options for a tour
    */
   async getLunchMenuOptions(tourId: string): Promise<Array<{ id: string; name: string; description?: string; dietary?: string[] }>> {
-    const result = await query<{ lunch_menu_options: unknown }>(`
-      SELECT lunch_menu_options FROM shared_tours WHERE id = $1
-    `, [tourId]);
+    const tour = await prisma.shared_tours.findUnique({
+      where: { id: parseInt(tourId) },
+      select: { lunch_menu_options: true },
+    });
 
-    if (!result.rows[0]) {
+    if (!tour) {
       return [];
     }
 
-    const options = result.rows[0].lunch_menu_options;
+    const options = tour.lunch_menu_options;
     return Array.isArray(options) ? options as Array<{ id: string; name: string; description?: string; dietary?: string[] }> : [];
   },
 
@@ -1492,11 +1423,13 @@ export const sharedTourService = {
     tourId: string,
     options: Array<{ id: string; name: string; description?: string; dietary?: string[] }>
   ): Promise<void> {
-    await query(`
-      UPDATE shared_tours
-      SET lunch_menu_options = $2::jsonb, updated_at = NOW()
-      WHERE id = $1
-    `, [tourId, JSON.stringify(options)]);
+    await prisma.shared_tours.update({
+      where: { id: parseInt(tourId) },
+      data: {
+        lunch_menu_options: options as unknown as Prisma.InputJsonValue,
+        updated_at: new Date(),
+      },
+    });
   },
 
   /**
@@ -1511,15 +1444,15 @@ export const sharedTourService = {
       dietary_restrictions?: string;
     }>;
   }> {
-    const result = await query(`
-      SELECT * FROM shared_tour_lunch_summary WHERE tour_id = $1
-    `, [tourId]);
+    const rows = await prisma.$queryRaw<Record<string, unknown>[]>`
+      SELECT * FROM shared_tour_lunch_summary WHERE tour_id = ${parseInt(tourId)}
+    `;
 
-    if (!result.rows[0]) {
+    if (!rows[0]) {
       return { total_guests_with_lunch: 0, selections: {}, details: [] };
     }
 
-    const summary = result.rows[0] as {
+    const summary = rows[0] as {
       guests_with_lunch: number;
       lunch_details: Array<{
         ticket_id: string;
@@ -1556,7 +1489,7 @@ export const sharedTourService = {
     }
 
     return {
-      total_guests_with_lunch: summary.guests_with_lunch || 0,
+      total_guests_with_lunch: Number(summary.guests_with_lunch) || 0,
       selections,
       details,
     };

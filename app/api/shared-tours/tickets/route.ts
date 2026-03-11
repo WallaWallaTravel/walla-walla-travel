@@ -5,7 +5,6 @@ import { sharedTourService } from '@/lib/services/shared-tour.service';
 import { guestProfileService } from '@/lib/services/guest-profile.service';
 import { CreateSharedTourTicketSchema } from '@/lib/api/schemas';
 import { z } from 'zod';
-import { withCSRF } from '@/lib/api/middleware/csrf';
 import { logger } from '@/lib/logger';
 
 /**
@@ -16,8 +15,7 @@ import { logger } from '@/lib/logger';
  * Uses Zod schema validation for robust input validation
  * Rate limited to prevent reservation spam (10 per 15 minutes per IP)
  */
-export const POST = withCSRF(
-  withRateLimit(rateLimiters.sharedTourTicket)(withErrorHandling(async (request: NextRequest) => {
+export const POST = withRateLimit(rateLimiters.sharedTourTicket)(withErrorHandling(async (request: NextRequest) => {
   const body = await request.json();
 
   // Validate with Zod schema
@@ -77,8 +75,7 @@ export const POST = withCSRF(
     }
     throw error;
   }
-}))
-);
+}));
 
 /**
  * GET /api/shared-tours/tickets

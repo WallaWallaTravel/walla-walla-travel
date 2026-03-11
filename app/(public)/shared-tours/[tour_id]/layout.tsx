@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import { queryOne } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -16,12 +16,12 @@ interface TourRow {
 export async function generateMetadata({ params }: LayoutProps): Promise<Metadata> {
   const { tour_id } = await params;
 
-  const tour = await queryOne<TourRow>(
-    `SELECT title, tour_date, description, base_price_per_person
-     FROM shared_tour_schedule
-     WHERE id = $1`,
-    [tour_id]
-  );
+  const rows = await prisma.$queryRaw<TourRow[]>`
+    SELECT title, tour_date, description, base_price_per_person
+    FROM shared_tour_schedule
+    WHERE id = ${tour_id}
+  `;
+  const tour = rows[0] || null;
 
   if (!tour) {
     return {

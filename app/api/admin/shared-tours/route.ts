@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper';
 import { sharedTourService } from '@/lib/services/shared-tour.service';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
-import { withCSRF } from '@/lib/api/middleware/csrf';
 import { z } from 'zod';
 import { invalidateCache } from '@/lib/api/middleware/redis-cache';
 
@@ -65,8 +64,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
  * - auto_assign_vehicle: false to disable auto-assignment (requires vehicle_id)
  * - require_vehicle: false to allow tour creation without vehicle (not recommended)
  */
-export const POST = withCSRF(
-  withRateLimit(rateLimiters.api)(
+export const POST = withRateLimit(rateLimiters.api)(
   withAdminAuth(async (request: NextRequest, _session: AuthSession) => {
   const body = PostBodySchema.parse(await request.json());
 
@@ -140,5 +138,4 @@ export const POST = withCSRF(
       { status: 400 }
     );
   }
-}))
-);
+}));

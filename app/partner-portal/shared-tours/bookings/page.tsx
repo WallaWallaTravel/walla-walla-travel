@@ -24,10 +24,6 @@ interface Booking {
   created_at: string;
 }
 
-function getCSRFToken(): string {
-  const match = document.cookie.match(/(?:^|;\s*)csrf-token=([^;]*)/);
-  return match ? decodeURIComponent(match[1]) : '';
-}
 
 export default function PartnerBookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -84,7 +80,6 @@ export default function PartnerBookingsPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRF-Token': getCSRFToken(),
         },
         body: JSON.stringify({
           ticketId: cancelTarget.id,

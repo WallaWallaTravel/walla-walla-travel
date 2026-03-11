@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, UnauthorizedError, BadRequestError, ForbiddenError } from '@/lib/api/middleware/error-handler';
 import { hotelPartnerService } from '@/lib/services/hotel-partner.service';
 import { getHotelSessionFromRequest } from '@/lib/auth/hotel-session';
-import { withCSRF } from '@/lib/api/middleware/csrf';
 import { z } from 'zod';
 import { noDisposableEmail } from '@/lib/utils/email-validation';
 
@@ -23,8 +22,7 @@ const BodySchema = z.object({
  * POST /api/partner/shared-tours/book
  * Book a guest on behalf of the hotel
  */
-export const POST = withCSRF(
-  withErrorHandling(async (request: NextRequest) => {
+export const POST = withErrorHandling(async (request: NextRequest) => {
   // Get hotel ID from server-side session cookie
   const session = await getHotelSessionFromRequest(request);
   const hotelId = session?.hotelId;
@@ -82,5 +80,4 @@ export const POST = withCSRF(
     },
     message: 'Guest booked successfully. Payment request email sent.',
   });
-})
-);
+});

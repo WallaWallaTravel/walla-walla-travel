@@ -10,7 +10,7 @@ import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { withErrorHandling, UnauthorizedError, ForbiddenError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { hotelPartnerService } from '@/lib/services/hotel-partner.service';
 import { getHotelSessionFromRequest } from '@/lib/auth/hotel-session';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 
 interface InvoiceTicket {
   id: string;
@@ -49,19 +49,18 @@ export const GET = withErrorHandling(async (
   const { ticketNumber } = await context.params;
 
   // Fetch ticket with tour info, verify hotel ownership
-  const result = await query<InvoiceTicket>(
-    `SELECT t.id, t.ticket_number, t.customer_name, t.customer_email,
+  const rows = await prisma.$queryRaw<InvoiceTicket[]>`
+    SELECT t.id, t.ticket_number, t.customer_name, t.customer_email,
             t.ticket_count, t.price_per_person, t.subtotal, t.tax_amount,
             t.total_amount, t.includes_lunch, t.payment_status, t.paid_at,
             t.status, t.hotel_partner_id, t.created_at,
             s.tour_date, s.title as tour_title
      FROM shared_tour_tickets t
      JOIN shared_tour_schedule s ON t.tour_id = s.id
-     WHERE t.ticket_number = $1`,
-    [ticketNumber]
-  );
+     WHERE t.ticket_number = ${ticketNumber}
+  `;
 
-  const ticket = result.rows[0];
+  const ticket = rows[0];
   if (!ticket) {
     throw new NotFoundError('Booking not found');
   }

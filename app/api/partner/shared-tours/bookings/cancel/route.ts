@@ -8,11 +8,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { withErrorHandling, UnauthorizedError, ForbiddenError, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
-import { withCSRF } from '@/lib/api/middleware/csrf';
 import { hotelPartnerService } from '@/lib/services/hotel-partner.service';
 import { sharedTourService } from '@/lib/services/shared-tour.service';
 import { getHotelSessionFromRequest } from '@/lib/auth/hotel-session';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 
 const CancelBookingSchema = z.object({
@@ -20,8 +19,7 @@ const CancelBookingSchema = z.object({
   reason: z.string().min(10, 'Cancellation reason must be at least 10 characters').max(500),
 });
 
-export const POST = withCSRF(
-  withErrorHandling(async (request: NextRequest) => {
+export const POST = withErrorHandling(async (request: NextRequest) => {
     const session = await getHotelSessionFromRequest(request);
     if (!session?.hotelId) {
       throw new UnauthorizedError('Hotel authentication required');
@@ -41,14 +39,13 @@ export const POST = withCSRF(
     const { ticketId, reason } = parsed.data;
 
     // Verify ticket belongs to this hotel
-    const ticketResult = await query(
-      `SELECT id, status, hotel_partner_id, ticket_number
-       FROM shared_tour_tickets
-       WHERE id = $1`,
-      [ticketId]
-    );
+    const ticketRows = await prisma.$queryRaw<{ id: string; status: string; hotel_partner_id: string; ticket_number: string }[]>`
+      SELECT id, status, hotel_partner_id, ticket_number
+      FROM shared_tour_tickets
+      WHERE id = ${ticketId}
+    `;
 
-    const ticket = ticketResult.rows[0];
+    const ticket = ticketRows[0];
     if (!ticket) {
       throw new NotFoundError('Booking not found');
     }
@@ -80,5 +77,4 @@ export const POST = withCSRF(
       message: 'Booking cancelled successfully',
       ticketNumber: cancelled.ticket_number,
     });
-  })
-);
+  });

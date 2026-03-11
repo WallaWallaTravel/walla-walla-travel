@@ -6,7 +6,6 @@
  */
 
 import Stripe from 'stripe';
-import { query, queryOne, withTransaction } from '@/lib/db-helpers';
 import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 import { sendBookingConfirmationEmail } from '@/lib/services/email-automation.service';
@@ -378,10 +377,10 @@ async function handleSharedTourPaymentSuccess(paymentIntent: Stripe.PaymentInten
  */
 async function autoCreateProposalGuests(ticket: SharedTourTicket): Promise<PortalLinkInfo | null> {
   // Look up the shared tour's trip_proposal_id
-  const tour = await queryOne<{ trip_proposal_id: number | null }>(
-    'SELECT trip_proposal_id FROM shared_tours WHERE id = $1',
-    [ticket.tour_id]
-  );
+  const tourRows = await prisma.$queryRaw<{ trip_proposal_id: number | null }[]>`
+    SELECT trip_proposal_id FROM shared_tours WHERE id = ${ticket.tour_id}
+  `;
+  const tour = tourRows[0] || null;
 
   if (!tour?.trip_proposal_id) {
     logger.info('[Shared Tour] No trip_proposal_id set on tour, skipping guest creation', {
@@ -413,10 +412,10 @@ async function autoCreateProposalGuests(ticket: SharedTourTicket): Promise<Porta
         proposalId,
       });
       // Still return portal info so email can include the link
-      const existingGuest = await queryOne<{ guest_access_token: string }>(
-        'SELECT guest_access_token FROM trip_proposal_guests WHERE trip_proposal_id = $1 AND LOWER(email) = LOWER($2)',
-        [proposalId, ticket.customer_email]
-      );
+      const existingGuestRows = await prisma.$queryRaw<{ guest_access_token: string }[]>`
+        SELECT guest_access_token FROM trip_proposal_guests WHERE trip_proposal_id = ${proposalId} AND LOWER(email) = LOWER(${ticket.customer_email})
+      `;
+      const existingGuest = existingGuestRows[0] || null;
       if (existingGuest) {
         return {
           proposalAccessToken: proposal.access_token,
@@ -451,14 +450,19 @@ async function autoCreateProposalGuests(ticket: SharedTourTicket): Promise<Porta
   });
 
   // Link shared_tour_ticket_id and guest_profile_id on the primary guest
-  await query(
-    `UPDATE trip_proposal_guests
-     SET shared_tour_ticket_id = $1${guestProfileId ? ', guest_profile_id = $3' : ''}
-     WHERE id = $2`,
-    guestProfileId
-      ? [ticket.id, primaryGuest.id, guestProfileId]
-      : [ticket.id, primaryGuest.id]
-  );
+  if (guestProfileId) {
+    await prisma.$executeRaw`
+      UPDATE trip_proposal_guests
+      SET shared_tour_ticket_id = ${ticket.id}, guest_profile_id = ${guestProfileId}
+      WHERE id = ${primaryGuest.id}
+    `;
+  } else {
+    await prisma.$executeRaw`
+      UPDATE trip_proposal_guests
+      SET shared_tour_ticket_id = ${ticket.id}
+      WHERE id = ${primaryGuest.id}
+    `;
+  }
 
   logger.info('[Shared Tour] Created primary proposal guest from ticket', {
     ticketId: ticket.id,
@@ -477,10 +481,9 @@ async function autoCreateProposalGuests(ticket: SharedTourTicket): Promise<Porta
           is_primary: false,
         });
         // Link shared_tour_ticket_id on additional guest
-        await query(
-          'UPDATE trip_proposal_guests SET shared_tour_ticket_id = $1 WHERE id = $2',
-          [ticket.id, additionalGuest.id]
-        );
+        await prisma.$executeRaw`
+          UPDATE trip_proposal_guests SET shared_tour_ticket_id = ${ticket.id} WHERE id = ${additionalGuest.id}
+        `;
         logger.info('[Shared Tour] Created additional proposal guest from ticket', {
           ticketId: ticket.id,
           proposalId,
@@ -527,11 +530,10 @@ async function handleGuestPaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
     amount: paymentAmount,
   });
 
-  const existing = await queryOne(
-    'SELECT id FROM guest_payments WHERE stripe_payment_intent_id = $1',
-    [id]
-  );
-  if (existing) {
+  const existingRows = await prisma.$queryRaw<{ id: number }[]>`
+    SELECT id FROM guest_payments WHERE stripe_payment_intent_id = ${id}
+  `;
+  if (existingRows.length > 0) {
     logger.info('[Stripe Webhook] Guest payment already processed', { paymentIntentId: id });
     return;
   }
@@ -544,13 +546,12 @@ async function handleGuestPaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
       .map((s: string) => parseInt(s))
       .filter((n: number) => !isNaN(n));
 
-    await withTransaction(async (client) => {
+    await prisma.$transaction(async (tx) => {
       for (const guestId of guestIds) {
-        const guest = await queryOne<{ amount_owed: string; amount_paid: string }>(
-          'SELECT amount_owed, amount_paid FROM trip_proposal_guests WHERE id = $1',
-          [guestId],
-          client
-        );
+        const guestRows = await tx.$queryRaw<{ amount_owed: string; amount_paid: string }[]>`
+          SELECT amount_owed, amount_paid FROM trip_proposal_guests WHERE id = ${guestId}
+        `;
+        const guest = guestRows[0] || null;
         if (!guest) continue;
 
         const remaining = Math.max(
@@ -559,60 +560,51 @@ async function handleGuestPaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
         );
         if (remaining <= 0) continue;
 
-        await query(
-          `INSERT INTO guest_payments (trip_proposal_id, guest_id, amount, stripe_payment_intent_id, payment_type, status, paid_by_guest_id)
-           VALUES ($1, $2, $3, $4, 'group_payment', 'succeeded', NULL)
-           ON CONFLICT DO NOTHING`,
-          [proposalId, guestId, remaining, id],
-          client
-        );
+        await tx.$executeRaw`
+          INSERT INTO guest_payments (trip_proposal_id, guest_id, amount, stripe_payment_intent_id, payment_type, status, paid_by_guest_id)
+          VALUES (${proposalId}, ${guestId}, ${remaining}, ${id}, 'group_payment', 'succeeded', NULL)
+          ON CONFLICT DO NOTHING
+        `;
 
         const newPaid = (parseFloat(guest.amount_paid) || 0) + remaining;
         const owed = parseFloat(guest.amount_owed) || 0;
         const status = newPaid >= owed ? 'paid' : 'partial';
 
-        await query(
-          `UPDATE trip_proposal_guests
-           SET amount_paid = $1, payment_status = $2,
-               payment_paid_at = CASE WHEN $2 = 'paid' THEN NOW() ELSE payment_paid_at END,
-               updated_at = NOW()
-           WHERE id = $3`,
-          [newPaid, status, guestId],
-          client
-        );
+        await tx.$executeRaw`
+          UPDATE trip_proposal_guests
+          SET amount_paid = ${newPaid}, payment_status = ${status},
+              payment_paid_at = CASE WHEN ${status} = 'paid' THEN NOW() ELSE payment_paid_at END,
+              updated_at = NOW()
+          WHERE id = ${guestId}
+        `;
       }
     });
   } else {
     const guestId = parseInt(metadata.guest_id);
 
-    await withTransaction(async (client) => {
-      await query(
-        `INSERT INTO guest_payments (trip_proposal_id, guest_id, amount, stripe_payment_intent_id, payment_type, status)
-         VALUES ($1, $2, $3, $4, 'guest_share', 'succeeded')
-         ON CONFLICT DO NOTHING`,
-        [proposalId, guestId, paymentAmount, id],
-        client
-      );
+    await prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`
+        INSERT INTO guest_payments (trip_proposal_id, guest_id, amount, stripe_payment_intent_id, payment_type, status)
+        VALUES (${proposalId}, ${guestId}, ${paymentAmount}, ${id}, 'guest_share', 'succeeded')
+        ON CONFLICT DO NOTHING
+      `;
 
-      const guest = await queryOne<{ amount_owed: string; amount_paid: string }>(
-        'SELECT amount_owed, amount_paid FROM trip_proposal_guests WHERE id = $1',
-        [guestId],
-        client
-      );
+      const guestRows = await tx.$queryRaw<{ amount_owed: string; amount_paid: string }[]>`
+        SELECT amount_owed, amount_paid FROM trip_proposal_guests WHERE id = ${guestId}
+      `;
+      const guest = guestRows[0] || null;
       if (guest) {
         const newPaid = (parseFloat(guest.amount_paid) || 0) + paymentAmount;
         const owed = parseFloat(guest.amount_owed) || 0;
         const status = newPaid >= owed ? 'paid' : newPaid > 0 ? 'partial' : 'unpaid';
 
-        await query(
-          `UPDATE trip_proposal_guests
-           SET amount_paid = $1, payment_status = $2,
-               payment_paid_at = CASE WHEN $2 = 'paid' THEN NOW() ELSE payment_paid_at END,
-               updated_at = NOW()
-           WHERE id = $3`,
-          [newPaid, status, guestId],
-          client
-        );
+        await tx.$executeRaw`
+          UPDATE trip_proposal_guests
+          SET amount_paid = ${newPaid}, payment_status = ${status},
+              payment_paid_at = CASE WHEN ${status} = 'paid' THEN NOW() ELSE payment_paid_at END,
+              updated_at = NOW()
+          WHERE id = ${guestId}
+        `;
       }
     });
   }
@@ -701,14 +693,13 @@ async function handleTripProposalPaymentSuccess(paymentIntent: Stripe.PaymentInt
   });
 
   try {
-    const alreadySent = await queryOne(
-      `SELECT id FROM email_logs
-       WHERE trip_proposal_id = $1 AND email_type = 'trip_proposal_deposit_received'
-       LIMIT 1`,
-      [tripProposalId]
-    );
+    const alreadySentRows = await prisma.$queryRaw<{ id: number }[]>`
+      SELECT id FROM email_logs
+      WHERE trip_proposal_id = ${tripProposalId} AND email_type = 'trip_proposal_deposit_received'
+      LIMIT 1
+    `;
 
-    if (!alreadySent) {
+    if (alreadySentRows.length === 0) {
       const { tripProposalEmailService } = await import(
         '@/lib/services/trip-proposal-email.service'
       );

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper';
-import { query } from '@/lib/db';
-import { withCSRF } from '@/lib/api/middleware/csrf';
+import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
+import { Prisma } from '@prisma/client';
 
 const PutBodySchema = z.object({
   name: z.string().min(1).max(255).optional(),
@@ -46,7 +46,7 @@ interface RouteParams {
 export const GET = withAdminAuth(async (_request: NextRequest, _session: AuthSession, context) => {
   const { id } = await (context as RouteParams).params;
 
-  const result = await query<SharedTourPreset>(`
+  const rows = await prisma.$queryRaw<SharedTourPreset[]>`
     SELECT
       id,
       name,
@@ -63,10 +63,10 @@ export const GET = withAdminAuth(async (_request: NextRequest, _session: AuthSes
       created_at,
       updated_at
     FROM shared_tour_presets
-    WHERE id = $1
-  `, [id]);
+    WHERE id = ${parseInt(id)}
+  `;
 
-  if (result.rows.length === 0) {
+  if (rows.length === 0) {
     return NextResponse.json(
       { success: false, error: 'Preset not found' },
       { status: 404 }
@@ -75,7 +75,7 @@ export const GET = withAdminAuth(async (_request: NextRequest, _session: AuthSes
 
   return NextResponse.json({
     success: true,
-    data: result.rows[0],
+    data: rows[0],
   });
 });
 
@@ -83,18 +83,17 @@ export const GET = withAdminAuth(async (_request: NextRequest, _session: AuthSes
  * PUT /api/admin/shared-tours/presets/[id]
  * Update a preset
  */
-export const PUT = withCSRF(
-  withAdminAuth(async (request: NextRequest, _session: AuthSession, context) => {
+export const PUT = withAdminAuth(async (request: NextRequest, _session: AuthSession, context) => {
   const { id } = await (context as RouteParams).params;
+  const numericId = parseInt(id);
   const body = PutBodySchema.parse(await request.json());
 
   // Check preset exists
-  const existing = await query<{ id: number }>(
-    'SELECT id FROM shared_tour_presets WHERE id = $1',
-    [id]
-  );
+  const existing = await prisma.$queryRaw<{ id: number }[]>`
+    SELECT id FROM shared_tour_presets WHERE id = ${numericId}
+  `;
 
-  if (existing.rows.length === 0) {
+  if (existing.length === 0) {
     return NextResponse.json(
       { success: false, error: 'Preset not found' },
       { status: 404 }
@@ -103,12 +102,11 @@ export const PUT = withCSRF(
 
   // Check for duplicate name (excluding current preset)
   if (body.name) {
-    const duplicateName = await query<{ id: number }>(
-      'SELECT id FROM shared_tour_presets WHERE LOWER(name) = LOWER($1) AND id != $2',
-      [body.name, id]
-    );
+    const duplicateName = await prisma.$queryRaw<{ id: number }[]>`
+      SELECT id FROM shared_tour_presets WHERE LOWER(name) = LOWER(${body.name}) AND id != ${numericId}
+    `;
 
-    if (duplicateName.rows.length > 0) {
+    if (duplicateName.length > 0) {
       return NextResponse.json(
         { success: false, error: 'A preset with this name already exists' },
         { status: 409 }
@@ -150,9 +148,9 @@ export const PUT = withCSRF(
     );
   }
 
-  values.push(id);
+  values.push(numericId);
 
-  const result = await query<SharedTourPreset>(`
+  const queryStr = `
     UPDATE shared_tour_presets
     SET ${updates.join(', ')}, updated_at = NOW()
     WHERE id = $${paramIndex}
@@ -171,31 +169,31 @@ export const PUT = withCSRF(
       sort_order,
       created_at,
       updated_at
-  `, values);
+  `;
+
+  const rows = await prisma.$queryRawUnsafe<SharedTourPreset[]>(queryStr, ...values);
 
   return NextResponse.json({
     success: true,
-    data: result.rows[0],
+    data: rows[0],
     message: 'Preset updated successfully',
   });
-})
-);
+});
 
 /**
  * DELETE /api/admin/shared-tours/presets/[id]
  * Delete a preset
  */
-export const DELETE = withCSRF(
-  withAdminAuth(async (_request: NextRequest, _session: AuthSession, context) => {
+export const DELETE = withAdminAuth(async (_request: NextRequest, _session: AuthSession, context) => {
   const { id } = await (context as RouteParams).params;
+  const numericId = parseInt(id);
 
   // Check preset exists
-  const existing = await query<{ id: number; is_default: boolean }>(
-    'SELECT id, is_default FROM shared_tour_presets WHERE id = $1',
-    [id]
-  );
+  const existing = await prisma.$queryRaw<{ id: number; is_default: boolean }[]>`
+    SELECT id, is_default FROM shared_tour_presets WHERE id = ${numericId}
+  `;
 
-  if (existing.rows.length === 0) {
+  if (existing.length === 0) {
     return NextResponse.json(
       { success: false, error: 'Preset not found' },
       { status: 404 }
@@ -203,11 +201,11 @@ export const DELETE = withCSRF(
   }
 
   // Prevent deleting the last preset
-  const count = await query<{ count: number }>(
-    'SELECT COUNT(*)::int as count FROM shared_tour_presets'
-  );
+  const countRows = await prisma.$queryRaw<{ count: number }[]>`
+    SELECT COUNT(*)::int as count FROM shared_tour_presets
+  `;
 
-  if (count.rows[0]?.count <= 1) {
+  if (countRows[0]?.count <= 1) {
     return NextResponse.json(
       { success: false, error: 'Cannot delete the last preset' },
       { status: 400 }
@@ -215,20 +213,19 @@ export const DELETE = withCSRF(
   }
 
   // Delete the preset
-  await query('DELETE FROM shared_tour_presets WHERE id = $1', [id]);
+  await prisma.$executeRaw`DELETE FROM shared_tour_presets WHERE id = ${numericId}`;
 
   // If we deleted the default, make the first preset the new default
-  if (existing.rows[0]?.is_default) {
-    await query(`
+  if (existing[0]?.is_default) {
+    await prisma.$executeRaw`
       UPDATE shared_tour_presets
       SET is_default = true, updated_at = NOW()
       WHERE id = (SELECT id FROM shared_tour_presets ORDER BY sort_order ASC LIMIT 1)
-    `);
+    `;
   }
 
   return NextResponse.json({
     success: true,
     message: 'Preset deleted successfully',
   });
-})
-);
+});

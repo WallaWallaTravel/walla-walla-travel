@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, NotFoundError, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { sharedTourService } from '@/lib/services/shared-tour.service';
-import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * POST /api/shared-tours/tickets/[ticket_id]/payment-intent
  * Create or retrieve a payment intent for a ticket
  */
-export const POST = withCSRF(
-  withErrorHandling(async (
+export const POST = withErrorHandling(async (
   request: NextRequest,
   { params }: { params: Promise<{ ticket_id: string }> }
 ) => {
@@ -50,8 +48,7 @@ export const POST = withCSRF(
       publishableKey: paymentIntent.publishableKey,
     },
   });
-})
-);
+});
 
 /**
  * GET /api/shared-tours/tickets/[ticket_id]/payment-intent

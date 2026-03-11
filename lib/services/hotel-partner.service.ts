@@ -12,7 +12,7 @@
  * - Future commission support
  */
 
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 import { sharedTourService, CreateTicketRequest, SharedTourTicket } from './shared-tour.service';
 import { sendSharedTourPaymentRequestEmail } from '@/lib/email/templates/shared-tour-payment-request';
@@ -97,21 +97,13 @@ export const hotelPartnerService = {
     // Generate invite token
     const inviteToken = crypto.randomBytes(32).toString('hex');
 
-    const result = await query<HotelPartner>(`
+    const rows = await prisma.$queryRaw<HotelPartner[]>`
       INSERT INTO hotel_partners (name, email, contact_name, phone, address, notes, invite_token)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      VALUES (${data.name}, ${data.email}, ${data.contact_name || null}, ${data.phone || null}, ${data.address || null}, ${data.notes || null}, ${inviteToken})
       RETURNING *
-    `, [
-      data.name,
-      data.email,
-      data.contact_name || null,
-      data.phone || null,
-      data.address || null,
-      data.notes || null,
-      inviteToken,
-    ]);
+    `;
 
-    return result.rows[0];
+    return rows[0];
   },
 
   /**
@@ -131,10 +123,10 @@ export const hotelPartnerService = {
     let inviteToken = hotel.invite_token;
     if (!inviteToken) {
       inviteToken = crypto.randomBytes(32).toString('hex');
-      await query(`
-        UPDATE hotel_partners SET invite_token = $2, updated_at = NOW()
-        WHERE id = $1
-      `, [hotelId, inviteToken]);
+      await prisma.$executeRaw`
+        UPDATE hotel_partners SET invite_token = ${inviteToken}, updated_at = NOW()
+        WHERE id = ${hotelId}
+      `;
     }
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
@@ -150,10 +142,10 @@ export const hotelPartnerService = {
     });
 
     if (sent) {
-      await query(`
+      await prisma.$executeRaw`
         UPDATE hotel_partners SET invite_sent_at = NOW(), updated_at = NOW()
-        WHERE id = $1
-      `, [hotelId]);
+        WHERE id = ${hotelId}
+      `;
     }
 
     return sent;
@@ -168,11 +160,11 @@ export const hotelPartnerService = {
     phone?: string;
   }): Promise<HotelPartner | null> {
     // Find hotel by token
-    const result = await query<HotelPartner>(`
-      SELECT * FROM hotel_partners WHERE invite_token = $1
-    `, [inviteToken]);
+    const rows = await prisma.$queryRaw<HotelPartner[]>`
+      SELECT * FROM hotel_partners WHERE invite_token = ${inviteToken}
+    `;
 
-    const hotel = result.rows[0];
+    const hotel = rows[0];
     if (!hotel) {
       return null;
     }
@@ -185,19 +177,19 @@ export const hotelPartnerService = {
     const passwordHash = await bcrypt.hash(data.password, 12);
 
     // Update hotel with password and mark as registered
-    const updateResult = await query<HotelPartner>(`
+    const updateRows = await prisma.$queryRaw<HotelPartner[]>`
       UPDATE hotel_partners
-      SET password_hash = $2,
-          contact_name = COALESCE($3, contact_name),
-          phone = COALESCE($4, phone),
+      SET password_hash = ${passwordHash},
+          contact_name = COALESCE(${data.contact_name || null}, contact_name),
+          phone = COALESCE(${data.phone || null}, phone),
           registered_at = NOW(),
           invite_token = NULL,
           updated_at = NOW()
-      WHERE id = $1
+      WHERE id = ${hotel.id}
       RETURNING *
-    `, [hotel.id, passwordHash, data.contact_name || null, data.phone || null]);
+    `;
 
-    const registeredHotel = updateResult.rows[0];
+    const registeredHotel = updateRows[0];
 
     logger.info('Hotel partner registered', { hotelId: hotel.id, hotelName: hotel.name });
 
@@ -219,11 +211,11 @@ export const hotelPartnerService = {
    * Authenticate hotel partner
    */
   async authenticateHotel(email: string, password: string): Promise<HotelPartner | null> {
-    const result = await query<HotelPartner & { password_hash: string }>(`
-      SELECT * FROM hotel_partners WHERE email = $1 AND is_active = true
-    `, [email]);
+    const rows = await prisma.$queryRaw<(HotelPartner & { password_hash: string })[]>`
+      SELECT * FROM hotel_partners WHERE email = ${email} AND is_active = true
+    `;
 
-    const hotel = result.rows[0];
+    const hotel = rows[0];
     if (!hotel || !hotel.password_hash || !hotel.registered_at) {
       return null;
     }
@@ -242,42 +234,44 @@ export const hotelPartnerService = {
    * Get hotel by ID
    */
   async getHotelById(hotelId: string): Promise<HotelPartner | null> {
-    const result = await query<HotelPartner>(`
-      SELECT * FROM hotel_partners WHERE id = $1
-    `, [hotelId]);
-    return result.rows[0] || null;
+    const rows = await prisma.$queryRaw<HotelPartner[]>`
+      SELECT * FROM hotel_partners WHERE id = ${hotelId}
+    `;
+    return rows[0] || null;
   },
 
   /**
    * Get hotel by email
    */
   async getHotelByEmail(email: string): Promise<HotelPartner | null> {
-    const result = await query<HotelPartner>(`
-      SELECT * FROM hotel_partners WHERE email = $1
-    `, [email]);
-    return result.rows[0] || null;
+    const rows = await prisma.$queryRaw<HotelPartner[]>`
+      SELECT * FROM hotel_partners WHERE email = ${email}
+    `;
+    return rows[0] || null;
   },
 
   /**
    * Get hotel by invite token
    */
   async getHotelByInviteToken(token: string): Promise<HotelPartner | null> {
-    const result = await query<HotelPartner>(`
-      SELECT * FROM hotel_partners WHERE invite_token = $1
-    `, [token]);
-    return result.rows[0] || null;
+    const rows = await prisma.$queryRaw<HotelPartner[]>`
+      SELECT * FROM hotel_partners WHERE invite_token = ${token}
+    `;
+    return rows[0] || null;
   },
 
   /**
    * List all hotel partners
    */
   async listHotels(activeOnly: boolean = false): Promise<HotelPartner[]> {
-    const whereClause = activeOnly ? 'WHERE is_active = true' : '';
-    const result = await query<HotelPartner>(`
-      SELECT * FROM hotel_partners ${whereClause}
-      ORDER BY name
-    `);
-    return result.rows;
+    if (activeOnly) {
+      return prisma.$queryRaw<HotelPartner[]>`
+        SELECT * FROM hotel_partners WHERE is_active = true ORDER BY name
+      `;
+    }
+    return prisma.$queryRaw<HotelPartner[]>`
+      SELECT * FROM hotel_partners ORDER BY name
+    `;
   },
 
   /**
@@ -324,14 +318,16 @@ export const hotelPartnerService = {
     updates.push('updated_at = NOW()');
     values.push(hotelId);
 
-    const result = await query<HotelPartner>(`
+    const queryStr = `
       UPDATE hotel_partners
       SET ${updates.join(', ')}
       WHERE id = $${paramCount}
       RETURNING *
-    `, values);
+    `;
 
-    return result.rows[0] || null;
+    const rows = await prisma.$queryRawUnsafe<HotelPartner[]>(queryStr, ...values);
+
+    return rows[0] || null;
   },
 
   // ============================================================================
@@ -364,22 +360,22 @@ export const hotelPartnerService = {
     }
 
     // Get upcoming tours
-    const toursResult = await query<{
+    const upcomingTours = await prisma.$queryRaw<{
       id: string;
       tour_date: string;
       start_time: string;
       title: string;
       spots_available: number;
       accepting_bookings: boolean;
-    }>(`
+    }[]>`
       SELECT * FROM shared_tours_availability_view
       WHERE accepting_bookings = true
       ORDER BY tour_date, start_time
       LIMIT 10
-    `);
+    `;
 
     // Get recent bookings by this hotel
-    const bookingsResult = await query<HotelBooking>(`
+    const recentBookings = await prisma.$queryRaw<HotelBooking[]>`
       SELECT
         t.id,
         t.ticket_number,
@@ -395,33 +391,33 @@ export const hotelPartnerService = {
         t.created_at
       FROM shared_tours_tickets t
       JOIN shared_tours st ON st.id = t.shared_tour_id
-      WHERE t.hotel_partner_id = $1
+      WHERE t.hotel_partner_id = ${hotelId}
       ORDER BY t.created_at DESC
       LIMIT 10
-    `, [hotelId]);
+    `;
 
     // Get stats
-    const statsResult = await query<{
+    const statsRows = await prisma.$queryRaw<{
       total_bookings: string;
       total_guests: string;
       pending_payments: string;
-    }>(`
+    }[]>`
       SELECT
         COUNT(*)::TEXT AS total_bookings,
         COALESCE(SUM(guest_count), 0)::TEXT AS total_guests,
         COUNT(*) FILTER (WHERE payment_status = 'pending')::TEXT AS pending_payments
       FROM shared_tours_tickets
-      WHERE hotel_partner_id = $1 AND status != 'cancelled'
-    `, [hotelId]);
+      WHERE hotel_partner_id = ${hotelId} AND status != 'cancelled'
+    `;
 
     return {
       hotel,
-      upcomingTours: toursResult.rows,
-      recentBookings: bookingsResult.rows,
+      upcomingTours,
+      recentBookings,
       stats: {
-        total_bookings: parseInt(statsResult.rows[0]?.total_bookings || '0'),
-        total_guests: parseInt(statsResult.rows[0]?.total_guests || '0'),
-        pending_payments: parseInt(statsResult.rows[0]?.pending_payments || '0'),
+        total_bookings: parseInt(statsRows[0]?.total_bookings || '0'),
+        total_guests: parseInt(statsRows[0]?.total_guests || '0'),
+        pending_payments: parseInt(statsRows[0]?.pending_payments || '0'),
       },
     };
   },
@@ -466,11 +462,11 @@ export const hotelPartnerService = {
     const ticket = await sharedTourService.createTicket(ticketRequest);
 
     // Update ticket to mark as booked by hotel
-    await query(`
+    await prisma.$executeRaw`
       UPDATE shared_tours_tickets
-      SET hotel_partner_id = $2, booked_by_hotel = true, updated_at = NOW()
-      WHERE id = $1
-    `, [ticket.id, hotelId]);
+      SET hotel_partner_id = ${hotelId}, booked_by_hotel = true, updated_at = NOW()
+      WHERE id = ${ticket.id}
+    `;
 
     // Generate payment URL
     const paymentUrl = await sharedTourService.createPaymentLink(ticket.id);
@@ -492,11 +488,10 @@ export const hotelPartnerService = {
 
     // Send booking confirmed notification to hotel partner
     try {
-      const tourResult = await query<{ title: string; tour_date: string }>(
-        `SELECT title, tour_date FROM shared_tours WHERE id = $1`,
-        [data.tour_id]
-      );
-      const tourInfo = tourResult.rows[0];
+      const tourRows = await prisma.$queryRaw<{ title: string; tour_date: string }[]>`
+        SELECT title, tour_date FROM shared_tours WHERE id = ${data.tour_id}
+      `;
+      const tourInfo = tourRows[0];
       if (tourInfo) {
         await sendPartnerBookingConfirmedEmail({
           hotelName: hotel.name,
@@ -556,14 +551,14 @@ export const hotelPartnerService = {
     const offset = options?.offset || 0;
 
     // Get total count
-    const countResult = await query<{ count: string }>(`
+    const countRows = await prisma.$queryRawUnsafe<{ count: string }[]>(`
       SELECT COUNT(*) AS count
       FROM shared_tours_tickets t
       WHERE ${whereClause}
-    `, values);
+    `, ...values);
 
     // Get bookings
-    const bookingsResult = await query<HotelBooking>(`
+    const bookingRows = await prisma.$queryRawUnsafe<HotelBooking[]>(`
       SELECT
         t.id,
         t.ticket_number,
@@ -582,11 +577,11 @@ export const hotelPartnerService = {
       WHERE ${whereClause}
       ORDER BY t.created_at DESC
       LIMIT $${paramCount++} OFFSET $${paramCount++}
-    `, [...values, limit, offset]);
+    `, ...values, limit, offset);
 
     return {
-      bookings: bookingsResult.rows,
-      total: parseInt(countResult.rows[0]?.count || '0'),
+      bookings: bookingRows,
+      total: parseInt(countRows[0]?.count || '0'),
     };
   },
 
@@ -607,33 +602,48 @@ export const hotelPartnerService = {
       pending_payments: number;
     }>;
   }> {
-    const whereClause = hotelId ? 'WHERE hp.id = $1' : '';
-    const values = hotelId ? [hotelId] : [];
-
-    const result = await query<{
+    let rows: {
       id: string;
       name: string;
       total_bookings: string;
       total_guests: string;
       total_revenue: string;
       pending_payments: string;
-    }>(`
-      SELECT
-        hp.id,
-        hp.name,
-        COUNT(t.id)::TEXT AS total_bookings,
-        COALESCE(SUM(t.guest_count), 0)::TEXT AS total_guests,
-        COALESCE(SUM(CASE WHEN t.payment_status = 'paid' THEN t.total_price * 1.089 ELSE 0 END), 0)::TEXT AS total_revenue,
-        COUNT(t.id) FILTER (WHERE t.payment_status = 'pending')::TEXT AS pending_payments
-      FROM hotel_partners hp
-      LEFT JOIN shared_tours_tickets t ON t.hotel_partner_id = hp.id AND t.status != 'cancelled'
-      ${whereClause}
-      GROUP BY hp.id, hp.name
-      ORDER BY total_bookings DESC
-    `, values);
+    }[];
+
+    if (hotelId) {
+      rows = await prisma.$queryRaw<typeof rows>`
+        SELECT
+          hp.id,
+          hp.name,
+          COUNT(t.id)::TEXT AS total_bookings,
+          COALESCE(SUM(t.guest_count), 0)::TEXT AS total_guests,
+          COALESCE(SUM(CASE WHEN t.payment_status = 'paid' THEN t.total_price * 1.089 ELSE 0 END), 0)::TEXT AS total_revenue,
+          COUNT(t.id) FILTER (WHERE t.payment_status = 'pending')::TEXT AS pending_payments
+        FROM hotel_partners hp
+        LEFT JOIN shared_tours_tickets t ON t.hotel_partner_id = hp.id AND t.status != 'cancelled'
+        WHERE hp.id = ${hotelId}
+        GROUP BY hp.id, hp.name
+        ORDER BY total_bookings DESC
+      `;
+    } else {
+      rows = await prisma.$queryRaw<typeof rows>`
+        SELECT
+          hp.id,
+          hp.name,
+          COUNT(t.id)::TEXT AS total_bookings,
+          COALESCE(SUM(t.guest_count), 0)::TEXT AS total_guests,
+          COALESCE(SUM(CASE WHEN t.payment_status = 'paid' THEN t.total_price * 1.089 ELSE 0 END), 0)::TEXT AS total_revenue,
+          COUNT(t.id) FILTER (WHERE t.payment_status = 'pending')::TEXT AS pending_payments
+        FROM hotel_partners hp
+        LEFT JOIN shared_tours_tickets t ON t.hotel_partner_id = hp.id AND t.status != 'cancelled'
+        GROUP BY hp.id, hp.name
+        ORDER BY total_bookings DESC
+      `;
+    }
 
     return {
-      hotels: result.rows.map(row => ({
+      hotels: rows.map(row => ({
         id: row.id,
         name: row.name,
         total_bookings: parseInt(row.total_bookings),

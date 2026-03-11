@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper';
 import { sharedTourService } from '@/lib/services/shared-tour.service';
-import { query } from '@/lib/db';
-import { withCSRF } from '@/lib/api/middleware/csrf';
+import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { invalidateCache } from '@/lib/api/middleware/redis-cache';
 
@@ -53,20 +52,20 @@ export const GET = withAdminAuth(async (request: NextRequest, _session: AuthSess
   // Get vehicle info if assigned
   let vehicleInfo = null;
   if (tour.vehicle_id) {
-    const vehicleResult = await query<{
+    const vehicleRows = await prisma.$queryRaw<{
       id: number;
       make: string;
       model: string;
       capacity: number;
       status: string;
-    }>(`
+    }[]>`
       SELECT id, make, model, capacity, status
       FROM vehicles
-      WHERE id = $1
-    `, [tour.vehicle_id]);
+      WHERE id = ${tour.vehicle_id}
+    `;
 
-    if (vehicleResult.rows[0]) {
-      const v = vehicleResult.rows[0];
+    if (vehicleRows[0]) {
+      const v = vehicleRows[0];
       vehicleInfo = {
         id: v.id,
         name: `${v.make} ${v.model}`,
@@ -80,33 +79,30 @@ export const GET = withAdminAuth(async (request: NextRequest, _session: AuthSess
   const { vehicles: availableVehicles, currentTicketsSold } = await sharedTourService.getAvailableVehiclesForTour(tour_id);
 
   // Get trip_proposal_id (not in the view, fetch from base table)
-  const proposalLinkResult = await query<{ trip_proposal_id: number | null }>(
-    'SELECT trip_proposal_id FROM shared_tours WHERE id = $1',
-    [tour_id]
-  );
-  const tripProposalId = proposalLinkResult.rows[0]?.trip_proposal_id || null;
+  const proposalLinkRows = await prisma.$queryRaw<{ trip_proposal_id: number | null }[]>`
+    SELECT trip_proposal_id FROM shared_tours WHERE id = ${tour_id}
+  `;
+  const tripProposalId = proposalLinkRows[0]?.trip_proposal_id || null;
 
   // If linked to a proposal, get basic proposal info
   let linkedProposal: { id: number; proposal_number: string; title: string; status: string } | null = null;
   if (tripProposalId) {
-    const proposalResult = await query<{ id: number; proposal_number: string; title: string; status: string }>(
-      'SELECT id, proposal_number, title, status FROM trip_proposals WHERE id = $1',
-      [tripProposalId]
-    );
-    linkedProposal = proposalResult.rows[0] || null;
+    const proposalRows = await prisma.$queryRaw<{ id: number; proposal_number: string; title: string; status: string }[]>`
+      SELECT id, proposal_number, title, status FROM trip_proposals WHERE id = ${tripProposalId}
+    `;
+    linkedProposal = proposalRows[0] || null;
   }
 
   // Get ticket IDs that are cross-referenced in trip_proposal_guests (for "On Proposal" badges)
   const ticketIds = tickets.map((t: { id: string }) => t.id);
   let ticketsOnProposal: string[] = [];
   if (ticketIds.length > 0) {
-    const crossRefResult = await query<{ shared_tour_ticket_id: number }>(
-      `SELECT DISTINCT shared_tour_ticket_id
-       FROM trip_proposal_guests
-       WHERE shared_tour_ticket_id = ANY($1::int[])`,
-      [ticketIds]
-    );
-    ticketsOnProposal = crossRefResult.rows.map(r => String(r.shared_tour_ticket_id));
+    const crossRefRows = await prisma.$queryRaw<{ shared_tour_ticket_id: number }[]>`
+      SELECT DISTINCT shared_tour_ticket_id
+      FROM trip_proposal_guests
+      WHERE shared_tour_ticket_id = ANY(${ticketIds}::int[])
+    `;
+    ticketsOnProposal = crossRefRows.map(r => String(r.shared_tour_ticket_id));
   }
 
   return NextResponse.json({
@@ -134,8 +130,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session: AuthSess
  * - If max_guests exceeds new vehicle capacity, caps it
  * - Use reassign_vehicle: true to trigger auto-reassignment
  */
-export const PATCH = withCSRF(
-  withAdminAuth(async (request: NextRequest, _session: AuthSession, context) => {
+export const PATCH = withAdminAuth(async (request: NextRequest, _session: AuthSession, context) => {
   const { tour_id } = await (context as RouteParams).params;
   const body = PatchBodySchema.parse(await request.json());
 
@@ -218,15 +213,13 @@ export const PATCH = withCSRF(
     data: tour,
     message: 'Tour updated successfully',
   });
-})
-);
+});
 
 /**
  * DELETE /api/admin/shared-tours/[tour_id]
  * Cancel a tour
  */
-export const DELETE = withCSRF(
-  withAdminAuth(async (request: NextRequest, _session: AuthSession, context) => {
+export const DELETE = withAdminAuth(async (request: NextRequest, _session: AuthSession, context) => {
   const { tour_id } = await (context as RouteParams).params;
 
   const tour = await sharedTourService.cancelTour(tour_id);
@@ -244,5 +237,4 @@ export const DELETE = withCSRF(
     data: tour,
     message: 'Tour cancelled successfully',
   });
-})
-);
+});

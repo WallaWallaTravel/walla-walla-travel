@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper';
 import { sharedTourService } from '@/lib/services/shared-tour.service';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 import { getBrandStripeClient } from '@/lib/stripe-brands';
-import { withCSRF } from '@/lib/api/middleware/csrf';
 import { z } from 'zod';
 
 interface RouteParams {
@@ -55,8 +54,7 @@ interface DiscountPreview {
  *
  * Also handles confirmation when `confirmed: true` is passed
  */
-export const POST = withCSRF(
-  withAdminAuth(async (request: NextRequest, session: AuthSession, context) => {
+export const POST = withAdminAuth(async (request: NextRequest, session: AuthSession, context) => {
   const { tour_id } = await (context as RouteParams).params;
   const body: DiscountRequest = BodySchema.parse(await request.json());
 
@@ -92,16 +90,16 @@ export const POST = withCSRF(
   }
 
   // Check if discount already applied
-  const tourWithDiscount = await query<{
+  const tourWithDiscountRows = await prisma.$queryRaw<{
     discount_type: string | null;
     discount_amount: number | null;
-  }>(`
+  }[]>`
     SELECT discount_type, discount_amount
     FROM shared_tours
-    WHERE id = $1
-  `, [tour_id]);
+    WHERE id = ${tour_id}
+  `;
 
-  if (tourWithDiscount.rows[0]?.discount_type && tourWithDiscount.rows[0]?.discount_type !== 'none') {
+  if (tourWithDiscountRows[0]?.discount_type && tourWithDiscountRows[0]?.discount_type !== 'none') {
     return NextResponse.json(
       { success: false, error: 'A discount has already been applied to this tour' },
       { status: 400 }
@@ -126,7 +124,7 @@ export const POST = withCSRF(
   }
 
   // Get all paid tickets for this tour
-  const ticketsResult = await query<{
+  const ticketsRows = await prisma.$queryRaw<{
     id: string;
     ticket_number: string;
     customer_name: string;
@@ -138,21 +136,21 @@ export const POST = withCSRF(
     payment_status: string;
     status: string;
     stripe_payment_intent_id: string | null;
-  }>(`
+  }[]>`
     SELECT
       id, ticket_number, customer_name, customer_email, ticket_count,
       includes_lunch, price_per_person, total_amount, payment_status, status,
       stripe_payment_intent_id
     FROM shared_tours_tickets
-    WHERE tour_id = $1
+    WHERE tour_id = ${tour_id}
     ORDER BY created_at
-  `, [tour_id]);
+  `;
 
   const warnings: string[] = [];
   const ticketsAffected: TicketRefundPreview[] = [];
   let totalRefund = 0;
 
-  for (const ticket of ticketsResult.rows) {
+  for (const ticket of ticketsRows) {
     // Skip cancelled tickets
     if (ticket.status === 'cancelled') {
       continue;
@@ -239,27 +237,19 @@ export const POST = withCSRF(
   // Start transaction
   try {
     // Update tour pricing
-    await query(`
+    await prisma.$executeRaw`
       UPDATE shared_tours
       SET
-        base_price_per_person = $2,
-        lunch_price_per_person = $3,
-        discount_type = $4,
-        discount_amount = $5,
-        discount_reason = $6,
+        base_price_per_person = ${newBasePrice},
+        lunch_price_per_person = ${newLunchPrice},
+        discount_type = ${body.discount_type},
+        discount_amount = ${body.discount_amount},
+        discount_reason = ${body.reason || null},
         discount_applied_at = NOW(),
-        discount_applied_by = $7,
+        discount_applied_by = ${session.email},
         updated_at = NOW()
-      WHERE id = $1
-    `, [
-      tour_id,
-      newBasePrice,
-      newLunchPrice,
-      body.discount_type,
-      body.discount_amount,
-      body.reason || null,
-      session.email,
-    ]);
+      WHERE id = ${tour_id}
+    `;
 
     // Process refunds for each affected ticket
     for (const ticket of ticketsAffected) {
@@ -298,28 +288,21 @@ export const POST = withCSRF(
         );
 
         // Update ticket with refund info
-        await query(`
+        await prisma.$executeRaw`
           UPDATE shared_tours_tickets
           SET
-            refund_amount = COALESCE(refund_amount, 0) + $2,
-            refund_id = $3,
-            refund_status = $4,
+            refund_amount = COALESCE(refund_amount, 0) + ${ticket.refund_amount},
+            refund_id = ${refund.id},
+            refund_status = ${refund.status},
             refunded_at = NOW(),
             original_price_per_person = COALESCE(original_price_per_person, price_per_person),
             original_total_amount = COALESCE(original_total_amount, total_amount),
-            price_per_person = $5,
-            total_amount = $6,
+            price_per_person = ${ticket.includes_lunch ? newLunchPrice : newBasePrice},
+            total_amount = ${ticket.new_price},
             payment_status = 'partial_refund',
             updated_at = NOW()
-          WHERE id = $1
-        `, [
-          ticket.ticket_id,
-          ticket.refund_amount,
-          refund.id,
-          refund.status,
-          ticket.includes_lunch ? newLunchPrice : newBasePrice,
-          ticket.new_price,
-        ]);
+          WHERE id = ${ticket.ticket_id}
+        `;
 
         refundResults.push({
           ticket_id: ticket.ticket_id,
@@ -355,22 +338,22 @@ export const POST = withCSRF(
     }
 
     // Update unpaid tickets to use new pricing
-    await query(`
+    await prisma.$executeRaw`
       UPDATE shared_tours_tickets
       SET
         price_per_person = CASE
-          WHEN includes_lunch THEN $2
-          ELSE $3
+          WHEN includes_lunch THEN ${newLunchPrice}
+          ELSE ${newBasePrice}
         END,
         total_amount = ticket_count * CASE
-          WHEN includes_lunch THEN $2
-          ELSE $3
+          WHEN includes_lunch THEN ${newLunchPrice}
+          ELSE ${newBasePrice}
         END,
         updated_at = NOW()
-      WHERE tour_id = $1
+      WHERE tour_id = ${tour_id}
         AND payment_status = 'pending'
         AND status != 'cancelled'
-    `, [tour_id, newLunchPrice, newBasePrice]);
+    `;
 
     // Get updated tour
     const updatedTour = await sharedTourService.getTourWithAvailability(tour_id);
@@ -395,5 +378,4 @@ export const POST = withCSRF(
       { status: 500 }
     );
   }
-})
-);
+});
