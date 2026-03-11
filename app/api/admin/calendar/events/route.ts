@@ -10,7 +10,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 
 // Calendar event types
@@ -59,8 +59,8 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const events: CalendarEvent[] = [];
 
   // 1. Fetch proposals with service_items containing dates
-  const proposalsResult = await query(
-    `SELECT
+  const proposals = await prisma.$queryRaw<{ id: number; proposal_number: string; uuid: string; client_name: string; client_company: string; status: string; service_items: any }[]>`
+    SELECT
       id,
       proposal_number,
       uuid,
@@ -71,12 +71,10 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
     FROM proposals
     WHERE status IN ('sent', 'viewed', 'accepted')
       AND service_items IS NOT NULL
-    ORDER BY created_at DESC`,
-    []
-  );
+    ORDER BY created_at DESC`;
 
   // Extract dates from service_items for each proposal
-  for (const proposal of proposalsResult.rows) {
+  for (const proposal of proposals) {
     const serviceItems = proposal.service_items;
     if (!Array.isArray(serviceItems)) continue;
 
@@ -117,8 +115,8 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   }
 
   // 2. Fetch corporate requests with preferred_dates
-  const corporateResult = await query(
-    `SELECT
+  const corporateRequests = await prisma.$queryRaw<{ id: number; request_number: string; company_name: string; contact_name: string; party_size: number; event_type: string; preferred_dates: any; status: string }[]>`
+    SELECT
       id,
       request_number,
       company_name,
@@ -130,11 +128,9 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
     FROM corporate_requests
     WHERE status NOT IN ('won', 'lost', 'cancelled')
       AND preferred_dates IS NOT NULL
-    ORDER BY created_at DESC`,
-    []
-  );
+    ORDER BY created_at DESC`;
 
-  for (const request of corporateResult.rows) {
+  for (const request of corporateRequests) {
     const preferredDates = request.preferred_dates;
 
     // Handle different formats for preferred_dates (can be array or object)
@@ -173,7 +169,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   }
 
   // 3. Fetch reservations with preferred dates (not yet converted to bookings)
-  const reservationsResult = await query(
+  const reservations = await prisma.$queryRawUnsafe<{ id: number; reservation_number: string; party_size: number; preferred_date: Date | null; alternate_date: Date | null; tour_start_date: Date | null; tour_end_date: Date | null; status: string; event_type: string; customer_name: string }[]>(
     `SELECT
       r.id,
       r.reservation_number,
@@ -196,10 +192,10 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
         OR (r.tour_end_date >= $1 AND r.tour_end_date <= $2)
       )
     ORDER BY r.preferred_date`,
-    [startDateStr, endDateStr]
+    startDateStr, endDateStr
   );
 
-  for (const reservation of reservationsResult.rows) {
+  for (const reservation of reservations) {
     // Collect all relevant dates
     const dates = new Set<string>();
 
@@ -239,17 +235,17 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
 
   // 4. Fetch shared tours with spots remaining
   try {
-    const sharedToursResult = await query(
+    const sharedTours = await prisma.$queryRawUnsafe<{ id: number; tour_code: string; title: string; tour_date: Date | string; start_time: string | null; max_guests: number; current_guests: number; status: string; driver_id: number | null }[]>(
       `SELECT id, tour_code, title, tour_date, start_time, max_guests,
               current_guests, status, driver_id
        FROM shared_tours
        WHERE tour_date >= $1 AND tour_date <= $2
          AND status NOT IN ('cancelled', 'completed')
        ORDER BY tour_date, start_time`,
-      [startDateStr, endDateStr]
+      startDateStr, endDateStr
     );
 
-    for (const tour of sharedToursResult.rows) {
+    for (const tour of sharedTours) {
       const date = tour.tour_date instanceof Date
         ? tour.tour_date.toISOString().split('T')[0]
         : String(tour.tour_date).split('T')[0];
@@ -275,7 +271,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
 
   // 5. Fetch trip proposals (new system) with dates in range
   try {
-    const tripProposalsResult = await query(
+    const tripProposals = await prisma.$queryRawUnsafe<{ id: number; proposal_number: string; trip_title: string; customer_name: string; start_date: Date | string; end_date: Date | string | null; party_size: number; status: string }[]>(
       `SELECT id, proposal_number, trip_title, customer_name, start_date, end_date,
               party_size, status
        FROM trip_proposals
@@ -286,10 +282,10 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
            OR (start_date <= $1 AND COALESCE(end_date, start_date) >= $2)
          )
        ORDER BY start_date`,
-      [startDateStr, endDateStr]
+      startDateStr, endDateStr
     );
 
-    for (const tp of tripProposalsResult.rows) {
+    for (const tp of tripProposals) {
       const startDt = tp.start_date instanceof Date
         ? tp.start_date : new Date(tp.start_date);
       const endDt = tp.end_date

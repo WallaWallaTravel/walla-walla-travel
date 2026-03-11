@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { NotFoundError, BadRequestError } from '@/lib/api/middleware/error-handler';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import type { CrmContactSummary, UpdateContactData } from '@/types/crm';
 import { withCSRF } from '@/lib/api/middleware/csrf';
@@ -22,7 +22,7 @@ export const GET = withAdminAuth(async (
   }
 
   // Get contact with summary data
-  const result = await query<CrmContactSummary>(
+  const rows = await prisma.$queryRawUnsafe<CrmContactSummary[]>(
     `SELECT
       c.*,
       u.name as assigned_user_name,
@@ -37,15 +37,15 @@ export const GET = withAdminAuth(async (
     LEFT JOIN crm_deals d ON d.contact_id = c.id
     WHERE c.id = $1
     GROUP BY c.id, u.name`,
-    [contactId]
+    contactId
   );
 
-  if (result.rows.length === 0) {
+  if (rows.length === 0) {
     throw new NotFoundError('Contact not found');
   }
 
   // Get deals for this contact
-  const dealsResult = await query(
+  const deals = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
     `SELECT
       d.*,
       ps.name as stage_name,
@@ -56,11 +56,11 @@ export const GET = withAdminAuth(async (
     LEFT JOIN crm_deal_types dt ON d.deal_type_id = dt.id
     WHERE d.contact_id = $1
     ORDER BY d.created_at DESC`,
-    [contactId]
+    contactId
   );
 
   // Get recent activities for this contact
-  const activitiesResult = await query(
+  const activities = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
     `SELECT
       a.*,
       u.name as performed_by_name
@@ -69,11 +69,11 @@ export const GET = withAdminAuth(async (
     WHERE a.contact_id = $1
     ORDER BY a.performed_at DESC
     LIMIT 20`,
-    [contactId]
+    contactId
   );
 
   // Get tasks for this contact
-  const tasksResult = await query(
+  const tasks = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
     `SELECT
       t.*,
       u.name as assigned_user_name
@@ -83,15 +83,15 @@ export const GET = withAdminAuth(async (
     ORDER BY
       CASE WHEN t.status IN ('pending', 'in_progress') THEN 0 ELSE 1 END,
       t.due_date ASC`,
-    [contactId]
+    contactId
   );
 
   return NextResponse.json({
     success: true,
-    contact: result.rows[0],
-    deals: dealsResult.rows,
-    activities: activitiesResult.rows,
-    tasks: tasksResult.rows,
+    contact: rows[0],
+    deals,
+    activities,
+    tasks,
     timestamp: new Date().toISOString(),
   });
 });
@@ -160,21 +160,21 @@ export const PATCH = withCSRF(
 
   params.push(contactId);
 
-  const result = await query(
+  const rows = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
     `UPDATE crm_contacts
      SET ${updates.join(', ')}, updated_at = NOW()
      WHERE id = $${paramIndex}
      RETURNING *`,
-    params
+    ...params
   );
 
-  if (result.rows.length === 0) {
+  if (rows.length === 0) {
     throw new NotFoundError('Contact not found');
   }
 
   return NextResponse.json({
     success: true,
-    contact: result.rows[0],
+    contact: rows[0],
     timestamp: new Date().toISOString(),
   });
 })
@@ -196,25 +196,25 @@ export const DELETE = withCSRF(
   }
 
   // Check if contact has active deals
-  const activeDealsResult = await query<{ count: string }>(
+  const activeDealsRows = await prisma.$queryRawUnsafe<{ count: string }[]>(
     `SELECT COUNT(*) as count FROM crm_deals WHERE contact_id = $1 AND won_at IS NULL AND lost_at IS NULL`,
-    [contactId]
+    contactId
   );
 
-  if (parseInt(activeDealsResult.rows[0]?.count || '0') > 0) {
+  if (parseInt(activeDealsRows[0]?.count || '0') > 0) {
     throw new BadRequestError('Cannot delete contact with active deals. Close or reassign deals first.');
   }
 
   // Soft delete - mark as lost
-  const result = await query(
+  const rows = await prisma.$queryRawUnsafe<{ id: number }[]>(
     `UPDATE crm_contacts
      SET lifecycle_stage = 'lost', updated_at = NOW()
      WHERE id = $1
      RETURNING id`,
-    [contactId]
+    contactId
   );
 
-  if (result.rows.length === 0) {
+  if (rows.length === 0) {
     throw new NotFoundError('Contact not found');
   }
 

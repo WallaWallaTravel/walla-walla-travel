@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
-import { query } from '@/lib/db';
-import { queryOne } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { withCSRF } from '@/lib/api/middleware/csrf';
@@ -32,21 +31,18 @@ interface MigrationResult {
  */
 export const GET = withAdminAuth(async (_request: NextRequest, _session): Promise<NextResponse> => {
   // Count total customers
-  const totalCustomers = await queryOne<{ count: string }>(
-    `SELECT COUNT(*) as count FROM customers`
-  );
+  const totalCustomersRows = await prisma.$queryRaw<{ count: string }[]>`SELECT COUNT(*) as count FROM customers`;
+  const totalCustomers = totalCustomersRows[0];
 
   // Count customers already linked to CRM contacts
-  const linkedCustomers = await queryOne<{ count: string }>(
-    `SELECT COUNT(*) as count FROM customers c
-     WHERE EXISTS (SELECT 1 FROM crm_contacts cc WHERE cc.customer_id = c.id)`
-  );
+  const linkedCustomersRows = await prisma.$queryRaw<{ count: string }[]>`SELECT COUNT(*) as count FROM customers c
+     WHERE EXISTS (SELECT 1 FROM crm_contacts cc WHERE cc.customer_id = c.id)`;
+  const linkedCustomers = linkedCustomersRows[0];
 
   // Count CRM contacts that exist but aren't linked
-  const unlinkedContacts = await queryOne<{ count: string }>(
-    `SELECT COUNT(*) as count FROM crm_contacts
-     WHERE customer_id IS NULL`
-  );
+  const unlinkedContactsRows = await prisma.$queryRaw<{ count: string }[]>`SELECT COUNT(*) as count FROM crm_contacts
+     WHERE customer_id IS NULL`;
+  const unlinkedContacts = unlinkedContactsRows[0];
 
   const total = parseInt(totalCustomers?.count || '0');
   const linked = parseInt(linkedCustomers?.count || '0');
@@ -90,8 +86,7 @@ export const POST = withCSRF(
       };
 
       // Get all customers with their booking stats
-      const customersResult = await query<Customer>(
-        `SELECT
+      const customers = await prisma.$queryRaw<Customer[]>`SELECT
           c.id,
           c.email,
           c.name,
@@ -103,10 +98,8 @@ export const POST = withCSRF(
         FROM customers c
         LEFT JOIN bookings b ON b.customer_id = c.id AND b.status != 'cancelled'
         GROUP BY c.id
-        ORDER BY c.id`
-      );
+        ORDER BY c.id`;
 
-      const customers = customersResult.rows;
       result.total_customers = customers.length;
 
       logger.info('[CRM Migration] Found customers to process', { count: customers.length });
@@ -118,10 +111,11 @@ export const POST = withCSRF(
         for (const customer of batch) {
           try {
             // Check if CRM contact already exists for this customer
-            const existingContact = await queryOne<{ id: number }>(
+            const existingContactRows = await prisma.$queryRawUnsafe<{ id: number }[]>(
               `SELECT id FROM crm_contacts WHERE customer_id = $1`,
-              [customer.id]
+              customer.id
             );
+            const existingContact = existingContactRows[0];
 
             if (existingContact) {
               result.already_exists++;
@@ -129,10 +123,11 @@ export const POST = withCSRF(
             }
 
             // Check if contact exists by email (created manually or from other source)
-            const emailContact = await queryOne<{ id: number }>(
+            const emailContactRows = await prisma.$queryRawUnsafe<{ id: number }[]>(
               `SELECT id FROM crm_contacts WHERE LOWER(email) = LOWER($1)`,
-              [customer.email]
+              customer.email
             );
+            const emailContact = emailContactRows[0];
 
             if (dryRun) {
               // In dry run, just count what would be migrated
@@ -142,7 +137,7 @@ export const POST = withCSRF(
 
             if (emailContact) {
               // Link existing contact to customer and update stats
-              await query(
+              await prisma.$queryRawUnsafe(
                 `UPDATE crm_contacts
                 SET
                   customer_id = $1,
@@ -158,15 +153,13 @@ export const POST = withCSRF(
                   last_booking_date = $6,
                   updated_at = NOW()
                 WHERE id = $7`,
-                [
-                  customer.id,
-                  customer.name,
-                  customer.phone,
-                  customer.total_bookings,
-                  parseFloat(customer.total_spent),
-                  customer.last_booking_date,
-                  emailContact.id,
-                ]
+                customer.id,
+                customer.name,
+                customer.phone,
+                customer.total_bookings,
+                parseFloat(customer.total_spent),
+                customer.last_booking_date,
+                emailContact.id,
               );
               result.migrated++;
             } else {
@@ -175,7 +168,7 @@ export const POST = withCSRF(
                 customer.total_bookings > 1 ? 'repeat_customer' :
                 customer.total_bookings === 1 ? 'customer' : 'lead';
 
-              await query(
+              await prisma.$queryRawUnsafe(
                 `INSERT INTO crm_contacts (
                   email, name, phone, customer_id, contact_type, lifecycle_stage,
                   lead_temperature, source, source_detail,
@@ -183,17 +176,15 @@ export const POST = withCSRF(
                   brand_id, created_at, updated_at
                 ) VALUES ($1, $2, $3, $4, 'individual', $5, 'warm', 'migration', 'customer_migration',
                   $6, $7, $8, 1, $9, NOW())`,
-                [
-                  customer.email,
-                  customer.name,
-                  customer.phone,
-                  customer.id,
-                  lifecycleStage,
-                  customer.total_bookings,
-                  parseFloat(customer.total_spent),
-                  customer.last_booking_date,
-                  customer.created_at,
-                ]
+                customer.email,
+                customer.name,
+                customer.phone,
+                customer.id,
+                lifecycleStage,
+                customer.total_bookings,
+                parseFloat(customer.total_spent),
+                customer.last_booking_date,
+                customer.created_at,
               );
               result.migrated++;
             }

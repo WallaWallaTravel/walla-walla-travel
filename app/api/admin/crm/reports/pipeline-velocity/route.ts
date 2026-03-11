@@ -6,9 +6,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
-import type { QueryParamValue } from '@/lib/db-helpers';
 
 export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const { searchParams } = new URL(request.url);
@@ -17,7 +16,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
 
   // Build date filters
   const dateConditions: string[] = [];
-  const params: QueryParamValue[] = [];
+  const params: (string | number | boolean | null)[] = [];
 
   if (fromDate) {
     params.push(fromDate);
@@ -31,11 +30,11 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const dateWhereClause = dateConditions.length > 0 ? `AND ${dateConditions.join(' AND ')}` : '';
 
   // Get average time to close (for won deals)
-  const avgTimeToCloseResult = await query<{
+  const avgTimeToCloseRows = await prisma.$queryRawUnsafe<{
     avg_days_to_close: number;
     deals_won: number;
     total_value_won: number;
-  }>(
+  }[]>(
     `SELECT
        COALESCE(AVG(EXTRACT(EPOCH FROM (won_at - created_at)) / 86400), 0)::numeric(10,1) as avg_days_to_close,
        COUNT(*) as deals_won,
@@ -44,18 +43,18 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
      JOIN crm_pipeline_stages ps ON d.stage_id = ps.id
      WHERE ps.is_won = true AND d.won_at IS NOT NULL
      ${dateWhereClause}`,
-    params
+    ...params
   );
 
   // Get average time spent in each stage
-  const stageVelocityResult = await query<{
+  const stageVelocityRows = await prisma.$queryRawUnsafe<{
     stage_name: string;
     stage_color: string;
     sort_order: number;
     deals_in_stage: number;
     avg_days_in_stage: number;
     deals_moved_through: number;
-  }>(
+  }[]>(
     `WITH stage_durations AS (
        SELECT
          d.id as deal_id,
@@ -84,15 +83,15 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
      WHERE is_won = false AND is_lost = false
      GROUP BY stage_name, stage_color, sort_order
      ORDER BY sort_order`,
-    params
+    ...params
   );
 
   // Get conversion rate between stages
-  const stageConversionResult = await query<{
+  const stageConversionRows = await prisma.$queryRawUnsafe<{
     from_stage: string;
     to_stage: string;
     conversion_count: number;
-  }>(
+  }[]>(
     `SELECT
        ps_from.name as from_stage,
        ps_to.name as to_stage,
@@ -104,11 +103,11 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
      WHERE d.stage_changed_at IS NOT NULL ${dateWhereClause}
      GROUP BY ps_from.name, ps_to.name, ps_from.sort_order
      ORDER BY ps_from.sort_order`,
-    params
+    ...params
   );
 
   // Get pipeline health metrics
-  const healthMetricsResult = await query<{
+  const healthMetricsRows = await prisma.$queryRawUnsafe<{
     total_open_deals: number;
     total_pipeline_value: number;
     deals_created_this_month: number;
@@ -116,7 +115,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
     deals_lost_this_month: number;
     win_rate: number;
     avg_deal_value: number;
-  }>(
+  }[]>(
     `SELECT
        COUNT(CASE WHEN ps.is_won = false AND ps.is_lost = false THEN 1 END) as total_open_deals,
        COALESCE(SUM(CASE WHEN ps.is_won = false AND ps.is_lost = false THEN d.estimated_value END), 0) as total_pipeline_value,
@@ -135,19 +134,18 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
      FROM crm_deals d
      JOIN crm_pipeline_stages ps ON d.stage_id = ps.id
      WHERE 1=1 ${dateWhereClause}`,
-    params
+    ...params
   );
 
   // Get deals at risk (stale deals in early stages)
-  const staleDealsResult = await query<{
+  const staleDealsRows = await prisma.$queryRaw<{
     deal_id: number;
     deal_title: string;
     stage_name: string;
     days_in_stage: number;
     estimated_value: number;
     contact_name: string;
-  }>(
-    `SELECT
+  }[]>`SELECT
        d.id as deal_id,
        d.title as deal_title,
        ps.name as stage_name,
@@ -160,19 +158,16 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
      WHERE ps.is_won = false AND ps.is_lost = false
        AND EXTRACT(EPOCH FROM (NOW() - COALESCE(d.stage_changed_at, d.created_at))) / 86400 > 14
      ORDER BY days_in_stage DESC
-     LIMIT 10`,
-    []
-  );
+     LIMIT 10`;
 
   // Get monthly deal flow
-  const monthlyFlowResult = await query<{
+  const monthlyFlowRows = await prisma.$queryRaw<{
     month: string;
     deals_created: number;
     deals_won: number;
     deals_lost: number;
     value_won: number;
-  }>(
-    `SELECT
+  }[]>`SELECT
        TO_CHAR(d.created_at, 'YYYY-MM') as month,
        COUNT(*) as deals_created,
        COUNT(CASE WHEN ps.is_won = true THEN 1 END) as deals_won,
@@ -182,23 +177,21 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
      JOIN crm_pipeline_stages ps ON d.stage_id = ps.id
      WHERE d.created_at >= NOW() - INTERVAL '12 months'
      GROUP BY TO_CHAR(d.created_at, 'YYYY-MM')
-     ORDER BY month ASC`,
-    []
-  );
+     ORDER BY month ASC`;
 
   return NextResponse.json({
     success: true,
     data: {
       time_to_close: {
-        avg_days: avgTimeToCloseResult.rows[0]?.avg_days_to_close || 0,
-        deals_won: avgTimeToCloseResult.rows[0]?.deals_won || 0,
-        total_value: avgTimeToCloseResult.rows[0]?.total_value_won || 0,
+        avg_days: avgTimeToCloseRows[0]?.avg_days_to_close || 0,
+        deals_won: avgTimeToCloseRows[0]?.deals_won || 0,
+        total_value: avgTimeToCloseRows[0]?.total_value_won || 0,
       },
-      stage_velocity: stageVelocityResult.rows,
-      stage_conversions: stageConversionResult.rows,
-      health_metrics: healthMetricsResult.rows[0],
-      stale_deals: staleDealsResult.rows,
-      monthly_flow: monthlyFlowResult.rows,
+      stage_velocity: stageVelocityRows,
+      stage_conversions: stageConversionRows,
+      health_metrics: healthMetricsRows[0],
+      stale_deals: staleDealsRows,
+      monthly_flow: monthlyFlowRows,
     },
   });
 });

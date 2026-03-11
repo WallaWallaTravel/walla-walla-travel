@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { NotFoundError, BadRequestError } from '@/lib/api/middleware/error-handler';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import type { CrmTaskWithRelations, UpdateTaskData } from '@/types/crm';
 import { withCSRF } from '@/lib/api/middleware/csrf';
@@ -21,7 +21,7 @@ export const GET = withAdminAuth(async (
     throw new BadRequestError('Invalid task ID');
   }
 
-  const result = await query<CrmTaskWithRelations>(
+  const rows = await prisma.$queryRawUnsafe<CrmTaskWithRelations[]>(
     `SELECT
       t.*,
       c.name as contact_name,
@@ -35,16 +35,16 @@ export const GET = withAdminAuth(async (
     LEFT JOIN users u1 ON t.assigned_to = u1.id
     LEFT JOIN users u2 ON t.created_by = u2.id
     WHERE t.id = $1`,
-    [taskId]
+    taskId
   );
 
-  if (result.rows.length === 0) {
+  if (rows.length === 0) {
     throw new NotFoundError('Task not found');
   }
 
   return NextResponse.json({
     success: true,
-    task: result.rows[0],
+    task: rows[0],
     timestamp: new Date().toISOString(),
   });
 });
@@ -121,23 +121,23 @@ export const PATCH = withCSRF(
 
   params.push(taskId);
 
-  const result = await query(
+  const rows = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
     `UPDATE crm_tasks
      SET ${updates.join(', ')}, updated_at = NOW()
      WHERE id = $${paramIndex}
      RETURNING *`,
-    params
+    ...params
   );
 
-  if (result.rows.length === 0) {
+  if (rows.length === 0) {
     throw new NotFoundError('Task not found');
   }
 
-  const task = result.rows[0];
+  const task = rows[0];
 
   // Update contact's next_follow_up_at
   if (task.contact_id) {
-    await query(
+    await prisma.$queryRawUnsafe(
       `UPDATE crm_contacts
        SET next_follow_up_at = (
          SELECT MIN(due_date)
@@ -145,7 +145,7 @@ export const PATCH = withCSRF(
          WHERE contact_id = $1 AND status IN ('pending', 'in_progress')
        )
        WHERE id = $1`,
-      [task.contact_id]
+      task.contact_id
     );
   }
 
@@ -173,26 +173,26 @@ export const DELETE = withCSRF(
   }
 
   // Get task to find contact_id for updating follow-up date
-  const taskResult = await query<{ contact_id: number | null }>(
+  const taskRows = await prisma.$queryRawUnsafe<{ contact_id: number | null }[]>(
     `SELECT contact_id FROM crm_tasks WHERE id = $1`,
-    [taskId]
+    taskId
   );
 
-  if (taskResult.rows.length === 0) {
+  if (taskRows.length === 0) {
     throw new NotFoundError('Task not found');
   }
 
-  const contactId = taskResult.rows[0].contact_id;
+  const contactId = taskRows[0].contact_id;
 
   // Delete the task
-  await query(
+  await prisma.$queryRawUnsafe(
     `DELETE FROM crm_tasks WHERE id = $1`,
-    [taskId]
+    taskId
   );
 
   // Update contact's next_follow_up_at
   if (contactId) {
-    await query(
+    await prisma.$queryRawUnsafe(
       `UPDATE crm_contacts
        SET next_follow_up_at = (
          SELECT MIN(due_date)
@@ -200,7 +200,7 @@ export const DELETE = withCSRF(
          WHERE contact_id = $1 AND status IN ('pending', 'in_progress')
        )
        WHERE id = $1`,
-      [contactId]
+      contactId
     );
   }
 

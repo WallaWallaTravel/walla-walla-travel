@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import type { CrmDealWithRelations, CreateDealData } from '@/types/crm';
 import { withCSRF } from '@/lib/api/middleware/csrf';
@@ -76,7 +76,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
   // Get deals with relations
-  const result = await query<CrmDealWithRelations>(
+  const deals = await prisma.$queryRawUnsafe<CrmDealWithRelations[]>(
     `SELECT
       d.*,
       c.name as contact_name,
@@ -94,41 +94,40 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
     ${whereClause}
     ORDER BY d.stage_changed_at DESC
     LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
-    [...params, limit, offset]
+    ...params, limit, offset
   );
 
   // Get total count
-  const countResult = await query<{ count: string }>(
+  const countRows = await prisma.$queryRawUnsafe<{ count: string }[]>(
     `SELECT COUNT(*) as count
      FROM crm_deals d
      JOIN crm_contacts c ON d.contact_id = c.id
      ${whereClause}`,
-    params
+    ...params
   );
 
-  const total = parseInt(countResult.rows[0]?.count || '0');
+  const total = parseInt(countRows[0]?.count || '0');
 
   // Get pipeline value summary
-  const summaryResult = await query<{
+  const summaryRows = await prisma.$queryRawUnsafe<{
     total_value: string;
     weighted_value: string;
     deal_count: string;
-  }>(
+  }[]>(
     `SELECT
       COALESCE(SUM(d.estimated_value), 0) as total_value,
       COALESCE(SUM(d.estimated_value * ps.probability / 100), 0) as weighted_value,
       COUNT(*) as deal_count
     FROM crm_deals d
     JOIN crm_pipeline_stages ps ON d.stage_id = ps.id
-    WHERE d.won_at IS NULL AND d.lost_at IS NULL`,
-    []
+    WHERE d.won_at IS NULL AND d.lost_at IS NULL`
   );
 
-  const summary = summaryResult.rows[0];
+  const summary = summaryRows[0];
 
   return NextResponse.json({
     success: true,
-    deals: result.rows,
+    deals,
     total,
     page,
     limit,
@@ -173,22 +172,22 @@ export const POST = withCSRF(
   }
 
   // Verify contact exists
-  const contactCheck = await query<{ id: number }>(
+  const contactCheck = await prisma.$queryRawUnsafe<{ id: number }[]>(
     `SELECT id FROM crm_contacts WHERE id = $1`,
-    [body.contact_id]
+    body.contact_id
   );
 
-  if (contactCheck.rows.length === 0) {
+  if (contactCheck.length === 0) {
     throw new BadRequestError('Contact not found');
   }
 
   // Verify stage exists
-  const stageCheck = await query<{ id: number }>(
+  const stageCheck = await prisma.$queryRawUnsafe<{ id: number }[]>(
     `SELECT id FROM crm_pipeline_stages WHERE id = $1`,
-    [body.stage_id]
+    body.stage_id
   );
 
-  if (stageCheck.rows.length === 0) {
+  if (stageCheck.length === 0) {
     throw new BadRequestError('Pipeline stage not found');
   }
 
@@ -213,28 +212,28 @@ export const POST = withCSRF(
 
   const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
 
-  const result = await query(
+  const rows = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
     `INSERT INTO crm_deals (${fields.join(', ')})
      VALUES (${placeholders})
      RETURNING *`,
-    values
+    ...values
   );
 
-  const deal = result.rows[0];
+  const deal = rows[0];
 
   // Update contact lifecycle stage to 'opportunity' if currently 'lead' or 'qualified'
-  await query(
+  await prisma.$queryRawUnsafe(
     `UPDATE crm_contacts
      SET lifecycle_stage = 'opportunity', updated_at = NOW()
      WHERE id = $1 AND lifecycle_stage IN ('lead', 'qualified')`,
-    [body.contact_id]
+    body.contact_id
   );
 
   // Log activity
-  await query(
+  await prisma.$queryRawUnsafe(
     `INSERT INTO crm_activities (contact_id, deal_id, activity_type, subject, performed_by, source_type)
      VALUES ($1, $2, 'system', 'Deal created: ' || $3, $4, 'manual')`,
-    [body.contact_id, deal.id, body.title, parseInt(session.userId)]
+    body.contact_id, deal.id, body.title, parseInt(session.userId)
   );
 
   return NextResponse.json({

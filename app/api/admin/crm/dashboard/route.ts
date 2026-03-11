@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import type { CrmDashboardStats, CrmActivityWithUser } from '@/types/crm';
 
 /**
@@ -9,31 +9,27 @@ import type { CrmDashboardStats, CrmActivityWithUser } from '@/types/crm';
  */
 export const GET = withAdminAuth(async (_request: NextRequest, _session) => {
   // Get contact stats
-  const contactStatsResult = await query<{
+  const contactStatsRows = await prisma.$queryRaw<{
     total_contacts: string;
     new_leads_this_month: string;
     hot_leads: string;
-  }>(
-    `SELECT
+  }[]>`SELECT
       COUNT(*) as total_contacts,
       COUNT(*) FILTER (WHERE created_at >= DATE_TRUNC('month', CURRENT_DATE)) as new_leads_this_month,
       COUNT(*) FILTER (WHERE lead_temperature = 'hot' AND lifecycle_stage IN ('lead', 'qualified', 'opportunity')) as hot_leads
-    FROM crm_contacts`,
-    []
-  );
+    FROM crm_contacts`;
 
-  const contactStats = contactStatsResult.rows[0];
+  const contactStats = contactStatsRows[0];
 
   // Get deal stats
-  const dealStatsResult = await query<{
+  const dealStatsRows = await prisma.$queryRaw<{
     total_deals: string;
     open_deals: string;
     pipeline_value: string;
     weighted_pipeline_value: string;
     won_this_month: string;
     won_value_this_month: string;
-  }>(
-    `SELECT
+  }[]>`SELECT
       COUNT(*) as total_deals,
       COUNT(*) FILTER (WHERE won_at IS NULL AND lost_at IS NULL) as open_deals,
       COALESCE(SUM(d.estimated_value) FILTER (WHERE won_at IS NULL AND lost_at IS NULL), 0) as pipeline_value,
@@ -41,30 +37,25 @@ export const GET = withAdminAuth(async (_request: NextRequest, _session) => {
       COUNT(*) FILTER (WHERE won_at >= DATE_TRUNC('month', CURRENT_DATE)) as won_this_month,
       COALESCE(SUM(actual_value) FILTER (WHERE won_at >= DATE_TRUNC('month', CURRENT_DATE)), 0) as won_value_this_month
     FROM crm_deals d
-    LEFT JOIN crm_pipeline_stages ps ON d.stage_id = ps.id`,
-    []
-  );
+    LEFT JOIN crm_pipeline_stages ps ON d.stage_id = ps.id`;
 
-  const dealStats = dealStatsResult.rows[0];
+  const dealStats = dealStatsRows[0];
 
   // Get task stats
-  const taskStatsResult = await query<{
+  const taskStatsRows = await prisma.$queryRaw<{
     overdue_tasks: string;
     tasks_due_today: string;
     upcoming_tasks: string;
-  }>(
-    `SELECT
+  }[]>`SELECT
       COUNT(*) FILTER (WHERE due_date < CURRENT_DATE AND status IN ('pending', 'in_progress')) as overdue_tasks,
       COUNT(*) FILTER (WHERE due_date = CURRENT_DATE AND status IN ('pending', 'in_progress')) as tasks_due_today,
       COUNT(*) FILTER (WHERE due_date > CURRENT_DATE AND due_date <= CURRENT_DATE + INTERVAL '7 days' AND status IN ('pending', 'in_progress')) as upcoming_tasks
-    FROM crm_tasks`,
-    []
-  );
+    FROM crm_tasks`;
 
-  const taskStats = taskStatsResult.rows[0];
+  const taskStats = taskStatsRows[0];
 
   // Get pipeline overview by stage
-  const pipelineOverviewResult = await query<{
+  const pipelineOverviewRows = await prisma.$queryRaw<{
     stage_id: number;
     stage_name: string;
     stage_color: string;
@@ -73,8 +64,7 @@ export const GET = withAdminAuth(async (_request: NextRequest, _session) => {
     total_value: string;
     is_won: boolean;
     is_lost: boolean;
-  }>(
-    `SELECT
+  }[]>`SELECT
       ps.id as stage_id,
       ps.name as stage_name,
       ps.color as stage_color,
@@ -86,13 +76,10 @@ export const GET = withAdminAuth(async (_request: NextRequest, _session) => {
     FROM crm_pipeline_stages ps
     LEFT JOIN crm_deals d ON d.stage_id = ps.id AND d.won_at IS NULL AND d.lost_at IS NULL
     GROUP BY ps.id, ps.name, ps.color, ps.sort_order, ps.is_won, ps.is_lost
-    ORDER BY ps.sort_order`,
-    []
-  );
+    ORDER BY ps.sort_order`;
 
   // Get recent activities
-  const recentActivitiesResult = await query<CrmActivityWithUser>(
-    `SELECT
+  const recentActivities = await prisma.$queryRaw<CrmActivityWithUser[]>`SELECT
       a.*,
       u.name as performed_by_name,
       c.name as contact_name,
@@ -102,13 +89,10 @@ export const GET = withAdminAuth(async (_request: NextRequest, _session) => {
     LEFT JOIN crm_contacts c ON a.contact_id = c.id
     LEFT JOIN crm_deals d ON a.deal_id = d.id
     ORDER BY a.performed_at DESC
-    LIMIT 20`,
-    []
-  );
+    LIMIT 20`;
 
   // Get upcoming tasks
-  const upcomingTasksResult = await query(
-    `SELECT
+  const upcomingTasksRows = await prisma.$queryRaw<Record<string, unknown>[]>`SELECT
       t.*,
       c.name as contact_name,
       d.title as deal_title
@@ -120,9 +104,7 @@ export const GET = withAdminAuth(async (_request: NextRequest, _session) => {
       CASE WHEN t.due_date < CURRENT_DATE THEN 0 ELSE 1 END,
       t.due_date ASC,
       CASE t.priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 WHEN 'normal' THEN 2 ELSE 3 END
-    LIMIT 10`,
-    []
-  );
+    LIMIT 10`;
 
   const stats: CrmDashboardStats = {
     totalContacts: parseInt(contactStats?.total_contacts || '0'),
@@ -142,13 +124,13 @@ export const GET = withAdminAuth(async (_request: NextRequest, _session) => {
   return NextResponse.json({
     success: true,
     stats,
-    pipelineOverview: pipelineOverviewResult.rows.map(row => ({
+    pipelineOverview: pipelineOverviewRows.map(row => ({
       ...row,
       deal_count: parseInt(String(row.deal_count)),
       total_value: parseFloat(String(row.total_value)),
     })),
-    recentActivities: recentActivitiesResult.rows,
-    upcomingTasks: upcomingTasksResult.rows,
+    recentActivities,
+    upcomingTasks: upcomingTasksRows,
     timestamp: new Date().toISOString(),
   });
 });

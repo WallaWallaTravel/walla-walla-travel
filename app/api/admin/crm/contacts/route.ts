@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import type { CrmContactSummary, CreateContactData } from '@/types/crm';
 import { withCSRF } from '@/lib/api/middleware/csrf';
@@ -59,7 +59,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
   // Get contacts with summary data
-  const result = await query<CrmContactSummary>(
+  const contacts = await prisma.$queryRawUnsafe<CrmContactSummary[]>(
     `SELECT
       c.*,
       u.name as assigned_user_name,
@@ -76,33 +76,32 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
     GROUP BY c.id, u.name
     ORDER BY c.created_at DESC
     LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
-    [...params, limit, offset]
+    ...params, limit, offset
   );
 
   // Get total count
-  const countResult = await query<{ count: string }>(
+  const countRows = await prisma.$queryRawUnsafe<{ count: string }[]>(
     `SELECT COUNT(*) as count FROM crm_contacts c ${whereClause}`,
-    params
+    ...params
   );
 
-  const total = parseInt(countResult.rows[0]?.count || '0');
+  const total = parseInt(countRows[0]?.count || '0');
 
   // Get counts by lifecycle stage
-  const stageCountsResult = await query<{ lifecycle_stage: string; count: string }>(
+  const stageCounts_rows = await prisma.$queryRawUnsafe<{ lifecycle_stage: string; count: string }[]>(
     `SELECT lifecycle_stage, COUNT(*) as count
      FROM crm_contacts
-     GROUP BY lifecycle_stage`,
-    []
+     GROUP BY lifecycle_stage`
   );
 
-  const stageCounts = stageCountsResult.rows.reduce((acc, row) => {
+  const stageCounts = stageCounts_rows.reduce((acc, row) => {
     acc[row.lifecycle_stage] = parseInt(row.count);
     return acc;
   }, {} as Record<string, number>);
 
   return NextResponse.json({
     success: true,
-    contacts: result.rows,
+    contacts,
     total,
     page,
     limit,
@@ -145,12 +144,12 @@ export const POST = withCSRF(
   }
 
   // Check for duplicate email
-  const existingContact = await query<{ id: number }>(
+  const existingContact = await prisma.$queryRawUnsafe<{ id: number }[]>(
     `SELECT id FROM crm_contacts WHERE email = $1`,
-    [body.email.toLowerCase()]
+    body.email.toLowerCase()
   );
 
-  if (existingContact.rows.length > 0) {
+  if (existingContact.length > 0) {
     throw new BadRequestError('A contact with this email already exists');
   }
 
@@ -176,23 +175,23 @@ export const POST = withCSRF(
 
   const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
 
-  const result = await query(
+  const rows = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
     `INSERT INTO crm_contacts (${fields.join(', ')})
      VALUES (${placeholders})
      RETURNING *`,
-    values
+    ...values
   );
 
   // Log activity
-  await query(
+  await prisma.$queryRawUnsafe(
     `INSERT INTO crm_activities (contact_id, activity_type, subject, performed_by, source_type)
      VALUES ($1, 'system', 'Contact created', $2, 'manual')`,
-    [result.rows[0].id, parseInt(session.userId)]
+    rows[0].id, parseInt(session.userId)
   );
 
   return NextResponse.json({
     success: true,
-    contact: result.rows[0],
+    contact: rows[0],
     timestamp: new Date().toISOString(),
   });
 })

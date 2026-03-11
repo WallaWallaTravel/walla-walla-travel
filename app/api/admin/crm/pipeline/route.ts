@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import type {
   PipelineTemplate,
   PipelineStageSummary,
@@ -18,10 +18,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const brand = searchParams.get('brand');
 
   // Get pipeline templates
-  const templatesResult = await query<PipelineTemplate>(
-    `SELECT * FROM crm_pipeline_templates ORDER BY is_default DESC, name`,
-    []
-  );
+  const templates = await prisma.$queryRaw<PipelineTemplate[]>`SELECT * FROM crm_pipeline_templates ORDER BY is_default DESC, name`;
 
   // Build stage query with optional template filter
   let stageConditions = '';
@@ -36,7 +33,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   }
 
   // Get pipeline stages with deal counts
-  const stagesResult = await query<PipelineStageSummary>(
+  const stages = await prisma.$queryRawUnsafe<PipelineStageSummary[]>(
     `SELECT
       pt.id as template_id,
       pt.name as template_name,
@@ -60,7 +57,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
     ${stageConditions}
     GROUP BY pt.id, pt.name, pt.brand, ps.id, ps.name, ps.sort_order, ps.probability, ps.is_won, ps.is_lost, ps.color, ps.template_id, ps.created_at
     ORDER BY pt.id, ps.sort_order`,
-    stageParams
+    ...stageParams
   );
 
   // Build deal query conditions
@@ -81,7 +78,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const dealWhereClause = `WHERE ${dealConditions.join(' AND ')}`;
 
   // Get active deals for the pipeline
-  const dealsResult = await query<CrmDealWithRelations>(
+  const deals = await prisma.$queryRawUnsafe<CrmDealWithRelations[]>(
     `SELECT
       d.*,
       c.name as contact_name,
@@ -98,7 +95,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
     LEFT JOIN users u ON d.assigned_to = u.id
     ${dealWhereClause}
     ORDER BY d.stage_changed_at DESC`,
-    dealParams
+    ...dealParams
   );
 
   // Get deal types
@@ -112,30 +109,30 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
     dealTypeConditions = 'WHERE is_active = true';
   }
 
-  const dealTypesResult = await query<DealType>(
+  const dealTypes = await prisma.$queryRawUnsafe<DealType[]>(
     `SELECT * FROM crm_deal_types ${dealTypeConditions} ORDER BY sort_order, name`,
-    dealTypeParams
+    ...dealTypeParams
   );
 
   // Calculate totals
-  const totalValue = stagesResult.rows
+  const totalValue = stages
     .filter(s => !s.is_won && !s.is_lost)
     .reduce((sum, s) => sum + parseFloat(String(s.total_value)), 0);
 
-  const weightedValue = stagesResult.rows
+  const weightedValue = stages
     .filter(s => !s.is_won && !s.is_lost)
     .reduce((sum, s) => sum + parseFloat(String(s.weighted_value)), 0);
 
-  const dealCount = stagesResult.rows
+  const dealCount = stages
     .filter(s => !s.is_won && !s.is_lost)
     .reduce((sum, s) => sum + parseInt(String(s.deal_count)), 0);
 
   return NextResponse.json({
     success: true,
-    templates: templatesResult.rows,
-    stages: stagesResult.rows,
-    deals: dealsResult.rows,
-    dealTypes: dealTypesResult.rows,
+    templates,
+    stages,
+    deals,
+    dealTypes,
     summary: {
       totalValue,
       weightedValue,

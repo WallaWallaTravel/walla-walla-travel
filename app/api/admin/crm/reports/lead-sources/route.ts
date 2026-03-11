@@ -6,9 +6,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
-import type { QueryParamValue } from '@/lib/db-helpers';
 
 interface LeadSourceStats {
   source: string;
@@ -36,7 +35,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
 
     // Build date filters
     const dateConditions: string[] = [];
-    const params: QueryParamValue[] = [];
+    const params: (string | number | boolean | null)[] = [];
 
     if (fromDate) {
       params.push(fromDate);
@@ -50,7 +49,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
     const dateWhereClause = dateConditions.length > 0 ? `WHERE ${dateConditions.join(' AND ')}` : '';
 
     // Get lead source summary
-    const summaryResult = await query<LeadSourceStats>(
+    const summaryRows = await prisma.$queryRawUnsafe<LeadSourceStats[]>(
       `SELECT
          COALESCE(source, 'unknown') as source,
          source_detail,
@@ -74,14 +73,14 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
        ${dateWhereClause}
        GROUP BY COALESCE(source, 'unknown'), source_detail
        ORDER BY total_leads DESC`,
-      params
+      ...params
     );
 
     // Get monthly trend data
-    const trendParams: QueryParamValue[] = [...params];
+    const trendParams: (string | number | boolean | null)[] = [...params];
     const trendDateClause = dateWhereClause || 'WHERE created_at >= NOW() - INTERVAL \'12 months\'';
 
-    const trendResult = await query<LeadSourceTrend>(
+    const trendRows = await prisma.$queryRawUnsafe<LeadSourceTrend[]>(
       `SELECT
          TO_CHAR(created_at, 'YYYY-MM') as month,
          COALESCE(source, 'unknown') as source,
@@ -90,17 +89,17 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
        ${trendDateClause}
        GROUP BY TO_CHAR(created_at, 'YYYY-MM'), COALESCE(source, 'unknown')
        ORDER BY month ASC, count DESC`,
-      trendParams
+      ...trendParams
     );
 
     // Get overall summary
-    const overallResult = await query<{
+    const overallRows = await prisma.$queryRawUnsafe<{
       total_contacts: number;
       total_leads: number;
       total_customers: number;
       total_revenue: number;
       overall_conversion_rate: number;
-    }>(
+    }[]>(
       `SELECT
          COUNT(*) as total_contacts,
          COUNT(CASE WHEN lifecycle_stage = 'lead' THEN 1 END) as total_leads,
@@ -113,15 +112,15 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
          ) as overall_conversion_rate
        FROM crm_contacts
        ${dateWhereClause}`,
-      params
+      ...params
     );
 
     // Get top performing sources (by revenue)
-    const topSourcesResult = await query<{
+    const topSourcesRows = await prisma.$queryRawUnsafe<{
       source: string;
       total_revenue: number;
       customers: number;
-    }>(
+    }[]>(
       `SELECT
          COALESCE(source, 'unknown') as source,
          COALESCE(SUM(total_revenue), 0) as total_revenue,
@@ -132,16 +131,16 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
        HAVING SUM(total_revenue) > 0
        ORDER BY total_revenue DESC
        LIMIT 5`,
-      params
+      ...params
     );
 
     return NextResponse.json({
       success: true,
       data: {
-        summary: overallResult.rows[0],
-        by_source: summaryResult.rows,
-        trends: trendResult.rows,
-        top_sources_by_revenue: topSourcesResult.rows,
+        summary: overallRows[0],
+        by_source: summaryRows,
+        trends: trendRows,
+        top_sources_by_revenue: topSourcesRows,
       },
     });
 });

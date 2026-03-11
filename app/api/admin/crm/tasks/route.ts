@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import type { CrmTaskWithRelations, CreateTaskData } from '@/types/crm';
 import { withCSRF } from '@/lib/api/middleware/csrf';
@@ -71,7 +71,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
   // Get tasks with relations
-  const result = await query<CrmTaskWithRelations>(
+  const tasks = await prisma.$queryRawUnsafe<CrmTaskWithRelations[]>(
     `SELECT
       t.*,
       c.name as contact_name,
@@ -89,28 +89,25 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
       CASE WHEN t.status IN ('pending', 'in_progress') AND t.due_date < CURRENT_DATE THEN 0 ELSE 1 END,
       t.due_date ASC,
       CASE t.priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 WHEN 'normal' THEN 2 ELSE 3 END`,
-    params
+    ...params
   );
 
   // Get counts for badges
-  const countsResult = await query<{
+  const countsRows = await prisma.$queryRaw<{
     overdue: string;
     due_today: string;
     upcoming: string;
-  }>(
-    `SELECT
+  }[]>`SELECT
       COUNT(*) FILTER (WHERE due_date < CURRENT_DATE AND status IN ('pending', 'in_progress')) as overdue,
       COUNT(*) FILTER (WHERE due_date = CURRENT_DATE AND status IN ('pending', 'in_progress')) as due_today,
       COUNT(*) FILTER (WHERE due_date > CURRENT_DATE AND due_date <= CURRENT_DATE + INTERVAL '7 days' AND status IN ('pending', 'in_progress')) as upcoming
-    FROM crm_tasks`,
-    []
-  );
+    FROM crm_tasks`;
 
-  const counts = countsResult.rows[0];
+  const counts = countsRows[0];
 
   return NextResponse.json({
     success: true,
-    tasks: result.rows,
+    tasks,
     overdue: parseInt(counts?.overdue || '0'),
     dueToday: parseInt(counts?.due_today || '0'),
     upcoming: parseInt(counts?.upcoming || '0'),
@@ -166,12 +163,12 @@ export const POST = withCSRF(
   // If deal_id is provided but not contact_id, get contact_id from deal
   let contactId = body.contact_id;
   if (body.deal_id && !contactId) {
-    const dealResult = await query<{ contact_id: number }>(
+    const dealRows = await prisma.$queryRawUnsafe<{ contact_id: number }[]>(
       `SELECT contact_id FROM crm_deals WHERE id = $1`,
-      [body.deal_id]
+      body.deal_id
     );
-    if (dealResult.rows.length > 0) {
-      contactId = dealResult.rows[0].contact_id;
+    if (dealRows.length > 0) {
+      contactId = dealRows[0].contact_id;
     }
   }
 
@@ -200,18 +197,18 @@ export const POST = withCSRF(
 
   const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
 
-  const result = await query(
+  const taskRows = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
     `INSERT INTO crm_tasks (${fields.join(', ')})
      VALUES (${placeholders})
      RETURNING *`,
-    values
+    ...values
   );
 
-  const task = result.rows[0];
+  const task = taskRows[0];
 
   // Update contact's next_follow_up_at if this is the earliest pending task
   if (contactId) {
-    await query(
+    await prisma.$queryRawUnsafe(
       `UPDATE crm_contacts
        SET next_follow_up_at = (
          SELECT MIN(due_date)
@@ -219,7 +216,7 @@ export const POST = withCSRF(
          WHERE contact_id = $1 AND status IN ('pending', 'in_progress')
        )
        WHERE id = $1`,
-      [contactId]
+      contactId
     );
   }
 
@@ -284,23 +281,23 @@ export const PATCH = withCSRF(
 
   params.push(taskId);
 
-  const result = await query(
+  const taskRows = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
     `UPDATE crm_tasks
      SET ${updateFields.join(', ')}, updated_at = NOW()
      WHERE id = $${paramIndex}
      RETURNING *`,
-    params
+    ...params
   );
 
-  if (result.rows.length === 0) {
+  if (taskRows.length === 0) {
     throw new BadRequestError('Task not found');
   }
 
-  const task = result.rows[0];
+  const task = taskRows[0];
 
   // Update contact's next_follow_up_at
   if (task.contact_id) {
-    await query(
+    await prisma.$queryRawUnsafe(
       `UPDATE crm_contacts
        SET next_follow_up_at = (
          SELECT MIN(due_date)
@@ -308,7 +305,7 @@ export const PATCH = withCSRF(
          WHERE contact_id = $1 AND status IN ('pending', 'in_progress')
        )
        WHERE id = $1`,
-      [task.contact_id]
+      task.contact_id
     );
   }
 

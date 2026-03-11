@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import type { CrmActivityWithUser, CreateActivityData } from '@/types/crm';
 import { withCSRF } from '@/lib/api/middleware/csrf';
@@ -24,7 +24,7 @@ export const GET = withAdminAuth(async (
   const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
   const offset = parseInt(searchParams.get('offset') || '0');
 
-  const result = await query<CrmActivityWithUser>(
+  const activities = await prisma.$queryRawUnsafe<CrmActivityWithUser[]>(
     `SELECT
       a.*,
       u.name as performed_by_name
@@ -33,18 +33,18 @@ export const GET = withAdminAuth(async (
     WHERE a.contact_id = $1
     ORDER BY a.performed_at DESC
     LIMIT $2 OFFSET $3`,
-    [contactId, limit, offset]
+    contactId, limit, offset
   );
 
-  const countResult = await query<{ count: string }>(
+  const countRows = await prisma.$queryRawUnsafe<{ count: string }[]>(
     `SELECT COUNT(*) as count FROM crm_activities WHERE contact_id = $1`,
-    [contactId]
+    contactId
   );
 
   return NextResponse.json({
     success: true,
-    activities: result.rows,
-    total: parseInt(countResult.rows[0]?.count || '0'),
+    activities,
+    total: parseInt(countRows[0]?.count || '0'),
     timestamp: new Date().toISOString(),
   });
 });
@@ -102,16 +102,16 @@ export const POST = withCSRF(
 
   const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
 
-  const result = await query(
+  const rows = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
     `INSERT INTO crm_activities (${fields.join(', ')})
      VALUES (${placeholders})
      RETURNING *`,
-    values
+    ...values
   );
 
   return NextResponse.json({
     success: true,
-    activity: result.rows[0],
+    activity: rows[0],
     timestamp: new Date().toISOString(),
   });
 })
