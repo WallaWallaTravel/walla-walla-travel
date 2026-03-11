@@ -9,7 +9,7 @@
  * Tokens are stored in the `integrations` table with service = 'google_search_console'.
  */
 
-import { prisma } from '@/lib/prisma';
+import { query } from '@/lib/db';
 import { logger } from '@/lib/logger';
 
 // Google OAuth endpoints
@@ -161,7 +161,7 @@ export async function storeTokens(
   refreshToken: string,
   expiresAt: Date
 ): Promise<void> {
-  await prisma.$executeRawUnsafe(
+  await query(
     `INSERT INTO integrations (service, access_token_encrypted, refresh_token_encrypted, token_expires_at, scopes, is_active)
      VALUES ('google_search_console', $1, $2, $3, $4, true)
      ON CONFLICT (service) DO UPDATE SET
@@ -172,7 +172,7 @@ export async function storeTokens(
        is_active = true,
        last_error = NULL,
        updated_at = NOW()`,
-    accessToken, refreshToken, expiresAt.toISOString(), [SEARCH_CONSOLE_SCOPE]
+    [accessToken, refreshToken, expiresAt.toISOString(), [SEARCH_CONSOLE_SCOPE]]
   );
 }
 
@@ -180,10 +180,10 @@ export async function storeTokens(
  * Retrieve stored integration record
  */
 export async function getIntegration(): Promise<IntegrationRecord | null> {
-  const rows = await prisma.$queryRawUnsafe<IntegrationRecord[]>(
+  const result = await query<IntegrationRecord>(
     `SELECT * FROM integrations WHERE service = 'google_search_console' AND is_active = true`
   );
-  return rows[0] || null;
+  return result.rows[0] || null;
 }
 
 /**
@@ -213,9 +213,9 @@ export async function refreshAccessToken(): Promise<string> {
       error: errorText,
     });
 
-    await prisma.$executeRawUnsafe(
+    await query(
       `UPDATE integrations SET last_error = $1, updated_at = NOW() WHERE service = 'google_search_console'`,
-      `Token refresh failed: ${response.status}`
+      [`Token refresh failed: ${response.status}`]
     );
 
     throw new Error(`Token refresh failed: ${response.status}`);
@@ -395,9 +395,9 @@ export async function syncDailyData(): Promise<{
     const errorMsg = `Search Console sync API error: ${response.status}`;
     logger.error(errorMsg, { error: errorText });
 
-    await prisma.$executeRawUnsafe(
+    await query(
       `UPDATE integrations SET last_error = $1, updated_at = NOW() WHERE service = 'google_search_console'`,
-      errorMsg
+      [errorMsg]
     );
 
     throw new Error(errorMsg);
@@ -414,7 +414,7 @@ export async function syncDailyData(): Promise<{
     const queryText = row.keys[0];
     const pageUrl = row.keys[1];
 
-    await prisma.$executeRawUnsafe(
+    await query(
       `INSERT INTO search_console_data (data_date, page_url, query, impressions, clicks, ctr, position)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        ON CONFLICT (data_date, page_url, COALESCE(query, ''), country, device)
@@ -423,13 +423,15 @@ export async function syncDailyData(): Promise<{
          clicks = $5,
          ctr = $6,
          position = $7`,
-      dateStr,
-      pageUrl,
-      queryText,
-      row.impressions,
-      row.clicks,
-      Math.round(row.ctr * 10000) / 10000,
-      Math.round(row.position * 100) / 100,
+      [
+        dateStr,
+        pageUrl,
+        queryText,
+        row.impressions,
+        row.clicks,
+        Math.round(row.ctr * 10000) / 10000,
+        Math.round(row.position * 100) / 100,
+      ]
     );
 
     queriesStored++;
@@ -461,7 +463,7 @@ export async function syncDailyData(): Promise<{
     for (const row of pageRows) {
       const pageUrl = row.keys[0];
 
-      await prisma.$executeRawUnsafe(
+      await query(
         `INSERT INTO search_console_data (data_date, page_url, query, impressions, clicks, ctr, position)
          VALUES ($1, $2, NULL, $3, $4, $5, $6)
          ON CONFLICT (data_date, page_url, COALESCE(query, ''), country, device)
@@ -470,12 +472,14 @@ export async function syncDailyData(): Promise<{
            clicks = $4,
            ctr = $5,
            position = $6`,
-        dateStr,
-        pageUrl,
-        row.impressions,
-        row.clicks,
-        Math.round(row.ctr * 10000) / 10000,
-        Math.round(row.position * 100) / 100,
+        [
+          dateStr,
+          pageUrl,
+          row.impressions,
+          row.clicks,
+          Math.round(row.ctr * 10000) / 10000,
+          Math.round(row.position * 100) / 100,
+        ]
       );
 
       pagesStored++;
@@ -483,9 +487,9 @@ export async function syncDailyData(): Promise<{
   }
 
   // Update last sync time and clear errors
-  await prisma.$executeRawUnsafe(
+  await query(
     `UPDATE integrations SET last_sync_at = NOW(), last_error = NULL, updated_at = NOW()
-     WHERE service = 'google_search_console'`
+     WHERE service = 'google_search_console'`,
   );
 
   logger.info('Search Console daily sync completed', {

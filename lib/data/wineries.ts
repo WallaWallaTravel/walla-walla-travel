@@ -7,7 +7,7 @@
 
 import { wineryService, Winery, WinerySummary } from '@/lib/services/winery.service';
 import { cache } from 'react';
-import { prisma } from '@/lib/prisma';
+import { query } from '@/lib/db';
 import { logger } from '@/lib/logger';
 
 // ============================================================================
@@ -92,32 +92,34 @@ export const getWineryCount = cache(async (): Promise<number> => {
 export const getWineryNarrativeContent = cache(async (wineryId: number): Promise<WineryNarrativeContent> => {
   try {
     // Get narrative content from winery_content table
-    const contentRows = await prisma.$queryRaw<WineryContent[]>`
-      SELECT content_type, title, content
+    const contentResult = await query<WineryContent>(
+      `SELECT content_type, title, content
        FROM winery_content
-       WHERE winery_id = ${wineryId}
+       WHERE winery_id = $1
          AND content_type IN ('origin_story', 'philosophy', 'unique_story')
          AND LENGTH(content) > 50
-       ORDER BY content_type
-    `;
+       ORDER BY content_type`,
+      [wineryId]
+    );
 
     // Get verified insider tips (prioritize featured, limit to 6)
-    const insiderTips = await prisma.$queryRaw<InsiderTip[]>`
-      SELECT id, tip_type, title, content, is_featured
+    const tipsResult = await query<InsiderTip>(
+      `SELECT id, tip_type, title, content, is_featured
        FROM winery_insider_tips
-       WHERE winery_id = ${wineryId}
+       WHERE winery_id = $1
          AND verified = true
        ORDER BY is_featured DESC, created_at DESC
-       LIMIT 6
-    `;
+       LIMIT 6`,
+      [wineryId]
+    );
 
-    const content = contentRows;
+    const content = contentResult.rows;
 
     return {
       originStory: content.find(c => c.content_type === 'origin_story') || null,
       philosophy: content.find(c => c.content_type === 'philosophy') || null,
       uniqueStory: content.find(c => c.content_type === 'unique_story') || null,
-      insiderTips,
+      insiderTips: tipsResult.rows,
     };
   } catch (error) {
     // Return empty content if query fails (tables may not exist yet)

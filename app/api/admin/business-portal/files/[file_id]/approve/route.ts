@@ -5,11 +5,12 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
+import { query } from '@/lib/db';
 import { z } from 'zod';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 import { auditService } from '@/lib/services/audit.service';
-import { prisma } from '@/lib/prisma';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -23,7 +24,8 @@ const BodySchema = z.object({
   notes: z.string().max(5000).optional(),
 });
 
-export const POST = withAdminAuth(async (
+export const POST = withCSRF(
+  withAdminAuth(async (
   request: NextRequest, session, context
 ) => {
   const { file_id } = await context!.params;
@@ -37,7 +39,7 @@ export const POST = withAdminAuth(async (
   logger.info('Setting file approval', { fileId, approved });
 
   // Update file
-  const result = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
+  const result = await query(
     `UPDATE business_files
      SET
        approved = $1,
@@ -48,24 +50,26 @@ export const POST = withAdminAuth(async (
     [approved, notes || null, fileId]
   );
 
-  if (result.length === 0) {
+  if (result.rows.length === 0) {
     throw new NotFoundError('File not found');
   }
 
-  const file = result[0];
+  const file = result.rows[0];
 
   // Log activity
-  await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
+  await query(
     `INSERT INTO business_activity_log (
       business_id,
       activity_type,
       activity_description,
       metadata
     ) VALUES ($1, $2, $3, $4)`,
+    [
       file.business_id,
       approved ? 'file_approved' : 'file_rejected',
       `File ${file.original_filename} ${approved ? 'approved' : 'rejected'}`,
       JSON.stringify({ file_id: fileId, notes })
+    ]
   );
 
   logger.info('File approval updated successfully', { fileId });
@@ -83,4 +87,5 @@ export const POST = withAdminAuth(async (
     success: true,
     file
   });
-});
+})
+);

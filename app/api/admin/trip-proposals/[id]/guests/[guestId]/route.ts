@@ -7,7 +7,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
-import { prisma } from '@/lib/prisma';
+import { queryOne, QueryParamValue } from '@/lib/db-helpers';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 import { z } from 'zod';
 import { auditService } from '@/lib/services/audit.service';
 
@@ -33,7 +34,8 @@ const PatchBodySchema = z.object({
  * PATCH /api/admin/trip-proposals/[id]/guests/[guestId]
  * Update a guest's fields
  */
-export const PATCH = withAdminAuth(async (request: NextRequest, session, context) => {
+export const PATCH = withCSRF(
+  withAdminAuth(async (request: NextRequest, session, context) => {
   const { id, guestId } = await (context as unknown as RouteParams).params;
   const proposalId = parseInt(id, 10);
   const guestIdNum = parseInt(guestId, 10);
@@ -49,13 +51,13 @@ export const PATCH = withAdminAuth(async (request: NextRequest, session, context
 
   // Build SET clauses from allowed fields
   const setClauses: string[] = [];
-  const values: unknown[] = [];
+  const values: QueryParamValue[] = [];
   let paramIndex = 1;
 
   for (const field of ALLOWED_FIELDS) {
     if (field in body) {
       setClauses.push(`${field} = $${paramIndex}`);
-      values.push(body[field]);
+      values.push(body[field] as QueryParamValue);
       paramIndex++;
     }
   }
@@ -71,23 +73,25 @@ export const PATCH = withAdminAuth(async (request: NextRequest, session, context
   values.push(guestIdNum, proposalId);
 
   const sql = `UPDATE trip_proposal_guests SET ${setClauses.join(', ')} WHERE id = $${paramIndex} AND trip_proposal_id = $${paramIndex + 1} RETURNING *`;
-  const result = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(sql, ...values);
+  const result = await queryOne(sql, values);
 
-  if (result.length === 0) {
+  if (!result) {
     return NextResponse.json(
       { success: false, error: 'Guest not found' },
       { status: 404 }
     );
   }
 
-  return NextResponse.json({ success: true, data: result[0] });
-});
+  return NextResponse.json({ success: true, data: result });
+})
+);
 
 /**
  * DELETE /api/admin/trip-proposals/[id]/guests/[guestId]
  * Delete a guest
  */
-export const DELETE = withAdminAuth(async (request: NextRequest, session, context) => {
+export const DELETE = withCSRF(
+  withAdminAuth(async (request: NextRequest, session, context) => {
   const { id, guestId } = await (context as unknown as RouteParams).params;
   const proposalId = parseInt(id, 10);
   const guestIdNum = parseInt(guestId, 10);
@@ -111,4 +115,5 @@ export const DELETE = withAdminAuth(async (request: NextRequest, session, contex
     success: true,
     message: 'Guest deleted successfully',
   });
-});
+})
+);

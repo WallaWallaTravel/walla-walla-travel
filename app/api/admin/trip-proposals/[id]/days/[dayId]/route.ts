@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import { AddDaySchema } from '@/lib/types/trip-proposal';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 import { auditService } from '@/lib/services/audit.service';
 
 interface RouteParams {
@@ -18,7 +19,8 @@ interface RouteParams {
  * PATCH /api/admin/trip-proposals/[id]/days/[dayId]
  * Update a day
  */
-export const PATCH = withAdminAuth(async (request: NextRequest, session, context) => {
+export const PATCH = withCSRF(
+  withAdminAuth(async (request: NextRequest, session, context) => {
   const { dayId } = await (context as unknown as RouteParams).params;
   const dayIdNum = parseInt(dayId, 10);
 
@@ -50,13 +52,15 @@ export const PATCH = withAdminAuth(async (request: NextRequest, session, context
     data: day,
     message: 'Day updated successfully',
   });
-});
+})
+);
 
 /**
  * DELETE /api/admin/trip-proposals/[id]/days/[dayId]
  * Delete a day and all its stops
  */
-export const DELETE = withAdminAuth(async (request: NextRequest, session, context) => {
+export const DELETE = withCSRF(
+  withAdminAuth(async (request: NextRequest, session, context) => {
   const { id, dayId } = await (context as unknown as RouteParams).params;
   const dayIdNum = parseInt(dayId, 10);
 
@@ -79,4 +83,5 @@ export const DELETE = withAdminAuth(async (request: NextRequest, session, contex
     success: true,
     message: 'Day deleted successfully',
   });
-});
+})
+);

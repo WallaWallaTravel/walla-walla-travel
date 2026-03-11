@@ -8,14 +8,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth, type AuthSession, type RouteContext } from '@/lib/api/middleware/auth-wrapper';
 import { NotFoundError, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { lunchSupplierService } from '@/lib/services/lunch-supplier.service';
-import { prisma } from '@/lib/prisma';
+import { query } from '@/lib/db';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 import { z } from 'zod';
 
 const PatchBodySchema = z.object({
   ordering_mode: z.enum(['coordinator', 'individual']).optional(),
 });
 
-export const PATCH =
+export const PATCH = withCSRF(
   withAdminAuth(
   async (request: NextRequest, _session: AuthSession, context?: RouteContext) => {
     const { orderId } = await context!.params;
@@ -54,21 +55,22 @@ export const PATCH =
 
     setClauses.push('updated_at = NOW()');
 
-    const rows = await prisma.$queryRawUnsafe<Array<Record<string, unknown>>>(
+    const result = await query(
       `UPDATE proposal_lunch_orders
        SET ${setClauses.join(', ')}
        WHERE id = $${paramIndex}
        RETURNING *`,
-      ...values, orderIdNum
+      [...values, orderIdNum]
     );
 
-    if (!rows[0]) {
+    if (!result.rows[0]) {
       throw new NotFoundError('Lunch order not found');
     }
 
     return NextResponse.json({
       success: true,
-      data: rows[0],
+      data: result.rows[0],
     });
   }
+)
 );

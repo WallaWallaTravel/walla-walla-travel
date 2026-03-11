@@ -7,7 +7,7 @@
  */
 
 import { hashPassword } from '../../lib/auth/passwords';
-import { prisma } from '../../lib/prisma';
+import { query } from '../../lib/db';
 
 async function createTestUsers() {
   console.log('🔐 Creating test users...\n');
@@ -20,33 +20,35 @@ async function createTestUsers() {
     
     // Create admin user
     console.log('\n1️⃣  Creating admin user...');
-    const adminRows = await prisma.$queryRaw<Array<{ id: number; email: string; name: string; role: string }>>`
-      INSERT INTO users (email, name, password_hash, role, is_active, created_at, updated_at)
-       VALUES (${'admin@wallawalla.travel'}, ${'Admin User'}, ${adminPassword}, ${'admin'}, ${true}, NOW(), NOW())
-       ON CONFLICT (email) DO UPDATE
+    const adminResult = await query(
+      `INSERT INTO users (email, name, password_hash, role, is_active, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+       ON CONFLICT (email) DO UPDATE 
        SET password_hash = EXCLUDED.password_hash,
            role = EXCLUDED.role,
            is_active = EXCLUDED.is_active
-       RETURNING id, email, name, role
-    `;
-
-    console.log('✅ Admin created:', adminRows[0]);
+       RETURNING id, email, name, role`,
+      ['admin@wallawalla.travel', 'Admin User', adminPassword, 'admin', true]
+    );
+    
+    console.log('✅ Admin created:', adminResult.rows[0]);
     console.log('   📧 Email: admin@wallawalla.travel');
     console.log('   🔑 Password: Admin123!');
     
     // Create driver user
     console.log('\n2️⃣  Creating driver user...');
-    const driverRows = await prisma.$queryRaw<Array<{ id: number; email: string; name: string; role: string }>>`
-      INSERT INTO users (email, name, password_hash, role, is_active, created_at, updated_at)
-       VALUES (${'driver@wallawalla.travel'}, ${'John Driver'}, ${driverPassword}, ${'driver'}, ${true}, NOW(), NOW())
-       ON CONFLICT (email) DO UPDATE
+    const driverResult = await query(
+      `INSERT INTO users (email, name, password_hash, role, is_active, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+       ON CONFLICT (email) DO UPDATE 
        SET password_hash = EXCLUDED.password_hash,
            role = EXCLUDED.role,
            is_active = EXCLUDED.is_active
-       RETURNING id, email, name, role
-    `;
-
-    console.log('✅ Driver created:', driverRows[0]);
+       RETURNING id, email, name, role`,
+      ['driver@wallawalla.travel', 'John Driver', driverPassword, 'driver', true]
+    );
+    
+    console.log('✅ Driver created:', driverResult.rows[0]);
     console.log('   📧 Email: driver@wallawalla.travel');
     console.log('   🔑 Password: Driver123!');
     

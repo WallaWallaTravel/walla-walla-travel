@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { query } from '@/lib/db';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
 import {
   uploadFile,
@@ -58,12 +58,9 @@ export const POST = withCSRF(
   // Parse tags
   const tagsArray = tags ? tags.split(',').map((t) => t.trim()) : [];
 
-  const finalTitle = title || file.name;
-  const finalAltText = alt_text || title || file.name;
-
   // Save to database
-  const result = await prisma.$queryRaw<Array<Record<string, unknown>>>`
-    INSERT INTO media_library (
+  const result = await query(
+    `INSERT INTO media_library (
       file_name,
       file_path,
       file_type,
@@ -76,25 +73,27 @@ export const POST = withCSRF(
       alt_text,
       tags,
       is_hero
-    ) VALUES (
-      ${file.name},
-      ${uploadResult.publicUrl},
-      ${fileType},
-      ${file.size},
-      ${file.type},
-      ${category},
-      ${subcategory},
-      ${finalTitle},
-      ${description},
-      ${finalAltText},
-      ${tagsArray},
-      ${is_hero}
-    )
-    RETURNING *`;
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+    RETURNING *`,
+    [
+      file.name,
+      uploadResult.publicUrl, // Store the full public URL from Supabase
+      fileType,
+      file.size,
+      file.type,
+      category,
+      subcategory,
+      title || file.name,
+      description,
+      alt_text || title || file.name,
+      tagsArray,
+      is_hero,
+    ]
+  );
 
   return NextResponse.json({
     success: true,
-    data: result[0],
+    data: result.rows[0],
     message: 'File uploaded successfully',
   });
 })

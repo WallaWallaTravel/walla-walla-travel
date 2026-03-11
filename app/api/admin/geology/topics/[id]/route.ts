@@ -3,9 +3,10 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import {
   NotFoundError,
 } from '@/lib/api/middleware/error-handler';
+import { query } from '@/lib/db';
 import { z } from 'zod';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 import { auditService } from '@/lib/services/audit.service';
-import { prisma } from '@/lib/prisma';
 
 // ============================================================================
 // Validation
@@ -59,14 +60,14 @@ export const GET = withAdminAuth(
       throw new NotFoundError('Invalid topic ID');
     }
 
-    const result = await prisma.$queryRawUnsafe<Record<string, unknown>[]>('SELECT * FROM geology_topics WHERE id = $1', [topicId]);
+    const result = await query('SELECT * FROM geology_topics WHERE id = $1', [topicId]);
 
-    if (result.length === 0) {
+    if (result.rows.length === 0) {
       throw new NotFoundError('Topic not found');
     }
 
     // Also get related facts
-    const factsResult = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
+    const factsResult = await query(
       'SELECT * FROM geology_facts WHERE topic_id = $1 ORDER BY display_order ASC',
       [topicId]
     );
@@ -74,8 +75,8 @@ export const GET = withAdminAuth(
     return NextResponse.json({
       success: true,
       data: {
-        topic: result[0],
-        relatedFacts: factsResult,
+        topic: result.rows[0],
+        relatedFacts: factsResult.rows,
       },
     });
   }
@@ -85,7 +86,8 @@ export const GET = withAdminAuth(
 // PUT /api/admin/geology/topics/[id] - Update a topic
 // ============================================================================
 
-export const PUT = withAdminAuth(
+export const PUT = withCSRF(
+  withAdminAuth(
   async (request: NextRequest, _session, context) => {
     const { id } = await context!.params;
     const topicId = parseInt(id);
@@ -140,27 +142,29 @@ export const PUT = withAdminAuth(
 
     values.push(topicId);
 
-    const result = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
+    const result = await query(
       `UPDATE geology_topics SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
-      ...values
+      values
     );
 
-    if (result.length === 0) {
+    if (result.rows.length === 0) {
       throw new NotFoundError('Topic not found');
     }
 
     return NextResponse.json({
       success: true,
-      data: result[0],
+      data: result.rows[0],
     });
   }
+)
 );
 
 // ============================================================================
 // DELETE /api/admin/geology/topics/[id] - Delete a topic
 // ============================================================================
 
-export const DELETE = withAdminAuth(
+export const DELETE = withCSRF(
+  withAdminAuth(
   async (request: NextRequest, session, context) => {
     const { id } = await context!.params;
     const topicId = parseInt(id);
@@ -169,9 +173,9 @@ export const DELETE = withAdminAuth(
       throw new NotFoundError('Invalid topic ID');
     }
 
-    const result = await prisma.$queryRawUnsafe<Record<string, unknown>[]>('DELETE FROM geology_topics WHERE id = $1 RETURNING id', [topicId]);
+    const result = await query('DELETE FROM geology_topics WHERE id = $1 RETURNING id', [topicId]);
 
-    if (result.length === 0) {
+    if (result.rows.length === 0) {
       throw new NotFoundError('Topic not found');
     }
 
@@ -185,4 +189,5 @@ export const DELETE = withAdminAuth(
       message: 'Topic deleted',
     });
   }
+)
 );

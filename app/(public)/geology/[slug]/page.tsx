@@ -4,11 +4,11 @@
  * Public page displaying a single geology topic/article.
  */
 
+import { query } from '@/lib/db';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { BreadcrumbJsonLd } from '@/components/seo/BreadcrumbJsonLd';
-import { prisma } from '@/lib/prisma';
 // Lightweight server-safe HTML sanitizer (avoids isomorphic-dompurify/JSDOM
 // which can fail in Vercel serverless). Content is admin-authored from our DB.
 function stripHtmlTags(input: string): string {
@@ -62,12 +62,14 @@ interface PageProps {
 
 async function getTopic(slug: string): Promise<Topic | null> {
   try {
-    const result = await prisma.$queryRawUnsafe<Topic[]>(
+    const result = await query<Topic>(
       `SELECT id, slug, title, subtitle, content, excerpt, topic_type, difficulty,
               hero_image_url, sources, author_name, verified, created_at, updated_at
        FROM geology_topics
-       WHERE slug = $1 AND is_published = true`, slug);
-    return result[0] || null;
+       WHERE slug = $1 AND is_published = true`,
+      [slug]
+    );
+    return result.rows[0] || null;
   } catch {
     return null;
   }
@@ -75,15 +77,17 @@ async function getTopic(slug: string): Promise<Topic | null> {
 
 async function getRelatedTopics(topicId: number, topicType: string): Promise<RelatedTopic[]> {
   try {
-    const result = await prisma.$queryRawUnsafe<RelatedTopic[]>(
+    const result = await query<RelatedTopic>(
       `SELECT id, slug, title, topic_type
        FROM geology_topics
        WHERE is_published = true AND id != $1
        ORDER BY
          CASE WHEN topic_type = $2 THEN 0 ELSE 1 END,
          display_order ASC
-       LIMIT 3`, topicId, topicType);
-    return result;
+       LIMIT 3`,
+      [topicId, topicType]
+    );
+    return result.rows;
   } catch {
     return [];
   }
@@ -91,12 +95,14 @@ async function getRelatedTopics(topicId: number, topicType: string): Promise<Rel
 
 async function getTopicFacts(topicId: number): Promise<Fact[]> {
   try {
-    const result = await prisma.$queryRawUnsafe<Fact[]>(
+    const result = await query<Fact>(
       `SELECT id, fact_text, fact_type
        FROM geology_facts
        WHERE topic_id = $1
-       ORDER BY display_order ASC`, topicId);
-    return result;
+       ORDER BY display_order ASC`,
+      [topicId]
+    );
+    return result.rows;
   } catch {
     return [];
   }

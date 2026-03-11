@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/prisma-query'
+import { query } from '@/lib/db-helpers';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 
 interface SiteRow {

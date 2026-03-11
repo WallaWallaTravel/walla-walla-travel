@@ -9,9 +9,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import Anthropic from '@anthropic-ai/sdk'
-import { query } from '@/lib/prisma-query'
+import { query } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 const PostBodySchema = z.object({
   title: z.string().min(1).max(255),
@@ -108,7 +109,8 @@ function estimateReadTime(wordCount: number): number {
   return Math.max(1, Math.ceil(wordCount / 250))
 }
 
-export const POST = withAdminAuth(async (request: NextRequest, _session) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest, _session) => {
   const body = PostBodySchema.parse(await request.json())
   const { title, targetKeywords, category, tone, wordCountTarget } = body
 
@@ -256,6 +258,8 @@ The article should be well-structured, informative, and optimized for the target
     draft: result.rows[0],
   })
 })
+);
+
 export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const { searchParams } = new URL(request.url)
   const status = searchParams.get('status')
@@ -315,7 +319,8 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   })
 });
 
-export const PATCH = withAdminAuth(async (request: NextRequest, _session) => {
+export const PATCH = withCSRF(
+  withAdminAuth(async (request: NextRequest, _session) => {
   const body = PatchBodySchema.parse(await request.json())
   const { id, status } = body
 
@@ -356,3 +361,4 @@ export const PATCH = withAdminAuth(async (request: NextRequest, _session) => {
     draft: result.rows[0],
   })
 })
+);

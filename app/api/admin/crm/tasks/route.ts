@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
-import { prisma } from '@/lib/prisma';
+import { query } from '@/lib/db';
 import { z } from 'zod';
 import type { CrmTaskWithRelations, CreateTaskData } from '@/types/crm';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * GET /api/admin/crm/tasks
@@ -70,7 +71,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
   // Get tasks with relations
-  const tasks = await prisma.$queryRawUnsafe<CrmTaskWithRelations[]>(
+  const result = await query<CrmTaskWithRelations>(
     `SELECT
       t.*,
       c.name as contact_name,
@@ -88,26 +89,28 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
       CASE WHEN t.status IN ('pending', 'in_progress') AND t.due_date < CURRENT_DATE THEN 0 ELSE 1 END,
       t.due_date ASC,
       CASE t.priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 WHEN 'normal' THEN 2 ELSE 3 END`,
-    ...params
+    params
   );
 
   // Get counts for badges
-  const countsResult = await prisma.$queryRaw<{
+  const countsResult = await query<{
     overdue: string;
     due_today: string;
     upcoming: string;
-  }[]>`
-    SELECT
+  }>(
+    `SELECT
       COUNT(*) FILTER (WHERE due_date < CURRENT_DATE AND status IN ('pending', 'in_progress')) as overdue,
       COUNT(*) FILTER (WHERE due_date = CURRENT_DATE AND status IN ('pending', 'in_progress')) as due_today,
       COUNT(*) FILTER (WHERE due_date > CURRENT_DATE AND due_date <= CURRENT_DATE + INTERVAL '7 days' AND status IN ('pending', 'in_progress')) as upcoming
-    FROM crm_tasks`;
+    FROM crm_tasks`,
+    []
+  );
 
-  const counts = countsResult[0];
+  const counts = countsResult.rows[0];
 
   return NextResponse.json({
     success: true,
-    tasks,
+    tasks: result.rows,
     overdue: parseInt(counts?.overdue || '0'),
     dueToday: parseInt(counts?.due_today || '0'),
     upcoming: parseInt(counts?.upcoming || '0'),
@@ -146,7 +149,8 @@ const PatchBodySchema = z.object({
  * POST /api/admin/crm/tasks
  * Create a new CRM task
  */
-export const POST = withAdminAuth(async (request: NextRequest, session) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest, session) => {
   const body = PostBodySchema.parse(await request.json()) as CreateTaskData;
 
   // Validate required fields
@@ -162,10 +166,12 @@ export const POST = withAdminAuth(async (request: NextRequest, session) => {
   // If deal_id is provided but not contact_id, get contact_id from deal
   let contactId = body.contact_id;
   if (body.deal_id && !contactId) {
-    const dealRows = await prisma.$queryRaw<{ contact_id: number }[]>`
-      SELECT contact_id FROM crm_deals WHERE id = ${body.deal_id}`;
-    if (dealRows.length > 0) {
-      contactId = dealRows[0].contact_id;
+    const dealResult = await query<{ contact_id: number }>(
+      `SELECT contact_id FROM crm_deals WHERE id = $1`,
+      [body.deal_id]
+    );
+    if (dealResult.rows.length > 0) {
+      contactId = dealResult.rows[0].contact_id;
     }
   }
 
@@ -194,25 +200,27 @@ export const POST = withAdminAuth(async (request: NextRequest, session) => {
 
   const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
 
-  const rows = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
+  const result = await query(
     `INSERT INTO crm_tasks (${fields.join(', ')})
      VALUES (${placeholders})
      RETURNING *`,
-    ...values
+    values
   );
 
-  const task = rows[0];
+  const task = result.rows[0];
 
   // Update contact's next_follow_up_at if this is the earliest pending task
   if (contactId) {
-    await prisma.$executeRaw`
-      UPDATE crm_contacts
+    await query(
+      `UPDATE crm_contacts
        SET next_follow_up_at = (
          SELECT MIN(due_date)
          FROM crm_tasks
-         WHERE contact_id = ${contactId} AND status IN ('pending', 'in_progress')
+         WHERE contact_id = $1 AND status IN ('pending', 'in_progress')
        )
-       WHERE id = ${contactId}`;
+       WHERE id = $1`,
+      [contactId]
+    );
   }
 
   return NextResponse.json({
@@ -220,13 +228,15 @@ export const POST = withAdminAuth(async (request: NextRequest, session) => {
     task,
     timestamp: new Date().toISOString(),
   });
-});
+})
+);
 
 /**
  * PATCH /api/admin/crm/tasks
  * Update a task (complete, reschedule, etc.)
  */
-export const PATCH = withAdminAuth(async (request: NextRequest, session) => {
+export const PATCH = withCSRF(
+  withAdminAuth(async (request: NextRequest, session) => {
   const body = PatchBodySchema.parse(await request.json());
   const { taskId, status, completion_notes, ...updates } = body;
 
@@ -274,30 +284,32 @@ export const PATCH = withAdminAuth(async (request: NextRequest, session) => {
 
   params.push(taskId);
 
-  const rows = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
+  const result = await query(
     `UPDATE crm_tasks
      SET ${updateFields.join(', ')}, updated_at = NOW()
      WHERE id = $${paramIndex}
      RETURNING *`,
-    ...params
+    params
   );
 
-  if (rows.length === 0) {
+  if (result.rows.length === 0) {
     throw new BadRequestError('Task not found');
   }
 
-  const task = rows[0];
+  const task = result.rows[0];
 
   // Update contact's next_follow_up_at
   if (task.contact_id) {
-    await prisma.$executeRaw`
-      UPDATE crm_contacts
+    await query(
+      `UPDATE crm_contacts
        SET next_follow_up_at = (
          SELECT MIN(due_date)
          FROM crm_tasks
-         WHERE contact_id = ${task.contact_id} AND status IN ('pending', 'in_progress')
+         WHERE contact_id = $1 AND status IN ('pending', 'in_progress')
        )
-       WHERE id = ${task.contact_id}`;
+       WHERE id = $1`,
+      [task.contact_id]
+    );
   }
 
   return NextResponse.json({
@@ -305,4 +317,5 @@ export const PATCH = withAdminAuth(async (request: NextRequest, session) => {
     task,
     timestamp: new Date().toISOString(),
   });
-});
+})
+);

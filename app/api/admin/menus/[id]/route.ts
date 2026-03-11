@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
-import { prisma } from '@/lib/prisma';
+import { withCSRF } from '@/lib/api/middleware/csrf';
+import { query } from '@/lib/db';
 import { z } from 'zod';
 import { validateBody } from '@/lib/api/middleware/validation';
 import type { RouteContext } from '@/lib/api/middleware/auth-wrapper';
@@ -23,36 +24,51 @@ const UpdateMenuSchema = z.object({
 });
 
 // PUT /api/admin/menus/[id] — update menu and replace items
-export const PUT =
+export const PUT = withCSRF(
   withAdminAuth(async (request, _session, context?: RouteContext) => {
     const { id } = await context!.params;
     const menuId = parseInt(id);
     const data = await validateBody(request, UpdateMenuSchema);
 
     // Check menu exists
-    const existing = await prisma.$queryRaw<Array<{ id: number }>>`
-      SELECT id FROM saved_menus WHERE id = ${menuId} AND is_active = true`;
-    if (existing.length === 0) {
+    const existing = await query(
+      `SELECT id FROM saved_menus WHERE id = $1 AND is_active = true`,
+      [menuId]
+    );
+    if (existing.rows.length === 0) {
       return NextResponse.json({ success: false, error: 'Menu not found' }, { status: 404 });
     }
 
     // Update menu
-    await prisma.$executeRaw`
-      UPDATE saved_menus SET name = ${data.name}, supplier_id = ${data.supplier_id || null} WHERE id = ${menuId}`;
+    await query(
+      `UPDATE saved_menus SET name = $1, supplier_id = $2 WHERE id = $3`,
+      [data.name, data.supplier_id || null, menuId]
+    );
 
     // Replace items: delete old, insert new
-    await prisma.$executeRaw`DELETE FROM saved_menu_items WHERE saved_menu_id = ${menuId}`;
+    await query(`DELETE FROM saved_menu_items WHERE saved_menu_id = $1`, [menuId]);
 
     for (let i = 0; i < data.items.length; i++) {
       const item = data.items[i];
-      await prisma.$executeRaw`
-        INSERT INTO saved_menu_items (saved_menu_id, category, name, description, price, dietary_tags, is_available, sort_order)
-         VALUES (${menuId}, ${item.category || null}, ${item.name}, ${item.description || null}, ${item.price}, ${item.dietary_tags || []}, ${item.is_available !== false}, ${item.sort_order ?? i})`;
+      await query(
+        `INSERT INTO saved_menu_items (saved_menu_id, category, name, description, price, dietary_tags, is_available, sort_order)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [
+          menuId,
+          item.category || null,
+          item.name,
+          item.description || null,
+          item.price,
+          item.dietary_tags || [],
+          item.is_available !== false,
+          item.sort_order ?? i,
+        ]
+      );
     }
 
     // Fetch updated menu
-    const fullRows = await prisma.$queryRaw<Array<Record<string, unknown>>>`
-      SELECT sm.*,
+    const fullResult = await query(
+      `SELECT sm.*,
          COALESCE(
            json_agg(
              json_build_object(
@@ -65,24 +81,30 @@ export const PUT =
          ) AS items
        FROM saved_menus sm
        LEFT JOIN saved_menu_items smi ON smi.saved_menu_id = sm.id
-       WHERE sm.id = ${menuId}
-       GROUP BY sm.id`;
+       WHERE sm.id = $1
+       GROUP BY sm.id`,
+      [menuId]
+    );
 
-    return NextResponse.json({ success: true, data: fullRows[0] });
-  });
+    return NextResponse.json({ success: true, data: fullResult.rows[0] });
+  })
+);
 
 // DELETE /api/admin/menus/[id] — soft delete
-export const DELETE =
+export const DELETE = withCSRF(
   withAdminAuth(async (_request, _session, context?: RouteContext) => {
     const { id } = await context!.params;
     const menuId = parseInt(id);
 
-    const rows = await prisma.$queryRaw<Array<{ id: number }>>`
-      UPDATE saved_menus SET is_active = false WHERE id = ${menuId} AND is_active = true RETURNING id`;
+    const result = await query(
+      `UPDATE saved_menus SET is_active = false WHERE id = $1 AND is_active = true RETURNING id`,
+      [menuId]
+    );
 
-    if (rows.length === 0) {
+    if (result.rows.length === 0) {
       return NextResponse.json({ success: false, error: 'Menu not found' }, { status: 404 });
     }
 
     return NextResponse.json({ success: true });
-  });
+  })
+);

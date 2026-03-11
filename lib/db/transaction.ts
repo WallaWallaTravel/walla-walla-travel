@@ -1,26 +1,29 @@
 /**
  * Database Transaction Helper
  *
- * Provides safe transaction management using Prisma.
- * Wraps prisma.$transaction() for backward compatibility with
- * code that uses the callback-based transaction pattern.
+ * Provides safe transaction management with automatic rollback on error.
+ * Uses pool.connect() to ensure all queries in a transaction run on the
+ * same dedicated connection (not random pool connections).
  */
 
-import { prisma } from '@/lib/prisma';
-import { Prisma } from '@prisma/client';
+import { pool, query } from '@/lib/db';
+import type { QueryResult, QueryResultRow } from 'pg';
 
 // ============================================================================
 // Transaction Callback Type
 // ============================================================================
 
-/**
- * A query function that accepts SQL text and params, returns { rows: T[] }.
- * This preserves backward compatibility with code that used the old
- * pool-based query function inside transactions.
- */
-type TransactionQueryFn = <T = unknown>(text: string, params?: unknown[]) => Promise<{ rows: T[]; rowCount: number }>;
+export type TransactionCallback<T> = (client: typeof query) => Promise<T>;
 
-export type TransactionCallback<T> = (client: TransactionQueryFn) => Promise<T>;
+/**
+ * Create a query function wrapper around a PoolClient that matches
+ * the signature of the pool-level query function.
+ */
+function createClientQuery(client: { query: <T extends QueryResultRow>(text: string, params?: unknown[]) => Promise<QueryResult<T>> }) {
+  return async function clientQuery<T = unknown>(text: string, params?: unknown[]): Promise<QueryResult<T & QueryResultRow>> {
+    return client.query<T & QueryResultRow>(text, params);
+  };
+}
 
 // ============================================================================
 // withTransaction - Execute operations in a transaction
@@ -29,42 +32,19 @@ export type TransactionCallback<T> = (client: TransactionQueryFn) => Promise<T>;
 export async function withTransaction<T>(
   callback: TransactionCallback<T>
 ): Promise<T> {
-  return prisma.$transaction(async (tx) => {
-    // Create a query function that wraps prisma raw queries
-    // to match the old { rows: T[] } interface
-    const queryFn: TransactionQueryFn = async <R = unknown>(text: string, params?: unknown[]) => {
-      if (text.trim().toUpperCase().startsWith('SELECT')) {
-        const rows = await tx.$queryRawUnsafe<R[]>(text, ...(params || []));
-        return { rows, rowCount: rows.length };
-      } else {
-        const count = await tx.$executeRawUnsafe(text, ...(params || []));
-        // For INSERT/UPDATE/DELETE with RETURNING, use queryRawUnsafe
-        if (text.toUpperCase().includes('RETURNING')) {
-          const rows = await tx.$queryRawUnsafe<R[]>(text, ...(params || []));
-          return { rows, rowCount: rows.length };
-        }
-        return { rows: [] as R[], rowCount: count };
-      }
-    };
-
-    // Re-implement: for RETURNING queries, we actually need to always use queryRawUnsafe
-    // The above logic double-executes for RETURNING. Let's fix:
-    const smartQueryFn: TransactionQueryFn = async <R = unknown>(text: string, params?: unknown[]) => {
-      const trimmed = text.trim().toUpperCase();
-      const hasReturning = trimmed.includes('RETURNING');
-      const isSelect = trimmed.startsWith('SELECT');
-
-      if (isSelect || hasReturning) {
-        const rows = await tx.$queryRawUnsafe<R[]>(text, ...(params || []));
-        return { rows, rowCount: rows.length };
-      } else {
-        const count = await tx.$executeRawUnsafe(text, ...(params || []));
-        return { rows: [] as R[], rowCount: count };
-      }
-    };
-
-    return callback(smartQueryFn);
-  });
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const clientQuery = createClientQuery(client) as typeof query;
+    const result = await callback(clientQuery);
+    await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 // ============================================================================
@@ -77,36 +57,23 @@ export type IsolationLevel =
   | 'REPEATABLE READ'
   | 'SERIALIZABLE';
 
-const isolationLevelMap: Record<IsolationLevel, Prisma.TransactionIsolationLevel> = {
-  'READ UNCOMMITTED': Prisma.TransactionIsolationLevel.ReadUncommitted,
-  'READ COMMITTED': Prisma.TransactionIsolationLevel.ReadCommitted,
-  'REPEATABLE READ': Prisma.TransactionIsolationLevel.RepeatableRead,
-  'SERIALIZABLE': Prisma.TransactionIsolationLevel.Serializable,
-};
-
 export async function withTransactionIsolation<T>(
   callback: TransactionCallback<T>,
   isolationLevel: IsolationLevel = 'READ COMMITTED'
 ): Promise<T> {
-  return prisma.$transaction(async (tx) => {
-    const smartQueryFn: TransactionQueryFn = async <R = unknown>(text: string, params?: unknown[]) => {
-      const trimmed = text.trim().toUpperCase();
-      const hasReturning = trimmed.includes('RETURNING');
-      const isSelect = trimmed.startsWith('SELECT');
-
-      if (isSelect || hasReturning) {
-        const rows = await tx.$queryRawUnsafe<R[]>(text, ...(params || []));
-        return { rows, rowCount: rows.length };
-      } else {
-        const count = await tx.$executeRawUnsafe(text, ...(params || []));
-        return { rows: [] as R[], rowCount: count };
-      }
-    };
-
-    return callback(smartQueryFn);
-  }, {
-    isolationLevel: isolationLevelMap[isolationLevel],
-  });
+  const client = await pool.connect();
+  try {
+    await client.query(`BEGIN ISOLATION LEVEL ${isolationLevel}`);
+    const clientQuery = createClientQuery(client) as typeof query;
+    const result = await callback(clientQuery);
+    await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 // ============================================================================
@@ -117,30 +84,17 @@ export async function withSavepoint<T>(
   savepointName: string,
   callback: TransactionCallback<T>
 ): Promise<T> {
-  // Prisma doesn't directly support savepoints, but we can use raw SQL
-  // Note: This must be called within an existing transaction context
-  const queryFn: TransactionQueryFn = async <R = unknown>(text: string, params?: unknown[]) => {
-    const trimmed = text.trim().toUpperCase();
-    const hasReturning = trimmed.includes('RETURNING');
-    const isSelect = trimmed.startsWith('SELECT');
-
-    if (isSelect || hasReturning) {
-      const rows = await prisma.$queryRawUnsafe<R[]>(text, ...(params || []));
-      return { rows, rowCount: rows.length };
-    } else {
-      const count = await prisma.$executeRawUnsafe(text, ...(params || []));
-      return { rows: [] as R[], rowCount: count };
-    }
-  };
-
-  await prisma.$executeRawUnsafe(`SAVEPOINT ${savepointName}`);
+  // Create savepoint
+  await query(`SAVEPOINT ${savepointName}`, []);
 
   try {
-    const result = await callback(queryFn);
-    await prisma.$executeRawUnsafe(`RELEASE SAVEPOINT ${savepointName}`);
+    const result = await callback(query);
+    // Release savepoint (optional, will auto-release on commit)
+    await query(`RELEASE SAVEPOINT ${savepointName}`, []);
     return result;
   } catch (error) {
-    await prisma.$executeRawUnsafe(`ROLLBACK TO SAVEPOINT ${savepointName}`);
+    // Rollback to savepoint
+    await query(`ROLLBACK TO SAVEPOINT ${savepointName}`, []);
     throw error;
   }
 }
@@ -218,19 +172,11 @@ export async function batchUpdate<T extends Record<string, unknown>>(
 }
 
 // ============================================================================
-// Export query for convenience (uses prisma raw queries)
+// Export for convenience
 // ============================================================================
 
-export async function query<T = unknown>(text: string, params?: unknown[]): Promise<{ rows: T[]; rowCount: number }> {
-  const trimmed = text.trim().toUpperCase();
-  const hasReturning = trimmed.includes('RETURNING');
-  const isSelect = trimmed.startsWith('SELECT');
+export { query };
 
-  if (isSelect || hasReturning) {
-    const rows = await prisma.$queryRawUnsafe<T[]>(text, ...(params || []));
-    return { rows, rowCount: rows.length };
-  } else {
-    const count = await prisma.$executeRawUnsafe(text, ...(params || []));
-    return { rows: [] as T[], rowCount: count };
-  }
-}
+
+
+

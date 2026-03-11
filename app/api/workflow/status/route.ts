@@ -6,8 +6,9 @@ import {
   parseRequestBody,
   logApiRequest
 } from '@/app/api/utils';
-import { prisma } from '@/lib/prisma';
+import { query } from '@/lib/db';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 export const GET = withErrorHandling(async (_request: NextRequest) => {
   // Check authentication
@@ -18,7 +19,7 @@ export const GET = withErrorHandling(async (_request: NextRequest) => {
   const driverId = parseInt(session.userId);
 
   // Get current driver status from multiple sources
-  const statusRows = await prisma.$queryRaw<Record<string, unknown>[]>`
+  const statusQuery = await query(`
     SELECT
       tc.id as time_card_id,
       tc.clock_in_time,
@@ -34,14 +35,14 @@ export const GET = withErrorHandling(async (_request: NextRequest) => {
       (
         SELECT COUNT(*)
         FROM routes
-        WHERE driver_id = ${driverId}
+        WHERE driver_id = $1
           AND route_date = CURRENT_DATE
           AND status = 'scheduled'
       ) as routes_remaining,
       (
         SELECT COUNT(*)
         FROM routes
-        WHERE driver_id = ${driverId}
+        WHERE driver_id = $1
           AND route_date = CURRENT_DATE
           AND status = 'completed'
       ) as routes_completed
@@ -49,13 +50,13 @@ export const GET = withErrorHandling(async (_request: NextRequest) => {
     LEFT JOIN vehicles v ON tc.vehicle_id = v.id
     LEFT JOIN routes r ON tc.current_route_id = r.id
     LEFT JOIN break_records br ON br.time_card_id = tc.id AND br.break_end IS NULL
-    WHERE tc.driver_id = ${driverId}
+    WHERE tc.driver_id = $1
       AND DATE(tc.clock_in_time) = CURRENT_DATE
       AND tc.clock_out_time IS NULL
     LIMIT 1
-  `;
+  `, [driverId]);
 
-  if (statusRows.length === 0) {
+  if (statusQuery.rowCount === 0) {
     // Driver not clocked in
     return successResponse({
       status: 'off_duty',
@@ -72,21 +73,21 @@ export const GET = withErrorHandling(async (_request: NextRequest) => {
     }, 'Driver is currently off duty');
   }
 
-  const currentStatus = statusRows[0];
+  const currentStatus = statusQuery.rows[0];
 
   // Calculate today's totals
-  const totalsRows = await prisma.$queryRaw<Record<string, unknown>[]>`
+  const totalsQuery = await query(`
     SELECT
       COALESCE(SUM(
         EXTRACT(EPOCH FROM (COALESCE(clock_out_time, CURRENT_TIMESTAMP) - clock_in_time)) / 3600
       ), 0) as total_hours,
       COALESCE(SUM(end_mileage - start_mileage), 0) as total_miles
     FROM time_cards
-    WHERE driver_id = ${driverId}
+    WHERE driver_id = $1
       AND DATE(clock_in_time) = CURRENT_DATE
-  `;
+  `, [driverId]);
 
-  const totals = totalsRows[0];
+  const totals = totalsQuery.rows[0];
 
   // Determine actual status
   let driverStatus = 'on_duty';
@@ -119,7 +120,7 @@ export const GET = withErrorHandling(async (_request: NextRequest) => {
     today_summary: {
       routes_completed: currentStatus.routes_completed || 0,
       routes_remaining: currentStatus.routes_remaining || 0,
-      total_hours: parseFloat(Number(totals.total_hours).toFixed(2)),
+      total_hours: parseFloat(totals.total_hours.toFixed(2)),
       total_miles: totals.total_miles || 0,
     }
   };
@@ -127,7 +128,8 @@ export const GET = withErrorHandling(async (_request: NextRequest) => {
   return successResponse(response, 'Current status retrieved');
 });
 
-export const PUT = withErrorHandling(async (request: NextRequest) => {
+export const PUT = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   // Check authentication
   const session = await requireAuth();
 
@@ -146,53 +148,54 @@ export const PUT = withErrorHandling(async (request: NextRequest) => {
   const driverId = parseInt(session.userId);
 
   // Get current time card
-  const timeCardRows = await prisma.$queryRaw<Record<string, unknown>[]>`
+  const timeCardResult = await query(`
     SELECT * FROM time_cards
-    WHERE driver_id = ${driverId}
+    WHERE driver_id = $1
       AND DATE(clock_in_time) = CURRENT_DATE
       AND clock_out_time IS NULL
-  `;
+  `, [driverId]);
 
-  if (timeCardRows.length === 0) {
+  if (timeCardResult.rowCount === 0) {
     return errorResponse('No active time card. Please clock in first.', 400);
   }
 
-  const timeCard = timeCardRows[0];
+  const timeCard = timeCardResult.rows[0];
 
   // Update time card status
-  const rows = await prisma.$queryRaw<Record<string, unknown>[]>`
+  const result = await query(`
     UPDATE time_cards
     SET
-      status = ${body.status},
-      notes = CASE WHEN ${body.notes || null} IS NOT NULL THEN ${body.notes || null} ELSE notes END,
+      status = $2,
+      notes = CASE WHEN $3 IS NOT NULL THEN $3 ELSE notes END,
       updated_at = CURRENT_TIMESTAMP
-    WHERE id = ${timeCard.id as number}
+    WHERE id = $1
     RETURNING *
-  `;
+  `, [timeCard.id, body.status, body.notes || null]);
 
   // Log status change for HOS tracking
-  await prisma.$executeRaw`
+  await query(`
     INSERT INTO driver_status_logs (
       driver_id,
       time_card_id,
       status,
       change_time,
       notes
-    ) VALUES (${driverId}, ${timeCard.id as number}, ${body.status}, CURRENT_TIMESTAMP, ${body.notes || null})
-  `;
+    ) VALUES ($1, $2, $3, CURRENT_TIMESTAMP, $4)
+  `, [driverId, timeCard.id, body.status, body.notes || null]);
 
-  return successResponse(rows[0], 'Status updated successfully');
-});
+  return successResponse(result.rows[0], 'Status updated successfully');
+})
+);
 
 // Helper function to get route count by status
 async function getRoutesCount(driverId: number, status: string): Promise<number> {
-  const rows = await prisma.$queryRaw<{ count: bigint }[]>`
+  const result = await query(`
     SELECT COUNT(*) as count
     FROM routes
-    WHERE driver_id = ${driverId}
+    WHERE driver_id = $1
       AND route_date = CURRENT_DATE
-      AND status = ${status}
-  `;
+      AND status = $2
+  `, [driverId, status]);
 
-  return Number(rows[0].count);
+  return parseInt(result.rows[0].count);
 }

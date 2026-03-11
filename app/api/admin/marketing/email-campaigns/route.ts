@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { query } from '@/lib/prisma-query'
+import { query } from '@/lib/db'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError } from '@/lib/api/middleware/error-handler'
+import { withCSRF } from '@/lib/api/middleware/csrf'
+
 const BodySchema = z.object({
   name: z.string().min(1).max(255),
   subject: z.string().min(1).max(500),
@@ -49,13 +51,7 @@ async function getHandler(request: NextRequest) {
 
   queryText += ` ORDER BY created_at DESC`
 
-  const result = await query<{
-    status: string;
-    recipients_count: number;
-    opened_count: number;
-    clicked_count: number;
-    [key: string]: unknown;
-  }>(queryText, params)
+  const result = await query(queryText, params)
 
   // Calculate aggregate stats
   const stats = {
@@ -136,5 +132,6 @@ async function postHandler(request: NextRequest) {
 }
 
 export const GET = withAdminAuth(async (request, _session) => getHandler(request))
-export const POST = withAdminAuth(async (request, _session) => postHandler(request)
+export const POST = withCSRF(
+  withAdminAuth(async (request, _session) => postHandler(request))
 )

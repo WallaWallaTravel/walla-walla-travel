@@ -8,8 +8,9 @@ import {
   resetCircuitBreaker,
 } from '@/lib/services/health.service';
 import { redis } from '@/lib/redis';
-import { prisma } from '@/lib/prisma';
+import { query as dbQuery } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 import { z } from 'zod';
 
 const PostBodySchema = z.object({
@@ -42,7 +43,7 @@ export const GET = withOptionalAuth(async (_request: NextRequest, session: AuthS
     let dbPoolStats = null;
     try {
       const dbStart = Date.now();
-      await prisma.$queryRaw`SELECT 1`;
+      await dbQuery('SELECT 1');
       const dbLatency = Date.now() - dbStart;
       dbPoolStats = {
         connected: true,
@@ -193,7 +194,7 @@ export const GET = withOptionalAuth(async (_request: NextRequest, session: AuthS
  * Admin actions for health management
  * - Reset circuit breakers
  */
-export const POST =
+export const POST = withCSRF(
   withOptionalAuth(async (request: NextRequest, session: AuthSession | null) => {
   const requestId = getRequestId();
   const body = PostBodySchema.parse(await request.json());
@@ -208,4 +209,5 @@ export const POST =
     success: true,
     message: `Circuit breaker reset for ${body.service}`,
   });
-});
+})
+);

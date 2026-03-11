@@ -6,9 +6,9 @@ import { getCachedQuery, cacheQueryResponse, generateSystemPromptHash, generateQ
 import { buildSystemPromptWithContext } from '@/lib/ai/context-builder'
 import { getOrCreateVisitor, setVisitorCookie } from '@/lib/visitor/visitor-tracking'
 import { logQuery, classifyQueryIntent } from '@/lib/analytics/query-logger'
-import { prisma } from '@/lib/prisma'
+import { query as dbQuery } from '@/lib/db'
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler'
-
+import { withCSRF } from '@/lib/api/middleware/csrf'
 
 const BodySchema = z.object({
   query: z.string().min(1).max(1000),
@@ -26,7 +26,7 @@ export const dynamic = 'force-dynamic'
  * - Caches response for future requests
  * - Tracks session for conversion attribution
  */
-export const POST =
+export const POST = withCSRF(
   withErrorHandling<unknown>(async (request: NextRequest) => {
   const startTime = Date.now()
 
@@ -62,8 +62,10 @@ export const POST =
     logger.info('AI Query cache hit', { query: query.substring(0, 50), duration, visitorId: visitor.visitor_uuid })
 
     // Update visitor query count for cached responses too
-    await prisma.$executeRaw`
-      UPDATE visitors SET total_queries = total_queries + 1, updated_at = NOW() WHERE id = ${visitor.id}`
+    await dbQuery(
+      'UPDATE visitors SET total_queries = total_queries + 1, updated_at = NOW() WHERE id = $1',
+      [visitor.id]
+    )
 
     const response = NextResponse.json({
       success: true,
@@ -130,10 +132,14 @@ export const POST =
   })
 
   // Update visitor query count and link query to visitor
-  await prisma.$executeRaw`
-    UPDATE visitors SET total_queries = total_queries + 1, updated_at = NOW() WHERE id = ${visitor.id}`
-  await prisma.$executeRaw`
-    UPDATE ai_queries SET visitor_id = ${visitor.id} WHERE id = ${queryId}`
+  await dbQuery(
+    'UPDATE visitors SET total_queries = total_queries + 1, updated_at = NOW() WHERE id = $1',
+    [visitor.id]
+  )
+  await dbQuery(
+    'UPDATE ai_queries SET visitor_id = $1 WHERE id = $2',
+    [visitor.id, queryId]
+  )
 
   logger.info('AI Query completed', {
     provider: aiResponse.provider,
@@ -169,6 +175,7 @@ export const POST =
   setVisitorCookie(response, visitor)
   return response
 })
+)
 
 function getDefaultPrompt(): string {
   return `You are the Walla Walla Valley Travel Guide, an intelligent assistant for Walla Walla Travel, a premier wine country tour company in the Walla Walla Valley.

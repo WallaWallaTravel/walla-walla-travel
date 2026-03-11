@@ -5,6 +5,7 @@ import {
 } from '@/app/api/utils';
 import { logApiRequest } from '@/lib/logger';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * Session verification endpoint
@@ -27,7 +28,8 @@ export const GET = withErrorHandling(async () => {
   }, 'Session is valid');
 });
 
-export const POST = withErrorHandling(async (_request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (_request: NextRequest) => {
   // Alternative POST endpoint for session verification
   logApiRequest('POST', '/api/auth/verify');
 
@@ -43,4 +45,5 @@ export const POST = withErrorHandling(async (_request: NextRequest) => {
       name: session.name,
     }
   }, 'Session is valid');
-});
+})
+);

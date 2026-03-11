@@ -4,9 +4,10 @@ import { withErrorHandling, BadRequestError, NotFoundError, RouteContext } from 
 import { getBrandStripeClient, getBrandStripePublishableKey } from '@/lib/stripe-brands';
 import { getBrandEmailConfig } from '@/lib/email-brands';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
-import { prisma } from '@/lib/prisma';
+import { queryOne, queryMany } from '@/lib/db-helpers';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 import { handleStripeError } from '@/lib/stripe/error-handler';
 
 interface RouteParams { token: string; groupToken: string; }
@@ -19,7 +20,8 @@ const GroupPaySchema = z.object({
  * POST /api/my-trip/[token]/group/[groupToken]/create-payment
  * Group payment — pay for one or multiple members in the group
  */
-export const POST = withErrorHandling<unknown, RouteParams>(
+export const POST = withCSRF(
+  withErrorHandling<unknown, RouteParams>(
   async (request: NextRequest, context) => {
     const { token, groupToken } = await (context as RouteContext<RouteParams>).params;
     const body = await request.json();
@@ -29,21 +31,25 @@ export const POST = withErrorHandling<unknown, RouteParams>(
     if (!proposal) throw new NotFoundError('Trip not found');
 
     // Verify group exists
-    const groupRows = await prisma.$queryRaw<{ id: string; trip_proposal_id: number; group_name: string }[]>`
-      SELECT id, trip_proposal_id, group_name FROM guest_payment_groups WHERE group_access_token = ${groupToken}`;
-    const group = groupRows[0] ?? null;
+    const group = await queryOne<{ id: string; trip_proposal_id: number; group_name: string }>(
+      'SELECT id, trip_proposal_id, group_name FROM guest_payment_groups WHERE group_access_token = $1',
+      [groupToken]
+    );
     if (!group || group.trip_proposal_id !== proposal.id) {
       throw new NotFoundError('Payment group not found');
     }
 
     // Get the guests being paid for
-    const guests = await prisma.$queryRaw<{
+    const guests = await queryMany<{
       id: number; name: string; email: string | null;
       amount_owed: string; amount_paid: string; payment_status: string;
-    }[]>`
-      SELECT id, name, email, amount_owed, amount_paid, payment_status
-      FROM trip_proposal_guests
-      WHERE id = ANY(${guest_ids}::int[]) AND payment_group_id = ${group.id} AND payment_status != 'paid'`;
+    }>(
+      `SELECT id, name, email, amount_owed, amount_paid, payment_status
+       FROM trip_proposal_guests
+       WHERE id = ANY($1) AND payment_group_id = $2 AND payment_status != 'paid'`,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      [guest_ids as any, group.id]
+    );
 
     if (guests.length === 0) {
       throw new BadRequestError('All selected guests are already paid');
@@ -116,4 +122,5 @@ export const POST = withErrorHandling<unknown, RouteParams>(
       },
     });
   }
+)
 );

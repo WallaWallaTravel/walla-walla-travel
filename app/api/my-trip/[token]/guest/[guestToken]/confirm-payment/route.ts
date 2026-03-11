@@ -3,9 +3,10 @@ import { after } from 'next/server';
 import { withErrorHandling, BadRequestError, NotFoundError, RouteContext } from '@/lib/api/middleware/error-handler';
 import { getBrandStripeClient } from '@/lib/stripe-brands';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
-import { prisma } from '@/lib/prisma';
+import { query, queryOne, withTransaction } from '@/lib/db-helpers';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface RouteParams { token: string; guestToken: string; }
 
@@ -21,7 +22,8 @@ const ConfirmSchema = z.object({
  * using INSERT ... ON CONFLICT ... DO NOTHING + checking RETURNING.
  * The standalone SELECT before the transaction has been removed.
  */
-export const POST = withErrorHandling<unknown, RouteParams>(
+export const POST = withCSRF(
+  withErrorHandling<unknown, RouteParams>(
   async (request: NextRequest, context) => {
     const { token, guestToken } = await (context as RouteContext<RouteParams>).params;
     const body = await request.json();
@@ -30,13 +32,14 @@ export const POST = withErrorHandling<unknown, RouteParams>(
     const proposal = await tripProposalService.getByAccessToken(token);
     if (!proposal) throw new NotFoundError('Trip not found');
 
-    const guestRows = await prisma.$queryRaw<{
+    const guest = await queryOne<{
       id: number; name: string; amount_owed: string; amount_paid: string; payment_status: string;
-    }[]>`
-      SELECT id, name, amount_owed, amount_paid, payment_status
-      FROM trip_proposal_guests
-      WHERE trip_proposal_id = ${proposal.id} AND guest_access_token = ${guestToken}`;
-    const guest = guestRows[0] ?? null;
+    }>(
+      `SELECT id, name, amount_owed, amount_paid, payment_status
+       FROM trip_proposal_guests
+       WHERE trip_proposal_id = $1 AND guest_access_token = $2`,
+      [proposal.id, guestToken]
+    );
 
     if (!guest) throw new NotFoundError('Guest not found');
 
@@ -57,16 +60,19 @@ export const POST = withErrorHandling<unknown, RouteParams>(
     // returns no rows, meaning this payment was already processed.
     let alreadyProcessed = false;
 
-    await prisma.$transaction(async (tx) => {
+    await withTransaction(async (client) => {
       // Atomic idempotency gate — relies on UNIQUE index from migration 093
-      const insertResult = await tx.$queryRaw<{ id: number }[]>`
-        INSERT INTO guest_payments (trip_proposal_id, guest_id, amount, stripe_payment_intent_id, payment_type, status)
-        VALUES (${proposal.id}, ${guest.id}, ${amount}, ${payment_intent_id}, 'guest_share', 'succeeded')
-        ON CONFLICT (stripe_payment_intent_id) WHERE stripe_payment_intent_id IS NOT NULL
-        DO NOTHING
-        RETURNING id`;
+      const insertResult = await query(
+        `INSERT INTO guest_payments (trip_proposal_id, guest_id, amount, stripe_payment_intent_id, payment_type, status)
+         VALUES ($1, $2, $3, $4, 'guest_share', 'succeeded')
+         ON CONFLICT (stripe_payment_intent_id) WHERE stripe_payment_intent_id IS NOT NULL
+         DO NOTHING
+         RETURNING id`,
+        [proposal.id, guest.id, amount, payment_intent_id],
+        client
+      );
 
-      if (insertResult.length === 0) {
+      if (insertResult.rows.length === 0) {
         // Payment was already recorded — no further updates needed
         alreadyProcessed = true;
         return;
@@ -77,12 +83,15 @@ export const POST = withErrorHandling<unknown, RouteParams>(
       const owed = parseFloat(guest.amount_owed) || 0;
       const status = newPaid >= owed ? 'paid' : newPaid > 0 ? 'partial' : 'unpaid';
 
-      await tx.$executeRaw`
-        UPDATE trip_proposal_guests
-        SET amount_paid = ${newPaid}, payment_status = ${status},
-            payment_paid_at = CASE WHEN ${status} = 'paid' THEN NOW() ELSE payment_paid_at END,
-            updated_at = NOW()
-        WHERE id = ${guest.id} AND trip_proposal_id = ${proposal.id}`;
+      await query(
+        `UPDATE trip_proposal_guests
+         SET amount_paid = $1, payment_status = $2,
+             payment_paid_at = CASE WHEN $2 = 'paid' THEN NOW() ELSE payment_paid_at END,
+             updated_at = NOW()
+         WHERE id = $3 AND trip_proposal_id = $4`,
+        [newPaid, status, guest.id, proposal.id],
+        client
+      );
     });
 
     if (alreadyProcessed) {
@@ -108,4 +117,5 @@ export const POST = withErrorHandling<unknown, RouteParams>(
       },
     });
   }
+)
 );

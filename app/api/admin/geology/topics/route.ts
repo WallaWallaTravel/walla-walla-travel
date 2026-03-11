@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { query } from '@/lib/db';
 import { z } from 'zod';
-import { prisma } from '@/lib/prisma';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // ============================================================================
 // Validation
@@ -53,13 +54,13 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
 
   sql += ' ORDER BY display_order ASC, created_at DESC';
 
-  const result = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(sql);
+  const result = await query(sql);
 
   return NextResponse.json({
     success: true,
     data: {
-      topics: result,
-      count: result.length,
+      topics: result.rows,
+      count: result.rows.length,
     },
   });
 });
@@ -68,17 +69,19 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
 // POST /api/admin/geology/topics - Create a new topic
 // ============================================================================
 
-export const POST = withAdminAuth(async (request: NextRequest, _session) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json();
   const validated = createTopicSchema.parse(body);
 
-  const result = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
+  const result = await query(
     `INSERT INTO geology_topics (
       slug, title, subtitle, content, excerpt, topic_type, difficulty,
       hero_image_url, display_order, is_featured, is_published,
       related_winery_ids, related_topic_ids, author_name, sources
     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
     RETURNING *`,
+    [
       validated.slug,
       validated.title,
       validated.subtitle || null,
@@ -94,10 +97,12 @@ export const POST = withAdminAuth(async (request: NextRequest, _session) => {
       validated.related_topic_ids || null,
       validated.author_name || null,
       validated.sources || null,
+    ]
   );
 
   return NextResponse.json({
     success: true,
-    data: result[0],
+    data: result.rows[0],
   });
-});
+})
+);

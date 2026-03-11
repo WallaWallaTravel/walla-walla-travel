@@ -7,8 +7,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { query } from '@/lib/prisma-query'
+import { query } from '@/lib/db-helpers';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 const BodySchema = z.object({
   preferences: z.object({
@@ -91,7 +92,8 @@ const ATMOSPHERE_KEYWORDS: Record<string, string[]> = {
   modern: ['contemporary', 'sleek', 'urban', 'downtown', 'tasting room']
 };
 
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   let rawBody = await request.json();
 
   // Handle case where body is a string (can happen in test environments)
@@ -272,6 +274,8 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     { headers: corsHeaders }
   );
 })
+);
+
 export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,

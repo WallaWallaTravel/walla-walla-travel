@@ -7,8 +7,9 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { query } from '@/lib/prisma-query'
+import { query } from '@/lib/db'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
+import { withCSRF } from '@/lib/api/middleware/csrf';
 import { auditService } from '@/lib/services/audit.service';
 
 const PutBodySchema = z.object({
@@ -77,7 +78,8 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   })
 });
 
-export const PUT = withAdminAuth(async (request: NextRequest, _session) => {
+export const PUT = withCSRF(
+  withAdminAuth(async (request: NextRequest, _session) => {
   const body = PutBodySchema.parse(await request.json())
   const { id, isActive } = body
 
@@ -96,7 +98,10 @@ export const PUT = withAdminAuth(async (request: NextRequest, _session) => {
 
   return NextResponse.json({ success: true })
 })
-export const DELETE = withAdminAuth(async (request: NextRequest, session) => {
+);
+
+export const DELETE = withCSRF(
+  withAdminAuth(async (request: NextRequest, session) => {
   const { searchParams } = new URL(request.url)
   const id = searchParams.get('id')
 
@@ -115,4 +120,5 @@ export const DELETE = withAdminAuth(async (request: NextRequest, session) => {
   });
 
   return NextResponse.json({ success: true })
-});
+})
+);

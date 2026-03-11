@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
-import { query } from '@/lib/prisma-query'
+import { query } from '@/lib/db'
 
 export const GET = withAdminAuth(async (_request, _session) => {
   const result = await query(

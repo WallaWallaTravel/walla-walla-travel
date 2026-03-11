@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 import { auditService } from '@/lib/services/audit.service';
 
 interface RouteParams {
@@ -17,7 +18,8 @@ interface RouteParams {
  * POST /api/admin/trip-proposals/[id]/archive
  * Archive a trip proposal
  */
-export const POST = withAdminAuth(async (request: NextRequest, session, context) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest, session, context) => {
   const { id } = await (context as unknown as RouteParams).params;
   const proposalId = parseInt(id, 10);
 
@@ -41,13 +43,15 @@ export const POST = withAdminAuth(async (request: NextRequest, session, context)
     data: proposal,
     message: 'Trip proposal archived successfully',
   });
-});
+})
+);
 
 /**
  * DELETE /api/admin/trip-proposals/[id]/archive
  * Unarchive a trip proposal
  */
-export const DELETE = withAdminAuth(async (request: NextRequest, session, context) => {
+export const DELETE = withCSRF(
+  withAdminAuth(async (request: NextRequest, session, context) => {
   const { id } = await (context as unknown as RouteParams).params;
   const proposalId = parseInt(id, 10);
 
@@ -71,4 +75,5 @@ export const DELETE = withAdminAuth(async (request: NextRequest, session, contex
     data: proposal,
     message: 'Trip proposal unarchived successfully',
   });
-});
+})
+);

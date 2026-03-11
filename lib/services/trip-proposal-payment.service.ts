@@ -15,7 +15,7 @@
 import { after } from 'next/server';
 import { getBrandStripeClient } from '@/lib/stripe-brands';
 import { tripProposalEmailService } from '@/lib/services/trip-proposal-email.service';
-import { prisma } from '@/lib/prisma';
+import { query, withTransaction } from '@/lib/db-helpers';
 import { logger } from '@/lib/logger';
 import type { TripProposal } from '@/lib/types/trip-proposal';
 
@@ -86,26 +86,27 @@ export async function confirmTripProposalDeposit(
   }
 
   // Update proposal and create payment record in a transaction
-  await prisma.$transaction(async (tx) => {
+  await withTransaction(async (client) => {
     // Mark deposit as paid and unlock planning phase
     // (AND deposit_paid = false prevents TOCTOU race)
-    const updateResult = await tx.$executeRawUnsafe(
+    const updateResult = await query(
       `UPDATE trip_proposals
        SET deposit_paid = true,
            deposit_paid_at = NOW(),
            planning_phase = 'active_planning',
            updated_at = NOW()
        WHERE id = $1 AND deposit_paid = false`,
-      proposal.id
+      [proposal.id],
+      client
     );
 
     // If no rows updated, another request already processed this payment
-    if (updateResult === 0) {
+    if (updateResult.rowCount === 0) {
       return;
     }
 
     // Insert payment record and link it back to the proposal
-    const paymentInsert = await tx.$queryRawUnsafe<{ id: number }[]>(
+    const paymentInsert = await query(
       `INSERT INTO payments (
         trip_proposal_id,
         amount,
@@ -115,18 +116,22 @@ export async function confirmTripProposalDeposit(
         created_at
       ) VALUES ($1, $2, 'trip_proposal_deposit', $3, 'succeeded', NOW())
       RETURNING id`,
-      proposal.id,
-      paymentIntent.amount / 100,
-      paymentIntentId,
+      [
+        proposal.id,
+        paymentIntent.amount / 100,
+        paymentIntentId,
+      ],
+      client
     );
 
     // Set deposit_payment_id FK on the proposal so the payment record is
     // reachable directly from the proposal (avoids reverse-join queries)
-    if (paymentInsert.length > 0) {
-      const paymentId = paymentInsert[0].id;
-      await tx.$executeRawUnsafe(
+    if (paymentInsert.rows.length > 0) {
+      const paymentId = paymentInsert.rows[0].id;
+      await query(
         `UPDATE trip_proposals SET deposit_payment_id = $1 WHERE id = $2`,
-        paymentId, proposal.id,
+        [paymentId, proposal.id],
+        client
       );
     }
   });

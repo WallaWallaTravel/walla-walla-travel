@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { query } from '@/lib/db';
 import { z } from 'zod';
-import { prisma } from '@/lib/prisma';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // ============================================================================
 // Validation
@@ -39,13 +40,13 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
 
   sql += ' ORDER BY priority DESC, created_at ASC';
 
-  const result = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(sql);
+  const result = await query(sql);
 
   return NextResponse.json({
     success: true,
     data: {
-      guidance: result,
-      count: result.length,
+      guidance: result.rows,
+      count: result.rows.length,
     },
   });
 });
@@ -54,23 +55,27 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
 // POST /api/admin/geology/guidance - Create new AI guidance
 // ============================================================================
 
-export const POST = withAdminAuth(async (request: NextRequest, _session) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest, _session) => {
   const body = await request.json();
   const validated = createGuidanceSchema.parse(body);
 
-  const result = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
+  const result = await query(
     `INSERT INTO geology_ai_guidance (guidance_type, title, content, priority, is_active)
      VALUES ($1, $2, $3, $4, $5)
      RETURNING *`,
+    [
       validated.guidance_type,
       validated.title || null,
       validated.content,
       validated.priority,
       validated.is_active,
+    ]
   );
 
   return NextResponse.json({
     success: true,
-    data: result[0],
+    data: result.rows[0],
   });
-});
+})
+);

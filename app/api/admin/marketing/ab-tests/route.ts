@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { prisma } from '@/lib/prisma'
+import { query } from '@/lib/db'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError } from '@/lib/api/middleware/error-handler'
+import { withCSRF } from '@/lib/api/middleware/csrf'
 
 const VariantSchema = z.object({
   name: z.string().max(255).optional(),
@@ -71,11 +72,10 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
 
   queryText += ` GROUP BY t.id ORDER BY t.created_at DESC`
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const rows = await prisma.$queryRawUnsafe<any[]>(queryText, ...params)
+  const result = await query(queryText, params)
 
   // Transform results
-  const tests = rows.map(row => ({
+  const tests = result.rows.map(row => ({
     ...row,
     variant_a: row.variants?.find((v: { variant_letter: string }) => v.variant_letter === 'a') || null,
     variant_b: row.variants?.find((v: { variant_letter: string }) => v.variant_letter === 'b') || null,
@@ -88,7 +88,8 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
 })
 
 // POST - Create new A/B test
-export const POST = withAdminAuth(async (request: NextRequest, _session) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest, _session) => {
   const body = BodySchema.parse(await request.json())
 
   const {
@@ -110,74 +111,78 @@ export const POST = withAdminAuth(async (request: NextRequest, _session) => {
   }
 
   // Create test
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const testRows = await prisma.$queryRaw<any[]>`
+  const testResult = await query(`
     INSERT INTO ab_tests (
       name, description, hypothesis, test_type,
       variable_tested, platform, sample_size_target,
       status, created_by, created_at, updated_at
     ) VALUES (
-      ${name},
-      ${description || null},
-      ${hypothesis || null},
-      ${test_type},
-      ${variable_tested || null},
-      ${platform || 'all'},
-      ${sample_size_target || null},
-      'draft',
-      ${created_by || null},
-      NOW(), NOW()
+      $1, $2, $3, $4, $5, $6, $7, 'draft', $8, NOW(), NOW()
     ) RETURNING *
-  `
+  `, [
+    name,
+    description || null,
+    hypothesis || null,
+    test_type,
+    variable_tested || null,
+    platform || 'all',
+    sample_size_target || null,
+    created_by || null
+  ])
 
-  const testId = testRows[0].id
+  const testId = testResult.rows[0].id
 
   // Create variant A
   if (variant_a) {
-    await prisma.$executeRaw`
+    await query(`
       INSERT INTO test_variants (
         test_id, variant_letter, name, description,
         caption, image_url, video_url, hashtags,
         cta, post_time, post_days, created_at
       ) VALUES (
-        ${testId}, 'a', ${variant_a.name || 'Variant A'},
-        ${variant_a.description || null},
-        ${variant_a.caption || null},
-        ${variant_a.image_url || null},
-        ${variant_a.video_url || null},
-        ${variant_a.hashtags || []},
-        ${variant_a.cta || null},
-        ${variant_a.post_time || null},
-        ${variant_a.post_days || []},
-        NOW()
+        $1, 'a', $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW()
       )
-    `
+    `, [
+      testId,
+      variant_a.name || 'Variant A',
+      variant_a.description || null,
+      variant_a.caption || null,
+      variant_a.image_url || null,
+      variant_a.video_url || null,
+      variant_a.hashtags || [],
+      variant_a.cta || null,
+      variant_a.post_time || null,
+      variant_a.post_days || []
+    ])
   }
 
   // Create variant B
   if (variant_b) {
-    await prisma.$executeRaw`
+    await query(`
       INSERT INTO test_variants (
         test_id, variant_letter, name, description,
         caption, image_url, video_url, hashtags,
         cta, post_time, post_days, created_at
       ) VALUES (
-        ${testId}, 'b', ${variant_b.name || 'Variant B'},
-        ${variant_b.description || null},
-        ${variant_b.caption || null},
-        ${variant_b.image_url || null},
-        ${variant_b.video_url || null},
-        ${variant_b.hashtags || []},
-        ${variant_b.cta || null},
-        ${variant_b.post_time || null},
-        ${variant_b.post_days || []},
-        NOW()
+        $1, 'b', $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW()
       )
-    `
+    `, [
+      testId,
+      variant_b.name || 'Variant B',
+      variant_b.description || null,
+      variant_b.caption || null,
+      variant_b.image_url || null,
+      variant_b.video_url || null,
+      variant_b.hashtags || [],
+      variant_b.cta || null,
+      variant_b.post_time || null,
+      variant_b.post_days || []
+    ])
   }
 
   return NextResponse.json({
     success: true,
-    test: testRows[0]
+    test: testResult.rows[0]
   })
 })
+)

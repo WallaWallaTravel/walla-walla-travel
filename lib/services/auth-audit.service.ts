@@ -2,10 +2,10 @@
  * Auth Audit Service
  *
  * Logs authentication events for the partner portal (hotel and business partners).
- * All logging is fire-and-forget -- failures are swallowed so auth flows are never blocked.
+ * All logging is fire-and-forget — failures are swallowed so auth flows are never blocked.
  */
 
-import { prisma } from '@/lib/prisma';
+import { query } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { NextRequest } from 'next/server';
 
@@ -48,16 +48,18 @@ export function logAuthEvent(data: LogAuthEventData): void {
   const ipAddress = getIp(data.request);
   const userAgent = data.request.headers.get('user-agent')?.substring(0, 500) || null;
 
-  prisma.$executeRawUnsafe(
+  query(
     `INSERT INTO auth_events (event_type, partner_type, partner_id, email, ip_address, user_agent, details)
      VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-    data.eventType,
-    data.partnerType,
-    data.partnerId,
-    data.email || null,
-    ipAddress,
-    userAgent,
-    data.details ? JSON.stringify(data.details) : null,
+    [
+      data.eventType,
+      data.partnerType,
+      data.partnerId,
+      data.email || null,
+      ipAddress,
+      userAgent,
+      data.details ? JSON.stringify(data.details) : null,
+    ]
   ).catch((error) => {
     logger.error('[AuthAudit] Failed to log auth event', {
       eventType: data.eventType,

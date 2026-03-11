@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { NotFoundError, ConflictError, BadRequestError } from '@/lib/api-errors';
-import { prisma } from '@/lib/prisma';
+import { queryOne, query } from '@/lib/db-helpers';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 import { auditService } from '@/lib/services/audit.service';
 import { z } from 'zod';
 
@@ -35,7 +36,7 @@ interface Invoice {
 /**
  * POST /api/admin/approve-invoice/[booking_id]
  * Approves and sends final invoice to customer
- *
+ * 
  * Workflow:
  * 1. Calculate final amount (actual_hours * hourly_rate)
  * 2. Create invoice record
@@ -43,7 +44,8 @@ interface Invoice {
  * 4. Send email to customer with payment link
  * 5. Mark booking as final_invoice_sent
  */
-export const POST = withAdminAuth(async (
+export const POST = withCSRF(
+  withAdminAuth(async (
   request: NextRequest,
   session,
   context
@@ -67,15 +69,15 @@ export const POST = withAdminAuth(async (
   }
 
   // 1. Get booking details
-  const bookingRows = await prisma.$queryRaw<BookingWithDriver[]>`
+  const booking = await queryOne<BookingWithDriver>(`
     SELECT
       b.*,
       u.name as driver_name,
       u.email as driver_email
     FROM bookings b
     LEFT JOIN users u ON b.driver_id = u.id
-    WHERE b.id = ${bookingId}`;
-  const booking = bookingRows[0] ?? null;
+    WHERE b.id = $1
+  `, [bookingId]);
 
   if (!booking) {
     throw new NotFoundError('Booking');
@@ -89,16 +91,17 @@ export const POST = withAdminAuth(async (
   const totalAmount = subtotal + taxAmount;
 
   // 3. Check if final invoice already exists
-  const existingRows = await prisma.$queryRaw<{ id: number }[]>`
+  const existingInvoice = await queryOne(`
     SELECT id FROM invoices
-    WHERE booking_id = ${bookingId} AND invoice_type = 'final'`;
+    WHERE booking_id = $1 AND invoice_type = 'final'
+  `, [bookingId]);
 
-  if (existingRows.length > 0) {
+  if (existingInvoice) {
     throw new ConflictError('Final invoice already exists for this booking');
   }
 
   // 4. Create invoice record
-  const invoiceRows = await prisma.$queryRaw<Invoice[]>`
+  const invoiceResult = await query<Invoice>(`
     INSERT INTO invoices (
       booking_id,
       invoice_type,
@@ -108,26 +111,28 @@ export const POST = withAdminAuth(async (
       status,
       sent_at,
       due_date
-    ) VALUES (${bookingId}, 'final', ${subtotal}, ${taxAmount}, ${totalAmount}, 'sent', NOW(), CURRENT_DATE + INTERVAL '7 days')
-    RETURNING *`;
-  const invoice = invoiceRows[0];
+    ) VALUES ($1, 'final', $2, $3, $4, 'sent', NOW(), CURRENT_DATE + INTERVAL '7 days')
+    RETURNING *
+  `, [bookingId, subtotal, taxAmount, totalAmount]);
+  const invoice = invoiceResult.rows[0];
 
   // 5. Update booking status
-  await prisma.$executeRaw`
+  await query(`
     UPDATE bookings
-    SET
+    SET 
       final_invoice_sent = true,
       final_invoice_sent_at = NOW(),
       final_invoice_approved_by = 1,
       final_invoice_approved_at = NOW(),
       status = 'awaiting_final_payment',
       updated_at = NOW()
-    WHERE id = ${bookingId}`;
+    WHERE id = $1
+  `, [bookingId]);
 
   // 6. Send email to customer
   const { sendEmail, EmailTemplates } = await import('@/lib/email');
   const paymentUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/payment/final/${bookingId}`;
-
+  
   const emailTemplate = EmailTemplates.finalInvoice({
     customer_name: booking.customer_name,
     booking_number: booking.booking_number,
@@ -180,4 +185,5 @@ export const POST = withAdminAuth(async (
       customer_email: booking.customer_email
     }
   });
-});
+})
+);

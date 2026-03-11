@@ -6,11 +6,12 @@
  */
 
 import { BaseService } from '../base.service';
-import { prisma } from '@/lib/prisma';
 import { NotFoundError, ConflictError, ValidationError } from '@/lib/api/middleware/error-handler';
 import { crmSyncService } from '../crm-sync.service';
 import { crmTaskAutomationService } from '../crm-task-automation.service';
 import { googleCalendarSyncService } from '../google-calendar-sync.service';
+import { withTransaction as withClientTransaction } from '@/lib/db-helpers';
+import type { PoolClient } from 'pg';
 import {
   Booking,
   BookingStatus,
@@ -213,7 +214,7 @@ export class BookingCoreService extends BaseService {
   /**
    * Create a simple booking (used by v1 API)
    *
-   * Uses a prisma.$transaction with advisory locking to prevent
+   * Uses a dedicated PoolClient transaction with advisory locking to prevent
    * double-booking race conditions. Two concurrent requests for the same date
    * are serialized by pg_advisory_xact_lock.
    */
@@ -223,7 +224,8 @@ export class BookingCoreService extends BaseService {
       tourDate: data.tourDate,
     });
 
-    return prisma.$transaction(async (tx) => {
+    // Use db-helpers withTransaction for proper connection-scoped transaction
+    return withClientTransaction(async (client: PoolClient) => {
       // 1. Validate data
       const validated = CreateBookingSchema.parse(data);
 
@@ -239,18 +241,18 @@ export class BookingCoreService extends BaseService {
 
       // 3. Acquire advisory lock on the tour date to serialize concurrent bookings
       // This prevents race conditions even when no bookings exist yet for the date
-      await tx.$queryRawUnsafe('SELECT pg_advisory_xact_lock(hashtext($1))', validated.tourDate);
+      await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [validated.tourDate]);
 
       // 4. Check capacity (safe now — no concurrent reader can pass this point)
-      const capacityResult = await tx.$queryRawUnsafe<{ total_party_size: string }[]>(
+      const capacityResult = await client.query<{ total_party_size: string }>(
         `SELECT COALESCE(SUM(party_size), 0) as total_party_size
          FROM bookings
          WHERE tour_date = $1
          AND status IN ('pending', 'confirmed')`,
-        validated.tourDate
+        [validated.tourDate]
       );
 
-      const currentCapacity = parseInt(capacityResult[0]?.total_party_size || '0', 10);
+      const currentCapacity = parseInt(capacityResult.rows[0]?.total_party_size || '0', 10);
       const maxCapacity = 50;
 
       if (currentCapacity + validated.partySize > maxCapacity) {
@@ -258,39 +260,39 @@ export class BookingCoreService extends BaseService {
       }
 
       // 5. Get or create customer (within same transaction)
-      const existingCustomer = await tx.$queryRawUnsafe<{ id: number }[]>(
+      const existingCustomer = await client.query<{ id: number }>(
         'SELECT id FROM customers WHERE LOWER(email) = LOWER($1)',
-        validated.customerEmail
+        [validated.customerEmail]
       );
 
       let customerId: number;
-      if (existingCustomer.length > 0) {
-        await tx.$executeRawUnsafe(
+      if (existingCustomer.rows.length > 0) {
+        await client.query(
           'UPDATE customers SET name = $1, phone = $2, updated_at = NOW() WHERE id = $3',
-          validated.customerName, validated.customerPhone, existingCustomer[0].id
+          [validated.customerName, validated.customerPhone, existingCustomer.rows[0].id]
         );
-        customerId = existingCustomer[0].id;
+        customerId = existingCustomer.rows[0].id;
       } else {
-        const newCustomer = await tx.$queryRawUnsafe<{ id: number }[]>(
+        const newCustomer = await client.query<{ id: number }>(
           `INSERT INTO customers (email, name, phone, created_at, updated_at)
            VALUES ($1, $2, $3, NOW(), NOW())
            RETURNING id`,
-          validated.customerEmail, validated.customerName, validated.customerPhone
+          [validated.customerEmail, validated.customerName, validated.customerPhone]
         );
-        customerId = newCustomer[0].id;
+        customerId = newCustomer.rows[0].id;
       }
 
       // 6. Generate booking number (within same transaction for sequence safety)
       const year = new Date().getFullYear();
       const sequenceName = `booking_seq_${year}`;
-      await tx.$executeRawUnsafe(`CREATE SEQUENCE IF NOT EXISTS ${sequenceName} START 1`);
-      const seqResult = await tx.$queryRawUnsafe<{ seq: string }[]>(`SELECT nextval('${sequenceName}') as seq`);
-      const paddedNumber = seqResult[0].seq.toString().padStart(5, '0');
+      await client.query(`CREATE SEQUENCE IF NOT EXISTS ${sequenceName} START 1`);
+      const seqResult = await client.query<{ seq: string }>(`SELECT nextval('${sequenceName}') as seq`);
+      const paddedNumber = seqResult.rows[0].seq.toString().padStart(5, '0');
       const bookingNumber = `WWT-${year}-${paddedNumber}`;
 
       // 7. Create booking
       const balanceDue = validated.totalPrice - validated.depositPaid;
-      const bookingResult = await tx.$queryRawUnsafe<Booking[]>(
+      const bookingResult = await client.query<Booking>(
         `INSERT INTO bookings (
           booking_number, customer_id, customer_name, customer_email, customer_phone,
           party_size, tour_date, start_time, duration_hours,
@@ -298,13 +300,15 @@ export class BookingCoreService extends BaseService {
           base_price, gratuity, taxes, status, brand_id, created_at, updated_at
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, NOW(), NOW())
         RETURNING *`,
-        bookingNumber, customerId, validated.customerName, validated.customerEmail, validated.customerPhone,
-        validated.partySize, validated.tourDate, validated.startTime, validated.durationHours,
-        validated.totalPrice, validated.depositPaid, validated.depositPaid > 0, balanceDue, false,
-        validated.totalPrice, 0, 0, 'pending', validated.brandId || null,
+        [
+          bookingNumber, customerId, validated.customerName, validated.customerEmail, validated.customerPhone,
+          validated.partySize, validated.tourDate, validated.startTime, validated.durationHours,
+          validated.totalPrice, validated.depositPaid, validated.depositPaid > 0, balanceDue, false,
+          validated.totalPrice, 0, 0, 'pending', validated.brandId || null,
+        ]
       );
 
-      const booking = bookingResult[0];
+      const booking = bookingResult.rows[0];
 
       this.log('Booking created successfully', {
         bookingId: booking.id,

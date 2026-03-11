@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { healthCheck } from '@/lib/db';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 import { isStripeConfigured, probeStripeHealth } from '@/lib/stripe';
 import { getRateLimitStatus } from '@/lib/api/middleware/rate-limit';
@@ -20,7 +20,7 @@ export const GET = withErrorHandling(async () => {
 
   // Check all services in parallel
   const [dbHealthy, stripeHealth, rateLimitStatus] = await Promise.all([
-    prisma.$queryRaw`SELECT 1`.then(() => true).catch(() => false),
+    healthCheck().catch(() => false),
     isStripeConfigured() ? probeStripeHealth().catch(() => ({ available: false, latencyMs: 0, error: 'Probe failed' })) : Promise.resolve({ available: false, latencyMs: 0, error: 'Not configured' }),
     Promise.resolve(getRateLimitStatus()),
   ]);

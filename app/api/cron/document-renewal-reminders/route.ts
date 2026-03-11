@@ -17,7 +17,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withCronAuth } from '@/lib/api/middleware/cron-auth';
 import { withCronLock } from '@/lib/api/middleware/cron-lock';
-import { query, queryMany } from '@/lib/prisma-query'
+import { query, queryMany } from '@/lib/db-helpers';
 import { sendEmail } from '@/lib/email';
 import { getBrandEmailConfig } from '@/lib/email-brands';
 import {

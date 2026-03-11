@@ -7,8 +7,8 @@
 import { getSession } from '@/lib/auth/session';
 import { canAccessGeology } from '@/lib/auth/roles';
 import { redirect } from 'next/navigation';
+import { query } from '@/lib/db';
 import Link from 'next/link';
-import { prisma } from '@/lib/prisma';
 
 // ============================================================================
 // Types
@@ -35,13 +35,13 @@ interface Site {
 
 async function getSites(): Promise<Site[]> {
   try {
-    const result = await prisma.$queryRawUnsafe<Site[]>(`
+    const result = await query<Site>(`
       SELECT id, name, slug, description, site_type, latitude, longitude,
              address, is_public_access, requires_appointment, is_published, created_at
       FROM geology_sites
       ORDER BY name ASC
     `);
-    return result;
+    return result.rows;
   } catch {
     return [];
   }

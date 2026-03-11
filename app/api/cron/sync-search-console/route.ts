@@ -4,7 +4,7 @@ import {
   refreshAccessToken,
   syncDailyData,
 } from '@/lib/services/search-console.service';
-import { query } from '@/lib/prisma-query'
+import { query } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { withCronAuth } from '@/lib/api/middleware/cron-auth';
 import { withCronLock } from '@/lib/api/middleware/cron-lock';

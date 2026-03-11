@@ -6,8 +6,9 @@ import {
   formatDateForDB,
   generateId
 } from '@/app/api/utils';
-import { prisma } from '@/lib/prisma';
+import { query } from '@/lib/db';
 import { z } from 'zod';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // Request body schema
 const DVIRSchema = z.object({
@@ -26,8 +27,11 @@ const DVIRSchema = z.object({
 /**
  * POST /api/inspections/dvir
  * Create a Driver Vehicle Inspection Report
+ *
+ * Uses withErrorHandling middleware for consistent error handling
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   // Check authentication
   const session = await requireAuth();
 
@@ -52,59 +56,82 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   const dvirId = `dvir-${generateId()}`;
 
   // Create DVIR record - try dedicated table first, then fallback to inspections
-  let rows = await prisma.$queryRaw<Record<string, unknown>[]>`
+  let result = await query(`
     INSERT INTO dvir_reports (
       id, driver_id, vehicle_id, report_date,
       pre_trip_inspection_id, post_trip_inspection_id,
       defects_found, defects_description,
       driver_signature, created_at
-    ) VALUES (${dvirId}, ${parseInt(session.userId)}, ${body.vehicleId}, ${dvirDate}, ${body.preTripInspectionId || null}, ${body.postTripInspectionId || null}, ${body.defects.length > 0}, ${body.defects.length > 0 ? JSON.stringify(body.defects) : null}, ${body.signature}, CURRENT_TIMESTAMP)
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP)
     RETURNING *
-  `.catch(async (error: Error) => {
+  `, [
+    dvirId,
+    parseInt(session.userId),
+    body.vehicleId,
+    dvirDate,
+    body.preTripInspectionId || null,
+    body.postTripInspectionId || null,
+    body.defects.length > 0,
+    body.defects.length > 0 ? JSON.stringify(body.defects) : null,
+    body.signature
+  ]).catch(async (error: Error) => {
     // If DVIR table doesn't exist, store as inspection
     if (error.message.includes('dvir_reports')) {
-      return prisma.$queryRaw<Record<string, unknown>[]>`
+      return query(`
         INSERT INTO inspections (
           driver_id, vehicle_id, type, inspection_data, status
-        ) VALUES (${parseInt(session.userId)}, ${body.vehicleId}, 'dvir', ${JSON.stringify({
+        ) VALUES ($1, $2, 'dvir', $3, $4)
+        RETURNING *
+      `, [
+        parseInt(session.userId),
+        body.vehicleId,
+        JSON.stringify({
           date: dvirDate,
           defects: body.defects,
           signature: body.signature,
           preTripInspectionId: body.preTripInspectionId,
           postTripInspectionId: body.postTripInspectionId
-        })}, ${body.defects.length > 0 ? 'requires_attention' : 'completed'})
-        RETURNING *
-      `;
+        }),
+        body.defects.length > 0 ? 'requires_attention' : 'completed'
+      ]);
     }
     throw error;
   });
 
   // If no rows returned from primary insert, try fallback
-  if (rows.length === 0) {
-    rows = await prisma.$queryRaw<Record<string, unknown>[]>`
+  if (result.rowCount === 0) {
+    result = await query(`
       INSERT INTO inspections (
         driver_id, vehicle_id, type, inspection_data, status
-      ) VALUES (${parseInt(session.userId)}, ${body.vehicleId}, 'dvir', ${JSON.stringify({
+      ) VALUES ($1, $2, 'dvir', $3, $4)
+      RETURNING *
+    `, [
+      parseInt(session.userId),
+      body.vehicleId,
+      JSON.stringify({
         date: dvirDate,
         defects: body.defects,
         signature: body.signature,
         preTripInspectionId: body.preTripInspectionId,
         postTripInspectionId: body.postTripInspectionId
-      })}, ${body.defects.length > 0 ? 'requires_attention' : 'completed'})
-      RETURNING *
-    `;
+      }),
+      body.defects.length > 0 ? 'requires_attention' : 'completed'
+    ]);
   }
 
   return NextResponse.json({
     success: true,
-    data: rows[0],
+    data: result.rows[0],
     message: 'DVIR created successfully'
   });
-});
+})
+);
 
 /**
  * GET /api/inspections/dvir
  * Get DVIRs for the authenticated driver
+ *
+ * Uses withErrorHandling middleware for consistent error handling
  */
 export const GET = withErrorHandling(async (request: NextRequest) => {
   // Check authentication
@@ -115,33 +142,33 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 
   if (!dvirId) {
     // Get recent DVIRs
-    const rows = await prisma.$queryRaw<Record<string, unknown>[]>`
+    const result = await query(`
       SELECT * FROM inspections
-      WHERE driver_id = ${parseInt(session.userId)} AND type = 'dvir'
+      WHERE driver_id = $1 AND type = 'dvir'
       ORDER BY created_at DESC
       LIMIT 10
-    `;
+    `, [parseInt(session.userId)]);
 
     return NextResponse.json({
       success: true,
-      data: rows,
+      data: result.rows,
       message: 'DVIRs retrieved'
     });
   }
 
   // Get specific DVIR
-  const rows = await prisma.$queryRaw<Record<string, unknown>[]>`
+  const result = await query(`
     SELECT * FROM inspections
-    WHERE id = ${dvirId} AND driver_id = ${parseInt(session.userId)} AND type = 'dvir'
-  `;
+    WHERE id = $1 AND driver_id = $2 AND type = 'dvir'
+  `, [dvirId, parseInt(session.userId)]);
 
-  if (rows.length === 0) {
+  if (result.rows.length === 0) {
     throw new NotFoundError('DVIR not found');
   }
 
   return NextResponse.json({
     success: true,
-    data: rows[0],
+    data: result.rows[0],
     message: 'DVIR retrieved'
   });
 });

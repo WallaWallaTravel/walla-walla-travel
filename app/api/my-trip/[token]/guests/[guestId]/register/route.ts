@@ -12,8 +12,9 @@ import {
   BadRequestError,
 } from '@/lib/api/middleware/error-handler';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
-import { prisma } from '@/lib/prisma';
+import { query } from '@/lib/db';
 import { z } from 'zod';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 import { noDisposableEmail } from '@/lib/utils/email-validation';
 
 interface RouteParams {
@@ -27,7 +28,8 @@ const RegisterGuestSchema = z.object({
   phone: z.string().max(50).optional().or(z.literal('')),
 });
 
-export const POST = withErrorHandling<unknown, RouteParams>(
+export const POST = withCSRF(
+  withErrorHandling<unknown, RouteParams>(
   async (request: NextRequest, context: RouteContext<RouteParams>) => {
     const { token, guestId } = await context.params;
 
@@ -49,20 +51,23 @@ export const POST = withErrorHandling<unknown, RouteParams>(
 
     const { name, email, phone } = parseResult.data;
 
-    const rows = await prisma.$queryRaw<Record<string, unknown>[]>`
-      UPDATE trip_proposal_guests
-      SET name = ${name}, email = ${email}, phone = ${phone || null}, is_registered = true, updated_at = NOW()
-      WHERE id = ${guestIdNum} AND trip_proposal_id = ${proposal.id}
-      RETURNING id, name, email, phone, is_registered, is_primary,
-               dietary_restrictions, accessibility_needs, special_requests`;
+    const result = await query(
+      `UPDATE trip_proposal_guests
+       SET name = $1, email = $2, phone = $3, is_registered = true, updated_at = NOW()
+       WHERE id = $4 AND trip_proposal_id = $5
+       RETURNING id, name, email, phone, is_registered, is_primary,
+                 dietary_restrictions, accessibility_needs, special_requests`,
+      [name, email, phone || null, guestIdNum, proposal.id]
+    );
 
-    if (!rows[0]) {
+    if (!result.rows[0]) {
       throw new NotFoundError('Guest not found');
     }
 
     return NextResponse.json({
       success: true,
-      data: rows[0],
+      data: result.rows[0],
     });
   }
+)
 );

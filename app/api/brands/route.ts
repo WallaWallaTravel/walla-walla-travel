@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { query } from '@/lib/db';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 
 /**
@@ -7,7 +7,7 @@ import { withErrorHandling } from '@/lib/api/middleware/error-handler';
  * Get all active brands for selection in forms
  */
 export const GET = withErrorHandling(async () => {
-  const rows = await prisma.$queryRaw<Array<Record<string, unknown>>>`
+  const result = await query(`
     SELECT
       id,
       brand_code,
@@ -22,10 +22,10 @@ export const GET = withErrorHandling(async () => {
     FROM brands
     WHERE active = true
     ORDER BY default_brand DESC, brand_name ASC
-  `;
+  `);
 
   return NextResponse.json({
     success: true,
-    data: rows,
+    data: result.rows,
   });
 });

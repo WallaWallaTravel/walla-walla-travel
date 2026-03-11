@@ -7,8 +7,10 @@ import {
   validateRequiredFields,
   logApiRequest
 } from '@/app/api/utils';
-import { prisma } from '@/lib/prisma';
+import { query } from '@/lib/db';
+import { withTransaction } from '@/lib/db-helpers';
 import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface OdometerUpdate {
   mileage: number;
@@ -20,7 +22,8 @@ interface OdometerUpdate {
  * PUT /api/vehicles/:id/odometer
  * Updates the vehicle's odometer reading
  */
-export const PUT = withErrorHandling(async (
+export const PUT = withCSRF(
+  withErrorHandling(async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) => {
@@ -65,10 +68,10 @@ export const PUT = withErrorHandling(async (
 
   const driverId = parseInt(session.userId);
 
-  // Use Prisma transaction for consistency
-  const result = await prisma.$transaction(async (tx) => {
+  // Use transaction for consistency
+  const result = await withTransaction(async (client) => {
     // Get current vehicle data
-    const vehicleRows = await tx.$queryRaw<Record<string, unknown>[]>`
+    const vehicleResult = await client.query(`
       SELECT
         id,
         vehicle_number,
@@ -76,46 +79,46 @@ export const PUT = withErrorHandling(async (
         next_service_due,
         is_active
       FROM vehicles
-      WHERE id = ${vehicleId}
-    `;
+      WHERE id = $1
+    `, [vehicleId]);
 
-    if (vehicleRows.length === 0) {
+    if (vehicleResult.rowCount === 0) {
       throw new NotFoundError('Vehicle not found');
     }
 
-    const vehicle = vehicleRows[0];
+    const vehicle = vehicleResult.rows[0];
 
     if (!vehicle.is_active) {
       throw new BadRequestError('Cannot update odometer for inactive vehicle');
     }
 
     // Check for odometer rollback
-    if (newMileage < (vehicle.current_mileage as number)) {
+    if (newMileage < vehicle.current_mileage) {
       throw new BadRequestError(`New mileage (${newMileage}) cannot be less than current mileage (${vehicle.current_mileage})`);
     }
 
     // Update vehicle mileage and optionally fuel level
-    let updatedRows: Record<string, unknown>[];
+    const updateFields = ['current_mileage = $2', 'updated_at = CURRENT_TIMESTAMP'];
+    const updateParams = [vehicleId, newMileage];
+    let paramCount = 2;
+
     if (body.fuel_level !== undefined) {
-      updatedRows = await tx.$queryRaw<Record<string, unknown>[]>`
-        UPDATE vehicles
-        SET current_mileage = ${newMileage}, fuel_level = ${body.fuel_level}, updated_at = CURRENT_TIMESTAMP
-        WHERE id = ${vehicleId}
-        RETURNING *
-      `;
-    } else {
-      updatedRows = await tx.$queryRaw<Record<string, unknown>[]>`
-        UPDATE vehicles
-        SET current_mileage = ${newMileage}, updated_at = CURRENT_TIMESTAMP
-        WHERE id = ${vehicleId}
-        RETURNING *
-      `;
+      paramCount++;
+      updateFields.push(`fuel_level = $${paramCount}`);
+      updateParams.push(body.fuel_level);
     }
 
-    const updatedVehicle = updatedRows[0];
+    const updateResult = await client.query(`
+      UPDATE vehicles
+      SET ${updateFields.join(', ')}
+      WHERE id = $1
+      RETURNING *
+    `, updateParams);
+
+    const updatedVehicle = updateResult.rows[0];
 
     // Log mileage change
-    await tx.$executeRaw`
+    await client.query(`
       INSERT INTO mileage_logs (
         vehicle_id,
         recorded_date,
@@ -124,54 +127,65 @@ export const PUT = withErrorHandling(async (
         mileage_change,
         recorded_by,
         notes
-      ) VALUES (${vehicleId}, CURRENT_TIMESTAMP, ${newMileage}, ${vehicle.current_mileage as number}, ${newMileage - (vehicle.current_mileage as number)}, ${driverId}, ${body.notes || null})
-    `;
+      ) VALUES ($1, CURRENT_TIMESTAMP, $2, $3, $4, $5, $6)
+    `, [
+      vehicleId,
+      newMileage,
+      vehicle.current_mileage,
+      newMileage - vehicle.current_mileage,
+      driverId,
+      body.notes || null,
+    ]);
 
     // Update time card if this is an end-of-day reading
-    await tx.$executeRaw`
+    await client.query(`
       UPDATE time_cards
-      SET end_mileage = ${newMileage}
-      WHERE vehicle_id = ${vehicleId}
-        AND driver_id = ${driverId}
+      SET end_mileage = $2
+      WHERE vehicle_id = $1
+        AND driver_id = $3
         AND DATE(clock_in_time) = CURRENT_DATE
         AND clock_out_time IS NOT NULL
         AND end_mileage IS NULL
-    `;
+    `, [vehicleId, newMileage, driverId]);
 
     // Update daily trip mileage
-    await tx.$executeRaw`
+    await client.query(`
       UPDATE daily_trips
       SET
-        end_mileage = ${newMileage},
-        total_miles = ${newMileage} - start_mileage
-      WHERE vehicle_id = ${vehicleId}
-        AND driver_id = ${driverId}
+        end_mileage = $2,
+        total_miles = $2 - start_mileage
+      WHERE vehicle_id = $1
+        AND driver_id = $3
         AND trip_date = CURRENT_DATE
         AND end_mileage IS NULL
-    `;
+    `, [vehicleId, newMileage, driverId]);
 
     return updatedVehicle;
   });
 
   // Check if service is required
-  const serviceRequired = result.next_service_due && (result.current_mileage as number) >= (result.next_service_due as number);
-  const milesUntilService = result.next_service_due ? (result.next_service_due as number) - (result.current_mileage as number) : null;
+  const serviceRequired = result.next_service_due && result.current_mileage >= result.next_service_due;
+  const milesUntilService = result.next_service_due ? result.next_service_due - result.current_mileage : null;
 
   // Create service alert if needed
   if (serviceRequired) {
-    await prisma.$executeRaw`
+    await query(`
       INSERT INTO vehicle_alerts (
         vehicle_id,
         alert_type,
         severity,
         message,
         created_by
-      ) VALUES (${vehicleId}, 'service_due', 'warning', ${`Service required - ${Math.abs(milesUntilService ?? 0)} miles overdue`}, ${driverId})
+      ) VALUES ($1, 'service_due', 'warning', $2, $3)
       ON CONFLICT (vehicle_id, alert_type)
       DO UPDATE SET
         message = EXCLUDED.message,
         updated_at = CURRENT_TIMESTAMP
-    `;
+    `, [
+      vehicleId,
+      `Service required - ${Math.abs(milesUntilService ?? 0)} miles overdue`,
+      driverId,
+    ]);
   }
 
   // Format response
@@ -193,7 +207,8 @@ export const PUT = withErrorHandling(async (
   }
 
   return successResponse(responseData, message);
-});
+})
+);
 
 /**
  * GET /api/vehicles/:id/odometer
@@ -216,7 +231,7 @@ export const GET = withErrorHandling(async (
   }
 
   // Get current odometer reading
-  const vehicleRows = await prisma.$queryRaw<Record<string, unknown>[]>`
+  const vehicleResult = await query(`
     SELECT
       id,
       vehicle_number,
@@ -225,17 +240,17 @@ export const GET = withErrorHandling(async (
       next_service_due,
       updated_at
     FROM vehicles
-    WHERE id = ${vehicleId}
-  `;
+    WHERE id = $1
+  `, [vehicleId]);
 
-  if (vehicleRows.length === 0) {
+  if (vehicleResult.rowCount === 0) {
     throw new NotFoundError('Vehicle not found');
   }
 
-  const vehicle = vehicleRows[0];
+  const vehicle = vehicleResult.rows[0];
 
   // Get recent mileage history
-  const historyRows = await prisma.$queryRaw<Record<string, unknown>[]>`
+  const historyResult = await query(`
     SELECT
       ml.recorded_date,
       ml.mileage,
@@ -245,14 +260,14 @@ export const GET = withErrorHandling(async (
       u.name as recorded_by
     FROM mileage_logs ml
     LEFT JOIN users u ON ml.recorded_by = u.id
-    WHERE ml.vehicle_id = ${vehicleId}
+    WHERE ml.vehicle_id = $1
     ORDER BY ml.recorded_date DESC
     LIMIT 20
-  `;
+  `, [vehicleId]);
 
   // Calculate service status
-  const serviceRequired = vehicle.next_service_due && (vehicle.current_mileage as number) >= (vehicle.next_service_due as number);
-  const milesUntilService = vehicle.next_service_due ? (vehicle.next_service_due as number) - (vehicle.current_mileage as number) : null;
+  const serviceRequired = vehicle.next_service_due && vehicle.current_mileage >= vehicle.next_service_due;
+  const milesUntilService = vehicle.next_service_due ? vehicle.next_service_due - vehicle.current_mileage : null;
 
   // Format response
   const responseData = {
@@ -263,7 +278,7 @@ export const GET = withErrorHandling(async (
       service_required: serviceRequired,
       miles_until_service: milesUntilService,
     },
-    history: historyRows,
+    history: historyResult.rows,
   };
 
   return successResponse(responseData, 'Odometer data retrieved successfully');

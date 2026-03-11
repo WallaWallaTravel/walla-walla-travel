@@ -11,7 +11,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { pool } from '@/lib/db';
 import { logger } from '@/lib/logger';
 
 /**
@@ -40,34 +40,21 @@ export async function withCronLock(
   fn: () => Promise<NextResponse>
 ): Promise<NextResponse> {
   const lockId = djb2Hash(jobName);
+  const client = await pool.connect();
 
-  // Use prisma.$transaction to ensure lock/unlock happen on the same connection
   try {
-    const result = await prisma.$transaction(async (tx) => {
-      const lockResult = await tx.$queryRaw<Array<{ pg_try_advisory_lock: boolean }>>`
-        SELECT pg_try_advisory_lock(${lockId})
-      `;
+    const lockResult = await client.query<{ pg_try_advisory_lock: boolean }>(
+      'SELECT pg_try_advisory_lock($1)',
+      [lockId]
+    );
 
-      const acquired = lockResult[0]?.pg_try_advisory_lock === true;
+    const acquired = lockResult.rows[0]?.pg_try_advisory_lock === true;
 
-      if (!acquired) {
-        logger.info(`Cron lock skipped: ${jobName} is already running`, {
-          job: jobName,
-          lockId,
-        });
-        return null; // Signal: lock not acquired
-      }
-
-      // Execute the job within the transaction context
-      const response = await fn();
-
-      // Unlock
-      await tx.$executeRaw`SELECT pg_advisory_unlock(${lockId})`;
-
-      return response;
-    });
-
-    if (result === null) {
+    if (!acquired) {
+      logger.info(`Cron lock skipped: ${jobName} is already running`, {
+        job: jobName,
+        lockId,
+      });
       return NextResponse.json({
         success: true,
         skipped: true,
@@ -76,14 +63,19 @@ export async function withCronLock(
       });
     }
 
-    return result;
+    const response = await fn();
+
+    await client.query('SELECT pg_advisory_unlock($1)', [lockId]);
+
+    return response;
   } catch (error) {
-    // Attempt to unlock in case of error (lock will auto-release on disconnect anyway)
     try {
-      await prisma.$executeRaw`SELECT pg_advisory_unlock(${lockId})`;
+      await client.query('SELECT pg_advisory_unlock($1)', [lockId]);
     } catch {
       // Unlock failed — lock will release when connection closes
     }
     throw error;
+  } finally {
+    client.release();
   }
 }

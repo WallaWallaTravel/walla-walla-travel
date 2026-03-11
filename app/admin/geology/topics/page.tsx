@@ -7,8 +7,8 @@
 import { getSession } from '@/lib/auth/session';
 import { canAccessGeology } from '@/lib/auth/roles';
 import { redirect } from 'next/navigation';
+import { query } from '@/lib/db';
 import Link from 'next/link';
-import { prisma } from '@/lib/prisma';
 
 // ============================================================================
 // Types
@@ -34,13 +34,13 @@ interface Topic {
 
 async function getTopics(): Promise<Topic[]> {
   try {
-    const result = await prisma.$queryRawUnsafe<Topic[]>(`
+    const result = await query<Topic>(`
       SELECT id, slug, title, subtitle, topic_type, difficulty,
              is_featured, is_published, verified, created_at, updated_at
       FROM geology_topics
       ORDER BY display_order ASC, created_at DESC
     `);
-    return result;
+    return result.rows;
   } catch {
     return [];
   }

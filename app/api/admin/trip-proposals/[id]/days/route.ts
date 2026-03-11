@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import { AddDaySchema } from '@/lib/types/trip-proposal';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -16,7 +17,8 @@ interface RouteParams {
  * POST /api/admin/trip-proposals/[id]/days
  * Add a new day to the trip proposal
  */
-export const POST = withAdminAuth(async (request: NextRequest, session, context) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest, session, context) => {
   const { id } = await (context as unknown as RouteParams).params;
   const proposalId = parseInt(id, 10);
 
@@ -51,4 +53,5 @@ export const POST = withAdminAuth(async (request: NextRequest, session, context)
     },
     { status: 201 }
   );
-});
+})
+);

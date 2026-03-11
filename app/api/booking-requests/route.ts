@@ -7,13 +7,14 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { query, queryOne } from '@/lib/db-helpers';
 import { sendEmail } from '@/lib/email';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { crmSyncService } from '@/lib/services/crm-sync.service';
 import { crmTaskAutomationService } from '@/lib/services/crm-task-automation.service';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 import { noDisposableEmail } from '@/lib/utils/email-validation';
 import { emailDarkModeStyles } from '@/lib/email/dark-mode-styles';
 
@@ -52,7 +53,8 @@ const BookingRequestSchema = z.object({
  * POST /api/booking-requests
  * Create a new booking request (reservation) for admin review
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   // Parse and validate request body
   let rawBody: unknown;
   try {
@@ -68,32 +70,40 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
 
   const data = parseResult.data;
 
-  // Use Prisma transaction
-  const result = await prisma.$transaction(async (tx) => {
+  // Start transaction
+  await query('BEGIN');
+
+  try {
     // 1. Create or find customer
     let customerId: number;
 
-    const existingCustomerRows = await tx.$queryRaw<{ id: number }[]>`
-      SELECT id FROM customers WHERE LOWER(email) = LOWER(${data.contact.email})`;
+    const existingCustomer = await query(
+      'SELECT id FROM customers WHERE LOWER(email) = LOWER($1)',
+      [data.contact.email]
+    );
 
-    if (existingCustomerRows.length > 0) {
-      customerId = existingCustomerRows[0].id;
+    if (existingCustomer.rows.length > 0) {
+      customerId = existingCustomer.rows[0].id;
 
       // Update customer info including SMS consent
-      await tx.$executeRaw`
-        UPDATE customers
-        SET name = ${data.contact.name},
-            phone = ${data.contact.phone || null},
-            sms_marketing_consent = ${data.contact.textConsent},
-            updated_at = NOW()
-        WHERE id = ${customerId}`;
+      await query(
+        `UPDATE customers
+         SET name = $1,
+             phone = $2,
+             sms_marketing_consent = $3,
+             updated_at = NOW()
+         WHERE id = $4`,
+        [data.contact.name, data.contact.phone || null, data.contact.textConsent, customerId]
+      );
     } else {
       // Create new customer
-      const newCustomerRows = await tx.$queryRaw<{ id: number }[]>`
-        INSERT INTO customers (email, name, phone, sms_marketing_consent, created_at, updated_at)
-        VALUES (${data.contact.email}, ${data.contact.name}, ${data.contact.phone || null}, ${data.contact.textConsent}, NOW(), NOW())
-        RETURNING id`;
-      customerId = newCustomerRows[0].id;
+      const newCustomer = await query(
+        `INSERT INTO customers (email, name, phone, sms_marketing_consent, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, NOW(), NOW())
+         RETURNING id`,
+        [data.contact.email, data.contact.name, data.contact.phone || null, data.contact.textConsent]
+      );
+      customerId = newCustomer.rows[0].id;
     }
 
     // 2. Determine party size (from first day, or use 0 for large groups)
@@ -128,13 +138,15 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     const brandCode = brandCodeMap[data.providerId] || 'NWT';
 
     // Look up brand ID
-    const brandRows = await tx.$queryRaw<{ id: number }[]>`
-      SELECT id FROM brands WHERE brand_code = ${brandCode}`;
-    const brandId = brandRows[0]?.id || 1;
+    const brandResult = await query(
+      'SELECT id FROM brands WHERE brand_code = $1',
+      [brandCode]
+    );
+    const brandId = brandResult.rows[0]?.id || 1;
 
     // 7. Create reservation record
-    const reservationRows = await tx.$queryRaw<{ id: number }[]>`
-      INSERT INTO reservations (
+    const reservation = await query(
+      `INSERT INTO reservations (
         reservation_number,
         customer_id,
         party_size,
@@ -151,161 +163,177 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
         brand_code,
         created_at,
         updated_at
-      ) VALUES (${reservationNumber}, ${customerId}, ${partySize}, ${startDate}, ${data.tourType}, ${isMultiDay ? 'multi' : 'single'}, ${startDate}, ${endDate}, ${JSON.stringify(specialRequestsData)}, 0, false, 'pending', ${brandId}, ${brandCode}, NOW(), NOW())
-      RETURNING id`;
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), NOW())
+      RETURNING id`,
+      [
+        reservationNumber,
+        customerId,
+        partySize,
+        startDate,
+        data.tourType,
+        isMultiDay ? 'multi' : 'single',
+        startDate,
+        endDate,
+        JSON.stringify(specialRequestsData),
+        0, // Deposit amount - will be set after admin reviews
+        false, // Deposit not paid yet
+        'pending', // Status: pending → contacted → confirmed → completed
+        brandId,
+        brandCode,
+      ]
+    );
 
-    const reservationId = reservationRows[0].id;
+    const reservationId = reservation.rows[0].id;
 
-    return { reservationId, reservationNumber, customerId, partySize, startDate, brandId };
-  });
+    await query('COMMIT');
 
-  logger.info('Booking request created', {
-    reservationNumber: result.reservationNumber,
-    customerName: data.contact.name,
-    days: data.tourDays.length,
-    provider: data.provider,
-  });
+    logger.info('Booking request created', {
+      reservationNumber,
+      customerName: data.contact.name,
+      days: data.tourDays.length,
+      provider: data.provider,
+    });
 
-  // Sync to CRM (async, don't block booking request)
-  syncBookingRequestToCrm({
-    customerId: result.customerId,
-    customerName: data.contact.name,
-    customerEmail: data.contact.email,
-    customerPhone: data.contact.phone,
-    reservationNumber: result.reservationNumber,
-    partySize: result.partySize,
-    tourType: data.tourType,
-    startDate: result.startDate,
-    provider: data.provider,
-    estimatedTotal: data.estimatedTotal,
-    notes: data.notes,
-    brandId: result.brandId,
-  }).catch((err) => {
-    logger.error('Failed to sync booking request to CRM', { error: err, reservationNumber: result.reservationNumber });
-  });
+    // Sync to CRM (async, don't block booking request)
+    syncBookingRequestToCrm({
+      customerId,
+      customerName: data.contact.name,
+      customerEmail: data.contact.email,
+      customerPhone: data.contact.phone,
+      reservationNumber,
+      partySize,
+      tourType: data.tourType,
+      startDate,
+      provider: data.provider,
+      estimatedTotal: data.estimatedTotal,
+      notes: data.notes,
+      brandId,
+    }).catch((err) => {
+      logger.error('Failed to sync booking request to CRM', { error: err, reservationNumber });
+    });
 
-  // Send confirmation email via Resend
-  try {
-    // Format dates for email
-    const formatDate = (dateStr: string) => {
-      const [year, month, day] = dateStr.split('-');
-      return `${month}/${day}/${year}`;
-    };
+    // Send confirmation email via Resend
+    try {
+      // Format dates for email
+      const formatDate = (dateStr: string) => {
+        const [year, month, day] = dateStr.split('-');
+        return `${month}/${day}/${year}`;
+      };
 
-    const tourDatesHtml = data.tourDays
-      .map((day) => {
-        const guests = typeof day.guests === 'number' ? `${day.guests} guests` : day.guests;
-        return `<li style="margin-bottom: 8px;"><strong>${formatDate(day.date)}</strong> - ${day.hours} hours, ${guests}</li>`;
-      })
-      .join('');
+      const tourDatesHtml = data.tourDays
+        .map((day) => {
+          const guests = typeof day.guests === 'number' ? `${day.guests} guests` : day.guests;
+          return `<li style="margin-bottom: 8px;"><strong>${formatDate(day.date)}</strong> - ${day.hours} hours, ${guests}</li>`;
+        })
+        .join('');
 
-    const tourDatesText = data.tourDays
-      .map((day) => {
-        const guests = typeof day.guests === 'number' ? `${day.guests} guests` : day.guests;
-        return `  • ${formatDate(day.date)} - ${day.hours} hours, ${guests}`;
-      })
-      .join('\n');
+      const tourDatesText = data.tourDays
+        .map((day) => {
+          const guests = typeof day.guests === 'number' ? `${day.guests} guests` : day.guests;
+          return `  • ${formatDate(day.date)} - ${day.hours} hours, ${guests}`;
+        })
+        .join('\n');
 
-    const firstName = data.contact.name.split(' ')[0];
-    const tourTypeDisplay = data.tourType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      const firstName = data.contact.name.split(' ')[0];
+      const tourTypeDisplay = data.tourType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 
-    const emailHtml = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        ${emailDarkModeStyles()}
-      </head>
-      <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f9fafb;">
-        <div class="em-wrapper" style="max-width: 600px; margin: 0 auto; background: #ffffff;">
-          <!-- Header -->
-          <div style="background-color: #10b981; background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 40px 20px; text-align: center;">
-            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">Request Received!</h1>
-            <p style="color: #d1fae5; margin: 10px 0 0 0; font-size: 16px;">We'll be in touch within 24 hours</p>
-          </div>
+      const emailHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          ${emailDarkModeStyles()}
+        </head>
+        <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f9fafb;">
+          <div class="em-wrapper" style="max-width: 600px; margin: 0 auto; background: #ffffff;">
+            <!-- Header -->
+            <div style="background-color: #10b981; background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 40px 20px; text-align: center;">
+              <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">Request Received!</h1>
+              <p style="color: #d1fae5; margin: 10px 0 0 0; font-size: 16px;">We'll be in touch within 24 hours</p>
+            </div>
 
-          <!-- Main Content -->
-          <div class="em-body" style="padding: 40px 20px;">
-            <p style="font-size: 18px; color: #1f2937; margin: 0 0 20px 0;">Hi ${firstName},</p>
+            <!-- Main Content -->
+            <div class="em-body" style="padding: 40px 20px;">
+              <p style="font-size: 18px; color: #1f2937; margin: 0 0 20px 0;">Hi ${firstName},</p>
 
-            <p style="font-size: 16px; color: #4b5563; line-height: 1.6; margin: 0 0 30px 0;">
-              Thank you for your booking request with <strong>${data.provider}</strong>! We've received your request and will be in touch within 24 hours to confirm availability and discuss the details of your tour.
-            </p>
+              <p style="font-size: 16px; color: #4b5563; line-height: 1.6; margin: 0 0 30px 0;">
+                Thank you for your booking request with <strong>${data.provider}</strong>! We've received your request and will be in touch within 24 hours to confirm availability and discuss the details of your tour.
+              </p>
 
-            <!-- Request Details Card -->
-            <div class="em-card" style="background: #f9fafb; border: 2px solid #e5e7eb; border-radius: 12px; padding: 24px; margin: 0 0 30px 0;">
-              <h2 style="color: #10b981; margin: 0 0 20px 0; font-size: 20px; font-weight: bold;">📋 Your Request Details</h2>
+              <!-- Request Details Card -->
+              <div class="em-card" style="background: #f9fafb; border: 2px solid #e5e7eb; border-radius: 12px; padding: 24px; margin: 0 0 30px 0;">
+                <h2 style="color: #10b981; margin: 0 0 20px 0; font-size: 20px; font-weight: bold;">📋 Your Request Details</h2>
 
-              <table style="width: 100%; border-collapse: collapse;">
-                <tr>
-                  <td style="padding: 8px 0; color: #6b7280; font-size: 14px; font-weight: 600;">Reference:</td>
-                  <td style="padding: 8px 0; color: #1f2937; font-size: 14px; font-weight: bold; text-align: right;">${result.reservationNumber}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px 0; color: #6b7280; font-size: 14px; font-weight: 600;">Tour Type:</td>
-                  <td style="padding: 8px 0; color: #1f2937; font-size: 14px; font-weight: bold; text-align: right;">${tourTypeDisplay}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px 0; color: #6b7280; font-size: 14px; font-weight: 600;">Estimated Total:</td>
-                  <td style="padding: 8px 0; color: #1f2937; font-size: 14px; font-weight: bold; text-align: right;">${data.estimatedTotal}</td>
-                </tr>
-              </table>
+                <table style="width: 100%; border-collapse: collapse;">
+                  <tr>
+                    <td style="padding: 8px 0; color: #6b7280; font-size: 14px; font-weight: 600;">Reference:</td>
+                    <td style="padding: 8px 0; color: #1f2937; font-size: 14px; font-weight: bold; text-align: right;">${reservationNumber}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #6b7280; font-size: 14px; font-weight: 600;">Tour Type:</td>
+                    <td style="padding: 8px 0; color: #1f2937; font-size: 14px; font-weight: bold; text-align: right;">${tourTypeDisplay}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #6b7280; font-size: 14px; font-weight: 600;">Estimated Total:</td>
+                    <td style="padding: 8px 0; color: #1f2937; font-size: 14px; font-weight: bold; text-align: right;">${data.estimatedTotal}</td>
+                  </tr>
+                </table>
 
-              <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
-                <p style="color: #6b7280; font-size: 14px; font-weight: 600; margin: 0 0 8px 0;">Tour Date${data.tourDays.length > 1 ? 's' : ''}:</p>
-                <ul style="margin: 0; padding: 0 0 0 20px; color: #1f2937; font-size: 14px;">
-                  ${tourDatesHtml}
+                <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
+                  <p style="color: #6b7280; font-size: 14px; font-weight: 600; margin: 0 0 8px 0;">Tour Date${data.tourDays.length > 1 ? 's' : ''}:</p>
+                  <ul style="margin: 0; padding: 0 0 0 20px; color: #1f2937; font-size: 14px;">
+                    ${tourDatesHtml}
+                  </ul>
+                </div>
+
+                ${data.notes ? `
+                <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
+                  <p style="color: #6b7280; font-size: 14px; font-weight: 600; margin: 0 0 8px 0;">Notes:</p>
+                  <p style="color: #1f2937; font-size: 14px; margin: 0;">${data.notes}</p>
+                </div>
+                ` : ''}
+              </div>
+
+              <!-- What's Next -->
+              <div class="em-card" style="background: #ecfdf5; border: 2px solid #10b981; border-radius: 12px; padding: 24px; margin: 0 0 30px 0;">
+                <h2 style="color: #065f46; margin: 0 0 16px 0; font-size: 18px; font-weight: bold;">📅 What's Next?</h2>
+
+                <ul style="margin: 0; padding: 0 0 0 20px; color: #1f2937;">
+                  <li style="margin: 0 0 12px 0; line-height: 1.6;">We'll review your request and check availability</li>
+                  <li style="margin: 0 0 12px 0; line-height: 1.6;">You'll receive a follow-up email or call within 24 hours</li>
+                  <li style="margin: 0 0 12px 0; line-height: 1.6;">Once confirmed, we'll send deposit payment instructions</li>
+                  <li style="margin: 0; line-height: 1.6;">Your date will be officially held once deposit is received</li>
                 </ul>
               </div>
 
-              ${data.notes ? `
-              <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
-                <p style="color: #6b7280; font-size: 14px; font-weight: 600; margin: 0 0 8px 0;">Notes:</p>
-                <p style="color: #1f2937; font-size: 14px; margin: 0;">${data.notes}</p>
+              <!-- Contact Info -->
+              <div style="text-align: center; padding: 20px 0; border-top: 2px solid #e5e7eb;">
+                <p style="color: #6b7280; font-size: 14px; margin: 0 0 10px 0;">Questions? We're here to help!</p>
+                <p style="margin: 0;">
+                  <a href="mailto:info@nwtouring.com" style="color: #10b981; text-decoration: none; font-weight: 600;">info@nwtouring.com</a>
+                  <span style="color: #d1d5db; margin: 0 10px;">|</span>
+                  <a href="tel:+15095403600" style="color: #10b981; text-decoration: none; font-weight: 600;">(509) 540-3600</a>
+                </p>
               </div>
-              ` : ''}
             </div>
 
-            <!-- What's Next -->
-            <div class="em-card" style="background: #ecfdf5; border: 2px solid #10b981; border-radius: 12px; padding: 24px; margin: 0 0 30px 0;">
-              <h2 style="color: #065f46; margin: 0 0 16px 0; font-size: 18px; font-weight: bold;">📅 What's Next?</h2>
-
-              <ul style="margin: 0; padding: 0 0 0 20px; color: #1f2937;">
-                <li style="margin: 0 0 12px 0; line-height: 1.6;">We'll review your request and check availability</li>
-                <li style="margin: 0 0 12px 0; line-height: 1.6;">You'll receive a follow-up email or call within 24 hours</li>
-                <li style="margin: 0 0 12px 0; line-height: 1.6;">Once confirmed, we'll send deposit payment instructions</li>
-                <li style="margin: 0; line-height: 1.6;">Your date will be officially held once deposit is received</li>
-              </ul>
-            </div>
-
-            <!-- Contact Info -->
-            <div style="text-align: center; padding: 20px 0; border-top: 2px solid #e5e7eb;">
-              <p style="color: #6b7280; font-size: 14px; margin: 0 0 10px 0;">Questions? We're here to help!</p>
-              <p style="margin: 0;">
-                <a href="mailto:info@nwtouring.com" style="color: #10b981; text-decoration: none; font-weight: 600;">info@nwtouring.com</a>
-                <span style="color: #d1d5db; margin: 0 10px;">|</span>
-                <a href="tel:+15095403600" style="color: #10b981; text-decoration: none; font-weight: 600;">(509) 540-3600</a>
+            <!-- Footer -->
+            <div class="em-footer" style="background: #f9fafb; padding: 30px 20px; text-align: center; border-top: 1px solid #e5e7eb;">
+              <p style="color: #6b7280; font-size: 14px; margin: 0 0 10px 0;">
+                <strong style="color: #1f2937;">${data.provider}</strong><br>
+                Walla Walla, Washington
+              </p>
+              <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+                © ${new Date().getFullYear()} ${data.provider}. All rights reserved.
               </p>
             </div>
           </div>
+        </body>
+        </html>
+      `;
 
-          <!-- Footer -->
-          <div class="em-footer" style="background: #f9fafb; padding: 30px 20px; text-align: center; border-top: 1px solid #e5e7eb;">
-            <p style="color: #6b7280; font-size: 14px; margin: 0 0 10px 0;">
-              <strong style="color: #1f2937;">${data.provider}</strong><br>
-              Walla Walla, Washington
-            </p>
-            <p style="color: #9ca3af; font-size: 12px; margin: 0;">
-              © ${new Date().getFullYear()} ${data.provider}. All rights reserved.
-            </p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-
-    const emailText = `Hi ${firstName},
+      const emailText = `Hi ${firstName},
 
 Thank you for your booking request with ${data.provider}!
 
@@ -313,7 +341,7 @@ We've received your request and will be in touch within 24 hours to confirm avai
 
 YOUR REQUEST DETAILS
 ─────────────────────
-Reference: ${result.reservationNumber}
+Reference: ${reservationNumber}
 Tour Type: ${tourTypeDisplay}
 
 Tour Date${data.tourDays.length > 1 ? 's' : ''}:
@@ -341,32 +369,37 @@ ${data.provider}
 info@nwtouring.com | (509) 540-3600
 `;
 
-    const emailSent = await sendEmail({
-      to: data.contact.email,
-      subject: `Booking Request Received - ${result.reservationNumber}`,
-      html: emailHtml,
-      text: emailText,
-      from: 'Walla Walla Travel <bookings@wallawalla.travel>',
-      replyTo: 'info@nwtouring.com',
-    });
+      const emailSent = await sendEmail({
+        to: data.contact.email,
+        subject: `Booking Request Received - ${reservationNumber}`,
+        html: emailHtml,
+        text: emailText,
+        from: 'Walla Walla Travel <bookings@wallawalla.travel>',
+        replyTo: 'info@nwtouring.com',
+      });
 
-    if (emailSent) {
-      logger.info('Confirmation email sent', { email: data.contact.email });
-    } else {
-      logger.warn('Failed to send confirmation email', { email: data.contact.email });
+      if (emailSent) {
+        logger.info('Confirmation email sent', { email: data.contact.email });
+      } else {
+        logger.warn('Failed to send confirmation email', { email: data.contact.email });
+      }
+    } catch (emailError) {
+      // Log but don't fail the request if email fails
+      logger.error('Failed to send confirmation email', { error: emailError });
     }
-  } catch (emailError) {
-    // Log but don't fail the request if email fails
-    logger.error('Failed to send confirmation email', { error: emailError });
-  }
 
-  return NextResponse.json({
-    success: true,
-    reservationId: result.reservationId,
-    reservationNumber: result.reservationNumber,
-    message: "We've received your booking request! You'll receive a confirmation email shortly.",
-  });
-});
+    return NextResponse.json({
+      success: true,
+      reservationId,
+      reservationNumber,
+      message: "We've received your booking request! You'll receive a confirmation email shortly.",
+    });
+  } catch (error) {
+    await query('ROLLBACK');
+    throw error;
+  }
+})
+);
 
 /**
  * GET /api/booking-requests
@@ -374,23 +407,25 @@ info@nwtouring.com | (509) 540-3600
  */
 export const GET = withErrorHandling(async () => {
   // Get reservation count
-  const reservationRows = await prisma.$queryRaw<{ count: string }[]>`
-    SELECT COUNT(*) as count
-    FROM reservations
-    WHERE status = 'pending'`;
+  const reservationResult = await query(
+    `SELECT COUNT(*) as count
+     FROM reservations
+     WHERE status = 'pending'`
+  );
 
   // Get consultation count (trips handed off but not yet assigned)
-  const consultationRows = await prisma.$queryRaw<{ count: string }[]>`
-    SELECT COUNT(*) as count
-    FROM trips
-    WHERE status = 'handed_off'
-      AND assigned_staff_id IS NULL
-      AND handoff_requested_at IS NOT NULL`;
+  const consultationResult = await query(
+    `SELECT COUNT(*) as count
+     FROM trips
+     WHERE status = 'handed_off'
+       AND assigned_staff_id IS NULL
+       AND handoff_requested_at IS NOT NULL`
+  );
 
   return NextResponse.json({
-    pendingCount: parseInt(reservationRows[0].count, 10),
-    pendingReservations: parseInt(reservationRows[0].count, 10),
-    pendingConsultations: parseInt(consultationRows[0].count, 10),
+    pendingCount: parseInt(reservationResult.rows[0].count, 10),
+    pendingReservations: parseInt(reservationResult.rows[0].count, 10),
+    pendingConsultations: parseInt(consultationResult.rows[0].count, 10),
   });
 });
 
@@ -415,32 +450,48 @@ interface SyncBookingRequestParams {
 
 async function syncBookingRequestToCrm(params: SyncBookingRequestParams): Promise<void> {
   // Find or create CRM contact
-  const contactRows = await prisma.$queryRaw<{ id: number; email: string }[]>`
-    SELECT id, email FROM crm_contacts WHERE LOWER(email) = LOWER(${params.customerEmail})`;
-  let contact = contactRows[0] ?? null;
+  let contact = await queryOne<{ id: number; email: string }>(
+    `SELECT id, email FROM crm_contacts WHERE LOWER(email) = LOWER($1)`,
+    [params.customerEmail]
+  );
 
   if (!contact) {
     // Create new contact as a lead
-    const newContactRows = await prisma.$queryRaw<{ id: number; email: string }[]>`
-      INSERT INTO crm_contacts (
+    contact = await queryOne<{ id: number; email: string }>(
+      `INSERT INTO crm_contacts (
         email, name, phone, customer_id, contact_type, lifecycle_stage,
         lead_temperature, source, source_detail,
         notes, brand_id, created_at, updated_at
-      ) VALUES (${params.customerEmail}, ${params.customerName}, ${params.customerPhone || null}, ${params.customerId}, 'individual', 'lead', 'hot', 'booking_request', ${params.provider}, ${`Booking Request ${params.reservationNumber}: ${params.tourType} for ${params.partySize} guests on ${params.startDate}`}, ${params.brandId || null}, NOW(), NOW())
-      RETURNING id, email`;
-    contact = newContactRows[0] ?? null;
+      ) VALUES ($1, $2, $3, $4, 'individual', 'lead', 'hot', 'booking_request', $5, $6, $7, NOW(), NOW())
+      RETURNING id, email`,
+      [
+        params.customerEmail,
+        params.customerName,
+        params.customerPhone || null,
+        params.customerId,
+        params.provider,
+        `Booking Request ${params.reservationNumber}: ${params.tourType} for ${params.partySize} guests on ${params.startDate}`,
+        params.brandId || null,
+      ]
+    );
 
     logger.info('[CRM] Created contact for booking request', { contactId: contact?.id, reservationNumber: params.reservationNumber });
   } else {
     // Update existing contact with booking request info
-    await prisma.$executeRaw`
-      UPDATE crm_contacts
-      SET customer_id = COALESCE(customer_id, ${params.customerId}),
-          lead_temperature = 'hot',
-          notes = COALESCE(notes || E'\n\n---\n', '') || ${`[Booking Request ${params.reservationNumber}] ${params.tourType} for ${params.partySize} guests on ${params.startDate}`},
-          last_contacted_at = NOW(),
-          updated_at = NOW()
-      WHERE id = ${contact.id}`;
+    await query(
+      `UPDATE crm_contacts
+       SET customer_id = COALESCE(customer_id, $1),
+           lead_temperature = 'hot',
+           notes = COALESCE(notes || E'\\n\\n---\\n', '') || $2,
+           last_contacted_at = NOW(),
+           updated_at = NOW()
+       WHERE id = $3`,
+      [
+        params.customerId,
+        `[Booking Request ${params.reservationNumber}] ${params.tourType} for ${params.partySize} guests on ${params.startDate}`,
+        contact.id,
+      ]
+    );
 
     logger.info('[CRM] Updated contact for booking request', { contactId: contact.id, reservationNumber: params.reservationNumber });
   }

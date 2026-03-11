@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { query } from '@/lib/db';
 import type {
   PipelineTemplate,
   PipelineStageSummary,
   CrmDealWithRelations,
   DealType
 } from '@/types/crm';
-import { prisma } from '@/lib/prisma';
 
 /**
  * GET /api/admin/crm/pipeline
@@ -18,8 +18,10 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const brand = searchParams.get('brand');
 
   // Get pipeline templates
-  const templatesResult = await prisma.$queryRawUnsafe<PipelineTemplate[]>(
-    `SELECT * FROM crm_pipeline_templates ORDER BY is_default DESC, name`, );
+  const templatesResult = await query<PipelineTemplate>(
+    `SELECT * FROM crm_pipeline_templates ORDER BY is_default DESC, name`,
+    []
+  );
 
   // Build stage query with optional template filter
   let stageConditions = '';
@@ -34,7 +36,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   }
 
   // Get pipeline stages with deal counts
-  const stagesResult = await prisma.$queryRawUnsafe<PipelineStageSummary[]>(
+  const stagesResult = await query<PipelineStageSummary>(
     `SELECT
       pt.id as template_id,
       pt.name as template_name,
@@ -79,7 +81,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const dealWhereClause = `WHERE ${dealConditions.join(' AND ')}`;
 
   // Get active deals for the pipeline
-  const dealsResult = await prisma.$queryRawUnsafe<CrmDealWithRelations[]>(
+  const dealsResult = await query<CrmDealWithRelations>(
     `SELECT
       d.*,
       c.name as contact_name,
@@ -110,30 +112,30 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
     dealTypeConditions = 'WHERE is_active = true';
   }
 
-  const dealTypesResult = await prisma.$queryRawUnsafe<DealType[]>(
+  const dealTypesResult = await query<DealType>(
     `SELECT * FROM crm_deal_types ${dealTypeConditions} ORDER BY sort_order, name`,
     dealTypeParams
   );
 
   // Calculate totals
-  const totalValue = stagesResult
+  const totalValue = stagesResult.rows
     .filter(s => !s.is_won && !s.is_lost)
     .reduce((sum, s) => sum + parseFloat(String(s.total_value)), 0);
 
-  const weightedValue = stagesResult
+  const weightedValue = stagesResult.rows
     .filter(s => !s.is_won && !s.is_lost)
     .reduce((sum, s) => sum + parseFloat(String(s.weighted_value)), 0);
 
-  const dealCount = stagesResult
+  const dealCount = stagesResult.rows
     .filter(s => !s.is_won && !s.is_lost)
     .reduce((sum, s) => sum + parseInt(String(s.deal_count)), 0);
 
   return NextResponse.json({
     success: true,
-    templates: templatesResult,
-    stages: stagesResult,
-    deals: dealsResult,
-    dealTypes: dealTypesResult,
+    templates: templatesResult.rows,
+    stages: stagesResult.rows,
+    deals: dealsResult.rows,
+    dealTypes: dealTypesResult.rows,
     summary: {
       totalValue,
       weightedValue,

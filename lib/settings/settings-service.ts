@@ -3,7 +3,7 @@
  * Single source of truth for all configurable settings
  */
 
-import { prisma } from '@/lib/prisma';
+import { query } from '@/lib/db';
 
 export interface SystemSetting {
   setting_key: string;
@@ -17,33 +17,39 @@ export interface SystemSetting {
  * Get a specific setting
  */
 export async function getSetting(key: string): Promise<unknown> {
-  const rows = await prisma.$queryRaw<Array<{ setting_value: unknown }>>`
-    SELECT setting_value FROM system_settings WHERE setting_key = ${key}
-  `;
-
-  if (rows.length === 0) {
+  const result = await query(
+    'SELECT setting_value FROM system_settings WHERE setting_key = $1',
+    [key]
+  );
+  
+  if (result.rows.length === 0) {
     return null;
   }
-
-  return rows[0].setting_value;
+  
+  return result.rows[0].setting_value;
 }
 
 /**
  * Get all settings by type
  */
 export async function getSettingsByType(type: string): Promise<SystemSetting[]> {
-  return await prisma.$queryRaw<SystemSetting[]>`
-    SELECT * FROM system_settings WHERE setting_type = ${type} ORDER BY setting_key
-  `;
+  const result = await query(
+    'SELECT * FROM system_settings WHERE setting_type = $1 ORDER BY setting_key',
+    [type]
+  );
+  
+  return result.rows;
 }
 
 /**
  * Get all settings
  */
 export async function getAllSettings(): Promise<SystemSetting[]> {
-  return await prisma.$queryRaw<SystemSetting[]>`
-    SELECT * FROM system_settings ORDER BY setting_type, setting_key
-  `;
+  const result = await query(
+    'SELECT * FROM system_settings ORDER BY setting_type, setting_key'
+  );
+  
+  return result.rows;
 }
 
 /**
@@ -54,12 +60,12 @@ export async function updateSetting(
   value: unknown,
   updatedBy?: number
 ): Promise<void> {
-  const valueJson = JSON.stringify(value);
-  await prisma.$executeRaw`
-    UPDATE system_settings
-     SET setting_value = ${valueJson}::jsonb, updated_at = NOW(), updated_by = ${updatedBy ?? null}
-     WHERE setting_key = ${key}
-  `;
+  await query(
+    `UPDATE system_settings 
+     SET setting_value = $1, updated_at = NOW(), updated_by = $2 
+     WHERE setting_key = $3`,
+    [JSON.stringify(value), updatedBy, key]
+  );
 }
 
 /**

@@ -10,6 +10,7 @@ import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import { tripProposalEmailService } from '@/lib/services/trip-proposal-email.service';
 import { TRIP_PROPOSAL_STATUS } from '@/lib/types/trip-proposal';
 import { z } from 'zod';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 import { auditService } from '@/lib/services/audit.service';
 
 interface RouteParams {
@@ -25,7 +26,8 @@ const UpdateStatusSchema = z.object({
  * PATCH /api/admin/trip-proposals/[id]/status
  * Update the status of a trip proposal
  */
-export const PATCH = withAdminAuth(async (request: NextRequest, session, context) => {
+export const PATCH = withCSRF(
+  withAdminAuth(async (request: NextRequest, session, context) => {
   const { id } = await (context as unknown as RouteParams).params;
   const proposalId = parseInt(id, 10);
 
@@ -84,4 +86,5 @@ export const PATCH = withAdminAuth(async (request: NextRequest, session, context
     data: proposal,
     message: `Status updated to ${parseResult.data.status}`,
   });
-});
+})
+);

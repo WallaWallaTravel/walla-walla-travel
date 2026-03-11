@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling } from '@/lib/api-errors';
-import { prisma } from '@/lib/prisma';
+import { queryMany } from '@/lib/db-helpers';
 
 interface ItineraryStop {
   id: number;
@@ -26,8 +26,8 @@ export const GET = withErrorHandling(async (
   const { booking_id: bookingIdStr } = await params;
   const booking_id = parseInt(bookingIdStr);
 
-  const stops = await prisma.$queryRaw<ItineraryStop[]>`
-    SELECT
+  const stops = await queryMany<ItineraryStop>(`
+    SELECT 
       ist.id,
       ist.stop_order,
       ist.arrival_time,
@@ -40,9 +40,9 @@ export const GET = withErrorHandling(async (
     FROM itinerary_stops ist
     JOIN itineraries i ON ist.itinerary_id = i.id
     JOIN wineries w ON ist.winery_id = w.id
-    WHERE i.booking_id = ${booking_id}
+    WHERE i.booking_id = $1
     ORDER BY ist.stop_order
-  `;
+  `, [booking_id]);
 
   return NextResponse.json({
     version: 'v1',

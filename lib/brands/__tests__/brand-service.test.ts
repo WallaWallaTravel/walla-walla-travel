@@ -20,14 +20,11 @@ import {
   trackBrandMetric,
   Brand,
 } from '../brand-service';
+import { createMockQueryResult } from '../../__tests__/test-utils';
 
-// Mock the prisma module
-jest.mock('../../prisma', () => ({
-  prisma: {
-    $queryRaw: jest.fn(),
-    $executeRaw: jest.fn(),
-    $executeRawUnsafe: jest.fn(),
-  },
+// Mock the db module (relative path from __tests__ to lib/db)
+jest.mock('../../db', () => ({
+  query: jest.fn(),
 }));
 
 // Mock the logger module
@@ -79,15 +76,11 @@ function createMockBrand(overrides: Partial<Brand> = {}): Brand {
 }
 
 describe('Brand Service', () => {
-  let mockQueryRaw: jest.Mock;
-  let mockExecuteRawUnsafe: jest.Mock;
+  let mockQuery: jest.Mock;
 
   beforeEach(() => {
-    const { prisma } = require('../../prisma');
-    mockQueryRaw = prisma.$queryRaw as jest.Mock;
-    mockExecuteRawUnsafe = prisma.$executeRawUnsafe as jest.Mock;
-    mockQueryRaw.mockClear();
-    mockExecuteRawUnsafe.mockClear();
+    mockQuery = require('../../db').query as jest.Mock;
+    mockQuery.mockClear();
     jest.clearAllMocks();
   });
 
@@ -97,16 +90,20 @@ describe('Brand Service', () => {
   describe('getBrandByCode', () => {
     it('should return a brand when found', async () => {
       const brand = createMockBrand();
-      mockQueryRaw.mockResolvedValueOnce([brand]);
+      mockQuery.mockResolvedValueOnce(createMockQueryResult([brand]));
 
       const result = await getBrandByCode('WWT');
 
       expect(result).toEqual(brand);
-      expect(mockQueryRaw).toHaveBeenCalledTimes(1);
+      expect(mockQuery).toHaveBeenCalledTimes(1);
+      expect(mockQuery).toHaveBeenCalledWith(
+        'SELECT * FROM brands WHERE LOWER(brand_code) = LOWER($1) AND active = true',
+        ['WWT']
+      );
     });
 
     it('should return null when brand is not found', async () => {
-      mockQueryRaw.mockResolvedValueOnce([]);
+      mockQuery.mockResolvedValueOnce(createMockQueryResult([]));
 
       const result = await getBrandByCode('NONEXISTENT');
 
@@ -115,17 +112,21 @@ describe('Brand Service', () => {
 
     it('should perform a case-insensitive lookup via the SQL query', async () => {
       const brand = createMockBrand({ brand_code: 'HCWT' });
-      mockQueryRaw.mockResolvedValueOnce([brand]);
+      mockQuery.mockResolvedValueOnce(createMockQueryResult([brand]));
 
       const result = await getBrandByCode('hcwt');
 
       expect(result).toEqual(brand);
-      expect(mockQueryRaw).toHaveBeenCalledTimes(1);
+      // The SQL uses LOWER() on both sides; the code passes the code as-is
+      expect(mockQuery).toHaveBeenCalledWith(
+        expect.stringContaining('LOWER(brand_code) = LOWER($1)'),
+        ['hcwt']
+      );
     });
 
     it('should return null and log error on database failure', async () => {
       const error = new Error('Connection refused');
-      mockQueryRaw.mockRejectedValueOnce(error);
+      mockQuery.mockRejectedValueOnce(error);
 
       const result = await getBrandByCode('WWT');
 
@@ -144,16 +145,19 @@ describe('Brand Service', () => {
   describe('getBrandById', () => {
     it('should return a brand when found', async () => {
       const brand = createMockBrand({ id: 42 });
-      mockQueryRaw.mockResolvedValueOnce([brand]);
+      mockQuery.mockResolvedValueOnce(createMockQueryResult([brand]));
 
       const result = await getBrandById(42);
 
       expect(result).toEqual(brand);
-      expect(mockQueryRaw).toHaveBeenCalledTimes(1);
+      expect(mockQuery).toHaveBeenCalledWith(
+        'SELECT * FROM brands WHERE id = $1 AND active = true',
+        [42]
+      );
     });
 
     it('should return null when brand is not found', async () => {
-      mockQueryRaw.mockResolvedValueOnce([]);
+      mockQuery.mockResolvedValueOnce(createMockQueryResult([]));
 
       const result = await getBrandById(999);
 
@@ -162,7 +166,7 @@ describe('Brand Service', () => {
 
     it('should return null and log error on database failure', async () => {
       const error = new Error('Timeout');
-      mockQueryRaw.mockRejectedValueOnce(error);
+      mockQuery.mockRejectedValueOnce(error);
 
       const result = await getBrandById(1);
 
@@ -181,16 +185,18 @@ describe('Brand Service', () => {
   describe('getDefaultBrand', () => {
     it('should return the default brand when found', async () => {
       const brand = createMockBrand({ default_brand: true });
-      mockQueryRaw.mockResolvedValueOnce([brand]);
+      mockQuery.mockResolvedValueOnce(createMockQueryResult([brand]));
 
       const result = await getDefaultBrand();
 
       expect(result).toEqual(brand);
-      expect(mockQueryRaw).toHaveBeenCalledTimes(1);
+      expect(mockQuery).toHaveBeenCalledWith(
+        'SELECT * FROM brands WHERE default_brand = true AND active = true LIMIT 1'
+      );
     });
 
     it('should return null when no default brand exists', async () => {
-      mockQueryRaw.mockResolvedValueOnce([]);
+      mockQuery.mockResolvedValueOnce(createMockQueryResult([]));
 
       const result = await getDefaultBrand();
 
@@ -199,7 +205,7 @@ describe('Brand Service', () => {
 
     it('should return null and log error on database failure', async () => {
       const error = new Error('DB error');
-      mockQueryRaw.mockRejectedValueOnce(error);
+      mockQuery.mockRejectedValueOnce(error);
 
       const result = await getDefaultBrand();
 
@@ -221,17 +227,19 @@ describe('Brand Service', () => {
         createMockBrand({ id: 1, brand_code: 'WWT' }),
         createMockBrand({ id: 2, brand_code: 'HCWT', brand_name: 'Herding Cats Wine Tours' }),
       ];
-      mockQueryRaw.mockResolvedValueOnce(brands);
+      mockQuery.mockResolvedValueOnce(createMockQueryResult(brands));
 
       const result = await getAllBrands();
 
       expect(result).toEqual(brands);
       expect(result).toHaveLength(2);
-      expect(mockQueryRaw).toHaveBeenCalledTimes(1);
+      expect(mockQuery).toHaveBeenCalledWith(
+        'SELECT * FROM brands WHERE active = true ORDER BY brand_name'
+      );
     });
 
     it('should return an empty array when no brands exist', async () => {
-      mockQueryRaw.mockResolvedValueOnce([]);
+      mockQuery.mockResolvedValueOnce(createMockQueryResult([]));
 
       const result = await getAllBrands();
 
@@ -241,7 +249,7 @@ describe('Brand Service', () => {
 
     it('should return empty array and log error on database failure', async () => {
       const error = new Error('Query failed');
-      mockQueryRaw.mockRejectedValueOnce(error);
+      mockQuery.mockRejectedValueOnce(error);
 
       const result = await getAllBrands();
 
@@ -263,17 +271,19 @@ describe('Brand Service', () => {
         createMockBrand({ id: 2, brand_code: 'HCWT', show_on_wwt: true }),
         createMockBrand({ id: 3, brand_code: 'NWT', show_on_wwt: true }),
       ];
-      mockQueryRaw.mockResolvedValueOnce(partners);
+      mockQuery.mockResolvedValueOnce(createMockQueryResult(partners));
 
       const result = await getPartnerBrands();
 
       expect(result).toEqual(partners);
       expect(result).toHaveLength(2);
-      expect(mockQueryRaw).toHaveBeenCalledTimes(1);
+      expect(mockQuery).toHaveBeenCalledWith(
+        'SELECT * FROM brands WHERE show_on_wwt = true AND active = true ORDER BY brand_name'
+      );
     });
 
     it('should return an empty array when no partner brands exist', async () => {
-      mockQueryRaw.mockResolvedValueOnce([]);
+      mockQuery.mockResolvedValueOnce(createMockQueryResult([]));
 
       const result = await getPartnerBrands();
 
@@ -282,7 +292,7 @@ describe('Brand Service', () => {
 
     it('should return empty array and log error on database failure', async () => {
       const error = new Error('Connection lost');
-      mockQueryRaw.mockRejectedValueOnce(error);
+      mockQuery.mockRejectedValueOnce(error);
 
       const result = await getPartnerBrands();
 
@@ -302,64 +312,64 @@ describe('Brand Service', () => {
     it('should return the matching brand when a valid code is provided', async () => {
       const brand = createMockBrand({ brand_code: 'HCWT' });
       // getBrandByCode query
-      mockQueryRaw.mockResolvedValueOnce([brand]);
+      mockQuery.mockResolvedValueOnce(createMockQueryResult([brand]));
 
       const result = await resolveBrand('HCWT');
 
       expect(result).toEqual(brand);
-      expect(mockQueryRaw).toHaveBeenCalledTimes(1);
+      expect(mockQuery).toHaveBeenCalledTimes(1);
     });
 
     it('should fall back to default brand when code is invalid', async () => {
       const defaultBrand = createMockBrand({ default_brand: true });
       // getBrandByCode returns empty
-      mockQueryRaw.mockResolvedValueOnce([]);
+      mockQuery.mockResolvedValueOnce(createMockQueryResult([]));
       // getDefaultBrand returns the default
-      mockQueryRaw.mockResolvedValueOnce([defaultBrand]);
+      mockQuery.mockResolvedValueOnce(createMockQueryResult([defaultBrand]));
 
       const result = await resolveBrand('INVALID');
 
       expect(result).toEqual(defaultBrand);
-      expect(mockQueryRaw).toHaveBeenCalledTimes(2);
+      expect(mockQuery).toHaveBeenCalledTimes(2);
     });
 
     it('should return default brand when no code is provided', async () => {
       const defaultBrand = createMockBrand({ default_brand: true });
       // getDefaultBrand query
-      mockQueryRaw.mockResolvedValueOnce([defaultBrand]);
+      mockQuery.mockResolvedValueOnce(createMockQueryResult([defaultBrand]));
 
       const result = await resolveBrand();
 
       expect(result).toEqual(defaultBrand);
-      expect(mockQueryRaw).toHaveBeenCalledTimes(1);
+      expect(mockQuery).toHaveBeenCalledTimes(1);
     });
 
     it('should return default brand when code is null', async () => {
       const defaultBrand = createMockBrand({ default_brand: true });
-      mockQueryRaw.mockResolvedValueOnce([defaultBrand]);
+      mockQuery.mockResolvedValueOnce(createMockQueryResult([defaultBrand]));
 
       const result = await resolveBrand(null);
 
       expect(result).toEqual(defaultBrand);
-      expect(mockQueryRaw).toHaveBeenCalledTimes(1);
+      expect(mockQuery).toHaveBeenCalledTimes(1);
     });
 
     it('should return default brand when code is empty string', async () => {
       const defaultBrand = createMockBrand({ default_brand: true });
       // empty string is falsy, so skips getBrandByCode, goes straight to getDefaultBrand
-      mockQueryRaw.mockResolvedValueOnce([defaultBrand]);
+      mockQuery.mockResolvedValueOnce(createMockQueryResult([defaultBrand]));
 
       const result = await resolveBrand('');
 
       expect(result).toEqual(defaultBrand);
-      expect(mockQueryRaw).toHaveBeenCalledTimes(1);
+      expect(mockQuery).toHaveBeenCalledTimes(1);
     });
 
     it('should throw when no brands exist at all', async () => {
       // getBrandByCode returns empty
-      mockQueryRaw.mockResolvedValueOnce([]);
+      mockQuery.mockResolvedValueOnce(createMockQueryResult([]));
       // getDefaultBrand returns empty
-      mockQueryRaw.mockResolvedValueOnce([]);
+      mockQuery.mockResolvedValueOnce(createMockQueryResult([]));
 
       await expect(resolveBrand('ANYTHING')).rejects.toThrow(
         'No brands configured in system'
@@ -368,7 +378,7 @@ describe('Brand Service', () => {
 
     it('should throw when no code given and no default brand exists', async () => {
       // getDefaultBrand returns empty
-      mockQueryRaw.mockResolvedValueOnce([]);
+      mockQuery.mockResolvedValueOnce(createMockQueryResult([]));
 
       await expect(resolveBrand()).rejects.toThrow(
         'No brands configured in system'
@@ -378,9 +388,9 @@ describe('Brand Service', () => {
     it('should fall back to default when getBrandByCode errors', async () => {
       const defaultBrand = createMockBrand({ default_brand: true });
       // getBrandByCode throws (caught internally, returns null)
-      mockQueryRaw.mockRejectedValueOnce(new Error('DB error'));
+      mockQuery.mockRejectedValueOnce(new Error('DB error'));
       // getDefaultBrand succeeds
-      mockQueryRaw.mockResolvedValueOnce([defaultBrand]);
+      mockQuery.mockResolvedValueOnce(createMockQueryResult([defaultBrand]));
 
       const result = await resolveBrand('WWT');
 
@@ -664,53 +674,54 @@ describe('Brand Service', () => {
   // ==========================================================================
   describe('trackBrandMetric', () => {
     it('should insert or upsert a metric for website_visit', async () => {
-      mockExecuteRawUnsafe.mockResolvedValueOnce(1);
+      mockQuery.mockResolvedValueOnce(createMockQueryResult([]));
 
       await trackBrandMetric(1, 'website_visit');
 
-      expect(mockExecuteRawUnsafe).toHaveBeenCalledTimes(1);
-      const [sql, brandId, dateStr, value] = mockExecuteRawUnsafe.mock.calls[0];
+      expect(mockQuery).toHaveBeenCalledTimes(1);
+      const [sql, params] = mockQuery.mock.calls[0];
       expect(sql).toContain('INSERT INTO brand_metrics');
       expect(sql).toContain('website_visit');
       expect(sql).toContain('ON CONFLICT');
-      expect(brandId).toBe(1);
-      expect(dateStr).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-      expect(value).toBe(1); // default value
+      expect(params[0]).toBe(1); // brandId
+      // params[1] is the date string (today)
+      expect(params[1]).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(params[2]).toBe(1); // default value
     });
 
     it('should pass custom value when provided', async () => {
-      mockExecuteRawUnsafe.mockResolvedValueOnce(1);
+      mockQuery.mockResolvedValueOnce(createMockQueryResult([]));
 
       await trackBrandMetric(5, 'booking_created', 3);
 
-      const [sql, brandId, , value] = mockExecuteRawUnsafe.mock.calls[0];
+      const [sql, params] = mockQuery.mock.calls[0];
       expect(sql).toContain('booking_created');
-      expect(brandId).toBe(5);
-      expect(value).toBe(3);
+      expect(params[0]).toBe(5);
+      expect(params[2]).toBe(3);
     });
 
     it('should track reservation_created metric type', async () => {
-      mockExecuteRawUnsafe.mockResolvedValueOnce(1);
+      mockQuery.mockResolvedValueOnce(createMockQueryResult([]));
 
       await trackBrandMetric(2, 'reservation_created');
 
-      const [sql] = mockExecuteRawUnsafe.mock.calls[0];
+      const [sql] = mockQuery.mock.calls[0];
       expect(sql).toContain('reservation_created');
     });
 
     it('should track booking_page_visit metric type', async () => {
-      mockExecuteRawUnsafe.mockResolvedValueOnce(1);
+      mockQuery.mockResolvedValueOnce(createMockQueryResult([]));
 
       await trackBrandMetric(3, 'booking_page_visit', 10);
 
-      const [sql, , , value] = mockExecuteRawUnsafe.mock.calls[0];
+      const [sql, params] = mockQuery.mock.calls[0];
       expect(sql).toContain('booking_page_visit');
-      expect(value).toBe(10);
+      expect(params[2]).toBe(10);
     });
 
     it('should handle errors silently without throwing', async () => {
       const error = new Error('Insert failed');
-      mockExecuteRawUnsafe.mockRejectedValueOnce(error);
+      mockQuery.mockRejectedValueOnce(error);
 
       // This should NOT throw
       await expect(trackBrandMetric(1, 'website_visit')).resolves.toBeUndefined();
@@ -723,13 +734,13 @@ describe('Brand Service', () => {
     });
 
     it('should use today date in ISO format (YYYY-MM-DD)', async () => {
-      mockExecuteRawUnsafe.mockResolvedValueOnce(1);
+      mockQuery.mockResolvedValueOnce(createMockQueryResult([]));
 
       await trackBrandMetric(1, 'website_visit');
 
       const today = new Date().toISOString().split('T')[0];
-      const [, , dateStr] = mockExecuteRawUnsafe.mock.calls[0];
-      expect(dateStr).toBe(today);
+      const [, params] = mockQuery.mock.calls[0];
+      expect(params[1]).toBe(today);
     });
   });
 });

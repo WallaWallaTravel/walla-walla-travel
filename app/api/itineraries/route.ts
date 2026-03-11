@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { prisma } from '@/lib/prisma';
+import { query } from '@/lib/db';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 
@@ -19,8 +19,8 @@ const BodySchema = z.object({
 
 // GET /api/itineraries - List all itineraries
 export const GET = withErrorHandling(async (_request: NextRequest) => {
-  const rows = await prisma.$queryRaw<Record<string, unknown>[]>`
-    SELECT
+  const result = await query(
+    `SELECT
       i.*,
       COUNT(DISTINCT d.id) as day_count,
       COUNT(a.id) as activity_count
@@ -28,9 +28,10 @@ export const GET = withErrorHandling(async (_request: NextRequest) => {
     LEFT JOIN itinerary_days d ON i.id = d.itinerary_id
     LEFT JOIN itinerary_activities a ON d.id = a.itinerary_day_id
     GROUP BY i.id
-    ORDER BY i.created_at DESC`;
+    ORDER BY i.created_at DESC`
+  );
 
-  return NextResponse.json({ itineraries: rows });
+  return NextResponse.json({ itineraries: result.rows });
 });
 
 // POST /api/itineraries - Create new itinerary
@@ -55,48 +56,56 @@ export const POST = withCSRF(
     throw new BadRequestError('Title, start_date, and end_date are required');
   }
 
-  const bookingIdVal = booking_id ?? null;
-  const proposalIdVal = proposal_id ?? null;
-  const clientNameVal = client_name ?? null;
-  const clientEmailVal = client_email ?? null;
-  const partySizeVal = party_size ?? null;
-  const internalNotesVal = internal_notes ?? null;
-  const clientNotesVal = client_notes ?? null;
+  await query('BEGIN');
 
-  let itinerary: Record<string, unknown>;
+  // Create itinerary
+  const itineraryResult = await query(
+    `INSERT INTO itineraries
+     (booking_id, proposal_id, title, client_name, client_email, party_size,
+      start_date, end_date, status, internal_notes, client_notes)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'draft', $9, $10)
+     RETURNING *`,
+    [
+      booking_id,
+      proposal_id,
+      title,
+      client_name,
+      client_email,
+      party_size,
+      start_date,
+      end_date,
+      internal_notes,
+      client_notes
+    ]
+  );
 
-  await prisma.$transaction(async (tx) => {
-    // Create itinerary
-    const itineraryRows = await tx.$queryRaw<Record<string, unknown>[]>`
-      INSERT INTO itineraries
-      (booking_id, proposal_id, title, client_name, client_email, party_size,
-       start_date, end_date, status, internal_notes, client_notes)
-      VALUES (${bookingIdVal}, ${proposalIdVal}, ${title}, ${clientNameVal}, ${clientEmailVal}, ${partySizeVal}, ${start_date}, ${end_date}, 'draft', ${internalNotesVal}, ${clientNotesVal})
-      RETURNING *`;
+  const itinerary = itineraryResult.rows[0];
 
-    itinerary = itineraryRows[0];
+  // Create default days based on date range
+  const startDateObj = new Date(start_date);
+  const endDateObj = new Date(end_date);
+  const dayCount = Math.ceil((endDateObj.getTime() - startDateObj.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
-    // Create default days based on date range
-    const startDateObj = new Date(start_date);
-    const endDateObj = new Date(end_date);
-    const dayCount = Math.ceil((endDateObj.getTime() - startDateObj.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+  for (let i = 0; i < dayCount; i++) {
+    const dayDate = new Date(startDateObj);
+    dayDate.setDate(startDateObj.getDate() + i);
 
-    for (let i = 0; i < dayCount; i++) {
-      const dayDate = new Date(startDateObj);
-      dayDate.setDate(startDateObj.getDate() + i);
-      const dateStr = dayDate.toISOString().split('T')[0];
-      const dayTitle = `Day ${i + 1}`;
-      const dayNumber = i + 1;
-      const displayOrder = i;
-      const itineraryIdVal = (itinerary as { id: number }).id;
+    await query(
+      `INSERT INTO itinerary_days
+       (itinerary_id, day_number, date, title, display_order)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [
+        itinerary.id,
+        i + 1,
+        dayDate.toISOString().split('T')[0],
+        `Day ${i + 1}`,
+        i
+      ]
+    );
+  }
 
-      await tx.$executeRaw`
-        INSERT INTO itinerary_days
-        (itinerary_id, day_number, date, title, display_order)
-        VALUES (${itineraryIdVal}, ${dayNumber}, ${dateStr}, ${dayTitle}, ${displayOrder})`;
-    }
-  });
+  await query('COMMIT');
 
-  return NextResponse.json({ itinerary: itinerary! });
+  return NextResponse.json({ itinerary });
 })
 );

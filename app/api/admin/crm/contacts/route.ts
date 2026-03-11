@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
+import { query } from '@/lib/db';
 import { z } from 'zod';
 import type { CrmContactSummary, CreateContactData } from '@/types/crm';
-import { prisma } from '@/lib/prisma';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * GET /api/admin/crm/contacts
@@ -58,7 +59,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
   // Get contacts with summary data
-  const result = await prisma.$queryRawUnsafe<CrmContactSummary[]>(
+  const result = await query<CrmContactSummary>(
     `SELECT
       c.*,
       u.name as assigned_user_name,
@@ -75,32 +76,33 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
     GROUP BY c.id, u.name
     ORDER BY c.created_at DESC
     LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
-    ...params, limit, offset
+    [...params, limit, offset]
   );
 
   // Get total count
-  const countResult = await prisma.$queryRawUnsafe<{ count: string }[]>(
+  const countResult = await query<{ count: string }>(
     `SELECT COUNT(*) as count FROM crm_contacts c ${whereClause}`,
-    ...params
+    params
   );
 
-  const total = parseInt(countResult[0]?.count || '0');
+  const total = parseInt(countResult.rows[0]?.count || '0');
 
   // Get counts by lifecycle stage
-  const stageCountsResult = await prisma.$queryRawUnsafe<{ lifecycle_stage: string; count: string }[]>(
+  const stageCountsResult = await query<{ lifecycle_stage: string; count: string }>(
     `SELECT lifecycle_stage, COUNT(*) as count
      FROM crm_contacts
-     GROUP BY lifecycle_stage`
+     GROUP BY lifecycle_stage`,
+    []
   );
 
-  const stageCounts = stageCountsResult.reduce((acc, row) => {
+  const stageCounts = stageCountsResult.rows.reduce((acc, row) => {
     acc[row.lifecycle_stage] = parseInt(row.count);
     return acc;
   }, {} as Record<string, number>);
 
   return NextResponse.json({
     success: true,
-    contacts: result,
+    contacts: result.rows,
     total,
     page,
     limit,
@@ -133,7 +135,8 @@ const BodySchema = z.object({
  * POST /api/admin/crm/contacts
  * Create a new CRM contact
  */
-export const POST = withAdminAuth(async (request: NextRequest, session) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest, session) => {
   const body = BodySchema.parse(await request.json()) as CreateContactData;
 
   // Validate required fields
@@ -142,10 +145,12 @@ export const POST = withAdminAuth(async (request: NextRequest, session) => {
   }
 
   // Check for duplicate email
-  const existingContact = await prisma.$queryRawUnsafe<{ id: number }[]>(
-    `SELECT id FROM crm_contacts WHERE email = $1`, body.email.toLowerCase());
+  const existingContact = await query<{ id: number }>(
+    `SELECT id FROM crm_contacts WHERE email = $1`,
+    [body.email.toLowerCase()]
+  );
 
-  if (existingContact.length > 0) {
+  if (existingContact.rows.length > 0) {
     throw new BadRequestError('A contact with this email already exists');
   }
 
@@ -171,23 +176,24 @@ export const POST = withAdminAuth(async (request: NextRequest, session) => {
 
   const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
 
-  const result = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
+  const result = await query(
     `INSERT INTO crm_contacts (${fields.join(', ')})
      VALUES (${placeholders})
      RETURNING *`,
-    ...values
+    values
   );
 
   // Log activity
-  await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
+  await query(
     `INSERT INTO crm_activities (contact_id, activity_type, subject, performed_by, source_type)
      VALUES ($1, 'system', 'Contact created', $2, 'manual')`,
-    result[0].id, parseInt(session.userId)
+    [result.rows[0].id, parseInt(session.userId)]
   );
 
   return NextResponse.json({
     success: true,
-    contact: result[0],
+    contact: result.rows[0],
     timestamp: new Date().toISOString(),
   });
-});
+})
+);

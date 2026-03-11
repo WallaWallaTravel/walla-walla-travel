@@ -6,9 +6,10 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/prisma-query'
+import { query } from '@/lib/db-helpers';
 import { z } from 'zod';
 import { withErrorHandling, BadRequestError, ValidationError } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 import { noDisposableEmail } from '@/lib/utils/email-validation';
 
 // CORS headers for ChatGPT
@@ -36,7 +37,8 @@ const InquirySchema = z.object({
   session_id: z.string().optional()
 });
 
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   let body = await request.json();
 
   // Handle case where body is a string (can happen in test environments)
@@ -153,6 +155,8 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     { status: 201, headers: corsHeaders }
   );
 })
+);
+
 export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,

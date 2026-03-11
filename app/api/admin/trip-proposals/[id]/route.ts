@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import { UpdateTripProposalSchema } from '@/lib/types/trip-proposal';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 import { auditService } from '@/lib/services/audit.service';
 
 interface RouteParams {
@@ -49,7 +50,8 @@ export const GET = withAdminAuth(async (request: NextRequest, session, context) 
  * PATCH /api/admin/trip-proposals/[id]
  * Update trip proposal
  */
-export const PATCH = withAdminAuth(async (request: NextRequest, session, context) => {
+export const PATCH = withCSRF(
+  withAdminAuth(async (request: NextRequest, session, context) => {
   const { id } = await (context as unknown as RouteParams).params;
   const proposalId = parseInt(id, 10);
 
@@ -84,13 +86,15 @@ export const PATCH = withAdminAuth(async (request: NextRequest, session, context
     data: proposal,
     message: 'Trip proposal updated successfully',
   });
-});
+})
+);
 
 /**
  * DELETE /api/admin/trip-proposals/[id]
  * Delete trip proposal (only drafts can be deleted)
  */
-export const DELETE = withAdminAuth(async (request: NextRequest, session, context) => {
+export const DELETE = withCSRF(
+  withAdminAuth(async (request: NextRequest, session, context) => {
   const { id } = await (context as unknown as RouteParams).params;
   const proposalId = parseInt(id, 10);
 
@@ -122,8 +126,8 @@ export const DELETE = withAdminAuth(async (request: NextRequest, session, contex
   }
 
   // Cascade delete will handle days, stops, guests, inclusions, activity
-  const { prisma } = await import('@/lib/prisma');
-  await prisma.$executeRaw`DELETE FROM trip_proposals WHERE id = ${proposalId}`;
+  const { query } = await import('@/lib/db');
+  await query('DELETE FROM trip_proposals WHERE id = $1', [proposalId]);
 
   await auditService.logFromRequest(request, parseInt(session.userId), 'resource_deleted', {
     entityType: 'trip_proposal',
@@ -134,4 +138,5 @@ export const DELETE = withAdminAuth(async (request: NextRequest, session, contex
     success: true,
     message: 'Trip proposal deleted successfully',
   });
-});
+})
+);

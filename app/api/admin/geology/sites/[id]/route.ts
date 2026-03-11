@@ -3,9 +3,10 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import {
   NotFoundError,
 } from '@/lib/api/middleware/error-handler';
+import { query } from '@/lib/db';
 import { z } from 'zod';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 import { auditService } from '@/lib/services/audit.service';
-import { prisma } from '@/lib/prisma';
 
 // ============================================================================
 // Validation
@@ -45,15 +46,15 @@ export const GET = withAdminAuth(
       throw new NotFoundError('Invalid site ID');
     }
 
-    const result = await prisma.$queryRawUnsafe<Record<string, unknown>[]>('SELECT * FROM geology_sites WHERE id = $1', [siteId]);
+    const result = await query('SELECT * FROM geology_sites WHERE id = $1', [siteId]);
 
-    if (result.length === 0) {
+    if (result.rows.length === 0) {
       throw new NotFoundError('Site not found');
     }
 
     return NextResponse.json({
       success: true,
-      data: result[0],
+      data: result.rows[0],
     });
   }
 );
@@ -62,7 +63,8 @@ export const GET = withAdminAuth(
 // PUT /api/admin/geology/sites/[id] - Update site
 // ============================================================================
 
-export const PUT = withAdminAuth(
+export const PUT = withCSRF(
+  withAdminAuth(
   async (request: NextRequest, _session, context) => {
     const { id } = await context!.params;
     const siteId = parseInt(id);
@@ -116,27 +118,29 @@ export const PUT = withAdminAuth(
 
     values.push(siteId);
 
-    const result = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
+    const result = await query(
       `UPDATE geology_sites SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
-      ...values
+      values
     );
 
-    if (result.length === 0) {
+    if (result.rows.length === 0) {
       throw new NotFoundError('Site not found');
     }
 
     return NextResponse.json({
       success: true,
-      data: result[0],
+      data: result.rows[0],
     });
   }
+)
 );
 
 // ============================================================================
 // DELETE /api/admin/geology/sites/[id] - Delete site
 // ============================================================================
 
-export const DELETE = withAdminAuth(
+export const DELETE = withCSRF(
+  withAdminAuth(
   async (request: NextRequest, session, context) => {
     const { id } = await context!.params;
     const siteId = parseInt(id);
@@ -145,9 +149,9 @@ export const DELETE = withAdminAuth(
       throw new NotFoundError('Invalid site ID');
     }
 
-    const result = await prisma.$queryRawUnsafe<Record<string, unknown>[]>('DELETE FROM geology_sites WHERE id = $1 RETURNING id', [siteId]);
+    const result = await query('DELETE FROM geology_sites WHERE id = $1 RETURNING id', [siteId]);
 
-    if (result.length === 0) {
+    if (result.rows.length === 0) {
       throw new NotFoundError('Site not found');
     }
 
@@ -161,4 +165,5 @@ export const DELETE = withAdminAuth(
       message: 'Site deleted',
     });
   }
+)
 );

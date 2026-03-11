@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
-import { prisma } from '@/lib/prisma';
+import { queryOne, query, withTransaction } from '@/lib/db-helpers';
 import { sendDriverAssignmentToCustomer } from '@/lib/services/email-automation.service';
 import { sendEmail, EmailTemplates } from '@/lib/email';
 import { auditService } from '@/lib/services/audit.service';
 import { withComplianceCheck } from '@/lib/api/middleware/compliance-check';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 import { z } from 'zod';
 
 const BodySchema = z.object({
@@ -60,11 +61,13 @@ async function handleAssignment(
     throw new BadRequestError('driver_id and vehicle_id are required');
   }
 
-  const result = await prisma.$transaction(async (tx) => {
+  const result = await withTransaction(async (client) => {
     // 1. Get booking
-    const bookingRows = await tx.$queryRaw<Record<string, unknown>[]>`
-      SELECT * FROM bookings WHERE id = ${bookingId}`;
-    const booking = bookingRows[0] ?? null;
+    const booking = await queryOne(
+      `SELECT * FROM bookings WHERE id = $1`,
+      [bookingId],
+      client
+    );
 
     if (!booking) {
       throw new NotFoundError('Booking not found');
@@ -72,69 +75,81 @@ async function handleAssignment(
 
     // 2. Verify driver exists and is available
     // Drivers can have role 'driver' or 'owner' (owner also drives)
-    const driverRows = await tx.$queryRaw<Record<string, unknown>[]>`
-      SELECT * FROM users WHERE id = ${driver_id} AND role IN ('driver', 'owner') AND is_active = true`;
-    const driver = driverRows[0] ?? null;
+    const driver = await queryOne(
+      `SELECT * FROM users WHERE id = $1 AND role IN ('driver', 'owner') AND is_active = true`,
+      [driver_id],
+      client
+    );
 
     if (!driver) {
       throw new NotFoundError('Driver not found');
     }
 
     // 3. Verify vehicle exists
-    const vehicleRows = await tx.$queryRaw<Record<string, unknown>[]>`
-      SELECT * FROM vehicles WHERE id = ${vehicle_id}`;
-    const vehicle = vehicleRows[0] ?? null;
+    const vehicle = await queryOne(
+      `SELECT * FROM vehicles WHERE id = $1`,
+      [vehicle_id],
+      client
+    );
 
     if (!vehicle) {
       throw new NotFoundError('Vehicle not found');
     }
 
     // 4. Check for conflicts (driver or vehicle already booked at overlapping time)
-    const conflictRows = await tx.$queryRaw<{ count: string }[]>`
-      SELECT COUNT(*) as count
-      FROM bookings b
-      WHERE b.tour_date = ${booking.tour_date}
-      AND b.id != ${bookingId}
-      AND b.status NOT IN ('cancelled', 'completed')
-      AND (
-        b.driver_id = ${driver_id}
-        OR b.vehicle_id = ${vehicle_id}
-      )
-      AND (
-        (b.start_time, b.end_time) OVERLAPS (${booking.start_time}::time, ${booking.end_time}::time)
-      )`;
+    const conflicts = await queryOne(
+      `SELECT COUNT(*) as count
+       FROM bookings b
+       WHERE b.tour_date = $1
+       AND b.id != $2
+       AND b.status NOT IN ('cancelled', 'completed')
+       AND (
+         b.driver_id = $3
+         OR b.vehicle_id = $4
+       )
+       AND (
+         (b.start_time, b.end_time) OVERLAPS ($5::time, $6::time)
+       )`,
+      [booking.tour_date, bookingId, driver_id, vehicle_id, booking.start_time, booking.end_time],
+      client
+    );
 
-    if (conflictRows[0] && parseInt(conflictRows[0].count) > 0) {
+    if (conflicts && conflicts.count > 0) {
       throw new BadRequestError('Driver or vehicle has conflicting booking');
     }
 
     // 5. Update booking with driver and vehicle
-    await tx.$executeRaw`
-      UPDATE bookings
-      SET driver_id = ${driver_id},
-          vehicle_id = ${vehicle_id},
-          status = CASE WHEN status = 'pending' THEN 'assigned' ELSE status END,
-          updated_at = NOW()
-      WHERE id = ${bookingId}`;
+    // bookings table has driver_id and vehicle_id columns directly
+    // (vehicle_assignments table is for time-card tracking, not booking assignment)
+    await query(
+      `UPDATE bookings
+       SET driver_id = $1,
+           vehicle_id = $2,
+           status = CASE WHEN status = 'pending' THEN 'assigned' ELSE status END,
+           updated_at = NOW()
+       WHERE id = $3`,
+      [driver_id, vehicle_id, bookingId],
+      client
+    );
 
     return { booking, driver, vehicle };
   });
 
   // 7. Send notifications (async, don't block response)
-  if (notify_driver && (result.driver as Record<string, unknown>).email) {
+  if (notify_driver && result.driver.email) {
     const template = EmailTemplates.driverAssignment({
-      driver_name: result.driver.name as string,
-      customer_name: result.booking.customer_name as string,
-      booking_number: result.booking.booking_number as string,
-      tour_date: result.booking.tour_date as string,
-      start_time: result.booking.start_time as string,
-      pickup_location: (result.booking.pickup_location as string) || 'TBD',
-      vehicle_name: result.vehicle ?
-        `${(result.vehicle as Record<string, unknown>).vehicle_number} (${(result.vehicle as Record<string, unknown>).make} ${(result.vehicle as Record<string, unknown>).model})` : undefined,
+      driver_name: result.driver.name,
+      customer_name: result.booking.customer_name,
+      booking_number: result.booking.booking_number,
+      tour_date: result.booking.tour_date,
+      start_time: result.booking.start_time,
+      pickup_location: result.booking.pickup_location || 'TBD',
+      vehicle_name: result.vehicle ? 
+        `${result.vehicle.vehicle_number} (${result.vehicle.make} ${result.vehicle.model})` : undefined,
     });
-
+    
     sendEmail({
-      to: (result.driver as Record<string, unknown>).email as string,
+      to: result.driver.email,
       ...template,
     }).catch(err => logger.error('Failed to send driver notification', { error: err }));
   }
@@ -151,7 +166,7 @@ async function handleAssignment(
     driverId: driver_id,
     vehicleId: vehicle_id,
     driverName: result.driver.name,
-    vehicleName: `${(result.vehicle as Record<string, unknown>).make} ${(result.vehicle as Record<string, unknown>).model}`,
+    vehicleName: `${result.vehicle.make} ${result.vehicle.model}`,
   }).catch(() => {}); // Non-blocking
 
   return NextResponse.json({
@@ -160,7 +175,7 @@ async function handleAssignment(
     data: {
       booking_id: bookingId,
       driver_name: result.driver.name,
-      vehicle_name: `${(result.vehicle as Record<string, unknown>).make} ${(result.vehicle as Record<string, unknown>).model}`,
+      vehicle_name: `${result.vehicle.make} ${result.vehicle.model}`,
     },
   });
 }
@@ -175,9 +190,10 @@ const complianceHandler = withComplianceCheck(handleAssignment, {
 
     // Get booking to determine tour date
     const { booking_id } = await context.params;
-    const bookingRows = await prisma.$queryRaw<{ tour_date: string }[]>`
-      SELECT tour_date FROM bookings WHERE id = ${parseInt(booking_id as string)}`;
-    const booking = bookingRows[0] ?? null;
+    const booking = await queryOne(
+      `SELECT tour_date FROM bookings WHERE id = $1`,
+      [parseInt(booking_id as string)]
+    );
 
     return {
       driverId: body.driver_id,
@@ -190,7 +206,9 @@ const complianceHandler = withComplianceCheck(handleAssignment, {
 });
 
 // Wrap with admin auth (which includes error handling), then delegate to compliance handler
-export const PUT = withAdminAuth(async (request, _session, context) => {
+export const PUT = withCSRF(
+  withAdminAuth(async (request, _session, context) => {
   return complianceHandler(request, context as { params: Promise<{ booking_id: string }> });
-});
+})
+);
 

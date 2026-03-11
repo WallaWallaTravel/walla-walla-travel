@@ -3,9 +3,9 @@
  * Uses Gemini Vision to analyze and describe photos
  */
 
+import { query } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { prisma } from '@/lib/prisma';
 
 function getGeminiClient() {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -134,20 +134,20 @@ export async function processPhotoFile(fileId: number): Promise<PhotoAnalysis> {
   logger.debug('Photo Analyzer: Processing photo file', { fileId });
 
   // Get the file
-  const result = await prisma.$queryRawUnsafe<{ storage_url: string | null; original_filename: string; file_type: string; mime_type: string | null }[]>(
+  const result = await query(
     'SELECT storage_url, original_filename, file_type, mime_type FROM business_files WHERE id = $1',
-    fileId
+    [fileId]
   );
 
-  if (result.length === 0) {
+  if (result.rows.length === 0) {
     throw new Error(`File ${fileId} not found`);
   }
 
-  const file = result[0];
+  const file = result.rows[0];
 
   // Check if it's an image (file_type is "photo" or mime_type starts with "image/")
   const isImage = file.file_type === 'photo' || (file.mime_type && file.mime_type.startsWith('image/'));
-
+  
   if (!isImage) {
     throw new Error(`File ${fileId} is not an image (type: ${file.file_type}, mime: ${file.mime_type})`);
   }
@@ -160,7 +160,7 @@ export async function processPhotoFile(fileId: number): Promise<PhotoAnalysis> {
   const analysis = await analyzePhoto(file.storage_url);
 
   // Update the file with analysis
-  await prisma.$queryRawUnsafe<Record<string, unknown>[]>(`
+  await query(`
     UPDATE business_files
     SET 
       ai_description = $2,
@@ -169,12 +169,12 @@ export async function processPhotoFile(fileId: number): Promise<PhotoAnalysis> {
       processing_status = 'completed',
       processed_at = NOW()
     WHERE id = $1
-  `,
+  `, [
     fileId,
     analysis.description,
     analysis.tags,
     analysis.suggestedCategory
-  );
+  ]);
 
   logger.debug('Photo Analyzer: Updated file with analysis', { fileId });
 

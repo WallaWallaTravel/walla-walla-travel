@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
+import { query } from '@/lib/db';
 import { z } from 'zod';
 import type { CrmActivityWithUser, CreateActivityData } from '@/types/crm';
-import { prisma } from '@/lib/prisma';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 /**
  * GET /api/admin/crm/contacts/[id]/activities
@@ -23,7 +24,7 @@ export const GET = withAdminAuth(async (
   const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
   const offset = parseInt(searchParams.get('offset') || '0');
 
-  const result = await prisma.$queryRawUnsafe<CrmActivityWithUser[]>(
+  const result = await query<CrmActivityWithUser>(
     `SELECT
       a.*,
       u.name as performed_by_name
@@ -31,17 +32,19 @@ export const GET = withAdminAuth(async (
     LEFT JOIN users u ON a.performed_by = u.id
     WHERE a.contact_id = $1
     ORDER BY a.performed_at DESC
-    LIMIT $2 OFFSET $3`, contactId, limit, offset);
+    LIMIT $2 OFFSET $3`,
+    [contactId, limit, offset]
+  );
 
-  const countResult = await prisma.$queryRawUnsafe<{ count: string }[]>(
+  const countResult = await query<{ count: string }>(
     `SELECT COUNT(*) as count FROM crm_activities WHERE contact_id = $1`,
     [contactId]
   );
 
   return NextResponse.json({
     success: true,
-    activities: result,
-    total: parseInt(countResult[0]?.count || '0'),
+    activities: result.rows,
+    total: parseInt(countResult.rows[0]?.count || '0'),
     timestamp: new Date().toISOString(),
   });
 });
@@ -62,7 +65,8 @@ const BodySchema = z.object({
  * POST /api/admin/crm/contacts/[id]/activities
  * Log a new activity for a contact
  */
-export const POST = withAdminAuth(async (
+export const POST = withCSRF(
+  withAdminAuth(async (
   request: NextRequest, session, context
 ) => {
   const { id } = await context!.params;
@@ -98,16 +102,17 @@ export const POST = withAdminAuth(async (
 
   const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
 
-  const result = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
+  const result = await query(
     `INSERT INTO crm_activities (${fields.join(', ')})
      VALUES (${placeholders})
      RETURNING *`,
-    ...values
+    values
   );
 
   return NextResponse.json({
     success: true,
-    activity: result[0],
+    activity: result.rows[0],
     timestamp: new Date().toISOString(),
   });
-});
+})
+);

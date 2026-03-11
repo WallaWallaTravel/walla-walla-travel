@@ -3,7 +3,7 @@
  * Manages multi-brand portfolio: WWT, Herding Cats, NW Touring
  */
 
-import { prisma } from '@/lib/prisma';
+import { query } from '@/lib/db';
 import { logger } from '@/lib/logger';
 
 export interface Brand {
@@ -43,11 +43,12 @@ export interface Brand {
  */
 export async function getBrandByCode(code: string): Promise<Brand | null> {
   try {
-    const rows = await prisma.$queryRaw<Brand[]>`
-      SELECT * FROM brands WHERE LOWER(brand_code) = LOWER(${code}) AND active = true
-    `;
-
-    return rows[0] || null;
+    const result = await query(
+      'SELECT * FROM brands WHERE LOWER(brand_code) = LOWER($1) AND active = true',
+      [code]
+    );
+    
+    return result.rows[0] || null;
   } catch (error) {
     logger.error('Brand Service: Error getting brand by code', { error });
     return null;
@@ -59,11 +60,12 @@ export async function getBrandByCode(code: string): Promise<Brand | null> {
  */
 export async function getBrandById(id: number): Promise<Brand | null> {
   try {
-    const rows = await prisma.$queryRaw<Brand[]>`
-      SELECT * FROM brands WHERE id = ${id} AND active = true
-    `;
+    const result = await query(
+      'SELECT * FROM brands WHERE id = $1 AND active = true',
+      [id]
+    );
 
-    return rows[0] || null;
+    return result.rows[0] || null;
   } catch (error) {
     logger.error('Brand Service: Error getting brand by ID', { error, id });
     return null;
@@ -75,11 +77,11 @@ export async function getBrandById(id: number): Promise<Brand | null> {
  */
 export async function getDefaultBrand(): Promise<Brand | null> {
   try {
-    const rows = await prisma.$queryRaw<Brand[]>`
-      SELECT * FROM brands WHERE default_brand = true AND active = true LIMIT 1
-    `;
+    const result = await query(
+      'SELECT * FROM brands WHERE default_brand = true AND active = true LIMIT 1'
+    );
 
-    return rows[0] || null;
+    return result.rows[0] || null;
   } catch (error) {
     logger.error('Brand Service: Error getting default brand', { error });
     return null;
@@ -91,9 +93,11 @@ export async function getDefaultBrand(): Promise<Brand | null> {
  */
 export async function getAllBrands(): Promise<Brand[]> {
   try {
-    return await prisma.$queryRaw<Brand[]>`
-      SELECT * FROM brands WHERE active = true ORDER BY brand_name
-    `;
+    const result = await query(
+      'SELECT * FROM brands WHERE active = true ORDER BY brand_name'
+    );
+
+    return result.rows;
   } catch (error) {
     logger.error('Brand Service: Error getting all brands', { error });
     return [];
@@ -105,9 +109,11 @@ export async function getAllBrands(): Promise<Brand[]> {
  */
 export async function getPartnerBrands(): Promise<Brand[]> {
   try {
-    return await prisma.$queryRaw<Brand[]>`
-      SELECT * FROM brands WHERE show_on_wwt = true AND active = true ORDER BY brand_name
-    `;
+    const result = await query(
+      'SELECT * FROM brands WHERE show_on_wwt = true AND active = true ORDER BY brand_name'
+    );
+
+    return result.rows;
   } catch (error) {
     logger.error('Brand Service: Error getting partner brands', { error });
     return [];
@@ -200,13 +206,12 @@ export async function trackBrandMetric(
   try {
     const today = new Date().toISOString().split('T')[0];
     
-    await prisma.$executeRawUnsafe(
-      `INSERT INTO brand_metrics (brand_id, metric_date, ${metricType})
+    await query(`
+      INSERT INTO brand_metrics (brand_id, metric_date, ${metricType})
       VALUES ($1, $2, $3)
       ON CONFLICT (brand_id, metric_date)
-      DO UPDATE SET ${metricType} = brand_metrics.${metricType} + $3`,
-      brandId, today, value
-    );
+      DO UPDATE SET ${metricType} = brand_metrics.${metricType} + $3
+    `, [brandId, today, value]);
   } catch (error) {
     logger.error('Brand Service: Error tracking metric', { error, brandId, metricType });
     // Don't throw - metrics tracking shouldn't break the app

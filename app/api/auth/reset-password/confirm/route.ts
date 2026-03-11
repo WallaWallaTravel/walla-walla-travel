@@ -3,9 +3,10 @@ import { z } from 'zod';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { validateBody } from '@/lib/api/middleware/validation';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
-import { prisma } from '@/lib/prisma';
+import { query } from '@/lib/db';
 import { hashPassword, validatePasswordStrength } from '@/lib/auth/passwords';
 import crypto from 'crypto';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 const ResetConfirmSchema = z.object({
   token: z.string().min(1, 'Reset token is required'),
@@ -16,7 +17,8 @@ const ResetConfirmSchema = z.object({
  * POST /api/auth/reset-password/confirm
  * Validates token and sets new password
  */
-export const POST = withRateLimit(rateLimiters.passwordReset)(
+export const POST = withCSRF(
+  withRateLimit(rateLimiters.passwordReset)(
   withErrorHandling(async (request: NextRequest) => {
     const { token, password } = await validateBody(request, ResetConfirmSchema);
 
@@ -30,22 +32,26 @@ export const POST = withRateLimit(rateLimiters.passwordReset)(
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 
     // Find user by hashed reset token (FOR UPDATE prevents race conditions)
-    const userRows = await prisma.$queryRaw<{ id: number; reset_token_expires_at: string }[]>`
-      SELECT id, reset_token_expires_at FROM users
-      WHERE reset_token = ${hashedToken} AND is_active = true
-      FOR UPDATE`;
+    const userResult = await query<{ id: number; reset_token_expires_at: string }>(
+      `SELECT id, reset_token_expires_at FROM users
+       WHERE reset_token = $1 AND is_active = true
+       FOR UPDATE`,
+      [hashedToken]
+    );
 
-    if (userRows.length === 0) {
+    if (userResult.rows.length === 0) {
       throw new BadRequestError('Invalid or expired reset link');
     }
 
-    const user = userRows[0];
+    const user = userResult.rows[0];
 
     // Check expiry
     if (new Date(user.reset_token_expires_at) < new Date()) {
       // Clear expired token
-      await prisma.$executeRaw`
-        UPDATE users SET reset_token = NULL, reset_token_expires_at = NULL WHERE id = ${user.id}`;
+      await query(
+        `UPDATE users SET reset_token = NULL, reset_token_expires_at = NULL WHERE id = $1`,
+        [user.id]
+      );
       throw new BadRequestError('Reset link has expired. Please request a new one.');
     }
 
@@ -53,10 +59,12 @@ export const POST = withRateLimit(rateLimiters.passwordReset)(
     const passwordHash = await hashPassword(password);
 
     // Update password and clear token
-    await prisma.$executeRaw`
-      UPDATE users
-      SET password_hash = ${passwordHash}, reset_token = NULL, reset_token_expires_at = NULL, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ${user.id}`;
+    await query(
+      `UPDATE users
+       SET password_hash = $1, reset_token = NULL, reset_token_expires_at = NULL, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $2`,
+      [passwordHash, user.id]
+    );
 
     // Revoke all sessions — forces re-login with new password
     const { sessionStoreService } = await import('@/lib/services/session-store.service');
@@ -68,4 +76,5 @@ export const POST = withRateLimit(rateLimiters.passwordReset)(
       timestamp: new Date().toISOString(),
     });
   })
+)
 );

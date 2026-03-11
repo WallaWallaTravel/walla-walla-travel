@@ -10,6 +10,7 @@ import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import { rateLimiters } from '@/lib/api/middleware/rate-limit';
 import { checkRateLimit } from '@/lib/api/middleware/rate-limit';
 import { z } from 'zod';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 import { noDisposableEmail } from '@/lib/utils/email-validation';
 
 interface RouteParams {
@@ -97,7 +98,8 @@ export const GET = withErrorHandling<unknown, RouteParams>(
  * POST /api/my-trip/[token]/join
  * Register a new guest via the shareable link
  */
-export const POST = withErrorHandling<unknown, RouteParams>(
+export const POST = withCSRF(
+  withErrorHandling<unknown, RouteParams>(
   async (request: NextRequest, context: RouteContext<RouteParams>) => {
     // Rate limit: 10 submissions per hour per IP
     const rateLimited = await checkRateLimit(request, rateLimiters.publicSubmit);
@@ -196,4 +198,5 @@ export const POST = withErrorHandling<unknown, RouteParams>(
       { status: 201 }
     );
   }
+)
 );

@@ -12,9 +12,10 @@ import { after } from 'next/server';
 import { withErrorHandling, BadRequestError, NotFoundError, RouteContext } from '@/lib/api/middleware/error-handler';
 import { getBrandStripeClient } from '@/lib/stripe-brands';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
-import { prisma } from '@/lib/prisma';
+import { query, queryOne, withTransaction } from '@/lib/db-helpers';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface RouteParams {
   token: string;
@@ -25,7 +26,8 @@ const ConfirmPaymentSchema = z.object({
   guest_access_token: z.string().min(1, 'guest_access_token is required'),
 });
 
-export const POST = withErrorHandling<unknown, RouteParams>(
+export const POST = withCSRF(
+  withErrorHandling<unknown, RouteParams>(
   async (request: NextRequest, context) => {
     const { token } = await (context as RouteContext<RouteParams>).params;
     const body = await request.json();
@@ -42,13 +44,14 @@ export const POST = withErrorHandling<unknown, RouteParams>(
     }
 
     // Look up guest by guest_access_token
-    const guestRows = await prisma.$queryRaw<{
+    const guest = await queryOne<{
       id: number; name: string; email: string | null; payment_status: string;
-    }[]>`
-      SELECT id, name, email, payment_status
-      FROM trip_proposal_guests
-      WHERE trip_proposal_id = ${proposal.id} AND guest_access_token = ${guest_access_token}`;
-    const guest = guestRows[0] ?? null;
+    }>(
+      `SELECT id, name, email, payment_status
+       FROM trip_proposal_guests
+       WHERE trip_proposal_id = $1 AND guest_access_token = $2`,
+      [proposal.id, guest_access_token]
+    );
 
     if (!guest) {
       throw new NotFoundError('Guest not found');
@@ -84,27 +87,33 @@ export const POST = withErrorHandling<unknown, RouteParams>(
     // Atomic idempotency: INSERT ... ON CONFLICT DO NOTHING
     let alreadyProcessed = false;
 
-    await prisma.$transaction(async (tx) => {
-      const insertResult = await tx.$queryRaw<{ id: number }[]>`
-        INSERT INTO guest_payments (trip_proposal_id, guest_id, amount, stripe_payment_intent_id, payment_type, status)
-        VALUES (${proposal.id}, ${guest.id}, ${amount}, ${payment_intent_id}, 'registration_deposit', 'succeeded')
-        ON CONFLICT (stripe_payment_intent_id) WHERE stripe_payment_intent_id IS NOT NULL
-        DO NOTHING
-        RETURNING id`;
+    await withTransaction(async (client) => {
+      const insertResult = await query(
+        `INSERT INTO guest_payments (trip_proposal_id, guest_id, amount, stripe_payment_intent_id, payment_type, status)
+         VALUES ($1, $2, $3, $4, 'registration_deposit', 'succeeded')
+         ON CONFLICT (stripe_payment_intent_id) WHERE stripe_payment_intent_id IS NOT NULL
+         DO NOTHING
+         RETURNING id`,
+        [proposal.id, guest.id, amount, payment_intent_id],
+        client
+      );
 
-      if (insertResult.length === 0) {
+      if (insertResult.rows.length === 0) {
         alreadyProcessed = true;
         return;
       }
 
       // Update guest payment status
-      await tx.$executeRaw`
-        UPDATE trip_proposal_guests
-        SET payment_status = 'paid',
-            amount_paid = COALESCE(amount_paid, 0) + ${amount},
-            payment_paid_at = NOW(),
-            updated_at = NOW()
-        WHERE id = ${guest.id} AND trip_proposal_id = ${proposal.id}`;
+      await query(
+        `UPDATE trip_proposal_guests
+         SET payment_status = 'paid',
+             amount_paid = COALESCE(amount_paid, 0) + $1,
+             payment_paid_at = NOW(),
+             updated_at = NOW()
+         WHERE id = $2 AND trip_proposal_id = $3`,
+        [amount, guest.id, proposal.id],
+        client
+      );
     });
 
     if (alreadyProcessed) {
@@ -144,4 +153,5 @@ export const POST = withErrorHandling<unknown, RouteParams>(
       },
     });
   }
+)
 );

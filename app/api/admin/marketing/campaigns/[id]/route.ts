@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { query } from '@/lib/prisma-query'
+import { query } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
+import { withCSRF } from '@/lib/api/middleware/csrf';
 import { auditService } from '@/lib/services/audit.service';
 
 const PutBodySchema = z.object({
@@ -54,7 +55,8 @@ export const GET = withAdminAuth(async (
 });
 
 // PUT - Update campaign status
-export const PUT = withAdminAuth(async (
+export const PUT = withCSRF(
+  withAdminAuth(async (
   request: NextRequest,
   _session,
   context
@@ -79,7 +81,7 @@ export const PUT = withAdminAuth(async (
       cancelled: [],
     }
 
-    const current = await query<{ status: string }>(
+    const current = await query(
       'SELECT status FROM marketing_campaigns WHERE id = $1',
       [campaignId]
     )
@@ -147,8 +149,11 @@ export const PUT = withAdminAuth(async (
     campaign: result.rows[0],
   })
 })
+);
+
 // DELETE - Cancel campaign
-export const DELETE = withAdminAuth(async (
+export const DELETE = withCSRF(
+  withAdminAuth(async (
   request: NextRequest,
   session,
   context
@@ -193,3 +198,4 @@ export const DELETE = withAdminAuth(async (
     campaign: result.rows[0],
   })
 })
+);

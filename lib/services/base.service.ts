@@ -27,7 +27,7 @@ import { logger } from '@/lib/logger';
  *   }
  *
  *   async createWithTransaction(data: CreateData) {
- *     return this.withTransaction(async (tx) => {
+ *     return this.withTransaction(async (client) => {
  *       const record = await this.insert('my_table', data);
  *       await this.insert('audit_log', { record_id: record.id, action: 'create' });
  *       return record;
@@ -37,11 +37,9 @@ import { logger } from '@/lib/logger';
  * ```
  */
 
-import { prisma } from '@/lib/prisma';
-import { Prisma } from '@prisma/client';
+import { query } from '@/lib/db';
+import { withTransaction, TransactionCallback } from '@/lib/db/transaction';
 import { logError } from '@/lib/monitoring/error-logger';
-
-type PrismaTransactionClient = Omit<typeof prisma, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
 
 export abstract class BaseService {
   // Service name for logging
@@ -56,9 +54,8 @@ export abstract class BaseService {
    */
   protected async query<T = unknown>(sql: string, params?: unknown[]): Promise<{ rows: T[]; rowCount: number | null }> {
     try {
-      const paramSql = this.buildRawQuery(sql, params);
-      const rows = await prisma.$queryRawUnsafe<T[]>(paramSql, ...(params || []));
-      return { rows, rowCount: rows.length };
+      const result = await query(sql, params);
+      return result as { rows: T[]; rowCount: number | null };
     } catch (error) {
       this.handleError(error, 'query');
       throw error;
@@ -85,8 +82,8 @@ export abstract class BaseService {
    * Execute a query and return count
    */
   protected async queryCount(sql: string, params?: unknown[]): Promise<number> {
-    const result = await this.query<{ count: string | number | bigint }>(sql, params);
-    return Number(result.rows[0]?.count || 0);
+    const result = await this.query<{ count: string }>(sql, params);
+    return parseInt(result.rows[0]?.count || '0');
   }
 
   /**
@@ -105,11 +102,9 @@ export abstract class BaseService {
   /**
    * Execute operations in a transaction
    */
-  protected async withTransaction<T>(callback: (tx: PrismaTransactionClient) => Promise<T>): Promise<T> {
+  protected async withTransaction<T>(callback: TransactionCallback<T>): Promise<T> {
     try {
-      return await prisma.$transaction(async (tx) => {
-        return callback(tx);
-      });
+      return await withTransaction(callback);
     } catch (error) {
       this.handleError(error, 'transaction');
       throw error;
@@ -315,18 +310,8 @@ export abstract class BaseService {
   protected warn(message: string, data?: Record<string, unknown>): void {
     logger.warn(`${this.serviceName}: ${message}`, data);
   }
-
-  // ============================================================================
-  // Private Helpers
-  // ============================================================================
-
-  /**
-   * Build a raw query string - used internally to pass through to $queryRawUnsafe.
-   * The actual parameter substitution is handled by Prisma via the spread params.
-   */
-  private buildRawQuery(sql: string, _params?: unknown[]): string {
-    // Prisma $queryRawUnsafe uses $1, $2 placeholders natively (PostgreSQL style)
-    // so we can pass the SQL through directly
-    return sql;
-  }
 }
+
+
+
+

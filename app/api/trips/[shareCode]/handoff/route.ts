@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, NotFoundError, RouteContext } from '@/lib/api/middleware/error-handler';
-import { prisma } from '@/lib/prisma';
+import { query } from '@/lib/db';
 import { requestHandoffSchema } from '@/lib/validation/schemas/trip';
 import { sendConsultationRequestNotification, sendConsultationConfirmationToCustomer } from '@/lib/email';
 import { logger } from '@/lib/logger';
 import { crmSyncService } from '@/lib/services/crm-sync.service';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface RouteParams {
   shareCode: string;
@@ -14,25 +15,27 @@ interface RouteParams {
 // POST /api/trips/[shareCode]/handoff - Request handoff to planning team
 // ============================================================================
 
-export const POST = withErrorHandling<unknown, RouteParams>(
+export const POST = withCSRF(
+  withErrorHandling<unknown, RouteParams>(
   async (request: NextRequest, context: RouteContext<RouteParams>) => {
     const { shareCode } = await context.params;
     const body = await request.json();
     const validated = requestHandoffSchema.parse(body);
 
     // Get trip with full details for notification
-    const tripRows = await prisma.$queryRaw<Record<string, unknown>[]>`
-      SELECT t.id, t.title, t.owner_name, t.owner_email, t.owner_phone, t.status,
+    const tripResult = await query(
+      `SELECT t.id, t.title, t.owner_name, t.owner_email, t.owner_phone, t.status,
               t.trip_type, t.start_date, t.end_date, t.expected_guests, t.share_code,
               (SELECT COUNT(*) FROM trip_stops WHERE trip_id = t.id AND stop_type = 'winery') as winery_count
-       FROM trips t WHERE t.share_code = ${shareCode}
-    `;
+       FROM trips t WHERE t.share_code = $1`,
+      [shareCode]
+    );
 
-    if (tripRows.length === 0) {
+    if (tripResult.rows.length === 0) {
       throw new NotFoundError('Trip not found');
     }
 
-    const trip = tripRows[0];
+    const trip = tripResult.rows[0];
 
     // Check if already handed off
     if (trip.status === 'handed_off' || trip.status === 'booked') {
@@ -43,52 +46,58 @@ export const POST = withErrorHandling<unknown, RouteParams>(
     }
 
     // Update trip status to handed_off
-    const updateRows = await prisma.$queryRaw<Record<string, unknown>[]>`
-      UPDATE trips
+    const updateResult = await query(
+      `UPDATE trips
        SET status = 'handed_off',
            handoff_requested_at = NOW(),
-           handoff_notes = ${validated.notes || null},
+           handoff_notes = $2,
            last_activity_at = NOW()
-       WHERE id = ${trip.id as number}
-       RETURNING *
-    `;
+       WHERE id = $1
+       RETURNING *`,
+      [trip.id, validated.notes || null]
+    );
 
-    const updatedTrip = updateRows[0];
+    const updatedTrip = updateResult.rows[0];
 
     // Log activity
-    await prisma.$executeRaw`
-      INSERT INTO trip_activity_log (trip_id, activity_type, description, actor_name, metadata)
-       VALUES (${trip.id as number}, 'handoff_requested', 'Requested handoff to Walla Walla Travel planning team', ${(trip.owner_name as string) || 'Anonymous'}, ${JSON.stringify({
-        notes: validated.notes || null,
-        owner_email: trip.owner_email,
-      })})
-    `;
+    await query(
+      `INSERT INTO trip_activity_log (trip_id, activity_type, description, actor_name, metadata)
+       VALUES ($1, 'handoff_requested', 'Requested handoff to Walla Walla Travel planning team', $2, $3)`,
+      [
+        trip.id,
+        trip.owner_name || 'Anonymous',
+        JSON.stringify({
+          notes: validated.notes || null,
+          owner_email: trip.owner_email,
+        }),
+      ]
+    );
 
     // Send notification emails (don't block on failure)
     try {
       // Notify staff
       await sendConsultationRequestNotification({
-        tripTitle: trip.title as string,
-        shareCode: trip.share_code as string,
-        ownerName: trip.owner_name as string,
-        ownerEmail: trip.owner_email as string,
-        ownerPhone: trip.owner_phone as string,
-        expectedGuests: (trip.expected_guests as number) || 2,
-        startDate: trip.start_date as string,
-        endDate: trip.end_date as string,
+        tripTitle: trip.title,
+        shareCode: trip.share_code,
+        ownerName: trip.owner_name,
+        ownerEmail: trip.owner_email,
+        ownerPhone: trip.owner_phone,
+        expectedGuests: trip.expected_guests || 2,
+        startDate: trip.start_date,
+        endDate: trip.end_date,
         notes: validated.notes,
-        tripType: trip.trip_type as string,
-        wineryCount: parseInt(trip.winery_count as string) || 0,
+        tripType: trip.trip_type,
+        wineryCount: parseInt(trip.winery_count) || 0,
       });
       logger.info('Staff notification sent for consultation request', { shareCode, tripId: trip.id });
 
       // Send confirmation to customer if they provided email
       if (trip.owner_email) {
         await sendConsultationConfirmationToCustomer({
-          customerEmail: trip.owner_email as string,
-          customerName: trip.owner_name as string,
-          tripTitle: trip.title as string,
-          shareCode: trip.share_code as string,
+          customerEmail: trip.owner_email,
+          customerName: trip.owner_name,
+          tripTitle: trip.title,
+          shareCode: trip.share_code,
         });
         logger.info('Customer confirmation sent for consultation request', { shareCode, email: trip.owner_email });
       }
@@ -100,16 +109,16 @@ export const POST = withErrorHandling<unknown, RouteParams>(
     // Sync to CRM (create contact + deal)
     if (trip.owner_email) {
       crmSyncService.syncConsultationToContact({
-        tripId: trip.id as number,
-        shareCode: trip.share_code as string,
-        tripTitle: trip.title as string,
-        ownerName: (trip.owner_name as string) || 'Unknown',
-        ownerEmail: trip.owner_email as string,
-        ownerPhone: trip.owner_phone as string,
-        tripType: (trip.trip_type as string) || 'wine_tour',
-        partySize: (trip.expected_guests as number) || 2,
-        startDate: trip.start_date as string,
-        endDate: trip.end_date as string,
+        tripId: trip.id,
+        shareCode: trip.share_code,
+        tripTitle: trip.title,
+        ownerName: trip.owner_name || 'Unknown',
+        ownerEmail: trip.owner_email,
+        ownerPhone: trip.owner_phone,
+        tripType: trip.trip_type || 'wine_tour',
+        partySize: trip.expected_guests || 2,
+        startDate: trip.start_date,
+        endDate: trip.end_date,
         notes: validated.notes,
         brand: 'walla_walla_travel',
       }).catch(err => {
@@ -130,4 +139,5 @@ export const POST = withErrorHandling<unknown, RouteParams>(
       },
     });
   }
+)
 );

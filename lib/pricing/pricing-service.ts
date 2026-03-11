@@ -3,7 +3,7 @@
  * Central pricing logic that queries database for rates and applies modifiers
  */
 
-import { prisma } from '@/lib/prisma';
+import { query } from '@/lib/db';
 
 export interface PricingTier {
   id: number;
@@ -72,35 +72,35 @@ export async function getPricingTier(params: {
     : ['sun_wed', 'weekday', 'any'];
   
   // Query for matching tier with multiple day type options
-  const rows = await prisma.$queryRaw<PricingTier[]>`
+  const result = await query(`
     SELECT * FROM pricing_tiers
-    WHERE service_type = ${serviceType}
-      AND party_size_min <= ${partySize}
-      AND party_size_max >= ${partySize}
-      AND (day_type = ANY(${dayTypes}) OR day_type IS NULL)
+    WHERE service_type = $1
+      AND party_size_min <= $2
+      AND party_size_max >= $2
+      AND (day_type = ANY($3) OR day_type IS NULL)
       AND active = true
-      AND (effective_start_date IS NULL OR effective_start_date <= ${date})
-      AND (effective_end_date IS NULL OR effective_end_date >= ${date})
+      AND (effective_start_date IS NULL OR effective_start_date <= $4)
+      AND (effective_end_date IS NULL OR effective_end_date >= $4)
     ORDER BY priority DESC, party_size_min DESC
     LIMIT 1
-  `;
-
-  if (rows.length === 0) {
+  `, [serviceType, partySize, dayTypes, date]);
+  
+  if (result.rows.length === 0) {
     // Fallback: try any matching tier regardless of day type
-    const fallbackRows = await prisma.$queryRaw<PricingTier[]>`
+    const fallbackResult = await query(`
       SELECT * FROM pricing_tiers
-      WHERE service_type = ${serviceType}
-        AND party_size_min <= ${partySize}
-        AND party_size_max >= ${partySize}
+      WHERE service_type = $1
+        AND party_size_min <= $2
+        AND party_size_max >= $2
         AND active = true
       ORDER BY priority DESC, party_size_min DESC
       LIMIT 1
-    `;
-
-    return fallbackRows[0] || null;
+    `, [serviceType, partySize]);
+    
+    return fallbackResult.rows[0] || null;
   }
-
-  return rows[0];
+  
+  return result.rows[0];
 }
 
 /**
@@ -123,8 +123,8 @@ export async function getApplicableModifiers(params: {
   ];
   const dayColumn = dayColumns[dayOfWeek];
   
-  return await prisma.$queryRawUnsafe<PricingModifier[]>(
-    `SELECT * FROM pricing_modifiers
+  const result = await query(`
+    SELECT * FROM pricing_modifiers
     WHERE active = true
       AND (applies_to_service_types IS NULL OR $1 = ANY(applies_to_service_types))
       AND (min_party_size IS NULL OR min_party_size <= $2)
@@ -134,9 +134,10 @@ export async function getApplicableModifiers(params: {
       AND (effective_start_date IS NULL OR effective_start_date <= $5)
       AND (effective_end_date IS NULL OR effective_end_date >= $5)
       AND ${dayColumn} = true
-    ORDER BY priority DESC`,
-    serviceType, partySize, advanceDays, bookingAmount, date
-  );
+    ORDER BY priority DESC
+  `, [serviceType, partySize, advanceDays, bookingAmount, date]);
+  
+  return result.rows;
 }
 
 /**
@@ -247,19 +248,18 @@ export async function calculateTransferPrice(params: {
   const { transferType, partySize, date: _date, applyModifiers: _applyModifiers = false } = params;
   
   // Get base tier - match by tier_name containing the transfer type
-  const transferPattern = `%${transferType}%`;
-  const transferRows = await prisma.$queryRaw<PricingTier[]>`
+  const result = await query(`
     SELECT * FROM pricing_tiers
     WHERE service_type = 'airport_transfer'
-      AND LOWER(tier_name) LIKE LOWER(${transferPattern})
-      AND party_size_min <= ${partySize}
-      AND party_size_max >= ${partySize}
+      AND LOWER(tier_name) LIKE LOWER($1)
+      AND party_size_min <= $2
+      AND party_size_max >= $2
       AND active = true
     ORDER BY priority DESC
     LIMIT 1
-  `;
-
-  const tier = transferRows[0];
+  `, [`%${transferType}%`, partySize]);
+  
+  const tier = result.rows[0];
   
   if (!tier) {
     throw new Error(`No pricing tier found for transfer: ${transferType}`);
@@ -321,23 +321,25 @@ export async function calculateWaitTimePrice(params: {
  * Get all pricing tiers (for admin UI)
  */
 export async function getAllPricingTiers(serviceType?: string): Promise<PricingTier[]> {
-  if (serviceType) {
-    return await prisma.$queryRaw<PricingTier[]>`
-      SELECT * FROM pricing_tiers WHERE service_type = ${serviceType} ORDER BY service_type, party_size_min, day_type
-    `;
-  }
-  return await prisma.$queryRaw<PricingTier[]>`
-    SELECT * FROM pricing_tiers ORDER BY service_type, party_size_min, day_type
-  `;
+  const result = await query(
+    serviceType
+      ? 'SELECT * FROM pricing_tiers WHERE service_type = $1 ORDER BY service_type, party_size_min, day_type'
+      : 'SELECT * FROM pricing_tiers ORDER BY service_type, party_size_min, day_type',
+    serviceType ? [serviceType] : []
+  );
+  
+  return result.rows;
 }
 
 /**
  * Get all pricing modifiers (for admin UI)
  */
 export async function getAllPricingModifiers(): Promise<PricingModifier[]> {
-  return await prisma.$queryRaw<PricingModifier[]>`
-    SELECT * FROM pricing_modifiers ORDER BY priority DESC, name
-  `;
+  const result = await query(
+    'SELECT * FROM pricing_modifiers ORDER BY priority DESC, name'
+  );
+  
+  return result.rows;
 }
 
 /**
@@ -352,17 +354,18 @@ export async function updatePricingTier(
   const fields = Object.keys(updates);
   const values = Object.values(updates);
   const setClause = fields.map((field, i) => `${field} = $${i + 2}`).join(', ');
-
-  await prisma.$executeRawUnsafe(
+  
+  await query(
     `UPDATE pricing_tiers SET ${setClause}, updated_at = NOW() WHERE id = $1`,
-    id, ...values
+    [id, ...values]
   );
-
+  
   // Log change
-  await prisma.$executeRaw`
-    INSERT INTO pricing_history (table_name, record_id, action, change_reason, changed_by)
-     VALUES ('pricing_tiers', ${id}, 'updated', ${changeReason}, ${changedBy})
-  `;
+  await query(
+    `INSERT INTO pricing_history (table_name, record_id, action, change_reason, changed_by)
+     VALUES ('pricing_tiers', $1, 'updated', $2, $3)`,
+    [id, changeReason, changedBy]
+  );
 }
 
 /**
@@ -372,16 +375,21 @@ export async function createPricingTier(
   tier: Omit<PricingTier, 'id'>,
   createdBy: number
 ): Promise<number> {
-  const rows = await prisma.$queryRaw<Array<{ id: number }>>`
+  const result = await query(`
     INSERT INTO pricing_tiers (
       service_type, tier_name, description,
       party_size_min, party_size_max, day_type, season,
       pricing_model, base_rate, hourly_rate, per_person_rate, per_mile_rate, minimum_charge,
       active, priority, notes, created_by
-    ) VALUES (${tier.service_type}, ${tier.tier_name}, ${tier.description}, ${tier.party_size_min}, ${tier.party_size_max}, ${tier.day_type}, ${tier.season}, ${tier.pricing_model}, ${tier.base_rate}, ${tier.hourly_rate}, ${tier.per_person_rate}, ${tier.per_mile_rate}, ${tier.minimum_charge}, ${tier.active}, ${tier.priority}, ${tier.notes}, ${createdBy})
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
     RETURNING id
-  `;
-
-  return rows[0].id;
+  `, [
+    tier.service_type, tier.tier_name, tier.description,
+    tier.party_size_min, tier.party_size_max, tier.day_type, tier.season,
+    tier.pricing_model, tier.base_rate, tier.hourly_rate, tier.per_person_rate, tier.per_mile_rate, tier.minimum_charge,
+    tier.active, tier.priority, tier.notes, createdBy
+  ]);
+  
+  return result.rows[0].id;
 }
 

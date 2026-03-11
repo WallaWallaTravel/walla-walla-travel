@@ -10,10 +10,11 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
-import { prisma } from '@/lib/prisma';
+import { query } from '@/lib/db';
 import { getSetting } from '@/lib/settings/settings-service';
 import { sendReservationConfirmation } from '@/lib/email';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 import { z } from 'zod';
 import { noDisposableEmail } from '@/lib/utils/email-validation';
 
@@ -62,7 +63,8 @@ interface ReserveRequest {
  * POST /api/booking/reserve
  * Create a reservation with deposit
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   const data: ReserveRequest = BodySchema.parse(await request.json());
 
   // Validate required fields
@@ -87,38 +89,45 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     throw new BadRequestError(`Invalid deposit amount. Expected approximately $${expectedDeposit}`);
   }
 
-  // Use Prisma transaction
-  const result = await prisma.$transaction(async (tx) => {
+  // Start transaction
+  await query('BEGIN');
+
+  try {
     // 1. Create or find customer
     let customerId: number;
 
-    const existingCustomerRows = await tx.$queryRaw<{ id: number }[]>`
-      SELECT id FROM customers WHERE LOWER(email) = LOWER(${data.contactEmail})`;
+    const existingCustomer = await query(
+      'SELECT id FROM customers WHERE LOWER(email) = LOWER($1)',
+      [data.contactEmail]
+    );
 
-    if (existingCustomerRows.length > 0) {
-      customerId = existingCustomerRows[0].id;
+    if (existingCustomer.rows.length > 0) {
+      customerId = existingCustomer.rows[0].id;
 
       // Update customer info
-      await tx.$executeRaw`
-        UPDATE customers
-        SET name = ${data.contactName}, phone = ${data.contactPhone}, updated_at = NOW()
-        WHERE id = ${customerId}`;
+      await query(
+        `UPDATE customers
+         SET name = $1, phone = $2, updated_at = NOW()
+         WHERE id = $3`,
+        [data.contactName, data.contactPhone, customerId]
+      );
     } else {
       // Create new customer
-      const newCustomerRows = await tx.$queryRaw<{ id: number }[]>`
-        INSERT INTO customers (email, name, phone, created_at, updated_at)
-        VALUES (${data.contactEmail}, ${data.contactName}, ${data.contactPhone}, NOW(), NOW())
-        RETURNING id`;
-      customerId = newCustomerRows[0].id;
+      const newCustomer = await query(
+        `INSERT INTO customers (email, name, phone, created_at, updated_at)
+         VALUES ($1, $2, $3, NOW(), NOW())
+         RETURNING id`,
+        [data.contactEmail, data.contactName, data.contactPhone]
+      );
+      customerId = newCustomer.rows[0].id;
     }
 
     // 2. Generate reservation number
     const reservationNumber = `RES${Date.now().toString().slice(-8)}`;
 
     // 3. Create reservation record
-    const consultationHours = bookingSettings?.reserve_refine_consultation_hours || 24;
-    const reservationRows = await tx.$queryRaw<{ id: number }[]>`
-      INSERT INTO reservations (
+    const reservation = await query(
+      `INSERT INTO reservations (
         reservation_number,
         customer_id,
         party_size,
@@ -134,15 +143,31 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
         consultation_deadline,
         created_at,
         updated_at
-      ) VALUES (${reservationNumber}, ${customerId}, ${data.partySize}, ${data.preferredDate}, ${data.alternateDate || null}, ${data.eventType}, ${data.specialRequests || null}, ${data.depositAmount}, ${data.paymentMethod === 'check' ? false : true}, ${data.paymentMethod}, 'pending', ${data.brandId || 1}, NOW() + INTERVAL '${consultationHours} hours', NOW(), NOW())
-      RETURNING id`;
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW() + INTERVAL '24 hours', NOW(), NOW())
+      RETURNING id`,
+      [
+        reservationNumber,
+        customerId,
+        data.partySize,
+        data.preferredDate,
+        data.alternateDate || null,
+        data.eventType,
+        data.specialRequests || null,
+        data.depositAmount,
+        data.paymentMethod === 'check' ? false : true, // Card paid immediately, check pending
+        data.paymentMethod,
+        'pending', // Status: pending → contacted → confirmed → completed
+        data.brandId || 1, // Default to Walla Walla Travel
+        bookingSettings?.reserve_refine_consultation_hours || 24
+      ]
+    );
 
-    const reservationId = reservationRows[0].id;
+    const reservationId = reservation.rows[0].id;
 
-    // 4. If card payment, create payment record
+    // 4. If card payment, create payment record (for now, just log it)
     if (data.paymentMethod === 'card') {
-      await tx.$executeRaw`
-        INSERT INTO payments (
+      await query(
+        `INSERT INTO payments (
           reservation_id,
           customer_id,
           amount,
@@ -151,66 +176,79 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
           status,
           brand_id,
           created_at
-        ) VALUES (${reservationId}, ${customerId}, ${data.depositAmount}, 'deposit', 'card', 'pending', ${data.brandId || 1}, NOW())`;
+        ) VALUES ($1, $2, $3, 'deposit', 'card', 'pending', $4, NOW())`,
+        [reservationId, customerId, data.depositAmount, data.brandId || 1]
+      );
     }
 
     // 5. Log activity
-    await tx.$executeRaw`
-      INSERT INTO activity_log (
+    await query(
+      `INSERT INTO activity_log (
         activity_type,
         user_type,
         user_id,
         description,
         metadata,
         created_at
-      ) VALUES ('reservation_created', 'customer', ${customerId}, ${`New reservation ${reservationNumber} for ${data.partySize} guests on ${data.preferredDate}`}, ${JSON.stringify({
-        reservation_id: reservationId,
-        reservation_number: reservationNumber,
-        deposit_amount: data.depositAmount,
-        payment_method: data.paymentMethod
-      })}::jsonb, NOW())`;
-
-    return { reservationId, reservationNumber, customerId };
-  });
-
-  // Send confirmation email
-  const confirmationUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/book/reserve/confirmation?id=${result.reservationId}`;
-
-  try {
-    await sendReservationConfirmation(
-      {
-        customer_name: data.contactName,
-        customer_email: data.contactEmail,
-        reservation_number: result.reservationNumber,
-        party_size: data.partySize,
-        preferred_date: data.preferredDate,
-        event_type: data.eventType,
-        deposit_amount: data.depositAmount,
-        payment_method: data.paymentMethod,
-        consultation_hours: bookingSettings?.reserve_refine_consultation_hours || 24,
-        confirmation_url: confirmationUrl
-      },
-      data.contactEmail,
-      data.brandId || 1 // Pass brand ID for brand-specific email template
+      ) VALUES ('reservation_created', 'customer', $1, $2, $3, NOW())`,
+      [
+        customerId,
+        `New reservation ${reservationNumber} for ${data.partySize} guests on ${data.preferredDate}`,
+        JSON.stringify({
+          reservation_id: reservationId,
+          reservation_number: reservationNumber,
+          deposit_amount: data.depositAmount,
+          payment_method: data.paymentMethod
+        })
+      ]
     );
-  } catch (emailError) {
-    logger.error('Reserve & Refine email send failed', { error: emailError });
-    // Don't fail the reservation if email fails
+
+    await query('COMMIT');
+
+    // Send confirmation email
+    const confirmationUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/book/reserve/confirmation?id=${reservationId}`;
+
+    try {
+      await sendReservationConfirmation(
+        {
+          customer_name: data.contactName,
+          customer_email: data.contactEmail,
+          reservation_number: reservationNumber,
+          party_size: data.partySize,
+          preferred_date: data.preferredDate,
+          event_type: data.eventType,
+          deposit_amount: data.depositAmount,
+          payment_method: data.paymentMethod,
+          consultation_hours: bookingSettings?.reserve_refine_consultation_hours || 24,
+          confirmation_url: confirmationUrl
+        },
+        data.contactEmail,
+        data.brandId || 1 // Pass brand ID for brand-specific email template
+      );
+    } catch (emailError) {
+      logger.error('Reserve & Refine email send failed', { error: emailError });
+      // Don't fail the reservation if email fails
+    }
+
+    logger.info('New reserve & refine reservation', {
+      reservationNumber,
+      partySize: data.partySize,
+      depositAmount: data.depositAmount,
+      paymentMethod: data.paymentMethod
+    });
+
+    return NextResponse.json({
+      success: true,
+      reservationId,
+      reservationNumber,
+      message: data.paymentMethod === 'card'
+        ? 'Reservation created! Processing payment...'
+        : 'Reservation created! Please mail your check.'
+    });
+
+  } catch (error) {
+    await query('ROLLBACK');
+    throw error;
   }
-
-  logger.info('New reserve & refine reservation', {
-    reservationNumber: result.reservationNumber,
-    partySize: data.partySize,
-    depositAmount: data.depositAmount,
-    paymentMethod: data.paymentMethod
-  });
-
-  return NextResponse.json({
-    success: true,
-    reservationId: result.reservationId,
-    reservationNumber: result.reservationNumber,
-    message: data.paymentMethod === 'card'
-      ? 'Reservation created! Processing payment...'
-      : 'Reservation created! Please mail your check.'
-  });
-});
+})
+);

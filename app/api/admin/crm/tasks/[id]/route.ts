@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { NotFoundError, BadRequestError } from '@/lib/api/middleware/error-handler';
-import { prisma } from '@/lib/prisma';
+import { query } from '@/lib/db';
 import { z } from 'zod';
 import type { CrmTaskWithRelations, UpdateTaskData } from '@/types/crm';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 import { auditService } from '@/lib/services/audit.service';
 
 /**
@@ -20,8 +21,8 @@ export const GET = withAdminAuth(async (
     throw new BadRequestError('Invalid task ID');
   }
 
-  const rows = await prisma.$queryRaw<CrmTaskWithRelations[]>`
-    SELECT
+  const result = await query<CrmTaskWithRelations>(
+    `SELECT
       t.*,
       c.name as contact_name,
       c.email as contact_email,
@@ -33,15 +34,17 @@ export const GET = withAdminAuth(async (
     LEFT JOIN crm_deals d ON t.deal_id = d.id
     LEFT JOIN users u1 ON t.assigned_to = u1.id
     LEFT JOIN users u2 ON t.created_by = u2.id
-    WHERE t.id = ${taskId}`;
+    WHERE t.id = $1`,
+    [taskId]
+  );
 
-  if (rows.length === 0) {
+  if (result.rows.length === 0) {
     throw new NotFoundError('Task not found');
   }
 
   return NextResponse.json({
     success: true,
-    task: rows[0],
+    task: result.rows[0],
     timestamp: new Date().toISOString(),
   });
 });
@@ -62,7 +65,8 @@ const BodySchema = z.object({
  * PATCH /api/admin/crm/tasks/[id]
  * Update a task
  */
-export const PATCH = withAdminAuth(async (
+export const PATCH = withCSRF(
+  withAdminAuth(async (
   request: NextRequest, session, context
 ) => {
   const { id } = await context!.params;
@@ -117,30 +121,32 @@ export const PATCH = withAdminAuth(async (
 
   params.push(taskId);
 
-  const rows = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
+  const result = await query(
     `UPDATE crm_tasks
      SET ${updates.join(', ')}, updated_at = NOW()
      WHERE id = $${paramIndex}
      RETURNING *`,
-    ...params
+    params
   );
 
-  if (rows.length === 0) {
+  if (result.rows.length === 0) {
     throw new NotFoundError('Task not found');
   }
 
-  const task = rows[0];
+  const task = result.rows[0];
 
   // Update contact's next_follow_up_at
   if (task.contact_id) {
-    await prisma.$executeRaw`
-      UPDATE crm_contacts
+    await query(
+      `UPDATE crm_contacts
        SET next_follow_up_at = (
          SELECT MIN(due_date)
          FROM crm_tasks
-         WHERE contact_id = ${task.contact_id} AND status IN ('pending', 'in_progress')
+         WHERE contact_id = $1 AND status IN ('pending', 'in_progress')
        )
-       WHERE id = ${task.contact_id}`;
+       WHERE id = $1`,
+      [task.contact_id]
+    );
   }
 
   return NextResponse.json({
@@ -148,13 +154,15 @@ export const PATCH = withAdminAuth(async (
     task,
     timestamp: new Date().toISOString(),
   });
-});
+})
+);
 
 /**
  * DELETE /api/admin/crm/tasks/[id]
  * Delete a task
  */
-export const DELETE = withAdminAuth(async (
+export const DELETE = withCSRF(
+  withAdminAuth(async (
   request: NextRequest, session, context
 ) => {
   const { id } = await context!.params;
@@ -165,28 +173,35 @@ export const DELETE = withAdminAuth(async (
   }
 
   // Get task to find contact_id for updating follow-up date
-  const taskRows = await prisma.$queryRaw<{ contact_id: number | null }[]>`
-    SELECT contact_id FROM crm_tasks WHERE id = ${taskId}`;
+  const taskResult = await query<{ contact_id: number | null }>(
+    `SELECT contact_id FROM crm_tasks WHERE id = $1`,
+    [taskId]
+  );
 
-  if (taskRows.length === 0) {
+  if (taskResult.rows.length === 0) {
     throw new NotFoundError('Task not found');
   }
 
-  const contactId = taskRows[0].contact_id;
+  const contactId = taskResult.rows[0].contact_id;
 
   // Delete the task
-  await prisma.$executeRaw`DELETE FROM crm_tasks WHERE id = ${taskId}`;
+  await query(
+    `DELETE FROM crm_tasks WHERE id = $1`,
+    [taskId]
+  );
 
   // Update contact's next_follow_up_at
   if (contactId) {
-    await prisma.$executeRaw`
-      UPDATE crm_contacts
+    await query(
+      `UPDATE crm_contacts
        SET next_follow_up_at = (
          SELECT MIN(due_date)
          FROM crm_tasks
-         WHERE contact_id = ${contactId} AND status IN ('pending', 'in_progress')
+         WHERE contact_id = $1 AND status IN ('pending', 'in_progress')
        )
-       WHERE id = ${contactId}`;
+       WHERE id = $1`,
+      [contactId]
+    );
   }
 
   await auditService.logFromRequest(request, parseInt(session.userId), 'resource_deleted', {
@@ -199,4 +214,5 @@ export const DELETE = withAdminAuth(async (
     message: 'Task deleted',
     timestamp: new Date().toISOString(),
   });
-});
+})
+);

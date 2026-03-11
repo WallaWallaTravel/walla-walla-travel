@@ -8,7 +8,7 @@
  */
 
 import { hashPassword } from '../../lib/auth/passwords';
-import { prisma } from '../../lib/prisma';
+import { query } from '../../lib/db';
 
 async function createGeologyAdmin() {
   console.log('Creating geology admin account...\n');
@@ -21,18 +21,19 @@ async function createGeologyAdmin() {
   try {
     const passwordHash = await hashPassword(password);
 
-    const rows = await prisma.$queryRaw<Array<{ id: number; email: string; name: string; role: string }>>`
-      INSERT INTO users (email, name, password_hash, role, is_active, created_at, updated_at)
-       VALUES (${email}, ${name}, ${passwordHash}, ${role}, ${true}, NOW(), NOW())
+    const result = await query(
+      `INSERT INTO users (email, name, password_hash, role, is_active, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
        ON CONFLICT (email) DO UPDATE
        SET password_hash = EXCLUDED.password_hash,
            name = EXCLUDED.name,
            role = EXCLUDED.role,
            is_active = EXCLUDED.is_active
-       RETURNING id, email, name, role
-    `;
+       RETURNING id, email, name, role`,
+      [email, name, passwordHash, role, true]
+    );
 
-    console.log('Account created:', rows[0]);
+    console.log('Account created:', result.rows[0]);
     console.log('');
     console.log('Login credentials:');
     console.log(`  Email:    ${email}`);

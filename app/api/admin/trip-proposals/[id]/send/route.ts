@@ -12,6 +12,7 @@ import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import { tripProposalEmailService } from '@/lib/services/trip-proposal-email.service';
 import { draftReminderService } from '@/lib/services/draft-reminder.service';
 import { z } from 'zod';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -21,7 +22,8 @@ const SendProposalSchema = z.object({
   custom_message: z.string().max(2000).optional(),
 });
 
-export const POST = withAdminAuth(async (request: NextRequest, session, context) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest, session, context) => {
   const { id } = await (context as unknown as RouteParams).params;
   const proposalId = parseInt(id, 10);
 
@@ -97,4 +99,5 @@ export const POST = withAdminAuth(async (request: NextRequest, session, context)
     message: `Proposal sent to ${proposal.customer_email}`,
     email_to: proposal.customer_email,
   });
-});
+})
+);

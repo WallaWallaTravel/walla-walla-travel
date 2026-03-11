@@ -4,7 +4,7 @@ import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
 import { competitorMonitoringService } from '@/lib/services/competitor-monitoring.service';
 import type { CreatePricingInput } from '@/types/competitors';
-
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 const BodySchema = z.object({
   pricing_type: z.enum(['base_tour', 'hourly_rate', 'per_person', 'premium_package', 'group_discount', 'promotion', 'other']),
@@ -64,4 +64,6 @@ async function postHandler(request: NextRequest) {
 }
 
 export const GET = withAdminAuth(async (request, _session) => getHandler(request));
-export const POST = withAdminAuth(async (request, _session) => postHandler(request));
+export const POST = withCSRF(
+  withAdminAuth(async (request, _session) => postHandler(request))
+);

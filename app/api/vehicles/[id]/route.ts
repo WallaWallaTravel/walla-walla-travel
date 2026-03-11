@@ -4,7 +4,7 @@ import {
   getOptionalAuth,
   logApiRequest
 } from '@/app/api/utils';
-import { prisma } from '@/lib/prisma';
+import { query } from '@/lib/db';
 import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 
 /**
@@ -28,7 +28,7 @@ export const GET = withErrorHandling(async (
   }
 
   // Get vehicle details
-  const vehicleRows = await prisma.$queryRaw<Record<string, unknown>[]>`
+  const vehicleResult = await query(`
     SELECT
       v.*,
       -- Current assignment info
@@ -69,17 +69,17 @@ export const GET = withErrorHandling(async (
       AND tc.clock_out_time IS NULL
       AND DATE(tc.clock_in_time) = CURRENT_DATE
     LEFT JOIN users u ON tc.driver_id = u.id
-    WHERE v.id = ${vehicleId}
-  `;
+    WHERE v.id = $1
+  `, [vehicleId]);
 
-  if (vehicleRows.length === 0) {
+  if (vehicleResult.rowCount === 0) {
     throw new NotFoundError('Vehicle not found');
   }
 
-  const vehicle = vehicleRows[0];
+  const vehicle = vehicleResult.rows[0];
 
   // Get maintenance history
-  const maintenanceRows = await prisma.$queryRaw<Record<string, unknown>[]>`
+  const maintenanceResult = await query(`
     SELECT
       id,
       service_date,
@@ -91,26 +91,26 @@ export const GET = withErrorHandling(async (
       next_service_due,
       created_at
     FROM maintenance_records
-    WHERE vehicle_id = ${vehicleId}
+    WHERE vehicle_id = $1
     ORDER BY service_date DESC
     LIMIT 10
-  `;
+  `, [vehicleId]);
 
   // Get recent mileage history
-  const mileageRows = await prisma.$queryRaw<Record<string, unknown>[]>`
+  const mileageResult = await query(`
     SELECT
       recorded_date,
       mileage,
       recorded_by,
       notes
     FROM mileage_logs
-    WHERE vehicle_id = ${vehicleId}
+    WHERE vehicle_id = $1
     ORDER BY recorded_date DESC
     LIMIT 10
-  `;
+  `, [vehicleId]);
 
   // Get upcoming scheduled routes
-  const routesRows = await prisma.$queryRaw<Record<string, unknown>[]>`
+  const routesResult = await query(`
     SELECT
       r.id,
       r.route_date,
@@ -121,29 +121,29 @@ export const GET = withErrorHandling(async (
       u.name as driver_name
     FROM routes r
     LEFT JOIN users u ON r.driver_id = u.id
-    WHERE r.vehicle_id = ${vehicleId}
+    WHERE r.vehicle_id = $1
       AND r.route_date >= CURRENT_DATE
       AND r.status = 'scheduled'
     ORDER BY r.route_date, r.start_time
     LIMIT 5
-  `;
+  `, [vehicleId]);
 
   // Get usage statistics
-  const statsRows = await prisma.$queryRaw<Record<string, unknown>[]>`
+  const statsResult = await query(`
     SELECT
       COUNT(DISTINCT DATE(clock_in_time)) as days_used,
       COUNT(DISTINCT driver_id) as unique_drivers,
       COALESCE(AVG(end_mileage - start_mileage), 0) as avg_daily_miles,
       COALESCE(SUM(end_mileage - start_mileage), 0) as total_miles_driven
     FROM time_cards
-    WHERE vehicle_id = ${vehicleId}
+    WHERE vehicle_id = $1
       AND clock_in_time >= CURRENT_DATE - INTERVAL '30 days'
-  `;
+  `, [vehicleId]);
 
-  const stats = statsRows[0];
+  const stats = statsResult.rows[0];
 
   // Check compliance status
-  const complianceRows = await prisma.$queryRaw<Record<string, unknown>[]>`
+  const complianceResult = await query(`
     SELECT
       -- Registration status
       CASE
@@ -164,10 +164,10 @@ export const GET = withErrorHandling(async (
         ELSE 'current'
       END as inspection_status
     FROM vehicles v
-    WHERE v.id = ${vehicleId}
-  `;
+    WHERE v.id = $1
+  `, [vehicleId]);
 
-  const compliance = complianceRows[0];
+  const compliance = complianceResult.rows[0];
 
   // Format response
   const responseData = {
@@ -202,14 +202,14 @@ export const GET = withErrorHandling(async (
       start_mileage: vehicle.assignment_start_mileage,
     } : null,
     last_inspection: vehicle.last_inspection_details,
-    maintenance_history: maintenanceRows,
-    mileage_history: mileageRows,
-    upcoming_routes: routesRows,
+    maintenance_history: maintenanceResult.rows,
+    mileage_history: mileageResult.rows,
+    upcoming_routes: routesResult.rows,
     usage_statistics: {
-      days_used_last_30: parseInt(stats.days_used as string),
-      unique_drivers: parseInt(stats.unique_drivers as string),
-      avg_daily_miles: parseFloat(stats.avg_daily_miles as string).toFixed(2),
-      total_miles_last_30: parseInt(stats.total_miles_driven as string),
+      days_used_last_30: parseInt(stats.days_used),
+      unique_drivers: parseInt(stats.unique_drivers),
+      avg_daily_miles: parseFloat(stats.avg_daily_miles).toFixed(2),
+      total_miles_last_30: parseInt(stats.total_miles_driven),
     },
     compliance: compliance,
   };

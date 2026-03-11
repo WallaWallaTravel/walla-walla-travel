@@ -1,11 +1,11 @@
 import { NextRequest } from 'next/server';
 import { successResponse, requireAuth } from '@/app/api/utils';
-import { prisma } from '@/lib/prisma';
+import { query } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
 import { COMPANY_INFO } from '@/lib/config/company';
 import { withErrorHandling, BadRequestError, ValidationError } from '@/lib/api/middleware/error-handler';
-
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // Request body schema
 const SupervisorHelpSchema = z.object({
@@ -19,7 +19,7 @@ const SupervisorHelpSchema = z.object({
  *
  * Refactored: Zod validation + structured logging + withErrorHandling
  */
-export const POST =
+export const POST = withCSRF(
   withErrorHandling(async (request: NextRequest) => {
   const session = await requireAuth();
 
@@ -50,9 +50,11 @@ export const POST =
   });
 
   // Get driver info
-  const driverRows = await prisma.$queryRaw<{ name: string; email: string }[]>`
-    SELECT name, email FROM users WHERE id = ${driverId}`;
-  const driver = driverRows[0];
+  const driverResult = await query(
+    'SELECT name, email FROM users WHERE id = $1',
+    [driverId]
+  );
+  const driver = driverResult.rows[0];
 
   // Supervisor contact info from company config
   const supervisorPhone = process.env.SUPERVISOR_PHONE || COMPANY_INFO.phone.dialable;
@@ -102,14 +104,20 @@ Driver ID: ${driverId}
 
   // Log to database for tracking
   try {
-    await prisma.$executeRaw`
+    await query(`
       INSERT INTO notifications (
         driver_id,
         type,
         message,
         sent_to,
         created_at
-      ) VALUES (${driverId}, 'emergency_vehicle_help', ${smsMessage}, ${supervisorEmail}, CURRENT_TIMESTAMP)`;
+      ) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
+    `, [
+      driverId,
+      'emergency_vehicle_help',
+      smsMessage,
+      supervisorEmail
+    ]);
   } catch (dbError) {
     // Non-critical error, continue
     logger.warn('Failed to log notification to database', { error: dbError });
@@ -124,4 +132,5 @@ Driver ID: ${driverId}
     },
     timestamp
   }, 'Notification sent successfully');
-});
+})
+);

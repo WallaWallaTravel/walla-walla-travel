@@ -3,8 +3,8 @@
  * Handles transcription, extraction, and analysis
  */
 
+import { query } from '@/lib/db';
 import { logger } from '@/lib/logger';
-import { prisma } from '@/lib/prisma';
 
 export interface ProcessingJob {
   id: number;
@@ -22,7 +22,7 @@ export interface ProcessingJob {
 export async function queueVoiceTranscription(voiceEntryId: number, businessId: number): Promise<number> {
   logger.debug('AI Processing: Queueing voice transcription', { voiceEntryId });
   
-  const result = await prisma.$queryRawUnsafe<{ id: number }[]>(`
+  const result = await query(`
     INSERT INTO processing_jobs (
       business_id,
       job_type,
@@ -32,10 +32,9 @@ export async function queueVoiceTranscription(voiceEntryId: number, businessId: 
     )
     VALUES ($1, 'voice_transcription', $2, 'pending', NOW())
     RETURNING id
-  `,
-    businessId, voiceEntryId);
-
-  return result[0].id;
+  `, [businessId, voiceEntryId]);
+  
+  return result.rows[0].id;
 }
 
 /**
@@ -44,7 +43,7 @@ export async function queueVoiceTranscription(voiceEntryId: number, businessId: 
 export async function queueTextExtraction(textEntryId: number, businessId: number): Promise<number> {
   logger.debug('AI Processing: Queueing text extraction', { textEntryId });
   
-  const result = await prisma.$queryRawUnsafe<{ id: number }[]>(`
+  const result = await query(`
     INSERT INTO processing_jobs (
       business_id,
       job_type,
@@ -54,10 +53,9 @@ export async function queueTextExtraction(textEntryId: number, businessId: numbe
     )
     VALUES ($1, 'text_extraction', $2, 'pending', NOW())
     RETURNING id
-  `,
-    businessId, textEntryId);
-
-  return result[0].id;
+  `, [businessId, textEntryId]);
+  
+  return result.rows[0].id;
 }
 
 /**
@@ -66,7 +64,7 @@ export async function queueTextExtraction(textEntryId: number, businessId: numbe
 export async function queuePhotoAnalysis(fileId: number, businessId: number): Promise<number> {
   logger.debug('AI Processing: Queueing photo analysis', { fileId });
   
-  const result = await prisma.$queryRawUnsafe<{ id: number }[]>(`
+  const result = await query(`
     INSERT INTO processing_jobs (
       business_id,
       job_type,
@@ -76,10 +74,9 @@ export async function queuePhotoAnalysis(fileId: number, businessId: number): Pr
     )
     VALUES ($1, 'photo_analysis', $2, 'pending', NOW())
     RETURNING id
-  `,
-    businessId, fileId);
-
-  return result[0].id;
+  `, [businessId, fileId]);
+  
+  return result.rows[0].id;
 }
 
 /**
@@ -87,8 +84,8 @@ export async function queuePhotoAnalysis(fileId: number, businessId: number): Pr
  */
 export async function queuePdfParsing(fileId: number, businessId: number): Promise<number> {
   logger.debug('AI Processing: Queueing PDF parsing', { fileId });
-
-  const result = await prisma.$queryRawUnsafe<{ id: number }[]>(`
+  
+  const result = await query(`
     INSERT INTO processing_jobs (
       business_id,
       job_type,
@@ -98,67 +95,62 @@ export async function queuePdfParsing(fileId: number, businessId: number): Promi
     )
     VALUES ($1, 'pdf_parsing', $2, 'pending', NOW())
     RETURNING id
-  `,
-    businessId, fileId);
-
-  return result[0].id;
+  `, [businessId, fileId]);
+  
+  return result.rows[0].id;
 }
 
 /**
  * Get pending processing jobs
  */
 export async function getPendingJobs(limit: number = 10): Promise<ProcessingJob[]> {
-  const result = await prisma.$queryRawUnsafe<ProcessingJob[]>(`
+  const result = await query(`
     SELECT * FROM processing_jobs
     WHERE status = 'pending'
     ORDER BY created_at ASC
     LIMIT $1
-  `,
-    limit);
-
-  return result;
+  `, [limit]);
+  
+  return result.rows;
 }
 
 /**
  * Mark job as processing
  */
 export async function markJobProcessing(jobId: number): Promise<void> {
-  await prisma.$queryRawUnsafe<Record<string, unknown>[]>(`
+  await query(`
     UPDATE processing_jobs
     SET status = 'processing', started_at = NOW()
     WHERE id = $1
-  `,
-    jobId);
+  `, [jobId]);
 }
 
 /**
  * Mark job as completed
  */
 export async function markJobCompleted(jobId: number, resultData: Record<string, unknown>): Promise<void> {
-  await prisma.$queryRawUnsafe<Record<string, unknown>[]>(`
+  await query(`
     UPDATE processing_jobs
     SET 
       status = 'completed',
       result_data = $2,
       completed_at = NOW()
     WHERE id = $1
-  `,
-    jobId, JSON.stringify(resultData));
+  `, [jobId, JSON.stringify(resultData)]);
 }
 
 /**
  * Mark job as failed
  */
 export async function markJobFailed(jobId: number, error: string): Promise<void> {
-  await prisma.$queryRawUnsafe<Record<string, unknown>[]>(`
+  await query(`
     UPDATE processing_jobs
     SET 
       status = 'failed',
       error_message = $2,
       completed_at = NOW()
     WHERE id = $1
-  `,
-    jobId, error);
+  `, [jobId, error]);
 }
 
 /**
@@ -171,8 +163,8 @@ export async function getBusinessProcessingStatus(businessId: number): Promise<{
   completed: number;
   failed: number;
 }> {
-  const result = await prisma.$queryRawUnsafe<{ total: string; pending: string; processing: string; completed: string; failed: string }[]>(`
-    SELECT
+  const result = await query(`
+    SELECT 
       COUNT(*) as total,
       COUNT(*) FILTER (WHERE status = 'pending') as pending,
       COUNT(*) FILTER (WHERE status = 'processing') as processing,
@@ -180,10 +172,9 @@ export async function getBusinessProcessingStatus(businessId: number): Promise<{
       COUNT(*) FILTER (WHERE status = 'failed') as failed
     FROM processing_jobs
     WHERE business_id = $1
-  `,
-    businessId);
-
-  const row = result[0];
+  `, [businessId]);
+  
+  const row = result.rows[0];
   return {
     total: parseInt(row.total || '0'),
     pending: parseInt(row.pending || '0'),

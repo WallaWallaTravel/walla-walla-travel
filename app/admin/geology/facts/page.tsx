@@ -7,8 +7,8 @@
 import { getSession } from '@/lib/auth/session';
 import { canAccessGeology } from '@/lib/auth/roles';
 import { redirect } from 'next/navigation';
+import { query } from '@/lib/db';
 import Link from 'next/link';
-import { prisma } from '@/lib/prisma';
 
 // ============================================================================
 // Types
@@ -32,7 +32,7 @@ interface Fact {
 
 async function getFacts(): Promise<Fact[]> {
   try {
-    const result = await prisma.$queryRawUnsafe<Fact[]>(`
+    const result = await query<Fact>(`
       SELECT f.id, f.fact_text, f.context, f.fact_type, f.topic_id,
              f.display_order, f.is_featured, f.created_at,
              t.title as topic_title
@@ -40,7 +40,7 @@ async function getFacts(): Promise<Fact[]> {
       LEFT JOIN geology_topics t ON f.topic_id = t.id
       ORDER BY f.is_featured DESC, f.display_order ASC, f.created_at DESC
     `);
-    return result;
+    return result.rows;
   } catch {
     return [];
   }

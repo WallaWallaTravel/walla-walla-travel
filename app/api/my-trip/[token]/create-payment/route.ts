@@ -5,6 +5,7 @@ import { getBrandStripeClient, getBrandStripePublishableKey } from '@/lib/stripe
 import { getBrandEmailConfig } from '@/lib/email-brands';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import { logger } from '@/lib/logger';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 import { handleStripeError } from '@/lib/stripe/error-handler';
 
 /**
@@ -16,7 +17,8 @@ interface RouteParams {
   token: string;
 }
 
-export const POST = withErrorHandling<unknown, RouteParams>(
+export const POST = withCSRF(
+  withErrorHandling<unknown, RouteParams>(
   async (request: NextRequest, context) => {
     const { token } = await (context as RouteContext<RouteParams>).params;
 
@@ -126,4 +128,5 @@ export const POST = withErrorHandling<unknown, RouteParams>(
       },
     });
   }
+)
 );

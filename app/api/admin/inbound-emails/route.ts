@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper';
-import { prisma } from '@/lib/prisma';
-import { Prisma } from '@prisma/client';
+import { query } from '@/lib/db-helpers';
 
 /**
  * GET /api/admin/inbound-emails
@@ -15,18 +14,19 @@ export const GET = withAdminAuth(
     const status = searchParams.get('status') || 'unmatched';
 
     const whereClause = status === 'all'
-      ? Prisma.sql``
-      : Prisma.sql`WHERE routing_method = 'unmatched' OR routing_method IS NULL`;
+      ? ''
+      : "WHERE routing_method = 'unmatched' OR routing_method IS NULL";
 
-    const rows = await prisma.$queryRaw<Array<Record<string, unknown>>>(
-      Prisma.sql`SELECT id, from_address, to_address, subject, body_text,
+    const emails = await query(
+      `SELECT id, from_address, to_address, subject, body_text,
               routed_to_stop_id, routing_method, routed_at, created_at
        FROM inbound_email_log
        ${whereClause}
        ORDER BY created_at DESC
-       LIMIT 100`
+       LIMIT 100`,
+      []
     );
 
-    return NextResponse.json({ success: true, data: rows });
+    return NextResponse.json({ success: true, data: emails });
   }
 );

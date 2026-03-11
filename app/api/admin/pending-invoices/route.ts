@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
-import { prisma } from '@/lib/prisma';
+import { queryMany } from '@/lib/db-helpers';
 
 interface PendingInvoice {
   booking_id: number;
@@ -20,9 +20,10 @@ interface PendingInvoice {
  */
 export const GET = withAdminAuth(async (_request: NextRequest, _session) => {
   // Use the view we created in migration
-  const invoices = await prisma.$queryRaw<PendingInvoice[]>`
+  const invoices = await queryMany<PendingInvoice>(`
     SELECT * FROM pending_final_invoices
-    ORDER BY tour_date DESC`;
+    ORDER BY tour_date DESC
+  `);
 
   return NextResponse.json({
     success: true,

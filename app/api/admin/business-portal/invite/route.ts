@@ -4,13 +4,14 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { query } from '@/lib/db';
 import crypto from 'crypto';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 import { auditService } from '@/lib/services/audit.service';
-import { prisma } from '@/lib/prisma';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -37,7 +38,8 @@ const BodySchema = z.object({
  * POST /api/admin/business-portal/invite
  * Send batch invites to businesses
  */
-export const POST = withAdminAuth(async (request: NextRequest, session) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest, session) => {
   const body = BodySchema.parse(await request.json());
   const { businesses } = body as { businesses: BusinessInvite[] };
 
@@ -67,20 +69,22 @@ export const POST = withAdminAuth(async (request: NextRequest, session) => {
       // Insert into database
       // Columns match migration 059: email, phone, invite_token (not contact_email, contact_phone, unique_code)
       const businessTypes = business.business_types || [business.business_type];
-      const result = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
+      const result = await query(
         `INSERT INTO businesses
           (name, business_type, business_types, email, phone, invite_token, status, invited_at)
         VALUES ($1, $2, $3::TEXT[], $4, $5, $6, 'invited', NOW())
         RETURNING id, invite_token`,
+        [
           business.name,
           businessTypes[0],
           businessTypes,
           business.contact_email,
           business.contact_phone || null,
           invite_token
+        ]
       );
 
-      const newBusiness = result[0];
+      const newBusiness = result.rows[0];
 
       // TODO: Send email with invite token
       // await sendInviteEmail(business.contact_email, business.name, invite_token);
@@ -140,4 +144,5 @@ export const POST = withAdminAuth(async (request: NextRequest, session) => {
       failed: failCount
     }
   });
-});
+})
+);

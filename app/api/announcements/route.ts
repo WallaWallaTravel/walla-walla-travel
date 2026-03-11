@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { query } from '@/lib/db';
 import { addCacheHeaders, CachePresets } from '@/lib/api/middleware/cache';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 import { logger } from '@/lib/logger';
@@ -16,27 +16,27 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   const { searchParams } = new URL(request.url);
   const position = searchParams.get('position');
 
+  let sql = `
+    SELECT id, title, message, link_text, link_url, type, position, background_color
+    FROM announcements
+    WHERE is_active = true
+      AND (starts_at IS NULL OR starts_at <= NOW())
+      AND (expires_at IS NULL OR expires_at > NOW())
+  `;
+  const params: (string | null)[] = [];
+
+  if (position) {
+    params.push(position);
+    sql += ` AND position = $${params.length}`;
+  }
+
+  sql += ` ORDER BY created_at DESC`;
+
   let rows: Record<string, unknown>[] = [];
 
   try {
-    if (position) {
-      rows = await prisma.$queryRaw<Record<string, unknown>[]>`
-        SELECT id, title, message, link_text, link_url, type, position, background_color
-        FROM announcements
-        WHERE is_active = true
-          AND (starts_at IS NULL OR starts_at <= NOW())
-          AND (expires_at IS NULL OR expires_at > NOW())
-          AND position = ${position}
-        ORDER BY created_at DESC`;
-    } else {
-      rows = await prisma.$queryRaw<Record<string, unknown>[]>`
-        SELECT id, title, message, link_text, link_url, type, position, background_color
-        FROM announcements
-        WHERE is_active = true
-          AND (starts_at IS NULL OR starts_at <= NOW())
-          AND (expires_at IS NULL OR expires_at > NOW())
-        ORDER BY created_at DESC`;
-    }
+    const result = await query(sql, params);
+    rows = result.rows;
   } catch (err: unknown) {
     // PostgreSQL error code 42P01 = "relation does not exist"
     // Return empty results instead of 500 — the table may not be migrated yet

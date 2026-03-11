@@ -9,7 +9,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { query } from '@/lib/db';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 
 // Compliance warning thresholds
@@ -44,10 +44,16 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   // Today for compliance checks
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  const _todayStr = today.toISOString().split('T')[0];
+
+  // Date 30 days from now for warning threshold
+  const warningDate = new Date(today);
+  warningDate.setDate(warningDate.getDate() + COMPLIANCE_WARNING_DAYS);
+  const _warningDateStr = warningDate.toISOString().split('T')[0];
 
   // Fetch bookings with driver and vehicle compliance data
-  const bookingsRows = await prisma.$queryRaw<Array<Record<string, unknown>>>`
-    SELECT
+  const bookingsResult = await query(
+    `SELECT
       b.id,
       b.booking_number,
       b.tour_date,
@@ -67,12 +73,14 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
      LEFT JOIN customers c ON b.customer_id = c.id
      LEFT JOIN vehicles v ON b.vehicle_id = v.id
      LEFT JOIN users d ON b.driver_id = d.id
-     WHERE b.tour_date >= ${startDateStr} AND b.tour_date <= ${endDateStr}
-     ORDER BY b.tour_date, b.pickup_time`;
+     WHERE b.tour_date >= $1 AND b.tour_date <= $2
+     ORDER BY b.tour_date, b.pickup_time`,
+    [startDateStr, endDateStr]
+  );
 
     // Fetch availability blocks
-    const blocksRows = await prisma.$queryRaw<Array<Record<string, unknown>>>`
-      SELECT
+    const blocksResult = await query(
+      `SELECT
         vab.id,
         vab.vehicle_id,
         vab.block_date,
@@ -85,22 +93,26 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
         v.name as vehicle_name
        FROM vehicle_availability_blocks vab
        LEFT JOIN vehicles v ON vab.vehicle_id = v.id
-       WHERE vab.block_date >= ${startDateStr} AND vab.block_date <= ${endDateStr}
-       ORDER BY vab.block_date, vab.start_time`;
+       WHERE vab.block_date >= $1 AND vab.block_date <= $2
+       ORDER BY vab.block_date, vab.start_time`,
+      [startDateStr, endDateStr]
+    );
 
     // Fetch vehicles for summary
-    const vehiclesRows = await prisma.$queryRaw<Array<Record<string, unknown>>>`
-      SELECT id, name, capacity, is_active
+    const vehiclesResult = await query(
+      `SELECT id, name, capacity, is_active
        FROM vehicles
        WHERE is_active = true
-       ORDER BY name`;
+       ORDER BY name`
+    );
 
     // Fetch drivers (stored in users table with role = 'driver')
-    const driversRows = await prisma.$queryRaw<Array<Record<string, unknown>>>`
-      SELECT id, name, role as is_active
+    const driversResult = await query(
+      `SELECT id, name, role as is_active
        FROM users
        WHERE role = 'driver'
-       ORDER BY name`;
+       ORDER BY name`
+    );
 
     // Calculate daily summaries
     const dailySummaries: Record<string, {
@@ -111,21 +123,21 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
       bookedCapacity: number;
     }> = {};
 
-    const totalVehicles = vehiclesRows.length;
-    const totalCapacity = vehiclesRows.reduce((sum, v) => sum + ((v.capacity as number) || 14), 0);
+    const totalVehicles = vehiclesResult.rows.length;
+    const totalCapacity = vehiclesResult.rows.reduce((sum, v) => sum + (v.capacity || 14), 0);
 
     // Group bookings by date
-    const bookingsByDate: Record<string, typeof bookingsRows> = {};
-    for (const booking of bookingsRows) {
-      const dateStr = (booking.tour_date as Date).toISOString().split('T')[0];
+    const bookingsByDate: Record<string, typeof bookingsResult.rows> = {};
+    for (const booking of bookingsResult.rows) {
+      const dateStr = booking.tour_date.toISOString().split('T')[0];
       if (!bookingsByDate[dateStr]) bookingsByDate[dateStr] = [];
       bookingsByDate[dateStr].push(booking);
     }
 
     // Group blocks by date and vehicle
-    const blocksByDate: Record<string, typeof blocksRows> = {};
-    for (const block of blocksRows) {
-      const dateStr = (block.block_date as Date).toISOString().split('T')[0];
+    const blocksByDate: Record<string, typeof blocksResult.rows> = {};
+    for (const block of blocksResult.rows) {
+      const dateStr = block.block_date.toISOString().split('T')[0];
       if (!blocksByDate[dateStr]) blocksByDate[dateStr] = [];
       blocksByDate[dateStr].push(block);
     }
@@ -150,7 +162,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
         blockedVehicles: blockedVehicleIds.size,
         availableVehicles: Math.max(0, totalVehicles - unavailableCount),
         totalCapacity,
-        bookedCapacity: dayBookings.reduce((sum, b) => sum + ((b.party_size as number) || 0), 0)
+        bookedCapacity: dayBookings.reduce((sum, b) => sum + (b.party_size || 0), 0)
       };
 
       currentDate.setDate(currentDate.getDate() + 1);
@@ -177,45 +189,47 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
     };
 
     // Check each booking for compliance issues
-    for (const booking of bookingsRows) {
+    for (const booking of bookingsResult.rows) {
       // Driver license expiry
       if (booking.driver_id && booking.driver_license_expiry) {
-        const info = getComplianceInfo(booking.driver_license_expiry as Date);
+        const info = getComplianceInfo(booking.driver_license_expiry);
         if (info) {
-          if (!driverIssuesMap.has(booking.driver_id as number)) {
-            driverIssuesMap.set(booking.driver_id as number, {
+          const _key = `driver-${booking.driver_id}-license`;
+          if (!driverIssuesMap.has(booking.driver_id)) {
+            driverIssuesMap.set(booking.driver_id, {
               type: 'driver',
-              entityId: booking.driver_id as number,
-              entityName: (booking.driver_name as string) || `Driver ${booking.driver_id}`,
+              entityId: booking.driver_id,
+              entityName: booking.driver_name || `Driver ${booking.driver_id}`,
               field: 'license_expiry',
-              expiryDate: new Date(booking.driver_license_expiry as Date).toISOString().split('T')[0],
+              expiryDate: new Date(booking.driver_license_expiry).toISOString().split('T')[0],
               daysUntilExpiry: info.daysUntil,
               severity: info.severity,
-              affectedBookings: [booking.id as number],
+              affectedBookings: [booking.id],
             });
           } else {
-            driverIssuesMap.get(booking.driver_id as number)!.affectedBookings.push(booking.id as number);
+            driverIssuesMap.get(booking.driver_id)!.affectedBookings.push(booking.id);
           }
         }
       }
 
       // Driver medical cert expiry
       if (booking.driver_id && booking.driver_medical_expiry) {
-        const info = getComplianceInfo(booking.driver_medical_expiry as Date);
+        const info = getComplianceInfo(booking.driver_medical_expiry);
         if (info) {
+          const _key = `driver-${booking.driver_id}-medical`;
           const existing = Array.from(driverIssuesMap.values()).find(
-            i => i.entityId === (booking.driver_id as number) && i.field === 'medical_cert_expiry'
+            i => i.entityId === booking.driver_id && i.field === 'medical_cert_expiry'
           );
           if (!existing) {
             complianceIssues.push({
               type: 'driver',
-              entityId: booking.driver_id as number,
-              entityName: (booking.driver_name as string) || `Driver ${booking.driver_id}`,
+              entityId: booking.driver_id,
+              entityName: booking.driver_name || `Driver ${booking.driver_id}`,
               field: 'medical_cert_expiry',
-              expiryDate: new Date(booking.driver_medical_expiry as Date).toISOString().split('T')[0],
+              expiryDate: new Date(booking.driver_medical_expiry).toISOString().split('T')[0],
               daysUntilExpiry: info.daysUntil,
               severity: info.severity,
-              affectedBookings: [booking.id as number],
+              affectedBookings: [booking.id],
             });
           }
         }
@@ -223,42 +237,42 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
 
       // Vehicle insurance expiry
       if (booking.vehicle_id && booking.vehicle_insurance_expiry) {
-        const info = getComplianceInfo(booking.vehicle_insurance_expiry as Date);
+        const info = getComplianceInfo(booking.vehicle_insurance_expiry);
         if (info) {
-          if (!vehicleIssuesMap.has(booking.vehicle_id as number)) {
-            vehicleIssuesMap.set(booking.vehicle_id as number, {
+          if (!vehicleIssuesMap.has(booking.vehicle_id)) {
+            vehicleIssuesMap.set(booking.vehicle_id, {
               type: 'vehicle',
-              entityId: booking.vehicle_id as number,
-              entityName: (booking.vehicle_name as string) || `Vehicle ${booking.vehicle_id}`,
+              entityId: booking.vehicle_id,
+              entityName: booking.vehicle_name || `Vehicle ${booking.vehicle_id}`,
               field: 'insurance_expiry',
-              expiryDate: new Date(booking.vehicle_insurance_expiry as Date).toISOString().split('T')[0],
+              expiryDate: new Date(booking.vehicle_insurance_expiry).toISOString().split('T')[0],
               daysUntilExpiry: info.daysUntil,
               severity: info.severity,
-              affectedBookings: [booking.id as number],
+              affectedBookings: [booking.id],
             });
           } else {
-            vehicleIssuesMap.get(booking.vehicle_id as number)!.affectedBookings.push(booking.id as number);
+            vehicleIssuesMap.get(booking.vehicle_id)!.affectedBookings.push(booking.id);
           }
         }
       }
 
       // Vehicle registration expiry
       if (booking.vehicle_id && booking.vehicle_registration_expiry) {
-        const info = getComplianceInfo(booking.vehicle_registration_expiry as Date);
+        const info = getComplianceInfo(booking.vehicle_registration_expiry);
         if (info) {
           const existing = Array.from(vehicleIssuesMap.values()).find(
-            i => i.entityId === (booking.vehicle_id as number) && i.field === 'registration_expiry'
+            i => i.entityId === booking.vehicle_id && i.field === 'registration_expiry'
           );
           if (!existing) {
             complianceIssues.push({
               type: 'vehicle',
-              entityId: booking.vehicle_id as number,
-              entityName: (booking.vehicle_name as string) || `Vehicle ${booking.vehicle_id}`,
+              entityId: booking.vehicle_id,
+              entityName: booking.vehicle_name || `Vehicle ${booking.vehicle_id}`,
               field: 'registration_expiry',
-              expiryDate: new Date(booking.vehicle_registration_expiry as Date).toISOString().split('T')[0],
+              expiryDate: new Date(booking.vehicle_registration_expiry).toISOString().split('T')[0],
               daysUntilExpiry: info.daysUntil,
               severity: info.severity,
-              affectedBookings: [booking.id as number],
+              affectedBookings: [booking.id],
             });
           }
         }
@@ -290,10 +304,10 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
     }
 
     return NextResponse.json({
-      bookings: bookingsRows.map(b => ({
+      bookings: bookingsResult.rows.map(b => ({
         id: b.id,
         booking_number: b.booking_number,
-        tour_date: (b.tour_date as Date).toISOString().split('T')[0],
+        tour_date: b.tour_date.toISOString().split('T')[0],
         start_time: b.start_time,
         party_size: b.party_size,
         status: b.status,
@@ -302,14 +316,14 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
         customer_name: b.customer_name,
         vehicle_name: b.vehicle_name,
         driver_name: b.driver_name,
-        complianceIssues: bookingComplianceIssues[b.id as number] || [],
+        complianceIssues: bookingComplianceIssues[b.id] || [],
       })),
-      blocks: blocksRows.map(b => ({
+      blocks: blocksResult.rows.map(b => ({
         ...b,
-        block_date: (b.block_date as Date).toISOString().split('T')[0]
+        block_date: b.block_date.toISOString().split('T')[0]
       })),
-      vehicles: vehiclesRows,
-      drivers: driversRows,
+      vehicles: vehiclesResult.rows,
+      drivers: driversResult.rows,
       dailySummaries,
       complianceIssues,
       meta: {

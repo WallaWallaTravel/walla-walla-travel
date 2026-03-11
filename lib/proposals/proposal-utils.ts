@@ -3,32 +3,8 @@
  * Shared functions for proposal management
  */
 
+import { Pool } from 'pg';
 import { generateSecureString } from '@/lib/utils';
-
-/** Generic database client interface — accepts pg Pool or Prisma client */
-interface QueryClient {
-  query(sql: string, params?: unknown[]): Promise<{ rows: Record<string, unknown>[] }>;
-}
-
-/** Adapt a Prisma client to the QueryClient interface */
-function adaptPrisma(client: { $queryRawUnsafe: <T>(sql: string, ...params: unknown[]) => Promise<T> }): QueryClient {
-  return {
-    async query(sql: string, params: unknown[] = []) {
-      const rows = await client.$queryRawUnsafe<Record<string, unknown>[]>(sql, ...params);
-      return { rows };
-    }
-  };
-}
-
-function toQueryClient(clientOrPrisma: unknown): QueryClient {
-  if (typeof (clientOrPrisma as QueryClient).query === 'function') {
-    return clientOrPrisma as QueryClient;
-  }
-  if (typeof (clientOrPrisma as { $queryRawUnsafe: unknown }).$queryRawUnsafe === 'function') {
-    return adaptPrisma(clientOrPrisma as { $queryRawUnsafe: <T>(sql: string, ...params: unknown[]) => Promise<T> });
-  }
-  throw new Error('Invalid database client');
-}
 
 // Module-specific types
 export interface CorporateDetails {
@@ -219,9 +195,8 @@ export function generateProposalNumber(): string {
 /**
  * Get default proposal text from template
  */
-export async function getDefaultProposalText(pool: unknown, templateName: string = 'default') {
-  const client = toQueryClient(pool);
-  const result = await client.query(
+export async function getDefaultProposalText(pool: Pool, templateName: string = 'default') {
+  const result = await pool.query(
     'SELECT * FROM proposal_text_templates WHERE template_name = $1',
     [templateName]
   );
@@ -327,14 +302,13 @@ export function validateProposalData(data: Partial<ProposalData>): string[] {
  * Log proposal activity
  */
 export async function logProposalActivity(
-  pool: unknown,
+  pool: Pool,
   proposalId: number,
   activityType: string,
   description: string,
   metadata?: ProposalActivityMetadata
 ) {
-  const client = toQueryClient(pool);
-  await client.query(
+  await pool.query(
     `INSERT INTO proposal_activity_log (proposal_id, activity_type, description, metadata)
      VALUES ($1, $2, $3, $4)`,
     [proposalId, activityType, description, metadata ? JSON.stringify(metadata) : null]

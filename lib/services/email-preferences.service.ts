@@ -14,7 +14,7 @@
  * @module lib/services/email-preferences.service
  */
 
-import { prisma } from '@/lib/prisma';
+import { query, queryOne } from '@/lib/db-helpers';
 import { logger } from '@/lib/logger';
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://wallawalla.travel';
@@ -40,21 +40,20 @@ class EmailPreferencesService {
     const normalizedEmail = email.toLowerCase().trim();
 
     // Attempt insert; if email already exists, do nothing
-    await prisma.$executeRawUnsafe(
+    await query(
       `INSERT INTO email_preferences (email)
        VALUES ($1)
        ON CONFLICT (email) DO NOTHING`,
-      normalizedEmail
+      [normalizedEmail]
     );
 
     // Now select (guaranteed to exist)
-    const rows = await prisma.$queryRawUnsafe<{ unsubscribe_token: string; unsubscribed_at: string | null }[]>(
+    const row = await queryOne<{ unsubscribe_token: string; unsubscribed_at: string | null }>(
       `SELECT unsubscribe_token, unsubscribed_at
        FROM email_preferences
        WHERE email = $1`,
-      normalizedEmail
+      [normalizedEmail]
     );
-    const row = rows[0] ?? null;
 
     if (!row) {
       // Should never happen after the INSERT above, but be defensive
@@ -74,13 +73,12 @@ class EmailPreferencesService {
   async isUnsubscribed(email: string): Promise<boolean> {
     const normalizedEmail = email.toLowerCase().trim();
 
-    const rows = await prisma.$queryRawUnsafe<{ unsubscribed_at: string | null }[]>(
+    const row = await queryOne<{ unsubscribed_at: string | null }>(
       `SELECT unsubscribed_at
        FROM email_preferences
        WHERE email = $1`,
-      normalizedEmail
+      [normalizedEmail]
     );
-    const row = rows[0] ?? null;
 
     return !!row?.unsubscribed_at;
   }
@@ -99,13 +97,12 @@ class EmailPreferencesService {
     // Look up the preference by token
     let row: { id: number; email: string; unsubscribed_at: string | null } | null;
     try {
-      const rows = await prisma.$queryRawUnsafe<{ id: number; email: string; unsubscribed_at: string | null }[]>(
+      row = await queryOne<{ id: number; email: string; unsubscribed_at: string | null }>(
         `SELECT id, email, unsubscribed_at
          FROM email_preferences
          WHERE unsubscribe_token = $1`,
-        token
+        [token]
       );
-      row = rows[0] ?? null;
     } catch {
       // Invalid token format or DB error
       return { success: false };
@@ -120,23 +117,23 @@ class EmailPreferencesService {
     }
 
     // Set unsubscribed_at
-    await prisma.$executeRawUnsafe(
+    await query(
       `UPDATE email_preferences
        SET unsubscribed_at = NOW()
        WHERE id = $1`,
-      row.id
+      [row.id]
     );
 
     // Sync legacy flag: booking_attempts.unsubscribed
     try {
-      await prisma.$executeRawUnsafe(
+      await query(
         `UPDATE booking_attempts
          SET unsubscribed = TRUE
          WHERE LOWER(email) = $1`,
-        row.email.toLowerCase()
+        [row.email.toLowerCase()]
       );
     } catch {
-      // booking_attempts table may not exist or have the column -- non-critical
+      // booking_attempts table may not exist or have the column — non-critical
       logger.warn('[EmailPreferences] Failed to sync legacy unsubscribed flag', { email: row.email });
     }
 

@@ -4,10 +4,11 @@ import {
   errorResponse,
   requireAuth,
 } from '@/app/api/utils';
-import { prisma } from '@/lib/prisma';
+import { query } from '@/lib/db';
 import { logger, logApiRequest } from '@/lib/logger';
 import { z } from 'zod';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // Request body schema
 const ClientPickupSchema = z.object({
@@ -20,8 +21,11 @@ const ClientPickupSchema = z.object({
 /**
  * POST /api/driver/client-pickup
  * Log client pickup time and location
+ *
+ * Wrapped with withErrorHandling for consistent error handling
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   // Check authentication
   const authResult = await requireAuth();
 
@@ -45,7 +49,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   const driverId = parseInt(authResult.userId);
 
   // 1. Verify client service exists and belongs to driver
-  const serviceRows = await prisma.$queryRaw<Record<string, unknown>[]>`
+  const serviceResult = await query(`
     SELECT
       cs.*,
       tc.clock_out_time,
@@ -53,14 +57,14 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     FROM client_services cs
     JOIN time_cards tc ON cs.time_card_id = tc.id
     LEFT JOIN vehicles v ON cs.vehicle_id = v.id
-    WHERE cs.id = ${body.clientServiceId}
-  `;
+    WHERE cs.id = $1
+  `, [body.clientServiceId]);
 
-  if (serviceRows.length === 0) {
+  if (serviceResult.rows.length === 0) {
     return errorResponse('Client service not found', 404);
   }
 
-  const service = serviceRows[0];
+  const service = serviceResult.rows[0];
 
   // Verify service belongs to current driver
   if (service.driver_id !== driverId) {
@@ -83,16 +87,16 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   }
 
   // 2. Update client service with pickup information
-  const updateRows = await prisma.$queryRaw<Record<string, unknown>[]>`
+  const updateResult = await query(`
     UPDATE client_services
     SET
       pickup_time = CURRENT_TIMESTAMP,
-      pickup_location = ${body.pickupLocation},
-      pickup_lat = ${body.pickupLat || null},
-      pickup_lng = ${body.pickupLng || null},
+      pickup_location = $1,
+      pickup_lat = $2,
+      pickup_lng = $3,
       status = 'in_progress',
       updated_at = CURRENT_TIMESTAMP
-    WHERE id = ${body.clientServiceId}
+    WHERE id = $4
     RETURNING
       id,
       client_name,
@@ -100,9 +104,14 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       pickup_location,
       status,
       hourly_rate
-  `;
+  `, [
+    body.pickupLocation,
+    body.pickupLat || null,
+    body.pickupLng || null,
+    body.clientServiceId
+  ]);
 
-  const updatedService = updateRows[0];
+  const updatedService = updateResult.rows[0];
 
   logger.info('Client pickup logged', {
     serviceId: updatedService.id,
@@ -118,7 +127,8 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       vehicle_number: service.vehicle_number
     } : null
   }, 'Client pickup logged successfully');
-});
+})
+);
 
 /**
  * GET /api/driver/client-pickup
@@ -131,7 +141,7 @@ export const GET = withErrorHandling(async () => {
   const driverId = parseInt(authResult.userId);
 
   // Get active client service for driver (assigned but not picked up yet)
-  const serviceRows = await prisma.$queryRaw<Record<string, unknown>[]>`
+  const serviceResult = await query(`
     SELECT
       cs.*,
       v.vehicle_number,
@@ -140,18 +150,18 @@ export const GET = withErrorHandling(async () => {
     FROM client_services cs
     JOIN time_cards tc ON cs.time_card_id = tc.id
     LEFT JOIN vehicles v ON cs.vehicle_id = v.id
-    WHERE cs.driver_id = ${driverId}
+    WHERE cs.driver_id = $1
       AND tc.clock_out_time IS NULL
       AND cs.status IN ('assigned', 'in_progress')
     ORDER BY cs.created_at DESC
     LIMIT 1
-  `;
+  `, [driverId]);
 
-  if (serviceRows.length === 0) {
+  if (serviceResult.rows.length === 0) {
     return successResponse(null, 'No active client service found');
   }
 
   return successResponse({
-    service: serviceRows[0]
+    service: serviceResult.rows[0]
   }, 'Active client service retrieved');
 });

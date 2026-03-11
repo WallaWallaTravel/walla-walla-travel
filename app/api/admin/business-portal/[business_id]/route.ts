@@ -4,11 +4,11 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { query } from '@/lib/db';
 import { detectDiscrepancies } from '@/lib/business-portal/discrepancy-detector';
 import { logger } from '@/lib/logger';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
-import { prisma } from '@/lib/prisma';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -30,19 +30,19 @@ export const GET = withAdminAuth(async (
   logger.debug('Fetching business details', { businessId });
 
   // Get business info
-  const businessResult = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
+  const businessResult = await query(
     `SELECT * FROM businesses WHERE id = $1`,
-    businessId
+    [businessId]
   );
 
-  if (businessResult.length === 0) {
+  if (businessResult.rows.length === 0) {
     throw new NotFoundError('Business not found');
   }
 
-  const business = businessResult[0];
+  const business = businessResult.rows[0];
 
   // Get voice entries
-  const voiceResult = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
+  const voiceResult = await query(
     `SELECT
       ve.*,
       q.question_text as question_text_from_table,
@@ -52,11 +52,11 @@ export const GET = withAdminAuth(async (
     LEFT JOIN interview_questions q ON ve.question_id = q.id
     WHERE ve.business_id = $1
     ORDER BY ve.question_number ASC`,
-    businessId
+    [businessId]
   );
 
   // Get text entries
-  const textResult = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
+  const textResult = await query(
     `SELECT
       te.*,
       q.question_text as question_text_from_table,
@@ -66,11 +66,11 @@ export const GET = withAdminAuth(async (
     LEFT JOIN interview_questions q ON te.question_id = q.id
     WHERE te.business_id = $1
     ORDER BY te.question_number ASC`,
-    businessId
+    [businessId]
   );
 
   // Get files with analysis
-  const filesResult = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
+  const filesResult = await query(
     `SELECT
       id,
       file_type,
@@ -87,11 +87,11 @@ export const GET = withAdminAuth(async (
     FROM business_files
     WHERE business_id = $1
     ORDER BY uploaded_at DESC`,
-    businessId
+    [businessId]
   );
 
   // Get processing job stats
-  const jobStatsResult = await prisma.$queryRawUnsafe<{ pending: string; processing: string; completed: string; failed: string }[]>(
+  const jobStatsResult = await query(
     `SELECT
       COUNT(*) FILTER (WHERE status = 'pending') as pending,
       COUNT(*) FILTER (WHERE status = 'processing') as processing,
@@ -99,14 +99,14 @@ export const GET = withAdminAuth(async (
       COUNT(*) FILTER (WHERE status = 'failed') as failed
     FROM processing_jobs
     WHERE business_id = $1`,
-    businessId
+    [businessId]
   );
 
-  const jobStats = jobStatsResult[0] || {
-    pending: '0',
-    processing: '0',
-    completed: '0',
-    failed: '0'
+  const jobStats = jobStatsResult.rows[0] || {
+    pending: 0,
+    processing: 0,
+    completed: 0,
+    failed: 0
   };
 
   // Detect discrepancies
@@ -118,14 +118,14 @@ export const GET = withAdminAuth(async (
   return NextResponse.json({
     success: true,
     business,
-    voiceEntries: voiceResult,
-    textEntries: textResult,
-    files: filesResult,
+    voiceEntries: voiceResult.rows,
+    textEntries: textResult.rows,
+    files: filesResult.rows,
     jobStats: {
-      pending: Number(jobStats.pending ?? 0),
-      processing: Number(jobStats.processing ?? 0),
-      completed: Number(jobStats.completed ?? 0),
-      failed: Number(jobStats.failed ?? 0)
+      pending: parseInt(jobStats.pending || '0'),
+      processing: parseInt(jobStats.processing || '0'),
+      completed: parseInt(jobStats.completed || '0'),
+      failed: parseInt(jobStats.failed || '0')
     },
     discrepancies
   });

@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { logger } from '@/lib/logger';
-import { prisma } from '@/lib/prisma';
+import { query, queryOne } from '@/lib/db-helpers';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 import { crmSyncService } from '@/lib/services/crm-sync.service';
 import { crmTaskAutomationService } from '@/lib/services/crm-task-automation.service';
 import { sendEmail } from '@/lib/email';
 import { COMPANY_INFO } from '@/lib/config/company';
-
+import { withCSRF } from '@/lib/api/middleware/csrf';
 import { noDisposableEmail } from '@/lib/utils/email-validation';
 
 // ============================================================================
@@ -33,7 +33,7 @@ const ContactFormSchema = z.object({
  * POST /api/contact
  * Handle contact form submissions and create CRM leads
  */
-export const POST =
+export const POST = withCSRF(
   withRateLimit(rateLimiters.api)(
   withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
     const body = await request.json();
@@ -54,37 +54,43 @@ export const POST =
     });
 
     // 1. Create or update CRM contact
-    const existingContacts = await prisma.$queryRaw<{ id: number; email: string; name: string }[]>`
-      SELECT id, email, name FROM crm_contacts WHERE LOWER(email) = LOWER(${data.email})`;
-
-    let contact: { id: number; email: string; name: string } | null = existingContacts[0] || null;
+    let contact = await queryOne<{ id: number; email: string; name: string }>(
+      `SELECT id, email, name FROM crm_contacts WHERE LOWER(email) = LOWER($1)`,
+      [data.email]
+    );
 
     if (!contact) {
       // Create new CRM contact as a lead
-      const sourceDetail = isFullPlanning ? 'full_planning_inquiry' : 'contact_form';
-      const newContacts = await prisma.$queryRaw<{ id: number; email: string; name: string }[]>`
-        INSERT INTO crm_contacts (
+      contact = await queryOne<{ id: number; email: string; name: string }>(
+        `INSERT INTO crm_contacts (
           email, name, phone, contact_type, lifecycle_stage,
           lead_temperature, source, source_detail,
           notes, brand_id, created_at, updated_at
-        ) VALUES (${data.email}, ${data.name}, ${data.phone || null}, 'individual', 'lead', 'warm', 'website_contact', ${sourceDetail}, ${data.message}, 1, NOW(), NOW())
-        RETURNING id, email, name`;
-
-      contact = newContacts[0] || null;
+        ) VALUES ($1, $2, $3, 'individual', 'lead', 'warm', 'website_contact', $4, $5, 1, NOW(), NOW())
+        RETURNING id, email, name`,
+        [
+          data.email,
+          data.name,
+          data.phone || null,
+          isFullPlanning ? 'full_planning_inquiry' : 'contact_form',
+          data.message,
+        ]
+      );
 
       logger.info('[Contact] Created new CRM contact', { contactId: contact?.id });
     } else {
       // Update existing contact with new inquiry info
-      const noteText = `[Contact Form ${new Date().toISOString()}]\n${data.message}`;
-      await prisma.$executeRaw`
-        UPDATE crm_contacts
+      await query(
+        `UPDATE crm_contacts
          SET
-           name = COALESCE(NULLIF(${data.name}, ''), name),
-           phone = COALESCE(${data.phone || null}, phone),
-           notes = COALESCE(notes || E'\n\n---\n', '') || ${noteText},
+           name = COALESCE(NULLIF($1, ''), name),
+           phone = COALESCE($2, phone),
+           notes = COALESCE(notes || E'\\n\\n---\\n', '') || $3,
            last_contacted_at = NOW(),
            updated_at = NOW()
-         WHERE id = ${contact.id}`;
+         WHERE id = $4`,
+        [data.name, data.phone || null, `[Contact Form ${new Date().toISOString()}]\n${data.message}`, contact.id]
+      );
 
       logger.info('[Contact] Updated existing CRM contact', { contactId: contact.id });
     }
@@ -109,12 +115,22 @@ export const POST =
     });
 
     // 4. Store the inquiry in a dedicated table for tracking
-    const inquiryType = isFullPlanning ? 'full_planning' : 'general';
-    await prisma.$executeRaw`
-      INSERT INTO contact_inquiries (
+    await query(
+      `INSERT INTO contact_inquiries (
         crm_contact_id, name, email, phone, dates, group_size, message,
         inquiry_type, created_at
-      ) VALUES (${contact.id}, ${data.name}, ${data.email}, ${data.phone || null}, ${data.dates || null}, ${data.groupSize || null}, ${data.message}, ${inquiryType}, NOW())`;
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())`,
+      [
+        contact.id,
+        data.name,
+        data.email,
+        data.phone || null,
+        data.dates || null,
+        data.groupSize || null,
+        data.message,
+        isFullPlanning ? 'full_planning' : 'general',
+      ]
+    );
 
     // 5. Send internal notification email (async, don't block)
     sendInternalNotification(data, contact.id, isFullPlanning).catch(err => {
@@ -131,6 +147,7 @@ export const POST =
       message: 'Thank you for your inquiry! We will be in touch within 24 hours.',
     });
   })
+)
 );
 
 // ============================================================================

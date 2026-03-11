@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { query } from '@/lib/prisma-query'
+import { query } from '@/lib/db'
 import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError } from '@/lib/api/middleware/error-handler'
+import { withCSRF } from '@/lib/api/middleware/csrf'
 import { z } from 'zod'
 
 const PostBodySchema = z.object({
@@ -39,7 +40,7 @@ async function getHandler(
     LIMIT $2 OFFSET $3
   `, [id, limit, offset])
 
-  const countResult = await query<{ count: string }>(
+  const countResult = await query(
     'SELECT COUNT(*) FROM crm_activities WHERE contact_id = $1',
     [id]
   )
@@ -111,4 +112,6 @@ async function postHandler(
 }
 
 export const GET = withAdminAuth(getHandler)
-export const POST = withAdminAuth(postHandler)
+export const POST = withCSRF(
+  withAdminAuth(postHandler)
+)

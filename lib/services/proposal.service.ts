@@ -30,7 +30,7 @@
  */
 
 import { BaseService } from './base.service';
-import { prisma } from '@/lib/prisma';
+import { pool } from '@/lib/db';
 import {
   ProposalData,
   generateProposalNumber,
@@ -106,7 +106,7 @@ export class ProposalService extends BaseService {
     values.push(offset);
 
     const proposalsQuery = `
-      SELECT
+      SELECT 
         id, proposal_number, uuid, client_name, client_email, client_phone,
         client_company, proposal_title, status, total, valid_until,
         created_at, updated_at, sent_at, viewed_at, accepted_at,
@@ -153,8 +153,8 @@ export class ProposalService extends BaseService {
     // Generate proposal number
     const proposalNumber = generateProposalNumber();
 
-    // Get default text — pass prisma instead of pool
-    const defaults = await getDefaultProposalText(prisma);
+    // Get default text
+    const defaults = await getDefaultProposalText(pool);
 
     // Merge with defaults
     const proposalTitle = data.proposal_title || defaults.title;
@@ -182,7 +182,7 @@ export class ProposalService extends BaseService {
         $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
         $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
         $31, $32, $33
-      ) RETURNING id, proposal_number, uuid`,
+      ) RETURNING id, proposal_number, uuid` as const,
       [
         proposalNumber,
         data.brand_id || 1, // Default to Walla Walla Travel (ID 1)
@@ -224,7 +224,7 @@ export class ProposalService extends BaseService {
 
     // Log activity
     await logProposalActivity(
-      prisma,
+      pool,
       proposal.id,
       'created',
       `Proposal created: ${proposalNumber}`
@@ -241,3 +241,7 @@ export class ProposalService extends BaseService {
 }
 
 export const proposalService = new ProposalService();
+
+
+
+

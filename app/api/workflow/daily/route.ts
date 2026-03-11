@@ -5,7 +5,7 @@ import {
   logApiRequest,
   formatDateForDB
 } from '@/app/api/utils';
-import { prisma } from '@/lib/prisma';
+import { query } from '@/lib/db';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 
 export const GET = withErrorHandling(async (_request: NextRequest) => {
@@ -18,7 +18,7 @@ export const GET = withErrorHandling(async (_request: NextRequest) => {
   const today = formatDateForDB(new Date());
 
   // Get today's time card (Pacific Time)
-  const timeCardRows = await prisma.$queryRaw<Record<string, unknown>[]>`
+  const timeCardResult = await query(`
     SELECT
       tc.*,
       v.vehicle_number,
@@ -28,13 +28,13 @@ export const GET = withErrorHandling(async (_request: NextRequest) => {
       0 as total_break_time
     FROM time_cards tc
     LEFT JOIN vehicles v ON tc.vehicle_id = v.id
-    WHERE tc.driver_id = ${driverId}
+    WHERE tc.driver_id = $1
       AND DATE(tc.clock_in_time AT TIME ZONE 'America/Los_Angeles') = DATE(NOW() AT TIME ZONE 'America/Los_Angeles')
     ORDER BY tc.clock_in_time DESC
     LIMIT 1
-  `;
+  `, [driverId]);
 
-  const timeCard = timeCardRows[0] || null;
+  const timeCard = timeCardResult.rows[0] || null;
 
   // Determine workflow status
   let status = 'not_started';
@@ -48,7 +48,7 @@ export const GET = withErrorHandling(async (_request: NextRequest) => {
   }
 
   // Get hours of service compliance data (8-day rolling window)
-  const hosRows = await prisma.$queryRaw<Record<string, unknown>[]>`
+  const hosResult = await query(`
     SELECT
       COALESCE(SUM(
         CASE
@@ -68,18 +68,19 @@ export const GET = withErrorHandling(async (_request: NextRequest) => {
         WHERE clock_in_time >= NOW() - INTERVAL '7 days'
       ) as consecutive_days
     FROM time_cards
-    WHERE driver_id = ${driverId}
+    WHERE driver_id = $1
       AND clock_in_time >= NOW() - INTERVAL '7 days'
-  `;
+  `, [driverId]);
 
-  const hos: Record<string, unknown> = hosRows[0] || {
+  const hos = hosResult.rows[0] || {
     daily_on_duty: 0,
     weekly_hours: 0,
     consecutive_days: 0,
   };
 
   // Add driving hours from time cards (using on_duty_hours as driving time for now)
-  const drivingRows = await prisma.$queryRaw<Record<string, unknown>[]>`
+  // In a real system, this would track actual driving vs on-duty time separately
+  const drivingResult = await query(`
     SELECT
       COALESCE(SUM(
         CASE
@@ -89,17 +90,17 @@ export const GET = withErrorHandling(async (_request: NextRequest) => {
         END
       ), 0) as daily_driving
     FROM time_cards
-    WHERE driver_id = ${driverId}
+    WHERE driver_id = $1
       AND clock_in_time >= NOW() - INTERVAL '7 days'
-  `;
+  `, [driverId]);
 
-  hos.daily_driving = drivingRows[0]?.daily_driving || 0;
+  hos.daily_driving = drivingResult.rows[0]?.daily_driving || 0;
 
   // Get today's breaks (table doesn't exist yet)
   const breaks: { id: number; break_start: string; break_end: string | null; break_type: string }[] = [];
 
   // Get today's scheduled routes
-  const routesRows = await prisma.$queryRaw<Record<string, unknown>[]>`
+  const routesResult = await query(`
     SELECT
       r.id,
       r.route_name,
@@ -110,48 +111,44 @@ export const GET = withErrorHandling(async (_request: NextRequest) => {
       v.vehicle_number
     FROM routes r
     LEFT JOIN vehicles v ON r.vehicle_id = v.id
-    WHERE r.driver_id = ${driverId}
-      AND r.route_date = ${today}
+    WHERE r.driver_id = $1
+      AND r.route_date = $2
     ORDER BY r.start_time
-  `;
+  `, [driverId, today]);
 
   // Get 150-mile exemption status
-  const exemptionRows = await prisma.$queryRaw<Record<string, unknown>[]>`
+  const exemptionResult = await query(`
     SELECT * FROM monthly_exemption_status
-    WHERE driver_id = ${driverId}
-      AND month = date_trunc('month', ${today}::date)
-  `;
+    WHERE driver_id = $1
+      AND month = date_trunc('month', $2::date)
+  `, [driverId, today]);
 
-  const exemptionStatus = exemptionRows[0] || {
+  const exemptionStatus = exemptionResult.rows[0] || {
     days_used: 0,
     days_available: 8,
     is_eligible: true,
   };
 
   // Compile daily workflow data
-  const dailyDriving = parseFloat(((hos.daily_driving as number) || 0).toFixed(2));
-  const dailyOnDuty = parseFloat(((hos.daily_on_duty as number) || 0).toFixed(2));
-  const weeklyHours = parseFloat(((hos.weekly_hours as number) || 0).toFixed(2));
-
   const dailyWorkflow = {
     date: today,
     status,
     timeCard,
     breaks,
-    routes: routesRows,
+    routes: routesResult.rows,
     hos: {
-      daily_driving: dailyDriving,
-      daily_on_duty: dailyOnDuty,
-      weekly_hours: weeklyHours,
+      daily_driving: parseFloat(hos.daily_driving.toFixed(2)),
+      daily_on_duty: parseFloat(hos.daily_on_duty.toFixed(2)),
+      weekly_hours: parseFloat(hos.weekly_hours.toFixed(2)),
       consecutive_days: hos.consecutive_days,
-      remaining_drive_time: Math.max(0, 10 - dailyDriving), // 10-hour limit (passenger)
-      remaining_duty_time: Math.max(0, 15 - dailyOnDuty), // 15-hour limit (passenger)
-      requires_break: dailyOnDuty >= 8, // 8-hour break requirement
+      remaining_drive_time: Math.max(0, 10 - parseFloat(hos.daily_driving.toFixed(2))), // 10-hour limit (passenger)
+      remaining_duty_time: Math.max(0, 15 - parseFloat(hos.daily_on_duty.toFixed(2))), // 15-hour limit (passenger)
+      requires_break: parseFloat(hos.daily_on_duty.toFixed(2)) >= 8, // 8-hour break requirement
     },
     exemption: {
-      using_today: (exemptionStatus.days_used as number) > 0,
+      using_today: exemptionStatus.days_used > 0,
       days_used_this_month: exemptionStatus.days_used,
-      days_remaining: Math.max(0, 8 - (exemptionStatus.days_used as number)),
+      days_remaining: Math.max(0, 8 - exemptionStatus.days_used),
       is_eligible: exemptionStatus.is_eligible,
     },
   };

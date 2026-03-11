@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
-import { prisma } from '@/lib/prisma';
+import { query } from '@/lib/db';
 
 export interface Visitor {
   id: number;
@@ -100,22 +100,24 @@ export function setVisitorCookie(response: NextResponse, visitor: Visitor): void
  * Get visitor by UUID
  */
 export async function getVisitorByUUID(visitor_uuid: string): Promise<Visitor | null> {
-  const rows = await prisma.$queryRaw<Visitor[]>`
-    SELECT * FROM visitors WHERE visitor_uuid = ${visitor_uuid}
-  `;
-
-  return rows[0] || null;
+  const result = await query(
+    'SELECT * FROM visitors WHERE visitor_uuid = $1',
+    [visitor_uuid]
+  );
+  
+  return result.rows[0] || null;
 }
 
 /**
  * Get visitor by email
  */
 export async function getVisitorByEmail(email: string): Promise<Visitor | null> {
-  const rows = await prisma.$queryRaw<Visitor[]>`
-    SELECT * FROM visitors WHERE email = ${email}
-  `;
-
-  return rows[0] || null;
+  const result = await query(
+    'SELECT * FROM visitors WHERE email = $1',
+    [email]
+  );
+  
+  return result.rows[0] || null;
 }
 
 /**
@@ -136,27 +138,40 @@ async function createNewVisitor(request: NextRequest): Promise<Visitor> {
     landing_page: url.pathname,
   };
   
-  const rows = await prisma.$queryRaw<Visitor[]>`
-    INSERT INTO visitors (
+  const result = await query(
+    `INSERT INTO visitors (
       visitor_uuid, user_agent, device_type, browser, os,
       referral_source, utm_source, utm_medium, utm_campaign, landing_page
-    ) VALUES (${visitor_uuid}, ${userAgent}, ${deviceInfo.deviceType}, ${deviceInfo.browser}, ${deviceInfo.os}, ${attribution.referral_source}, ${attribution.utm_source}, ${attribution.utm_medium}, ${attribution.utm_campaign}, ${attribution.landing_page})
-    RETURNING *
-  `;
-
-  return rows[0];
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+    RETURNING *`,
+    [
+      visitor_uuid,
+      userAgent,
+      deviceInfo.deviceType,
+      deviceInfo.browser,
+      deviceInfo.os,
+      attribution.referral_source,
+      attribution.utm_source,
+      attribution.utm_medium,
+      attribution.utm_campaign,
+      attribution.landing_page,
+    ]
+  );
+  
+  return result.rows[0];
 }
 
 /**
  * Update visitor visit tracking
  */
 async function updateVisitorVisit(visitorId: number): Promise<void> {
-  await prisma.$executeRaw`
-    UPDATE visitors
+  await query(
+    `UPDATE visitors 
      SET visit_count = visit_count + 1,
          last_visit_at = NOW()
-     WHERE id = ${visitorId}
-  `;
+     WHERE id = $1`,
+    [visitorId]
+  );
 }
 
 /**
@@ -168,17 +183,18 @@ export async function captureVisitorEmail(
   name?: string,
   phone?: string
 ): Promise<Visitor> {
-  const rows = await prisma.$queryRaw<Visitor[]>`
-    UPDATE visitors
-     SET email = ${email},
-         name = COALESCE(${name ?? null}, name),
-         phone = COALESCE(${phone ?? null}, phone),
+  const result = await query(
+    `UPDATE visitors 
+     SET email = $1, 
+         name = COALESCE($2, name),
+         phone = COALESCE($3, phone),
          updated_at = NOW()
-     WHERE id = ${visitorId}
-     RETURNING *
-  `;
-
-  return rows[0];
+     WHERE id = $4
+     RETURNING *`,
+    [email, name, phone, visitorId]
+  );
+  
+  return result.rows[0];
 }
 
 /**
@@ -191,12 +207,12 @@ export async function logEmailCaptureAttempt(
   captured: boolean,
   email?: string
 ): Promise<void> {
-  const capturedAt = captured ? new Date() : null;
-  await prisma.$executeRaw`
-    INSERT INTO email_capture_attempts
+  await query(
+    `INSERT INTO email_capture_attempts 
      (visitor_id, trigger_type, query_count_at_prompt, captured, email, captured_at)
-     VALUES (${visitorId}, ${triggerType}, ${queryCount}, ${captured}, ${email ?? null}, ${capturedAt})
-  `;
+     VALUES ($1, $2, $3, $4, $5, $6)`,
+    [visitorId, triggerType, queryCount, captured, email, captured ? new Date() : null]
+  );
 }
 
 /**
@@ -206,8 +222,8 @@ export async function getVisitorConversationHistory(
   visitorId: number,
   limit: number = 20
 ): Promise<Array<{ id: number; query_text: string; response_text: string; model: string; user_rating: number | null; created_at: Date }>> {
-  return await prisma.$queryRaw<Array<{ id: number; query_text: string; response_text: string; model: string; user_rating: number | null; created_at: Date }>>`
-    SELECT
+  const result = await query(
+    `SELECT 
       id,
       query_text,
       response_text,
@@ -215,10 +231,13 @@ export async function getVisitorConversationHistory(
       user_rating,
       created_at
      FROM ai_queries
-     WHERE visitor_id = ${visitorId}
+     WHERE visitor_id = $1
      ORDER BY created_at DESC
-     LIMIT ${limit}
-  `;
+     LIMIT $2`,
+    [visitorId, limit]
+  );
+  
+  return result.rows;
 }
 
 /**
@@ -228,13 +247,13 @@ export async function updateVisitorPreferences(
   visitorId: number,
   preferences: Record<string, unknown>
 ): Promise<void> {
-  const prefsJson = JSON.stringify(preferences);
-  await prisma.$executeRaw`
-    UPDATE visitors
-     SET preferences = preferences || ${prefsJson}::jsonb,
+  await query(
+    `UPDATE visitors 
+     SET preferences = preferences || $1::jsonb,
          updated_at = NOW()
-     WHERE id = ${visitorId}
-  `;
+     WHERE id = $2`,
+    [JSON.stringify(preferences), visitorId]
+  );
 }
 
 /**
@@ -281,14 +300,15 @@ export async function trackVisitorConversion(
   bookingId: number,
   amount: number
 ): Promise<void> {
-  await prisma.$executeRaw`
-    UPDATE visitors
+  await query(
+    `UPDATE visitors 
      SET converted_to_booking = TRUE,
-         first_booking_id = COALESCE(first_booking_id, ${bookingId}),
+         first_booking_id = COALESCE(first_booking_id, $2),
          total_bookings = total_bookings + 1,
-         total_revenue = total_revenue + ${amount},
+         total_revenue = total_revenue + $3,
          updated_at = NOW()
-     WHERE id = ${visitorId}
-  `;
+     WHERE id = $1`,
+    [visitorId, bookingId, amount]
+  );
 }
 

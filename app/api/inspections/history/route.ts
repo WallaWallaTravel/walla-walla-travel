@@ -6,12 +6,13 @@ import {
   getPaginationParams,
   buildPaginationMeta
 } from '@/app/api/utils';
-import { prisma } from '@/lib/prisma';
-import { Prisma } from '@prisma/client';
+import { query } from '@/lib/db';
 
 /**
  * GET /api/inspections/history
  * Get inspection history for the authenticated driver
+ *
+ * Uses withErrorHandling middleware for consistent error handling
  */
 export const GET = withErrorHandling(async (request: NextRequest) => {
   // Check authentication
@@ -28,34 +29,46 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   const endDate = searchParams.get('endDate');
   const type = searchParams.get('type'); // pre_trip, post_trip, dvir, or all
 
-  // Build dynamic query with Prisma.sql
-  const conditions: Prisma.Sql[] = [Prisma.sql`i.driver_id = ${parseInt(session.userId)}`];
+  // Build query conditions
+  const whereConditions = ['i.driver_id = $1'];
+  const queryParams: (string | number)[] = [parseInt(session.userId)];
+  let paramCount = 1;
 
   if (type && type !== 'all') {
-    conditions.push(Prisma.sql`i.type = ${type}`);
+    paramCount++;
+    whereConditions.push(`i.type = $${paramCount}`);
+    queryParams.push(type);
   }
 
   if (startDate) {
-    conditions.push(Prisma.sql`DATE(i.created_at) >= ${startDate}`);
+    paramCount++;
+    whereConditions.push(`DATE(i.created_at) >= $${paramCount}`);
+    queryParams.push(startDate);
   }
 
   if (endDate) {
-    conditions.push(Prisma.sql`DATE(i.created_at) <= ${endDate}`);
+    paramCount++;
+    whereConditions.push(`DATE(i.created_at) <= $${paramCount}`);
+    queryParams.push(endDate);
   }
 
-  const whereClause = Prisma.join(conditions, ' AND ');
-
   // Get total count for pagination
-  const countRows = await prisma.$queryRaw<{ total: bigint }[]>`
+  const countResult = await query(`
     SELECT COUNT(*) as total
     FROM inspections i
-    WHERE ${whereClause}
-  `;
+    WHERE ${whereConditions.join(' AND ')}
+  `, queryParams);
 
-  const total = Number(countRows[0].total);
+  const total = parseInt(countResult.rows[0].total);
+
+  // Add pagination params
+  paramCount++;
+  queryParams.push(pagination.limit);
+  paramCount++;
+  queryParams.push(pagination.offset);
 
   // Get inspections with vehicle details
-  const rows = await prisma.$queryRaw<Record<string, unknown>[]>`
+  const result = await query(`
     SELECT
       i.id,
       i.type,
@@ -71,10 +84,10 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
       v.year
     FROM inspections i
     JOIN vehicles v ON i.vehicle_id = v.id
-    WHERE ${whereClause}
+    WHERE ${whereConditions.join(' AND ')}
     ORDER BY i.created_at DESC
-    LIMIT ${pagination.limit} OFFSET ${pagination.offset}
-  `;
+    LIMIT $${paramCount - 1} OFFSET $${paramCount}
+  `, queryParams);
 
   // Format the response with pagination metadata
   const paginationMeta = buildPaginationMeta(pagination, total);
@@ -82,7 +95,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   return NextResponse.json({
     success: true,
     data: {
-      inspections: rows,
+      inspections: result.rows,
       pagination: paginationMeta,
     },
     message: 'Inspection history retrieved'

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { query } from '@/lib/prisma-query'
+import { query } from '@/lib/db'
 import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler'
+import { withCSRF } from '@/lib/api/middleware/csrf'
 import { auditService } from '@/lib/services/audit.service'
 import { z } from 'zod'
 
@@ -65,7 +66,7 @@ async function getHandler(
   const id = parseInt(lead_id)
 
   // Get lead details from crm_contacts
-  const leadResult = await query<Record<string, string | number | null>>(`
+  const leadResult = await query(`
     SELECT
       c.id,
       c.name,
@@ -108,7 +109,7 @@ async function getHandler(
   const row = leadResult.rows[0]
 
   // Split name into first_name and last_name for API compatibility
-  const nameParts = String(row.name || '').split(' ')
+  const nameParts = (row.name || '').split(' ')
   const firstName = nameParts[0] || ''
   const lastName = nameParts.slice(1).join(' ') || ''
 
@@ -120,7 +121,7 @@ async function getHandler(
     phone: row.phone,
     company: row.company,
     source: row.source || 'website',
-    status: mapLifecycleToStatus(String(row.lifecycle_stage || 'lead')),
+    status: mapLifecycleToStatus(row.lifecycle_stage),
     temperature: row.temperature || 'cold',
     score: row.score || 0,
     interested_services: [],
@@ -194,11 +195,11 @@ async function patchHandler(
   // Handle name: combine first_name + last_name into name
   if (body.first_name !== undefined || body.last_name !== undefined) {
     // We need the current name to merge partial updates
-    const currentResult = await query<{ name: string }>('SELECT name FROM crm_contacts WHERE id = $1', [id])
+    const currentResult = await query('SELECT name FROM crm_contacts WHERE id = $1', [id])
     if (currentResult.rows.length === 0) {
       throw new NotFoundError('Lead not found')
     }
-    const currentParts = String(currentResult.rows[0].name || '').split(' ')
+    const currentParts = (currentResult.rows[0].name || '').split(' ')
     const currentFirst = currentParts[0] || ''
     const currentLast = currentParts.slice(1).join(' ') || ''
 
@@ -236,7 +237,7 @@ async function patchHandler(
   updates.push(`updated_at = NOW()`)
   values.push(id)
 
-  const result = await query<Record<string, string | number | null>>(`
+  const result = await query(`
     UPDATE crm_contacts
     SET ${updates.join(', ')}
     WHERE id = $${paramIndex}
@@ -250,7 +251,7 @@ async function patchHandler(
   const row = result.rows[0]
 
   // Transform to legacy format for API response
-  const nameParts = String(row.name || '').split(' ')
+  const nameParts = (row.name || '').split(' ')
   const lead = {
     id: row.id,
     first_name: nameParts[0] || '',
@@ -259,7 +260,7 @@ async function patchHandler(
     phone: row.phone,
     company: row.company,
     source: row.source || 'website',
-    status: mapLifecycleToStatus(String(row.lifecycle_stage || 'lead')),
+    status: mapLifecycleToStatus(row.lifecycle_stage),
     temperature: row.lead_temperature || 'cold',
     score: row.lead_score || 0,
     notes: row.notes,
@@ -312,5 +313,9 @@ async function deleteHandler(
 }
 
 export const GET = withAdminAuth(getHandler)
-export const PATCH = withAdminAuth(patchHandler)
-export const DELETE = withAdminAuth(deleteHandler)
+export const PATCH = withCSRF(
+  withAdminAuth(patchHandler)
+)
+export const DELETE = withCSRF(
+  withAdminAuth(deleteHandler)
+)

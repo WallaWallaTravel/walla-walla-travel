@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, BadRequestError } from '@/lib/api-errors';
-import { prisma } from '@/lib/prisma';
+import { queryMany } from '@/lib/db-helpers';
 
 interface TourOffer {
   id: number;
@@ -33,8 +33,8 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     throw new BadRequestError('driver_id is required');
   }
 
-  const offers = await prisma.$queryRaw<TourOffer[]>`
-    SELECT
+  const offers = await queryMany<TourOffer>(`
+    SELECT 
       tof.id,
       tof.booking_id,
       tof.driver_id,
@@ -58,15 +58,15 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     FROM tour_offers tof
     JOIN bookings b ON tof.booking_id = b.id
     LEFT JOIN vehicles v ON tof.vehicle_id = v.id
-    WHERE tof.driver_id = ${parseInt(driver_id)}
+    WHERE tof.driver_id = $1
     AND (tof.status = 'pending' OR tof.response_at > NOW() - INTERVAL '7 days')
-    ORDER BY
-      CASE tof.status
+    ORDER BY 
+      CASE tof.status 
         WHEN 'pending' THEN 1
         ELSE 2
       END,
       tof.offered_at DESC
-  `;
+  `, [driver_id]);
 
   return NextResponse.json({
     success: true,

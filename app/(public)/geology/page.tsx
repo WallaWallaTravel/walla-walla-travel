@@ -4,10 +4,10 @@
  * Public page showcasing Walla Walla's unique geological story.
  */
 
+import { query } from '@/lib/db';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { BreadcrumbJsonLd } from '@/components/seo/BreadcrumbJsonLd';
-import { prisma } from '@/lib/prisma';
 
 export const metadata: Metadata = {
   title: 'Geology of Walla Walla Wine Country | Walla Walla Travel',
@@ -70,14 +70,14 @@ interface Site {
 
 async function getPublishedTopics(): Promise<Topic[]> {
   try {
-    const result = await prisma.$queryRawUnsafe<Topic[]>(`
+    const result = await query<Topic>(`
       SELECT id, slug, title, subtitle, excerpt, topic_type, difficulty,
              hero_image_url, is_featured
       FROM geology_topics
       WHERE is_published = true
       ORDER BY is_featured DESC, display_order ASC, created_at DESC
     `);
-    return result;
+    return result.rows;
   } catch {
     return [];
   }
@@ -85,14 +85,14 @@ async function getPublishedTopics(): Promise<Topic[]> {
 
 async function getFeaturedFacts(): Promise<Fact[]> {
   try {
-    const result = await prisma.$queryRawUnsafe<Fact[]>(`
+    const result = await query<Fact>(`
       SELECT id, fact_text, fact_type
       FROM geology_facts
       WHERE is_featured = true
       ORDER BY display_order ASC
       LIMIT 6
     `);
-    return result;
+    return result.rows;
   } catch {
     return [];
   }
@@ -100,14 +100,14 @@ async function getFeaturedFacts(): Promise<Fact[]> {
 
 async function getPublishedSites(): Promise<Site[]> {
   try {
-    const result = await prisma.$queryRawUnsafe<Site[]>(`
+    const result = await query<Site>(`
       SELECT id, name, slug, description, site_type
       FROM geology_sites
       WHERE is_published = true
       ORDER BY name ASC
       LIMIT 6
     `);
-    return result;
+    return result.rows;
   } catch {
     return [];
   }

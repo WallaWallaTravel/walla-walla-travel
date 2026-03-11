@@ -7,8 +7,9 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { query } from '@/lib/prisma-query'
+import { query } from '@/lib/db'
 import { withAdminAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper'
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 const PutBodySchema = z.object({
   id: z.number().int().positive(),
@@ -120,7 +121,8 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
 });
 
 // PUT - Update suggestion status
-export const PUT = withAdminAuth(async (request: NextRequest, session: AuthSession) => {
+export const PUT = withCSRF(
+  withAdminAuth(async (request: NextRequest, session: AuthSession) => {
   const body = PutBodySchema.parse(await request.json())
   const { id, status } = body
 
@@ -170,3 +172,4 @@ export const PUT = withAdminAuth(async (request: NextRequest, session: AuthSessi
     suggestion: result.rows[0],
   })
 })
+);

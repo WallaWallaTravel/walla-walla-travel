@@ -13,9 +13,10 @@ import {
 } from '@/lib/api/middleware/error-handler';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import { lunchSupplierService } from '@/lib/services/lunch-supplier.service';
-import { prisma } from '@/lib/prisma';
+import { withTransaction } from '@/lib/db-helpers';
 import { z } from 'zod';
 import type { GuestOrder, GuestOrderItem } from '@/lib/types/lunch-supplier';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface RouteParams {
   token: string;
@@ -34,7 +35,8 @@ const IndividualOrderSchema = z.object({
   notes: z.string().max(500).optional(),
 });
 
-export const POST = withErrorHandling<unknown, RouteParams>(
+export const POST = withCSRF(
+  withErrorHandling<unknown, RouteParams>(
   async (request: NextRequest, context: RouteContext<RouteParams>) => {
     const { token } = await context.params;
 
@@ -82,8 +84,14 @@ export const POST = withErrorHandling<unknown, RouteParams>(
     let priceMap = new Map<number, number>();
 
     if (uniqueItemIds.length > 0) {
-      const menuItems = await prisma.$queryRaw<{ id: number; price: number }[]>`
-        SELECT id, price FROM lunch_menu_items WHERE id = ANY(${uniqueItemIds}::int[])`;
+      const placeholders = uniqueItemIds.map((_, i) => `$${i + 1}`).join(',');
+      const menuItems = await withTransaction(async (client) => {
+        const result = await client.query<{ id: number; price: number }>(
+          `SELECT id, price FROM lunch_menu_items WHERE id IN (${placeholders})`,
+          uniqueItemIds
+        );
+        return result.rows;
+      });
       priceMap = new Map(menuItems.map((item) => [item.id, item.price]));
     }
 
@@ -102,20 +110,22 @@ export const POST = withErrorHandling<unknown, RouteParams>(
     };
 
     // Atomic JSONB merge with row locking
-    const updatedOrder = await prisma.$transaction(async (tx) => {
+    const updatedOrder = await withTransaction(async (client) => {
       // Lock the row
-      const lockResult = await tx.$queryRaw<{
+      const lockResult = await client.query<{
         guest_orders: GuestOrder[] | string;
-      }[]>`
-        SELECT guest_orders FROM proposal_lunch_orders WHERE id = ${order_id} FOR UPDATE`;
+      }>(
+        'SELECT guest_orders FROM proposal_lunch_orders WHERE id = $1 FOR UPDATE',
+        [order_id]
+      );
 
-      if (!lockResult[0]) {
+      if (!lockResult.rows[0]) {
         throw new NotFoundError('Lunch order not found');
       }
 
       // Parse existing guest orders
       let existingOrders: GuestOrder[] = [];
-      const raw = lockResult[0].guest_orders;
+      const raw = lockResult.rows[0].guest_orders;
       if (typeof raw === 'string') {
         existingOrders = JSON.parse(raw);
       } else if (Array.isArray(raw)) {
@@ -141,13 +151,15 @@ export const POST = withErrorHandling<unknown, RouteParams>(
       const total = Math.round((subtotal + tax) * 100) / 100;
 
       // Update the order
-      const updateResult = await tx.$queryRaw<Record<string, unknown>[]>`
-        UPDATE proposal_lunch_orders
-        SET guest_orders = ${JSON.stringify(mergedOrders)}::jsonb, subtotal = ${subtotal}, tax = ${tax}, total = ${total}, updated_at = NOW()
-        WHERE id = ${order_id}
-        RETURNING *`;
+      const updateResult = await client.query(
+        `UPDATE proposal_lunch_orders
+         SET guest_orders = $1, subtotal = $2, tax = $3, total = $4, updated_at = NOW()
+         WHERE id = $5
+         RETURNING *`,
+        [JSON.stringify(mergedOrders), subtotal, tax, total, order_id]
+      );
 
-      return updateResult[0];
+      return updateResult.rows[0];
     });
 
     return NextResponse.json({
@@ -156,4 +168,5 @@ export const POST = withErrorHandling<unknown, RouteParams>(
       message: 'Your lunch order has been submitted',
     });
   }
+)
 );

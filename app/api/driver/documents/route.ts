@@ -11,11 +11,12 @@ import {
   BadRequestError,
 } from '@/lib/api/middleware/error-handler';
 import { requireAuth, requireDriver } from '@/lib/api/middleware/auth';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { MEDIA_BUCKET } from '@/lib/storage/supabase-storage';
 import { stripExif } from '@/lib/utils/image-processing';
 import { generateSecureString } from '@/lib/utils';
-import { prisma } from '@/lib/prisma';
+import { query } from '@/lib/db';
 import { logger } from '@/lib/logger';
 
 const ALLOWED_DOCUMENT_TYPES = [
@@ -40,17 +41,19 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   const session = await requireAuth(request);
   await requireDriver(session);
 
-  const rows = await prisma.$queryRaw<Record<string, unknown>[]>`
-    SELECT * FROM driver_documents WHERE driver_id = ${session.user.id} AND is_active = true ORDER BY created_at DESC
-  `;
+  const result = await query(
+    'SELECT * FROM driver_documents WHERE driver_id = $1 AND is_active = true ORDER BY created_at DESC',
+    [session.user.id]
+  );
 
   return NextResponse.json({
     success: true,
-    documents: rows,
+    documents: result.rows,
   });
 });
 
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
     const session = await requireAuth(request);
     await requireDriver(session);
 
@@ -118,14 +121,26 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     const fileTypeLabel = file.type === 'application/pdf' ? 'pdf' : ext;
 
     // Insert into database
-    const insertRows = await prisma.$queryRaw<Record<string, unknown>[]>`
-      INSERT INTO driver_documents (
+    const insertResult = await query(
+      `INSERT INTO driver_documents (
         driver_id, document_type, document_name, document_url,
         file_type, file_size_bytes, expiry_date, source,
         original_filename, created_by
-      ) VALUES (${session.user.id}, ${documentType}, ${documentName}, ${publicUrl}, ${fileTypeLabel}, ${file.size}, ${expiresAt || null}, 'upload', ${file.name}, ${session.user.id})
-      RETURNING *
-    `;
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      RETURNING *`,
+      [
+        session.user.id,
+        documentType,
+        documentName,
+        publicUrl,
+        fileTypeLabel,
+        file.size,
+        expiresAt || null,
+        'upload',
+        file.name,
+        session.user.id,
+      ]
+    );
 
     logger.info('Driver document uploaded', {
       driverId: session.user.id,
@@ -136,9 +151,10 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     return NextResponse.json(
       {
         success: true,
-        document: insertRows[0],
+        document: insertResult.rows[0],
         timestamp: new Date().toISOString(),
       },
       { status: 201 }
     );
-  });
+  })
+);

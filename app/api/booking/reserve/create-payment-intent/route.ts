@@ -10,9 +10,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createDepositPaymentIntent } from '@/lib/stripe';
 import { withErrorHandling } from '@/lib/api-errors';
 import { validateBody, ReservationPaymentIntentSchema } from '@/lib/api/middleware/validation';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 
-export const POST = withRateLimit(rateLimiters.payment)(
+export const POST = withCSRF(
+  withRateLimit(rateLimiters.payment)(
     withErrorHandling(async (request: NextRequest) => {
   // Validate input with Zod schema
   const { amount, reservationId, customerEmail, customerName, partySize, preferredDate } =
@@ -31,6 +33,6 @@ export const POST = withRateLimit(rateLimiters.payment)(
     clientSecret: paymentIntent.client_secret,
     paymentIntentId: paymentIntent.id,
   });
-}));
+})));
 
 

@@ -7,12 +7,13 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import { buildGroupAnnouncementEmail } from '@/lib/email/templates/group-announcement-emails';
 import { sendEmail } from '@/lib/email';
 import { emailPreferencesService } from '@/lib/services/email-preferences.service';
 import { logger } from '@/lib/logger';
-import { prisma } from '@/lib/prisma';
+import { query } from '@/lib/db-helpers';
 import { z } from 'zod';
 
 interface RouteParams {
@@ -26,7 +27,8 @@ const AnnounceSchema = z.object({
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://wallawalla.travel';
 
-export const POST = withAdminAuth(async (request: NextRequest, session, context) => {
+export const POST = withCSRF(
+  withAdminAuth(async (request: NextRequest, session, context) => {
     const { id } = await (context as unknown as RouteParams).params;
     const proposalId = parseInt(id, 10);
 
@@ -125,10 +127,11 @@ export const POST = withAdminAuth(async (request: NextRequest, session, context)
 
       // Log to email_logs for audit trail
       try {
-        const emailSubject = subject || emailContent.subject;
-        const emailStatus = success ? 'sent' : 'failed';
-        await prisma.$executeRaw`INSERT INTO email_logs (trip_proposal_id, email_type, recipient, subject, sent_at, status)
-           VALUES (${proposalId}, 'group_announcement', ${guest.email}, ${emailSubject}, NOW(), ${emailStatus})`;
+        await query(
+          `INSERT INTO email_logs (trip_proposal_id, email_type, recipient, subject, sent_at, status)
+           VALUES ($1, 'group_announcement', $2, $3, NOW(), $4)`,
+          [proposalId, guest.email, subject || emailContent.subject, success ? 'sent' : 'failed']
+        );
       } catch {
         // Non-critical — don't fail the announcement if logging fails
       }
@@ -149,4 +152,5 @@ export const POST = withAdminAuth(async (request: NextRequest, session, context)
         errors: errors.length > 0 ? errors : undefined,
       },
     });
-  });
+  })
+);

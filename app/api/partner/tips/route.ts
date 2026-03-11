@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, UnauthorizedError, NotFoundError, ValidationError } from '@/lib/api/middleware/error-handler';
 import { getSession } from '@/lib/auth/session';
 import { partnerService } from '@/lib/services/partner.service';
-import { prisma } from '@/lib/prisma';
+import { query } from '@/lib/db';
 import { INSIDER_TIP_TYPES } from '@/lib/config/content-types';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 import { z } from 'zod';
 
 const tipTypeValues = ['locals_know', 'best_time', 'what_to_ask', 'pairing', 'photo_spot', 'hidden_gem', 'practical'] as const;
@@ -62,11 +63,14 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   }> = [];
 
   if (profile.winery_id) {
-    tips = await prisma.$queryRaw<typeof tips>`
-      SELECT id, tip_type, title, content, is_featured, verified, created_at
+    const result = await query(
+      `SELECT id, tip_type, title, content, is_featured, verified, created_at
        FROM winery_insider_tips
-       WHERE winery_id = ${profile.winery_id}
-       ORDER BY is_featured DESC, created_at DESC`;
+       WHERE winery_id = $1
+       ORDER BY is_featured DESC, created_at DESC`,
+      [profile.winery_id]
+    );
+    tips = result.rows;
   }
 
   return NextResponse.json({
@@ -80,7 +84,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
  * POST /api/partner/tips
  * Create a new insider tip
  */
-export const POST =
+export const POST = withCSRF(
   withRateLimit(rateLimiters.api)(
   withErrorHandling(async (request: NextRequest) => {
   const session = await getSession();
@@ -107,6 +111,7 @@ export const POST =
     throw new ValidationError(`Invalid tip type: ${tip_type}`);
   }
 
+  // Validate content
   if (!content || typeof content !== 'string') {
     throw new ValidationError('Content is required');
   }
@@ -119,32 +124,44 @@ export const POST =
     throw new ValidationError('Content must be less than 500 characters');
   }
 
-  const rows = await prisma.$queryRaw<Array<{ id: number }>>`
-    INSERT INTO winery_insider_tips
+  // Insert new tip
+  const result = await query(
+    `INSERT INTO winery_insider_tips
        (winery_id, tip_type, title, content, is_featured, data_source, verified, created_by, created_at, updated_at)
-     VALUES (${profile.winery_id}, ${tip_type}, ${title || null}, ${content}, ${is_featured || false}, 'partner_portal', false, ${session.user.id}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-     RETURNING id`;
+     VALUES ($1, $2, $3, $4, $5, 'partner_portal', false, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+     RETURNING id`,
+    [
+      profile.winery_id,
+      tip_type,
+      title || null,
+      content,
+      is_featured || false,
+      session.user.id,
+    ]
+  );
 
+  // Log the activity
   await partnerService.logActivity(
     profile.id,
     'tip_created',
-    { tip_type, tip_id: rows[0].id },
+    { tip_type, tip_id: result.rows[0].id },
     getClientIp(request)
   );
 
   return NextResponse.json({
     success: true,
-    id: rows[0].id,
+    id: result.rows[0].id,
     message: 'Tip created and submitted for review',
     timestamp: new Date().toISOString(),
   });
-}));
+}))
+);
 
 /**
  * PUT /api/partner/tips
  * Update an existing insider tip
  */
-export const PUT =
+export const PUT = withCSRF(
   withRateLimit(rateLimiters.api)(
   withErrorHandling(async (request: NextRequest) => {
   const session = await getSession();
@@ -170,27 +187,36 @@ export const PUT =
     throw new ValidationError('Tip ID is required');
   }
 
-  const existingRows = await prisma.$queryRaw<Array<{ id: number }>>`
-    SELECT id FROM winery_insider_tips WHERE id = ${id} AND winery_id = ${profile.winery_id}`;
+  // Verify ownership
+  const existingResult = await query(
+    `SELECT id FROM winery_insider_tips WHERE id = $1 AND winery_id = $2`,
+    [id, profile.winery_id]
+  );
 
-  if (existingRows.length === 0) {
+  if (existingResult.rows.length === 0) {
     throw new NotFoundError('Tip not found');
   }
 
+  // Validate tip type
   if (!VALID_TIP_TYPES.includes(tip_type)) {
     throw new ValidationError(`Invalid tip type: ${tip_type}`);
   }
 
+  // Validate content
   if (!content || content.length < 20) {
     throw new ValidationError('Content must be at least 20 characters');
   }
 
-  await prisma.$executeRaw`
-    UPDATE winery_insider_tips
-     SET tip_type = ${tip_type}, title = ${title || null}, content = ${content}, is_featured = ${is_featured || false},
+  // Update tip
+  await query(
+    `UPDATE winery_insider_tips
+     SET tip_type = $1, title = $2, content = $3, is_featured = $4,
          verified = false, updated_at = CURRENT_TIMESTAMP
-     WHERE id = ${id}`;
+     WHERE id = $5`,
+    [tip_type, title || null, content, is_featured || false, id]
+  );
 
+  // Log the activity
   await partnerService.logActivity(
     profile.id,
     'tip_updated',
@@ -203,13 +229,14 @@ export const PUT =
     message: 'Tip updated and submitted for review',
     timestamp: new Date().toISOString(),
   });
-}));
+}))
+);
 
 /**
  * DELETE /api/partner/tips
  * Delete an insider tip
  */
-export const DELETE =
+export const DELETE = withCSRF(
   withRateLimit(rateLimiters.api)(
   withErrorHandling(async (request: NextRequest) => {
   const session = await getSession();
@@ -231,13 +258,17 @@ export const DELETE =
     throw new ValidationError('Tip ID is required');
   }
 
-  const rows = await prisma.$queryRaw<Array<{ id: number }>>`
-    DELETE FROM winery_insider_tips WHERE id = ${parseInt(id)} AND winery_id = ${profile.winery_id} RETURNING id`;
+  // Verify ownership and delete
+  const result = await query(
+    `DELETE FROM winery_insider_tips WHERE id = $1 AND winery_id = $2 RETURNING id`,
+    [id, profile.winery_id]
+  );
 
-  if (rows.length === 0) {
+  if (result.rowCount === 0) {
     throw new NotFoundError('Tip not found');
   }
 
+  // Log the activity
   await partnerService.logActivity(
     profile.id,
     'tip_deleted',
@@ -250,4 +281,5 @@ export const DELETE =
     message: 'Tip deleted',
     timestamp: new Date().toISOString(),
   });
-}));
+}))
+);

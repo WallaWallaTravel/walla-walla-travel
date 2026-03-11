@@ -5,7 +5,7 @@
  * Sends email notifications at 30 days, 7 days, and day of expiration.
  */
 
-import { prisma } from '@/lib/prisma';
+import { query } from '@/lib/db';
 import { sendEmail } from '@/lib/email';
 import { logger } from '@/lib/logger';
 
@@ -88,10 +88,7 @@ export async function checkAllCompliance(): Promise<ComplianceCheckResult> {
   };
 
   // Check driver compliance
-  const drivers = await prisma.$queryRawUnsafe<{
-    id: number; name: string; email: string;
-    license_expiry: string | null; medical_cert_expiry: string | null;
-  }[]>(
+  const driversResult = await query(
     `SELECT
       id,
       name,
@@ -105,10 +102,10 @@ export async function checkAllCompliance(): Promise<ComplianceCheckResult> {
         license_expiry <= $1
         OR medical_cert_expiry <= $1
       )`,
-    noticeDate.toISOString().split('T')[0]
+    [noticeDate.toISOString().split('T')[0]]
   );
 
-  for (const driver of drivers) {
+  for (const driver of driversResult.rows) {
     // Check license
     if (driver.license_expiry) {
       const expiry = new Date(driver.license_expiry);
@@ -151,10 +148,7 @@ export async function checkAllCompliance(): Promise<ComplianceCheckResult> {
   }
 
   // Check vehicle compliance
-  const vehicles = await prisma.$queryRawUnsafe<{
-    id: number; name: string;
-    insurance_expiry: string | null; registration_expiry: string | null;
-  }[]>(
+  const vehiclesResult = await query(
     `SELECT
       id,
       name,
@@ -166,10 +160,10 @@ export async function checkAllCompliance(): Promise<ComplianceCheckResult> {
         insurance_expiry <= $1
         OR registration_expiry <= $1
       )`,
-    noticeDate.toISOString().split('T')[0]
+    [noticeDate.toISOString().split('T')[0]]
   );
 
-  for (const vehicle of vehicles) {
+  for (const vehicle of vehiclesResult.rows) {
     // Check insurance
     if (vehicle.insurance_expiry) {
       const expiry = new Date(vehicle.insurance_expiry);
@@ -383,6 +377,14 @@ function shouldNotifyToday(daysUntilExpiry: number): boolean {
 /**
  * Run compliance check and send all notifications
  * This should be called by a daily cron job
+ *
+ * Notification schedule:
+ * - 40 days: Staff + Driver notification
+ * - 20 days: Staff + Driver reminder
+ * - 10 days: Staff + Driver reminder
+ * - 5 days: Staff + Driver URGENT
+ * - 1 day: Staff + Driver CRITICAL
+ * - 0 days (expired): Staff + Driver EXPIRED
  */
 export async function runComplianceNotifications(): Promise<{
   checked: number;

@@ -1,39 +1,56 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
-import { prisma } from '@/lib/prisma';
+import { query } from '@/lib/db';
 import { createTripSchema } from '@/lib/validation/schemas/trip';
 import { nanoid } from 'nanoid';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // ============================================================================
 // POST /api/trips - Create a new trip
 // ============================================================================
 
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   const body = await request.json();
   const validated = createTripSchema.parse(body);
 
   // Generate unique share code
   const shareCode = nanoid(8);
 
-  const rows = await prisma.$queryRaw<Record<string, unknown>[]>`
-    INSERT INTO trips (
+  const result = await query(
+    `INSERT INTO trips (
       share_code, title, description, trip_type,
       start_date, end_date, dates_flexible,
       expected_guests, owner_name, owner_email, owner_phone,
       preferences, status
     ) VALUES (
-      ${shareCode}, ${validated.title}, ${validated.description || null}, ${validated.trip_type}, ${validated.start_date || null}, ${validated.end_date || null}, ${validated.dates_flexible}, ${validated.expected_guests}, ${validated.owner_name || null}, ${validated.owner_email || null}, ${validated.owner_phone || null}, ${JSON.stringify(validated.preferences || { transportation: 'undecided', pace: 'moderate', budget: 'moderate' })}, 'draft'
+      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'draft'
     )
-    RETURNING *
-  `;
+    RETURNING *`,
+    [
+      shareCode,
+      validated.title,
+      validated.description || null,
+      validated.trip_type,
+      validated.start_date || null,
+      validated.end_date || null,
+      validated.dates_flexible,
+      validated.expected_guests,
+      validated.owner_name || null,
+      validated.owner_email || null,
+      validated.owner_phone || null,
+      JSON.stringify(validated.preferences || { transportation: 'undecided', pace: 'moderate', budget: 'moderate' }),
+    ]
+  );
 
-  const trip = rows[0];
+  const trip = result.rows[0];
 
   // Log activity
-  await prisma.$executeRaw`
-    INSERT INTO trip_activity_log (trip_id, activity_type, description, actor_name)
-     VALUES (${trip.id as number}, 'trip_created', 'Trip created', ${(validated.owner_name as string) || 'Anonymous'})
-  `;
+  await query(
+    `INSERT INTO trip_activity_log (trip_id, activity_type, description, actor_name)
+     VALUES ($1, 'trip_created', 'Trip created', $2)`,
+    [trip.id, validated.owner_name || 'Anonymous']
+  );
 
   return NextResponse.json({
     success: true,
@@ -70,4 +87,5 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       },
     },
   }, { status: 201 });
-});
+})
+);

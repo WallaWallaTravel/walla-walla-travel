@@ -6,9 +6,10 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { query } from '@/lib/prisma-query'
+import { query } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
+import { withCSRF } from '@/lib/api/middleware/csrf';
 import { z } from 'zod'
 
 const PutBodySchema = z.object({
@@ -50,7 +51,8 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   })
 });
 
-export const PUT = withAdminAuth(async (request: NextRequest, _session) => {
+export const PUT = withCSRF(
+  withAdminAuth(async (request: NextRequest, _session) => {
   const body = PutBodySchema.parse(await request.json())
   const { id, status } = body
 
@@ -84,3 +86,4 @@ export const PUT = withAdminAuth(async (request: NextRequest, _session) => {
     topic: result.rows[0],
   })
 })
+);

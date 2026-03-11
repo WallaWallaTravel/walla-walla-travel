@@ -4,10 +4,11 @@ import {
   errorResponse,
   requireAuth,
 } from '@/app/api/utils';
-import { prisma } from '@/lib/prisma';
+import { query } from '@/lib/db';
 import { logger, logApiRequest } from '@/lib/logger';
 import { z } from 'zod';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 // Request body schema
 const ClientDropoffSchema = z.object({
@@ -20,8 +21,11 @@ const ClientDropoffSchema = z.object({
 /**
  * POST /api/driver/client-dropoff
  * Log client dropoff time, calculate service hours and total cost
+ *
+ * Wrapped with withErrorHandling for consistent error handling
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
+export const POST = withCSRF(
+  withErrorHandling(async (request: NextRequest) => {
   // Check authentication
   const authResult = await requireAuth();
 
@@ -45,7 +49,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   const driverId = parseInt(authResult.userId);
 
   // 1. Verify client service exists and belongs to driver
-  const serviceRows = await prisma.$queryRaw<Record<string, unknown>[]>`
+  const serviceResult = await query(`
     SELECT
       cs.*,
       tc.clock_out_time,
@@ -53,14 +57,14 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     FROM client_services cs
     JOIN time_cards tc ON cs.time_card_id = tc.id
     LEFT JOIN vehicles v ON cs.vehicle_id = v.id
-    WHERE cs.id = ${body.clientServiceId}
-  `;
+    WHERE cs.id = $1
+  `, [body.clientServiceId]);
 
-  if (serviceRows.length === 0) {
+  if (serviceResult.rows.length === 0) {
     return errorResponse('Client service not found', 404);
   }
 
-  const service = serviceRows[0];
+  const service = serviceResult.rows[0];
 
   // Verify service belongs to current driver
   if (service.driver_id !== driverId) {
@@ -83,13 +87,16 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   }
 
   // 2. Calculate service hours and total cost
-  const updateRows = await prisma.$queryRaw<Record<string, unknown>[]>`
+  // Service hours = (dropoff_time - pickup_time) in hours
+  // Total cost = service_hours * hourly_rate
+
+  const updateResult = await query(`
     UPDATE client_services
     SET
       dropoff_time = CURRENT_TIMESTAMP,
-      dropoff_location = ${body.dropoffLocation},
-      dropoff_lat = ${body.dropoffLat || null},
-      dropoff_lng = ${body.dropoffLng || null},
+      dropoff_location = $1,
+      dropoff_lat = $2,
+      dropoff_lng = $3,
       -- Calculate service hours: difference in hours between pickup and dropoff
       service_hours = ROUND(
         EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - pickup_time)) / 3600.0,
@@ -102,7 +109,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       ),
       status = 'completed',
       updated_at = CURRENT_TIMESTAMP
-    WHERE id = ${body.clientServiceId}
+    WHERE id = $4
     RETURNING
       id,
       client_name,
@@ -114,16 +121,21 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       hourly_rate,
       total_cost,
       status
-  `;
+  `, [
+    body.dropoffLocation,
+    body.dropoffLat || null,
+    body.dropoffLng || null,
+    body.clientServiceId
+  ]);
 
-  const completedService = updateRows[0];
+  const completedService = updateResult.rows[0];
 
   // 3. Update vehicle assignment status to completed
-  await prisma.$executeRaw`
+  await query(`
     UPDATE vehicle_assignments
     SET status = 'completed', updated_at = CURRENT_TIMESTAMP
-    WHERE client_service_id = ${body.clientServiceId} AND status = 'active'
-  `;
+    WHERE client_service_id = $1 AND status = 'active'
+  `, [body.clientServiceId]);
 
   logger.info('Client dropoff logged and service completed', {
     serviceId: completedService.id,
@@ -139,28 +151,29 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     service: {
       ...completedService,
       // Format times for display
-      pickup_time_formatted: new Date(completedService.pickup_time as string).toLocaleString('en-US', {
+      pickup_time_formatted: new Date(completedService.pickup_time).toLocaleString('en-US', {
         timeZone: 'America/Los_Angeles',
         dateStyle: 'short',
         timeStyle: 'short'
       }),
-      dropoff_time_formatted: new Date(completedService.dropoff_time as string).toLocaleString('en-US', {
+      dropoff_time_formatted: new Date(completedService.dropoff_time).toLocaleString('en-US', {
         timeZone: 'America/Los_Angeles',
         dateStyle: 'short',
         timeStyle: 'short'
       })
     },
     billing: {
-      service_hours: parseFloat(completedService.service_hours as string),
-      hourly_rate: parseFloat(completedService.hourly_rate as string),
-      total_cost: parseFloat(completedService.total_cost as string),
+      service_hours: parseFloat(completedService.service_hours),
+      hourly_rate: parseFloat(completedService.hourly_rate),
+      total_cost: parseFloat(completedService.total_cost),
       formatted: `${completedService.service_hours} hrs × $${completedService.hourly_rate}/hr = $${completedService.total_cost}`
     },
     vehicle: service.vehicle_number ? {
       vehicle_number: service.vehicle_number
     } : null
   }, 'Client dropoff logged and billing calculated successfully');
-});
+})
+);
 
 /**
  * GET /api/driver/client-dropoff
@@ -173,7 +186,7 @@ export const GET = withErrorHandling(async () => {
   const driverId = parseInt(authResult.userId);
 
   // Get active service with pickup completed but dropoff not logged
-  const serviceRows = await prisma.$queryRaw<Record<string, unknown>[]>`
+  const serviceResult = await query(`
     SELECT
       cs.*,
       v.vehicle_number,
@@ -191,27 +204,27 @@ export const GET = withErrorHandling(async () => {
     FROM client_services cs
     JOIN time_cards tc ON cs.time_card_id = tc.id
     LEFT JOIN vehicles v ON cs.vehicle_id = v.id
-    WHERE cs.driver_id = ${driverId}
+    WHERE cs.driver_id = $1
       AND tc.clock_out_time IS NULL
       AND cs.status = 'in_progress'
       AND cs.pickup_time IS NOT NULL
       AND cs.dropoff_time IS NULL
     ORDER BY cs.pickup_time DESC
     LIMIT 1
-  `;
+  `, [driverId]);
 
-  if (serviceRows.length === 0) {
+  if (serviceResult.rows.length === 0) {
     return successResponse(null, 'No service ready for dropoff');
   }
 
-  const service = serviceRows[0];
+  const service = serviceResult.rows[0];
 
   return successResponse({
     service,
     billing_preview: {
-      elapsed_hours: parseFloat(service.elapsed_hours as string),
-      hourly_rate: parseFloat(service.hourly_rate as string),
-      estimated_cost: parseFloat(service.estimated_cost as string),
+      elapsed_hours: parseFloat(service.elapsed_hours),
+      hourly_rate: parseFloat(service.hourly_rate),
+      estimated_cost: parseFloat(service.estimated_cost),
       formatted: `${service.elapsed_hours} hrs × $${service.hourly_rate}/hr ≈ $${service.estimated_cost}`
     }
   }, 'Service ready for dropoff');

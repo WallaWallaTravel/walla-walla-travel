@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, NotFoundError, RouteContext } from '@/lib/api/middleware/error-handler';
-import { prisma } from '@/lib/prisma';
+import { query } from '@/lib/db';
 import { addStopSchema } from '@/lib/validation/schemas/trip';
+import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface RouteParams {
   shareCode: string;
@@ -11,35 +12,38 @@ interface RouteParams {
 // POST /api/trips/[shareCode]/stops - Add a stop to the trip
 // ============================================================================
 
-export const POST = withErrorHandling<unknown, RouteParams>(
+export const POST = withCSRF(
+  withErrorHandling<unknown, RouteParams>(
   async (request: NextRequest, context: RouteContext<RouteParams>) => {
     const { shareCode } = await context.params;
     const body = await request.json();
     const validated = addStopSchema.parse(body);
 
     // Get trip ID from share code
-    const tripRows = await prisma.$queryRaw<{ id: number }[]>`
-      SELECT id FROM trips WHERE share_code = ${shareCode}
-    `;
+    const tripResult = await query(
+      `SELECT id FROM trips WHERE share_code = $1`,
+      [shareCode]
+    );
 
-    if (tripRows.length === 0) {
+    if (tripResult.rows.length === 0) {
       throw new NotFoundError('Trip not found');
     }
 
-    const tripId = tripRows[0].id;
+    const tripId = tripResult.rows[0].id;
 
     // Get next stop order for the day
-    const orderRows = await prisma.$queryRaw<{ next_order: number }[]>`
-      SELECT COALESCE(MAX(stop_order), 0) + 1 as next_order
+    const orderResult = await query(
+      `SELECT COALESCE(MAX(stop_order), 0) + 1 as next_order
        FROM trip_stops
-       WHERE trip_id = ${tripId} AND day_number = ${validated.day_number}
-    `;
+       WHERE trip_id = $1 AND day_number = $2`,
+      [tripId, validated.day_number]
+    );
 
-    const stopOrder = orderRows[0].next_order;
+    const stopOrder = orderResult.rows[0].next_order;
 
     // Insert the stop
-    const rows = await prisma.$queryRaw<Record<string, unknown>[]>`
-      INSERT INTO trip_stops (
+    const result = await query(
+      `INSERT INTO trip_stops (
         trip_id, stop_type, name, description,
         winery_id, lodging_property_id, check_in_date, check_out_date,
         day_number, stop_order,
@@ -47,23 +51,44 @@ export const POST = withErrorHandling<unknown, RouteParams>(
         notes, special_requests, estimated_cost_per_person,
         added_by, status
       ) VALUES (
-        ${tripId}, ${validated.stop_type}, ${validated.name}, ${validated.description || null}, ${validated.winery_id || null}, ${validated.lodging_property_id || null}, ${validated.check_in_date || null}, ${validated.check_out_date || null}, ${validated.day_number}, ${stopOrder}, ${validated.planned_arrival || null}, ${validated.planned_departure || null}, ${validated.duration_minutes || null}, ${validated.notes || null}, ${validated.special_requests || null}, ${validated.estimated_cost_per_person || null}, 'owner', 'suggested'
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, 'suggested'
       )
-      RETURNING *
-    `;
+      RETURNING *`,
+      [
+        tripId,
+        validated.stop_type,
+        validated.name,
+        validated.description || null,
+        validated.winery_id || null,
+        validated.lodging_property_id || null,
+        validated.check_in_date || null,
+        validated.check_out_date || null,
+        validated.day_number,
+        stopOrder,
+        validated.planned_arrival || null,
+        validated.planned_departure || null,
+        validated.duration_minutes || null,
+        validated.notes || null,
+        validated.special_requests || null,
+        validated.estimated_cost_per_person || null,
+        'owner', // added_by
+      ]
+    );
 
-    const stop = rows[0];
+    const stop = result.rows[0];
 
     // Update trip activity timestamp
-    await prisma.$executeRaw`
-      UPDATE trips SET last_activity_at = NOW() WHERE id = ${tripId}
-    `;
+    await query(
+      `UPDATE trips SET last_activity_at = NOW() WHERE id = $1`,
+      [tripId]
+    );
 
     // Log activity
-    await prisma.$executeRaw`
-      INSERT INTO trip_activity_log (trip_id, activity_type, description, actor_type)
-       VALUES (${tripId}, 'stop_added', ${`Added stop: ${validated.name}`}, 'owner')
-    `;
+    await query(
+      `INSERT INTO trip_activity_log (trip_id, activity_type, description, actor_type)
+       VALUES ($1, 'stop_added', $2, 'owner')`,
+      [tripId, `Added stop: ${validated.name}`]
+    );
 
     return NextResponse.json({
       success: true,
@@ -85,11 +110,12 @@ export const POST = withErrorHandling<unknown, RouteParams>(
         status: stop.status,
         notes: stop.notes,
         special_requests: stop.special_requests,
-        estimated_cost_per_person: stop.estimated_cost_per_person ? parseFloat(stop.estimated_cost_per_person as string) : null,
+        estimated_cost_per_person: stop.estimated_cost_per_person ? parseFloat(stop.estimated_cost_per_person) : null,
         added_by: stop.added_by,
         created_at: stop.created_at,
         updated_at: stop.updated_at,
       },
     }, { status: 201 });
   }
+)
 );

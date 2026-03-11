@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth, AuthSession, RouteContext } from '@/lib/api/middleware/auth-wrapper';
-import { prisma } from '@/lib/prisma';
+import { withCSRF } from '@/lib/api/middleware/csrf';
+import { queryOne } from '@/lib/db-helpers';
 import { sendEmail } from '@/lib/email';
 import { renderPartnerRequestEmail } from '@/lib/email/templates/partner-request';
 import { partnerRequestService } from '@/lib/services/partner-request.service';
@@ -15,7 +16,8 @@ interface RouteParams { id: string; stopId: string; }
  * Compose and send a partner booking request email.
  * Creates a token, sends branded email via Resend, logs the interaction.
  */
-export const POST = withAdminAuth(
+export const POST = withCSRF(
+  withAdminAuth(
     async (request: NextRequest, session: AuthSession, context?) => {
       const { id, stopId } = await (context as RouteContext<RouteParams>).params;
       const proposalId = parseInt(id, 10);
@@ -34,7 +36,7 @@ export const POST = withAdminAuth(
       }
 
       // Get stop + proposal details for email template
-      const stopDetailsRows = await prisma.$queryRaw<{
+      const stopDetails = await queryOne<{
         venue_name: string;
         stop_type: string;
         date: string | null;
@@ -42,7 +44,8 @@ export const POST = withAdminAuth(
         party_size: number;
         duration_minutes: number | null;
         customer_name: string;
-      }[]>`SELECT
+      }>(
+        `SELECT
           COALESCE(s.custom_name, w.name, r.name, h.name, 'Venue') as venue_name,
           s.stop_type,
           d.date::text as date,
@@ -56,9 +59,9 @@ export const POST = withAdminAuth(
          LEFT JOIN wineries w ON w.id = s.winery_id
          LEFT JOIN restaurants r ON r.id = s.restaurant_id
          LEFT JOIN hotels h ON h.id = s.hotel_id
-         WHERE s.id = ${stopIdNum} AND d.trip_proposal_id = ${proposalId}`;
-
-      const stopDetails = stopDetailsRows[0] ?? null;
+         WHERE s.id = $1 AND d.trip_proposal_id = $2`,
+        [stopIdNum, proposalId]
+      );
 
       if (!stopDetails) {
         return NextResponse.json(
@@ -169,4 +172,5 @@ export const POST = withAdminAuth(
         },
       });
     }
+  )
 );
