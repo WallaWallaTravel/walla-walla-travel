@@ -212,12 +212,19 @@ async function handleBookingPaymentSuccess(
       )
     `.catch(() => {});
 
-    // invoices is @@ignore — raw SQL
-    await tx.$executeRaw`
-      INSERT INTO invoices (booking_id, invoice_type, subtotal, tax_amount, total_amount, status, sent_at, due_date)
-      VALUES (${targetBookingId}, ${paymentType}, ${amount / 100}, 0, ${amount / 100}, 'paid', NOW(), NOW())
-      ON CONFLICT DO NOTHING
-    `.catch((err) => {
+    // Create invoice record for this payment
+    await tx.invoices.create({
+      data: {
+        booking_id: targetBookingId,
+        invoice_type: paymentType,
+        subtotal: amount / 100,
+        tax_amount: 0,
+        total_amount: amount / 100,
+        status: 'paid',
+        sent_at: new Date(),
+        due_date: new Date(),
+      },
+    }).catch((err) => {
       logger.warn('[Stripe Webhook] Could not create invoice record', { error: String(err) });
     });
   });

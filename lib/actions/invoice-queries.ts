@@ -142,35 +142,11 @@ export async function getInvoiceByBookingId(
       driverName = driver?.name || null
     }
 
-    // Get invoice record (@@ignore — raw SQL)
-    const invoiceResults = await prisma.$queryRaw<
-      {
-        id: number
-        invoice_number: string
-        invoice_type: string
-        subtotal: number
-        tip_amount: number | null
-        tax_amount: number | null
-        total_amount: number
-        status: string
-        payment_method: string | null
-        sent_at: Date | null
-        paid_at: Date | null
-        due_date: Date | null
-        notes: string | null
-        created_at: Date
-      }[]
-    >`
-      SELECT id, invoice_number, invoice_type, subtotal, tip_amount, tax_amount,
-             total_amount, status, payment_method, sent_at, paid_at, due_date,
-             notes, created_at
-      FROM invoices
-      WHERE booking_id = ${bookingId} AND invoice_type = 'final'
-      ORDER BY created_at DESC
-      LIMIT 1
-    `
-
-    const invoiceRecord = invoiceResults[0]
+    // Get invoice record
+    const invoiceRecord = await prisma.invoices.findFirst({
+      where: { booking_id: bookingId, invoice_type: 'final' },
+      orderBy: { created_at: 'desc' },
+    })
 
     // Calculate amounts
     const hours = Number(booking.actual_hours) || Number(booking.estimated_hours) || 6
@@ -239,69 +215,46 @@ export async function getInvoicesList(filters?: {
   }
 
   try {
-    // Build WHERE clauses for raw SQL (invoices is @@ignore)
-    const conditions: string[] = ['1=1']
-    const params: (string | number)[] = []
-    let paramIndex = 1
+    // Build Prisma where clause with optional filters
+    const invoiceResults = await prisma.invoices.findMany({
+      where: {
+        ...(filters?.status && { status: filters.status }),
+        ...(filters?.invoiceType && { invoice_type: filters.invoiceType }),
+        ...(filters?.bookingId && { booking_id: filters.bookingId }),
+      },
+      include: {
+        bookings: {
+          select: {
+            booking_number: true,
+            customer_name: true,
+            customer_email: true,
+            tour_date: true,
+            actual_hours: true,
+            estimated_hours: true,
+            hourly_rate: true,
+            driver_id: true,
+          },
+        },
+      },
+      orderBy: { created_at: 'desc' },
+      take: 100,
+    })
 
-    if (filters?.status) {
-      conditions.push(`i.status = $${paramIndex}`)
-      params.push(filters.status)
-      paramIndex++
-    }
-    if (filters?.invoiceType) {
-      conditions.push(`i.invoice_type = $${paramIndex}`)
-      params.push(filters.invoiceType)
-      paramIndex++
-    }
-    if (filters?.bookingId) {
-      conditions.push(`i.booking_id = $${paramIndex}`)
-      params.push(filters.bookingId)
-      paramIndex++
-    }
+    // Collect driver IDs for batch lookup
+    const driverIds = [...new Set(
+      invoiceResults
+        .map((inv) => inv.bookings.driver_id)
+        .filter((id): id is number => id != null)
+    )]
+    const drivers = driverIds.length > 0
+      ? await prisma.users.findMany({
+          where: { id: { in: driverIds } },
+          select: { id: true, name: true },
+        })
+      : []
+    const driverMap = new Map(drivers.map((d) => [d.id, d.name]))
 
-    const whereClause = conditions.join(' AND ')
-
-    const results = await prisma.$queryRawUnsafe<
-      {
-        id: number
-        invoice_number: string
-        booking_id: number
-        invoice_type: string
-        subtotal: number
-        tip_amount: number | null
-        tax_amount: number | null
-        total_amount: number
-        status: string
-        payment_method: string | null
-        sent_at: Date | null
-        paid_at: Date | null
-        due_date: Date | null
-        notes: string | null
-        created_at: Date
-        booking_number: string
-        customer_name: string
-        customer_email: string
-        tour_date: Date | null
-        actual_hours: number | null
-        estimated_hours: number | null
-        hourly_rate: number | null
-        driver_name: string | null
-      }[]
-    >(
-      `SELECT i.*, b.booking_number, b.customer_name, b.customer_email,
-              b.tour_date, b.actual_hours, b.estimated_hours, b.hourly_rate,
-              u.name as driver_name
-       FROM invoices i
-       LEFT JOIN bookings b ON i.booking_id = b.id
-       LEFT JOIN users u ON b.driver_id = u.id
-       WHERE ${whereClause}
-       ORDER BY i.created_at DESC
-       LIMIT 100`,
-      ...params
-    )
-
-    return results.map((r) => ({
+    return invoiceResults.map((r) => ({
       id: r.id,
       invoice_number: r.invoice_number,
       booking_id: r.booking_id,
@@ -310,7 +263,7 @@ export async function getInvoicesList(filters?: {
       tip_amount: r.tip_amount != null ? Number(r.tip_amount) : null,
       tax_amount: r.tax_amount != null ? Number(r.tax_amount) : null,
       total_amount: Number(r.total_amount),
-      status: r.status,
+      status: r.status || 'draft',
       payment_method: r.payment_method,
       sent_at: r.sent_at?.toISOString() || null,
       paid_at: r.paid_at?.toISOString() || null,
@@ -318,17 +271,17 @@ export async function getInvoicesList(filters?: {
       notes: r.notes,
       created_at: r.created_at?.toISOString() || '',
       booking: {
-        booking_number: r.booking_number || '',
-        customer_name: r.customer_name || '',
-        customer_email: r.customer_email || '',
-        tour_date: r.tour_date
-          ? new Date(r.tour_date).toISOString().split('T')[0]
+        booking_number: r.bookings.booking_number || '',
+        customer_name: r.bookings.customer_name || '',
+        customer_email: r.bookings.customer_email || '',
+        tour_date: r.bookings.tour_date
+          ? new Date(r.bookings.tour_date).toISOString().split('T')[0]
           : '',
-        actual_hours: r.actual_hours != null ? Number(r.actual_hours) : null,
+        actual_hours: r.bookings.actual_hours != null ? Number(r.bookings.actual_hours) : null,
         estimated_hours:
-          r.estimated_hours != null ? Number(r.estimated_hours) : null,
-        hourly_rate: r.hourly_rate != null ? Number(r.hourly_rate) : null,
-        driver_name: r.driver_name,
+          r.bookings.estimated_hours != null ? Number(r.bookings.estimated_hours) : null,
+        hourly_rate: r.bookings.hourly_rate != null ? Number(r.bookings.hourly_rate) : null,
+        driver_name: r.bookings.driver_id ? (driverMap.get(r.bookings.driver_id) || null) : null,
       },
     }))
   } catch {

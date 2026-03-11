@@ -101,47 +101,35 @@ export async function approveAndSendInvoice(
     const taxAmount = 0
     const totalAmount = subtotal + taxAmount
 
-    // 3. Check if final invoice already exists (invoices is @@ignore — use raw SQL)
-    const existingInvoice = await prisma.$queryRaw<{ id: number }[]>`
-      SELECT id FROM invoices
-      WHERE booking_id = ${bookingId} AND invoice_type = 'final'
-      LIMIT 1
-    `
+    // 3. Check if final invoice already exists
+    const existingInvoice = await prisma.invoices.findFirst({
+      where: { booking_id: bookingId, invoice_type: 'final' },
+      select: { id: true },
+    })
 
-    if (existingInvoice.length > 0) {
+    if (existingInvoice) {
       return {
         success: false,
         error: 'Final invoice already exists for this booking',
       }
     }
 
-    // 4. Create invoice record (invoices is @@ignore — use raw SQL)
-    const invoiceResult = await prisma.$queryRaw<
-      { id: number; invoice_number: string; total_amount: number; sent_at: Date; due_date: Date }[]
-    >`
-      INSERT INTO invoices (
-        booking_id,
-        invoice_type,
-        subtotal,
-        tax_amount,
-        total_amount,
-        status,
-        sent_at,
-        due_date
-      ) VALUES (
-        ${bookingId},
-        'final',
-        ${subtotal},
-        ${taxAmount},
-        ${totalAmount},
-        'sent',
-        NOW(),
-        CURRENT_DATE + INTERVAL '7 days'
-      )
-      RETURNING id, invoice_number, total_amount, sent_at, due_date
-    `
+    // 4. Create invoice record
+    const dueDate = new Date()
+    dueDate.setDate(dueDate.getDate() + 7)
 
-    const invoice = invoiceResult[0]
+    const invoice = await prisma.invoices.create({
+      data: {
+        booking_id: bookingId,
+        invoice_type: 'final',
+        subtotal,
+        tax_amount: taxAmount,
+        total_amount: totalAmount,
+        status: 'sent',
+        sent_at: new Date(),
+        due_date: dueDate,
+      },
+    })
 
     // 5. Update booking status via Prisma
     await prisma.bookings.update({
@@ -279,13 +267,20 @@ export async function recordPayment(
       })
     }
 
-    // Create invoice record (@@ignore — raw SQL)
-    await prisma.$queryRaw`
-      INSERT INTO invoices (booking_id, invoice_type, subtotal, tax_amount, total_amount, status, sent_at, due_date)
-      VALUES (${bookingId}, ${paymentType}, ${amount}, 0, ${amount}, 'paid', NOW(), NOW())
-      ON CONFLICT DO NOTHING
-    `.catch(() => {
-      // Invoice table might not exist or have different schema
+    // Create invoice record for this payment
+    await prisma.invoices.create({
+      data: {
+        booking_id: bookingId,
+        invoice_type: paymentType,
+        subtotal: amount,
+        tax_amount: 0,
+        total_amount: amount,
+        status: 'paid',
+        sent_at: new Date(),
+        due_date: new Date(),
+      },
+    }).catch(() => {
+      // May already exist or other constraint issue
     })
 
     // Create booking timeline entry (@@ignore — raw SQL)
@@ -450,12 +445,19 @@ export async function confirmStripePayment(
       )
     `.catch(() => {})
 
-    // Create invoice record (@@ignore — raw SQL)
-    await prisma.$queryRaw`
-      INSERT INTO invoices (booking_id, invoice_type, subtotal, tax_amount, total_amount, status, sent_at, due_date)
-      VALUES (${payment.booking_id}, ${paymentType}, ${Number(payment.amount)}, 0, ${Number(payment.amount)}, 'paid', NOW(), NOW())
-      ON CONFLICT DO NOTHING
-    `.catch(() => {})
+    // Create invoice record for this payment
+    await prisma.invoices.create({
+      data: {
+        booking_id: payment.booking_id!,
+        invoice_type: paymentType,
+        subtotal: Number(payment.amount),
+        tax_amount: 0,
+        total_amount: Number(payment.amount),
+        status: 'paid',
+        sent_at: new Date(),
+        due_date: new Date(),
+      },
+    }).catch(() => {})
 
     // Send receipt email async
     import('@/lib/services/email-automation.service').then(
