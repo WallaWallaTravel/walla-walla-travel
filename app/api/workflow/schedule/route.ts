@@ -10,7 +10,7 @@ import {
   buildPaginationMeta,
   parseRequestBody
 } from '@/app/api/utils';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 
@@ -47,17 +47,17 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   const pagination = getPaginationParams(request);
 
   // Get total count for pagination
-  const countResult = await query(`
+  const countRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     SELECT COUNT(*) as total
     FROM routes
     WHERE driver_id = $1
       AND route_date BETWEEN $2 AND $3
-  `, [driverId, startDate, endDate]);
+  `, driverId, startDate, endDate);
 
-  const total = parseInt(countResult.rows[0].total);
+  const total = parseInt(countRows[0].total);
 
   // Get scheduled routes with vehicle and passenger details
-  const result = await query(`
+  const resultRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     SELECT
       r.id,
       r.route_date as date,
@@ -91,11 +91,11 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
       AND r.route_date BETWEEN $2 AND $3
     ORDER BY r.route_date, r.start_time
     LIMIT $4 OFFSET $5
-  `, [driverId, startDate, endDate, pagination.limit, pagination.offset]);
+  `, driverId, startDate, endDate, pagination.limit, pagination.offset);
 
   // Group by date for better organization
-  const scheduleByDate: Record<string, typeof result.rows> = {};
-  result.rows.forEach(route => {
+  const scheduleByDate: Record<string, typeof resultRows> = {};
+  resultRows.forEach(route => {
     const date = route.date;
     if (!scheduleByDate[date]) {
       scheduleByDate[date] = [];
@@ -104,7 +104,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   });
 
   // Get driver's availability/time-off for the period
-  const timeOffResult = await query(`
+  const timeOffRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     SELECT
       date,
       reason,
@@ -112,9 +112,9 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     FROM driver_availability
     WHERE driver_id = $1
       AND date BETWEEN $2 AND $3
-  `, [driverId, startDate, endDate]);
+  `, driverId, startDate, endDate);
 
-  const timeOff = timeOffResult.rows.reduce((acc: Record<string, { available: boolean; reason: string }>, row) => {
+  const timeOff = timeOffRows.reduce((acc: Record<string, { available: boolean; reason: string }>, row: Record<string, any>) => {
     acc[row.date] = {
       available: row.is_available,
       reason: row.reason
@@ -123,7 +123,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   }, {});
 
   // Calculate summary statistics
-  const summaryResult = await query(`
+  const summaryRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     SELECT
       COUNT(DISTINCT route_date) as total_days,
       COUNT(*) as total_routes,
@@ -134,9 +134,9 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     FROM routes
     WHERE driver_id = $1
       AND route_date BETWEEN $2 AND $3
-  `, [driverId, startDate, endDate]);
+  `, driverId, startDate, endDate);
 
-  const summary = summaryResult.rows[0] || {
+  const summary = summaryRows[0] || {
     total_days: 0,
     total_routes: 0,
     total_passengers: 0,
@@ -191,17 +191,17 @@ export const PUT = withCSRF(
   const driverId = parseInt(session.userId);
 
   // Verify the route belongs to this driver
-  const routeCheck = await query(`
+  const routeCheckRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     SELECT * FROM routes
     WHERE id = $1 AND driver_id = $2
-  `, [body.routeId, driverId]);
+  `, body.routeId, driverId);
 
-  if (routeCheck.rowCount === 0) {
+  if (routeCheckRows.length === 0) {
     return errorResponse('Route not found or access denied', 404);
   }
 
   // Update route status
-  const result = await query(`
+  const updateRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     UPDATE routes
     SET
       status = $2,
@@ -209,11 +209,11 @@ export const PUT = withCSRF(
       updated_at = CURRENT_TIMESTAMP
     WHERE id = $1
     RETURNING *
-  `, [body.routeId, body.status, body.notes || null]);
+  `, body.routeId, body.status, body.notes || null);
 
   // If marking as in_progress, update time card
   if (body.status === 'in_progress') {
-    await query(`
+    await prisma.$queryRawUnsafe(`
       UPDATE time_cards
       SET
         current_route_id = $1,
@@ -221,12 +221,12 @@ export const PUT = withCSRF(
       WHERE driver_id = $2
         AND DATE(clock_in_time) = CURRENT_DATE
         AND clock_out_time IS NULL
-    `, [body.routeId, driverId]);
+    `, body.routeId, driverId);
   }
 
   // If marking as completed, clear current route
   if (body.status === 'completed') {
-    await query(`
+    await prisma.$queryRawUnsafe(`
       UPDATE time_cards
       SET
         current_route_id = NULL,
@@ -235,9 +235,9 @@ export const PUT = withCSRF(
       WHERE driver_id = $1
         AND DATE(clock_in_time) = CURRENT_DATE
         AND clock_out_time IS NULL
-    `, [driverId]);
+    `, driverId);
   }
 
-  return successResponse(result.rows[0], 'Route status updated successfully');
+  return successResponse(updateRows[0], 'Route status updated successfully');
 })
 );

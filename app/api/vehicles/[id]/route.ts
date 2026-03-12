@@ -4,7 +4,7 @@ import {
   getOptionalAuth,
   logApiRequest
 } from '@/app/api/utils';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 
 /**
@@ -28,7 +28,7 @@ export const GET = withErrorHandling(async (
   }
 
   // Get vehicle details
-  const vehicleResult = await query(`
+  const vehicleRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     SELECT
       v.*,
       -- Current assignment info
@@ -70,16 +70,16 @@ export const GET = withErrorHandling(async (
       AND DATE(tc.clock_in_time) = CURRENT_DATE
     LEFT JOIN users u ON tc.driver_id = u.id
     WHERE v.id = $1
-  `, [vehicleId]);
+  `, vehicleId);
 
-  if (vehicleResult.rowCount === 0) {
+  if (vehicleRows.length === 0) {
     throw new NotFoundError('Vehicle not found');
   }
 
-  const vehicle = vehicleResult.rows[0];
+  const vehicle = vehicleRows[0];
 
   // Get maintenance history
-  const maintenanceResult = await query(`
+  const maintenanceRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     SELECT
       id,
       service_date,
@@ -94,10 +94,10 @@ export const GET = withErrorHandling(async (
     WHERE vehicle_id = $1
     ORDER BY service_date DESC
     LIMIT 10
-  `, [vehicleId]);
+  `, vehicleId);
 
   // Get recent mileage history
-  const mileageResult = await query(`
+  const mileageRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     SELECT
       recorded_date,
       mileage,
@@ -107,10 +107,10 @@ export const GET = withErrorHandling(async (
     WHERE vehicle_id = $1
     ORDER BY recorded_date DESC
     LIMIT 10
-  `, [vehicleId]);
+  `, vehicleId);
 
   // Get upcoming scheduled routes
-  const routesResult = await query(`
+  const routesRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     SELECT
       r.id,
       r.route_date,
@@ -126,10 +126,10 @@ export const GET = withErrorHandling(async (
       AND r.status = 'scheduled'
     ORDER BY r.route_date, r.start_time
     LIMIT 5
-  `, [vehicleId]);
+  `, vehicleId);
 
   // Get usage statistics
-  const statsResult = await query(`
+  const statsRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     SELECT
       COUNT(DISTINCT DATE(clock_in_time)) as days_used,
       COUNT(DISTINCT driver_id) as unique_drivers,
@@ -138,12 +138,12 @@ export const GET = withErrorHandling(async (
     FROM time_cards
     WHERE vehicle_id = $1
       AND clock_in_time >= CURRENT_DATE - INTERVAL '30 days'
-  `, [vehicleId]);
+  `, vehicleId);
 
-  const stats = statsResult.rows[0];
+  const stats = statsRows[0];
 
   // Check compliance status
-  const complianceResult = await query(`
+  const complianceRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     SELECT
       -- Registration status
       CASE
@@ -165,9 +165,9 @@ export const GET = withErrorHandling(async (
       END as inspection_status
     FROM vehicles v
     WHERE v.id = $1
-  `, [vehicleId]);
+  `, vehicleId);
 
-  const compliance = complianceResult.rows[0];
+  const compliance = complianceRows[0];
 
   // Format response
   const responseData = {
@@ -202,9 +202,9 @@ export const GET = withErrorHandling(async (
       start_mileage: vehicle.assignment_start_mileage,
     } : null,
     last_inspection: vehicle.last_inspection_details,
-    maintenance_history: maintenanceResult.rows,
-    mileage_history: mileageResult.rows,
-    upcoming_routes: routesResult.rows,
+    maintenance_history: maintenanceRows,
+    mileage_history: mileageRows,
+    upcoming_routes: routesRows,
     usage_statistics: {
       days_used_last_30: parseInt(stats.days_used),
       unique_drivers: parseInt(stats.unique_drivers),

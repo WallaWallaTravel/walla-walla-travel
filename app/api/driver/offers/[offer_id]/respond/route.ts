@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { sendEmail, EmailTemplates } from '@/lib/email';
 import { sendDriverAssignmentToCustomer } from '@/lib/services/email-automation.service';
@@ -26,104 +26,117 @@ export const POST = withCSRF(
     throw new BadRequestError('Invalid action. Must be "accept" or "decline"');
   }
 
-  await query('BEGIN');
+  // Run transactional queries inside prisma.$transaction
+  const { offer, expired } = await prisma.$transaction(async (tx) => {
+    // Get offer details
+    const offerRows = await tx.$queryRawUnsafe<Record<string, any>[]>(`
+      SELECT
+        tof.*,
+        b.booking_number,
+        b.customer_name
+      FROM tour_offers tof
+      JOIN bookings b ON tof.booking_id = b.id
+      WHERE tof.id = $1
+    `, offer_id);
 
-  // Get offer details
-  const offerResult = await query(`
-    SELECT
-      to.*,
-      b.booking_number,
-      b.customer_name
-    FROM tour_offers to
-    JOIN bookings b ON to.booking_id = b.id
-    WHERE to.id = $1
-  `, [offer_id]);
+    if (offerRows.length === 0) {
+      throw new NotFoundError('Offer not found');
+    }
 
-  if (offerResult.rows.length === 0) {
-    await query('ROLLBACK');
-    throw new NotFoundError('Offer not found');
-  }
+    const offerData = offerRows[0];
 
-  const offer = offerResult.rows[0];
+    // Check if offer is still pending
+    if (offerData.status !== 'pending') {
+      throw new BadRequestError('Offer is no longer available');
+    }
 
-  // Check if offer is still pending
-  if (offer.status !== 'pending') {
-    await query('ROLLBACK');
-    throw new BadRequestError('Offer is no longer available');
-  }
+    // Check if offer has expired
+    if (new Date(offerData.expires_at) < new Date()) {
+      await tx.$executeRawUnsafe(`
+        UPDATE tour_offers
+        SET status = 'expired', updated_at = NOW()
+        WHERE id = $1
+      `, offer_id);
 
-  // Check if offer has expired
-  if (new Date(offer.expires_at) < new Date()) {
-    await query(`
-      UPDATE tour_offers
-      SET status = 'expired', updated_at = NOW()
-      WHERE id = $1
-    `, [offer_id]);
+      return { offer: offerData, expired: true };
+    }
 
-    await query('COMMIT');
+    if (action === 'accept') {
+      // Update offer status
+      await tx.$executeRawUnsafe(`
+        UPDATE tour_offers
+        SET
+          status = 'accepted',
+          response_at = NOW(),
+          response_notes = $2
+        WHERE id = $1
+      `, offer_id, notes || null);
 
+      // Assign driver to booking
+      await tx.$executeRawUnsafe(`
+        UPDATE bookings
+        SET
+          driver_id = $1,
+          status = CASE
+            WHEN status = 'pending' THEN 'confirmed'
+            ELSE status
+          END,
+          updated_at = NOW()
+        WHERE id = $2
+      `, offerData.driver_id, offerData.booking_id);
+
+      // Assign vehicle if specified
+      if (offerData.vehicle_id) {
+        await tx.$executeRawUnsafe(`
+          INSERT INTO vehicle_assignments (
+            vehicle_id,
+            booking_id,
+            driver_id,
+            assigned_at,
+            status
+          ) VALUES ($1, $2, $3, NOW(), 'assigned')
+          ON CONFLICT (booking_id)
+          DO UPDATE SET
+            vehicle_id = $1,
+            driver_id = $3,
+            assigned_at = NOW(),
+            status = 'assigned'
+        `, offerData.vehicle_id, offerData.booking_id, offerData.driver_id);
+      }
+
+      // Withdraw other pending offers for this booking
+      await tx.$executeRawUnsafe(`
+        UPDATE tour_offers
+        SET
+          status = 'withdrawn',
+          response_at = NOW(),
+          response_notes = 'Automatically withdrawn - booking accepted by another driver'
+        WHERE booking_id = $1
+        AND id != $2
+        AND status = 'pending'
+      `, offerData.booking_id, offer_id);
+    } else {
+      // action === 'decline'
+      await tx.$executeRawUnsafe(`
+        UPDATE tour_offers
+        SET
+          status = 'declined',
+          response_at = NOW(),
+          response_notes = $2
+        WHERE id = $1
+      `, offer_id, notes || null);
+    }
+
+    return { offer: offerData, expired: false };
+  });
+
+  if (expired) {
     throw new BadRequestError('Offer has expired');
   }
 
   if (action === 'accept') {
-    // Update offer status
-    await query(`
-      UPDATE tour_offers
-      SET
-        status = 'accepted',
-        response_at = NOW(),
-        response_notes = $2
-      WHERE id = $1
-    `, [offer_id, notes || null]);
-
-    // Assign driver to booking
-    await query(`
-      UPDATE bookings
-      SET
-        driver_id = $1,
-        status = CASE
-          WHEN status = 'pending' THEN 'confirmed'
-          ELSE status
-        END,
-        updated_at = NOW()
-      WHERE id = $2
-    `, [offer.driver_id, offer.booking_id]);
-
-    // Assign vehicle if specified
-    if (offer.vehicle_id) {
-      await query(`
-        INSERT INTO vehicle_assignments (
-          vehicle_id,
-          booking_id,
-          driver_id,
-          assigned_at,
-          status
-        ) VALUES ($1, $2, $3, NOW(), 'assigned')
-        ON CONFLICT (booking_id)
-        DO UPDATE SET
-          vehicle_id = $1,
-          driver_id = $3,
-          assigned_at = NOW(),
-          status = 'assigned'
-      `, [offer.vehicle_id, offer.booking_id, offer.driver_id]);
-    }
-
-    // Withdraw other pending offers for this booking
-    await query(`
-      UPDATE tour_offers
-      SET
-        status = 'withdrawn',
-        response_at = NOW(),
-        response_notes = 'Automatically withdrawn - booking accepted by another driver'
-      WHERE booking_id = $1
-      AND id != $2
-      AND status = 'pending'
-    `, [offer.booking_id, offer_id]);
-
-    await query('COMMIT');
-
-    // Get full booking and driver details for emails
-    const bookingDetails = await query(`
+    // Get full booking and driver details for emails (outside transaction)
+    const bookingRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
       SELECT
         b.*,
         u.name as driver_name,
@@ -136,9 +149,9 @@ export const POST = withCSRF(
       LEFT JOIN users u ON b.driver_id = u.id
       LEFT JOIN vehicles v ON v.id = $2
       WHERE b.id = $1
-    `, [offer.booking_id, offer.vehicle_id]);
+    `, offer.booking_id, offer.vehicle_id);
 
-    const bookingData = bookingDetails.rows[0];
+    const bookingData = bookingRows[0];
 
     // Send confirmation email to driver
     if (bookingData?.driver_email) {
@@ -189,21 +202,7 @@ export const POST = withCSRF(
       booking_id: offer.booking_id,
       booking_number: offer.booking_number,
     });
-
   } else {
-    // action === 'decline'
-    // Update offer status
-    await query(`
-      UPDATE tour_offers
-      SET
-        status = 'declined',
-        response_at = NOW(),
-        response_notes = $2
-      WHERE id = $1
-    `, [offer_id, notes || null]);
-
-    await query('COMMIT');
-
     return NextResponse.json({
       success: true,
       message: 'Tour declined.',

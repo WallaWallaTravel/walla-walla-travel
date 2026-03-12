@@ -5,7 +5,7 @@ import {
   logApiRequest,
   formatDateForDB
 } from '@/app/api/utils';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 
@@ -26,7 +26,7 @@ export const GET = withErrorHandling(async (_request: NextRequest) => {
 
   // First check if driver has a permanently assigned vehicle
   // This is now the primary way vehicles are assigned
-  const permanentVehicleResult = await query(`
+  const permanentVehicleRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     SELECT
       v.id,
       v.vehicle_number,
@@ -50,12 +50,12 @@ export const GET = withErrorHandling(async (_request: NextRequest) => {
       AND v.status = 'assigned'
       AND v.is_active = true
     LIMIT 1
-  `, [driverId]);
+  `, driverId);
 
-  logger.debug('Permanent vehicle query result', { rowCount: permanentVehicleResult.rowCount });
+  logger.debug('Permanent vehicle query result', { rowCount: permanentVehicleRows.length });
 
-  if ((permanentVehicleResult.rowCount ?? 0) > 0) {
-    const vehicle = permanentVehicleResult.rows[0];
+  if (permanentVehicleRows.length > 0) {
+    const vehicle = permanentVehicleRows[0];
     logger.debug('Found permanently assigned vehicle', { vehicleNumber: vehicle.vehicle_number });
 
     // Return the permanently assigned vehicle
@@ -67,7 +67,7 @@ export const GET = withErrorHandling(async (_request: NextRequest) => {
   }
 
   // If no permanent assignment, check for ACTIVE time card (currently clocked in)
-  const result = await query(`
+  const resultRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     SELECT
       v.id,
       v.vehicle_number,
@@ -96,18 +96,18 @@ export const GET = withErrorHandling(async (_request: NextRequest) => {
       AND tc.clock_out_time IS NULL
     ORDER BY tc.clock_in_time DESC
     LIMIT 1
-  `, [driverId]);
+  `, driverId);
 
-  if (result.rowCount === 0) {
+  if (resultRows.length === 0) {
     // No vehicle assigned at all
     logger.debug('No vehicle assigned to driver', { driverId });
     return successResponse(null, 'No vehicle assigned to driver');
   }
 
-  const assignedVehicle = result.rows[0];
+  const assignedVehicle = resultRows[0];
 
   // Get pre-trip inspection status for today
-  const inspectionResult = await query(`
+  const inspectionRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     SELECT
       id,
       type,
@@ -121,21 +121,21 @@ export const GET = withErrorHandling(async (_request: NextRequest) => {
       AND type = 'pre_trip'
     ORDER BY created_at DESC
     LIMIT 1
-  `, [assignedVehicle.id, driverId, today]);
+  `, assignedVehicle.id, driverId, today);
 
-  const preTripInspection = inspectionResult.rows[0] || null;
+  const preTripInspection = inspectionRows[0] || null;
 
   // Get today's mileage
-  const mileageResult = await query(`
+  const mileageRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     SELECT
       COALESCE(SUM(end_mileage - start_mileage), 0) as miles_today
     FROM time_cards
     WHERE vehicle_id = $1
       AND DATE(clock_in_time) = $2
       AND end_mileage IS NOT NULL
-  `, [assignedVehicle.id, today]);
+  `, assignedVehicle.id, today);
 
-  const milesToday = mileageResult.rows[0]?.miles_today || 0;
+  const milesToday = mileageRows[0]?.miles_today || 0;
 
   // Check for any active alerts/issues
   const alerts = [];

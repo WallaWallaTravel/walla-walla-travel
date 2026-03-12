@@ -5,7 +5,7 @@ import {
   requireAuth,
   formatDateForDB
 } from '@/app/api/utils';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { logger, logApiRequest } from '@/lib/logger';
 import { z } from 'zod';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
@@ -103,7 +103,7 @@ export const POST = withCSRF(
     logger.debug('Processing CLOCK IN', { driverId });
 
     // 1. Check for ACTIVE time card only (not clocked out)
-    const activeTimeCard = await query(`
+    const activeTimeCardRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
       SELECT
         tc.*,
         v.vehicle_number,
@@ -115,10 +115,10 @@ export const POST = withCSRF(
         AND tc.clock_out_time IS NULL
       ORDER BY tc.clock_in_time DESC
       LIMIT 1
-    `, [driverId]);
+    `, driverId);
 
-    if ((activeTimeCard.rowCount ?? 0) > 0) {
-      const card = activeTimeCard.rows[0];
+    if (activeTimeCardRows.length > 0) {
+      const card = activeTimeCardRows[0];
       const clockInTime = new Date(card.clock_in_time);
 
       // Already clocked in and not clocked out
@@ -135,7 +135,7 @@ export const POST = withCSRF(
     }
 
     // 2. Check for incomplete time cards from previous days
-    const incompletePrevious = await query(`
+    const incompletePreviousRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
       SELECT
         tc.*,
         v.vehicle_number,
@@ -148,10 +148,10 @@ export const POST = withCSRF(
         AND tc.clock_out_time IS NULL
       ORDER BY tc.date DESC
       LIMIT 1
-    `, [driverId, today]);
+    `, driverId, today);
 
-    if ((incompletePrevious.rowCount ?? 0) > 0) {
-      const card = incompletePrevious.rows[0];
+    if (incompletePreviousRows.length > 0) {
+      const card = incompletePreviousRows[0];
       const cardDate = new Date(card.date);
 
       // Auto-close old time card if it's from yesterday or before
@@ -159,7 +159,7 @@ export const POST = withCSRF(
         const endOfDay = new Date(card.date);
         endOfDay.setHours(23, 59, 59, 999);
 
-        await query(`
+        await prisma.$queryRawUnsafe(`
           UPDATE time_cards
           SET
             clock_out_time = $2,
@@ -170,7 +170,7 @@ export const POST = withCSRF(
             notes = 'Auto-closed by system - incomplete time card',
             updated_at = CURRENT_TIMESTAMP
           WHERE id = $1
-        `, [card.id, endOfDay, 'SYSTEM_AUTO_CLOSE']);
+        `, card.id, endOfDay, 'SYSTEM_AUTO_CLOSE');
 
         logger.info('Auto-closed incomplete time card', { timeCardId: card.id, date: formatDate(cardDate) });
       } else {
@@ -198,7 +198,7 @@ export const POST = withCSRF(
         ? `Lat: ${body.location.latitude.toFixed(4)}, Lng: ${body.location.longitude.toFixed(4)}`
         : 'Location not provided';
 
-      const result = await query(`
+      const resultRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
         INSERT INTO time_cards (
           driver_id,
           vehicle_id,
@@ -212,24 +212,24 @@ export const POST = withCSRF(
           updated_at
         ) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, 'on_duty', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         RETURNING *
-      `, [
+      `,
         driverId,
         null, // No vehicle for non-driving shift
         today,
         workLocation,
         body.location?.latitude || null,
         body.location?.longitude || null
-      ]);
+      );
 
       logger.info('Driver clocked in for non-driving shift', {
         driverId,
-        timeCardId: result.rows[0].id,
-        clockInTime: result.rows[0].clock_in_time,
+        timeCardId: resultRows[0].id,
+        clockInTime: resultRows[0].clock_in_time,
       });
 
       return successResponse({
         status: 'success',
-        timeCard: result.rows[0],
+        timeCard: resultRows[0],
         vehicle: null,
         message: `Successfully clocked in for non-driving shift at ${formatTime(now)}`,
         reminders: [
@@ -240,7 +240,7 @@ export const POST = withCSRF(
     }
 
     // 4. Verify vehicle exists and is available
-    const vehicleCheck = await query(`
+    const vehicleCheckRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
       SELECT
         id,
         vehicle_number,
@@ -250,9 +250,9 @@ export const POST = withCSRF(
         status
       FROM vehicles
       WHERE id = $1
-    `, [body.vehicleId]);
+    `, body.vehicleId);
 
-    if (vehicleCheck.rowCount === 0) {
+    if (vehicleCheckRows.length === 0) {
       return successResponse({
         status: 'invalid_vehicle',
         message: 'Selected vehicle not found',
@@ -263,7 +263,7 @@ export const POST = withCSRF(
       }, 'Invalid vehicle');
     }
 
-    const vehicle = vehicleCheck.rows[0];
+    const vehicle = vehicleCheckRows[0];
 
     if (!vehicle.is_active) {
       return successResponse({
@@ -278,7 +278,7 @@ export const POST = withCSRF(
     }
 
     // Check if vehicle is already in use by another driver
-    const vehicleInUse = await query(`
+    const vehicleInUseRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
       SELECT
         tc.id,
         tc.driver_id,
@@ -290,10 +290,10 @@ export const POST = withCSRF(
         AND tc.clock_out_time IS NULL
         AND tc.driver_id != $2
       LIMIT 1
-    `, [body.vehicleId, driverId]);
+    `, body.vehicleId, driverId);
 
-    if ((vehicleInUse.rowCount ?? 0) > 0) {
-      const inUseInfo = vehicleInUse.rows[0];
+    if (vehicleInUseRows.length > 0) {
+      const inUseInfo = vehicleInUseRows[0];
       return successResponse({
         status: 'vehicle_in_use',
         message: `Vehicle ${vehicle.vehicle_number} is currently in use by ${inUseInfo.driver_name}`,
@@ -318,7 +318,7 @@ export const POST = withCSRF(
       longitude: body.location?.longitude || null,
     });
 
-    const result = await query(`
+    const clockInRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
       INSERT INTO time_cards (
         driver_id,
         vehicle_id,
@@ -332,25 +332,25 @@ export const POST = withCSRF(
         updated_at
       ) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, 'on_duty', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       RETURNING *
-    `, [
+    `,
       driverId,
       body.vehicleId,
       today,
       workLocation,
       body.location?.latitude || null,
       body.location?.longitude || null
-    ]);
+    );
 
     logger.info('Driver clocked in successfully', {
       driverId,
-      timeCardId: result.rows[0].id,
-      vehicleId: result.rows[0].vehicle_id,
-      clockInTime: result.rows[0].clock_in_time,
+      timeCardId: clockInRows[0].id,
+      vehicleId: clockInRows[0].vehicle_id,
+      clockInTime: clockInRows[0].clock_in_time,
     });
 
     return successResponse({
       status: 'success',
-      timeCard: result.rows[0],
+      timeCard: clockInRows[0],
       vehicle: `${vehicle.make} ${vehicle.model} (${vehicle.vehicle_number})`,
       message: `Successfully clocked in at ${formatTime(now)}`,
       reminders: [
@@ -364,7 +364,7 @@ export const POST = withCSRF(
   else {
 
     // 1. Find active time card (any day, not clocked out)
-    const activeTimeCard = await query(`
+    const activeTimeCardRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
       SELECT
         tc.*,
         v.vehicle_number,
@@ -376,9 +376,9 @@ export const POST = withCSRF(
         AND tc.clock_out_time IS NULL
       ORDER BY tc.clock_in_time DESC
       LIMIT 1
-    `, [driverId]);
+    `, driverId);
 
-    if (activeTimeCard.rowCount === 0) {
+    if (activeTimeCardRows.length === 0) {
       // No active time card - can clock in
       return successResponse({
         status: 'not_clocked_in',
@@ -403,7 +403,7 @@ export const POST = withCSRF(
     }
 
     // 3. Check for post-trip inspection (ONLY required if vehicle was used)
-    const timeCard = activeTimeCard.rows[0];
+    const timeCard = activeTimeCardRows[0];
     const timeCardId = timeCard.id;
     const vehicleId = timeCard.vehicle_id;
 
@@ -412,15 +412,15 @@ export const POST = withCSRF(
 
     if (vehicleId) {
       // Vehicle was used - post-trip inspection REQUIRED
-      const inspectionCheck = await query(`
+      const inspectionCheckRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
         SELECT id, type, status
         FROM inspections
         WHERE time_card_id = $1
           AND type = 'post_trip'
         LIMIT 1
-      `, [timeCardId]);
+      `, timeCardId);
 
-      if ((inspectionCheck.rowCount ?? 0) === 0) {
+      if (inspectionCheckRows.length === 0) {
         // BLOCK clock-out if post-trip not completed for THIS shift with vehicle
         const vehicleName = timeCard.vehicle_number
           ? `${timeCard.make} ${timeCard.model} (${timeCard.vehicle_number})`
@@ -445,11 +445,11 @@ export const POST = withCSRF(
 
     // 4. Calculate total hours using database function for absolute time
     const clockOutTime = new Date();
-    const hoursResult = await query(`
+    const hoursRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
       SELECT calculate_hos_hours($1::timestamptz, $2::timestamptz) as total_hours
-    `, [timeCard.clock_in_time, clockOutTime]);
+    `, timeCard.clock_in_time, clockOutTime);
 
-    const totalHours = parseFloat(hoursResult.rows[0].total_hours) || 0;
+    const totalHours = parseFloat(hoursRows[0].total_hours) || 0;
 
     // 5. Check for HOS violations (FMCSA regulations for passenger carriers)
     const hosWarnings = [];
@@ -461,21 +461,21 @@ export const POST = withCSRF(
     const eightDaysAgo = new Date();
     eightDaysAgo.setDate(eightDaysAgo.getDate() - 7); // 7 days ago = 8-day window including today
 
-    const weeklyHours = await query(`
+    const weeklyHoursRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
       SELECT COALESCE(SUM(on_duty_hours), 0) as total_hours
       FROM time_cards
       WHERE driver_id = $1
         AND clock_in_time >= $2::timestamptz
         AND status = 'completed'
-    `, [driverId, eightDaysAgo.toISOString()]);
+    `, driverId, eightDaysAgo.toISOString());
 
-    const currentWeekHours = (weeklyHours.rows[0]?.total_hours || 0) + totalHours;
+    const currentWeekHours = (weeklyHoursRows[0]?.total_hours || 0) + totalHours;
     if (currentWeekHours > 70) {
       hosWarnings.push(`Warning: ${currentWeekHours.toFixed(2)} weekly hours exceeds 70-hour limit`);
     }
 
     // 6. Update time card
-    const result = await query(`
+    const clockOutRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
       UPDATE time_cards
       SET
         clock_out_time = CURRENT_TIMESTAMP,
@@ -486,31 +486,31 @@ export const POST = withCSRF(
         updated_at = CURRENT_TIMESTAMP
       WHERE id = $1
       RETURNING *
-    `, [
+    `,
       timeCard.id,
       totalHours,
       body.signature.trim()
-    ]);
+    );
 
     logger.info('Driver clocked out', { driverId, totalHours: totalHours.toFixed(2) });
 
     // 7. Update weekly HOS
     try {
-      await query(`
+      await prisma.$queryRawUnsafe(`
         INSERT INTO weekly_hos (driver_id, week_start_date, total_on_duty_hours, created_at, updated_at)
         VALUES ($1, date_trunc('week', CURRENT_DATE)::date, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         ON CONFLICT (driver_id, week_start_date)
         DO UPDATE SET
           total_on_duty_hours = COALESCE(weekly_hos.total_on_duty_hours, 0) + $2,
           updated_at = CURRENT_TIMESTAMP
-      `, [driverId, totalHours]);
+      `, driverId, totalHours);
     } catch (e) {
       logger.error('Failed to update weekly HOS', { error: e });
     }
 
     return successResponse({
       status: 'success',
-      timeCard: result.rows[0],
+      timeCard: clockOutRows[0],
       message: `Successfully clocked out at ${formatTime(clockOutTime)}`,
       summary: {
         clockIn: formatTime(clockInTime),
@@ -539,7 +539,7 @@ export const GET = withErrorHandling(async (_request: NextRequest) => {
   const _today = formatDateForDB(new Date());
 
   // Get current status (check for any active time card, not just today)
-  const currentStatus = await query(`
+  const currentStatusRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     SELECT
       tc.*,
       v.vehicle_number,
@@ -553,11 +553,11 @@ export const GET = withErrorHandling(async (_request: NextRequest) => {
       AND tc.clock_out_time IS NULL
     ORDER BY tc.clock_in_time DESC
     LIMIT 1
-  `, [driverId]);
+  `, driverId);
 
-  if (currentStatus.rowCount === 0) {
+  if (currentStatusRows.length === 0) {
     // Check for completed shifts today
-    const todayShifts = await query(`
+    const todayShiftRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
       SELECT
         tc.*,
         v.vehicle_number,
@@ -570,10 +570,10 @@ export const GET = withErrorHandling(async (_request: NextRequest) => {
         AND tc.clock_out_time IS NOT NULL
       ORDER BY tc.clock_out_time DESC
       LIMIT 1
-    `, [driverId]);
+    `, driverId);
 
-    if ((todayShifts.rowCount ?? 0) > 0) {
-      const lastShift = todayShifts.rows[0];
+    if (todayShiftRows.length > 0) {
+      const lastShift = todayShiftRows[0];
       return successResponse({
         status: 'not_clocked_in',
         message: 'Ready to start your next shift',
@@ -596,7 +596,7 @@ export const GET = withErrorHandling(async (_request: NextRequest) => {
     }, 'No active time card');
   }
 
-  const timeCard = currentStatus.rows[0];
+  const timeCard = currentStatusRows[0];
   const isClocked = !timeCard.clock_out_time;
 
   if (isClocked) {
@@ -605,11 +605,11 @@ export const GET = withErrorHandling(async (_request: NextRequest) => {
     const timeDiff = (now.getTime() - clockInTime.getTime()) / (1000 * 60 * 60); // hours
 
     // Calculate hours worked using database function for accuracy
-    const hoursResult = await query(`
+    const hoursWorkedRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
       SELECT calculate_hos_hours($1::timestamptz, NOW()) as hours_worked
-    `, [timeCard.clock_in_time]);
+    `, timeCard.clock_in_time);
 
-    const hoursWorked = parseFloat(hoursResult.rows[0].hours_worked) || 0;
+    const hoursWorked = parseFloat(hoursWorkedRows[0].hours_worked) || 0;
 
     // Debug logging for troubleshooting
     logger.debug('Clock status calculation', {

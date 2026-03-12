@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getSession } from '@/lib/auth/session'
 import { PostTripInspectionClient } from './PostTripInspectionClient'
-import { query } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 import { formatDateForDB } from '@/app/api/utils'
 import { logger } from '@/lib/logger'
 
@@ -23,18 +23,18 @@ export default async function PostTripInspection() {
   let beginningMileage = 0
   try {
     const today = formatDateForDB(new Date())
-    const preTripResult = await query(`
-      SELECT start_mileage 
-      FROM inspections 
-      WHERE driver_id = $1 
+    const preTripRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
+      SELECT start_mileage
+      FROM inspections
+      WHERE driver_id = $1
         AND type = 'pre_trip'
         AND DATE(created_at) = $2
       ORDER BY created_at DESC
       LIMIT 1
-    `, [driver.id, today])
-    
-    if (preTripResult.rows.length > 0) {
-      beginningMileage = preTripResult.rows[0].start_mileage || 0
+    `, driver.id, today)
+
+    if (preTripRows.length > 0) {
+      beginningMileage = preTripRows[0].start_mileage || 0
     }
   } catch (error) {
     logger.error('Failed to fetch beginning mileage', { error })

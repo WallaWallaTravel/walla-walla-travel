@@ -4,7 +4,7 @@ import {
   errorResponse,
   requireAuth,
 } from '@/app/api/utils';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { logger, logApiRequest } from '@/lib/logger';
 import { z } from 'zod';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
@@ -49,7 +49,7 @@ export const POST = withCSRF(
   const driverId = parseInt(authResult.userId);
 
   // 1. Verify client service exists and belongs to driver
-  const serviceResult = await query(`
+  const serviceRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     SELECT
       cs.*,
       tc.clock_out_time,
@@ -58,13 +58,13 @@ export const POST = withCSRF(
     JOIN time_cards tc ON cs.time_card_id = tc.id
     LEFT JOIN vehicles v ON cs.vehicle_id = v.id
     WHERE cs.id = $1
-  `, [body.clientServiceId]);
+  `, body.clientServiceId);
 
-  if (serviceResult.rows.length === 0) {
+  if (serviceRows.length === 0) {
     return errorResponse('Client service not found', 404);
   }
 
-  const service = serviceResult.rows[0];
+  const service = serviceRows[0];
 
   // Verify service belongs to current driver
   if (service.driver_id !== driverId) {
@@ -90,7 +90,7 @@ export const POST = withCSRF(
   // Service hours = (dropoff_time - pickup_time) in hours
   // Total cost = service_hours * hourly_rate
 
-  const updateResult = await query(`
+  const updateRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     UPDATE client_services
     SET
       dropoff_time = CURRENT_TIMESTAMP,
@@ -121,21 +121,21 @@ export const POST = withCSRF(
       hourly_rate,
       total_cost,
       status
-  `, [
+  `,
     body.dropoffLocation,
     body.dropoffLat || null,
     body.dropoffLng || null,
     body.clientServiceId
-  ]);
+  );
 
-  const completedService = updateResult.rows[0];
+  const completedService = updateRows[0];
 
   // 3. Update vehicle assignment status to completed
-  await query(`
+  await prisma.$executeRawUnsafe(`
     UPDATE vehicle_assignments
     SET status = 'completed', updated_at = CURRENT_TIMESTAMP
     WHERE client_service_id = $1 AND status = 'active'
-  `, [body.clientServiceId]);
+  `, body.clientServiceId);
 
   logger.info('Client dropoff logged and service completed', {
     serviceId: completedService.id,
@@ -186,7 +186,7 @@ export const GET = withErrorHandling(async () => {
   const driverId = parseInt(authResult.userId);
 
   // Get active service with pickup completed but dropoff not logged
-  const serviceResult = await query(`
+  const serviceRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     SELECT
       cs.*,
       v.vehicle_number,
@@ -211,13 +211,13 @@ export const GET = withErrorHandling(async () => {
       AND cs.dropoff_time IS NULL
     ORDER BY cs.pickup_time DESC
     LIMIT 1
-  `, [driverId]);
+  `, driverId);
 
-  if (serviceResult.rows.length === 0) {
+  if (serviceRows.length === 0) {
     return successResponse(null, 'No service ready for dropoff');
   }
 
-  const service = serviceResult.rows[0];
+  const service = serviceRows[0];
 
   return successResponse({
     service,

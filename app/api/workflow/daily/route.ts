@@ -5,7 +5,7 @@ import {
   logApiRequest,
   formatDateForDB
 } from '@/app/api/utils';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 
 export const GET = withErrorHandling(async (_request: NextRequest) => {
@@ -18,7 +18,7 @@ export const GET = withErrorHandling(async (_request: NextRequest) => {
   const today = formatDateForDB(new Date());
 
   // Get today's time card (Pacific Time)
-  const timeCardResult = await query(`
+  const timeCardRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     SELECT
       tc.*,
       v.vehicle_number,
@@ -32,9 +32,9 @@ export const GET = withErrorHandling(async (_request: NextRequest) => {
       AND DATE(tc.clock_in_time AT TIME ZONE 'America/Los_Angeles') = DATE(NOW() AT TIME ZONE 'America/Los_Angeles')
     ORDER BY tc.clock_in_time DESC
     LIMIT 1
-  `, [driverId]);
+  `, driverId);
 
-  const timeCard = timeCardResult.rows[0] || null;
+  const timeCard = timeCardRows[0] || null;
 
   // Determine workflow status
   let status = 'not_started';
@@ -48,7 +48,7 @@ export const GET = withErrorHandling(async (_request: NextRequest) => {
   }
 
   // Get hours of service compliance data (8-day rolling window)
-  const hosResult = await query(`
+  const hosRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     SELECT
       COALESCE(SUM(
         CASE
@@ -70,9 +70,9 @@ export const GET = withErrorHandling(async (_request: NextRequest) => {
     FROM time_cards
     WHERE driver_id = $1
       AND clock_in_time >= NOW() - INTERVAL '7 days'
-  `, [driverId]);
+  `, driverId);
 
-  const hos = hosResult.rows[0] || {
+  const hos = hosRows[0] || {
     daily_on_duty: 0,
     weekly_hours: 0,
     consecutive_days: 0,
@@ -80,7 +80,7 @@ export const GET = withErrorHandling(async (_request: NextRequest) => {
 
   // Add driving hours from time cards (using on_duty_hours as driving time for now)
   // In a real system, this would track actual driving vs on-duty time separately
-  const drivingResult = await query(`
+  const drivingRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     SELECT
       COALESCE(SUM(
         CASE
@@ -92,15 +92,15 @@ export const GET = withErrorHandling(async (_request: NextRequest) => {
     FROM time_cards
     WHERE driver_id = $1
       AND clock_in_time >= NOW() - INTERVAL '7 days'
-  `, [driverId]);
+  `, driverId);
 
-  hos.daily_driving = drivingResult.rows[0]?.daily_driving || 0;
+  hos.daily_driving = drivingRows[0]?.daily_driving || 0;
 
   // Get today's breaks (table doesn't exist yet)
   const breaks: { id: number; break_start: string; break_end: string | null; break_type: string }[] = [];
 
   // Get today's scheduled routes
-  const routesResult = await query(`
+  const routesRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     SELECT
       r.id,
       r.route_name,
@@ -114,16 +114,16 @@ export const GET = withErrorHandling(async (_request: NextRequest) => {
     WHERE r.driver_id = $1
       AND r.route_date = $2
     ORDER BY r.start_time
-  `, [driverId, today]);
+  `, driverId, today);
 
   // Get 150-mile exemption status
-  const exemptionResult = await query(`
+  const exemptionRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     SELECT * FROM monthly_exemption_status
     WHERE driver_id = $1
       AND month = date_trunc('month', $2::date)
-  `, [driverId, today]);
+  `, driverId, today);
 
-  const exemptionStatus = exemptionResult.rows[0] || {
+  const exemptionStatus = exemptionRows[0] || {
     days_used: 0,
     days_available: 8,
     is_eligible: true,
@@ -135,7 +135,7 @@ export const GET = withErrorHandling(async (_request: NextRequest) => {
     status,
     timeCard,
     breaks,
-    routes: routesResult.rows,
+    routes: routesRows,
     hos: {
       daily_driving: parseFloat(hos.daily_driving.toFixed(2)),
       daily_on_duty: parseFloat(hos.daily_on_duty.toFixed(2)),

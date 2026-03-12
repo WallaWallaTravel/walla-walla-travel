@@ -5,7 +5,7 @@ import {
   logApiRequest,
   formatDateForDB
 } from '@/app/api/utils';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 
 export const GET = withErrorHandling(async (request: NextRequest) => {
@@ -27,7 +27,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   // - 150-mile exemption (8 times per month)
 
   // Get daily hours
-  const dailyHoursResult = await query(`
+  const dailyHoursRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     SELECT
       COALESCE(SUM(
         CASE
@@ -46,23 +46,23 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     FROM time_cards
     WHERE driver_id = $1
       AND DATE(clock_in_time) = $2
-  `, [driverId, date]);
+  `, driverId, date);
 
-  const dailyHours = dailyHoursResult.rows[0];
+  const dailyHours = dailyHoursRows[0];
 
   // Get driving hours from daily trips
-  const drivingHoursResult = await query(`
+  const drivingHoursRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     SELECT
       COALESCE(SUM(total_miles / 40.0), 0) as driving_hours,
       COALESCE(SUM(total_miles), 0) as total_miles
     FROM daily_trips
     WHERE driver_id = $1 AND trip_date = $2
-  `, [driverId, date]);
+  `, driverId, date);
 
-  const drivingData = drivingHoursResult.rows[0];
+  const drivingData = drivingHoursRows[0];
 
   // Get 7-day and 8-day totals
-  const weeklyHoursResult = await query(`
+  const weeklyHoursRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     SELECT
       COALESCE(SUM(
         EXTRACT(EPOCH FROM (COALESCE(clock_out_time, CURRENT_TIMESTAMP) - clock_in_time)) / 3600
@@ -77,22 +77,22 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     FROM time_cards
     WHERE driver_id = $1
       AND clock_in_time >= CURRENT_DATE - INTERVAL '7 days'
-  `, [driverId]);
+  `, driverId);
 
-  const weeklyHours = weeklyHoursResult.rows[0];
+  const weeklyHours = weeklyHoursRows[0];
 
   // Get consecutive days worked
-  const consecutiveDaysResult = await query(`
+  const consecutiveDaysRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     SELECT COUNT(DISTINCT DATE(clock_in_time)) as consecutive_days
     FROM time_cards
     WHERE driver_id = $1
       AND clock_in_time >= CURRENT_DATE - INTERVAL '7 days'
-  `, [driverId]);
+  `, driverId);
 
-  const consecutiveDays = consecutiveDaysResult.rows[0].consecutive_days;
+  const consecutiveDays = consecutiveDaysRows[0].consecutive_days;
 
   // Check 150-mile exemption eligibility and usage
-  const exemptionResult = await query(`
+  const exemptionRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     SELECT
       mes.*,
       (
@@ -106,9 +106,9 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     FROM monthly_exemption_status mes
     WHERE mes.driver_id = $1
       AND mes.month = date_trunc('month', $2::date)
-  `, [driverId, date]);
+  `, driverId, date);
 
-  const exemption = exemptionResult.rows[0] || {
+  const exemption = exemptionRows[0] || {
     days_used: 0,
     days_available: 8,
     is_eligible: true,

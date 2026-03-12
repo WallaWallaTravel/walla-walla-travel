@@ -6,7 +6,7 @@ import {
   formatDateForDB,
   generateId
 } from '@/app/api/utils';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 
@@ -56,7 +56,7 @@ export const POST = withCSRF(
   const dvirId = `dvir-${generateId()}`;
 
   // Create DVIR record - try dedicated table first, then fallback to inspections
-  let result = await query(`
+  let rows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     INSERT INTO dvir_reports (
       id, driver_id, vehicle_id, report_date,
       pre_trip_inspection_id, post_trip_inspection_id,
@@ -64,7 +64,7 @@ export const POST = withCSRF(
       driver_signature, created_at
     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP)
     RETURNING *
-  `, [
+  `,
     dvirId,
     parseInt(session.userId),
     body.vehicleId,
@@ -74,15 +74,15 @@ export const POST = withCSRF(
     body.defects.length > 0,
     body.defects.length > 0 ? JSON.stringify(body.defects) : null,
     body.signature
-  ]).catch(async (error: Error) => {
+  ).catch(async (error: Error) => {
     // If DVIR table doesn't exist, store as inspection
     if (error.message.includes('dvir_reports')) {
-      return query(`
+      return prisma.$queryRawUnsafe<Record<string, any>[]>(`
         INSERT INTO inspections (
           driver_id, vehicle_id, type, inspection_data, status
         ) VALUES ($1, $2, 'dvir', $3, $4)
         RETURNING *
-      `, [
+      `,
         parseInt(session.userId),
         body.vehicleId,
         JSON.stringify({
@@ -93,19 +93,19 @@ export const POST = withCSRF(
           postTripInspectionId: body.postTripInspectionId
         }),
         body.defects.length > 0 ? 'requires_attention' : 'completed'
-      ]);
+      );
     }
     throw error;
   });
 
   // If no rows returned from primary insert, try fallback
-  if (result.rowCount === 0) {
-    result = await query(`
+  if (rows.length === 0) {
+    rows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
       INSERT INTO inspections (
         driver_id, vehicle_id, type, inspection_data, status
       ) VALUES ($1, $2, 'dvir', $3, $4)
       RETURNING *
-    `, [
+    `,
       parseInt(session.userId),
       body.vehicleId,
       JSON.stringify({
@@ -116,12 +116,12 @@ export const POST = withCSRF(
         postTripInspectionId: body.postTripInspectionId
       }),
       body.defects.length > 0 ? 'requires_attention' : 'completed'
-    ]);
+    );
   }
 
   return NextResponse.json({
     success: true,
-    data: result.rows[0],
+    data: rows[0],
     message: 'DVIR created successfully'
   });
 })
@@ -142,33 +142,33 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 
   if (!dvirId) {
     // Get recent DVIRs
-    const result = await query(`
+    const dvirRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
       SELECT * FROM inspections
       WHERE driver_id = $1 AND type = 'dvir'
       ORDER BY created_at DESC
       LIMIT 10
-    `, [parseInt(session.userId)]);
+    `, parseInt(session.userId));
 
     return NextResponse.json({
       success: true,
-      data: result.rows,
+      data: dvirRows,
       message: 'DVIRs retrieved'
     });
   }
 
   // Get specific DVIR
-  const result = await query(`
+  const dvirRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     SELECT * FROM inspections
     WHERE id = $1 AND driver_id = $2 AND type = 'dvir'
-  `, [dvirId, parseInt(session.userId)]);
+  `, dvirId, parseInt(session.userId));
 
-  if (result.rows.length === 0) {
+  if (dvirRows.length === 0) {
     throw new NotFoundError('DVIR not found');
   }
 
   return NextResponse.json({
     success: true,
-    data: result.rows[0],
+    data: dvirRows[0],
     message: 'DVIR retrieved'
   });
 });

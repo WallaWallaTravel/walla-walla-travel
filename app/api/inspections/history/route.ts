@@ -6,7 +6,7 @@ import {
   getPaginationParams,
   buildPaginationMeta
 } from '@/app/api/utils';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 
 /**
  * GET /api/inspections/history
@@ -53,13 +53,13 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   }
 
   // Get total count for pagination
-  const countResult = await query(`
+  const countRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     SELECT COUNT(*) as total
     FROM inspections i
     WHERE ${whereConditions.join(' AND ')}
-  `, queryParams);
+  `, ...queryParams);
 
-  const total = parseInt(countResult.rows[0].total);
+  const total = parseInt(countRows[0].total);
 
   // Add pagination params
   paramCount++;
@@ -68,7 +68,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   queryParams.push(pagination.offset);
 
   // Get inspections with vehicle details
-  const result = await query(`
+  const inspectionRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     SELECT
       i.id,
       i.type,
@@ -87,7 +87,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     WHERE ${whereConditions.join(' AND ')}
     ORDER BY i.created_at DESC
     LIMIT $${paramCount - 1} OFFSET $${paramCount}
-  `, queryParams);
+  `, ...queryParams);
 
   // Format the response with pagination metadata
   const paginationMeta = buildPaginationMeta(pagination, total);
@@ -95,7 +95,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   return NextResponse.json({
     success: true,
     data: {
-      inspections: result.rows,
+      inspections: inspectionRows,
       pagination: paginationMeta,
     },
     message: 'Inspection history retrieved'

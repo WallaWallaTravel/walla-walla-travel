@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { withErrorHandling, UnauthorizedError } from '@/lib/api/middleware/error-handler';
 import { withAuth, AuthSession } from '@/lib/api/middleware/auth-wrapper';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 
 const BodySchema = z.object({
@@ -36,7 +36,7 @@ export const POST = withCSRF(
     }
 
     // Save inspection to database using correct column names
-    const result = await query(
+    const resultRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
       `INSERT INTO inspections (
         vehicle_id,
         driver_id,
@@ -48,20 +48,18 @@ export const POST = withCSRF(
         updated_at
       ) VALUES ($1, $2, $3, $4, $5, 'completed', NOW(), NOW())
       RETURNING id, created_at`,
-      [
-        vehicleId,
-        userId,
-        type || 'pre_trip',
-        startMileage || 0,
-        JSON.stringify({
-          items: inspectionData?.items || {},
-          notes: inspectionData?.notes || '',
-          signature: inspectionData?.signature ? 'captured' : null
-        })
-      ]
+      vehicleId,
+      userId,
+      type || 'pre_trip',
+      startMileage || 0,
+      JSON.stringify({
+        items: inspectionData?.items || {},
+        notes: inspectionData?.notes || '',
+        signature: inspectionData?.signature ? 'captured' : null
+      })
     );
 
-    const inspection = result.rows[0];
+    const inspection = resultRows[0];
 
     return NextResponse.json({
       success: true,

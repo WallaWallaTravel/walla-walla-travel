@@ -7,8 +7,7 @@ import {
   validateRequiredFields,
   logApiRequest
 } from '@/app/api/utils';
-import { query } from '@/lib/db';
-import { withTransaction } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 
@@ -69,9 +68,9 @@ export const PUT = withCSRF(
   const driverId = parseInt(session.userId);
 
   // Use transaction for consistency
-  const result = await withTransaction(async (client) => {
+  const result = await prisma.$transaction(async (tx) => {
     // Get current vehicle data
-    const vehicleResult = await client.query(`
+    const vehicleRows = await tx.$queryRawUnsafe<Record<string, any>[]>(`
       SELECT
         id,
         vehicle_number,
@@ -80,13 +79,13 @@ export const PUT = withCSRF(
         is_active
       FROM vehicles
       WHERE id = $1
-    `, [vehicleId]);
+    `, vehicleId);
 
-    if (vehicleResult.rowCount === 0) {
+    if (vehicleRows.length === 0) {
       throw new NotFoundError('Vehicle not found');
     }
 
-    const vehicle = vehicleResult.rows[0];
+    const vehicle = vehicleRows[0];
 
     if (!vehicle.is_active) {
       throw new BadRequestError('Cannot update odometer for inactive vehicle');
@@ -99,7 +98,7 @@ export const PUT = withCSRF(
 
     // Update vehicle mileage and optionally fuel level
     const updateFields = ['current_mileage = $2', 'updated_at = CURRENT_TIMESTAMP'];
-    const updateParams = [vehicleId, newMileage];
+    const updateParams: any[] = [vehicleId, newMileage];
     let paramCount = 2;
 
     if (body.fuel_level !== undefined) {
@@ -108,17 +107,17 @@ export const PUT = withCSRF(
       updateParams.push(body.fuel_level);
     }
 
-    const updateResult = await client.query(`
+    const updateRows = await tx.$queryRawUnsafe<Record<string, any>[]>(`
       UPDATE vehicles
       SET ${updateFields.join(', ')}
       WHERE id = $1
       RETURNING *
-    `, updateParams);
+    `, ...updateParams);
 
-    const updatedVehicle = updateResult.rows[0];
+    const updatedVehicle = updateRows[0];
 
     // Log mileage change
-    await client.query(`
+    await tx.$queryRawUnsafe(`
       INSERT INTO mileage_logs (
         vehicle_id,
         recorded_date,
@@ -128,17 +127,17 @@ export const PUT = withCSRF(
         recorded_by,
         notes
       ) VALUES ($1, CURRENT_TIMESTAMP, $2, $3, $4, $5, $6)
-    `, [
+    `,
       vehicleId,
       newMileage,
       vehicle.current_mileage,
       newMileage - vehicle.current_mileage,
       driverId,
       body.notes || null,
-    ]);
+    );
 
     // Update time card if this is an end-of-day reading
-    await client.query(`
+    await tx.$queryRawUnsafe(`
       UPDATE time_cards
       SET end_mileage = $2
       WHERE vehicle_id = $1
@@ -146,10 +145,10 @@ export const PUT = withCSRF(
         AND DATE(clock_in_time) = CURRENT_DATE
         AND clock_out_time IS NOT NULL
         AND end_mileage IS NULL
-    `, [vehicleId, newMileage, driverId]);
+    `, vehicleId, newMileage, driverId);
 
     // Update daily trip mileage
-    await client.query(`
+    await tx.$queryRawUnsafe(`
       UPDATE daily_trips
       SET
         end_mileage = $2,
@@ -158,7 +157,7 @@ export const PUT = withCSRF(
         AND driver_id = $3
         AND trip_date = CURRENT_DATE
         AND end_mileage IS NULL
-    `, [vehicleId, newMileage, driverId]);
+    `, vehicleId, newMileage, driverId);
 
     return updatedVehicle;
   });
@@ -169,7 +168,7 @@ export const PUT = withCSRF(
 
   // Create service alert if needed
   if (serviceRequired) {
-    await query(`
+    await prisma.$queryRawUnsafe(`
       INSERT INTO vehicle_alerts (
         vehicle_id,
         alert_type,
@@ -181,11 +180,11 @@ export const PUT = withCSRF(
       DO UPDATE SET
         message = EXCLUDED.message,
         updated_at = CURRENT_TIMESTAMP
-    `, [
+    `,
       vehicleId,
       `Service required - ${Math.abs(milesUntilService ?? 0)} miles overdue`,
       driverId,
-    ]);
+    );
   }
 
   // Format response
@@ -231,7 +230,7 @@ export const GET = withErrorHandling(async (
   }
 
   // Get current odometer reading
-  const vehicleResult = await query(`
+  const vehicleRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     SELECT
       id,
       vehicle_number,
@@ -241,16 +240,16 @@ export const GET = withErrorHandling(async (
       updated_at
     FROM vehicles
     WHERE id = $1
-  `, [vehicleId]);
+  `, vehicleId);
 
-  if (vehicleResult.rowCount === 0) {
+  if (vehicleRows.length === 0) {
     throw new NotFoundError('Vehicle not found');
   }
 
-  const vehicle = vehicleResult.rows[0];
+  const vehicle = vehicleRows[0];
 
   // Get recent mileage history
-  const historyResult = await query(`
+  const historyRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     SELECT
       ml.recorded_date,
       ml.mileage,
@@ -263,7 +262,7 @@ export const GET = withErrorHandling(async (
     WHERE ml.vehicle_id = $1
     ORDER BY ml.recorded_date DESC
     LIMIT 20
-  `, [vehicleId]);
+  `, vehicleId);
 
   // Calculate service status
   const serviceRequired = vehicle.next_service_due && vehicle.current_mileage >= vehicle.next_service_due;
@@ -278,7 +277,7 @@ export const GET = withErrorHandling(async (
       service_required: serviceRequired,
       miles_until_service: milesUntilService,
     },
-    history: historyResult.rows,
+    history: historyRows,
   };
 
   return successResponse(responseData, 'Odometer data retrieved successfully');
