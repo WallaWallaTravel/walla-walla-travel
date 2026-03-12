@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth/session';
-import { pool } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { withErrorHandling, UnauthorizedError, ForbiddenError } from '@/lib/api/middleware/error-handler';
 
 export const GET = withErrorHandling(async () => {
@@ -15,40 +15,38 @@ export const GET = withErrorHandling(async () => {
   }
 
   // Get the winery associated with this user's email
-  const wineryResult = await pool.query(
+  const wineryRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
     `SELECT * FROM wineries WHERE email = $1 LIMIT 1`,
-    [session.user.email]
+    session.user.email
   );
 
-  const wineryData = wineryResult.rows[0] || null;
+  const wineryData = wineryRows[0] || null;
   const wineryId = wineryData?.id;
 
   // Get narrative content (if winery exists)
   let narrativeContent: Array<{ content_type: string; content: string }> = [];
   if (wineryId) {
-    const contentResult = await pool.query(
+    narrativeContent = await prisma.$queryRawUnsafe<Array<{ content_type: string; content: string }>>(
       `SELECT content_type, content FROM winery_content
        WHERE winery_id = $1`,
-      [wineryId]
+      wineryId
     );
-    narrativeContent = contentResult.rows;
   }
 
   // Get insider tips (if winery exists)
   let insiderTips: Array<{ tip_type: string; title: string; content: string }> = [];
   if (wineryId) {
-    const tipsResult = await pool.query(
+    insiderTips = await prisma.$queryRawUnsafe<Array<{ tip_type: string; title: string; content: string }>>(
       `SELECT tip_type, title, content FROM winery_insider_tips
        WHERE winery_id = $1`,
-      [wineryId]
+      wineryId
     );
-    insiderTips = tipsResult.rows;
   }
 
   // Get photos (if winery exists)
   const photos: Record<string, Array<{ id: number; url: string; alt_text: string | null }>> = {};
   if (wineryId) {
-    const photosResult = await pool.query(
+    const photosRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
       `SELECT
         wm.id,
         wm.section as category,
@@ -61,11 +59,11 @@ export const GET = withErrorHandling(async () => {
          AND ml.file_type = 'image'
          AND ml.is_active = true
        ORDER BY wm.section, wm.display_order`,
-      [wineryId]
+      wineryId
     );
 
     // Group by category
-    for (const row of photosResult.rows) {
+    for (const row of photosRows) {
       const category = row.category || 'gallery';
       if (!photos[category]) {
         photos[category] = [];

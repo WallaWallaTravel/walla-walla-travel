@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
@@ -69,22 +69,20 @@ export const POST = withCSRF(
       // Insert into database
       // Columns match migration 059: email, phone, invite_token (not contact_email, contact_phone, unique_code)
       const businessTypes = business.business_types || [business.business_type];
-      const result = await query(
+      const result = await prisma.$queryRawUnsafe(
         `INSERT INTO businesses
           (name, business_type, business_types, email, phone, invite_token, status, invited_at)
         VALUES ($1, $2, $3::TEXT[], $4, $5, $6, 'invited', NOW())
         RETURNING id, invite_token`,
-        [
-          business.name,
-          businessTypes[0],
-          businessTypes,
-          business.contact_email,
-          business.contact_phone || null,
-          invite_token
-        ]
-      );
+        business.name,
+        businessTypes[0],
+        businessTypes,
+        business.contact_email,
+        business.contact_phone || null,
+        invite_token
+      ) as Record<string, any>[];
 
-      const newBusiness = result.rows[0];
+      const newBusiness = result[0];
 
       // TODO: Send email with invite token
       // await sendInviteEmail(business.contact_email, business.name, invite_token);

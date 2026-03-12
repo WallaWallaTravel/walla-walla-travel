@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { query } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError } from '@/lib/api/middleware/error-handler'
 import { withCSRF } from '@/lib/api/middleware/csrf'
@@ -45,13 +45,13 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const active_only = searchParams.get('active_only') !== 'false'
 
   // Check if the featured_photo_override_id column exists
-  const columnCheck = await query(
+  const columnCheckRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
     `SELECT EXISTS (
       SELECT 1 FROM information_schema.columns
       WHERE table_name = 'wineries' AND column_name = 'featured_photo_override_id'
     ) as exists`
   )
-  const hasOverrideColumn = columnCheck.rows[0]?.exists ?? false
+  const hasOverrideColumn = columnCheckRows[0]?.exists ?? false
 
   const overrideColumnSelect = hasOverrideColumn ? 'featured_photo_override_id,' : 'NULL::integer as featured_photo_override_id,'
 
@@ -95,11 +95,11 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
 
   queryText += ` ORDER BY is_featured DESC, is_verified DESC, name ASC`
 
-  const result = await query(queryText, params)
+  const wineryRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(queryText, ...params)
 
   return NextResponse.json({
-    wineries: result.rows,
-    total: result.rows.length
+    wineries: wineryRows,
+    total: wineryRows.length
   })
 })
 
@@ -147,7 +147,7 @@ export const POST = withCSRF(
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '')
 
-  const result = await query(`
+  const insertRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     INSERT INTO wineries (
       name, slug, city, state, ava,
       address_line1, address_line2, zip, latitude, longitude,
@@ -164,7 +164,7 @@ export const POST = withCSRF(
       $19, $20, $21, $22, $23, $24, $25, $26,
       NOW(), NOW()
     ) RETURNING *
-  `, [
+  `,
     name,
     winerySlug,
     city || 'Walla Walla',
@@ -191,9 +191,9 @@ export const POST = withCSRF(
     founded_year || null,
     annual_production_cases || null,
     vineyard_acres || null
-  ]).catch((error) => {
+  ).catch((error: any) => {
     // Check for unique constraint violation
-    if (error.code === '23505') {
+    if (error.code === '23505' || error.code === 'P2002') {
       throw new BadRequestError('A winery with this slug already exists')
     }
     throw error
@@ -203,7 +203,7 @@ export const POST = withCSRF(
 
   return NextResponse.json({
     success: true,
-    winery: result.rows[0]
+    winery: insertRows[0]
   })
 })
 )

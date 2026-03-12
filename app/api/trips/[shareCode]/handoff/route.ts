@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, NotFoundError, RouteContext } from '@/lib/api/middleware/error-handler';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { requestHandoffSchema } from '@/lib/validation/schemas/trip';
 import { sendConsultationRequestNotification, sendConsultationConfirmationToCustomer } from '@/lib/email';
 import { logger } from '@/lib/logger';
@@ -23,19 +23,19 @@ export const POST = withCSRF(
     const validated = requestHandoffSchema.parse(body);
 
     // Get trip with full details for notification
-    const tripResult = await query(
+    const tripRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
       `SELECT t.id, t.title, t.owner_name, t.owner_email, t.owner_phone, t.status,
               t.trip_type, t.start_date, t.end_date, t.expected_guests, t.share_code,
               (SELECT COUNT(*) FROM trip_stops WHERE trip_id = t.id AND stop_type = 'winery') as winery_count
        FROM trips t WHERE t.share_code = $1`,
-      [shareCode]
+      shareCode
     );
 
-    if (tripResult.rows.length === 0) {
+    if (tripRows.length === 0) {
       throw new NotFoundError('Trip not found');
     }
 
-    const trip = tripResult.rows[0];
+    const trip = tripRows[0];
 
     // Check if already handed off
     if (trip.status === 'handed_off' || trip.status === 'booked') {
@@ -46,7 +46,7 @@ export const POST = withCSRF(
     }
 
     // Update trip status to handed_off
-    const updateResult = await query(
+    const updateRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
       `UPDATE trips
        SET status = 'handed_off',
            handoff_requested_at = NOW(),
@@ -54,23 +54,21 @@ export const POST = withCSRF(
            last_activity_at = NOW()
        WHERE id = $1
        RETURNING *`,
-      [trip.id, validated.notes || null]
+      trip.id, validated.notes || null
     );
 
-    const updatedTrip = updateResult.rows[0];
+    const updatedTrip = updateRows[0];
 
     // Log activity
-    await query(
+    await prisma.$executeRawUnsafe(
       `INSERT INTO trip_activity_log (trip_id, activity_type, description, actor_name, metadata)
        VALUES ($1, 'handoff_requested', 'Requested handoff to Walla Walla Travel planning team', $2, $3)`,
-      [
-        trip.id,
-        trip.owner_name || 'Anonymous',
-        JSON.stringify({
-          notes: validated.notes || null,
-          owner_email: trip.owner_email,
-        }),
-      ]
+      trip.id,
+      trip.owner_name || 'Anonymous',
+      JSON.stringify({
+        notes: validated.notes || null,
+        owner_email: trip.owner_email,
+      }),
     );
 
     // Send notification emails (don't block on failure)

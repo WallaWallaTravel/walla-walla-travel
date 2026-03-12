@@ -13,7 +13,7 @@
  * @module lib/services/admin-reminder.service
  */
 
-import { query, queryOne } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 
 // ---------------------------------------------------------------------------
@@ -46,22 +46,24 @@ interface AdminReminder {
  */
 async function onSkipDepositEnabled(proposalId: number): Promise<void> {
   try {
-    const proposal = await queryOne(
+    const proposals = await prisma.$queryRawUnsafe<Record<string, any>[]>(
       `SELECT id, start_date, customer_name, proposal_number
        FROM trip_proposals WHERE id = $1`,
-      [proposalId]
+      proposalId
     );
+    const proposal = proposals[0];
     if (!proposal) return;
 
     // Check for existing deferred-deposit reminder to avoid duplicates
-    const existing = await queryOne(
+    const existingRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
       `SELECT id FROM admin_reminders
        WHERE trip_proposal_id = $1
          AND title LIKE '%Deferred Deposit%'
          AND status IN ('pending', 'snoozed')
        LIMIT 1`,
-      [proposalId]
+      proposalId
     );
+    const existing = existingRows[0];
 
     if (existing) return; // Already has one
 
@@ -82,17 +84,15 @@ async function onSkipDepositEnabled(proposalId: number): Promise<void> {
       reminderDate = d.toISOString().split('T')[0];
     }
 
-    await query(
+    await prisma.$queryRawUnsafe(
       `INSERT INTO admin_reminders (
         trip_proposal_id, trigger_type, days_before_trip, reminder_date,
         title, description, status
       ) VALUES ($1, 'time_based', 60, $2, $3, $4, 'pending')`,
-      [
-        proposalId,
-        reminderDate,
-        `Deferred Deposit: ${proposal.proposal_number}`,
-        `The deposit for ${proposal.customer_name} (${proposal.proposal_number}) was deferred. Follow up to collect.`,
-      ]
+      proposalId,
+      reminderDate,
+      `Deferred Deposit: ${proposal.proposal_number}`,
+      `The deposit for ${proposal.customer_name} (${proposal.proposal_number}) was deferred. Follow up to collect.`
     );
 
     logger.info('Created deferred deposit admin reminder', { proposalId, reminderDate });
@@ -106,13 +106,13 @@ async function onSkipDepositEnabled(proposalId: number): Promise<void> {
  */
 async function onSkipDepositDisabled(proposalId: number): Promise<void> {
   try {
-    await query(
+    await prisma.$queryRawUnsafe(
       `UPDATE admin_reminders
        SET status = 'dismissed', dismissed_at = NOW(), updated_at = NOW()
        WHERE trip_proposal_id = $1
          AND title LIKE '%Deferred Deposit%'
          AND status IN ('pending', 'snoozed')`,
-      [proposalId]
+      proposalId
     );
   } catch (error) {
     logger.error('Failed to dismiss deferred deposit reminder', { proposalId, error });
@@ -128,30 +128,30 @@ async function onSkipDepositDisabled(proposalId: number): Promise<void> {
  */
 async function onPlanningPhaseChange(proposalId: number, newPhase: string): Promise<void> {
   try {
-    const milestoneReminders = await query(
+    const milestoneReminders = await prisma.$queryRawUnsafe<Record<string, any>[]>(
       `SELECT id FROM admin_reminders
        WHERE trip_proposal_id = $1
          AND trigger_type = 'milestone'
          AND trigger_milestone = $2
          AND status = 'pending'`,
-      [proposalId, newPhase]
+      proposalId, newPhase
     );
 
-    if (milestoneReminders.rows.length > 0) {
-      await query(
+    if (milestoneReminders.length > 0) {
+      await prisma.$queryRawUnsafe(
         `UPDATE admin_reminders
          SET status = 'triggered', triggered_at = NOW(), updated_at = NOW()
          WHERE trip_proposal_id = $1
            AND trigger_type = 'milestone'
            AND trigger_milestone = $2
            AND status = 'pending'`,
-        [proposalId, newPhase]
+        proposalId, newPhase
       );
 
       logger.info('Triggered milestone admin reminders', {
         proposalId,
         milestone: newPhase,
-        count: milestoneReminders.rows.length,
+        count: milestoneReminders.length,
       });
     }
   } catch (error) {
@@ -171,20 +171,20 @@ async function processTimeBased(): Promise<{ triggered: number }> {
   const today = new Date().toISOString().split('T')[0];
 
   // D fix: Simplified WHERE — removed redundant status checks inside OR branches
-  const result = await query(
+  const result = await prisma.$queryRawUnsafe<Record<string, any>[]>(
     `UPDATE admin_reminders
      SET status = 'triggered', triggered_at = NOW(), updated_at = NOW()
      WHERE (status = 'pending' AND reminder_date IS NOT NULL AND reminder_date <= $1)
         OR (status = 'snoozed' AND snoozed_until IS NOT NULL AND snoozed_until <= $1)
      RETURNING id`,
-    [today]
+    today
   );
 
-  if (result.rows.length > 0) {
-    logger.info('Triggered time-based admin reminders', { count: result.rows.length });
+  if (result.length > 0) {
+    logger.info('Triggered time-based admin reminders', { count: result.length });
   }
 
-  return { triggered: result.rows.length };
+  return { triggered: result.length };
 }
 
 // ---------------------------------------------------------------------------
@@ -195,11 +195,11 @@ async function processTimeBased(): Promise<{ triggered: number }> {
  * Dismiss a reminder (mark as handled)
  */
 async function dismissReminder(reminderId: number): Promise<void> {
-  await query(
+  await prisma.$queryRawUnsafe(
     `UPDATE admin_reminders
      SET status = 'dismissed', dismissed_at = NOW(), updated_at = NOW()
      WHERE id = $1`,
-    [reminderId]
+    reminderId
   );
 }
 
@@ -215,11 +215,11 @@ async function snoozeReminder(reminderId: number, days: number): Promise<void> {
   const snoozeUntil = new Date();
   snoozeUntil.setDate(snoozeUntil.getDate() + days);
 
-  await query(
+  await prisma.$queryRawUnsafe(
     `UPDATE admin_reminders
      SET status = 'snoozed', snoozed_until = $2, updated_at = NOW()
      WHERE id = $1`,
-    [reminderId, snoozeUntil.toISOString().split('T')[0]]
+    reminderId, snoozeUntil.toISOString().split('T')[0]
   );
 }
 
@@ -232,19 +232,19 @@ async function createManualReminder(
   description: string,
   reminderDate: string
 ): Promise<{ id: number }> {
-  const result = await queryOne<{ id: number }>(
+  const rows = await prisma.$queryRawUnsafe<{ id: number }[]>(
     `INSERT INTO admin_reminders (
       trip_proposal_id, trigger_type, reminder_date, title, description, status
     ) VALUES ($1, 'manual', $2, $3, $4, 'pending')
     RETURNING id`,
-    [proposalId, reminderDate, title, description]
+    proposalId, reminderDate, title, description
   );
 
-  if (!result) {
+  if (rows.length === 0) {
     throw new Error('Failed to create admin reminder');
   }
 
-  return result;
+  return rows[0];
 }
 
 /**
@@ -256,19 +256,19 @@ async function createMilestoneReminder(
   title: string,
   description: string
 ): Promise<{ id: number }> {
-  const result = await queryOne<{ id: number }>(
+  const rows = await prisma.$queryRawUnsafe<{ id: number }[]>(
     `INSERT INTO admin_reminders (
       trip_proposal_id, trigger_type, trigger_milestone, title, description, status
     ) VALUES ($1, 'milestone', $2, $3, $4, 'pending')
     RETURNING id`,
-    [proposalId, milestone, title, description]
+    proposalId, milestone, title, description
   );
 
-  if (!result) {
+  if (rows.length === 0) {
     throw new Error('Failed to create milestone reminder');
   }
 
-  return result;
+  return rows[0];
 }
 
 // ---------------------------------------------------------------------------
@@ -279,15 +279,15 @@ async function createMilestoneReminder(
  * Get all admin reminders for a proposal
  */
 async function getReminders(proposalId: number): Promise<AdminReminder[]> {
-  const result = await query<AdminReminder>(
+  const rows = await prisma.$queryRawUnsafe<AdminReminder[]>(
     `SELECT * FROM admin_reminders
      WHERE trip_proposal_id = $1
      ORDER BY
        CASE status WHEN 'triggered' THEN 0 WHEN 'pending' THEN 1 WHEN 'snoozed' THEN 2 ELSE 3 END,
        reminder_date ASC NULLS LAST`,
-    [proposalId]
+    proposalId
   );
-  return result.rows;
+  return rows;
 }
 
 /**
@@ -295,15 +295,14 @@ async function getReminders(proposalId: number): Promise<AdminReminder[]> {
  * Used for the admin dashboard widget.
  */
 async function getTriggeredReminders(): Promise<(AdminReminder & { proposal_number: string; customer_name: string })[]> {
-  const result = await query<AdminReminder & { proposal_number: string; customer_name: string }>(
+  const rows = await prisma.$queryRawUnsafe<(AdminReminder & { proposal_number: string; customer_name: string })[]>(
     `SELECT ar.*, tp.proposal_number, tp.customer_name
      FROM admin_reminders ar
      JOIN trip_proposals tp ON tp.id = ar.trip_proposal_id
      WHERE ar.status = 'triggered'
-     ORDER BY ar.triggered_at DESC`,
-    []
+     ORDER BY ar.triggered_at DESC`
   );
-  return result.rows;
+  return rows;
 }
 
 // ---------------------------------------------------------------------------

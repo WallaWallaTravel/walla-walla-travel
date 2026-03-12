@@ -3,7 +3,7 @@
  * Converts AI-extracted itinerary data into proposal format
  */
 
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 import { generateSecureString } from '@/lib/utils';
 import { ParsedItinerary } from './itinerary-parser';
@@ -39,16 +39,16 @@ export async function convertCorporateRequestToProposal(
   requestId: number
 ): Promise<ConversionResult> {
   // Get the corporate request
-  const requestResult = await query(
+  const requestRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
     'SELECT * FROM corporate_requests WHERE id = $1',
-    [requestId]
+    requestId
   );
-  
-  if (requestResult.rows.length === 0) {
+
+  if (requestRows.length === 0) {
     throw new Error(`Corporate request ${requestId} not found`);
   }
-  
-  const request = requestResult.rows[0];
+
+  const request = requestRows[0];
   const aiData: ParsedItinerary = request.ai_extracted_data;
   
   // Generate proposal number
@@ -150,7 +150,7 @@ export async function convertCorporateRequestToProposal(
   }
   
   // Create proposal in database
-  const proposalResult = await query(`
+  const proposalRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     INSERT INTO proposals (
       proposal_number,
       customer_name,
@@ -165,7 +165,7 @@ export async function convertCorporateRequestToProposal(
       corporate_request_id
     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
     RETURNING id, proposal_number
-  `, [
+  `,
     proposalNumber,
     request.contact_name,
     request.contact_email,
@@ -177,16 +177,16 @@ export async function convertCorporateRequestToProposal(
     notes.join('\n'),
     true,
     requestId
-  ]);
-  
-  const proposal = proposalResult.rows[0];
-  
+  );
+
+  const proposal = proposalRows[0];
+
   // Update corporate request status
-  await query(`
+  await prisma.$queryRawUnsafe(`
     UPDATE corporate_requests
     SET status = 'converted', proposal_id = $1, converted_to_proposal_at = NOW()
     WHERE id = $2
-  `, [proposal.id, requestId]);
+  `, proposal.id, requestId);
   
   return {
     proposalId: proposal.id,
@@ -204,26 +204,26 @@ export async function convertCorporateRequestToProposal(
 export async function ensureProposalColumns(): Promise<void> {
   try {
     // Check if columns exist
-    const checkResult = await query(`
-      SELECT column_name 
-      FROM information_schema.columns 
-      WHERE table_name = 'proposals' 
+    const checkRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_name = 'proposals'
         AND column_name IN ('created_from_corporate_request', 'corporate_request_id')
     `);
-    
-    const existingColumns = checkResult.rows.map(r => r.column_name);
-    
+
+    const existingColumns = checkRows.map(r => r.column_name);
+
     // Add missing columns
     if (!existingColumns.includes('created_from_corporate_request')) {
-      await query(`
-        ALTER TABLE proposals 
+      await prisma.$executeRawUnsafe(`
+        ALTER TABLE proposals
         ADD COLUMN IF NOT EXISTS created_from_corporate_request BOOLEAN DEFAULT FALSE
       `);
     }
-    
+
     if (!existingColumns.includes('corporate_request_id')) {
-      await query(`
-        ALTER TABLE proposals 
+      await prisma.$executeRawUnsafe(`
+        ALTER TABLE proposals
         ADD COLUMN IF NOT EXISTS corporate_request_id INTEGER REFERENCES corporate_requests(id)
       `);
     }

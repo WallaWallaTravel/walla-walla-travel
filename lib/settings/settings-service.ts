@@ -3,7 +3,7 @@
  * Single source of truth for all configurable settings
  */
 
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 
 export interface SystemSetting {
   setting_key: string;
@@ -17,39 +17,35 @@ export interface SystemSetting {
  * Get a specific setting
  */
 export async function getSetting(key: string): Promise<unknown> {
-  const result = await query(
+  const rows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
     'SELECT setting_value FROM system_settings WHERE setting_key = $1',
-    [key]
+    key
   );
-  
-  if (result.rows.length === 0) {
+
+  if (rows.length === 0) {
     return null;
   }
-  
-  return result.rows[0].setting_value;
+
+  return rows[0].setting_value;
 }
 
 /**
  * Get all settings by type
  */
 export async function getSettingsByType(type: string): Promise<SystemSetting[]> {
-  const result = await query(
+  return prisma.$queryRawUnsafe<SystemSetting[]>(
     'SELECT * FROM system_settings WHERE setting_type = $1 ORDER BY setting_key',
-    [type]
+    type
   );
-  
-  return result.rows;
 }
 
 /**
  * Get all settings
  */
 export async function getAllSettings(): Promise<SystemSetting[]> {
-  const result = await query(
+  return prisma.$queryRawUnsafe<SystemSetting[]>(
     'SELECT * FROM system_settings ORDER BY setting_type, setting_key'
   );
-  
-  return result.rows;
 }
 
 /**
@@ -60,11 +56,11 @@ export async function updateSetting(
   value: unknown,
   updatedBy?: number
 ): Promise<void> {
-  await query(
-    `UPDATE system_settings 
-     SET setting_value = $1, updated_at = NOW(), updated_by = $2 
+  await prisma.$queryRawUnsafe(
+    `UPDATE system_settings
+     SET setting_value = $1, updated_at = NOW(), updated_by = $2
      WHERE setting_key = $3`,
-    [JSON.stringify(value), updatedBy, key]
+    JSON.stringify(value), updatedBy, key
   );
 }
 

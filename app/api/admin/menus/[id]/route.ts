@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { withCSRF } from '@/lib/api/middleware/csrf';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { validateBody } from '@/lib/api/middleware/validation';
 import type { RouteContext } from '@/lib/api/middleware/auth-wrapper';
@@ -31,43 +31,41 @@ export const PUT = withCSRF(
     const data = await validateBody(request, UpdateMenuSchema);
 
     // Check menu exists
-    const existing = await query(
+    const existingRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
       `SELECT id FROM saved_menus WHERE id = $1 AND is_active = true`,
-      [menuId]
+      menuId
     );
-    if (existing.rows.length === 0) {
+    if (existingRows.length === 0) {
       return NextResponse.json({ success: false, error: 'Menu not found' }, { status: 404 });
     }
 
     // Update menu
-    await query(
+    await prisma.$queryRawUnsafe(
       `UPDATE saved_menus SET name = $1, supplier_id = $2 WHERE id = $3`,
-      [data.name, data.supplier_id || null, menuId]
+      data.name, data.supplier_id || null, menuId
     );
 
     // Replace items: delete old, insert new
-    await query(`DELETE FROM saved_menu_items WHERE saved_menu_id = $1`, [menuId]);
+    await prisma.$queryRawUnsafe(`DELETE FROM saved_menu_items WHERE saved_menu_id = $1`, menuId);
 
     for (let i = 0; i < data.items.length; i++) {
       const item = data.items[i];
-      await query(
+      await prisma.$queryRawUnsafe(
         `INSERT INTO saved_menu_items (saved_menu_id, category, name, description, price, dietary_tags, is_available, sort_order)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-        [
-          menuId,
-          item.category || null,
-          item.name,
-          item.description || null,
-          item.price,
-          item.dietary_tags || [],
-          item.is_available !== false,
-          item.sort_order ?? i,
-        ]
+        menuId,
+        item.category || null,
+        item.name,
+        item.description || null,
+        item.price,
+        item.dietary_tags || [],
+        item.is_available !== false,
+        item.sort_order ?? i,
       );
     }
 
     // Fetch updated menu
-    const fullResult = await query(
+    const fullRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
       `SELECT sm.*,
          COALESCE(
            json_agg(
@@ -83,10 +81,10 @@ export const PUT = withCSRF(
        LEFT JOIN saved_menu_items smi ON smi.saved_menu_id = sm.id
        WHERE sm.id = $1
        GROUP BY sm.id`,
-      [menuId]
+      menuId
     );
 
-    return NextResponse.json({ success: true, data: fullResult.rows[0] });
+    return NextResponse.json({ success: true, data: fullRows[0] });
   })
 );
 
@@ -96,12 +94,12 @@ export const DELETE = withCSRF(
     const { id } = await context!.params;
     const menuId = parseInt(id);
 
-    const result = await query(
+    const deleteRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
       `UPDATE saved_menus SET is_active = false WHERE id = $1 AND is_active = true RETURNING id`,
-      [menuId]
+      menuId
     );
 
-    if (result.rows.length === 0) {
+    if (deleteRows.length === 0) {
       return NextResponse.json({ success: false, error: 'Menu not found' }, { status: 404 });
     }
 

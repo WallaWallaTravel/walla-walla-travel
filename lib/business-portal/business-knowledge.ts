@@ -3,7 +3,7 @@
  * Aggregates all business data for AI Travel Guide queries
  */
 
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 
 export interface BusinessKnowledge {
   id: number;
@@ -47,29 +47,29 @@ export interface BusinessKnowledge {
  */
 export async function getBusinessKnowledge(businessId: number): Promise<BusinessKnowledge | null> {
   // Get business
-  const bizResult = await query(
+  const bizRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
     `SELECT id, name, business_type, business_types, contact_email, status
      FROM businesses WHERE id = $1 AND status = 'approved'`,
-    [businessId]
+    businessId
   );
 
-  if (bizResult.rows.length === 0) return null;
-  const business = bizResult.rows[0];
+  if (bizRows.length === 0) return null;
+  const business = bizRows[0];
   
   // Get photos with AI analysis
-  const photosResult = await query(
-    `SELECT id, storage_url, ai_description, ai_tags, category, 
+  const photosRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
+    `SELECT id, storage_url, ai_description, ai_tags, category,
             quality_rating, detected_elements, suitable_for_directory
-     FROM business_files 
-     WHERE business_id = $1 
-       AND file_type = 'photo' 
+     FROM business_files
+     WHERE business_id = $1
+       AND file_type = 'photo'
        AND approved = true
        AND suitable_for_directory = true
      ORDER BY quality_rating DESC`,
-    [businessId]
+    businessId
   );
-  
-  const photos = photosResult.rows.map(row => ({
+
+  const photos = photosRows.map(row => ({
     id: row.id,
     url: row.storage_url,
     description: row.ai_description || '',
@@ -80,15 +80,15 @@ export async function getBusinessKnowledge(businessId: number): Promise<Business
   }));
   
   // Get insights
-  const insightsResult = await query(
+  const insightsRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
     `SELECT id, insight_type, title, content, priority, best_for, is_public
      FROM business_insights
      WHERE business_id = $1 AND is_public = true
      ORDER BY priority DESC`,
-    [businessId]
+    businessId
   );
-  
-  const insights = insightsResult.rows.map(row => ({
+
+  const insights = insightsRows.map(row => ({
     id: row.id,
     type: row.insight_type,
     title: row.title,
@@ -99,18 +99,18 @@ export async function getBusinessKnowledge(businessId: number): Promise<Business
   }));
   
   // Get structured data from answers
-  const answersResult = await query(
-    `SELECT extracted_data FROM business_voice_entries 
+  const answersRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
+    `SELECT extracted_data FROM business_voice_entries
      WHERE business_id = $1 AND extracted_data IS NOT NULL
      UNION ALL
-     SELECT extracted_data FROM business_text_entries 
+     SELECT extracted_data FROM business_text_entries
      WHERE business_id = $1 AND extracted_data IS NOT NULL`,
-    [businessId, businessId]
+    businessId, businessId
   );
-  
+
   // Merge all extracted data
   const structured_data: Record<string, unknown> = {};
-  answersResult.rows.forEach(row => {
+  answersRows.forEach(row => {
     if (row.extracted_data) {
       Object.assign(structured_data, row.extracted_data);
     }
@@ -174,13 +174,13 @@ export async function searchBusinesses(criteria: {
   query?: string;
 }): Promise<BusinessKnowledge[]> {
   // Get all approved businesses
-  const bizResult = await query(
+  const bizRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
     `SELECT id FROM businesses WHERE status = 'approved'`
   );
-  
+
   const businesses: BusinessKnowledge[] = [];
-  
-  for (const row of bizResult.rows) {
+
+  for (const row of bizRows) {
     const knowledge = await getBusinessKnowledge(row.id);
     if (!knowledge) continue;
     

@@ -37,9 +37,11 @@ import { logger } from '@/lib/logger';
  * ```
  */
 
-import { query } from '@/lib/db';
-import { withTransaction, TransactionCallback } from '@/lib/db/transaction';
+import { prisma } from '@/lib/prisma';
 import { logError } from '@/lib/monitoring/error-logger';
+
+type PrismaTransactionClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+type TransactionCallback<T> = (tx: PrismaTransactionClient) => Promise<T>;
 
 export abstract class BaseService {
   // Service name for logging
@@ -54,8 +56,8 @@ export abstract class BaseService {
    */
   protected async query<T = unknown>(sql: string, params?: unknown[]): Promise<{ rows: T[]; rowCount: number | null }> {
     try {
-      const result = await query(sql, params);
-      return result as { rows: T[]; rowCount: number | null };
+      const rows = await prisma.$queryRawUnsafe<T[]>(sql, ...(params || []));
+      return { rows, rowCount: rows.length };
     } catch (error) {
       this.handleError(error, 'query');
       throw error;
@@ -104,7 +106,9 @@ export abstract class BaseService {
    */
   protected async withTransaction<T>(callback: TransactionCallback<T>): Promise<T> {
     try {
-      return await withTransaction(callback);
+      return await prisma.$transaction(async (tx) => {
+        return callback(tx);
+      });
     } catch (error) {
       this.handleError(error, 'transaction');
       throw error;

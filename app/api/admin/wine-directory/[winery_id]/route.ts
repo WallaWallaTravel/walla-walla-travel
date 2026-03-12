@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { query } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper'
 import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler'
 import { withCSRF } from '@/lib/api/middleware/csrf'
@@ -50,28 +50,28 @@ export const GET = withAdminAuth(async (
 
   const id = parseInt(winery_id)
 
-  const result = await query(`
+  const wineryRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     SELECT * FROM wineries WHERE id = $1
-  `, [id])
+  `, id)
 
-  if (result.rows.length === 0) {
+  if (wineryRows.length === 0) {
     throw new NotFoundError('Winery not found')
   }
 
   // Get wines for this winery
-  const winesResult = await query(`
+  const winesRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     SELECT * FROM wines WHERE winery_id = $1 ORDER BY name
-  `, [id]).catch(() => ({ rows: [] }))
+  `, id).catch(() => [] as Record<string, any>[])
 
   // Get content chunks
-  const contentResult = await query(`
+  const contentRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     SELECT * FROM winery_content WHERE winery_id = $1 ORDER BY content_type
-  `, [id]).catch(() => ({ rows: [] }))
+  `, id).catch(() => [] as Record<string, any>[])
 
   return NextResponse.json({
-    winery: result.rows[0],
-    wines: winesResult.rows,
-    content: contentResult.rows
+    winery: wineryRows[0],
+    wines: winesRows,
+    content: contentRows
   })
 })
 
@@ -123,14 +123,14 @@ export const PATCH = withCSRF(
   updates.push(`updated_at = NOW()`)
   values.push(id)
 
-  const result = await query(`
+  const updateRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     UPDATE wineries
     SET ${updates.join(', ')}
     WHERE id = $${paramIndex}
     RETURNING *
-  `, values)
+  `, ...values)
 
-  if (result.rows.length === 0) {
+  if (updateRows.length === 0) {
     throw new NotFoundError('Winery not found')
   }
 
@@ -138,7 +138,7 @@ export const PATCH = withCSRF(
 
   return NextResponse.json({
     success: true,
-    winery: result.rows[0]
+    winery: updateRows[0]
   })
 })
 )
@@ -154,7 +154,7 @@ export const DELETE = withCSRF(
 
   const id = parseInt(winery_id)
 
-  await query('DELETE FROM wineries WHERE id = $1', [id])
+  await prisma.$queryRawUnsafe('DELETE FROM wineries WHERE id = $1', id)
 
   await auditService.logFromRequest(request, parseInt(session.userId), 'resource_deleted', {
     entityType: 'winery',

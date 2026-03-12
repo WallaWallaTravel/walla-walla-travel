@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, UnauthorizedError, NotFoundError, ValidationError } from '@/lib/api/middleware/error-handler';
 import { getSession } from '@/lib/auth/session';
 import { partnerService } from '@/lib/services/partner.service';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { INSIDER_TIP_TYPES } from '@/lib/config/content-types';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 import { withCSRF } from '@/lib/api/middleware/csrf';
@@ -63,14 +63,21 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   }> = [];
 
   if (profile.winery_id) {
-    const result = await query(
+    tips = await prisma.$queryRawUnsafe<Array<{
+      id: number;
+      tip_type: string;
+      title: string;
+      content: string;
+      is_featured: boolean;
+      verified: boolean;
+      created_at: string;
+    }>>(
       `SELECT id, tip_type, title, content, is_featured, verified, created_at
        FROM winery_insider_tips
        WHERE winery_id = $1
        ORDER BY is_featured DESC, created_at DESC`,
-      [profile.winery_id]
+      profile.winery_id
     );
-    tips = result.rows;
   }
 
   return NextResponse.json({
@@ -125,32 +132,30 @@ export const POST = withCSRF(
   }
 
   // Insert new tip
-  const result = await query(
+  const insertRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
     `INSERT INTO winery_insider_tips
        (winery_id, tip_type, title, content, is_featured, data_source, verified, created_by, created_at, updated_at)
      VALUES ($1, $2, $3, $4, $5, 'partner_portal', false, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
      RETURNING id`,
-    [
-      profile.winery_id,
-      tip_type,
-      title || null,
-      content,
-      is_featured || false,
-      session.user.id,
-    ]
+    profile.winery_id,
+    tip_type,
+    title || null,
+    content,
+    is_featured || false,
+    session.user.id,
   );
 
   // Log the activity
   await partnerService.logActivity(
     profile.id,
     'tip_created',
-    { tip_type, tip_id: result.rows[0].id },
+    { tip_type, tip_id: insertRows[0].id },
     getClientIp(request)
   );
 
   return NextResponse.json({
     success: true,
-    id: result.rows[0].id,
+    id: insertRows[0].id,
     message: 'Tip created and submitted for review',
     timestamp: new Date().toISOString(),
   });
@@ -188,12 +193,12 @@ export const PUT = withCSRF(
   }
 
   // Verify ownership
-  const existingResult = await query(
+  const existingRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
     `SELECT id FROM winery_insider_tips WHERE id = $1 AND winery_id = $2`,
-    [id, profile.winery_id]
+    id, profile.winery_id
   );
 
-  if (existingResult.rows.length === 0) {
+  if (existingRows.length === 0) {
     throw new NotFoundError('Tip not found');
   }
 
@@ -208,12 +213,12 @@ export const PUT = withCSRF(
   }
 
   // Update tip
-  await query(
+  await prisma.$queryRawUnsafe(
     `UPDATE winery_insider_tips
      SET tip_type = $1, title = $2, content = $3, is_featured = $4,
          verified = false, updated_at = CURRENT_TIMESTAMP
      WHERE id = $5`,
-    [tip_type, title || null, content, is_featured || false, id]
+    tip_type, title || null, content, is_featured || false, id
   );
 
   // Log the activity
@@ -259,12 +264,12 @@ export const DELETE = withCSRF(
   }
 
   // Verify ownership and delete
-  const result = await query(
+  const deleteRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
     `DELETE FROM winery_insider_tips WHERE id = $1 AND winery_id = $2 RETURNING id`,
-    [id, profile.winery_id]
+    id, profile.winery_id
   );
 
-  if (result.rowCount === 0) {
+  if (deleteRows.length === 0) {
     throw new NotFoundError('Tip not found');
   }
 

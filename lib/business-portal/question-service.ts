@@ -3,7 +3,7 @@
  * Manages questions, voice/text responses, and AI extraction
  */
 
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 
 export interface InterviewQuestion {
   id: number;
@@ -44,14 +44,12 @@ export async function getQuestionsForBusiness(
   businessType: string | string[]
 ): Promise<InterviewQuestion[]> {
   const types = Array.isArray(businessType) ? businessType : [businessType];
-  const result = await query(`
+  return prisma.$queryRawUnsafe<InterviewQuestion[]>(`
     SELECT * FROM interview_questions
     WHERE (business_type = ANY($1) OR business_type = 'all')
     AND active = true
     ORDER BY question_number
-  `, [types]);
-
-  return result.rows;
+  `, types);
 }
 
 /**
@@ -65,38 +63,38 @@ export async function getBusinessQuestionProgress(
   textAnswers: Map<number, TextEntry>;
 }> {
   // Get business types (prefer business_types array, fall back to single business_type)
-  const bizResult = await query(
+  const bizRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
     'SELECT business_type, business_types FROM businesses WHERE id = $1',
-    [businessId]
+    businessId
   );
 
-  if (bizResult.rows.length === 0) {
+  if (bizRows.length === 0) {
     throw new Error('Business not found');
   }
 
-  const businessTypes = bizResult.rows[0].business_types || [bizResult.rows[0].business_type];
+  const businessTypes = bizRows[0].business_types || [bizRows[0].business_type];
 
   // Get questions (union of questions for all business types)
   const questions = await getQuestionsForBusiness(businessTypes);
   
   // Get voice answers
-  const voiceResult = await query(
+  const voiceRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
     'SELECT * FROM business_voice_entries WHERE business_id = $1',
-    [businessId]
+    businessId
   );
   const voiceAnswers = new Map<number, VoiceEntry>();
-  voiceResult.rows.forEach(row => {
-    voiceAnswers.set(row.question_id, row);
+  voiceRows.forEach(row => {
+    voiceAnswers.set(row.question_id, row as VoiceEntry);
   });
-  
+
   // Get text answers
-  const textResult = await query(
+  const textRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
     'SELECT * FROM business_text_entries WHERE business_id = $1',
-    [businessId]
+    businessId
   );
   const textAnswers = new Map<number, TextEntry>();
-  textResult.rows.forEach(row => {
-    textAnswers.set(row.question_id, row);
+  textRows.forEach(row => {
+    textAnswers.set(row.question_id, row as TextEntry);
   });
   
   return {
@@ -118,7 +116,7 @@ export async function saveVoiceResponse(data: {
   audioDurationSeconds: number;
   audioSizeBytes: number;
 }): Promise<number> {
-  const result = await query(`
+  const rows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     INSERT INTO business_voice_entries (
       business_id,
       question_id,
@@ -131,7 +129,7 @@ export async function saveVoiceResponse(data: {
     )
     VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')
     RETURNING id
-  `, [
+  `,
     data.businessId,
     data.questionId,
     data.questionNumber,
@@ -139,9 +137,9 @@ export async function saveVoiceResponse(data: {
     data.audioUrl,
     data.audioDurationSeconds,
     data.audioSizeBytes
-  ]);
-  
-  return result.rows[0].id;
+  );
+
+  return rows[0].id;
 }
 
 /**
@@ -152,15 +150,15 @@ export async function updateVoiceTranscription(
   transcription: string,
   confidence: number
 ): Promise<void> {
-  await query(`
+  await prisma.$queryRawUnsafe(`
     UPDATE business_voice_entries
-    SET 
+    SET
       transcription = $2,
       transcription_confidence = $3,
       transcribed_at = NOW(),
       extraction_status = 'pending'
     WHERE id = $1
-  `, [entryId, transcription, confidence]);
+  `, entryId, transcription, confidence);
 }
 
 /**
@@ -170,14 +168,14 @@ export async function updateVoiceExtraction(
   entryId: number,
   extractedData: Record<string, unknown>
 ): Promise<void> {
-  await query(`
+  await prisma.$queryRawUnsafe(`
     UPDATE business_voice_entries
-    SET 
+    SET
       extracted_data = $2,
       extraction_status = 'completed',
       extracted_at = NOW()
     WHERE id = $1
-  `, [entryId, JSON.stringify(extractedData)]);
+  `, entryId, JSON.stringify(extractedData));
 }
 
 /**
@@ -190,7 +188,7 @@ export async function saveTextResponse(data: {
   questionText: string;
   responseText: string;
 }): Promise<number> {
-  const result = await query(`
+  const rows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     INSERT INTO business_text_entries (
       business_id,
       question_id,
@@ -201,15 +199,15 @@ export async function saveTextResponse(data: {
     )
     VALUES ($1, $2, $3, $4, $5, 'pending')
     RETURNING id
-  `, [
+  `,
     data.businessId,
     data.questionId,
     data.questionNumber,
     data.questionText,
     data.responseText
-  ]);
-  
-  return result.rows[0].id;
+  );
+
+  return rows[0].id;
 }
 
 /**
@@ -219,14 +217,14 @@ export async function updateTextExtraction(
   entryId: number,
   extractedData: Record<string, unknown>
 ): Promise<void> {
-  await query(`
+  await prisma.$queryRawUnsafe(`
     UPDATE business_text_entries
-    SET 
+    SET
       extracted_data = $2,
       extraction_status = 'completed',
       extracted_at = NOW()
     WHERE id = $1
-  `, [entryId, JSON.stringify(extractedData)]);
+  `, entryId, JSON.stringify(extractedData));
 }
 
 /**
@@ -254,11 +252,11 @@ export async function getNextQuestion(
  * Delete a response (allow re-recording)
  */
 export async function deleteVoiceResponse(entryId: number): Promise<void> {
-  await query('DELETE FROM business_voice_entries WHERE id = $1', [entryId]);
+  await prisma.$queryRawUnsafe('DELETE FROM business_voice_entries WHERE id = $1', entryId);
 }
 
 export async function deleteTextResponse(entryId: number): Promise<void> {
-  await query('DELETE FROM business_text_entries WHERE id = $1', [entryId]);
+  await prisma.$queryRawUnsafe('DELETE FROM business_text_entries WHERE id = $1', entryId);
 }
 
 /**
@@ -268,19 +266,16 @@ export async function getAllBusinessResponses(businessId: number): Promise<{
   voice: VoiceEntry[];
   text: TextEntry[];
 }> {
-  const voiceResult = await query(
+  const voice = await prisma.$queryRawUnsafe<VoiceEntry[]>(
     'SELECT * FROM business_voice_entries WHERE business_id = $1 ORDER BY question_number',
-    [businessId]
+    businessId
   );
-  
-  const textResult = await query(
+
+  const text = await prisma.$queryRawUnsafe<TextEntry[]>(
     'SELECT * FROM business_text_entries WHERE business_id = $1 ORDER BY question_number',
-    [businessId]
+    businessId
   );
-  
-  return {
-    voice: voiceResult.rows,
-    text: textResult.rows
-  };
+
+  return { voice, text };
 }
 

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import { BadRequestError, NotFoundError, InternalServerError } from '@/lib/api-errors';
 import { withOptionalAuth } from '@/lib/api/middleware/auth-wrapper';
-import { queryOne, withTransaction } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 import { sendPaymentReceiptEmail } from '@/lib/services/email-automation.service';
 import { crmSyncService } from '@/lib/services/crm-sync.service';
 import { auditService } from '@/lib/services/audit.service';
@@ -42,12 +42,13 @@ export const POST = withCSRF(
   const { payment_intent_id } = await validateBody(request, ConfirmPaymentSchema);
 
   // Get payment from database
-  const payment = await queryOne<Payment>(
+  const paymentRows = await prisma.$queryRawUnsafe<Payment[]>(
     `SELECT id, booking_id, amount, payment_type
      FROM payments
      WHERE stripe_payment_intent_id = $1`,
-    [payment_intent_id]
+    payment_intent_id
   );
+  const payment = paymentRows[0];
 
   if (!payment) {
     throw new NotFoundError('Payment record');
@@ -57,12 +58,13 @@ export const POST = withCSRF(
   const paymentType = payment.payment_type;
 
   // Get booking details (including brand_id for brand-specific Stripe routing)
-  const booking = await queryOne<Booking>(
+  const bookingRows = await prisma.$queryRawUnsafe<Booking[]>(
     `SELECT id, booking_number, customer_email, deposit_paid, final_payment_paid, brand_id
      FROM bookings
      WHERE id = $1`,
-    [bookingId]
+    bookingId
   );
+  const booking = bookingRows[0];
 
   if (!booking) {
     throw new NotFoundError('Booking');
@@ -87,39 +89,39 @@ export const POST = withCSRF(
   }
 
   // Update payment and booking in a transaction
-  await withTransaction(async (client) => {
+  await prisma.$transaction(async (tx) => {
     // Update payment status
-    await client.query(
+    await tx.$executeRawUnsafe(
       `UPDATE payments
        SET status = $1, succeeded_at = NOW(), updated_at = NOW()
        WHERE id = $2`,
-      ['succeeded', payment.id]
+      'succeeded', payment.id
     );
 
     // Update booking based on payment type
     if (paymentType === 'deposit') {
-      await client.query(
+      await tx.$executeRawUnsafe(
         `UPDATE bookings
          SET deposit_paid = true,
              deposit_paid_at = NOW(),
              status = CASE WHEN status = 'pending' THEN 'confirmed' ELSE status END,
              updated_at = NOW()
          WHERE id = $1`,
-        [bookingId]
+        bookingId
       );
     } else if (paymentType === 'final_payment') {
-      await client.query(
+      await tx.$executeRawUnsafe(
         `UPDATE bookings
          SET final_payment_paid = true,
              final_payment_paid_at = NOW(),
              updated_at = NOW()
          WHERE id = $1`,
-        [bookingId]
+        bookingId
       );
     }
 
     // Create booking timeline event
-    await client.query(
+    await tx.$executeRawUnsafe(
       `INSERT INTO booking_timeline (
         booking_id,
         event_type,
@@ -127,27 +129,27 @@ export const POST = withCSRF(
         event_data,
         created_at
       ) VALUES ($1, $2, $3, $4, NOW())`,
-      [
-        bookingId,
-        'payment_received',
-        `${paymentType === 'deposit' ? 'Deposit' : 'Final payment'} received`,
-        JSON.stringify({
-          payment_intent_id,
-          amount: payment.amount,
-          payment_type: paymentType,
-        }),
-      ]
+      bookingId,
+      'payment_received',
+      `${paymentType === 'deposit' ? 'Deposit' : 'Final payment'} received`,
+      JSON.stringify({
+        payment_intent_id,
+        amount: payment.amount,
+        payment_type: paymentType,
+      })
     );
 
     // Create invoice record for this payment
-    await client.query(
-      `INSERT INTO invoices (booking_id, invoice_type, subtotal, tax_amount, total_amount, status, sent_at, due_date)
-       VALUES ($1, $2, $3, 0, $3, 'paid', NOW(), NOW())
-       ON CONFLICT DO NOTHING`,
-      [bookingId, paymentType, parseFloat(payment.amount)]
-    ).catch(() => {
+    try {
+      await tx.$executeRawUnsafe(
+        `INSERT INTO invoices (booking_id, invoice_type, subtotal, tax_amount, total_amount, status, sent_at, due_date)
+         VALUES ($1, $2, $3, 0, $3, 'paid', NOW(), NOW())
+         ON CONFLICT DO NOTHING`,
+        bookingId, paymentType, parseFloat(payment.amount)
+      );
+    } catch {
       // Invoice table might not exist or have different schema
-    });
+    }
   });
 
   // Send payment receipt email (async, don't wait)
@@ -157,10 +159,10 @@ export const POST = withCSRF(
 
   // Log payment to CRM (async, don't wait)
   // We need to get customer_id from the booking
-  queryOne<{ customer_id: number }>(
+  prisma.$queryRawUnsafe<{ customer_id: number }[]>(
     `SELECT customer_id FROM bookings WHERE id = $1`,
-    [bookingId]
-  ).then(bookingData => {
+    bookingId
+  ).then(rows => rows[0]).then(bookingData => {
     if (bookingData?.customer_id) {
       crmSyncService.logPaymentReceived(
         bookingData.customer_id,

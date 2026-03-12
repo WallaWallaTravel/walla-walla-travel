@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 
 interface WineryRow {
@@ -103,10 +103,10 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   sql += ` ORDER BY name ASC LIMIT $${paramIndex}`;
   params.push(limit);
 
-  const result = await query<WineryRow>(sql, params);
+  const result = await prisma.$queryRawUnsafe(sql, ...params) as WineryRow[];
 
   // Format results for GPT-friendly response
-  const wineries: WineryResult[] = result.rows.map(row => ({
+  const wineries: WineryResult[] = result.map(row => ({
     id: row.id,
     name: row.name,
     slug: row.slug,

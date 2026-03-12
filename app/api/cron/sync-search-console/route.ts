@@ -4,7 +4,7 @@ import {
   refreshAccessToken,
   syncDailyData,
 } from '@/lib/services/search-console.service';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 import { withCronAuth } from '@/lib/api/middleware/cron-auth';
 import { withCronLock } from '@/lib/api/middleware/cron-lock';
@@ -20,24 +20,18 @@ async function syncBlogPerformance(): Promise<{ matched: number }> {
 
   try {
     // Find published blogs with slugs
-    const blogs = await query<{ id: number; slug: string }>(`
+    const blogs = await prisma.$queryRaw`
       SELECT id, slug
       FROM blog_drafts
       WHERE status = 'published'
         AND slug IS NOT NULL
         AND (performance_synced_at IS NULL OR performance_synced_at < NOW() - INTERVAL '24 hours')
       LIMIT 50
-    `);
+    ` as { id: number; slug: string }[];
 
-    for (const blog of blogs.rows) {
+    for (const blog of blogs) {
       // Match Search Console pages containing this slug
-      const perfResult = await query<{
-        total_impressions: number;
-        total_clicks: number;
-        avg_ctr: number;
-        avg_position: number;
-        top_queries: string;
-      }>(`
+      const perfResult = await prisma.$queryRawUnsafe(`
         SELECT
           COALESCE(SUM(impressions), 0)::int AS total_impressions,
           COALESCE(SUM(clicks), 0)::int AS total_clicks,
@@ -59,15 +53,21 @@ async function syncBlogPerformance(): Promise<{ matched: number }> {
         FROM search_console_data
         WHERE page_url LIKE '%' || $1 || '%'
           AND data_date >= CURRENT_DATE - INTERVAL '30 days'
-      `, [blog.slug]);
+      `, blog.slug) as {
+        total_impressions: number;
+        total_clicks: number;
+        avg_ctr: number;
+        avg_position: number;
+        top_queries: string;
+      }[];
 
-      const perf = perfResult.rows[0];
+      const perf = perfResult[0];
       if (perf && (perf.total_impressions > 0 || perf.total_clicks > 0)) {
-        await query(`
+        await prisma.$queryRawUnsafe(`
           UPDATE blog_drafts
           SET performance = $1, performance_synced_at = NOW(), updated_at = NOW()
           WHERE id = $2
-        `, [
+        `,
           JSON.stringify({
             impressions_30d: perf.total_impressions,
             clicks_30d: perf.total_clicks,
@@ -76,8 +76,8 @@ async function syncBlogPerformance(): Promise<{ matched: number }> {
             top_queries: JSON.parse(perf.top_queries),
             synced_at: new Date().toISOString(),
           }),
-          blog.id,
-        ]);
+          blog.id
+        );
         matched++;
       }
     }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, BadRequestError } from '@/lib/api-errors';
-import { queryOne, query } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { z } from 'zod';
 
@@ -86,21 +86,23 @@ export const POST = withCSRF(
   const total = subtotal + tax;
 
   // Get restaurant details for email
-  const restaurant = await queryOne<Restaurant>(
+  const restaurantResult = await prisma.$queryRawUnsafe(
     'SELECT name, email, phone, contact_name FROM restaurants WHERE id = $1',
-    [restaurant_id]
-  );
+    restaurant_id
+  ) as Restaurant[];
 
+  const restaurant = restaurantResult[0];
   if (!restaurant) {
     throw new BadRequestError('Restaurant not found');
   }
 
   // Get booking details
-  const booking = await queryOne<Booking>(
+  const bookingResult = await prisma.$queryRawUnsafe(
     'SELECT customer_name, customer_email, tour_date FROM bookings WHERE id = $1',
-    [booking_id]
-  );
+    booking_id
+  ) as Booking[];
 
+  const booking = bookingResult[0];
   if (!booking) {
     throw new BadRequestError('Booking not found');
   }
@@ -120,7 +122,7 @@ export const POST = withCSRF(
   });
 
   // Insert lunch order
-  const insertResult = await query<LunchOrderResult>(
+  const insertResult = await prisma.$queryRawUnsafe(
     `INSERT INTO lunch_orders (
       booking_id,
       restaurant_id,
@@ -141,23 +143,21 @@ export const POST = withCSRF(
       (SELECT id FROM customers WHERE email = $3 LIMIT 1),
       $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW()
     ) RETURNING id`,
-    [
-      booking_id,
-      restaurant_id,
-      booking.customer_email,
-      JSON.stringify(items),
-      subtotal,
-      tax,
-      total,
-      estimated_arrival_time,
-      estimated_arrival_time, // requested_ready_time same as arrival
-      dietary_restrictions || null,
-      special_requests || null,
-      'pending_approval', // Status
-      emailBody,
-    ]
-  );
-  const result = insertResult.rows[0];
+    booking_id,
+    restaurant_id,
+    booking.customer_email,
+    JSON.stringify(items),
+    subtotal,
+    tax,
+    total,
+    estimated_arrival_time,
+    estimated_arrival_time, // requested_ready_time same as arrival
+    dietary_restrictions || null,
+    special_requests || null,
+    'pending_approval', // Status
+    emailBody,
+  ) as LunchOrderResult[];
+  const result = insertResult[0];
 
   return NextResponse.json({
     success: true,

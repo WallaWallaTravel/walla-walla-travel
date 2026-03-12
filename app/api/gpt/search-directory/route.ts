@@ -8,7 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 
 interface BusinessRow {
@@ -90,10 +90,10 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   sql += ` ORDER BY name ASC LIMIT $${paramIndex}`;
   params.push(limit);
 
-  const result = await query<BusinessRow>(sql, params);
+  const result = await prisma.$queryRawUnsafe(sql, ...params) as BusinessRow[];
 
   // Format results for GPT-friendly response
-  const businesses: BusinessResult[] = result.rows.map(row => ({
+  const businesses: BusinessResult[] = result.map(row => ({
     name: row.name,
     business_type: row.business_type,
     short_description: row.short_description || 'A local Walla Walla business.',

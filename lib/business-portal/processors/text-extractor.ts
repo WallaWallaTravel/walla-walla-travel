@@ -3,7 +3,7 @@
  * Uses Gemini to extract structured data from text responses
  */
 
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
@@ -89,8 +89,8 @@ export async function processTextEntry(textEntryId: number): Promise<ExtractedDa
   logger.debug('Text Extractor: Processing text entry', { textEntryId });
 
   // Get the text entry and question info
-  const result = await query(`
-    SELECT 
+  const rows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
+    SELECT
       te.response_text,
       te.question_text,
       q.category,
@@ -98,13 +98,13 @@ export async function processTextEntry(textEntryId: number): Promise<ExtractedDa
     FROM business_text_entries te
     LEFT JOIN interview_questions q ON te.question_id = q.id
     WHERE te.id = $1
-  `, [textEntryId]);
+  `, textEntryId);
 
-  if (result.rows.length === 0) {
+  if (rows.length === 0) {
     throw new Error(`Text entry ${textEntryId} not found`);
   }
 
-  const entry = result.rows[0];
+  const entry = rows[0];
 
   // Extract data
   const extracted = await extractDataFromText(
@@ -115,14 +115,14 @@ export async function processTextEntry(textEntryId: number): Promise<ExtractedDa
   );
 
   // Update the text entry with extracted data
-  await query(`
+  await prisma.$queryRawUnsafe(`
     UPDATE business_text_entries
-    SET 
+    SET
       extracted_data = $2,
       extraction_status = 'completed',
       extracted_at = NOW()
     WHERE id = $1
-  `, [textEntryId, JSON.stringify(extracted)]);
+  `, textEntryId, JSON.stringify(extracted));
 
   logger.debug('Text Extractor: Updated text entry with extracted data', { textEntryId });
 
@@ -136,8 +136,8 @@ export async function processVoiceTranscription(voiceEntryId: number): Promise<E
   logger.debug('Text Extractor: Processing voice transcription', { voiceEntryId });
 
   // Get the voice entry and question info
-  const result = await query(`
-    SELECT 
+  const voiceRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
+    SELECT
       ve.transcription,
       ve.question_text,
       q.category,
@@ -145,13 +145,13 @@ export async function processVoiceTranscription(voiceEntryId: number): Promise<E
     FROM business_voice_entries ve
     LEFT JOIN interview_questions q ON ve.question_id = q.id
     WHERE ve.id = $1
-  `, [voiceEntryId]);
+  `, voiceEntryId);
 
-  if (result.rows.length === 0) {
+  if (voiceRows.length === 0) {
     throw new Error(`Voice entry ${voiceEntryId} not found`);
   }
 
-  const entry = result.rows[0];
+  const entry = voiceRows[0];
 
   if (!entry.transcription) {
     throw new Error(`Voice entry ${voiceEntryId} has no transcription yet`);
@@ -166,14 +166,14 @@ export async function processVoiceTranscription(voiceEntryId: number): Promise<E
   );
 
   // Update the voice entry with extracted data
-  await query(`
+  await prisma.$queryRawUnsafe(`
     UPDATE business_voice_entries
-    SET 
+    SET
       extracted_data = $2,
       extraction_status = 'completed',
       extracted_at = NOW()
     WHERE id = $1
-  `, [voiceEntryId, JSON.stringify(extracted)]);
+  `, voiceEntryId, JSON.stringify(extracted));
 
   logger.debug('Text Extractor: Updated voice entry with extracted data', { voiceEntryId });
 

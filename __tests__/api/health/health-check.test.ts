@@ -5,8 +5,10 @@
  * Tests the GET /api/health endpoint with various service states.
  */
 
-jest.mock('@/lib/db', () => ({
-  healthCheck: jest.fn(),
+jest.mock('@/lib/prisma', () => ({
+  prisma: {
+    $queryRaw: jest.fn(),
+  },
 }));
 
 jest.mock('@/lib/stripe', () => ({
@@ -31,11 +33,11 @@ jest.mock('@/lib/utils', () => ({
 }));
 
 import { GET } from '@/app/api/health/route';
-import { healthCheck } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { isStripeConfigured, probeStripeHealth } from '@/lib/stripe';
 import { getRateLimitStatus } from '@/lib/api/middleware/rate-limit';
 
-const mockHealthCheck = healthCheck as jest.MockedFunction<typeof healthCheck>;
+const mockPrisma = prisma as jest.Mocked<typeof prisma>;
 const mockIsStripeConfigured = isStripeConfigured as jest.MockedFunction<typeof isStripeConfigured>;
 const mockProbeStripeHealth = probeStripeHealth as jest.MockedFunction<typeof probeStripeHealth>;
 const mockGetRateLimitStatus = getRateLimitStatus as jest.MockedFunction<typeof getRateLimitStatus>;
@@ -60,7 +62,7 @@ describe('GET /api/health', () => {
   });
 
   it('should return healthy when all services are up', async () => {
-    mockHealthCheck.mockResolvedValue(true);
+    (mockPrisma.$queryRaw as jest.Mock).mockResolvedValue([{ '?column?': 1 }]);
     mockIsStripeConfigured.mockReturnValue(true);
     mockProbeStripeHealth.mockResolvedValue({ available: true, latencyMs: 50 });
 
@@ -77,7 +79,7 @@ describe('GET /api/health', () => {
   });
 
   it('should return unhealthy (503) when database is down', async () => {
-    mockHealthCheck.mockRejectedValue(new Error('Connection refused'));
+    (mockPrisma.$queryRaw as jest.Mock).mockRejectedValue(new Error('Connection refused'));
     mockIsStripeConfigured.mockReturnValue(true);
     mockProbeStripeHealth.mockResolvedValue({ available: true, latencyMs: 50 });
 
@@ -90,7 +92,7 @@ describe('GET /api/health', () => {
   });
 
   it('should return degraded (200) when Stripe is down but DB is up', async () => {
-    mockHealthCheck.mockResolvedValue(true);
+    (mockPrisma.$queryRaw as jest.Mock).mockResolvedValue([{ '?column?': 1 }]);
     mockIsStripeConfigured.mockReturnValue(true);
     mockProbeStripeHealth.mockResolvedValue({
       available: false, latencyMs: 0, error: 'Probe failed',
@@ -106,7 +108,7 @@ describe('GET /api/health', () => {
   });
 
   it('should handle Stripe not configured', async () => {
-    mockHealthCheck.mockResolvedValue(true);
+    (mockPrisma.$queryRaw as jest.Mock).mockResolvedValue([{ '?column?': 1 }]);
     mockIsStripeConfigured.mockReturnValue(false);
 
     const response = await GET(createMockRequest(), createMockContext());
@@ -118,7 +120,7 @@ describe('GET /api/health', () => {
   });
 
   it('should include rate limiting mode', async () => {
-    mockHealthCheck.mockResolvedValue(true);
+    (mockPrisma.$queryRaw as jest.Mock).mockResolvedValue([{ '?column?': 1 }]);
     mockIsStripeConfigured.mockReturnValue(true);
     mockProbeStripeHealth.mockResolvedValue({ available: true, latencyMs: 30 });
     mockGetRateLimitStatus.mockReturnValue({ mode: 'redis' as const, available: true });
@@ -130,7 +132,7 @@ describe('GET /api/health', () => {
   });
 
   it('should include version and uptime', async () => {
-    mockHealthCheck.mockResolvedValue(true);
+    (mockPrisma.$queryRaw as jest.Mock).mockResolvedValue([{ '?column?': 1 }]);
     mockIsStripeConfigured.mockReturnValue(true);
     mockProbeStripeHealth.mockResolvedValue({ available: true, latencyMs: 20 });
 
@@ -142,7 +144,7 @@ describe('GET /api/health', () => {
   });
 
   it('should set Cache-Control header to no-store', async () => {
-    mockHealthCheck.mockResolvedValue(true);
+    (mockPrisma.$queryRaw as jest.Mock).mockResolvedValue([{ '?column?': 1 }]);
     mockIsStripeConfigured.mockReturnValue(true);
     mockProbeStripeHealth.mockResolvedValue({ available: true, latencyMs: 10 });
 
@@ -153,7 +155,7 @@ describe('GET /api/health', () => {
   });
 
   it('should handle Stripe probe throwing error', async () => {
-    mockHealthCheck.mockResolvedValue(true);
+    (mockPrisma.$queryRaw as jest.Mock).mockResolvedValue([{ '?column?': 1 }]);
     mockIsStripeConfigured.mockReturnValue(true);
     mockProbeStripeHealth.mockRejectedValue(new Error('Network timeout'));
 
@@ -165,7 +167,7 @@ describe('GET /api/health', () => {
   });
 
   it('should return unhealthy even when both DB and Stripe fail', async () => {
-    mockHealthCheck.mockRejectedValue(new Error('DB down'));
+    (mockPrisma.$queryRaw as jest.Mock).mockRejectedValue(new Error('DB down'));
     mockIsStripeConfigured.mockReturnValue(true);
     mockProbeStripeHealth.mockRejectedValue(new Error('Stripe down'));
 

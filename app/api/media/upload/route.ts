@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
 import {
   uploadFile,
@@ -59,7 +59,7 @@ export const POST = withCSRF(
   const tagsArray = tags ? tags.split(',').map((t) => t.trim()) : [];
 
   // Save to database
-  const result = await query(
+  const result = await prisma.$queryRawUnsafe(
     `INSERT INTO media_library (
       file_name,
       file_path,
@@ -75,25 +75,23 @@ export const POST = withCSRF(
       is_hero
     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
     RETURNING *`,
-    [
-      file.name,
-      uploadResult.publicUrl, // Store the full public URL from Supabase
-      fileType,
-      file.size,
-      file.type,
-      category,
-      subcategory,
-      title || file.name,
-      description,
-      alt_text || title || file.name,
-      tagsArray,
-      is_hero,
-    ]
-  );
+    file.name,
+    uploadResult.publicUrl, // Store the full public URL from Supabase
+    fileType,
+    file.size,
+    file.type,
+    category,
+    subcategory,
+    title || file.name,
+    description,
+    alt_text || title || file.name,
+    tagsArray,
+    is_hero,
+  ) as Record<string, any>[];
 
   return NextResponse.json({
     success: true,
-    data: result.rows[0],
+    data: result[0],
     message: 'File uploaded successfully',
   });
 })

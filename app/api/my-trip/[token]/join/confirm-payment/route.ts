@@ -12,7 +12,7 @@ import { after } from 'next/server';
 import { withErrorHandling, BadRequestError, NotFoundError, RouteContext } from '@/lib/api/middleware/error-handler';
 import { getBrandStripeClient } from '@/lib/stripe-brands';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
-import { query, queryOne, withTransaction } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
 import { withCSRF } from '@/lib/api/middleware/csrf';
@@ -44,14 +44,15 @@ export const POST = withCSRF(
     }
 
     // Look up guest by guest_access_token
-    const guest = await queryOne<{
+    const guestRows = await prisma.$queryRawUnsafe<{
       id: number; name: string; email: string | null; payment_status: string;
-    }>(
+    }[]>(
       `SELECT id, name, email, payment_status
        FROM trip_proposal_guests
        WHERE trip_proposal_id = $1 AND guest_access_token = $2`,
-      [proposal.id, guest_access_token]
+      proposal.id, guest_access_token
     );
+    const guest = guestRows[0];
 
     if (!guest) {
       throw new NotFoundError('Guest not found');
@@ -87,32 +88,30 @@ export const POST = withCSRF(
     // Atomic idempotency: INSERT ... ON CONFLICT DO NOTHING
     let alreadyProcessed = false;
 
-    await withTransaction(async (client) => {
-      const insertResult = await query(
+    await prisma.$transaction(async (tx) => {
+      const insertResult = await tx.$queryRawUnsafe<{ id: number }[]>(
         `INSERT INTO guest_payments (trip_proposal_id, guest_id, amount, stripe_payment_intent_id, payment_type, status)
          VALUES ($1, $2, $3, $4, 'registration_deposit', 'succeeded')
          ON CONFLICT (stripe_payment_intent_id) WHERE stripe_payment_intent_id IS NOT NULL
          DO NOTHING
          RETURNING id`,
-        [proposal.id, guest.id, amount, payment_intent_id],
-        client
+        proposal.id, guest.id, amount, payment_intent_id
       );
 
-      if (insertResult.rows.length === 0) {
+      if (insertResult.length === 0) {
         alreadyProcessed = true;
         return;
       }
 
       // Update guest payment status
-      await query(
+      await tx.$executeRawUnsafe(
         `UPDATE trip_proposal_guests
          SET payment_status = 'paid',
              amount_paid = COALESCE(amount_paid, 0) + $1,
              payment_paid_at = NOW(),
              updated_at = NOW()
          WHERE id = $2 AND trip_proposal_id = $3`,
-        [amount, guest.id, proposal.id],
-        client
+        amount, guest.id, proposal.id
       );
     });
 

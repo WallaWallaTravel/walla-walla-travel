@@ -12,7 +12,7 @@ import {
   BadRequestError,
 } from '@/lib/api/middleware/error-handler';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { noDisposableEmail } from '@/lib/utils/email-validation';
@@ -51,22 +51,22 @@ export const POST = withCSRF(
 
     const { name, email, phone } = parseResult.data;
 
-    const result = await query(
+    const rows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
       `UPDATE trip_proposal_guests
        SET name = $1, email = $2, phone = $3, is_registered = true, updated_at = NOW()
        WHERE id = $4 AND trip_proposal_id = $5
        RETURNING id, name, email, phone, is_registered, is_primary,
                  dietary_restrictions, accessibility_needs, special_requests`,
-      [name, email, phone || null, guestIdNum, proposal.id]
+      name, email, phone || null, guestIdNum, proposal.id
     );
 
-    if (!result.rows[0]) {
+    if (!rows[0]) {
       throw new NotFoundError('Guest not found');
     }
 
     return NextResponse.json({
       success: true,
-      data: result.rows[0],
+      data: rows[0],
     });
   }
 )

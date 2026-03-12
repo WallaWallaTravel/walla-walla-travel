@@ -3,7 +3,7 @@ import {
   successResponse,
   requireAuth,
 } from '@/app/api/utils';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { userService } from '@/lib/services/user.service';
 import { validate, profileUpdateSchema } from '@/lib/validation';
 import { logApiRequest } from '@/lib/logger';
@@ -107,13 +107,13 @@ export const PUT = withCSRF(
     RETURNING id, email, name, phone, role, created_at, last_login, emergency_contact_name, emergency_contact_phone
   `;
 
-  const result = await query(updateQuery, values);
+  const resultRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(updateQuery, ...values);
 
-  if (result.rowCount === 0) {
+  if (resultRows.length === 0) {
     throw new NotFoundError('User not found');
   }
 
-  const updatedUser = result.rows[0];
+  const updatedUser = resultRows[0];
 
   return successResponse({
     id: updatedUser.id,

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { addCacheHeaders, CachePresets } from '@/lib/api/middleware/cache';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 import { logger } from '@/lib/logger';
@@ -35,8 +35,8 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   let rows: Record<string, unknown>[] = [];
 
   try {
-    const result = await query(sql, params);
-    rows = result.rows;
+    const result = await prisma.$queryRawUnsafe(sql, ...params) as Record<string, unknown>[];
+    rows = result;
   } catch (err: unknown) {
     // PostgreSQL error code 42P01 = "relation does not exist"
     // Return empty results instead of 500 — the table may not be migrated yet

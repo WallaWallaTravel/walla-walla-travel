@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, NotFoundError, RouteContext } from '@/lib/api/middleware/error-handler';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { tripAIService } from '@/lib/services/trip-ai.service';
 import { Trip, TripStop, TripGuest } from '@/lib/types/trip-planner';
 import { z } from 'zod';
@@ -29,30 +29,30 @@ const suggestionsRequestSchema = z.object({
 
 async function loadTripWithRelations(shareCode: string): Promise<Trip | null> {
   // Get trip
-  const tripResult = await query(
+  const tripRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
     `SELECT * FROM trips WHERE share_code = $1`,
-    [shareCode]
+    shareCode
   );
 
-  if (tripResult.rows.length === 0) {
+  if (tripRows.length === 0) {
     return null;
   }
 
-  const trip = tripResult.rows[0];
+  const trip = tripRows[0];
 
   // Get stops and guests in parallel
-  const [stopsResult, guestsResult] = await Promise.all([
-    query(
+  const [stopsRows, guestsRows] = await Promise.all([
+    prisma.$queryRawUnsafe<Record<string, any>[]>(
       `SELECT * FROM trip_stops WHERE trip_id = $1 ORDER BY day_number, stop_order`,
-      [trip.id]
+      trip.id
     ),
-    query(
+    prisma.$queryRawUnsafe<Record<string, any>[]>(
       `SELECT * FROM trip_guests WHERE trip_id = $1 ORDER BY is_organizer DESC, name ASC`,
-      [trip.id]
+      trip.id
     ),
   ]);
 
-  const stops: TripStop[] = stopsResult.rows.map((row) => ({
+  const stops: TripStop[] = stopsRows.map((row) => ({
     id: row.id,
     trip_id: row.trip_id,
     stop_type: row.stop_type,
@@ -67,7 +67,7 @@ async function loadTripWithRelations(shareCode: string): Promise<Trip | null> {
     created_at: row.created_at,
   }));
 
-  const guests: TripGuest[] = guestsResult.rows.map((row) => ({
+  const guests: TripGuest[] = guestsRows.map((row) => ({
     id: row.id,
     trip_id: row.trip_id,
     name: row.name,

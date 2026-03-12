@@ -7,7 +7,7 @@
 import { getSession } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 
 interface User {
@@ -22,12 +22,11 @@ interface User {
 
 async function getUsers(): Promise<User[]> {
   try {
-    const result = await query<User>(
+    return await prisma.$queryRawUnsafe<User[]>(
       `SELECT id, email, name, role, is_active, last_login, created_at
        FROM users
        ORDER BY created_at DESC`
     );
-    return result.rows;
   } catch (error) {
     logger.error('[Users] Error fetching users', { error });
     return [];

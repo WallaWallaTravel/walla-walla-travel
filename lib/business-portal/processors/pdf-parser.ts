@@ -3,7 +3,7 @@
  * Extracts text from PDF documents
  */
 
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 
 export interface PdfParseResult {
@@ -43,16 +43,16 @@ export async function processPdfFile(fileId: number): Promise<PdfParseResult> {
   logger.debug('PDF Parser: Processing PDF file', { fileId });
 
   // Get the file
-  const result = await query(
+  const rows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
     'SELECT storage_url, original_filename FROM business_files WHERE id = $1',
-    [fileId]
+    fileId
   );
 
-  if (result.rows.length === 0) {
+  if (rows.length === 0) {
     throw new Error(`File ${fileId} not found`);
   }
 
-  const file = result.rows[0];
+  const file = rows[0];
 
   if (!file.storage_url) {
     throw new Error(`File ${fileId} has no storage URL`);
@@ -62,14 +62,14 @@ export async function processPdfFile(fileId: number): Promise<PdfParseResult> {
   const parseResult = await parsePdf(file.storage_url);
 
   // Update the file with extracted text
-  await query(`
+  await prisma.$queryRawUnsafe(`
     UPDATE business_files
-    SET 
+    SET
       extracted_text = $2,
       processing_status = 'completed',
       processed_at = NOW()
     WHERE id = $1
-  `, [fileId, parseResult.text]);
+  `, fileId, parseResult.text);
 
   logger.debug('PDF Parser: Updated file with extracted text', { fileId });
 

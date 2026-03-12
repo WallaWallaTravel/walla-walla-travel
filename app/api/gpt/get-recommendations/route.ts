@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { query } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 
@@ -114,17 +114,15 @@ export const POST = withCSRF(
   const stops = Math.min(Math.max(number_of_stops, 2), 5);
 
   // Get all active wineries
-  const result = await query<WineryRow>(
-    `SELECT id, name, slug, description, address, city,
+  const result = await prisma.$queryRaw`SELECT id, name, slug, description, address, city,
             tasting_fee, average_visit_duration, website,
             reservation_required, specialties, features
      FROM wineries
      WHERE is_active = true
-     ORDER BY name`
-  );
+     ORDER BY name` as WineryRow[];
 
   // Score each winery based on preferences
-  const scoredWineries: WineryRecommendation[] = result.rows.map(winery => {
+  const scoredWineries: WineryRecommendation[] = result.map(winery => {
     let score = 50; // Base score
     const matchReasons: string[] = [];
 

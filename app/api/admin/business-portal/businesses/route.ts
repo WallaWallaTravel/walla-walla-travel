@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 
 export const runtime = 'nodejs';
@@ -17,7 +17,7 @@ export const dynamic = 'force-dynamic';
 export const GET = withAdminAuth(async (
   _request: NextRequest, _session
 ) => {
-  const result = await query(`
+  const result = await prisma.$queryRaw`
     SELECT
       id,
       business_type,
@@ -38,10 +38,10 @@ export const GET = withAdminAuth(async (
       updated_at
     FROM businesses
     ORDER BY updated_at DESC NULLS LAST, invited_at DESC
-  `);
+  ` as Record<string, any>[];
 
   return NextResponse.json({
     success: true,
-    businesses: result.rows
+    businesses: result
   });
 });

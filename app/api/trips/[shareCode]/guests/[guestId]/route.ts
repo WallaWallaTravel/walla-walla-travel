@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, NotFoundError, RouteContext } from '@/lib/api/middleware/error-handler';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface RouteParams {
@@ -23,51 +23,51 @@ export const DELETE = withCSRF(
     }
 
     // Get trip ID from share code
-    const tripResult = await query(
+    const tripRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
       `SELECT id FROM trips WHERE share_code = $1`,
-      [shareCode]
+      shareCode
     );
 
-    if (tripResult.rows.length === 0) {
+    if (tripRows.length === 0) {
       throw new NotFoundError('Trip not found');
     }
 
-    const tripId = tripResult.rows[0].id;
+    const tripId = tripRows[0].id;
 
     // Get guest name for activity log
-    const guestResult = await query(
+    const guestRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
       `SELECT name FROM trip_guests WHERE id = $1 AND trip_id = $2`,
-      [guestIdNum, tripId]
+      guestIdNum, tripId
     );
 
-    if (guestResult.rows.length === 0) {
+    if (guestRows.length === 0) {
       throw new NotFoundError('Guest not found');
     }
 
-    const guestName = guestResult.rows[0].name;
+    const guestName = guestRows[0].name;
 
     // Delete the guest
-    await query(
+    await prisma.$executeRawUnsafe(
       `DELETE FROM trip_guests WHERE id = $1 AND trip_id = $2`,
-      [guestIdNum, tripId]
+      guestIdNum, tripId
     );
 
     // Update confirmed guests count and trip activity
-    await query(
+    await prisma.$executeRawUnsafe(
       `UPDATE trips
        SET confirmed_guests = (
          SELECT COUNT(*) FROM trip_guests WHERE trip_id = $1 AND rsvp_status = 'attending'
        ),
        last_activity_at = NOW()
        WHERE id = $1`,
-      [tripId]
+      tripId
     );
 
     // Log activity
-    await query(
+    await prisma.$executeRawUnsafe(
       `INSERT INTO trip_activity_log (trip_id, activity_type, description, actor_type)
        VALUES ($1, 'guest_removed', $2, 'owner')`,
-      [tripId, `Removed guest: ${guestName}`]
+      tripId, `Removed guest: ${guestName}`
     );
 
     return NextResponse.json({

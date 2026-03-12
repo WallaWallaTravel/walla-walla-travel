@@ -3,7 +3,7 @@
  * Uses Deepgram to transcribe voice recordings
  */
 
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 
 const DEEPGRAM_API_KEY = process.env.DEEPGRAM_API_KEY;
@@ -95,16 +95,16 @@ export async function processVoiceEntry(voiceEntryId: number): Promise<Transcrip
   logger.debug('Voice Transcriber: Processing voice entry', { voiceEntryId });
 
   // Get the voice entry
-  const result = await query(
+  const rows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
     'SELECT audio_url, audio_duration_seconds FROM business_voice_entries WHERE id = $1',
-    [voiceEntryId]
+    voiceEntryId
   );
 
-  if (result.rows.length === 0) {
+  if (rows.length === 0) {
     throw new Error(`Voice entry ${voiceEntryId} not found`);
   }
 
-  const voiceEntry = result.rows[0];
+  const voiceEntry = rows[0];
   
   if (!voiceEntry.audio_url) {
     throw new Error(`Voice entry ${voiceEntryId} has no audio URL`);
@@ -114,14 +114,14 @@ export async function processVoiceEntry(voiceEntryId: number): Promise<Transcrip
   const transcription = await transcribeAudio(voiceEntry.audio_url);
 
   // Update the voice entry with transcription
-  await query(`
+  await prisma.$queryRawUnsafe(`
     UPDATE business_voice_entries
-    SET 
+    SET
       transcription = $2,
       transcription_confidence = $3,
       transcribed_at = NOW()
     WHERE id = $1
-  `, [voiceEntryId, transcription.transcription, transcription.confidence]);
+  `, voiceEntryId, transcription.transcription, transcription.confidence);
 
   logger.debug('Voice Transcriber: Updated voice entry with transcription', { voiceEntryId });
 

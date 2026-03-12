@@ -11,7 +11,7 @@
  * @module lib/services/payment-reminder.service
  */
 
-import { query, queryOne, withTransaction } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 import { sendEmail } from '@/lib/email';
 import { getBrandEmailConfig } from '@/lib/email-brands';
 import { logger } from '@/lib/logger';
@@ -75,11 +75,12 @@ const DEFAULT_SCHEDULE: ReminderScheduleConfig[] = [
  */
 async function generateReminderSchedule(proposalId: number): Promise<{ created: number }> {
   // Fetch proposal deadline
-  const proposal = await queryOne(
+  const proposalRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
     `SELECT id, payment_deadline, reminders_paused, individual_billing_enabled
      FROM trip_proposals WHERE id = $1`,
-    [proposalId]
+    proposalId
   );
+  const proposal = proposalRows[0] ?? null;
 
   if (!proposal) {
     throw new Error(`Proposal ${proposalId} not found`);
@@ -105,28 +106,27 @@ async function generateReminderSchedule(proposalId: number): Promise<{ created: 
   let created = 0;
 
   // C2 (TOCTOU fix): Move unpaidGuests query inside the transaction
-  await withTransaction(async (client) => {
+  await prisma.$transaction(async (tx) => {
     // Get all non-sponsored, unpaid guests inside the transaction
-    const unpaidGuests = await query(
+    const unpaidGuests = await tx.$queryRawUnsafe<Record<string, any>[]>(
       `SELECT id FROM trip_proposal_guests
        WHERE trip_proposal_id = $1
          AND is_sponsored = FALSE
          AND payment_status NOT IN ('paid', 'refunded')`,
-      [proposalId],
-      client
+      proposalId
     );
 
-    if (unpaidGuests.rows.length === 0) {
+    if (unpaidGuests.length === 0) {
       return;
     }
 
     // Remove existing pending auto-reminders for this proposal
-    await client.query(
+    await tx.$queryRawUnsafe(
       `DELETE FROM payment_reminders
        WHERE trip_proposal_id = $1
          AND reminder_type = 'auto_schedule'
          AND status = 'pending'`,
-      [proposalId]
+      proposalId
     );
 
     const today = new Date();
@@ -136,7 +136,7 @@ async function generateReminderSchedule(proposalId: number): Promise<{ created: 
     const insertValues: unknown[] = [];
     const insertClauses: string[] = [];
 
-    for (const guest of unpaidGuests.rows) {
+    for (const guest of unpaidGuests) {
       for (const config of DEFAULT_SCHEDULE) {
         const scheduledDate = new Date(deadline);
         scheduledDate.setDate(scheduledDate.getDate() - config.days_before);
@@ -161,12 +161,12 @@ async function generateReminderSchedule(proposalId: number): Promise<{ created: 
     }
 
     if (insertClauses.length > 0) {
-      await client.query(
+      await tx.$queryRawUnsafe(
         `INSERT INTO payment_reminders (
           trip_proposal_id, guest_id, reminder_type, scheduled_date,
           days_before_deadline, urgency, status
         ) VALUES ${insertClauses.join(', ')}`,
-        insertValues
+        ...insertValues
       );
       created = insertClauses.length;
     }
@@ -174,14 +174,12 @@ async function generateReminderSchedule(proposalId: number): Promise<{ created: 
 
   // Log activity
   try {
-    await query(
+    await prisma.$queryRawUnsafe(
       `INSERT INTO trip_proposal_activity (trip_proposal_id, activity_type, description, metadata)
        VALUES ($1, 'reminders_generated', $2, $3)`,
-      [
-        proposalId,
-        `Generated ${created} payment reminders`,
-        JSON.stringify({ reminder_count: created }),
-      ]
+      proposalId,
+      `Generated ${created} payment reminders`,
+      JSON.stringify({ reminder_count: created }),
     );
   } catch {
     // Activity logging is non-critical
@@ -217,7 +215,7 @@ async function processScheduledReminders(): Promise<{
 
   // B1 FIX: Atomically claim pending reminders — no other process can grab these.
   // FOR UPDATE SKIP LOCKED ensures concurrent cron runs don't overlap.
-  const pendingReminders = await query<PaymentReminder>(
+  const pendingReminders = await prisma.$queryRawUnsafe<PaymentReminder[]>(
     `UPDATE payment_reminders
      SET status = 'processing', updated_at = NOW()
      WHERE id IN (
@@ -230,7 +228,7 @@ async function processScheduledReminders(): Promise<{
        FOR UPDATE SKIP LOCKED
      )
      RETURNING *`,
-    [today]
+    today
   );
 
   const results = {
@@ -248,7 +246,7 @@ async function processScheduledReminders(): Promise<{
   }
   const proposalCache = new Map<number, CachedProposal>();
 
-  for (const reminder of pendingReminders.rows) {
+  for (const reminder of pendingReminders) {
     try {
       // ---------------------------------------------------------------
       // SAFETY: Fresh DB reads for every decision — never cached
@@ -257,12 +255,13 @@ async function processScheduledReminders(): Promise<{
       // Check 1: Get proposal data (cached per cron run for N+1 fix)
       let proposal = proposalCache.get(reminder.trip_proposal_id);
       if (!proposal) {
-        const p = await queryOne<CachedProposal>(
+        const pRows = await prisma.$queryRawUnsafe<CachedProposal[]>(
           `SELECT id, reminders_paused, payment_deadline, proposal_number, brand_id,
                   customer_name, trip_type, start_date, access_token
            FROM trip_proposals WHERE id = $1`,
-          [reminder.trip_proposal_id]
+          reminder.trip_proposal_id
         );
+        const p = pRows[0] ?? null;
 
         if (!p) {
           await skipReminder(reminder.id, 'Proposal not found');
@@ -283,15 +282,16 @@ async function processScheduledReminders(): Promise<{
 
       // Check 2: RE-QUERY guest payment status (the most important safety check)
       if (reminder.guest_id) {
-        const guest = await queryOne<{
+        const guestRows = await prisma.$queryRawUnsafe<{
           id: number; guest_name: string; guest_email: string;
           payment_status: string; amount_owed: number; amount_paid: number;
           is_sponsored: boolean; guest_token: string;
-        }>(
+        }[]>(
           `SELECT id, guest_name, guest_email, payment_status, amount_owed, amount_paid, is_sponsored, guest_access_token as guest_token
            FROM trip_proposal_guests WHERE id = $1`,
-          [reminder.guest_id]
+          reminder.guest_id
         );
+        const guest = guestRows[0] ?? null;
 
         if (!guest) {
           await skipReminder(reminder.id, 'Guest not found');
@@ -360,7 +360,7 @@ async function processScheduledReminders(): Promise<{
   }
 
   logger.info('Payment reminders processed', {
-    total: pendingReminders.rows.length,
+    total: pendingReminders.length,
     sent: results.sent,
     skipped: results.skipped,
     failed: results.failed,
@@ -441,17 +441,15 @@ async function sendReminderEmail(
 
     // Audit logging for sent emails
     try {
-      await query(
+      await prisma.$queryRawUnsafe(
         `INSERT INTO email_logs (
           trip_proposal_id, email_type, recipient, subject, sent_at, status
         ) VALUES ($1, $2, $3, $4, NOW(), $5)`,
-        [
-          proposal.id,
-          `payment_reminder_${reminder.urgency}`,
-          guest.guest_email,
-          template.subject,
-          success ? 'sent' : 'failed',
-        ]
+        proposal.id,
+        `payment_reminder_${reminder.urgency}`,
+        guest.guest_email,
+        template.subject,
+        success ? 'sent' : 'failed',
       );
     } catch {
       // email_logs is non-critical
@@ -473,20 +471,20 @@ async function sendReminderEmail(
 // ---------------------------------------------------------------------------
 
 async function skipReminder(reminderId: number, reason: string): Promise<void> {
-  await query(
+  await prisma.$queryRawUnsafe(
     `UPDATE payment_reminders
      SET status = 'skipped', skip_reason = $2, updated_at = NOW()
      WHERE id = $1 AND status IN ('pending', 'processing')`,
-    [reminderId, reason]
+    reminderId, reason
   );
 }
 
 async function markReminderSent(reminderId: number): Promise<void> {
-  await query(
+  await prisma.$queryRawUnsafe(
     `UPDATE payment_reminders
      SET status = 'sent', sent_at = NOW(), updated_at = NOW()
      WHERE id = $1 AND status = 'processing'`,
-    [reminderId]
+    reminderId
   );
 }
 
@@ -519,11 +517,11 @@ function formatDateForEmail(dateStr: string): string {
  * Pause all reminders for a specific guest
  */
 async function pauseRemindersForGuest(guestId: number): Promise<void> {
-  await query(
+  await prisma.$queryRawUnsafe(
     `UPDATE payment_reminders
      SET paused = TRUE, updated_at = NOW()
      WHERE guest_id = $1 AND status = 'pending'`,
-    [guestId]
+    guestId
   );
 }
 
@@ -531,11 +529,11 @@ async function pauseRemindersForGuest(guestId: number): Promise<void> {
  * Resume all reminders for a specific guest
  */
 async function resumeRemindersForGuest(guestId: number): Promise<void> {
-  await query(
+  await prisma.$queryRawUnsafe(
     `UPDATE payment_reminders
      SET paused = FALSE, updated_at = NOW()
      WHERE guest_id = $1 AND status = 'pending'`,
-    [guestId]
+    guestId
   );
 }
 
@@ -543,9 +541,9 @@ async function resumeRemindersForGuest(guestId: number): Promise<void> {
  * Pause all reminders at the proposal level
  */
 async function pauseRemindersForProposal(proposalId: number): Promise<void> {
-  await query(
+  await prisma.$queryRawUnsafe(
     `UPDATE trip_proposals SET reminders_paused = TRUE WHERE id = $1`,
-    [proposalId]
+    proposalId
   );
 }
 
@@ -553,9 +551,9 @@ async function pauseRemindersForProposal(proposalId: number): Promise<void> {
  * Resume all reminders at the proposal level
  */
 async function resumeRemindersForProposal(proposalId: number): Promise<void> {
-  await query(
+  await prisma.$queryRawUnsafe(
     `UPDATE trip_proposals SET reminders_paused = FALSE WHERE id = $1`,
-    [proposalId]
+    proposalId
   );
 }
 
@@ -595,14 +593,15 @@ async function addManualReminder(
     throw new Error('Cannot schedule a reminder in the past');
   }
 
-  const result = await queryOne<{ id: number }>(
+  const resultRows = await prisma.$queryRawUnsafe<{ id: number }[]>(
     `INSERT INTO payment_reminders (
       trip_proposal_id, guest_id, reminder_type, scheduled_date,
       urgency, status, custom_message
     ) VALUES ($1, $2, 'manual', $3, $4, 'pending', $5)
     RETURNING id`,
-    [proposalId, guestId || null, scheduledDate, urgency, customMessage || null]
+    proposalId, guestId || null, scheduledDate, urgency, customMessage || null
   );
+  const result = resultRows[0] ?? null;
 
   if (!result) {
     throw new Error('Failed to create manual reminder');
@@ -620,15 +619,14 @@ async function addManualReminder(
  * D fix: Extended return type with guest_name, guest_email
  */
 async function getReminderHistory(proposalId: number): Promise<ReminderHistoryRow[]> {
-  const result = await query<ReminderHistoryRow>(
+  return prisma.$queryRawUnsafe<ReminderHistoryRow[]>(
     `SELECT pr.*, tpg.guest_name, tpg.guest_email
      FROM payment_reminders pr
      LEFT JOIN trip_proposal_guests tpg ON tpg.id = pr.guest_id
      WHERE pr.trip_proposal_id = $1
      ORDER BY pr.scheduled_date DESC, pr.created_at DESC`,
-    [proposalId]
+    proposalId
   );
-  return result.rows;
 }
 
 /**
@@ -636,14 +634,15 @@ async function getReminderHistory(proposalId: number): Promise<ReminderHistoryRo
  * D fix: Check rowCount and throw if no rows affected
  */
 async function cancelReminder(reminderId: number): Promise<void> {
-  const result = await query(
+  const result = await prisma.$queryRawUnsafe<Record<string, any>[]>(
     `UPDATE payment_reminders
      SET status = 'cancelled', updated_at = NOW()
-     WHERE id = $1 AND status = 'pending'`,
-    [reminderId]
+     WHERE id = $1 AND status = 'pending'
+     RETURNING id`,
+    reminderId
   );
 
-  if (result.rowCount === 0) {
+  if (result.length === 0) {
     throw new Error(`Reminder ${reminderId} not found or not in pending status`);
   }
 }

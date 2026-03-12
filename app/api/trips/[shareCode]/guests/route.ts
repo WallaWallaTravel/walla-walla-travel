@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, NotFoundError, RouteContext } from '@/lib/api/middleware/error-handler';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { addGuestSchema } from '@/lib/validation/schemas/trip';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 
@@ -20,19 +20,19 @@ export const POST = withCSRF(
     const validated = addGuestSchema.parse(body);
 
     // Get trip ID from share code
-    const tripResult = await query(
+    const tripRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
       `SELECT id FROM trips WHERE share_code = $1`,
-      [shareCode]
+      shareCode
     );
 
-    if (tripResult.rows.length === 0) {
+    if (tripRows.length === 0) {
       throw new NotFoundError('Trip not found');
     }
 
-    const tripId = tripResult.rows[0].id;
+    const tripId = tripRows[0].id;
 
     // Insert the guest
-    const result = await query(
+    const rows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
       `INSERT INTO trip_guests (
         trip_id, name, email, phone,
         is_organizer, dietary_restrictions, accessibility_needs,
@@ -41,30 +41,28 @@ export const POST = withCSRF(
         $1, $2, $3, $4, $5, $6, $7, 'pending'
       )
       RETURNING *`,
-      [
-        tripId,
-        validated.name,
-        validated.email || null,
-        validated.phone || null,
-        validated.is_organizer,
-        validated.dietary_restrictions || null,
-        validated.accessibility_needs || null,
-      ]
+      tripId,
+      validated.name,
+      validated.email || null,
+      validated.phone || null,
+      validated.is_organizer,
+      validated.dietary_restrictions || null,
+      validated.accessibility_needs || null,
     );
 
-    const guest = result.rows[0];
+    const guest = rows[0];
 
     // Update trip activity timestamp
-    await query(
+    await prisma.$executeRawUnsafe(
       `UPDATE trips SET last_activity_at = NOW() WHERE id = $1`,
-      [tripId]
+      tripId
     );
 
     // Log activity
-    await query(
+    await prisma.$executeRawUnsafe(
       `INSERT INTO trip_activity_log (trip_id, activity_type, description, actor_type)
        VALUES ($1, 'guest_added', $2, 'owner')`,
-      [tripId, `Added guest: ${validated.name}`]
+      tripId, `Added guest: ${validated.name}`
     );
 
     return NextResponse.json({

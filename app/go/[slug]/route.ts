@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 
 /**
@@ -20,15 +20,15 @@ export async function GET(
 
   try {
     // Look up winery by slug
-    const wineryResult = await query(
+    const rows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
       `SELECT id, name, slug, website, is_active
        FROM wineries
        WHERE slug = $1
        LIMIT 1`,
-      [slug]
+      slug
     );
 
-    const winery = wineryResult.rows[0];
+    const winery = rows[0];
 
     if (!winery) {
       logger.warn(`[Booking Redirect] Winery not found: ${slug}`);
@@ -49,11 +49,11 @@ export async function GET(
 
     // Log the click for analytics
     try {
-      await query(
+      await prisma.$queryRawUnsafe(
         `INSERT INTO booking_clicks (
           winery_id, winery_slug, referrer, user_agent, ip_address, created_at
         ) VALUES ($1, $2, $3, $4, $5, NOW())`,
-        [winery.id, winery.slug, referrer, userAgent, ip]
+        winery.id, winery.slug, referrer, userAgent, ip
       );
     } catch (logError) {
       // Don't block redirect if logging fails - table might not exist yet

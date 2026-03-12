@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { validateBody } from '@/lib/api/middleware/validation';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { hashPassword, validatePasswordStrength } from '@/lib/auth/passwords';
 import crypto from 'crypto';
 import { withCSRF } from '@/lib/api/middleware/csrf';
@@ -32,25 +32,25 @@ export const POST = withCSRF(
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 
     // Find user by hashed reset token (FOR UPDATE prevents race conditions)
-    const userResult = await query<{ id: number; reset_token_expires_at: string }>(
+    const userRows = await prisma.$queryRawUnsafe<Array<{ id: number; reset_token_expires_at: string }>>(
       `SELECT id, reset_token_expires_at FROM users
        WHERE reset_token = $1 AND is_active = true
        FOR UPDATE`,
-      [hashedToken]
+      hashedToken
     );
 
-    if (userResult.rows.length === 0) {
+    if (userRows.length === 0) {
       throw new BadRequestError('Invalid or expired reset link');
     }
 
-    const user = userResult.rows[0];
+    const user = userRows[0];
 
     // Check expiry
     if (new Date(user.reset_token_expires_at) < new Date()) {
       // Clear expired token
-      await query(
+      await prisma.$queryRawUnsafe(
         `UPDATE users SET reset_token = NULL, reset_token_expires_at = NULL WHERE id = $1`,
-        [user.id]
+        user.id
       );
       throw new BadRequestError('Reset link has expired. Please request a new one.');
     }
@@ -59,11 +59,11 @@ export const POST = withCSRF(
     const passwordHash = await hashPassword(password);
 
     // Update password and clear token
-    await query(
+    await prisma.$queryRawUnsafe(
       `UPDATE users
        SET password_hash = $1, reset_token = NULL, reset_token_expires_at = NULL, updated_at = CURRENT_TIMESTAMP
        WHERE id = $2`,
-      [passwordHash, user.id]
+      passwordHash, user.id
     );
 
     // Revoke all sessions — forces re-login with new password

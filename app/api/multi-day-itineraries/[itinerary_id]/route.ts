@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { withErrorHandling, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 
@@ -56,19 +56,19 @@ export const GET = withErrorHandling(async (
   const { itinerary_id } = await params;
 
   // Get itinerary
-  const itineraryResult = await query(
+  const itineraryRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
     'SELECT * FROM itineraries WHERE id = $1',
-    [itinerary_id]
+    itinerary_id
   );
 
-  if (itineraryResult.rows.length === 0) {
+  if (itineraryRows.length === 0) {
     throw new NotFoundError('Itinerary not found');
   }
 
-  const itinerary = itineraryResult.rows[0];
+  const itinerary = itineraryRows[0];
 
   // Get days with activities
-  const daysResult = await query(
+  const days = await prisma.$queryRawUnsafe<Record<string, any>[]>(
     `SELECT
       d.*,
       json_agg(
@@ -100,10 +100,8 @@ export const GET = withErrorHandling(async (
     WHERE d.itinerary_id = $1
     GROUP BY d.id
     ORDER BY d.display_order`,
-    [itinerary_id]
+    itinerary_id
   );
-
-  const days = daysResult.rows;
 
   return NextResponse.json({
     itinerary,
@@ -122,24 +120,22 @@ export const PUT = withCSRF(
   const body = PutBodySchema.parse(await request.json());
   const { itinerary, days } = body;
 
-  await query('BEGIN');
-
-  // Update itinerary
-  if (itinerary) {
-    await query(
-      `UPDATE itineraries
-       SET title = $1,
-           client_name = $2,
-           client_email = $3,
-           party_size = $4,
-           start_date = $5,
-           end_date = $6,
-           status = $7,
-           internal_notes = $8,
-           client_notes = $9,
-           updated_at = NOW()
-       WHERE id = $10`,
-      [
+  await prisma.$transaction(async (tx) => {
+    // Update itinerary
+    if (itinerary) {
+      await tx.$queryRawUnsafe(
+        `UPDATE itineraries
+         SET title = $1,
+             client_name = $2,
+             client_email = $3,
+             party_size = $4,
+             start_date = $5,
+             end_date = $6,
+             status = $7,
+             internal_notes = $8,
+             client_notes = $9,
+             updated_at = NOW()
+         WHERE id = $10`,
         itinerary.title,
         itinerary.client_name,
         itinerary.client_email,
@@ -150,55 +146,51 @@ export const PUT = withCSRF(
         itinerary.internal_notes,
         itinerary.client_notes,
         itinerary_id
-      ]
-    );
-  }
+      );
+    }
 
-  // Update days and activities
-  if (days && Array.isArray(days)) {
-    for (const day of days) {
-      // Upsert day
-      const dayResult = await query(
-        `INSERT INTO itinerary_days
-         (id, itinerary_id, day_number, date, title, description, display_order)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
-         ON CONFLICT (id) DO UPDATE SET
-           day_number = $3,
-           date = $4,
-           title = $5,
-           description = $6,
-           display_order = $7,
-           updated_at = NOW()
-         RETURNING id`,
-        [
-          (day.id && day.id > 1000000000000) ? null : (day.id ?? null), // Temp IDs are timestamps
+    // Update days and activities
+    if (days && Array.isArray(days)) {
+      for (const day of days) {
+        // Upsert day
+        const dayResult = await tx.$queryRawUnsafe<Record<string, any>[]>(
+          `INSERT INTO itinerary_days
+           (id, itinerary_id, day_number, date, title, description, display_order)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)
+           ON CONFLICT (id) DO UPDATE SET
+             day_number = $3,
+             date = $4,
+             title = $5,
+             description = $6,
+             display_order = $7,
+             updated_at = NOW()
+           RETURNING id`,
+          (day.id && day.id > 1000000000000) ? null : (day.id ?? null),
           itinerary_id,
           day.day_number,
           day.date,
           day.title,
           day.description,
           day.display_order
-        ]
-      );
+        );
 
-      const dayId = dayResult.rows[0].id;
+        const dayId = dayResult[0].id;
 
-      // Delete existing activities for this day
-      await query(
-        'DELETE FROM itinerary_activities WHERE itinerary_day_id = $1',
-        [dayId]
-      );
+        // Delete existing activities for this day
+        await tx.$queryRawUnsafe(
+          'DELETE FROM itinerary_activities WHERE itinerary_day_id = $1',
+          dayId
+        );
 
-      // Insert activities
-      if (day.activities && Array.isArray(day.activities)) {
-        for (const activity of day.activities) {
-          await query(
-            `INSERT INTO itinerary_activities
-             (itinerary_day_id, activity_type, start_time, end_time, duration_minutes,
-              location_name, location_address, location_type, pickup_location, dropoff_location,
-              winery_id, tasting_included, tasting_fee, title, description, notes, display_order)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
-            [
+        // Insert activities
+        if (day.activities && Array.isArray(day.activities)) {
+          for (const activity of day.activities) {
+            await tx.$queryRawUnsafe(
+              `INSERT INTO itinerary_activities
+               (itinerary_day_id, activity_type, start_time, end_time, duration_minutes,
+                location_name, location_address, location_type, pickup_location, dropoff_location,
+                winery_id, tasting_included, tasting_fee, title, description, notes, display_order)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
               dayId,
               activity.activity_type,
               activity.start_time,
@@ -216,14 +208,12 @@ export const PUT = withCSRF(
               activity.description,
               activity.notes,
               activity.display_order
-            ]
-          );
+            );
+          }
         }
       }
     }
-  }
-
-  await query('COMMIT');
+  });
 
   return NextResponse.json({ success: true });
 })
@@ -237,7 +227,7 @@ export const DELETE = withCSRF(
 ) => {
   const { itinerary_id } = await params;
 
-  await query('DELETE FROM itineraries WHERE id = $1', [itinerary_id]);
+  await prisma.$queryRawUnsafe('DELETE FROM itineraries WHERE id = $1', itinerary_id);
   return NextResponse.json({ success: true });
 })
 );

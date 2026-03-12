@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 
@@ -62,7 +62,7 @@ export const GET = withErrorHandling(async (request: Request) => {
     WHERE is_active = TRUE
   `;
 
-  const params: string[] = [];
+  const params: (string | number)[] = [];
   let paramCount = 0;
 
   if (category) {
@@ -96,24 +96,23 @@ export const GET = withErrorHandling(async (request: Request) => {
   sqlQuery += ` ORDER BY is_hero DESC, display_order ASC, created_at DESC`;
   sqlQuery += ` LIMIT ${limit} OFFSET ${offset}`;
 
-  const result = await query(sqlQuery, params);
+  const result = await prisma.$queryRawUnsafe(sqlQuery, ...params) as Record<string, any>[];
 
   // Get total count
   let countQuery = `SELECT COUNT(*) FROM media_library WHERE is_active = TRUE`;
   if (category) countQuery += ` AND category = $1`;
-  const countResult = await query(
-    countQuery,
-    category ? [category] : []
-  );
+  const countResult = category
+    ? await prisma.$queryRawUnsafe(countQuery, category) as Record<string, any>[]
+    : await prisma.$queryRawUnsafe(countQuery) as Record<string, any>[];
 
   return NextResponse.json({
     success: true,
-    data: result.rows,
+    data: result,
     pagination: {
-      total: parseInt(countResult.rows[0].count),
+      total: parseInt(countResult[0].count),
       limit,
       offset,
-      hasMore: offset + result.rows.length < parseInt(countResult.rows[0].count)
+      hasMore: offset + result.length < parseInt(countResult[0].count)
     }
   });
 });
@@ -149,7 +148,7 @@ export const POST = withCSRF(
     throw new BadRequestError('Missing required fields: file_name, file_path, file_type, category');
   }
 
-  const result = await query(
+  const result = await prisma.$queryRawUnsafe(
     `INSERT INTO media_library (
       file_name, file_path, file_type, file_size, mime_type,
       category, subcategory, title, description, alt_text,
@@ -157,29 +156,27 @@ export const POST = withCSRF(
       thumbnail_path, medium_path, large_path
     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
     RETURNING *`,
-    [
-      file_name,
-      file_path,
-      file_type,
-      file_size,
-      mime_type,
-      category,
-      subcategory,
-      title || file_name,
-      description,
-      alt_text || title || file_name,
-      tags || [],
-      is_hero || false,
-      display_order || 0,
-      thumbnail_path,
-      medium_path,
-      large_path
-    ]
-  );
+    file_name,
+    file_path,
+    file_type,
+    file_size,
+    mime_type,
+    category,
+    subcategory,
+    title || file_name,
+    description,
+    alt_text || title || file_name,
+    tags || [],
+    is_hero || false,
+    display_order || 0,
+    thumbnail_path,
+    medium_path,
+    large_path
+  ) as Record<string, any>[];
 
   return NextResponse.json({
     success: true,
-    data: result.rows[0]
+    data: result[0]
   });
 })
 );

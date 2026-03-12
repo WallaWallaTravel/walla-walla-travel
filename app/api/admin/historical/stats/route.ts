@@ -9,7 +9,7 @@ import { z } from 'zod';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { inspectionService } from '@/lib/services/inspection.service';
 import { timeCardService } from '@/lib/services/timecard.service';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 
 // =============================================================================
 // Validation Schema
@@ -48,7 +48,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   });
 
   // Get booking stats
-  const bookingStatsResult = await query(
+  const bookingStatsRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
     `SELECT
       COUNT(*)::int as total_bookings,
       COUNT(*) FILTER (WHERE booking_source = 'calendar_import')::int as calendar_imports,
@@ -58,10 +58,10 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
     WHERE ($1::int IS NULL OR driver_id = $1)
       AND ($2::date IS NULL OR tour_date >= $2)
       AND ($3::date IS NULL OR tour_date <= $3)`,
-    [filters.driverId || null, filters.startDate || null, filters.endDate || null]
+    filters.driverId || null, filters.startDate || null, filters.endDate || null
   );
 
-  const bookingStats = bookingStatsResult.rows[0] || {
+  const bookingStats = bookingStatsRows[0] || {
     total_bookings: 0,
     calendar_imports: 0,
     linked_to_time_cards: 0,
@@ -69,7 +69,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   };
 
   // Get compliance gaps
-  const gapsResult = await query(
+  const gapsRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
     `WITH booking_dates AS (
       SELECT DISTINCT tour_date, driver_id
       FROM bookings
@@ -99,16 +99,16 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
     FROM booking_dates bd
     LEFT JOIN inspection_dates id ON bd.tour_date = id.inspection_date AND bd.driver_id = id.driver_id
     LEFT JOIN time_card_dates td ON bd.tour_date = td.tc_date AND bd.driver_id = td.driver_id`,
-    [filters.driverId || null, filters.startDate || null, filters.endDate || null]
+    filters.driverId || null, filters.startDate || null, filters.endDate || null
   );
 
-  const complianceGaps = gapsResult.rows[0] || {
+  const complianceGaps = gapsRows[0] || {
     bookings_missing_inspections: 0,
     bookings_missing_time_cards: 0,
   };
 
   // Get date range of historical data
-  const dateRangeResult = await query(
+  const dateRangeRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
     `SELECT
       MIN(COALESCE(original_document_date, DATE(created_at)))::text as earliest_inspection,
       MAX(COALESCE(original_document_date, DATE(created_at)))::text as latest_inspection,
@@ -118,7 +118,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
     WHERE is_historical_entry = true`
   );
 
-  const dateRange = dateRangeResult.rows[0] || {};
+  const dateRange = dateRangeRows[0] || {};
 
   // Calculate compliance score (percentage of bookings with full documentation)
   const totalBookings = bookingStats.total_bookings || 1; // Avoid division by zero

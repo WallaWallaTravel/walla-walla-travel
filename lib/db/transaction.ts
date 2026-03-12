@@ -2,28 +2,24 @@
  * Database Transaction Helper
  *
  * Provides safe transaction management with automatic rollback on error.
- * Uses pool.connect() to ensure all queries in a transaction run on the
- * same dedicated connection (not random pool connections).
+ * Uses Prisma's interactive transactions internally.
  */
 
-import { pool, query } from '@/lib/db';
-import type { QueryResult, QueryResultRow } from 'pg';
+import { prisma } from '@/lib/prisma';
+import type { Prisma } from '@prisma/client';
 
 // ============================================================================
 // Transaction Callback Type
 // ============================================================================
 
-export type TransactionCallback<T> = (client: typeof query) => Promise<T>;
-
 /**
- * Create a query function wrapper around a PoolClient that matches
- * the signature of the pool-level query function.
+ * The callback receives a `queryFn` that matches the old `query(sql, params)` signature
+ * but returns `{ rows: T[], rowCount: number }` for backward compatibility with callers
+ * that still use `.rows`.
  */
-function createClientQuery(client: { query: <T extends QueryResultRow>(text: string, params?: unknown[]) => Promise<QueryResult<T>> }) {
-  return async function clientQuery<T = unknown>(text: string, params?: unknown[]): Promise<QueryResult<T & QueryResultRow>> {
-    return client.query<T & QueryResultRow>(text, params);
-  };
-}
+export type TransactionCallback<T> = (
+  queryFn: <R = Record<string, any>>(text: string, params?: unknown[]) => Promise<{ rows: R[]; rowCount: number }>
+) => Promise<T>;
 
 // ============================================================================
 // withTransaction - Execute operations in a transaction
@@ -32,19 +28,16 @@ function createClientQuery(client: { query: <T extends QueryResultRow>(text: str
 export async function withTransaction<T>(
   callback: TransactionCallback<T>
 ): Promise<T> {
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
-    const clientQuery = createClientQuery(client) as typeof query;
-    const result = await callback(clientQuery);
-    await client.query('COMMIT');
-    return result;
-  } catch (error) {
-    await client.query('ROLLBACK');
-    throw error;
-  } finally {
-    client.release();
-  }
+  return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    const queryFn = async <R = Record<string, any>>(text: string, params?: unknown[]): Promise<{ rows: R[]; rowCount: number }> => {
+      const rows = await (params && params.length > 0
+        ? tx.$queryRawUnsafe<R[]>(text, ...params)
+        : tx.$queryRawUnsafe<R[]>(text));
+      return { rows, rowCount: rows.length };
+    };
+
+    return callback(queryFn);
+  });
 }
 
 // ============================================================================
@@ -57,23 +50,27 @@ export type IsolationLevel =
   | 'REPEATABLE READ'
   | 'SERIALIZABLE';
 
+const ISOLATION_MAP: Record<IsolationLevel, Prisma.TransactionIsolationLevel> = {
+  'READ UNCOMMITTED': 'ReadUncommitted',
+  'READ COMMITTED': 'ReadCommitted',
+  'REPEATABLE READ': 'RepeatableRead',
+  'SERIALIZABLE': 'Serializable',
+};
+
 export async function withTransactionIsolation<T>(
   callback: TransactionCallback<T>,
   isolationLevel: IsolationLevel = 'READ COMMITTED'
 ): Promise<T> {
-  const client = await pool.connect();
-  try {
-    await client.query(`BEGIN ISOLATION LEVEL ${isolationLevel}`);
-    const clientQuery = createClientQuery(client) as typeof query;
-    const result = await callback(clientQuery);
-    await client.query('COMMIT');
-    return result;
-  } catch (error) {
-    await client.query('ROLLBACK');
-    throw error;
-  } finally {
-    client.release();
-  }
+  return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    const queryFn = async <R = Record<string, any>>(text: string, params?: unknown[]): Promise<{ rows: R[]; rowCount: number }> => {
+      const rows = await (params && params.length > 0
+        ? tx.$queryRawUnsafe<R[]>(text, ...params)
+        : tx.$queryRawUnsafe<R[]>(text));
+      return { rows, rowCount: rows.length };
+    };
+
+    return callback(queryFn);
+  }, { isolationLevel: ISOLATION_MAP[isolationLevel] });
 }
 
 // ============================================================================
@@ -84,17 +81,24 @@ export async function withSavepoint<T>(
   savepointName: string,
   callback: TransactionCallback<T>
 ): Promise<T> {
+  const queryFn = async <R = Record<string, any>>(text: string, params?: unknown[]): Promise<{ rows: R[]; rowCount: number }> => {
+    const rows = await (params && params.length > 0
+      ? prisma.$queryRawUnsafe<R[]>(text, ...params)
+      : prisma.$queryRawUnsafe<R[]>(text));
+    return { rows, rowCount: rows.length };
+  };
+
   // Create savepoint
-  await query(`SAVEPOINT ${savepointName}`, []);
+  await prisma.$executeRawUnsafe(`SAVEPOINT ${savepointName}`);
 
   try {
-    const result = await callback(query);
+    const result = await callback(queryFn);
     // Release savepoint (optional, will auto-release on commit)
-    await query(`RELEASE SAVEPOINT ${savepointName}`, []);
+    await prisma.$executeRawUnsafe(`RELEASE SAVEPOINT ${savepointName}`);
     return result;
   } catch (error) {
     // Rollback to savepoint
-    await query(`ROLLBACK TO SAVEPOINT ${savepointName}`, []);
+    await prisma.$executeRawUnsafe(`ROLLBACK TO SAVEPOINT ${savepointName}`);
     throw error;
   }
 }
@@ -170,13 +174,3 @@ export async function batchUpdate<T extends Record<string, unknown>>(
     return updated;
   });
 }
-
-// ============================================================================
-// Export for convenience
-// ============================================================================
-
-export { query };
-
-
-
-

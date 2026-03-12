@@ -5,8 +5,7 @@ import { logger } from '@/lib/logger';
  */
 
 import { sendEmail, EmailTemplates } from '@/lib/email';
-import { query } from '@/lib/db';
-import { queryOne, queryMany } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 import { crmSyncService } from './crm-sync.service';
 
 interface BookingData {
@@ -46,15 +45,16 @@ interface PaymentData {
  */
 export async function sendBookingConfirmationEmail(bookingId: number): Promise<boolean> {
   try {
-    const booking = await queryOne<BookingData>(`
-      SELECT 
+    const bookingRows = await prisma.$queryRawUnsafe<BookingData[]>(`
+      SELECT
         b.*,
         u.name as driver_name,
         u.email as driver_email
       FROM bookings b
       LEFT JOIN users u ON b.driver_id = u.id
       WHERE b.id = $1
-    `, [bookingId]);
+    `, bookingId);
+    const booking = bookingRows[0] ?? null;
 
     if (!booking || !booking.customer_email) {
       logger.error('[EmailAutomation] Booking not found or no email', { bookingId });
@@ -62,13 +62,13 @@ export async function sendBookingConfirmationEmail(bookingId: number): Promise<b
     }
 
     // Get wineries for this booking
-    const wineries = await queryMany<{ name: string; city: string }>(`
+    const wineries = await prisma.$queryRawUnsafe<{ name: string; city: string }[]>(`
       SELECT w.name, w.city
       FROM itinerary_stops its
       JOIN wineries w ON its.winery_id = w.id
       WHERE its.booking_id = $1
       ORDER BY its.stop_order
-    `, [bookingId]);
+    `, bookingId);
 
     const template = EmailTemplates.bookingConfirmation({
       customer_name: booking.customer_name,
@@ -92,7 +92,7 @@ export async function sendBookingConfirmationEmail(bookingId: number): Promise<b
 
     if (result) {
       // Log email sent
-      await query(`
+      await prisma.$queryRawUnsafe(`
         INSERT INTO email_logs (
           booking_id,
           email_type,
@@ -101,7 +101,7 @@ export async function sendBookingConfirmationEmail(bookingId: number): Promise<b
           sent_at,
           status
         ) VALUES ($1, $2, $3, $4, NOW(), 'sent')
-      `, [bookingId, 'booking_confirmation', booking.customer_email, template.subject]);
+      `, bookingId, 'booking_confirmation', booking.customer_email, template.subject);
 
       // Log to CRM (async, non-blocking)
       crmSyncService.logEmailSent({
@@ -113,7 +113,7 @@ export async function sendBookingConfirmationEmail(bookingId: number): Promise<b
       });
     } else {
       // Log failed send for retry (next_retry_at = NOW for immediate first retry)
-      await query(`
+      await prisma.$queryRawUnsafe(`
         INSERT INTO email_logs (
           booking_id,
           email_type,
@@ -124,7 +124,7 @@ export async function sendBookingConfirmationEmail(bookingId: number): Promise<b
           retry_count,
           next_retry_at
         ) VALUES ($1, $2, $3, $4, NOW(), 'failed', 0, NOW())
-      `, [bookingId, 'booking_confirmation', booking.customer_email, template.subject]).catch(() => {});
+      `, bookingId, 'booking_confirmation', booking.customer_email, template.subject).catch(() => {});
 
       logger.warn('[EmailAutomation] Booking confirmation send failed, logged for retry', {
         bookingId,
@@ -139,7 +139,7 @@ export async function sendBookingConfirmationEmail(bookingId: number): Promise<b
     logger.error('[EmailAutomation] Error sending booking confirmation', { error, bookingId });
 
     // Log error for retry (next_retry_at = NOW for immediate first retry)
-    await query(`
+    await prisma.$queryRawUnsafe(`
       INSERT INTO email_logs (
         booking_id,
         email_type,
@@ -151,7 +151,7 @@ export async function sendBookingConfirmationEmail(bookingId: number): Promise<b
         retry_count,
         next_retry_at
       ) VALUES ($1, 'booking_confirmation', 'unknown', 'Booking Confirmation', NOW(), 'error', $2, 0, NOW())
-    `, [bookingId, error instanceof Error ? error.message : 'Unknown error']).catch(() => {});
+    `, bookingId, error instanceof Error ? error.message : 'Unknown error').catch(() => {});
 
     return false;
   }
@@ -163,8 +163,8 @@ export async function sendBookingConfirmationEmail(bookingId: number): Promise<b
  */
 export async function sendPaymentReceiptEmail(paymentId: number): Promise<boolean> {
   try {
-    const payment = await queryOne<PaymentData>(`
-      SELECT 
+    const paymentRows = await prisma.$queryRawUnsafe<PaymentData[]>(`
+      SELECT
         p.*,
         b.customer_name,
         b.customer_email,
@@ -172,7 +172,8 @@ export async function sendPaymentReceiptEmail(paymentId: number): Promise<boolea
       FROM payments p
       JOIN bookings b ON p.booking_id = b.id
       WHERE p.id = $1
-    `, [paymentId]);
+    `, paymentId);
+    const payment = paymentRows[0] ?? null;
 
     if (!payment || !payment.customer_email) {
       logger.error('[EmailAutomation] Payment not found or no email', { paymentId });
@@ -211,7 +212,7 @@ export async function sendPaymentReceiptEmail(paymentId: number): Promise<boolea
     });
 
     if (result) {
-      await query(`
+      await prisma.$queryRawUnsafe(`
         INSERT INTO email_logs (
           booking_id,
           email_type,
@@ -220,7 +221,7 @@ export async function sendPaymentReceiptEmail(paymentId: number): Promise<boolea
           sent_at,
           status
         ) VALUES ($1, $2, $3, $4, NOW(), 'sent')
-      `, [payment.booking_id, 'payment_receipt', payment.customer_email, 'Payment Received']);
+      `, payment.booking_id, 'payment_receipt', payment.customer_email, 'Payment Received');
 
       // Log to CRM (async, non-blocking)
       crmSyncService.logEmailSent({
@@ -247,15 +248,16 @@ export async function sendPaymentReceiptEmail(paymentId: number): Promise<boolea
  */
 export async function sendTourReminderEmail(bookingId: number): Promise<boolean> {
   try {
-    const booking = await queryOne<BookingData>(`
-      SELECT 
+    const tourBookingRows = await prisma.$queryRawUnsafe<BookingData[]>(`
+      SELECT
         b.*,
         u.name as driver_name,
         u.phone as driver_phone
       FROM bookings b
       LEFT JOIN users u ON b.driver_id = u.id
       WHERE b.id = $1
-    `, [bookingId]);
+    `, bookingId);
+    const booking = tourBookingRows[0] ?? null;
 
     if (!booking || !booking.customer_email) {
       logger.error('[EmailAutomation] Booking not found or no email', { bookingId });
@@ -263,13 +265,13 @@ export async function sendTourReminderEmail(bookingId: number): Promise<boolean>
     }
 
     // Get itinerary
-    const stops = await queryMany<{ name: string; arrival_time: string; city: string }>(`
+    const stops = await prisma.$queryRawUnsafe<{ name: string; arrival_time: string; city: string }[]>(`
       SELECT w.name, its.arrival_time::text, w.city
       FROM itinerary_stops its
       JOIN wineries w ON its.winery_id = w.id
       WHERE its.booking_id = $1
       ORDER BY its.stop_order
-    `, [bookingId]);
+    `, bookingId);
 
     const tourDate = new Date(booking.tour_date);
     const formattedDate = tourDate.toLocaleDateString('en-US', { 
@@ -338,7 +340,7 @@ export async function sendTourReminderEmail(bookingId: number): Promise<boolean>
     });
 
     if (result) {
-      await query(`
+      await prisma.$queryRawUnsafe(`
         INSERT INTO email_logs (
           booking_id,
           email_type,
@@ -347,12 +349,12 @@ export async function sendTourReminderEmail(bookingId: number): Promise<boolean>
           sent_at,
           status
         ) VALUES ($1, $2, $3, $4, NOW(), 'sent')
-      `, [bookingId, 'tour_reminder', booking.customer_email, 'Your Tour is Coming Up']);
+      `, bookingId, 'tour_reminder', booking.customer_email, 'Your Tour is Coming Up');
 
       // Mark reminder as sent
-      await query(`
+      await prisma.$queryRawUnsafe(`
         UPDATE bookings SET reminder_sent = true WHERE id = $1
-      `, [bookingId]);
+      `, bookingId);
 
       // Log to CRM (async, non-blocking)
       crmSyncService.logEmailSent({
@@ -383,7 +385,7 @@ export async function processTourReminders(): Promise<{ sent: number; failed: nu
 
   try {
     // Find bookings needing reminders (48 hours before tour)
-    const bookings = await queryMany<{ id: number; booking_number: string }>(`
+    const bookings = await prisma.$queryRawUnsafe<{ id: number; booking_number: string }[]>(`
       SELECT id, booking_number
       FROM bookings
       WHERE status IN ('confirmed', 'pending')
@@ -419,13 +421,13 @@ export async function processTourReminders(): Promise<{ sent: number; failed: nu
  */
 export async function sendDriverAssignmentToCustomer(bookingId: number): Promise<boolean> {
   try {
-    const booking = await queryOne<BookingData & { 
+    const driverBookingRows = await prisma.$queryRawUnsafe<(BookingData & {
       driver_phone: string;
       vehicle_number: string;
       vehicle_make: string;
       vehicle_model: string;
-    }>(`
-      SELECT 
+    })[]>(`
+      SELECT
         b.*,
         u.name as driver_name,
         u.phone as driver_phone,
@@ -437,7 +439,8 @@ export async function sendDriverAssignmentToCustomer(bookingId: number): Promise
       LEFT JOIN vehicle_assignments va ON va.booking_id = b.id
       LEFT JOIN vehicles v ON va.vehicle_id = v.id
       WHERE b.id = $1
-    `, [bookingId]);
+    `, bookingId);
+    const booking = driverBookingRows[0] ?? null;
 
     if (!booking || !booking.customer_email || !booking.driver_name) {
       logger.error('[EmailAutomation] Booking, email, or driver not found', { bookingId });
@@ -497,7 +500,7 @@ export async function sendDriverAssignmentToCustomer(bookingId: number): Promise
     });
 
     if (result) {
-      await query(`
+      await prisma.$queryRawUnsafe(`
         INSERT INTO email_logs (
           booking_id,
           email_type,
@@ -506,7 +509,7 @@ export async function sendDriverAssignmentToCustomer(bookingId: number): Promise
           sent_at,
           status
         ) VALUES ($1, $2, $3, $4, NOW(), 'sent')
-      `, [bookingId, 'driver_assignment_customer', booking.customer_email, 'Driver Confirmed']);
+      `, bookingId, 'driver_assignment_customer', booking.customer_email, 'Driver Confirmed');
 
       // Log to CRM (async, non-blocking)
       crmSyncService.logEmailSent({
@@ -548,12 +551,12 @@ export async function retryFailedEmails(): Promise<{ retried: number; succeeded:
   let failed = 0;
 
   try {
-    const failedEmails = await queryMany<{
+    const failedEmails = await prisma.$queryRawUnsafe<{
       id: number;
       booking_id: number;
       email_type: string;
       retry_count: number;
-    }>(`
+    }[]>(`
       SELECT id, booking_id, email_type, COALESCE(retry_count, 0) as retry_count
       FROM email_logs
       WHERE status IN ('failed', 'error')
@@ -563,7 +566,7 @@ export async function retryFailedEmails(): Promise<{ retried: number; succeeded:
         AND sent_at > NOW() - INTERVAL '24 hours'
       ORDER BY next_retry_at ASC
       LIMIT 10
-    `, [MAX_RETRIES]);
+    `, MAX_RETRIES);
 
     for (const email of failedEmails) {
       retried++;
@@ -576,9 +579,9 @@ export async function retryFailedEmails(): Promise<{ retried: number; succeeded:
       if (success) {
         succeeded++;
         // Mark original as superseded
-        await query(
+        await prisma.$queryRawUnsafe(
           `UPDATE email_logs SET status = 'superseded', next_retry_at = NULL, updated_at = NOW() WHERE id = $1`,
-          [email.id]
+          email.id
         );
       } else {
         failed++;
@@ -588,13 +591,13 @@ export async function retryFailedEmails(): Promise<{ retried: number; succeeded:
           ? `NOW() + INTERVAL '${RETRY_BACKOFF_MINUTES[newRetryCount]} minutes'`
           : 'NULL';
 
-        await query(
+        await prisma.$queryRawUnsafe(
           `UPDATE email_logs
            SET retry_count = $1,
                next_retry_at = ${nextRetryAt},
                updated_at = NOW()
            WHERE id = $2`,
-          [newRetryCount, email.id]
+          newRetryCount, email.id
         );
       }
     }

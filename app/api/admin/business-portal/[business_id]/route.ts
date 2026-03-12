@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { detectDiscrepancies } from '@/lib/business-portal/discrepancy-detector';
 import { logger } from '@/lib/logger';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
@@ -30,19 +30,19 @@ export const GET = withAdminAuth(async (
   logger.debug('Fetching business details', { businessId });
 
   // Get business info
-  const businessResult = await query(
+  const businessResult = await prisma.$queryRawUnsafe(
     `SELECT * FROM businesses WHERE id = $1`,
-    [businessId]
-  );
+    businessId
+  ) as Record<string, any>[];
 
-  if (businessResult.rows.length === 0) {
+  if (businessResult.length === 0) {
     throw new NotFoundError('Business not found');
   }
 
-  const business = businessResult.rows[0];
+  const business = businessResult[0];
 
   // Get voice entries
-  const voiceResult = await query(
+  const voiceResult = await prisma.$queryRawUnsafe(
     `SELECT
       ve.*,
       q.question_text as question_text_from_table,
@@ -52,11 +52,11 @@ export const GET = withAdminAuth(async (
     LEFT JOIN interview_questions q ON ve.question_id = q.id
     WHERE ve.business_id = $1
     ORDER BY ve.question_number ASC`,
-    [businessId]
-  );
+    businessId
+  ) as Record<string, any>[];
 
   // Get text entries
-  const textResult = await query(
+  const textResult = await prisma.$queryRawUnsafe(
     `SELECT
       te.*,
       q.question_text as question_text_from_table,
@@ -66,11 +66,11 @@ export const GET = withAdminAuth(async (
     LEFT JOIN interview_questions q ON te.question_id = q.id
     WHERE te.business_id = $1
     ORDER BY te.question_number ASC`,
-    [businessId]
-  );
+    businessId
+  ) as Record<string, any>[];
 
   // Get files with analysis
-  const filesResult = await query(
+  const filesResult = await prisma.$queryRawUnsafe(
     `SELECT
       id,
       file_type,
@@ -87,11 +87,11 @@ export const GET = withAdminAuth(async (
     FROM business_files
     WHERE business_id = $1
     ORDER BY uploaded_at DESC`,
-    [businessId]
-  );
+    businessId
+  ) as Record<string, any>[];
 
   // Get processing job stats
-  const jobStatsResult = await query(
+  const jobStatsResult = await prisma.$queryRawUnsafe(
     `SELECT
       COUNT(*) FILTER (WHERE status = 'pending') as pending,
       COUNT(*) FILTER (WHERE status = 'processing') as processing,
@@ -99,10 +99,10 @@ export const GET = withAdminAuth(async (
       COUNT(*) FILTER (WHERE status = 'failed') as failed
     FROM processing_jobs
     WHERE business_id = $1`,
-    [businessId]
-  );
+    businessId
+  ) as Record<string, any>[];
 
-  const jobStats = jobStatsResult.rows[0] || {
+  const jobStats = jobStatsResult[0] || {
     pending: 0,
     processing: 0,
     completed: 0,
@@ -118,9 +118,9 @@ export const GET = withAdminAuth(async (
   return NextResponse.json({
     success: true,
     business,
-    voiceEntries: voiceResult.rows,
-    textEntries: textResult.rows,
-    files: filesResult.rows,
+    voiceEntries: voiceResult,
+    textEntries: textResult,
+    files: filesResult,
     jobStats: {
       pending: parseInt(jobStats.pending || '0'),
       processing: parseInt(jobStats.processing || '0'),

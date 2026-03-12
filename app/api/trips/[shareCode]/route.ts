@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, NotFoundError, RouteContext } from '@/lib/api/middleware/error-handler';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { updateTripSchema } from '@/lib/validation/schemas/trip';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 
@@ -17,30 +17,30 @@ export const GET = withErrorHandling<unknown, RouteParams>(
     const { shareCode } = await context.params;
 
     // Get trip
-    const tripResult = await query(
+    const tripRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
       `SELECT * FROM trips WHERE share_code = $1`,
-      [shareCode]
+      shareCode
     );
 
-    if (tripResult.rows.length === 0) {
+    if (tripRows.length === 0) {
       throw new NotFoundError('Trip not found');
     }
 
-    const trip = tripResult.rows[0];
+    const trip = tripRows[0];
 
     // Get stops and guests in parallel
-    const [stopsResult, guestsResult] = await Promise.all([
-      query(
+    const [stopsRows, guestsRows] = await Promise.all([
+      prisma.$queryRawUnsafe<Record<string, any>[]>(
         `SELECT * FROM trip_stops WHERE trip_id = $1 ORDER BY day_number, stop_order`,
-        [trip.id]
+        trip.id
       ),
-      query(
+      prisma.$queryRawUnsafe<Record<string, any>[]>(
         `SELECT * FROM trip_guests WHERE trip_id = $1 ORDER BY is_organizer DESC, name ASC`,
-        [trip.id]
+        trip.id
       ),
     ]);
 
-    const stops = stopsResult.rows.map(row => ({
+    const stops = stopsRows.map(row => ({
       id: row.id,
       trip_id: row.trip_id,
       stop_type: row.stop_type,
@@ -62,7 +62,7 @@ export const GET = withErrorHandling<unknown, RouteParams>(
       updated_at: row.updated_at,
     }));
 
-    const guests = guestsResult.rows.map(row => ({
+    const guests = guestsRows.map(row => ({
       id: row.id,
       trip_id: row.trip_id,
       name: row.name,
@@ -209,24 +209,24 @@ export const PATCH = withCSRF(
 
     values.push(shareCode);
 
-    const result = await query(
+    const rows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
       `UPDATE trips SET ${updates.join(', ')}, updated_at = NOW()
        WHERE share_code = $${paramIndex}
        RETURNING *`,
-      values
+      ...values
     );
 
-    if (result.rows.length === 0) {
+    if (rows.length === 0) {
       throw new NotFoundError('Trip not found');
     }
 
-    const trip = result.rows[0];
+    const trip = rows[0];
 
     // Log activity
-    await query(
+    await prisma.$queryRawUnsafe(
       `INSERT INTO trip_activity_log (trip_id, activity_type, description, actor_name)
        VALUES ($1, 'trip_updated', 'Trip updated', $2)`,
-      [trip.id, trip.owner_name || 'Anonymous']
+      trip.id, trip.owner_name || 'Anonymous'
     );
 
     return NextResponse.json({

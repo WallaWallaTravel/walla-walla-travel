@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, NotFoundError, RouteContext } from '@/lib/api/middleware/error-handler';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
-import { queryOne, queryMany } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 
 interface RouteParams { token: string; guestToken: string; }
 
@@ -16,22 +16,23 @@ export const GET = withErrorHandling<unknown, RouteParams>(
     const proposal = await tripProposalService.getByAccessToken(token);
     if (!proposal) throw new NotFoundError('Trip not found');
 
-    const guest = await queryOne(
+    const guestRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
       `SELECT id, name, email, amount_owed, amount_paid, payment_status, is_sponsored, payment_group_id
        FROM trip_proposal_guests
        WHERE trip_proposal_id = $1 AND guest_access_token = $2`,
-      [proposal.id, guestToken]
+      proposal.id, guestToken
     );
+    const guest = guestRows[0];
 
     if (!guest) throw new NotFoundError('Guest not found');
 
     // Get payment history
-    const payments = await queryMany(
+    const payments = await prisma.$queryRawUnsafe<Record<string, any>[]>(
       `SELECT id, amount, payment_type, status, created_at
        FROM guest_payments
        WHERE guest_id = $1 AND status = 'succeeded'
        ORDER BY created_at DESC`,
-      [guest.id]
+      guest.id
     );
 
     return NextResponse.json({

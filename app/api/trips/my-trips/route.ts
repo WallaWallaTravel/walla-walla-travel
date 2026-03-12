@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { withAuth } from '@/lib/api/middleware/auth-wrapper';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 
 // ============================================================================
 // GET /api/trips/my-trips - Get trips for the authenticated user
@@ -9,7 +9,7 @@ import { query } from '@/lib/db';
 export const GET = withAuth(async (_request, session) => {
   const email = session.email;
 
-  const result = await query(
+  const rows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
     `SELECT
       t.*,
       COUNT(DISTINCT ts.id) as stops_count,
@@ -20,10 +20,10 @@ export const GET = withAuth(async (_request, session) => {
     WHERE t.owner_email = $1
     GROUP BY t.id
     ORDER BY t.last_activity_at DESC`,
-    [email]
+    email
   );
 
-  const trips = result.rows.map(row => ({
+  const trips = rows.map(row => ({
     id: row.id,
     share_code: row.share_code,
     title: row.title,

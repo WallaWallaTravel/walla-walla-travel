@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { successResponse, requireAuth } from '@/app/api/utils';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
 import { COMPANY_INFO } from '@/lib/config/company';
@@ -50,11 +50,11 @@ export const POST = withCSRF(
   });
 
   // Get driver info
-  const driverResult = await query(
+  const driverResult = await prisma.$queryRawUnsafe(
     'SELECT name, email FROM users WHERE id = $1',
-    [driverId]
-  );
-  const driver = driverResult.rows[0];
+    driverId
+  ) as Record<string, any>[];
+  const driver = driverResult[0];
 
   // Supervisor contact info from company config
   const supervisorPhone = process.env.SUPERVISOR_PHONE || COMPANY_INFO.phone.dialable;
@@ -104,7 +104,7 @@ Driver ID: ${driverId}
 
   // Log to database for tracking
   try {
-    await query(`
+    await prisma.$queryRawUnsafe(`
       INSERT INTO notifications (
         driver_id,
         type,
@@ -112,12 +112,12 @@ Driver ID: ${driverId}
         sent_to,
         created_at
       ) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
-    `, [
+    `,
       driverId,
       'emergency_vehicle_help',
       smsMessage,
       supervisorEmail
-    ]);
+    );
   } catch (dbError) {
     // Non-critical error, continue
     logger.warn('Failed to log notification to database', { error: dbError });

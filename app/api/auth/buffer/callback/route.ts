@@ -8,7 +8,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { withErrorHandling } from '@/lib/api/middleware/error-handler'
-import { query } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 import { bufferService } from '@/lib/services/buffer.service'
 import { logger } from '@/lib/logger'
 
@@ -67,14 +67,14 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
       const platform = platformMap[profile.service] || profile.service
 
       // Check if this profile already exists
-      const existing = await query(
+      const existingRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
         'SELECT id FROM social_accounts WHERE buffer_profile_id = $1',
-        [profile.id]
+        profile.id
       )
 
-      if (existing.rows.length > 0) {
+      if (existingRows.length > 0) {
         // Update existing account
-        await query(`
+        await prisma.$queryRawUnsafe(`
           UPDATE social_accounts SET
             account_name = $1,
             account_username = $2,
@@ -85,18 +85,18 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
             last_sync_at = NOW(),
             updated_at = NOW()
           WHERE buffer_profile_id = $5
-        `, [
+        `,
           profile.formatted_username,
           profile.service_username,
           tokenResponse.access_token, // In production, encrypt this!
           profile.avatar,
           profile.id,
-        ])
+        )
 
         logger.info('Updated existing Buffer profile', { profileId: profile.id, platform })
       } else {
         // Insert new account
-        await query(`
+        await prisma.$queryRawUnsafe(`
           INSERT INTO social_accounts (
             platform,
             account_name,
@@ -111,7 +111,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
             created_at,
             updated_at
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'connected', true, NOW(), NOW(), NOW())
-        `, [
+        `,
           platform,
           profile.formatted_username,
           profile.service_username,
@@ -119,7 +119,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
           profile.service_id,
           tokenResponse.access_token, // In production, encrypt this!
           profile.avatar,
-        ])
+        )
 
         logger.info('Created new Buffer profile', { profileId: profile.id, platform })
       }

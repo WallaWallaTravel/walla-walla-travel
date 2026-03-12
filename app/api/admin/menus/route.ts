@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { withCSRF } from '@/lib/api/middleware/csrf';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { validateBody } from '@/lib/api/middleware/validation';
 
@@ -23,7 +23,7 @@ const CreateMenuSchema = z.object({
 
 // GET /api/admin/menus — list all active saved menus with items
 export const GET = withAdminAuth(async () => {
-  const result = await query(
+  const rows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
     `SELECT sm.id, sm.name, sm.supplier_id, sm.is_active, sm.created_at, sm.updated_at,
        COALESCE(
          json_agg(
@@ -47,7 +47,7 @@ export const GET = withAdminAuth(async () => {
      ORDER BY sm.name`
   );
 
-  return NextResponse.json({ success: true, data: result.rows });
+  return NextResponse.json({ success: true, data: rows });
 });
 
 // POST /api/admin/menus — create a new saved menu with items
@@ -56,33 +56,31 @@ export const POST = withCSRF(
     const data = await validateBody(request, CreateMenuSchema);
 
     // Insert menu
-    const menuResult = await query(
+    const menuRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
       `INSERT INTO saved_menus (name, supplier_id) VALUES ($1, $2) RETURNING *`,
-      [data.name, data.supplier_id || null]
+      data.name, data.supplier_id || null
     );
-    const menu = menuResult.rows[0];
+    const menu = menuRows[0];
 
     // Insert items
     for (let i = 0; i < data.items.length; i++) {
       const item = data.items[i];
-      await query(
+      await prisma.$queryRawUnsafe(
         `INSERT INTO saved_menu_items (saved_menu_id, category, name, description, price, dietary_tags, is_available, sort_order)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-        [
-          menu.id,
-          item.category || null,
-          item.name,
-          item.description || null,
-          item.price,
-          item.dietary_tags || [],
-          item.is_available !== false,
-          item.sort_order ?? i,
-        ]
+        menu.id,
+        item.category || null,
+        item.name,
+        item.description || null,
+        item.price,
+        item.dietary_tags || [],
+        item.is_available !== false,
+        item.sort_order ?? i,
       );
     }
 
     // Fetch full menu with items
-    const fullResult = await query(
+    const fullRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
       `SELECT sm.*,
          COALESCE(
            json_agg(
@@ -98,9 +96,9 @@ export const POST = withCSRF(
        LEFT JOIN saved_menu_items smi ON smi.saved_menu_id = sm.id
        WHERE sm.id = $1
        GROUP BY sm.id`,
-      [menu.id]
+      menu.id
     );
 
-    return NextResponse.json({ success: true, data: fullResult.rows[0] }, { status: 201 });
+    return NextResponse.json({ success: true, data: fullRows[0] }, { status: 201 });
   })
 );

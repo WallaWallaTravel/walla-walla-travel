@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { z } from 'zod';
@@ -30,11 +30,11 @@ export const GET = withErrorHandling(async (request: NextRequest): Promise<NextR
 
   sqlQuery += ' ORDER BY display_order ASC, name ASC';
 
-  const result = await query(sqlQuery);
+  const result = await prisma.$queryRawUnsafe<Record<string, any>[]>(sqlQuery);
 
   return NextResponse.json({
     success: true,
-    data: result.rows
+    data: result
   });
 });
 
@@ -57,22 +57,22 @@ export const POST = withCSRF(
   }
 
   // Get next display order
-  const orderResult = await query(
+  const orderResult = await prisma.$queryRawUnsafe<Record<string, any>[]>(
     'SELECT COALESCE(MAX(display_order), 0) + 1 as next_order FROM additional_services'
   );
-  const displayOrder = orderResult.rows[0].next_order;
+  const displayOrder = orderResult[0].next_order;
 
   // Insert
-  const result = await query(
+  const result = await prisma.$queryRawUnsafe<Record<string, any>[]>(
     `INSERT INTO additional_services (name, description, price, icon, display_order)
      VALUES ($1, $2, $3, $4, $5)
      RETURNING *`,
-    [name, description || null, price, icon, displayOrder]
+    name, description || null, price, icon, displayOrder
   );
 
   return NextResponse.json({
     success: true,
-    data: result.rows[0],
+    data: result[0],
     message: 'Additional service created successfully'
   }, { status: 201 });
 })

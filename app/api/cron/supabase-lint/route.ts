@@ -9,7 +9,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 import { sendEmail } from '@/lib/email';
 import { withCronAuth } from '@/lib/api/middleware/cron-auth';
@@ -35,28 +35,24 @@ export const GET = withCronAuth('supabase-lint', async (_request: NextRequest) =
     let lintResults: LintResult[] = [];
 
     try {
-      const result = await query<LintResult>(
-        `SELECT name, level, detail, metadata
+      const result = await prisma.$queryRaw`SELECT name, level, detail, metadata
          FROM extensions.lint()
          WHERE level IN ('ERROR', 'WARN')
-           AND categories @> ARRAY['SECURITY']`
-      );
-      lintResults = result.rows;
+           AND categories @> ARRAY['SECURITY']` as LintResult[];
+      lintResults = result;
     } catch (err) {
       // extensions.lint() may not be available — log and store as degraded
       logger.error('Failed to run extensions.lint()', { error: err });
 
-      await query(
+      await prisma.$queryRawUnsafe(
         `INSERT INTO system_health_checks (check_type, check_name, status, response_time_ms, error_message, metadata)
          VALUES ($1, $2, $3, $4, $5, $6)`,
-        [
           'database',
           'supabase-lint',
           'degraded',
           Date.now() - start,
           'extensions.lint() not available',
-          JSON.stringify({ error: String(err) }),
-        ]
+          JSON.stringify({ error: String(err) })
       );
 
       return NextResponse.json({
@@ -74,10 +70,9 @@ export const GET = withCronAuth('supabase-lint', async (_request: NextRequest) =
     const status = errors.length > 0 ? 'unhealthy' : warnings.length > 0 ? 'degraded' : 'healthy';
 
     // Store results in system_health_checks
-    await query(
+    await prisma.$queryRawUnsafe(
       `INSERT INTO system_health_checks (check_type, check_name, status, response_time_ms, error_message, metadata)
        VALUES ($1, $2, $3, $4, $5, $6)`,
-      [
         'database',
         'supabase-lint',
         status,
@@ -88,8 +83,7 @@ export const GET = withCronAuth('supabase-lint', async (_request: NextRequest) =
           warningCount: warnings.length,
           errors: errors.map(e => ({ name: e.name, detail: e.detail, metadata: e.metadata })),
           warnings: warnings.map(w => ({ name: w.name, detail: w.detail, metadata: w.metadata })),
-        }),
-      ]
+        })
     );
 
     // Send admin alert if any ERRORs found

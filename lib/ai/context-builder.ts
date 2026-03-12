@@ -1,7 +1,7 @@
 // Context Builder
 // Builds rich context for AI from database
 
-import { pool } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 import { searchBusinesses, formatBusinessForAI } from '@/lib/business-portal/business-knowledge'
 import { logger } from '@/lib/logger'
 
@@ -37,7 +37,7 @@ export interface BusinessContext {
  */
 export async function getWineryContext(): Promise<WineryInfo[]> {
   try {
-    const result = await pool.query(`
+    const rows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
       SELECT id, name, description, location
       FROM wineries
       WHERE active = true
@@ -45,7 +45,7 @@ export async function getWineryContext(): Promise<WineryInfo[]> {
       LIMIT 20
     `)
 
-    return result.rows.map(row => ({
+    return rows.map(row => ({
       id: row.id,
       name: row.name,
       description: row.description,
@@ -63,7 +63,7 @@ export async function getWineryContext(): Promise<WineryInfo[]> {
  */
 export async function getTourContext(): Promise<TourInfo[]> {
   try {
-    const result = await pool.query(`
+    const rows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
       SELECT id, name, description, duration_hours, base_price, max_passengers
       FROM tours
       WHERE active = true
@@ -71,7 +71,7 @@ export async function getTourContext(): Promise<TourInfo[]> {
       LIMIT 10
     `)
 
-    return result.rows.map(row => ({
+    return rows.map(row => ({
       id: row.id,
       name: row.name,
       description: row.description,

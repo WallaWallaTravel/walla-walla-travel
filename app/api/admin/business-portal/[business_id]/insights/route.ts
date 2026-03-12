@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
@@ -28,16 +28,16 @@ export const GET = withAdminAuth(async (
     throw new BadRequestError('Invalid business ID');
   }
 
-  const result = await query(
+  const result = await prisma.$queryRawUnsafe(
     `SELECT * FROM tour_operator_insights
      WHERE business_id = $1
      ORDER BY priority DESC, created_at DESC`,
-    [businessId]
-  );
+    businessId
+  ) as Record<string, any>[];
 
   return NextResponse.json({
     success: true,
-    insights: result.rows
+    insights: result
   });
 });
 
@@ -82,7 +82,7 @@ export const POST = withCSRF(
   } = data;
 
   // Insert insight
-  const result = await query(
+  const result = await prisma.$queryRawUnsafe(
     `INSERT INTO tour_operator_insights (
       business_id,
       insight_type,
@@ -96,34 +96,30 @@ export const POST = withCSRF(
       created_at
     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
     RETURNING *`,
-    [
-      businessId,
-      insight_type || 'general',
-      title,
-      content,
-      priority || 5,
-      is_public !== false,
-      tags || [],
-      best_for || [],
-      recommended_for || []
-    ]
-  );
+    businessId,
+    insight_type || 'general',
+    title,
+    content,
+    priority || 5,
+    is_public !== false,
+    tags || [],
+    best_for || [],
+    recommended_for || []
+  ) as Record<string, any>[];
 
-  const insight = result.rows[0];
+  const insight = result[0];
 
   // Log activity
-  await query(
+  await prisma.$queryRawUnsafe(
     `INSERT INTO business_activity_log (
       business_id,
       activity_type,
       activity_description,
       metadata
     ) VALUES ($1, 'insight_added', $2, $3)`,
-    [
-      businessId,
-      `Insight added: ${title}`,
-      JSON.stringify({ insight_id: insight.id, type: insight_type })
-    ]
+    businessId,
+    `Insight added: ${title}`,
+    JSON.stringify({ insight_id: insight.id, type: insight_type })
   );
 
   logger.info('Insight added', { insightId: insight.id, businessId });
@@ -150,7 +146,7 @@ export const DELETE = withCSRF(
     throw new BadRequestError('Invalid insight ID');
   }
 
-  await query('DELETE FROM tour_operator_insights WHERE id = $1', [insightId]);
+  await prisma.$queryRawUnsafe('DELETE FROM tour_operator_insights WHERE id = $1', insightId);
 
   return NextResponse.json({
     success: true,

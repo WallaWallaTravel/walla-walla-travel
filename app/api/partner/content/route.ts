@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, UnauthorizedError, NotFoundError, ValidationError } from '@/lib/api/middleware/error-handler';
 import { getSession } from '@/lib/auth/session';
 import { partnerService } from '@/lib/services/partner.service';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { WINERY_CONTENT_TYPES } from '@/lib/config/content-types';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 import { withCSRF } from '@/lib/api/middleware/csrf';
@@ -54,13 +54,13 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   }> = [];
 
   if (profile.winery_id) {
-    const result = await query<{
+    content = await prisma.$queryRawUnsafe<Array<{
       id: number;
       content_type: string;
       content: string;
       status: string;
       updated_at: string;
-    }>(
+    }>>(
       `SELECT id, content_type, content,
         CASE
           WHEN verified = true THEN 'approved'
@@ -71,9 +71,8 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
        FROM winery_content
        WHERE winery_id = $1 AND content_type = ANY($2)
        ORDER BY content_type`,
-      [profile.winery_id, STORY_CONTENT_TYPES]
+      profile.winery_id, STORY_CONTENT_TYPES
     );
-    content = result.rows;
   }
 
   return NextResponse.json({
@@ -128,17 +127,17 @@ export const POST = withCSRF(
   }
 
   // Check if content already exists for this type
-  const existingResult = await query(
+  const existingRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
     `SELECT id FROM winery_content
      WHERE winery_id = $1 AND content_type = $2`,
-    [profile.winery_id, content_type]
+    profile.winery_id, content_type
   );
 
   let contentId: number;
 
-  if (existingResult.rows.length > 0) {
+  if (existingRows.length > 0) {
     // Update existing content
-    const updateResult = await query(
+    const updateRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
       `UPDATE winery_content
        SET content = $1,
            verified = false,
@@ -146,18 +145,18 @@ export const POST = withCSRF(
            updated_at = CURRENT_TIMESTAMP
        WHERE id = $2
        RETURNING id`,
-      [content, existingResult.rows[0].id]
+      content, existingRows[0].id
     );
-    contentId = updateResult.rows[0].id;
+    contentId = updateRows[0].id;
   } else {
     // Insert new content
-    const insertResult = await query(
+    const insertRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
       `INSERT INTO winery_content (winery_id, content_type, content, data_source, verified, created_at, updated_at)
        VALUES ($1, $2, $3, 'partner_portal', false, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
        RETURNING id`,
-      [profile.winery_id, content_type, content]
+      profile.winery_id, content_type, content
     );
-    contentId = insertResult.rows[0].id;
+    contentId = insertRows[0].id;
   }
 
   // Log the activity

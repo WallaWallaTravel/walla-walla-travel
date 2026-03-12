@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { z } from 'zod';
 
@@ -28,7 +28,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
     statusFilter = "AND (t.status = 'booked' OR t.converted_to_booking_id IS NOT NULL)";
   }
 
-  const result = await query(
+  const consultationRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
     `SELECT
       t.id,
       t.share_code,
@@ -58,27 +58,25 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
     ORDER BY
       CASE WHEN t.status = 'handed_off' AND t.assigned_staff_id IS NULL THEN 0 ELSE 1 END,
       t.handoff_requested_at DESC
-    LIMIT 100`,
-    []
+    LIMIT 100`
   );
 
   // Get counts for tabs
-  const countsResult = await query(
+  const countsRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
     `SELECT
       COUNT(*) FILTER (WHERE status = 'handed_off' AND assigned_staff_id IS NULL) as pending,
       COUNT(*) FILTER (WHERE status = 'handed_off' AND assigned_staff_id IS NOT NULL) as in_progress,
       COUNT(*) FILTER (WHERE status = 'booked' OR converted_to_booking_id IS NOT NULL) as completed,
       COUNT(*) as total
     FROM trips
-    WHERE handoff_requested_at IS NOT NULL`,
-    []
+    WHERE handoff_requested_at IS NOT NULL`
   );
 
-  const counts = countsResult.rows[0] || { pending: 0, in_progress: 0, completed: 0, total: 0 };
+  const counts = countsRows[0] || { pending: 0, in_progress: 0, completed: 0, total: 0 };
 
   return NextResponse.json({
     success: true,
-    consultations: result.rows,
+    consultations: consultationRows,
     counts: {
       pending: parseInt(counts.pending) || 0,
       in_progress: parseInt(counts.in_progress) || 0,
@@ -129,21 +127,21 @@ export const PATCH = withCSRF(
   }
 
   values.push(tripId);
-  const result = await query(
+  const updateRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
     `UPDATE trips
      SET ${updates.join(', ')}, updated_at = NOW()
      WHERE id = $${paramIndex}
      RETURNING *`,
-    values
+    ...values
   );
 
-  if (result.rows.length === 0) {
+  if (updateRows.length === 0) {
     return NextResponse.json({ error: 'Trip not found' }, { status: 404 });
   }
 
   return NextResponse.json({
     success: true,
-    trip: result.rows[0],
+    trip: updateRows[0],
     timestamp: new Date().toISOString(),
   });
 })

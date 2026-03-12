@@ -3,7 +3,7 @@
  * Handles business registration, invitations, and portal access
  */
 
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 
 // Type for SQL query parameters
@@ -68,7 +68,7 @@ export async function createBusiness(data: CreateBusinessInput): Promise<Busines
 
     // Generate invite token using the DB function (from migration 059)
     const businessTypes = data.business_types || [data.business_type];
-    const result = await query(`
+    const rows = await prisma.$queryRawUnsafe<Business[]>(`
       INSERT INTO businesses (
         business_type,
         business_types,
@@ -83,7 +83,7 @@ export async function createBusiness(data: CreateBusinessInput): Promise<Busines
       )
       VALUES ($1, $2::TEXT[], $3, $4, $5, $6, generate_business_invite_token(), 'invited', $7, NOW())
       RETURNING *
-    `, [
+    `,
       data.business_type,
       businessTypes,
       data.name,
@@ -91,9 +91,9 @@ export async function createBusiness(data: CreateBusinessInput): Promise<Busines
       data.contact_phone || null,
       data.website || null,
       data.invited_by || null
-    ]);
+    );
 
-    const business = result.rows[0];
+    const business = rows[0];
     logger.info('createBusiness: Business created', { token: business.invite_token, name: data.name });
 
     // Log activity
@@ -118,19 +118,19 @@ export async function getBusinessByCode(code: string): Promise<Business | null> 
   try {
     logger.debug('getBusinessByCode: Looking up code', { code });
 
-    const result = await query(
+    const rows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
       'SELECT * FROM businesses WHERE invite_token = $1',
-      [code]
+      code
     );
 
-    logger.debug('getBusinessByCode: Query result', { rows: result.rows.length });
-    
-    if (result.rows.length === 0) {
+    logger.debug('getBusinessByCode: Query result', { rows: rows.length });
+
+    if (rows.length === 0) {
       return null;
     }
-    
+
     // Update last activity and first access if needed
-    const business = result.rows[0];
+    const business = rows[0];
     const updates: string[] = ['last_activity_at = NOW()'];
     
     if (!business.first_access_at) {
@@ -139,13 +139,13 @@ export async function getBusinessByCode(code: string): Promise<Business | null> 
       await logBusinessActivity(business.id, 'portal_first_access', 'First time accessing portal');
     }
     
-    await query(
+    await prisma.$queryRawUnsafe(
       `UPDATE businesses SET ${updates.join(', ')} WHERE id = $1`,
-      [business.id]
+      business.id
     );
 
     logger.debug('getBusinessByCode: Successfully retrieved business', { name: business.name });
-    return business;
+    return business as Business;
   } catch (error) {
     logger.error('getBusinessByCode: Error', { error });
     throw error;
@@ -156,12 +156,12 @@ export async function getBusinessByCode(code: string): Promise<Business | null> 
  * Get business by ID
  */
 export async function getBusinessById(id: number): Promise<Business | null> {
-  const result = await query(
+  const rows = await prisma.$queryRawUnsafe<Business[]>(
     'SELECT * FROM businesses WHERE id = $1',
-    [id]
+    id
   );
-  
-  return result.rows[0] || null;
+
+  return rows[0] || null;
 }
 
 /**
@@ -192,26 +192,26 @@ export async function getBusinesses(filters: {
     : '';
   
   // Get total count
-  const countResult = await query(
+  const countRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
     `SELECT COUNT(*) as total FROM businesses ${whereClause}`,
-    params
+    ...params
   );
-  const total = parseInt(countResult.rows[0].total);
-  
+  const total = parseInt(countRows[0].total);
+
   // Get businesses
   const limit = filters.limit || 50;
   const offset = filters.offset || 0;
-  
+
   params.push(limit, offset);
-  const result = await query(
-    `SELECT * FROM businesses ${whereClause} 
-     ORDER BY created_at DESC 
+  const rows = await prisma.$queryRawUnsafe<Business[]>(
+    `SELECT * FROM businesses ${whereClause}
+     ORDER BY created_at DESC
      LIMIT $${++paramCount} OFFSET $${++paramCount}`,
-    params
+    ...params
   );
-  
+
   return {
-    businesses: result.rows,
+    businesses: rows,
     total
   };
 }
@@ -252,27 +252,27 @@ export async function updateBusiness(
   
   setClauses.push('updated_at = NOW()');
   params.push(id);
-  
-  const result = await query(
-    `UPDATE businesses 
-     SET ${setClauses.join(', ')} 
+
+  const rows = await prisma.$queryRawUnsafe<Business[]>(
+    `UPDATE businesses
+     SET ${setClauses.join(', ')}
      WHERE id = $${++paramCount}
      RETURNING *`,
-    params
+    ...params
   );
-  
-  return result.rows[0];
+
+  return rows[0];
 }
 
 /**
  * Mark business as submitted
  */
 export async function submitBusiness(businessId: number): Promise<void> {
-  await query(
-    `UPDATE businesses 
+  await prisma.$queryRawUnsafe(
+    `UPDATE businesses
      SET status = 'submitted', submitted_at = NOW(), updated_at = NOW()
      WHERE id = $1`,
-    [businessId]
+    businessId
   );
   
   await logBusinessActivity(businessId, 'business_submitted', 'Business completed submission');
@@ -285,14 +285,14 @@ export async function approveBusiness(
   businessId: number, 
   approvedBy: number
 ): Promise<void> {
-  await query(
-    `UPDATE businesses 
-     SET status = 'approved', 
-         approved_at = NOW(), 
+  await prisma.$queryRawUnsafe(
+    `UPDATE businesses
+     SET status = 'approved',
+         approved_at = NOW(),
          approved_by = $2,
          updated_at = NOW()
      WHERE id = $1`,
-    [businessId, approvedBy]
+    businessId, approvedBy
   );
   
   await logBusinessActivity(businessId, 'business_approved', 'Business approved by admin', { approved_by: approvedBy });
@@ -302,11 +302,11 @@ export async function approveBusiness(
  * Activate business (make live in directory)
  */
 export async function activateBusiness(businessId: number): Promise<void> {
-  await query(
-    `UPDATE businesses 
+  await prisma.$queryRawUnsafe(
+    `UPDATE businesses
      SET status = 'active', public_profile = true, updated_at = NOW()
      WHERE id = $1`,
-    [businessId]
+    businessId
   );
   
   await logBusinessActivity(businessId, 'business_activated', 'Business activated in directory');
@@ -323,18 +323,16 @@ export async function logBusinessActivity(
   ipAddress?: string,
   userAgent?: string
 ): Promise<void> {
-  await query(
-    `INSERT INTO business_activity_log 
+  await prisma.$queryRawUnsafe(
+    `INSERT INTO business_activity_log
       (business_id, activity_type, activity_description, metadata, ip_address, user_agent)
      VALUES ($1, $2, $3, $4, $5, $6)`,
-    [
-      businessId,
-      activityType,
-      description || null,
-      metadata ? JSON.stringify(metadata) : null,
-      ipAddress || null,
-      userAgent || null
-    ]
+    businessId,
+    activityType,
+    description || null,
+    metadata ? JSON.stringify(metadata) : null,
+    ipAddress || null,
+    userAgent || null
   );
 }
 
@@ -345,15 +343,13 @@ export async function getBusinessActivity(
   businessId: number,
   limit: number = 50
 ): Promise<BusinessActivityLogEntry[]> {
-  const result = await query(
-    `SELECT * FROM business_activity_log 
-     WHERE business_id = $1 
-     ORDER BY created_at DESC 
+  return prisma.$queryRawUnsafe<BusinessActivityLogEntry[]>(
+    `SELECT * FROM business_activity_log
+     WHERE business_id = $1
+     ORDER BY created_at DESC
      LIMIT $2`,
-    [businessId, limit]
+    businessId, limit
   );
-  
-  return result.rows;
 }
 
 /**
@@ -367,31 +363,31 @@ export async function getBusinessStats(businessId: number): Promise<{
   uploadedFiles: number;
   completionPercentage: number;
 }> {
-  const result = await query(`
-    SELECT 
+  const rows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
+    SELECT
       (SELECT COUNT(*)
        FROM interview_questions q
        JOIN businesses b ON (q.business_type = ANY(b.business_types) OR q.business_type = 'all')
        WHERE b.id = $1 AND q.required = true) as total_questions,
-      
-      (SELECT COUNT(DISTINCT question_id) 
-       FROM business_voice_entries 
+
+      (SELECT COUNT(DISTINCT question_id)
+       FROM business_voice_entries
        WHERE business_id = $1) as voice_answers,
-      
-      (SELECT COUNT(DISTINCT question_id) 
-       FROM business_text_entries 
+
+      (SELECT COUNT(DISTINCT question_id)
+       FROM business_text_entries
        WHERE business_id = $1) as text_answers,
-      
-      (SELECT COUNT(*) 
-       FROM business_files 
+
+      (SELECT COUNT(*)
+       FROM business_files
        WHERE business_id = $1) as uploaded_files,
-      
-      (SELECT completion_percentage 
-       FROM businesses 
+
+      (SELECT completion_percentage
+       FROM businesses
        WHERE id = $1) as completion_percentage
-  `, [businessId]);
-  
-  const row = result.rows[0];
+  `, businessId);
+
+  const row = rows[0];
   
   return {
     totalQuestions: parseInt(row.total_questions || '0'),

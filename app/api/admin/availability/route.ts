@@ -9,7 +9,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { BadRequestError, NotFoundError, ConflictError, ForbiddenError } from '@/lib/api/middleware/error-handler';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { withCSRF } from '@/lib/api/middleware/csrf';
@@ -86,19 +86,17 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
 
   sql += ` ORDER BY vab.block_date DESC, vab.start_time`;
 
-  const result = await query(sql, params);
+  const result = await prisma.$queryRawUnsafe(sql, ...params) as Record<string, any>[];
 
   // Also fetch vehicles for the form
-  const vehiclesResult = await query(
-    `SELECT id, name, capacity, is_active FROM vehicles WHERE is_active = true ORDER BY name`
-  );
+  const vehiclesResult = await prisma.$queryRaw`SELECT id, name, capacity, is_active FROM vehicles WHERE is_active = true ORDER BY name` as Record<string, any>[];
 
   return NextResponse.json({
-    blocks: result.rows.map(row => ({
+    blocks: result.map(row => ({
       ...row,
       block_date: row.block_date?.toISOString().split('T')[0]
     })),
-    vehicles: vehiclesResult.rows
+    vehicles: vehiclesResult
   });
 });
 
@@ -120,32 +118,32 @@ export const POST = withCSRF(
   }
 
   // Check for conflicts
-  const conflictCheck = await query(
+  const conflictCheck = await prisma.$queryRawUnsafe(
     `SELECT id FROM vehicle_availability_blocks
      WHERE vehicle_id = $1 AND block_date = $2 AND block_type != 'booking'
      AND ($3::time IS NULL OR $4::time IS NULL OR
           (start_time IS NULL AND end_time IS NULL) OR
           (start_time < $4::time AND end_time > $3::time))`,
-    [vehicle_id, block_date, start_time || null, end_time || null]
-  );
+    vehicle_id, block_date, start_time || null, end_time || null
+  ) as Record<string, any>[];
 
-  if (conflictCheck.rows.length > 0) {
+  if (conflictCheck.length > 0) {
     throw new ConflictError('Conflicting availability block exists for this vehicle and time');
   }
 
-  const result = await query(
+  const result = await prisma.$queryRawUnsafe(
     `INSERT INTO vehicle_availability_blocks
      (vehicle_id, block_date, start_time, end_time, block_type, reason)
      VALUES ($1, $2, $3, $4, $5, $6)
      RETURNING *`,
-    [vehicle_id, block_date, start_time || null, end_time || null, block_type, reason || null]
-  );
+    vehicle_id, block_date, start_time || null, end_time || null, block_type, reason || null
+  ) as Record<string, any>[];
 
   return NextResponse.json({
     success: true,
     block: {
-      ...result.rows[0],
-      block_date: result.rows[0].block_date?.toISOString().split('T')[0]
+      ...result[0],
+      block_date: result[0].block_date?.toISOString().split('T')[0]
     }
   }, { status: 201 });
 })));
@@ -162,20 +160,20 @@ export const PUT = withCSRF(
   }
 
   // Check if block exists and is not a booking block
-  const existingBlock = await query(
+  const existingBlock = await prisma.$queryRawUnsafe(
     `SELECT id, block_type FROM vehicle_availability_blocks WHERE id = $1`,
-    [id]
-  );
+    id
+  ) as Record<string, any>[];
 
-  if (existingBlock.rows.length === 0) {
+  if (existingBlock.length === 0) {
     throw new NotFoundError('Availability block not found');
   }
 
-  if (existingBlock.rows[0].block_type === 'booking') {
+  if (existingBlock[0].block_type === 'booking') {
     throw new ForbiddenError('Cannot modify booking-related blocks');
   }
 
-  const result = await query(
+  const result = await prisma.$queryRawUnsafe(
     `UPDATE vehicle_availability_blocks
      SET vehicle_id = COALESCE($2, vehicle_id),
          block_date = COALESCE($3, block_date),
@@ -186,14 +184,14 @@ export const PUT = withCSRF(
          updated_at = NOW()
      WHERE id = $1
      RETURNING *`,
-    [id, vehicle_id, block_date, start_time || null, end_time || null, block_type, reason || null]
-  );
+    id, vehicle_id, block_date, start_time || null, end_time || null, block_type, reason || null
+  ) as Record<string, any>[];
 
   return NextResponse.json({
     success: true,
     block: {
-      ...result.rows[0],
-      block_date: result.rows[0].block_date?.toISOString().split('T')[0]
+      ...result[0],
+      block_date: result[0].block_date?.toISOString().split('T')[0]
     }
   });
 })));
@@ -210,22 +208,22 @@ export const DELETE = withCSRF(
   }
 
   // Check if block exists and is not a booking block
-  const existingBlock = await query(
+  const existingBlock2 = await prisma.$queryRawUnsafe(
     `SELECT id, block_type FROM vehicle_availability_blocks WHERE id = $1`,
-    [id]
-  );
+    id
+  ) as Record<string, any>[];
 
-  if (existingBlock.rows.length === 0) {
+  if (existingBlock2.length === 0) {
     throw new NotFoundError('Availability block not found');
   }
 
-  if (existingBlock.rows[0].block_type === 'booking') {
+  if (existingBlock2[0].block_type === 'booking') {
     throw new ForbiddenError('Cannot delete booking-related blocks. Cancel the booking instead.');
   }
 
-  await query(
+  await prisma.$queryRawUnsafe(
     `DELETE FROM vehicle_availability_blocks WHERE id = $1`,
-    [id]
+    id
   );
 
   return NextResponse.json({ success: true });

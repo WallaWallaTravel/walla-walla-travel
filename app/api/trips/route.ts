@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { createTripSchema } from '@/lib/validation/schemas/trip';
 import { nanoid } from 'nanoid';
 import { withCSRF } from '@/lib/api/middleware/csrf';
@@ -17,7 +17,7 @@ export const POST = withCSRF(
   // Generate unique share code
   const shareCode = nanoid(8);
 
-  const result = await query(
+  const rows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
     `INSERT INTO trips (
       share_code, title, description, trip_type,
       start_date, end_date, dates_flexible,
@@ -27,29 +27,27 @@ export const POST = withCSRF(
       $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'draft'
     )
     RETURNING *`,
-    [
-      shareCode,
-      validated.title,
-      validated.description || null,
-      validated.trip_type,
-      validated.start_date || null,
-      validated.end_date || null,
-      validated.dates_flexible,
-      validated.expected_guests,
-      validated.owner_name || null,
-      validated.owner_email || null,
-      validated.owner_phone || null,
-      JSON.stringify(validated.preferences || { transportation: 'undecided', pace: 'moderate', budget: 'moderate' }),
-    ]
+    shareCode,
+    validated.title,
+    validated.description || null,
+    validated.trip_type,
+    validated.start_date || null,
+    validated.end_date || null,
+    validated.dates_flexible,
+    validated.expected_guests,
+    validated.owner_name || null,
+    validated.owner_email || null,
+    validated.owner_phone || null,
+    JSON.stringify(validated.preferences || { transportation: 'undecided', pace: 'moderate', budget: 'moderate' }),
   );
 
-  const trip = result.rows[0];
+  const trip = rows[0];
 
   // Log activity
-  await query(
+  await prisma.$queryRawUnsafe(
     `INSERT INTO trip_activity_log (trip_id, activity_type, description, actor_name)
      VALUES ($1, 'trip_created', 'Trip created', $2)`,
-    [trip.id, validated.owner_name || 'Anonymous']
+    trip.id, validated.owner_name || 'Anonymous'
   );
 
   return NextResponse.json({

@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { withErrorHandling, RouteContext } from '@/lib/api/middleware/error-handler';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 
 const BodySchema = z.object({
@@ -84,15 +84,15 @@ export const PATCH = withCSRF(
 
     setClauses.push(`updated_at = NOW()`);
 
-    const result = await query(
+    const rows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
       `UPDATE trip_proposal_guests
        SET ${setClauses.join(', ')}
        WHERE id = $${paramIndex} AND trip_proposal_id = $${paramIndex + 1}
        RETURNING *`,
-      [...values, guestIdNum, proposal.id]
+      ...values, guestIdNum, proposal.id
     );
 
-    if (!result.rows[0]) {
+    if (!rows[0]) {
       return NextResponse.json(
         { success: false, error: 'Guest not found' },
         { status: 404 }
@@ -101,7 +101,7 @@ export const PATCH = withCSRF(
 
     return NextResponse.json({
       success: true,
-      data: result.rows[0],
+      data: rows[0],
     });
   }
 )

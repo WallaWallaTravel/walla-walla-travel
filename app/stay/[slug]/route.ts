@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 
 /**
@@ -20,15 +20,15 @@ export async function GET(
 
   try {
     // Look up lodging property by slug
-    const propertyResult = await query(
+    const rows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
       `SELECT id, name, slug, booking_url, booking_platform, is_active
        FROM lodging_properties
        WHERE slug = $1
        LIMIT 1`,
-      [slug]
+      slug
     );
 
-    const property = propertyResult.rows[0];
+    const property = rows[0];
 
     if (!property) {
       logger.warn(`[Lodging Redirect] Property not found: ${slug}`);
@@ -48,11 +48,11 @@ export async function GET(
 
     // Log the click for analytics (non-blocking)
     try {
-      await query(
+      await prisma.$queryRawUnsafe(
         `INSERT INTO lodging_clicks (
           property_id, property_slug, platform, referrer, user_agent, ip_address, created_at
         ) VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
-        [property.id, property.slug, property.booking_platform || null, referrer, userAgent, ip]
+        property.id, property.slug, property.booking_platform || null, referrer, userAgent, ip
       );
     } catch (logError) {
       // Don't block redirect if logging fails - table might not exist yet

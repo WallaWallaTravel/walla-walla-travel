@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 import { validateBody } from '@/lib/api/middleware/validation';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { sendEmail } from '@/lib/email';
 import { logAuthEvent } from '@/lib/services/auth-audit.service';
 import crypto from 'crypto';
@@ -26,28 +26,28 @@ export const POST = withCSRF(
     const normalizedEmail = email.toLowerCase();
 
     // Try hotel partner first, then business partner (users table)
-    const hotelResult = await query<{ id: number; name: string }>(
+    const hotelRows = await prisma.$queryRawUnsafe<{ id: number; name: string }[]>(
       `SELECT id, name FROM hotel_partners WHERE email = $1 AND is_active = true`,
-      [normalizedEmail]
+      normalizedEmail
     );
 
-    const businessResult = await query<{ id: number; name: string }>(
+    const businessRows = await prisma.$queryRawUnsafe<{ id: number; name: string }[]>(
       `SELECT id, name FROM users WHERE email = $1 AND is_active = true AND role = 'partner'`,
-      [normalizedEmail]
+      normalizedEmail
     );
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
     // Handle hotel partner reset
-    if (hotelResult.rows.length > 0) {
-      const hotel = hotelResult.rows[0];
+    if (hotelRows.length > 0) {
+      const hotel = hotelRows[0];
       const rawToken = crypto.randomBytes(32).toString('hex');
       const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
       const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
 
-      await query(
+      await prisma.$queryRawUnsafe(
         `UPDATE hotel_partners SET reset_token = $1, reset_token_expires_at = $2 WHERE id = $3`,
-        [hashedToken, expiresAt, hotel.id]
+        hashedToken, expiresAt, hotel.id
       );
 
       const resetUrl = `${appUrl}/partner-portal/reset-password?token=${rawToken}&type=hotel`;
@@ -63,15 +63,15 @@ export const POST = withCSRF(
     }
 
     // Handle business partner reset
-    if (businessResult.rows.length > 0) {
-      const user = businessResult.rows[0];
+    if (businessRows.length > 0) {
+      const user = businessRows[0];
       const rawToken = crypto.randomBytes(32).toString('hex');
       const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
       const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
 
-      await query(
+      await prisma.$queryRawUnsafe(
         `UPDATE users SET reset_token = $1, reset_token_expires_at = $2 WHERE id = $3`,
-        [hashedToken, expiresAt, user.id]
+        hashedToken, expiresAt, user.id
       );
 
       const resetUrl = `${appUrl}/partner-portal/reset-password?token=${rawToken}&type=business`;

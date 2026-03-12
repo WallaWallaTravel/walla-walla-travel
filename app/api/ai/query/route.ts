@@ -6,7 +6,7 @@ import { getCachedQuery, cacheQueryResponse, generateSystemPromptHash, generateQ
 import { buildSystemPromptWithContext } from '@/lib/ai/context-builder'
 import { getOrCreateVisitor, setVisitorCookie } from '@/lib/visitor/visitor-tracking'
 import { logQuery, classifyQueryIntent } from '@/lib/analytics/query-logger'
-import { query as dbQuery } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler'
 import { withCSRF } from '@/lib/api/middleware/csrf'
 
@@ -62,9 +62,9 @@ export const POST = withCSRF(
     logger.info('AI Query cache hit', { query: query.substring(0, 50), duration, visitorId: visitor.visitor_uuid })
 
     // Update visitor query count for cached responses too
-    await dbQuery(
+    await prisma.$queryRawUnsafe(
       'UPDATE visitors SET total_queries = total_queries + 1, updated_at = NOW() WHERE id = $1',
-      [visitor.id]
+      visitor.id
     )
 
     const response = NextResponse.json({
@@ -132,13 +132,13 @@ export const POST = withCSRF(
   })
 
   // Update visitor query count and link query to visitor
-  await dbQuery(
+  await prisma.$queryRawUnsafe(
     'UPDATE visitors SET total_queries = total_queries + 1, updated_at = NOW() WHERE id = $1',
-    [visitor.id]
+    visitor.id
   )
-  await dbQuery(
+  await prisma.$queryRawUnsafe(
     'UPDATE ai_queries SET visitor_id = $1 WHERE id = $2',
-    [visitor.id, queryId]
+    visitor.id, queryId
   )
 
   logger.info('AI Query completed', {

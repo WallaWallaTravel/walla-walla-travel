@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, UnauthorizedError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { getSession } from '@/lib/auth/session';
 import { partnerService } from '@/lib/services/partner.service';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { z } from 'zod';
@@ -52,7 +52,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   let listing = null;
 
   if (profile.winery_id) {
-    const result = await query(
+    const listingRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
       `SELECT
         name, description, short_description, address, city, phone, website,
         tasting_fee, reservation_required, hours_of_operation as hours,
@@ -61,10 +61,10 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
         booking_advance_days_min, booking_advance_days_max,
         cancellation_policy, pet_policy
        FROM wineries WHERE id = $1`,
-      [profile.winery_id]
+      profile.winery_id
     );
-    if (result.rows[0]) {
-      const row = result.rows[0];
+    if (listingRows[0]) {
+      const row = listingRows[0];
       listing = {
         ...row,
         short_description: row.short_description || row.description?.substring(0, 150) || '',
@@ -113,7 +113,7 @@ export const PUT = withCSRF(
 
   // Update the linked entity
   if (profile.winery_id) {
-    await query(
+    await prisma.$queryRawUnsafe(
       `UPDATE wineries SET
         description = COALESCE($1, description),
         short_description = COALESCE($2, short_description),
@@ -131,23 +131,21 @@ export const PUT = withCSRF(
         pet_policy = $14,
         updated_at = CURRENT_TIMESTAMP
        WHERE id = $15`,
-      [
-        body.description,
-        body.short_description,
-        body.tasting_fee,
-        body.reservation_required,
-        body.hours ? JSON.stringify(body.hours) : null,
-        body.specialties || null,
-        body.features || null,
-        body.experience_tags || null,
-        body.min_group_size ?? null,
-        body.max_group_size ?? null,
-        body.booking_advance_days_min ?? null,
-        body.booking_advance_days_max ?? null,
-        body.cancellation_policy || null,
-        body.pet_policy || null,
-        profile.winery_id,
-      ]
+      body.description,
+      body.short_description,
+      body.tasting_fee,
+      body.reservation_required,
+      body.hours ? JSON.stringify(body.hours) : null,
+      body.specialties || null,
+      body.features || null,
+      body.experience_tags || null,
+      body.min_group_size ?? null,
+      body.max_group_size ?? null,
+      body.booking_advance_days_min ?? null,
+      body.booking_advance_days_max ?? null,
+      body.cancellation_policy || null,
+      body.pet_policy || null,
+      profile.winery_id,
     );
   }
   // TODO: Add hotel and restaurant cases

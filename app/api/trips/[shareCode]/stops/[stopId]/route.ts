@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, NotFoundError, RouteContext } from '@/lib/api/middleware/error-handler';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 
 interface RouteParams {
@@ -23,46 +23,46 @@ export const DELETE = withCSRF(
     }
 
     // Get trip ID from share code
-    const tripResult = await query(
+    const tripRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
       `SELECT id FROM trips WHERE share_code = $1`,
-      [shareCode]
+      shareCode
     );
 
-    if (tripResult.rows.length === 0) {
+    if (tripRows.length === 0) {
       throw new NotFoundError('Trip not found');
     }
 
-    const tripId = tripResult.rows[0].id;
+    const tripId = tripRows[0].id;
 
     // Get stop name for activity log
-    const stopResult = await query(
+    const stopRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
       `SELECT name FROM trip_stops WHERE id = $1 AND trip_id = $2`,
-      [stopIdNum, tripId]
+      stopIdNum, tripId
     );
 
-    if (stopResult.rows.length === 0) {
+    if (stopRows.length === 0) {
       throw new NotFoundError('Stop not found');
     }
 
-    const stopName = stopResult.rows[0].name;
+    const stopName = stopRows[0].name;
 
     // Delete the stop
-    await query(
+    await prisma.$executeRawUnsafe(
       `DELETE FROM trip_stops WHERE id = $1 AND trip_id = $2`,
-      [stopIdNum, tripId]
+      stopIdNum, tripId
     );
 
     // Update trip activity timestamp
-    await query(
+    await prisma.$executeRawUnsafe(
       `UPDATE trips SET last_activity_at = NOW() WHERE id = $1`,
-      [tripId]
+      tripId
     );
 
     // Log activity
-    await query(
+    await prisma.$executeRawUnsafe(
       `INSERT INTO trip_activity_log (trip_id, activity_type, description, actor_type)
        VALUES ($1, 'stop_removed', $2, 'owner')`,
-      [tripId, `Removed stop: ${stopName}`]
+      tripId, `Removed stop: ${stopName}`
     );
 
     return NextResponse.json({

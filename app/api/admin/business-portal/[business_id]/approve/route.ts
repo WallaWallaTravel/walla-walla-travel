@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
@@ -43,7 +43,7 @@ export const POST = withCSRF(
   logger.info('Setting business status', { businessId, status });
 
   // Update business status
-  const result = await query(
+  const result = await prisma.$queryRawUnsafe(
     `UPDATE businesses
      SET
        status = $1,
@@ -51,29 +51,27 @@ export const POST = withCSRF(
        public_profile = $2
      WHERE id = $3
      RETURNING *`,
-    [status, status === 'approved', businessId]
-  );
+    status, status === 'approved', businessId
+  ) as Record<string, any>[];
 
-  if (result.rows.length === 0) {
+  if (result.length === 0) {
     throw new NotFoundError('Business not found');
   }
 
-  const business = result.rows[0];
+  const business = result[0];
 
   // Log activity
-  await query(
+  await prisma.$queryRawUnsafe(
     `INSERT INTO business_activity_log (
       business_id,
       activity_type,
       activity_description,
       metadata
     ) VALUES ($1, $2, $3, $4)`,
-    [
-      businessId,
-      status === 'approved' ? 'business_approved' : 'business_rejected',
-      `Business ${status === 'approved' ? 'approved' : 'rejected'} for directory`,
-      JSON.stringify({ notes })
-    ]
+    businessId,
+    status === 'approved' ? 'business_approved' : 'business_rejected',
+    `Business ${status === 'approved' ? 'approved' : 'rejected'} for directory`,
+    JSON.stringify({ notes })
   );
 
   logger.info('Business status updated successfully', { businessId });

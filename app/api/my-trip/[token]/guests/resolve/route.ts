@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { withErrorHandling, RouteContext, NotFoundError, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
-import { queryOne } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 
 const BodySchema = z.object({
@@ -36,7 +36,7 @@ export const POST = withCSRF(
       throw new BadRequestError('guest_token is required');
     }
 
-    const guest = await queryOne<{
+    const rows = await prisma.$queryRawUnsafe<{
       id: number;
       name: string;
       email: string | null;
@@ -46,13 +46,14 @@ export const POST = withCSRF(
       dietary_restrictions: string | null;
       accessibility_needs: string | null;
       special_requests: string | null;
-    }>(
+    }[]>(
       `SELECT id, name, email, phone, is_registered, is_primary,
               dietary_restrictions, accessibility_needs, special_requests
        FROM trip_proposal_guests
        WHERE guest_access_token = $1 AND trip_proposal_id = $2`,
-      [guestToken, proposal.id]
+      guestToken, proposal.id
     );
+    const guest = rows[0];
 
     if (!guest) {
       throw new NotFoundError('Guest not found');

@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 
 /**
  * GET /api/admin/drafts/summary
  * Returns aggregate counts for draft proposals by age.
  */
 export const GET = withAdminAuth(async (_request: NextRequest) => {
-  const result = await query(`
+  const rows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
     SELECT
       COUNT(*) as total,
       COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '7 days') as recent,
@@ -17,7 +17,7 @@ export const GET = withAdminAuth(async (_request: NextRequest) => {
     WHERE status = 'draft'
   `);
 
-  const row = result.rows[0] || { total: 0, recent: 0, aging: 0, stale: 0 };
+  const row = rows[0] || { total: 0, recent: 0, aging: 0, stale: 0 };
 
   return NextResponse.json({
     success: true,

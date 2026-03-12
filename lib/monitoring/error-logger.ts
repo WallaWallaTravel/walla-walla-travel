@@ -3,7 +3,7 @@
  * Tracks and analyzes application errors
  */
 
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 
 export type ErrorSeverity = 'warning' | 'error' | 'critical';
@@ -72,7 +72,7 @@ export interface NewErrorType {
  */
 export async function logError(entry: ErrorLogEntry): Promise<number | null> {
   try {
-    const result = await query(`
+    const rows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
       INSERT INTO error_logs (
         error_type,
         error_message,
@@ -87,7 +87,7 @@ export async function logError(entry: ErrorLogEntry): Promise<number | null> {
         metadata
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING id
-    `, [
+    `,
       entry.errorType,
       entry.errorMessage,
       entry.stackTrace || null,
@@ -99,9 +99,9 @@ export async function logError(entry: ErrorLogEntry): Promise<number | null> {
       entry.sessionId || null,
       entry.severity || 'error',
       entry.metadata ? JSON.stringify(entry.metadata) : null
-    ]);
-    
-    return result.rows[0]?.id;
+    );
+
+    return rows[0]?.id;
   } catch (error) {
     // If error logging fails, log to console but don't throw
     logger.error('[Error Logger] Failed to log error to database', { error });
@@ -157,8 +157,8 @@ export async function getRecentErrors(options: {
     params.push(limit);
     sql += ` ORDER BY occurred_at DESC LIMIT $${++paramCount}`;
     
-    const result = await query(sql, params);
-    return result.rows;
+    const rows = await prisma.$queryRawUnsafe<ErrorLogRow[]>(sql, ...params);
+    return rows;
   } catch (error) {
     logger.error('[Error Logger] Failed to fetch recent errors', { error });
     return [];
@@ -176,8 +176,8 @@ export async function getErrorStats(hoursBack: number = 24): Promise<{
   unresolved: number;
 }> {
   try {
-    const result = await query(`
-      SELECT 
+    const rows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
+      SELECT
         COUNT(*) as total,
         COUNT(*) FILTER (WHERE resolved = true) as resolved,
         COUNT(*) FILTER (WHERE resolved = false) as unresolved,
@@ -190,7 +190,7 @@ export async function getErrorStats(hoursBack: number = 24): Promise<{
           count_by_severity
         ) as by_severity
       FROM (
-        SELECT 
+        SELECT
           error_type,
           severity,
           resolved,
@@ -201,8 +201,8 @@ export async function getErrorStats(hoursBack: number = 24): Promise<{
       ) subquery
       GROUP BY NULL
     `);
-    
-    const row = result.rows[0];
+
+    const row = rows[0];
     
     return {
       total: parseInt(row?.total || '0'),
@@ -231,14 +231,14 @@ export async function resolveError(
   resolutionNotes?: string
 ): Promise<boolean> {
   try {
-    await query(`
+    await prisma.$queryRawUnsafe(`
       UPDATE error_logs
-      SET 
+      SET
         resolved = true,
         resolved_at = NOW(),
         resolution_notes = $2
       WHERE id = $1
-    `, [errorId, resolutionNotes || null]);
+    `, errorId, resolutionNotes || null);
     
     return true;
   } catch (error) {
@@ -257,8 +257,8 @@ export async function detectErrorPatterns(): Promise<{
 }> {
   try {
     // Find errors that repeat frequently
-    const repeatingErrors = await query(`
-      SELECT 
+    const repeatingErrorRows = await prisma.$queryRawUnsafe<RepeatingError[]>(`
+      SELECT
         error_type,
         error_message,
         COUNT(*) as occurrences,
@@ -270,11 +270,11 @@ export async function detectErrorPatterns(): Promise<{
       ORDER BY occurrences DESC
       LIMIT 10
     `);
-    
+
     // Detect error spikes (hour with unusual error count)
-    const errorSpikes = await query(`
+    const errorSpikeRows = await prisma.$queryRawUnsafe<ErrorSpike[]>(`
       WITH hourly_counts AS (
-        SELECT 
+        SELECT
           DATE_TRUNC('hour', occurred_at) as hour,
           COUNT(*) as error_count
         FROM error_logs
@@ -285,7 +285,7 @@ export async function detectErrorPatterns(): Promise<{
         SELECT AVG(error_count) as avg, STDDEV(error_count) as stddev
         FROM hourly_counts
       )
-      SELECT 
+      SELECT
         h.hour,
         h.error_count,
         a.avg,
@@ -295,10 +295,10 @@ export async function detectErrorPatterns(): Promise<{
       AND (h.error_count - a.avg) / NULLIF(a.stddev, 0) > 2
       ORDER BY z_score DESC
     `);
-    
+
     // Find new error types in last 24 hours
-    const newErrorTypes = await query(`
-      SELECT DISTINCT 
+    const newErrorTypeRows = await prisma.$queryRawUnsafe<NewErrorType[]>(`
+      SELECT DISTINCT
         error_type,
         MIN(occurred_at) as first_seen,
         COUNT(*) as occurrences
@@ -312,11 +312,11 @@ export async function detectErrorPatterns(): Promise<{
       GROUP BY error_type
       ORDER BY occurrences DESC
     `);
-    
+
     return {
-      repeatingErrors: repeatingErrors.rows,
-      errorSpikes: errorSpikes.rows,
-      newErrorTypes: newErrorTypes.rows
+      repeatingErrors: repeatingErrorRows,
+      errorSpikes: errorSpikeRows,
+      newErrorTypes: newErrorTypeRows
     };
   } catch (error) {
     logger.error('[Error Logger] Failed to detect patterns', { error });

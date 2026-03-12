@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
@@ -39,7 +39,7 @@ export const POST = withCSRF(
   logger.info('Setting file approval', { fileId, approved });
 
   // Update file
-  const result = await query(
+  const result = await prisma.$queryRawUnsafe(
     `UPDATE business_files
      SET
        approved = $1,
@@ -47,29 +47,27 @@ export const POST = withCSRF(
        reviewed_at = NOW()
      WHERE id = $3
      RETURNING *`,
-    [approved, notes || null, fileId]
-  );
+    approved, notes || null, fileId
+  ) as Record<string, any>[];
 
-  if (result.rows.length === 0) {
+  if (result.length === 0) {
     throw new NotFoundError('File not found');
   }
 
-  const file = result.rows[0];
+  const file = result[0];
 
   // Log activity
-  await query(
+  await prisma.$queryRawUnsafe(
     `INSERT INTO business_activity_log (
       business_id,
       activity_type,
       activity_description,
       metadata
     ) VALUES ($1, $2, $3, $4)`,
-    [
-      file.business_id,
-      approved ? 'file_approved' : 'file_rejected',
-      `File ${file.original_filename} ${approved ? 'approved' : 'rejected'}`,
-      JSON.stringify({ file_id: fileId, notes })
-    ]
+    file.business_id,
+    approved ? 'file_approved' : 'file_rejected',
+    `File ${file.original_filename} ${approved ? 'approved' : 'rejected'}`,
+    JSON.stringify({ file_id: fileId, notes })
   );
 
   logger.info('File approval updated successfully', { fileId });

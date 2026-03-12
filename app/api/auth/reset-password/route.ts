@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 import { validateBody } from '@/lib/api/middleware/validation';
 import { withRateLimit, rateLimiters } from '@/lib/api/middleware/rate-limit';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { sendEmail } from '@/lib/email';
 import crypto from 'crypto';
 import { withCSRF } from '@/lib/api/middleware/csrf';
@@ -24,13 +24,13 @@ export const POST = withCSRF(
     const { email } = await validateBody(request, ResetRequestSchema);
 
     // Look up user (but always return success regardless)
-    const userResult = await query<{ id: number; name: string }>(
+    const userRows = await prisma.$queryRawUnsafe<Array<{ id: number; name: string }>>(
       `SELECT id, name FROM users WHERE email = $1 AND is_active = true`,
-      [email.toLowerCase()]
+      email.toLowerCase()
     );
 
-    if (userResult.rows.length > 0) {
-      const user = userResult.rows[0];
+    if (userRows.length > 0) {
+      const user = userRows[0];
 
       // Generate reset token (1 hour expiry)
       // Store only the hash in the database; email the raw token
@@ -38,9 +38,9 @@ export const POST = withCSRF(
       const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
       const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
-      await query(
+      await prisma.$queryRawUnsafe(
         `UPDATE users SET reset_token = $1, reset_token_expires_at = $2 WHERE id = $3`,
-        [hashedToken, expiresAt, user.id]
+        hashedToken, expiresAt, user.id
       );
 
       const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';

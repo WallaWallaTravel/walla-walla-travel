@@ -1,7 +1,7 @@
 // Query Cache Service
 // Caches AI responses to reduce API costs and improve response time
 
-import { pool } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 import crypto from 'crypto'
 
 export interface CachedQuery {
@@ -42,27 +42,27 @@ export async function getCachedQuery(
 ): Promise<CachedQuery | null> {
   const queryHash = generateQueryHash(query, model, systemPromptHash)
   
-  const result = await pool.query<CachedQuery>(
-    `SELECT * FROM ai_query_cache 
-     WHERE query_hash = $1 
+  const rows = await prisma.$queryRawUnsafe<CachedQuery[]>(
+    `SELECT * FROM ai_query_cache
+     WHERE query_hash = $1
      AND expires_at > NOW()
      LIMIT 1`,
-    [queryHash]
+    queryHash
   )
 
-  if (result.rows.length === 0) {
+  if (rows.length === 0) {
     return null
   }
 
   // Update hit count and last_hit_at
-  await pool.query(
-    `UPDATE ai_query_cache 
+  await prisma.$queryRawUnsafe(
+    `UPDATE ai_query_cache
      SET hit_count = hit_count + 1, last_hit_at = NOW()
      WHERE id = $1`,
-    [result.rows[0].id]
+    rows[0].id
   )
 
-  return result.rows[0]
+  return rows[0]
 }
 
 /**
@@ -79,7 +79,7 @@ export async function cacheQueryResponse(
   const queryHash = generateQueryHash(query, model, systemPromptHash)
   const expiresAt = new Date(Date.now() + ttlHours * 60 * 60 * 1000)
 
-  await pool.query(
+  await prisma.$queryRawUnsafe(
     `INSERT INTO ai_query_cache (
       query_hash, query_text, model, system_prompt_hash,
       response_text, response_data, expires_at
@@ -89,15 +89,13 @@ export async function cacheQueryResponse(
       response_data = $6,
       expires_at = $7,
       last_hit_at = NOW()`,
-    [
-      queryHash,
-      query,
-      model,
-      systemPromptHash,
-      response,
-      responseData ? JSON.stringify(responseData) : null,
-      expiresAt
-    ]
+    queryHash,
+    query,
+    model,
+    systemPromptHash,
+    response,
+    responseData ? JSON.stringify(responseData) : null,
+    expiresAt
   )
 }
 
@@ -105,10 +103,10 @@ export async function cacheQueryResponse(
  * Clear expired cache entries
  */
 export async function clearExpiredCache(): Promise<number> {
-  const result = await pool.query(
+  const result = await prisma.$executeRawUnsafe(
     'DELETE FROM ai_query_cache WHERE expires_at < NOW()'
   )
-  return result.rowCount || 0
+  return result
 }
 
 /**
@@ -121,8 +119,8 @@ export async function getCacheStats(): Promise<{
   oldestEntry: Date | null
   newestEntry: Date | null
 }> {
-  const result = await pool.query(`
-    SELECT 
+  const rows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
+    SELECT
       COUNT(*) as total_entries,
       SUM(hit_count) as total_hits,
       AVG(hit_count) as avg_hit_count,
@@ -132,7 +130,7 @@ export async function getCacheStats(): Promise<{
     WHERE expires_at > NOW()
   `)
 
-  const row = result.rows[0]
+  const row = rows[0]
 
   return {
     totalEntries: parseInt(row.total_entries) || 0,
@@ -147,7 +145,7 @@ export async function getCacheStats(): Promise<{
  * Clear entire cache (use with caution!)
  */
 export async function clearAllCache(): Promise<number> {
-  const result = await pool.query('DELETE FROM ai_query_cache')
-  return result.rowCount || 0
+  const result = await prisma.$executeRawUnsafe('DELETE FROM ai_query_cache')
+  return result
 }
 

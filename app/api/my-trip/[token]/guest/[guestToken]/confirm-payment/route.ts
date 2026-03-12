@@ -3,7 +3,7 @@ import { after } from 'next/server';
 import { withErrorHandling, BadRequestError, NotFoundError, RouteContext } from '@/lib/api/middleware/error-handler';
 import { getBrandStripeClient } from '@/lib/stripe-brands';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
-import { query, queryOne, withTransaction } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
 import { withCSRF } from '@/lib/api/middleware/csrf';
@@ -32,14 +32,15 @@ export const POST = withCSRF(
     const proposal = await tripProposalService.getByAccessToken(token);
     if (!proposal) throw new NotFoundError('Trip not found');
 
-    const guest = await queryOne<{
+    const guestRows = await prisma.$queryRawUnsafe<{
       id: number; name: string; amount_owed: string; amount_paid: string; payment_status: string;
-    }>(
+    }[]>(
       `SELECT id, name, amount_owed, amount_paid, payment_status
        FROM trip_proposal_guests
        WHERE trip_proposal_id = $1 AND guest_access_token = $2`,
-      [proposal.id, guestToken]
+      proposal.id, guestToken
     );
+    const guest = guestRows[0];
 
     if (!guest) throw new NotFoundError('Guest not found');
 
@@ -60,19 +61,18 @@ export const POST = withCSRF(
     // returns no rows, meaning this payment was already processed.
     let alreadyProcessed = false;
 
-    await withTransaction(async (client) => {
+    await prisma.$transaction(async (tx) => {
       // Atomic idempotency gate — relies on UNIQUE index from migration 093
-      const insertResult = await query(
+      const insertResult = await tx.$queryRawUnsafe<{ id: number }[]>(
         `INSERT INTO guest_payments (trip_proposal_id, guest_id, amount, stripe_payment_intent_id, payment_type, status)
          VALUES ($1, $2, $3, $4, 'guest_share', 'succeeded')
          ON CONFLICT (stripe_payment_intent_id) WHERE stripe_payment_intent_id IS NOT NULL
          DO NOTHING
          RETURNING id`,
-        [proposal.id, guest.id, amount, payment_intent_id],
-        client
+        proposal.id, guest.id, amount, payment_intent_id
       );
 
-      if (insertResult.rows.length === 0) {
+      if (insertResult.length === 0) {
         // Payment was already recorded — no further updates needed
         alreadyProcessed = true;
         return;
@@ -83,14 +83,13 @@ export const POST = withCSRF(
       const owed = parseFloat(guest.amount_owed) || 0;
       const status = newPaid >= owed ? 'paid' : newPaid > 0 ? 'partial' : 'unpaid';
 
-      await query(
+      await tx.$executeRawUnsafe(
         `UPDATE trip_proposal_guests
          SET amount_paid = $1, payment_status = $2,
              payment_paid_at = CASE WHEN $2 = 'paid' THEN NOW() ELSE payment_paid_at END,
              updated_at = NOW()
          WHERE id = $3 AND trip_proposal_id = $4`,
-        [newPaid, status, guest.id, proposal.id],
-        client
+        newPaid, status, guest.id, proposal.id
       );
     });
 

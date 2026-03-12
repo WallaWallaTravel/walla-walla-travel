@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 import { withErrorHandling, BadRequestError } from '@/lib/api/middleware/error-handler';
 
 interface BookingRow {
@@ -99,15 +99,15 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   }
 
   // Check existing bookings for that date
-  const existingBookings = await query<BookingRow>(
+  const existingBookings = await prisma.$queryRawUnsafe(
     `SELECT id, tour_date, party_size FROM bookings
      WHERE tour_date = $1 AND status NOT IN ('cancelled')`,
-    [dateStr]
-  );
+    dateStr
+  ) as BookingRow[];
 
   // Calculate capacity (simplified - assume 3 vehicles with 14 capacity each)
   const maxDailyCapacity = 42;
-  const bookedCapacity = existingBookings.rows.reduce((sum, b) => sum + b.party_size, 0);
+  const bookedCapacity = existingBookings.reduce((sum, b) => sum + b.party_size, 0);
   const remainingCapacity = maxDailyCapacity - bookedCapacity;
 
   const isAvailable = remainingCapacity >= partySize;
@@ -129,13 +129,13 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
       checkDate.setDate(checkDate.getDate() + i);
       const checkDateStr = checkDate.toISOString().split('T')[0];
 
-      const checkBookings = await query<BookingRow>(
+      const checkBookings = await prisma.$queryRawUnsafe(
         `SELECT SUM(party_size) as booked FROM bookings
          WHERE tour_date = $1 AND status NOT IN ('cancelled')`,
-        [checkDateStr]
-      );
+        checkDateStr
+      ) as BookingRow[];
 
-      const bookedOnDay = checkBookings.rows[0]?.party_size || 0;
+      const bookedOnDay = checkBookings[0]?.party_size || 0;
       if ((maxDailyCapacity - bookedOnDay) >= partySize) {
         nextAvailableDate = checkDateStr;
         break;

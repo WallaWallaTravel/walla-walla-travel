@@ -3,7 +3,7 @@
  * Continuously monitors all system components
  */
 
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 
 export type HealthStatus = 'healthy' | 'degraded' | 'down';
@@ -24,7 +24,7 @@ export async function checkDatabase(): Promise<HealthCheckResult> {
   const startTime = Date.now();
   
   try {
-    await query('SELECT 1 as health_check');
+    await prisma.$queryRawUnsafe('SELECT 1 as health_check');
     const responseTime = Date.now() - startTime;
     
     // Adjusted thresholds for remote database (Heroku/AWS)
@@ -160,14 +160,14 @@ export async function checkDatabaseTables(): Promise<HealthCheckResult> {
   ];
   
   try {
-    const result = await query(`
-      SELECT table_name 
-      FROM information_schema.tables 
-      WHERE table_schema = 'public' 
+    const rows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
+      SELECT table_name
+      FROM information_schema.tables
+      WHERE table_schema = 'public'
       AND table_name = ANY($1)
-    `, [requiredTables]);
-    
-    const existingTables = result.rows.map(r => r.table_name);
+    `, requiredTables);
+
+    const existingTables = rows.map(r => r.table_name);
     const missingTables = requiredTables.filter(t => !existingTables.includes(t));
     
     const status: HealthStatus = missingTables.length === 0 ? 'healthy' : 
@@ -204,15 +204,15 @@ export async function checkErrorRate(): Promise<HealthCheckResult> {
   const startTime = Date.now();
   
   try {
-    const result = await query(`
-      SELECT 
+    const rows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
+      SELECT
         COUNT(*) as total_errors,
         COUNT(*) FILTER (WHERE severity = 'critical') as critical_errors
       FROM error_logs
       WHERE occurred_at > NOW() - INTERVAL '5 minutes'
     `);
-    
-    const { total_errors, critical_errors } = result.rows[0];
+
+    const { total_errors, critical_errors } = rows[0];
     
     const status: HealthStatus = 
       critical_errors > 0 ? 'down' :
@@ -248,14 +248,14 @@ export async function checkAPIPerformance(): Promise<HealthCheckResult> {
   const startTime = Date.now();
   
   try {
-    const result = await query(`
+    const rows = await prisma.$queryRawUnsafe<Record<string, any>[]>(`
       SELECT AVG(value) as avg_response_time
       FROM performance_metrics
       WHERE metric_type = 'api_response'
       AND recorded_at > NOW() - INTERVAL '5 minutes'
     `);
-    
-    const avgTime = parseFloat(result.rows[0]?.avg_response_time || '0');
+
+    const avgTime = parseFloat(rows[0]?.avg_response_time || '0');
     
     const status: HealthStatus = 
       avgTime === 0 ? 'healthy' : // No data yet
@@ -306,18 +306,18 @@ export async function runAllHealthChecks(): Promise<HealthCheckResult[]> {
  */
 export async function logHealthCheck(result: HealthCheckResult): Promise<void> {
   try {
-    await query(`
-      INSERT INTO system_health_checks 
+    await prisma.$queryRawUnsafe(`
+      INSERT INTO system_health_checks
         (check_type, check_name, status, response_time_ms, error_message, metadata)
       VALUES ($1, $2, $3, $4, $5, $6)
-    `, [
+    `,
       result.checkType,
       result.checkName,
       result.status,
       result.responseTimeMs,
       result.errorMessage || null,
       result.metadata ? JSON.stringify(result.metadata) : null
-    ]);
+    );
   } catch (error) {
     // If monitoring tables don't exist yet, fail silently
     logger.debug('Health Check: Could not log to database', { error });

@@ -30,14 +30,12 @@
  */
 
 import { BaseService } from './base.service';
-import { pool } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import {
   ProposalData,
   generateProposalNumber,
-  getDefaultProposalText,
   calculateProposalTotals,
   validateProposalData,
-  logProposalActivity
 } from '@/lib/proposals/proposal-utils';
 import { BadRequestError } from '@/lib/api/middleware/error-handler';
 
@@ -154,7 +152,20 @@ export class ProposalService extends BaseService {
     const proposalNumber = generateProposalNumber();
 
     // Get default text
-    const defaults = await getDefaultProposalText(pool);
+    const templateRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
+      'SELECT * FROM proposal_text_templates WHERE template_name = $1',
+      'default'
+    );
+    const defaults = templateRows[0] || {
+      title: 'Walla Walla Wine Country Experience',
+      introduction: 'Thank you for your interest in Walla Walla Travel! We are excited to create a memorable wine country experience for you and your guests.',
+      wine_tour_description: 'Visit 3 premier wineries in the Walla Walla Valley. Your private guide will provide insights into the region\'s rich wine-making heritage while ensuring a comfortable and memorable experience.',
+      transfer_description: 'Professional transportation service with experienced drivers and comfortable, well-maintained vehicles.',
+      wait_time_description: 'Professional wait time service while you attend meetings, events, or other activities.',
+      terms_and_conditions: 'A 50% deposit is required to confirm your booking. The remaining balance is due 48 hours after your tour concludes. Cancellations 45+ days before: 100% refund of deposit. Cancellations 21-44 days before: 50% refund of deposit. Cancellations within 21 days: No refund.',
+      cancellation_policy: 'Cancellations 45+ days before: 100% refund of deposit. 21-44 days before: 50% refund of deposit. Within 21 days: No refund.',
+      footer_notes: 'Looking forward to hosting you!'
+    };
 
     // Merge with defaults
     const proposalTitle = data.proposal_title || defaults.title;
@@ -223,11 +234,13 @@ export class ProposalService extends BaseService {
     const proposal = result.rows[0] as { id: number; proposal_number: string; uuid: string };
 
     // Log activity
-    await logProposalActivity(
-      pool,
+    await prisma.$queryRawUnsafe(
+      `INSERT INTO proposal_activity_log (proposal_id, activity_type, description, metadata)
+       VALUES ($1, $2, $3, $4)`,
       proposal.id,
       'created',
-      `Proposal created: ${proposalNumber}`
+      `Proposal created: ${proposalNumber}`,
+      null
     );
 
     this.log(`Proposal created: ${proposalNumber}`);

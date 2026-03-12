@@ -7,7 +7,7 @@
  * if database content is not available.
  */
 
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 
 // ============================================================================
@@ -137,13 +137,13 @@ export async function getPageContent<T = string>(
   sectionKey: string
 ): Promise<T> {
   try {
-    const result = await query<PageContentItem>(
+    const rows = await prisma.$queryRawUnsafe<PageContentItem[]>(
       `SELECT content, content_type FROM page_content WHERE page_slug = $1 AND section_key = $2`,
-      [pageSlug, sectionKey]
+      pageSlug, sectionKey
     );
 
-    if (result.rows.length > 0) {
-      const { content, content_type } = result.rows[0];
+    if (rows.length > 0) {
+      const { content, content_type } = rows[0];
 
       // Parse based on content type
       switch (content_type) {
@@ -179,14 +179,14 @@ export async function getPageContent<T = string>(
  */
 export async function getAllPageContent(pageSlug: string): Promise<Record<string, string>> {
   try {
-    const result = await query<PageContentItem>(
+    const rows = await prisma.$queryRawUnsafe<PageContentItem[]>(
       `SELECT section_key, content, content_type FROM page_content WHERE page_slug = $1`,
-      [pageSlug]
+      pageSlug
     );
 
-    if (result.rows.length > 0) {
+    if (rows.length > 0) {
       const content: Record<string, string> = {};
-      for (const row of result.rows) {
+      for (const row of rows) {
         content[row.section_key] = row.content;
       }
       return content;
@@ -208,16 +208,16 @@ export async function getAllPageContent(pageSlug: string): Promise<Record<string
  */
 export async function getCollectionItems(collectionType: string): Promise<CollectionItem[]> {
   try {
-    const result = await query<CollectionItem & { is_active: boolean }>(
+    const rows = await prisma.$queryRawUnsafe<(CollectionItem & { is_active: boolean })[]>(
       `SELECT slug, title, subtitle, description, content, image_url, icon, sort_order
        FROM content_collections
        WHERE collection_type = $1 AND is_active = true
        ORDER BY sort_order, title`,
-      [collectionType]
+      collectionType
     );
 
-    if (result.rows.length > 0) {
-      return result.rows.map((row) => ({
+    if (rows.length > 0) {
+      return rows.map((row) => ({
         slug: row.slug,
         title: row.title,
         subtitle: row.subtitle,
@@ -247,15 +247,15 @@ export async function getCollectionItem(
   slug: string
 ): Promise<CollectionItem | null> {
   try {
-    const result = await query<CollectionItem>(
+    const rows = await prisma.$queryRawUnsafe<CollectionItem[]>(
       `SELECT slug, title, subtitle, description, content, image_url, icon, sort_order
        FROM content_collections
        WHERE collection_type = $1 AND slug = $2 AND is_active = true`,
-      [collectionType, slug]
+      collectionType, slug
     );
 
-    if (result.rows.length > 0) {
-      const row = result.rows[0];
+    if (rows.length > 0) {
+      const row = rows[0];
       return {
         slug: row.slug,
         title: row.title,

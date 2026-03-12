@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth, type AuthSession, type RouteContext } from '@/lib/api/middleware/auth-wrapper';
 import { NotFoundError, BadRequestError } from '@/lib/api/middleware/error-handler';
 import { lunchSupplierService } from '@/lib/services/lunch-supplier.service';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { z } from 'zod';
 
@@ -55,21 +55,21 @@ export const PATCH = withCSRF(
 
     setClauses.push('updated_at = NOW()');
 
-    const result = await query(
+    const resultRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
       `UPDATE proposal_lunch_orders
        SET ${setClauses.join(', ')}
        WHERE id = $${paramIndex}
        RETURNING *`,
-      [...values, orderIdNum]
+      ...values, orderIdNum
     );
 
-    if (!result.rows[0]) {
+    if (!resultRows[0]) {
       throw new NotFoundError('Lunch order not found');
     }
 
     return NextResponse.json({
       success: true,
-      data: result.rows[0],
+      data: resultRows[0],
     });
   }
 )

@@ -10,7 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling } from '@/lib/api/middleware/error-handler';
 import { clearSessionCookie, getSessionFromRequest } from '@/lib/auth/session';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 
 /** Clear both old session and Auth.js session cookies */
@@ -56,10 +56,10 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       }
 
       // Log logout activity
-      await query(
+      await prisma.$queryRawUnsafe(
         `INSERT INTO user_activity_logs (user_id, action, details, created_at)
          VALUES ($1, $2, $3, NOW())`,
-        [session.user.id, 'logout', JSON.stringify({ ip: getClientIp(request) })]
+        session.user.id, 'logout', JSON.stringify({ ip: getClientIp(request) })
       ).catch(err => {
         logger.warn('Failed to log logout activity', { error: err });
       });
@@ -98,10 +98,10 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
       });
     }
 
-    await query(
+    await prisma.$queryRawUnsafe(
       `INSERT INTO user_activity_logs (user_id, action, details, created_at)
        VALUES ($1, $2, $3, NOW())`,
-      [session.user.id, 'logout', JSON.stringify({ ip: getClientIp(request) })]
+      session.user.id, 'logout', JSON.stringify({ ip: getClientIp(request) })
     ).catch(err => {
       logger.warn('Failed to log logout activity', { error: err });
     });

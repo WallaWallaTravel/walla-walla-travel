@@ -11,7 +11,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { pool } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 
 /**
@@ -40,15 +40,14 @@ export async function withCronLock(
   fn: () => Promise<NextResponse>
 ): Promise<NextResponse> {
   const lockId = djb2Hash(jobName);
-  const client = await pool.connect();
 
   try {
-    const lockResult = await client.query<{ pg_try_advisory_lock: boolean }>(
+    const lockResult = await prisma.$queryRawUnsafe<Record<string, any>[]>(
       'SELECT pg_try_advisory_lock($1)',
-      [lockId]
+      lockId
     );
 
-    const acquired = lockResult.rows[0]?.pg_try_advisory_lock === true;
+    const acquired = lockResult[0]?.pg_try_advisory_lock === true;
 
     if (!acquired) {
       logger.info(`Cron lock skipped: ${jobName} is already running`, {
@@ -65,17 +64,15 @@ export async function withCronLock(
 
     const response = await fn();
 
-    await client.query('SELECT pg_advisory_unlock($1)', [lockId]);
+    await prisma.$queryRawUnsafe('SELECT pg_advisory_unlock($1)', lockId);
 
     return response;
   } catch (error) {
     try {
-      await client.query('SELECT pg_advisory_unlock($1)', [lockId]);
+      await prisma.$queryRawUnsafe('SELECT pg_advisory_unlock($1)', lockId);
     } catch {
       // Unlock failed — lock will release when connection closes
     }
     throw error;
-  } finally {
-    client.release();
   }
 }

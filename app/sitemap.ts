@@ -5,7 +5,7 @@ import { getAllGuideSlugs } from '@/lib/data/guides';
 import { getAllItinerarySlugs } from '@/lib/data/itineraries';
 import { getAllNeighborhoodSlugs } from '@/lib/data/neighborhoods';
 import { getAllBestOfCategorySlugs } from '@/lib/data/best-of-categories';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 
 // ISR: revalidate every hour. Sitemap content changes infrequently.
@@ -189,10 +189,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let eventCategoryPages: MetadataRoute.Sitemap = [];
 
   try {
-    const result = await query<{ slug: string }>(
+    const rows = await prisma.$queryRawUnsafe<{ slug: string }[]>(
       "SELECT slug FROM event_categories WHERE is_active = true ORDER BY display_order ASC"
     );
-    eventCategoryPages = result.rows.map((row) => ({
+    eventCategoryPages = rows.map((row) => ({
       url: `${baseUrl}/events/category/${row.slug}`,
       lastModified: new Date(),
       changeFrequency: 'weekly' as const,
@@ -206,10 +206,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let eventPages: MetadataRoute.Sitemap = [];
 
   try {
-    const result = await query<{ slug: string }>(
+    const rows = await prisma.$queryRawUnsafe<{ slug: string }[]>(
       "SELECT slug FROM events WHERE status = 'published' AND start_date >= CURRENT_DATE ORDER BY start_date ASC"
     );
-    eventPages = result.rows.map((row) => ({
+    eventPages = rows.map((row) => ({
       url: `${baseUrl}/events/${row.slug}`,
       lastModified: new Date(),
       changeFrequency: 'weekly' as const,
@@ -223,10 +223,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let geologyPages: MetadataRoute.Sitemap = [];
 
   try {
-    const result = await query<{ slug: string }>(
+    const rows = await prisma.$queryRawUnsafe<{ slug: string }[]>(
       'SELECT slug FROM geology_topics WHERE is_published = true ORDER BY display_order ASC'
     );
-    geologyPages = result.rows.map((row) => ({
+    geologyPages = rows.map((row) => ({
       url: `${baseUrl}/geology/${row.slug}`,
       lastModified: new Date(),
       changeFrequency: 'monthly' as const,

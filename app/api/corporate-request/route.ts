@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { parseItineraryFile } from '@/lib/corporate/itinerary-parser';
 import { sendCorporateRequestNotification } from '@/lib/email';
 import { logger } from '@/lib/logger';
@@ -89,7 +89,7 @@ export const POST = withCSRF(
   }
 
   // Insert into database
-  const result = await query(`
+  const result = await prisma.$queryRawUnsafe(`
     INSERT INTO corporate_requests (
       request_number, company_name, contact_name, contact_email, contact_phone,
       party_size, event_type, description, special_requirements, budget_range,
@@ -97,7 +97,7 @@ export const POST = withCSRF(
       status
     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
     RETURNING id, request_number
-  `, [
+  `,
     requestNumber,
     companyName,
     contactName,
@@ -113,9 +113,9 @@ export const POST = withCSRF(
     aiExtractedData ? JSON.stringify(aiExtractedData) : null,
     aiConfidenceScore,
     'pending'
-  ]);
+  ) as Record<string, any>[];
 
-  const corporateRequest = result.rows[0];
+  const corporateRequest = result[0];
 
   // Send email notification to admin (async, don't block response)
   sendCorporateRequestNotification({
@@ -177,11 +177,11 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 
   sql += ' ORDER BY created_at DESC';
 
-  const result = await query(sql, params);
+  const result = await prisma.$queryRawUnsafe(sql, ...params) as Record<string, any>[];
 
   return NextResponse.json({
     success: true,
-    requests: result.rows,
-    count: result.rows.length
+    requests: result,
+    count: result.length
   });
 });

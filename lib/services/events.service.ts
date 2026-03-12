@@ -1003,11 +1003,11 @@ export class EventsService extends BaseService {
       const parentPlaceholders = parentKeys.map((_, i) => `$${i + 1}`).join(', ');
       const parentColumns = parentKeys.join(', ');
 
-      const parentResult = await client(
+      const parentRows = await client.$queryRawUnsafe<Event[]>(
         `INSERT INTO events (${parentColumns}) VALUES (${parentPlaceholders}) RETURNING *`,
-        parentValues
+        ...parentValues
       );
-      const parent = parentResult.rows[0] as Event;
+      const parent = parentRows[0];
 
       // Calculate day span for multi-day events
       let daySpan = 0;
@@ -1072,9 +1072,9 @@ export class EventsService extends BaseService {
         const childPlaceholders = childKeys.map((_, i) => `$${i + 1}`).join(', ');
         const childColumns = childKeys.join(', ');
 
-        await client(
+        await client.$queryRawUnsafe(
           `INSERT INTO events (${childColumns}) VALUES (${childPlaceholders})`,
-          childValues
+          ...childValues
         );
       }
 

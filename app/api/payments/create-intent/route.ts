@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { NotFoundError, InternalServerError, BadRequestError } from '@/lib/api-errors';
 import { withAuth } from '@/lib/api/middleware/auth-wrapper';
-import { queryOne, query } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 import { validateBody, CreatePaymentIntentSchema } from '@/lib/api/middleware/validation';
 import { auditService } from '@/lib/services/audit.service';
 import { withCSRF } from '@/lib/api/middleware/csrf';
@@ -44,12 +44,13 @@ export const POST = withCSRF(
   const { booking_number, amount, payment_type } = await validateBody(request, CreatePaymentIntentSchema);
 
   // Get booking details (including brand_id for brand-specific Stripe routing)
-  const booking = await queryOne<Booking>(
+  const bookingRows = await prisma.$queryRawUnsafe<Booking[]>(
     `SELECT id, booking_number, customer_email, customer_name, total_price, deposit_amount, final_payment_amount, brand_id
      FROM bookings
      WHERE booking_number = $1`,
-    [booking_number]
+    booking_number
   );
+  const booking = bookingRows[0];
 
   if (!booking) {
     throw new NotFoundError('Booking');
@@ -109,7 +110,7 @@ export const POST = withCSRF(
   }
 
   // Store payment intent in database
-  await query(
+  await prisma.$executeRawUnsafe(
     `INSERT INTO payments (
       booking_id,
       customer_id,
@@ -126,17 +127,15 @@ export const POST = withCSRF(
       $1,
       (SELECT id FROM customers WHERE email = $2 LIMIT 1),
       $3, $4, $5, 'card', $6, $7, $8, NOW(), NOW()
-    ) RETURNING id`,
-    [
-      booking.id,
-      booking.customer_email,
-      amount,
-      'USD',
-      payment_type,
-      paymentIntent.id,
-      paymentIntent.status,
-      booking.brand_id,
-    ]
+    )`,
+    booking.id,
+    booking.customer_email,
+    amount,
+    'USD',
+    payment_type,
+    paymentIntent.id,
+    paymentIntent.status,
+    booking.brand_id
   );
 
   // Audit log: payment intent created

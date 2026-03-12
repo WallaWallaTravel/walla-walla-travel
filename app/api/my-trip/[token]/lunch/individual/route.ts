@@ -13,7 +13,7 @@ import {
 } from '@/lib/api/middleware/error-handler';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import { lunchSupplierService } from '@/lib/services/lunch-supplier.service';
-import { withTransaction } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import type { GuestOrder, GuestOrderItem } from '@/lib/types/lunch-supplier';
 import { withCSRF } from '@/lib/api/middleware/csrf';
@@ -85,13 +85,10 @@ export const POST = withCSRF(
 
     if (uniqueItemIds.length > 0) {
       const placeholders = uniqueItemIds.map((_, i) => `$${i + 1}`).join(',');
-      const menuItems = await withTransaction(async (client) => {
-        const result = await client.query<{ id: number; price: number }>(
-          `SELECT id, price FROM lunch_menu_items WHERE id IN (${placeholders})`,
-          uniqueItemIds
-        );
-        return result.rows;
-      });
+      const menuItems = await prisma.$queryRawUnsafe<{ id: number; price: number }[]>(
+        `SELECT id, price FROM lunch_menu_items WHERE id IN (${placeholders})`,
+        ...uniqueItemIds
+      );
       priceMap = new Map(menuItems.map((item) => [item.id, item.price]));
     }
 
@@ -110,22 +107,22 @@ export const POST = withCSRF(
     };
 
     // Atomic JSONB merge with row locking
-    const updatedOrder = await withTransaction(async (client) => {
+    const updatedOrder = await prisma.$transaction(async (tx) => {
       // Lock the row
-      const lockResult = await client.query<{
+      const lockRows = await tx.$queryRawUnsafe<{
         guest_orders: GuestOrder[] | string;
-      }>(
+      }[]>(
         'SELECT guest_orders FROM proposal_lunch_orders WHERE id = $1 FOR UPDATE',
-        [order_id]
+        order_id
       );
 
-      if (!lockResult.rows[0]) {
+      if (!lockRows[0]) {
         throw new NotFoundError('Lunch order not found');
       }
 
       // Parse existing guest orders
       let existingOrders: GuestOrder[] = [];
-      const raw = lockResult.rows[0].guest_orders;
+      const raw = lockRows[0].guest_orders;
       if (typeof raw === 'string') {
         existingOrders = JSON.parse(raw);
       } else if (Array.isArray(raw)) {
@@ -151,15 +148,15 @@ export const POST = withCSRF(
       const total = Math.round((subtotal + tax) * 100) / 100;
 
       // Update the order
-      const updateResult = await client.query(
+      const updateRows = await tx.$queryRawUnsafe<Record<string, any>[]>(
         `UPDATE proposal_lunch_orders
          SET guest_orders = $1, subtotal = $2, tax = $3, total = $4, updated_at = NOW()
          WHERE id = $5
          RETURNING *`,
-        [JSON.stringify(mergedOrders), subtotal, tax, total, order_id]
+        JSON.stringify(mergedOrders), subtotal, tax, total, order_id
       );
 
-      return updateResult.rows[0];
+      return updateRows[0];
     });
 
     return NextResponse.json({

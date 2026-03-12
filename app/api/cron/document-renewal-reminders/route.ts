@@ -17,7 +17,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withCronAuth } from '@/lib/api/middleware/cron-auth';
 import { withCronLock } from '@/lib/api/middleware/cron-lock';
-import { query, queryMany } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 import { sendEmail } from '@/lib/email';
 import { getBrandEmailConfig } from '@/lib/email-brands';
 import {
@@ -67,8 +67,7 @@ export const GET = withCronAuth('document-renewal-reminders', async (_request: N
 
     // 1) Query all active documents expiring within 30 days that haven't
     //    already received the appropriate reminder tier.
-    const rows = await queryMany<ExpiringDocument>(
-      `SELECT
+    const rows = await prisma.$queryRaw`SELECT
          dd.id                          AS doc_id,
          dd.driver_id,
          u.name                         AS driver_name,
@@ -83,9 +82,7 @@ export const GET = withCronAuth('document-renewal-reminders', async (_request: N
          AND dd.expiry_date IS NOT NULL
          AND dd.expiry_date >= CURRENT_DATE
          AND dd.expiry_date <= CURRENT_DATE + INTERVAL '30 days'
-       ORDER BY dd.expiry_date ASC`,
-      []
-    );
+       ORDER BY dd.expiry_date ASC` as ExpiringDocument[];
 
     if (rows.length === 0) {
       logger.info('[DocRenewalReminders] No documents expiring within 30 days');
@@ -105,12 +102,12 @@ export const GET = withCronAuth('document-renewal-reminders', async (_request: N
       if (!reminderType) continue;
 
       // Check if this reminder was already sent
-      const existing = await queryMany(
+      const existing = await prisma.$queryRawUnsafe(
         `SELECT id FROM document_reminders
          WHERE driver_document_id = $1 AND reminder_type = $2
          LIMIT 1`,
-        [doc.doc_id, reminderType]
-      );
+        doc.doc_id, reminderType
+      ) as Record<string, any>[];
 
       if (existing.length === 0) {
         docsNeedingReminder.push(doc);
@@ -176,11 +173,11 @@ export const GET = withCronAuth('document-renewal-reminders', async (_request: N
           for (const doc of docs) {
             const reminderType = getReminderType(doc.days_until_expiry);
             if (reminderType) {
-              await query(
+              await prisma.$queryRawUnsafe(
                 `INSERT INTO document_reminders (driver_document_id, reminder_type, recipient_email)
                  VALUES ($1, $2, $3)
                  ON CONFLICT (driver_document_id, reminder_type) DO NOTHING`,
-                [doc.doc_id, reminderType, driverEmail]
+                doc.doc_id, reminderType, driverEmail
               ).catch(() => { /* ON CONFLICT handles duplicates */ });
             }
           }

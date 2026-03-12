@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import {
   uploadFile,
@@ -28,16 +28,16 @@ export const POST = withCSRF(
   const { media_id } = await params;
 
   // Check if media exists
-  const existingMedia = await query(
+  const existingMedia = await prisma.$queryRawUnsafe<Record<string, any>[]>(
     `SELECT * FROM media_library WHERE id = $1 AND is_active = TRUE`,
-    [media_id]
+    media_id
   );
 
-  if (existingMedia.rows.length === 0) {
+  if (existingMedia.length === 0) {
     throw new NotFoundError('Media not found');
   }
 
-  const media = existingMedia.rows[0];
+  const media = existingMedia[0];
 
   // Ensure the storage bucket exists
   await ensureMediaBucket();
@@ -67,7 +67,7 @@ export const POST = withCSRF(
   const fileType = ALLOWED_IMAGE_TYPES.includes(file.type) ? 'image' : 'video';
 
   // Update database with new file info
-  const result = await query(
+  const result = await prisma.$queryRawUnsafe<Record<string, any>[]>(
     `UPDATE media_library
      SET
        file_name = $1,
@@ -78,19 +78,17 @@ export const POST = withCSRF(
        updated_at = NOW()
      WHERE id = $6 AND is_active = TRUE
      RETURNING *`,
-    [
-      file.name,
-      uploadResult.publicUrl,
-      fileType,
-      file.size,
-      file.type,
-      media_id
-    ]
+    file.name,
+    uploadResult.publicUrl,
+    fileType,
+    file.size,
+    file.type,
+    media_id
   );
 
   return NextResponse.json({
     success: true,
-    data: result.rows[0],
+    data: result[0],
     message: 'File replaced successfully',
   });
 })

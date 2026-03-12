@@ -5,7 +5,7 @@
  * Sends email notifications at 30 days, 7 days, and day of expiration.
  */
 
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { sendEmail } from '@/lib/email';
 import { logger } from '@/lib/logger';
 
@@ -88,7 +88,7 @@ export async function checkAllCompliance(): Promise<ComplianceCheckResult> {
   };
 
   // Check driver compliance
-  const driversResult = await query(
+  const drivers = await prisma.$queryRawUnsafe<Record<string, any>[]>(
     `SELECT
       id,
       name,
@@ -102,10 +102,10 @@ export async function checkAllCompliance(): Promise<ComplianceCheckResult> {
         license_expiry <= $1
         OR medical_cert_expiry <= $1
       )`,
-    [noticeDate.toISOString().split('T')[0]]
+    noticeDate.toISOString().split('T')[0]
   );
 
-  for (const driver of driversResult.rows) {
+  for (const driver of drivers) {
     // Check license
     if (driver.license_expiry) {
       const expiry = new Date(driver.license_expiry);
@@ -148,7 +148,7 @@ export async function checkAllCompliance(): Promise<ComplianceCheckResult> {
   }
 
   // Check vehicle compliance
-  const vehiclesResult = await query(
+  const vehicles = await prisma.$queryRawUnsafe<Record<string, any>[]>(
     `SELECT
       id,
       name,
@@ -160,10 +160,10 @@ export async function checkAllCompliance(): Promise<ComplianceCheckResult> {
         insurance_expiry <= $1
         OR registration_expiry <= $1
       )`,
-    [noticeDate.toISOString().split('T')[0]]
+    noticeDate.toISOString().split('T')[0]
   );
 
-  for (const vehicle of vehiclesResult.rows) {
+  for (const vehicle of vehicles) {
     // Check insurance
     if (vehicle.insurance_expiry) {
       const expiry = new Date(vehicle.insurance_expiry);

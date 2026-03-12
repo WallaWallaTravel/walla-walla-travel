@@ -11,7 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { z } from 'zod';
 import { vehicleAvailabilityService } from '@/lib/services/vehicle-availability.service';
-import { pool } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 
 const CheckAvailabilitySchema = z.object({
@@ -60,22 +60,20 @@ export const POST = withCSRF(
     });
 
     // Get all vehicles to show availability status
-    const vehiclesResult = await pool.query<{
+    const vehiclesResult = await prisma.$queryRaw`SELECT id, make, model, capacity, vehicle_type, status
+       FROM vehicles
+       WHERE status = 'active'
+       ORDER BY capacity ASC` as {
       id: number;
       make: string;
       model: string;
       capacity: number;
       vehicle_type: string;
       status: string;
-    }>(
-      `SELECT id, make, model, capacity, vehicle_type, status
-       FROM vehicles
-       WHERE status = 'active'
-       ORDER BY capacity ASC`
-    );
+    }[];
 
     // Check which vehicles have conflicts
-    const vehicleIds = vehiclesResult.rows.map(v => v.id);
+    const vehicleIds = vehiclesResult.map(v => v.id);
     const conflictMap = vehicleIds.length > 0
       ? await vehicleAvailabilityService.checkMultipleVehiclesAvailability(
           vehicleIds,
@@ -85,7 +83,7 @@ export const POST = withCSRF(
         )
       : new Map();
 
-    const vehicles = vehiclesResult.rows.map(v => ({
+    const vehicles = vehiclesResult.map(v => ({
       id: v.id,
       name: `${v.make} ${v.model}`,
       capacity: v.capacity,
@@ -94,16 +92,14 @@ export const POST = withCSRF(
     }));
 
     // Get available drivers (drivers are users with role = 'driver' or 'owner')
-    const driversResult = await pool.query<DriverRow>(
-      `SELECT id, name, email, phone
+    const driversResult = await prisma.$queryRaw`SELECT id, name, email, phone
        FROM users
        WHERE role IN ('driver', 'owner')
        AND is_active = true
-       ORDER BY name`
-    );
+       ORDER BY name` as DriverRow[];
 
     // Check driver availability for the date
-    const driverAvailability = await pool.query<{ driver_id: number }>(
+    const driverAvailability = await prisma.$queryRawUnsafe(
       `SELECT DISTINCT b.driver_id
        FROM bookings b
        WHERE b.tour_date = $1
@@ -112,12 +108,12 @@ export const POST = withCSRF(
        AND (
          (b.start_time < $3 AND b.end_time > $2)
        )`,
-      [date, startTime, endTime]
-    );
+      date, startTime, endTime
+    ) as { driver_id: number }[];
 
-    const busyDriverIds = new Set(driverAvailability.rows.map(r => r.driver_id));
+    const busyDriverIds = new Set(driverAvailability.map(r => r.driver_id));
 
-    const drivers = driversResult.rows.map(d => ({
+    const drivers = driversResult.map(d => ({
       id: d.id,
       name: d.name,
       email: d.email,
@@ -144,16 +140,16 @@ export const POST = withCSRF(
     }
 
     // Check blackout dates
-    const blackoutsResult = await pool.query<{ reason: string }>(
+    const blackoutsResult = await prisma.$queryRawUnsafe(
       `SELECT reason FROM availability_rules
        WHERE rule_type = 'blackout_date'
        AND is_active = true
        AND blackout_date = $1`,
-      [date]
-    );
+      date
+    ) as { reason: string }[];
 
-    if (blackoutsResult.rows.length > 0) {
-      warnings.push(`Blackout date: ${blackoutsResult.rows[0].reason || 'Date blocked'}`);
+    if (blackoutsResult.length > 0) {
+      warnings.push(`Blackout date: ${blackoutsResult[0].reason || 'Date blocked'}`);
     }
 
     // If party size exceeds single vehicle capacity, note multi-vehicle needed
