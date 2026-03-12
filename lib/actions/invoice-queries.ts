@@ -23,6 +23,18 @@ export type PendingInvoiceItem = {
   final_invoice_count: number
 }
 
+export type InvoiceLineItemSerialized = {
+  id: number
+  invoice_id: number
+  description: string
+  service_type: string | null
+  quantity: number
+  unit_price: number
+  amount: number
+  sort_order: number
+  notes: string | null
+}
+
 export type InvoiceDetail = {
   id: number
   invoice_number: string
@@ -39,6 +51,7 @@ export type InvoiceDetail = {
   due_date: string | null
   notes: string | null
   created_at: string
+  line_items: InvoiceLineItemSerialized[]
   booking: {
     booking_number: string
     customer_name: string
@@ -142,9 +155,10 @@ export async function getInvoiceByBookingId(
       driverName = driver?.name || null
     }
 
-    // Get invoice record
+    // Get invoice record with line items
     const invoiceRecord = await prisma.invoices.findFirst({
       where: { booking_id: bookingId, invoice_type: 'final' },
+      include: { invoice_line_items: { orderBy: { sort_order: 'asc' } } },
       orderBy: { created_at: 'desc' },
     })
 
@@ -176,6 +190,17 @@ export async function getInvoiceByBookingId(
       due_date: invoiceRecord?.due_date?.toISOString() || null,
       notes: invoiceRecord?.notes || null,
       created_at: invoiceRecord?.created_at?.toISOString() || new Date().toISOString(),
+      line_items: (invoiceRecord?.invoice_line_items || []).map((li) => ({
+        id: li.id,
+        invoice_id: li.invoice_id,
+        description: li.description,
+        service_type: li.service_type,
+        quantity: Number(li.quantity),
+        unit_price: Number(li.unit_price),
+        amount: Number(li.amount),
+        sort_order: li.sort_order,
+        notes: li.notes,
+      })),
       booking: {
         booking_number: booking.booking_number,
         customer_name: booking.customer_name,
@@ -235,6 +260,9 @@ export async function getInvoicesList(filters?: {
             driver_id: true,
           },
         },
+        invoice_line_items: {
+          orderBy: { sort_order: 'asc' },
+        },
       },
       orderBy: { created_at: 'desc' },
       take: 100,
@@ -270,6 +298,17 @@ export async function getInvoicesList(filters?: {
       due_date: r.due_date?.toISOString() || null,
       notes: r.notes,
       created_at: r.created_at?.toISOString() || '',
+      line_items: r.invoice_line_items.map((li) => ({
+        id: li.id,
+        invoice_id: li.invoice_id,
+        description: li.description,
+        service_type: li.service_type,
+        quantity: Number(li.quantity),
+        unit_price: Number(li.unit_price),
+        amount: Number(li.amount),
+        sort_order: li.sort_order,
+        notes: li.notes,
+      })),
       booking: {
         booking_number: r.bookings.booking_number || '',
         customer_name: r.bookings.customer_name || '',
