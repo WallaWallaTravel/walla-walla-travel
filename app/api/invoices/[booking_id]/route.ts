@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, NotFoundError } from '@/lib/api-errors';
-import { queryOne } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 
 interface BookingInvoiceData {
   id: number;
@@ -32,8 +32,8 @@ export const GET = withErrorHandling(async (
   const booking_id = parseInt(bookingIdStr);
 
   // Get booking with invoice data
-  const booking = await queryOne<BookingInvoiceData>(`
-    SELECT 
+  const bookingRows = await prisma.$queryRawUnsafe<BookingInvoiceData[]>(`
+    SELECT
       b.id,
       b.booking_number,
       b.customer_name,
@@ -49,7 +49,8 @@ export const GET = withErrorHandling(async (
     FROM bookings b
     LEFT JOIN users u ON b.driver_id = u.id
     WHERE b.id = $1
-  `, [booking_id]);
+  `, booking_id);
+  const booking = bookingRows[0];
 
   if (!booking) {
     throw new NotFoundError('Booking');
@@ -61,13 +62,14 @@ export const GET = withErrorHandling(async (
   const subtotal = hours * rate;
 
   // Check if there's an actual invoice record
-  const invoiceRecord = await queryOne<InvoiceRecord>(`
+  const invoiceRecordRows = await prisma.$queryRawUnsafe<InvoiceRecord[]>(`
     SELECT id, invoice_number, status, created_at
     FROM invoices
     WHERE booking_id = $1 AND invoice_type = 'final'
     ORDER BY created_at DESC
     LIMIT 1
-  `, [booking_id]);
+  `, booking_id);
+  const invoiceRecord = invoiceRecordRows[0];
 
   const invoice = {
     id: invoiceRecord?.id || null,

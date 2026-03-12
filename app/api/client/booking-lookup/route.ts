@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { z } from 'zod';
@@ -21,56 +21,56 @@ export const POST = withCSRF(
     throw new BadRequestError('Last name is required');
   }
 
-  let result;
+  let rows: Record<string, any>[];
   const lastNamePattern = `%${last_name.trim()}%`;
 
   // Look up by the specified method
   if (lookup_method === 'email' && email) {
     // Look up by email
-    result = await query(
+    rows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
       `SELECT id, booking_number, customer_name, customer_email, tour_date, status
        FROM bookings
        WHERE LOWER(customer_email) = LOWER($1)
        AND UPPER(customer_name) LIKE UPPER($2)
        ORDER BY tour_date DESC
        LIMIT 1`,
-      [email.trim(), lastNamePattern]
+      email.trim(), lastNamePattern
     );
   } else if (lookup_method === 'phone' && phone) {
     // Look up by phone - strip non-digits and match last 10 digits
     const phoneDigits = phone.replace(/\D/g, '');
     const phoneLast10 = phoneDigits.slice(-10);
 
-    result = await query(
+    rows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
       `SELECT id, booking_number, customer_name, customer_email, customer_phone, tour_date, status
        FROM bookings
        WHERE REGEXP_REPLACE(customer_phone, '[^0-9]', '', 'g') LIKE $1
        AND UPPER(customer_name) LIKE UPPER($2)
        ORDER BY tour_date DESC
        LIMIT 1`,
-      [`%${phoneLast10}`, lastNamePattern]
+      `%${phoneLast10}`, lastNamePattern
     );
   } else if (booking_number) {
     // Look up by booking number (original method)
-    result = await query(
+    rows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
       `SELECT id, booking_number, customer_name, customer_email, tour_date, status
        FROM bookings
        WHERE UPPER(booking_number) = UPPER($1)
        AND UPPER(customer_name) LIKE UPPER($2)
        LIMIT 1`,
-      [booking_number.trim(), lastNamePattern]
+      booking_number.trim(), lastNamePattern
     );
   } else {
     throw new BadRequestError('Please provide a booking number, email, or phone number');
   }
 
-  if (result.rows.length === 0) {
+  if (rows.length === 0) {
     const lookupTypeMsg = lookup_method === 'email' ? 'email address' :
                           lookup_method === 'phone' ? 'phone number' : 'booking number';
     throw new NotFoundError(`Booking not found. Please check your ${lookupTypeMsg} and last name.`);
   }
 
-  const booking = result.rows[0];
+  const booking = rows[0];
 
   return NextResponse.json({
     success: true,

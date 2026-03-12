@@ -11,7 +11,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, RouteContext } from '@/lib/api/middleware/error-handler';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import {
   generateICalendar,
   createBookingEvent,
@@ -38,14 +38,14 @@ async function validateFeedToken(token: string): Promise<{
     // Look up the feed token in the database
     // For simplicity, we'll use a hash of user email + secret as token
     // In production, use proper token generation and storage
-    const result = await query(
+    const rows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
       `SELECT id, role FROM users
        WHERE MD5(CONCAT(email, $1)) = $2 AND is_active = true`,
-      [process.env.CALENDAR_FEED_SECRET || 'calendar-feed-secret', token]
+      process.env.CALENDAR_FEED_SECRET || 'calendar-feed-secret', token
     );
 
-    if (result.rows.length > 0) {
-      const user = result.rows[0];
+    if (rows.length > 0) {
+      const user = rows[0];
       return {
         valid: true,
         userId: user.id,
@@ -102,8 +102,8 @@ export const GET = withErrorHandling<unknown, CalendarRouteParams>(
         calendarName = 'WWT Bookings';
         calendarDesc = 'All confirmed wine tour bookings';
 
-        const bookingsResult = await query(
-          `SELECT
+        const bookingsRows = await prisma.$queryRaw<Record<string, any>[]>`
+          SELECT
             b.id, b.booking_number, b.tour_date, b.pickup_time, b.end_time,
             b.party_size, b.status, b.pickup_location, b.dropoff_location,
             c.name as customer_name,
@@ -116,11 +116,9 @@ export const GET = withErrorHandling<unknown, CalendarRouteParams>(
           WHERE b.status IN ('confirmed', 'pending')
             AND b.tour_date >= CURRENT_DATE - INTERVAL '30 days'
             AND b.tour_date <= CURRENT_DATE + INTERVAL '90 days'
-          ORDER BY b.tour_date`,
-          []
-        );
+          ORDER BY b.tour_date`;
 
-        events = bookingsResult.rows.map(booking =>
+        events = bookingsRows.map(booking =>
           createBookingEvent({
             id: booking.id,
             booking_number: booking.booking_number,
@@ -152,16 +150,16 @@ export const GET = withErrorHandling<unknown, CalendarRouteParams>(
         }
 
         // Get driver name
-        const driverResult = await query(
+        const driverRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
           'SELECT name FROM users WHERE id = $1',
-          [driverId]
+          driverId
         );
-        const driverName = driverResult.rows[0]?.name || 'Driver';
+        const driverName = (driverRows[0]?.name as string) || 'Driver';
 
         calendarName = `${driverName} - Tour Schedule`;
         calendarDesc = `Assigned wine tours for ${driverName}`;
 
-        const bookingsResult = await query(
+        const driverBookingsRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
           `SELECT
             b.id, b.booking_number, b.tour_date, b.pickup_time, b.end_time,
             b.party_size, b.status, b.pickup_location, b.dropoff_location,
@@ -175,10 +173,10 @@ export const GET = withErrorHandling<unknown, CalendarRouteParams>(
             AND b.tour_date >= CURRENT_DATE - INTERVAL '7 days'
             AND b.tour_date <= CURRENT_DATE + INTERVAL '60 days'
           ORDER BY b.tour_date`,
-          [driverId]
+          driverId
         );
 
-        events = bookingsResult.rows.map(booking =>
+        events = driverBookingsRows.map(booking =>
           createDriverAssignmentEvent({
             id: booking.id,
             booking_number: booking.booking_number,
@@ -206,8 +204,8 @@ export const GET = withErrorHandling<unknown, CalendarRouteParams>(
         calendarDesc = 'All bookings, proposals, and requests';
 
         // Get confirmed bookings
-        const bookingsResult = await query(
-          `SELECT
+        const allBookingsRows = await prisma.$queryRaw<Record<string, any>[]>`
+          SELECT
             b.id, b.booking_number, b.tour_date, b.pickup_time, b.end_time,
             b.party_size, b.status, b.pickup_location,
             c.name as customer_name,
@@ -219,11 +217,9 @@ export const GET = withErrorHandling<unknown, CalendarRouteParams>(
           LEFT JOIN users d ON b.driver_id = d.id
           WHERE b.tour_date >= CURRENT_DATE - INTERVAL '30 days'
             AND b.tour_date <= CURRENT_DATE + INTERVAL '90 days'
-          ORDER BY b.tour_date`,
-          []
-        );
+          ORDER BY b.tour_date`;
 
-        events = bookingsResult.rows.map(booking =>
+        events = allBookingsRows.map(booking =>
           createBookingEvent({
             id: booking.id,
             booking_number: booking.booking_number,
@@ -240,15 +236,13 @@ export const GET = withErrorHandling<unknown, CalendarRouteParams>(
         );
 
         // Add tentative events from proposals (old system)
-        const proposalsResult = await query(
-          `SELECT id, proposal_number, client_name, service_items, status
+        const proposalsRows = await prisma.$queryRaw<Record<string, any>[]>`
+          SELECT id, proposal_number, client_name, service_items, status
            FROM proposals
            WHERE status IN ('sent', 'viewed', 'accepted')
-             AND service_items IS NOT NULL`,
-          []
-        );
+             AND service_items IS NOT NULL`;
 
-        for (const proposal of proposalsResult.rows) {
+        for (const proposal of proposalsRows) {
           const serviceItems = proposal.service_items;
           if (!Array.isArray(serviceItems)) continue;
 
@@ -274,18 +268,16 @@ export const GET = withErrorHandling<unknown, CalendarRouteParams>(
 
         // Add shared tours
         try {
-          const sharedToursResult = await query(
-            `SELECT id, tour_code, title, tour_date, start_time, end_time,
+          const sharedToursRows = await prisma.$queryRaw<Record<string, any>[]>`
+            SELECT id, tour_code, title, tour_date, start_time, end_time,
                     max_guests, current_guests, status
              FROM shared_tours
              WHERE status NOT IN ('cancelled', 'completed')
                AND tour_date >= CURRENT_DATE - INTERVAL '30 days'
                AND tour_date <= CURRENT_DATE + INTERVAL '90 days'
-             ORDER BY tour_date`,
-            []
-          );
+             ORDER BY tour_date`;
 
-          for (const tour of sharedToursResult.rows) {
+          for (const tour of sharedToursRows) {
             events.push(
               createSharedTourEvent({
                 id: tour.id,
@@ -308,18 +300,16 @@ export const GET = withErrorHandling<unknown, CalendarRouteParams>(
 
         // Add trip proposals (new system)
         try {
-          const tripProposalsResult = await query(
-            `SELECT id, proposal_number, customer_name, trip_title, start_date,
+          const tripProposalsRows = await prisma.$queryRaw<Record<string, any>[]>`
+            SELECT id, proposal_number, customer_name, trip_title, start_date,
                     end_date, party_size, status
              FROM trip_proposals
              WHERE status NOT IN ('expired', 'declined', 'converted')
                AND start_date >= CURRENT_DATE - INTERVAL '30 days'
                AND start_date <= CURRENT_DATE + INTERVAL '90 days'
-             ORDER BY start_date`,
-            []
-          );
+             ORDER BY start_date`;
 
-          for (const tp of tripProposalsResult.rows) {
+          for (const tp of tripProposalsRows) {
             const startDt = tp.start_date instanceof Date
               ? tp.start_date : new Date(tp.start_date);
             const endDt = tp.end_date
@@ -349,16 +339,14 @@ export const GET = withErrorHandling<unknown, CalendarRouteParams>(
 
         // Add corporate requests
         try {
-          const corporateResult = await query(
-            `SELECT id, request_number, company_name, contact_name, party_size,
+          const corporateRows = await prisma.$queryRaw<Record<string, any>[]>`
+            SELECT id, request_number, company_name, contact_name, party_size,
                     preferred_dates, status
              FROM corporate_requests
              WHERE status NOT IN ('won', 'lost', 'cancelled')
-               AND preferred_dates IS NOT NULL`,
-            []
-          );
+               AND preferred_dates IS NOT NULL`;
 
-          for (const req of corporateResult.rows) {
+          for (const req of corporateRows) {
             const dates: string[] = [];
             if (Array.isArray(req.preferred_dates)) {
               dates.push(...req.preferred_dates.filter((d: unknown) => typeof d === 'string'));
@@ -390,19 +378,17 @@ export const GET = withErrorHandling<unknown, CalendarRouteParams>(
 
         // Add reservations
         try {
-          const reservationsResult = await query(
-            `SELECT r.id, r.reservation_number, r.party_size, r.preferred_date,
+          const reservationsRows = await prisma.$queryRaw<Record<string, any>[]>`
+            SELECT r.id, r.reservation_number, r.party_size, r.preferred_date,
                     r.status, c.name as customer_name
              FROM reservations r
              LEFT JOIN customers c ON r.customer_id = c.id
              WHERE r.status NOT IN ('booked', 'cancelled', 'expired')
                AND r.booking_id IS NULL
                AND r.preferred_date >= CURRENT_DATE - INTERVAL '30 days'
-               AND r.preferred_date <= CURRENT_DATE + INTERVAL '90 days'`,
-            []
-          );
+               AND r.preferred_date <= CURRENT_DATE + INTERVAL '90 days'`;
 
-          for (const res of reservationsResult.rows) {
+          for (const res of reservationsRows) {
             if (!res.preferred_date) continue;
             const dateStr = res.preferred_date instanceof Date
               ? res.preferred_date.toISOString().split('T')[0]

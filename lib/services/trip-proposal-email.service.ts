@@ -12,7 +12,7 @@
  */
 
 import { sendEmail } from '@/lib/email';
-import { query, queryOne } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
 import { getBrandEmailConfig } from '@/lib/email-brands';
 import { crmSyncService } from '@/lib/services/crm-sync.service';
@@ -72,13 +72,13 @@ function getTripTypeLabel(type: string | null | undefined): string {
 
 async function wasEmailAlreadySent(proposalId: number, emailType: string): Promise<boolean> {
   try {
-    const existing = await queryOne(
+    const rows = await prisma.$queryRawUnsafe<{ id: number }[]>(
       `SELECT id FROM email_logs
        WHERE trip_proposal_id = $1 AND email_type = $2 AND status = 'sent'
        LIMIT 1`,
-      [proposalId, emailType]
+      proposalId, emailType
     );
-    return !!existing;
+    return !!rows[0];
   } catch {
     // email_logs table may not exist yet; proceed with sending
     return false;
@@ -97,11 +97,11 @@ async function logEmail(
   success: boolean
 ): Promise<void> {
   try {
-    await query(
+    await prisma.$queryRawUnsafe(
       `INSERT INTO email_logs (
         trip_proposal_id, email_type, recipient, subject, sent_at, status
       ) VALUES ($1, $2, $3, $4, NOW(), $5)`,
-      [proposalId, emailType, recipient, subject, success ? 'sent' : 'failed']
+      proposalId, emailType, recipient, subject, success ? 'sent' : 'failed'
     );
   } catch (err) {
     logger.warn('[TripProposalEmail] Failed to log email', {
@@ -447,10 +447,11 @@ class TripProposalEmailService {
       }
 
       // Get guest info
-      const guest = await queryOne<{ name: string; email: string | null; guest_access_token: string }>(
+      const guestRows = await prisma.$queryRawUnsafe<{ name: string; email: string | null; guest_access_token: string }[]>(
         `SELECT name, email, guest_access_token FROM trip_proposal_guests WHERE id = $1 AND trip_proposal_id = $2`,
-        [guestId, proposalId]
+        guestId, proposalId
       );
+      const guest = guestRows[0];
       if (!guest?.email) {
         logger.warn('[TripProposalEmail] Guest has no email for registration confirmation', { proposalId, guestId });
         return;

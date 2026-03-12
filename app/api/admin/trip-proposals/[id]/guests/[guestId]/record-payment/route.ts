@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth, AuthSession, RouteContext } from '@/lib/api/middleware/auth-wrapper';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
-import { queryOne } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 
@@ -26,10 +26,11 @@ export const POST = withCSRF(
     const validated = RecordPaymentSchema.parse(body);
 
     // B6 FIX: Verify guest belongs to this proposal
-    const guest = await queryOne(
+    const guestRows = await prisma.$queryRawUnsafe<{ id: number }[]>(
       'SELECT id FROM trip_proposal_guests WHERE id = $1 AND trip_proposal_id = $2',
-      [gId, proposalId]
+      gId, proposalId
     );
+    const guest = guestRows[0];
     if (!guest) {
       return NextResponse.json({ success: false, error: 'Guest not found in this proposal' }, { status: 404 });
     }

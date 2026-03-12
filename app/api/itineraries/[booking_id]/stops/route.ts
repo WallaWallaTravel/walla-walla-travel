@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, NotFoundError, RouteContext } from '@/lib/api/middleware/error-handler';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { z } from 'zod';
 
@@ -33,27 +33,30 @@ export const PUT = withCSRF(
     const { stops } = BodySchema.parse(await request.json());
 
     // Get itinerary ID for this booking
-    const itineraryResult = await query(
+    const itineraryRows = await prisma.$queryRawUnsafe<{ id: number }[]>(
       'SELECT id FROM itineraries WHERE booking_id = $1',
-      [bookingId]
+      bookingId
     );
 
-    if (itineraryResult.rows.length === 0) {
+    if (itineraryRows.length === 0) {
       throw new NotFoundError('Itinerary not found');
     }
 
-    const itineraryId = itineraryResult.rows[0].id;
+    const itineraryId = itineraryRows[0].id;
 
-    // Start transaction
-    await query('BEGIN');
+    // Calculate total drive time
+    const totalDriveTime = stops.reduce((sum: number, stop) =>
+      sum + (stop.drive_time_to_next_minutes ?? 0), 0
+    );
 
-    try {
+    // Run everything in a transaction
+    await prisma.$transaction(async (tx) => {
       // Delete all existing stops for this itinerary
-      await query('DELETE FROM itinerary_stops WHERE itinerary_id = $1', [itineraryId]);
+      await tx.$queryRawUnsafe('DELETE FROM itinerary_stops WHERE itinerary_id = $1', itineraryId);
 
       // Insert new stops
       for (const stop of stops) {
-        await query(`
+        await tx.$queryRawUnsafe(`
           INSERT INTO itinerary_stops (
             itinerary_id,
             winery_id,
@@ -66,7 +69,7 @@ export const PUT = withCSRF(
             reservation_confirmed,
             special_notes
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-        `, [
+        `,
           itineraryId,
           stop.winery_id,
           stop.stop_order,
@@ -77,33 +80,23 @@ export const PUT = withCSRF(
           stop.stop_type || 'winery',
           stop.reservation_confirmed || false,
           stop.special_notes || ''
-        ]);
+        );
       }
 
       // Calculate and update total drive time
-      const totalDriveTime = stops.reduce((sum: number, stop) =>
-        sum + (stop.drive_time_to_next_minutes ?? 0), 0
-      );
-
-      await query(`
+      await tx.$queryRawUnsafe(`
         UPDATE itineraries
         SET total_drive_time_minutes = $1, updated_at = NOW()
         WHERE id = $2
-      `, [totalDriveTime, itineraryId]);
+      `, totalDriveTime, itineraryId);
+    });
 
-      await query('COMMIT');
-
-      return NextResponse.json({
-        success: true,
-        message: 'Stops saved successfully',
-        stops_count: stops.length,
-        total_drive_time: totalDriveTime
-      });
-
-    } catch (error) {
-      await query('ROLLBACK');
-      throw error;
-    }
+    return NextResponse.json({
+      success: true,
+      message: 'Stops saved successfully',
+      stops_count: stops.length,
+      total_drive_time: totalDriveTime
+    });
   }
 )
 );

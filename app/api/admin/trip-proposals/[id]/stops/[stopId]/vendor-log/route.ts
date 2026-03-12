@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth, AuthSession, RouteContext } from '@/lib/api/middleware/auth-wrapper';
-import { query, queryOne } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { z } from 'zod';
 
@@ -22,24 +22,24 @@ export const GET = withAdminAuth(
     const stopIdNum = parseInt(stopId, 10);
 
     // Verify stop belongs to proposal
-    const stop = await queryOne(
+    const stopRows = await prisma.$queryRawUnsafe<{ id: number }[]>(
       `SELECT s.id FROM trip_proposal_stops s
        JOIN trip_proposal_days d ON d.id = s.trip_proposal_day_id
        WHERE s.id = $1 AND d.trip_proposal_id = $2`,
-      [stopIdNum, proposalId]
+      stopIdNum, proposalId
     );
 
-    if (!stop) {
+    if (!stopRows[0]) {
       return NextResponse.json({ success: false, error: 'Stop not found' }, { status: 404 });
     }
 
-    const interactions = await query(
+    const interactions = await prisma.$queryRawUnsafe<Record<string, any>[]>(
       `SELECT vi.*, u.email as contacted_by_email
        FROM vendor_interactions vi
        LEFT JOIN users u ON u.id = vi.contacted_by
        WHERE vi.trip_proposal_stop_id = $1
        ORDER BY vi.created_at DESC`,
-      [stopIdNum]
+      stopIdNum
     );
 
     return NextResponse.json({ success: true, data: interactions });
@@ -76,26 +76,26 @@ export const POST = withCSRF(
     }
 
     // Verify stop belongs to proposal
-    const stop = await queryOne(
+    const postStopRows = await prisma.$queryRawUnsafe<{ id: number }[]>(
       `SELECT s.id FROM trip_proposal_stops s
        JOIN trip_proposal_days d ON d.id = s.trip_proposal_day_id
        WHERE s.id = $1 AND d.trip_proposal_id = $2`,
-      [stopIdNum, proposalId]
+      stopIdNum, proposalId
     );
 
-    if (!stop) {
+    if (!postStopRows[0]) {
       return NextResponse.json({ success: false, error: 'Stop not found' }, { status: 404 });
     }
 
-    const interaction = await queryOne(
+    const interactionRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
       `INSERT INTO vendor_interactions (
         trip_proposal_stop_id, interaction_type, content
       ) VALUES ($1, $2, $3)
       RETURNING *`,
-      [stopIdNum, body.interaction_type, body.content.trim()]
+      stopIdNum, body.interaction_type, body.content.trim()
     );
 
-    return NextResponse.json({ success: true, data: interaction });
+    return NextResponse.json({ success: true, data: interactionRows[0] });
   }
 )
 );

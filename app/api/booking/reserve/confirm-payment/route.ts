@@ -7,7 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 import { confirmPaymentSuccess } from '@/lib/stripe';
 import { sendReservationConfirmation } from '@/lib/email';
@@ -31,29 +31,29 @@ export const POST = withCSRF(
   }
 
   // Update reservation with payment info
-  const updateResult = await query(
+  const updateRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
     `UPDATE reservations
      SET deposit_paid = true,
          payment_method = 'card',
          updated_at = CURRENT_TIMESTAMP
      WHERE id = $1
      RETURNING *`,
-    [reservationId]
+    reservationId
   );
 
-  if (updateResult.rows.length === 0) {
+  if (updateRows.length === 0) {
     throw new NotFoundError('Reservation not found');
   }
 
-  const reservation = updateResult.rows[0];
+  const reservation = updateRows[0];
 
   // Get customer info
-  const customerResult = await query(
+  const customerRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
     'SELECT * FROM customers WHERE id = $1',
-    [reservation.customer_id]
+    reservation.customer_id
   );
 
-  const customer = customerResult.rows[0];
+  const customer = customerRows[0];
 
   // Send confirmation email with payment receipt
   if (customer) {

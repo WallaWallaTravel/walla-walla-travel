@@ -9,7 +9,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 
 // Compliance warning thresholds
@@ -52,7 +52,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
   const _warningDateStr = warningDate.toISOString().split('T')[0];
 
   // Fetch bookings with driver and vehicle compliance data
-  const bookingsResult = await query(
+  const bookingsRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
     `SELECT
       b.id,
       b.booking_number,
@@ -75,11 +75,11 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
      LEFT JOIN users d ON b.driver_id = d.id
      WHERE b.tour_date >= $1 AND b.tour_date <= $2
      ORDER BY b.tour_date, b.pickup_time`,
-    [startDateStr, endDateStr]
+    startDateStr, endDateStr
   );
 
     // Fetch availability blocks
-    const blocksResult = await query(
+    const blocksRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
       `SELECT
         vab.id,
         vab.vehicle_id,
@@ -95,24 +95,22 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
        LEFT JOIN vehicles v ON vab.vehicle_id = v.id
        WHERE vab.block_date >= $1 AND vab.block_date <= $2
        ORDER BY vab.block_date, vab.start_time`,
-      [startDateStr, endDateStr]
+      startDateStr, endDateStr
     );
 
     // Fetch vehicles for summary
-    const vehiclesResult = await query(
-      `SELECT id, name, capacity, is_active
+    const vehiclesRows = await prisma.$queryRaw<{ id: number; name: string; capacity: number | null; is_active: boolean }[]>`
+      SELECT id, name, capacity, is_active
        FROM vehicles
        WHERE is_active = true
-       ORDER BY name`
-    );
+       ORDER BY name`;
 
     // Fetch drivers (stored in users table with role = 'driver')
-    const driversResult = await query(
-      `SELECT id, name, role as is_active
+    const driversRows = await prisma.$queryRaw<Record<string, any>[]>`
+      SELECT id, name, role as is_active
        FROM users
        WHERE role = 'driver'
-       ORDER BY name`
-    );
+       ORDER BY name`;
 
     // Calculate daily summaries
     const dailySummaries: Record<string, {
@@ -123,20 +121,20 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
       bookedCapacity: number;
     }> = {};
 
-    const totalVehicles = vehiclesResult.rows.length;
-    const totalCapacity = vehiclesResult.rows.reduce((sum, v) => sum + (v.capacity || 14), 0);
+    const totalVehicles = vehiclesRows.length;
+    const totalCapacity = vehiclesRows.reduce((sum, v) => sum + (v.capacity || 14), 0);
 
     // Group bookings by date
-    const bookingsByDate: Record<string, typeof bookingsResult.rows> = {};
-    for (const booking of bookingsResult.rows) {
+    const bookingsByDate: Record<string, typeof bookingsRows> = {};
+    for (const booking of bookingsRows) {
       const dateStr = booking.tour_date.toISOString().split('T')[0];
       if (!bookingsByDate[dateStr]) bookingsByDate[dateStr] = [];
       bookingsByDate[dateStr].push(booking);
     }
 
     // Group blocks by date and vehicle
-    const blocksByDate: Record<string, typeof blocksResult.rows> = {};
-    for (const block of blocksResult.rows) {
+    const blocksByDate: Record<string, typeof blocksRows> = {};
+    for (const block of blocksRows) {
       const dateStr = block.block_date.toISOString().split('T')[0];
       if (!blocksByDate[dateStr]) blocksByDate[dateStr] = [];
       blocksByDate[dateStr].push(block);
@@ -189,7 +187,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
     };
 
     // Check each booking for compliance issues
-    for (const booking of bookingsResult.rows) {
+    for (const booking of bookingsRows) {
       // Driver license expiry
       if (booking.driver_id && booking.driver_license_expiry) {
         const info = getComplianceInfo(booking.driver_license_expiry);
@@ -304,7 +302,7 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
     }
 
     return NextResponse.json({
-      bookings: bookingsResult.rows.map(b => ({
+      bookings: bookingsRows.map(b => ({
         id: b.id,
         booking_number: b.booking_number,
         tour_date: b.tour_date.toISOString().split('T')[0],
@@ -318,12 +316,12 @@ export const GET = withAdminAuth(async (request: NextRequest, _session) => {
         driver_name: b.driver_name,
         complianceIssues: bookingComplianceIssues[b.id] || [],
       })),
-      blocks: blocksResult.rows.map(b => ({
+      blocks: blocksRows.map(b => ({
         ...b,
         block_date: b.block_date.toISOString().split('T')[0]
       })),
-      vehicles: vehiclesResult.rows,
-      drivers: driversResult.rows,
+      vehicles: vehiclesRows,
+      drivers: driversRows,
       dailySummaries,
       complianceIssues,
       meta: {

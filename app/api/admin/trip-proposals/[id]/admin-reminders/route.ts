@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth, AuthSession, RouteContext } from '@/lib/api/middleware/auth-wrapper';
 import { adminReminderService } from '@/lib/services/admin-reminder.service';
-import { queryOne } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { z } from 'zod';
 
@@ -102,10 +102,11 @@ export const POST = withCSRF(
           );
         }
         // C3 FIX: Verify reminder belongs to this proposal
-        const reminder = await queryOne(
+        const rows = await prisma.$queryRawUnsafe<{ id: number }[]>(
           'SELECT id FROM admin_reminders WHERE id = $1 AND trip_proposal_id = $2',
-          [body.reminder_id, proposalId]
+          body.reminder_id, proposalId
         );
+        const reminder = rows[0];
         if (!reminder) {
           return NextResponse.json(
             { success: false, error: 'Reminder not found in this proposal' },
@@ -126,10 +127,11 @@ export const POST = withCSRF(
         // C4: Validate snooze days (already validated by Zod: 1-365)
         const days = body.days;
         // C3 FIX: Verify reminder belongs to this proposal
-        const snoozedReminder = await queryOne(
+        const snoozeRows = await prisma.$queryRawUnsafe<{ id: number }[]>(
           'SELECT id FROM admin_reminders WHERE id = $1 AND trip_proposal_id = $2',
-          [body.reminder_id, proposalId]
+          body.reminder_id, proposalId
         );
+        const snoozedReminder = snoozeRows[0];
         if (!snoozedReminder) {
           return NextResponse.json(
             { success: false, error: 'Reminder not found in this proposal' },

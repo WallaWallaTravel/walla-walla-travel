@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth, AuthSession, RouteContext } from '@/lib/api/middleware/auth-wrapper';
 import { paymentReminderService } from '@/lib/services/payment-reminder.service';
-import { queryOne } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { z } from 'zod';
 
@@ -106,10 +106,11 @@ export const POST = withCSRF(
           );
         }
         // C3 FIX: Verify reminder belongs to this proposal
-        const cancelReminder = await queryOne(
+        const cancelRows = await prisma.$queryRawUnsafe<{ id: number }[]>(
           'SELECT id FROM payment_reminders WHERE id = $1 AND trip_proposal_id = $2',
-          [body.reminder_id, proposalId]
+          body.reminder_id, proposalId
         );
+        const cancelReminder = cancelRows[0];
         if (!cancelReminder) {
           return NextResponse.json(
             { success: false, error: 'Reminder not found in this proposal' },

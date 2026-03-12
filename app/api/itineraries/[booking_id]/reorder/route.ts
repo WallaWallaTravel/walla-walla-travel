@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling, NotFoundError, RouteContext } from '@/lib/api/middleware/error-handler';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { z } from 'zod';
 
@@ -26,34 +26,27 @@ export const PUT = withCSRF(
     const { stops } = BodySchema.parse(await request.json());
 
     // Get itinerary ID for this booking
-    const itineraryResult = await query(
+    const itineraryRows = await prisma.$queryRawUnsafe<{ id: number }[]>(
       'SELECT id FROM itineraries WHERE booking_id = $1',
-      [bookingId]
+      bookingId
     );
 
-    if (itineraryResult.rows.length === 0) {
+    if (itineraryRows.length === 0) {
       throw new NotFoundError('Itinerary not found');
     }
 
-    const itineraryId = itineraryResult.rows[0].id;
+    const itineraryId = itineraryRows[0].id;
 
     // Update stop orders in a transaction
-    await query('BEGIN');
-
-    try {
+    await prisma.$transaction(async (tx) => {
       for (const stop of stops) {
-        await query(`
+        await tx.$queryRawUnsafe(`
           UPDATE itinerary_stops
           SET stop_order = $1
           WHERE id = $2 AND itinerary_id = $3
-        `, [stop.stop_order, stop.id, itineraryId]);
+        `, stop.stop_order, stop.id, itineraryId);
       }
-
-      await query('COMMIT');
-    } catch (error) {
-      await query('ROLLBACK');
-      throw error;
-    }
+    });
 
     return NextResponse.json({ success: true, message: 'Stops reordered successfully' });
   }

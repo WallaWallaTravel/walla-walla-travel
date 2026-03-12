@@ -8,7 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 
 export const runtime = 'nodejs';
@@ -29,7 +29,7 @@ export const GET = withErrorHandling(async (
     throw new BadRequestError('Invalid reservation ID');
   }
 
-  const result = await query(
+  const rows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
     `SELECT
       r.*,
       c.name as customer_name,
@@ -38,15 +38,15 @@ export const GET = withErrorHandling(async (
      FROM reservations r
      JOIN customers c ON r.customer_id = c.id
      WHERE r.id = $1`,
-    [reservationId]
+    reservationId
   );
 
-  if (result.rows.length === 0) {
+  if (rows.length === 0) {
     throw new NotFoundError('Reservation not found');
   }
 
   return NextResponse.json({
     success: true,
-    reservation: result.rows[0]
+    reservation: rows[0]
   });
 });

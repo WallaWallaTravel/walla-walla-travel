@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth, AuthSession, RouteContext } from '@/lib/api/middleware/auth-wrapper';
 import { withCSRF } from '@/lib/api/middleware/csrf';
-import { queryOne } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 import { sendEmail } from '@/lib/email';
 import { renderPartnerRequestEmail } from '@/lib/email/templates/partner-request';
 import { partnerRequestService } from '@/lib/services/partner-request.service';
@@ -36,7 +36,7 @@ export const POST = withCSRF(
       }
 
       // Get stop + proposal details for email template
-      const stopDetails = await queryOne<{
+      const stopDetailRows = await prisma.$queryRawUnsafe<{
         venue_name: string;
         stop_type: string;
         date: string | null;
@@ -44,7 +44,7 @@ export const POST = withCSRF(
         party_size: number;
         duration_minutes: number | null;
         customer_name: string;
-      }>(
+      }[]>(
         `SELECT
           COALESCE(s.custom_name, w.name, r.name, h.name, 'Venue') as venue_name,
           s.stop_type,
@@ -60,8 +60,9 @@ export const POST = withCSRF(
          LEFT JOIN restaurants r ON r.id = s.restaurant_id
          LEFT JOIN hotels h ON h.id = s.hotel_id
          WHERE s.id = $1 AND d.trip_proposal_id = $2`,
-        [stopIdNum, proposalId]
+        stopIdNum, proposalId
       );
+      const stopDetails = stopDetailRows[0];
 
       if (!stopDetails) {
         return NextResponse.json(

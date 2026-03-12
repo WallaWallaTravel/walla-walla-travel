@@ -18,7 +18,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { z } from 'zod';
-import { pool } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { vehicleAvailabilityService } from '@/lib/services/vehicle-availability.service';
 import { bookingCoreService } from '@/lib/services/booking/core.service';
 import { sendBookingConfirmationEmail } from '@/lib/services/email-automation.service';
@@ -118,9 +118,9 @@ export const POST = withCSRF(
     });
 
     // Update customer with text consent preference (DB column: sms_marketing_consent)
-    await pool.query(
+    await prisma.$queryRawUnsafe(
       `UPDATE customers SET sms_marketing_consent = $1 WHERE id = $2`,
-      [customer.can_text, customerId]
+      customer.can_text, customerId
     );
 
     // Step 3: Generate booking number
@@ -131,11 +131,11 @@ export const POST = withCSRF(
 
     // Step 5: Create booking
     // Columns verified against Prisma schema (bookings model, lines 263-385)
-    const bookingResult = await pool.query<{
+    const bookingRows = await prisma.$queryRawUnsafe<{
       id: number;
       booking_number: string;
       status: string;
-    }>(
+    }[]>(
       `INSERT INTO bookings (
         booking_number,
         customer_id,
@@ -173,39 +173,37 @@ export const POST = withCSRF(
         $21, $22, $23, $24, $25, $26, $27, $28,
         CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
       ) RETURNING id, booking_number, status`,
-      [
-        bookingNumber,                                          // $1
-        customerId,                                             // $2
-        customerName,                                           // $3
-        customer.email,                                         // $4
-        customer.phone,                                         // $5
-        tour.party_size,                                        // $6
-        tour.date,                                              // $7
-        tour.start_time,                                        // $8
-        endTime,                                                // $9
-        tour.duration_hours,                                    // $10
-        tour.pickup_location,                                   // $11
-        tour.dropoff_location || tour.pickup_location,          // $12
-        tour.special_requests || null,                          // $13
-        pricing.total_price,                                    // $14
-        pricing.total_price,                                    // $15 base_price
-        pricing.deposit_amount,                                 // $16
-        false,                                                  // $17 deposit_paid
-        pricing.total_price - pricing.deposit_amount,           // $18 final_payment_amount
-        false,                                                  // $19 final_payment_paid
-        0,                                                      // $20 gratuity
-        0,                                                      // $21 taxes
-        status,                                                 // $22
-        driver_id || null,                                      // $23
-        vehicles.length === 1 ? vehicles[0] : null,             // $24 vehicle_id (single)
-        'console',                                              // $25 booking_source
-        tour.how_did_you_hear || null,                          // $26 referral_source
-        tour.wine_preferences || null,                          // $27 wine_tour_preference
-        tour.tour_type || 'wine_tour',                          // $28 tour_type
-      ]
+      bookingNumber,                                          // $1
+      customerId,                                             // $2
+      customerName,                                           // $3
+      customer.email,                                         // $4
+      customer.phone,                                         // $5
+      tour.party_size,                                        // $6
+      tour.date,                                              // $7
+      tour.start_time,                                        // $8
+      endTime,                                                // $9
+      tour.duration_hours,                                    // $10
+      tour.pickup_location,                                   // $11
+      tour.dropoff_location || tour.pickup_location,          // $12
+      tour.special_requests || null,                          // $13
+      pricing.total_price,                                    // $14
+      pricing.total_price,                                    // $15 base_price
+      pricing.deposit_amount,                                 // $16
+      false,                                                  // $17 deposit_paid
+      pricing.total_price - pricing.deposit_amount,           // $18 final_payment_amount
+      false,                                                  // $19 final_payment_paid
+      0,                                                      // $20 gratuity
+      0,                                                      // $21 taxes
+      status,                                                 // $22
+      driver_id || null,                                      // $23
+      vehicles.length === 1 ? vehicles[0] : null,             // $24 vehicle_id (single)
+      'console',                                              // $25 booking_source
+      tour.how_did_you_hear || null,                          // $26 referral_source
+      tour.wine_preferences || null,                          // $27 wine_tour_preference
+      tour.tour_type || 'wine_tour',                          // $28 tour_type
     );
 
-    const booking = bookingResult.rows[0];
+    const booking = bookingRows[0];
 
     // Step 6: Convert hold blocks to booking blocks
     if (holdBlockIds.length > 0) {
@@ -217,37 +215,33 @@ export const POST = withCSRF(
     // Step 7: For multi-vehicle bookings, store in special_requests
     // (bookings table has no vehicle_ids or notes column)
     if (vehicles.length > 1) {
-      await pool.query(
+      await prisma.$queryRawUnsafe(
         `UPDATE bookings SET
           special_requests = COALESCE(special_requests, '') || $1
          WHERE id = $2`,
-        [
-          `\n[Multi-vehicle booking: vehicles ${vehicles.join(', ')}]`,
-          booking.id,
-        ]
+        `\n[Multi-vehicle booking: vehicles ${vehicles.join(', ')}]`,
+        booking.id,
       );
     }
 
     // Step 8: Create timeline event
     // Use nextval to generate id (sequence may not auto-fire from raw SQL)
     try {
-      await pool.query(
+      await prisma.$queryRawUnsafe(
         `INSERT INTO booking_timeline (id, booking_id, event_type, event_description, event_data, created_at)
          VALUES (
            (SELECT COALESCE(MAX(id), 0) + 1 FROM booking_timeline),
            $1, $2, $3, $4, CURRENT_TIMESTAMP
          )`,
-        [
-          booking.id,
-          'booking_created',
-          `Booking created via console (${saveMode})`,
-          JSON.stringify({
-            save_mode: saveMode,
-            created_by: 'console',
-            vehicles: vehicles,
-            driver_id: driver_id,
-          }),
-        ]
+        booking.id,
+        'booking_created',
+        `Booking created via console (${saveMode})`,
+        JSON.stringify({
+          save_mode: saveMode,
+          created_by: 'console',
+          vehicles: vehicles,
+          driver_id: driver_id,
+        }),
       );
     } catch (timelineError) {
       // Timeline is informational — don't fail the booking if this errors

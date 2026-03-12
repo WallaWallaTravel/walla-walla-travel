@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 import { withErrorHandling, BadRequestError, NotFoundError } from '@/lib/api/middleware/error-handler';
 
 interface BookingRow {
@@ -91,29 +91,29 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     params = [email!];
   }
 
-  const result = await query<BookingRow>(sql, params);
+  const resultRows = await prisma.$queryRawUnsafe<BookingRow[]>(sql, ...params);
 
-  if (result.rows.length === 0) {
+  if (resultRows.length === 0) {
     const searchType = bookingNumber ? `booking number "${bookingNumber}"` : `email "${email}"`;
     throw new NotFoundError(
       `I couldn't find a booking with ${searchType}. Please double-check the information or contact us at info@wallawalla.travel for assistance.`
     );
   }
 
-  const booking = result.rows[0];
+  const booking = resultRows[0];
 
   // Get itinerary stops if they exist
-  const stopsResult = await query<ItineraryStopRow>(
+  const stopsRows = await prisma.$queryRawUnsafe<ItineraryStopRow[]>(
     `SELECT w.name as winery_name, s.stop_order, s.arrival_time
      FROM itinerary_stops s
      JOIN itineraries i ON s.itinerary_id = i.id
      JOIN wineries w ON s.winery_id = w.id
      WHERE i.booking_id = $1
      ORDER BY s.stop_order`,
-    [booking.id]
+    booking.id
   );
 
-  const wineryNames = stopsResult.rows.map(s => s.winery_name);
+  const wineryNames = stopsRows.map(s => s.winery_name);
 
   // Format date and time
   const tourDate = new Date(booking.tour_date);

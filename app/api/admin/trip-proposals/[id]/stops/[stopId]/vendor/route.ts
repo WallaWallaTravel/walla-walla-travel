@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth, AuthSession, RouteContext } from '@/lib/api/middleware/auth-wrapper';
-import { query, queryOne, type QueryParamValue } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { z } from 'zod';
 
@@ -35,14 +35,14 @@ export const PATCH = withCSRF(
     const body = BodySchema.parse(await request.json());
 
     // Verify stop belongs to proposal
-    const stop = await queryOne(
+    const stopRows = await prisma.$queryRawUnsafe<{ id: number }[]>(
       `SELECT s.id FROM trip_proposal_stops s
        JOIN trip_proposal_days d ON d.id = s.trip_proposal_day_id
        WHERE s.id = $1 AND d.trip_proposal_id = $2`,
-      [stopIdNum, proposalId]
+      stopIdNum, proposalId
     );
 
-    if (!stop) {
+    if (!stopRows[0]) {
       return NextResponse.json({ success: false, error: 'Stop not found' }, { status: 404 });
     }
 
@@ -56,14 +56,14 @@ export const PATCH = withCSRF(
 
     // Build dynamic SET clause
     const setClauses: string[] = [];
-    const values: QueryParamValue[] = [];
+    const values: (string | number | boolean | null)[] = [];
     let paramIdx = 1;
 
     for (const field of ALLOWED_FIELDS) {
       if (field in body) {
         setClauses.push(`${field} = $${paramIdx}`);
         const val = (body as Record<string, unknown>)[field];
-        values.push((val === '' ? null : val) as QueryParamValue);
+        values.push((val === '' ? null : val) as string | number | boolean | null);
         paramIdx++;
       }
     }
@@ -75,24 +75,23 @@ export const PATCH = withCSRF(
     setClauses.push(`updated_at = NOW()`);
     values.push(stopIdNum);
 
-    const updated = await queryOne(
+    const updatedRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
       `UPDATE trip_proposal_stops
        SET ${setClauses.join(', ')}
        WHERE id = $${paramIdx}
        RETURNING *`,
-      values
+      ...values
     );
+    const updated = updatedRows[0];
 
     // Log activity
     try {
-      await query(
+      await prisma.$queryRawUnsafe(
         `INSERT INTO trip_proposal_activity (trip_proposal_id, activity_type, description, metadata)
          VALUES ($1, 'vendor_updated', $2, $3)`,
-        [
-          proposalId,
-          `Vendor info updated for stop #${stopIdNum}`,
-          JSON.stringify({ stop_id: stopIdNum, fields: Object.keys(body).filter(k => ALLOWED_FIELDS.includes(k)) }),
-        ]
+        proposalId,
+        `Vendor info updated for stop #${stopIdNum}`,
+        JSON.stringify({ stop_id: stopIdNum, fields: Object.keys(body).filter(k => ALLOWED_FIELDS.includes(k)) })
       );
     } catch {
       // Non-critical

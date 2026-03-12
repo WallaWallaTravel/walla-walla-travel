@@ -7,7 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
 import { tripProposalService } from '@/lib/services/trip-proposal.service';
-import { queryOne, QueryParamValue } from '@/lib/db-helpers';
+import { prisma } from '@/lib/prisma';
 import { withCSRF } from '@/lib/api/middleware/csrf';
 import { z } from 'zod';
 import { auditService } from '@/lib/services/audit.service';
@@ -51,13 +51,13 @@ export const PATCH = withCSRF(
 
   // Build SET clauses from allowed fields
   const setClauses: string[] = [];
-  const values: QueryParamValue[] = [];
+  const values: (string | number | boolean | null)[] = [];
   let paramIndex = 1;
 
   for (const field of ALLOWED_FIELDS) {
     if (field in body) {
       setClauses.push(`${field} = $${paramIndex}`);
-      values.push(body[field] as QueryParamValue);
+      values.push(body[field] as string | number | boolean | null);
       paramIndex++;
     }
   }
@@ -73,7 +73,8 @@ export const PATCH = withCSRF(
   values.push(guestIdNum, proposalId);
 
   const sql = `UPDATE trip_proposal_guests SET ${setClauses.join(', ')} WHERE id = $${paramIndex} AND trip_proposal_id = $${paramIndex + 1} RETURNING *`;
-  const result = await queryOne(sql, values);
+  const resultRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(sql, ...values);
+  const result = resultRows[0];
 
   if (!result) {
     return NextResponse.json(

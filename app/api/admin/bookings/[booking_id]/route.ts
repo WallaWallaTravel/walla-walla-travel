@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth } from '@/lib/api/middleware/auth-wrapper';
-import { query } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { auditService } from '@/lib/services/audit.service';
 import { logger } from '@/lib/logger';
 import { withCSRF } from '@/lib/api/middleware/csrf';
@@ -25,7 +25,7 @@ export const GET = withAdminAuth(
       );
     }
 
-    const result = await query(
+    const rows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
       `SELECT
         b.*,
         c.name as customer_name,
@@ -38,17 +38,17 @@ export const GET = withAdminAuth(
       LEFT JOIN vehicles v ON b.vehicle_id = v.id
       LEFT JOIN users d ON b.driver_id = d.id
       WHERE b.id = $1`,
-      [bookingId]
+      bookingId
     );
 
-    if (result.rows.length === 0) {
+    if (rows.length === 0) {
       return NextResponse.json(
         { success: false, error: { message: 'Booking not found', statusCode: 404 } },
         { status: 404 }
       );
     }
 
-    return NextResponse.json({ success: true, data: result.rows[0] });
+    return NextResponse.json({ success: true, data: rows[0] });
   }
 );
 
@@ -67,28 +67,28 @@ export const DELETE = withCSRF(
     }
 
     // Get booking info for logging
-    const bookingResult = await query(
+    const bookingRows = await prisma.$queryRawUnsafe<Record<string, any>[]>(
       `SELECT b.booking_number, c.name as customer_name
        FROM bookings b
        LEFT JOIN customers c ON b.customer_id = c.id
        WHERE b.id = $1`,
-      [bookingId]
+      bookingId
     );
 
-    if (bookingResult.rows.length === 0) {
+    if (bookingRows.length === 0) {
       return NextResponse.json(
         { success: false, error: { message: 'Booking not found', statusCode: 404 } },
         { status: 404 }
       );
     }
 
-    const booking = bookingResult.rows[0];
+    const booking = bookingRows[0];
 
     // Delete related records first (in order of dependencies)
     // Use a helper to safely run queries even if tables don't exist
     const safeQuery = async (sql: string, params: unknown[]) => {
       try {
-        await query(sql, params);
+        await prisma.$queryRawUnsafe(sql, ...params);
       } catch (err) {
         // Ignore "relation does not exist" errors - table may not exist
         if (err instanceof Error && err.message.includes('does not exist')) {
@@ -117,7 +117,7 @@ export const DELETE = withCSRF(
     await safeQuery('UPDATE shared_tours_tickets SET booking_id = NULL WHERE booking_id = $1', [bookingId]);
 
     // Delete the booking itself (this one must succeed)
-    await query('DELETE FROM bookings WHERE id = $1', [bookingId]);
+    await prisma.$queryRawUnsafe('DELETE FROM bookings WHERE id = $1', bookingId);
 
     logger.info('Booking permanently deleted', {
       bookingId,
