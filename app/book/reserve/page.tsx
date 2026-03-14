@@ -15,6 +15,7 @@ import 'react-datepicker/dist/react-datepicker.css';
 import { useBookingTracking } from '@/lib/hooks/useBookingTracking';
 import { logger } from '@/lib/logger';
 import PhoneInput from '@/components/ui/PhoneInput';
+import { createReservation } from '@/lib/actions/reservation-actions';
 
 const FORM_STORAGE_KEY = 'ww_reserve_form_data';
 const STEP_STORAGE_KEY = 'ww_reserve_form_step';
@@ -210,25 +211,25 @@ export default function ReserveRefinePage() {
     setSubmitting(true);
 
     try {
-      // Format dates for API
-      const formattedData = {
-        ...formData,
-        preferredDate: formData.preferredDate?.toISOString().split('T')[0],
+      const result = await createReservation({
+        contactName: formData.contactName,
+        contactEmail: formData.contactEmail,
+        contactPhone: formData.contactPhone,
+        partySize: formData.partySize,
+        preferredDate: formData.preferredDate?.toISOString().split('T')[0] || '',
         alternateDate: formData.alternateDate?.toISOString().split('T')[0] || undefined,
-        depositAmount: depositCalculated
-      };
-
-      const response = await fetch('/api/booking/reserve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formattedData)
+        eventType: formData.eventType,
+        specialRequests: formData.specialRequests || undefined,
+        brandId: formData.brandId,
+        paymentMethod: formData.paymentMethod,
+        depositAmount: depositCalculated,
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to submit reservation');
+      if (!result.success) {
+        throw new Error(result.error);
       }
 
-      const data = await response.json();
+      const data = result;
 
       // Track successful reservation submission
       trackBookingProgress({

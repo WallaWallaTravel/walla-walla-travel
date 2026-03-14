@@ -1,94 +1,53 @@
-"use client";
-
 /**
  * Reserve & Refine Confirmation Page
- * Shows receipt and next steps after reservation
+ * Server Component — fetches reservation data directly via Prisma
  */
 
-import { useState, useEffect, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { redirect } from 'next/navigation';
+import Link from 'next/link';
+import { Decimal } from '@prisma/client/runtime/library';
+import { getReservationById } from '@/lib/actions/reservation-actions';
+import { PrintButton } from './PrintButton';
 
-interface Reservation {
-  id: number;
-  reservation_number: string;
-  customer_name: string;
-  customer_email: string;
-  customer_phone: string;
-  party_size: number;
-  preferred_date: string;
-  alternate_date?: string;
-  event_type: string;
-  special_requests?: string;
-  deposit_amount: number;
-  payment_method: string;
-  deposit_paid: boolean;
-  consultation_deadline: string;
-  created_at: string;
+interface PageProps {
+  searchParams: Promise<{ id?: string }>;
 }
 
-function ReservationConfirmationContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const reservationId = searchParams.get('id');
-  
-  const [reservation, setReservation] = useState<Reservation | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export default async function ReservationConfirmationPage({ searchParams }: PageProps) {
+  const { id } = await searchParams;
 
-  useEffect(() => {
-    if (reservationId) {
-      loadReservation();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reservationId]);
-
-  const loadReservation = async () => {
-    try {
-      const response = await fetch(`/api/booking/reserve/${reservationId}`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to load reservation');
-      }
-      
-      const data = await response.json();
-      setReservation(data.reservation);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your reservation...</p>
-        </div>
-      </div>
-    );
+  if (!id) {
+    redirect('/book');
   }
 
-  if (error || !reservation) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md">
-          <h2 className="text-2xl font-bold text-red-600 mb-4">Error</h2>
-          <p className="text-gray-700 mb-4">{error || 'Reservation not found'}</p>
-          <button
-            onClick={() => router.push('/book')}
-            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
-          >
-            Back to Booking
-          </button>
-        </div>
-      </div>
-    );
+  const reservationId = parseInt(id);
+  if (isNaN(reservationId)) {
+    redirect('/book');
   }
 
-  const preferredDate = new Date(reservation.preferred_date);
-  const deadlineDate = new Date(reservation.consultation_deadline);
+  const reservation = await getReservationById(reservationId);
+  if (!reservation) {
+    redirect('/book');
+  }
+
+  const depositAmount = reservation.deposit_amount instanceof Decimal
+    ? Number(reservation.deposit_amount)
+    : Number(reservation.deposit_amount);
+  const depositPaid = reservation.deposit_paid as boolean;
+  const paymentMethod = reservation.payment_method as string;
+  const reservationNumber = reservation.reservation_number as string;
+  const customerName = reservation.customer_name as string;
+  const customerEmail = reservation.customer_email as string;
+  const customerPhone = reservation.customer_phone as string;
+  const partySize = reservation.party_size as number;
+  const preferredDate = new Date(reservation.preferred_date as string);
+  const alternateDate = reservation.alternate_date ? new Date(reservation.alternate_date as string) : null;
+  const eventType = reservation.event_type as string;
+  const specialRequests = reservation.special_requests as string | null;
+  const consultationDeadline = new Date(reservation.consultation_deadline as string);
+  const createdAt = new Date(reservation.created_at as string);
+
+  const hoursUntilDeadline = Math.max(0, Math.round((consultationDeadline.getTime() - Date.now()) / (1000 * 60 * 60)));
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
@@ -102,7 +61,7 @@ function ReservationConfirmationContent() {
               </svg>
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              🎉 Reservation Confirmed!
+              Reservation Confirmed!
             </h1>
             <p className="text-xl text-gray-600">
               Your date is secured - Ryan will call you soon
@@ -117,12 +76,12 @@ function ReservationConfirmationContent() {
         <div className="bg-white rounded-lg shadow-lg p-8 mb-6">
           <div className="flex items-center justify-between mb-6 pb-6 border-b">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Reservation #{reservation.reservation_number}</h2>
-              <p className="text-gray-600">Created {new Date(reservation.created_at).toLocaleDateString()}</p>
+              <h2 className="text-2xl font-bold text-gray-900">Reservation #{reservationNumber}</h2>
+              <p className="text-gray-600">Created {createdAt.toLocaleDateString()}</p>
             </div>
             <div className="text-right">
-              <div className="text-3xl font-bold text-green-600">${reservation.deposit_amount}</div>
-              <div className="text-sm text-gray-600">Deposit {reservation.deposit_paid ? 'Paid' : 'Pending'}</div>
+              <div className="text-3xl font-bold text-green-600">${depositAmount}</div>
+              <div className="text-sm text-gray-600">Deposit {depositPaid ? 'Paid' : 'Pending'}</div>
             </div>
           </div>
 
@@ -132,15 +91,15 @@ function ReservationConfirmationContent() {
               <div className="space-y-2 text-sm">
                 <div>
                   <span className="text-gray-600">Name:</span>
-                  <span className="ml-2 font-medium">{reservation.customer_name}</span>
+                  <span className="ml-2 font-medium">{customerName}</span>
                 </div>
                 <div>
                   <span className="text-gray-600">Email:</span>
-                  <span className="ml-2 font-medium">{reservation.customer_email}</span>
+                  <span className="ml-2 font-medium">{customerEmail}</span>
                 </div>
                 <div>
                   <span className="text-gray-600">Phone:</span>
-                  <span className="ml-2 font-medium">{reservation.customer_phone}</span>
+                  <span className="ml-2 font-medium">{customerPhone}</span>
                 </div>
               </div>
             </div>
@@ -150,30 +109,30 @@ function ReservationConfirmationContent() {
               <div className="space-y-2 text-sm">
                 <div>
                   <span className="text-gray-600">Party Size:</span>
-                  <span className="ml-2 font-medium">{reservation.party_size} guests</span>
+                  <span className="ml-2 font-medium">{partySize} guests</span>
                 </div>
                 <div>
                   <span className="text-gray-600">Preferred Date:</span>
                   <span className="ml-2 font-medium">{preferredDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
                 </div>
-                {reservation.alternate_date && (
+                {alternateDate && (
                   <div>
                     <span className="text-gray-600">Alternate Date:</span>
-                    <span className="ml-2 font-medium">{new Date(reservation.alternate_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</span>
+                    <span className="ml-2 font-medium">{alternateDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</span>
                   </div>
                 )}
                 <div>
                   <span className="text-gray-600">Event Type:</span>
-                  <span className="ml-2 font-medium capitalize">{reservation.event_type.replace('_', ' ')}</span>
+                  <span className="ml-2 font-medium capitalize">{eventType.replace('_', ' ')}</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {reservation.special_requests && (
+          {specialRequests && (
             <div className="bg-blue-50 rounded-lg p-4">
               <h3 className="font-semibold text-gray-900 mb-2">Your Notes</h3>
-              <p className="text-gray-700 text-sm whitespace-pre-wrap">{reservation.special_requests}</p>
+              <p className="text-gray-700 text-sm whitespace-pre-wrap">{specialRequests}</p>
             </div>
           )}
         </div>
@@ -181,7 +140,7 @@ function ReservationConfirmationContent() {
         {/* What's Next */}
         <div className="bg-white rounded-lg shadow-lg p-8 mb-6">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">What Happens Next?</h2>
-          
+
           <div className="space-y-6">
             <div className="flex items-start gap-4">
               <div className="flex-shrink-0 w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">
@@ -190,7 +149,7 @@ function ReservationConfirmationContent() {
               <div className="flex-1">
                 <h3 className="font-bold text-gray-900 mb-1">Ryan Calls You</h3>
                 <p className="text-gray-600 text-sm">
-                  Within {Math.round((deadlineDate.getTime() - Date.now()) / (1000 * 60 * 60))} hours (by {deadlineDate.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })})
+                  Within {hoursUntilDeadline} hours (by {consultationDeadline.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })})
                 </p>
               </div>
             </div>
@@ -234,11 +193,11 @@ function ReservationConfirmationContent() {
         </div>
 
         {/* Payment Info */}
-        {reservation.payment_method === 'check' && !reservation.deposit_paid && (
+        {paymentMethod === 'check' && !depositPaid && (
           <div className="bg-yellow-50 border-l-4 border-yellow-500 p-6 rounded-lg mb-6">
-            <h3 className="font-bold text-gray-900 mb-2">📮 Mail Your Check</h3>
+            <h3 className="font-bold text-gray-900 mb-2">Mail Your Check</h3>
             <p className="text-gray-700 mb-4">
-              Please mail a check for <strong>${reservation.deposit_amount}</strong> to:
+              Please mail a check for <strong>${depositAmount}</strong> to:
             </p>
             <div className="bg-white rounded-lg p-4 font-mono text-sm">
               Walla Walla Travel<br />
@@ -253,41 +212,28 @@ function ReservationConfirmationContent() {
 
         {/* Actions */}
         <div className="flex gap-4">
-          <button
-            onClick={() => window.print()}
-            className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition"
-          >
-            🖨️ Print Receipt
-          </button>
-          <button
-            onClick={() => router.push('/')}
-            className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition"
+          <PrintButton />
+          <Link
+            href="/"
+            className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition text-center"
           >
             Back to Home
-          </button>
+          </Link>
         </div>
 
         {/* Contact */}
         <div className="mt-8 text-center text-gray-600">
           <p className="mb-2">Questions? We&apos;re here to help!</p>
           <div className="flex items-center justify-center gap-6">
-            <a href={`mailto:${reservation.customer_email}`} className="text-blue-600 hover:underline font-medium">
-              📧 Email Us
+            <a href="mailto:info@wallawalla.travel" className="text-blue-600 hover:underline font-medium">
+              Email Us
             </a>
-            <a href={`tel:${reservation.customer_phone}`} className="text-blue-600 hover:underline font-medium">
-              📞 Call Us
+            <a href="tel:509-200-8000" className="text-blue-600 hover:underline font-medium">
+              Call Us
             </a>
           </div>
         </div>
       </main>
     </div>
-  );
-}
-
-export default function ReservationConfirmationPage() {
-  return (
-    <Suspense fallback={<div className="min-h-screen bg-[#FDF8F3] flex items-center justify-center">Loading confirmation...</div>}>
-      <ReservationConfirmationContent />
-    </Suspense>
   );
 }
