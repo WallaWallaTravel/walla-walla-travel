@@ -4,7 +4,6 @@ import "./globals.css";
 import { ConditionalNavigation, ConditionalNavSpacer } from "@/components/navigation/ConditionalNav";
 import { ServiceWorkerProvider } from "@/components/ServiceWorkerProvider";
 import { OfflineSyncIndicator } from "@/components/OfflineSyncIndicator";
-import { AnnouncementBannerWrapper } from "@/components/ui/AnnouncementBannerWrapper";
 import { OrganizationJsonLd } from "@/components/seo/OrganizationJsonLd";
 import ErrorBoundary from "@/components/ui/ErrorBoundary";
 
@@ -98,7 +97,6 @@ export default function RootLayout({
         </a>
         <ErrorBoundary name="RootLayout">
           <ServiceWorkerProvider>
-            <AnnouncementBannerWrapper position="top" />
             <main id="main-content">
               {children}
             </main>
