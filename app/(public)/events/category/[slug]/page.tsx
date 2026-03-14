@@ -35,7 +35,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export const dynamic = 'force-dynamic';
+// ISR: revalidate every 60s. force-dynamic was exhausting the connection pool.
+export const revalidate = 60;
 
 export default async function CategoryEventsPage({ params, searchParams }: PageProps) {
   const { slug } = await params;

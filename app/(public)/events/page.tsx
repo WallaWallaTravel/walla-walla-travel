@@ -26,7 +26,9 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export const dynamic = 'force-dynamic';
+// ISR: serve cached responses, revalidate every 60s.
+// force-dynamic was causing every request to hit the DB (~20 req/min), exhausting the connection pool.
+export const revalidate = 60;
 
 export default async function EventsHomePage({
   searchParams,
