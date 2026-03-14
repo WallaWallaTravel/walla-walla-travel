@@ -1,0 +1,63 @@
+# Build artifacts
+.next/
+dist/
+build/
+out/
+
+# Dependencies
+node_modules/
+
+# Lock files (massive, never useful for Claude to read)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Generated files
+prisma/generated/
+*.generated.ts
+*.generated.js
+
+# Large data / media
+public/uploads/
+public/images/
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.ico
+*.webp
+*.mp4
+*.pdf
+
+# Environment files (sensitive)
+.env
+.env.*
+!.env.example
+
+# Git internals
+.git/
+
+# Coverage & test artifacts
+coverage/
+.nyc_output/
+junit.xml
+
+# IDE / OS files
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Vercel
+.vercel/
+
+# Claude worktrees
+.claude/worktrees/
+
+# Temporary
+tmp/
+temp/
+*.tmp
+*.log
