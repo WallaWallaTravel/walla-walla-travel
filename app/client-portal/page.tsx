@@ -1,66 +1,43 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useTransition } from 'react';
 import Link from 'next/link';
-import { logger } from '@/lib/logger';
+import { lookupBooking } from '@/lib/actions/client-portal-lookup';
 
 export default function ClientPortalPage() {
   const [lookupValue, setLookupValue] = useState('');
   const [lastName, setLastName] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
 
-  // Auto-detect lookup type based on input
-  const detectLookupType = (value: string): 'email' | 'phone' | 'booking' => {
+  const detectLookupType = (value: string): 'email' | 'phone' | 'booking_number' => {
     const trimmed = value.trim();
     if (trimmed.includes('@')) return 'email';
-    // If mostly digits (allowing for formatting like dashes, parens, spaces)
     const digitsOnly = trimmed.replace(/\D/g, '');
     if (digitsOnly.length >= 7 && digitsOnly.length <= 11) return 'phone';
-    return 'booking';
+    return 'booking_number';
   };
 
-  async function handleLookup(e: React.FormEvent) {
+  function handleLookup(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
     setError('');
 
-    try {
-      const lookupType = detectLookupType(lookupValue);
-      const body: Record<string, string> = {
-        last_name: lastName.trim(),
-        lookup_method: lookupType,
-      };
+    const lookupType = detectLookupType(lookupValue);
+    const input: Parameters<typeof lookupBooking>[0] = {
+      last_name: lastName.trim(),
+      lookup_method: lookupType,
+      ...(lookupType === 'email' && { email: lookupValue.toLowerCase().trim() }),
+      ...(lookupType === 'phone' && { phone: lookupValue.replace(/\D/g, '') }),
+      ...(lookupType === 'booking_number' && { booking_number: lookupValue.toUpperCase().trim() }),
+    };
 
-      if (lookupType === 'email') {
-        body.email = lookupValue.toLowerCase().trim();
-      } else if (lookupType === 'phone') {
-        body.phone = lookupValue.replace(/\D/g, '');
-      } else {
-        body.booking_number = lookupValue.toUpperCase().trim();
+    startTransition(async () => {
+      const result = await lookupBooking(input);
+      if (result?.error) {
+        setError(result.error);
       }
-
-      const response = await fetch(`/api/client/booking-lookup`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        router.push(`/client-portal/${data.data.booking_id}`);
-      } else {
-        setError(data.error?.message || 'Booking not found. Please check your details and try again.');
-        setLoading(false);
-      }
-    } catch (err) {
-      logger.error('Lookup error', { error: err });
-      setError('Unable to look up booking. Please try again.');
-      setLoading(false);
-    }
+      // If no result returned, redirect() was called server-side and navigation is happening
+    });
   }
 
   return (
@@ -81,8 +58,8 @@ export default function ClientPortalPage() {
       <main className="max-w-md mx-auto px-4 py-12">
         <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-8">
           {/* Back Link */}
-          <Link 
-            href="/" 
+          <Link
+            href="/"
             className="inline-flex items-center text-sm text-slate-500 hover:text-slate-700 mb-6"
           >
             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -118,8 +95,8 @@ export default function ClientPortalPage() {
             </div>
 
             <div className="mb-5">
-              <label 
-                htmlFor="lastName" 
+              <label
+                htmlFor="lastName"
                 className="block text-sm font-medium text-slate-700 mb-1.5"
               >
                 Last Name
@@ -143,14 +120,14 @@ export default function ClientPortalPage() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={isPending}
               className={`w-full py-2.5 rounded-lg text-white font-semibold transition-colors ${
-                loading 
-                  ? 'bg-slate-400 cursor-not-allowed' 
+                isPending
+                  ? 'bg-slate-400 cursor-not-allowed'
                   : 'bg-emerald-600 hover:bg-emerald-700'
               }`}
             >
-              {loading ? 'Looking up...' : 'Find My Booking'}
+              {isPending ? 'Looking up...' : 'Find My Booking'}
             </button>
           </form>
         </div>
@@ -160,8 +137,8 @@ export default function ClientPortalPage() {
           <p className="text-sm text-slate-500 mb-2">
             Need help finding your booking?
           </p>
-          <a 
-            href="tel:+15092008000" 
+          <a
+            href="tel:+15092008000"
             className="text-emerald-600 font-medium hover:underline"
           >
             Call (509) 200-8000
@@ -171,10 +148,3 @@ export default function ClientPortalPage() {
     </div>
   );
 }
-
-
-
-
-
-
-
