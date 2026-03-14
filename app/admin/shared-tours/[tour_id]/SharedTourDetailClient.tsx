@@ -1,0 +1,1333 @@
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import * as actions from '@/lib/actions/shared-tour-actions';
+
+
+/**
+ * Admin Shared Tour Detail Page
+ *
+ * View and manage a specific shared tour:
+ * - Tour details and status
+ * - Guest manifest
+ * - Ticket management
+ * - Check-in functionality
+ */
+
+interface Tour {
+  id: string;
+  tour_date: string;
+  start_time: string;
+  duration_hours: number;
+  title: string;
+  description: string | null;
+  meeting_location: string | null;
+  wineries_preview: string[] | null;
+  max_guests: number;
+  min_guests: number;
+  base_price_per_person: number;
+  lunch_price_per_person: number;
+  status: string;
+  is_published: boolean;
+  tickets_sold: number;
+  spots_available: number;
+  revenue: number;
+  minimum_met: boolean;
+  accepting_bookings: boolean;
+  driver_id: string | null;
+  vehicle_id: string | null;
+  notes: string | null;
+}
+
+interface Ticket {
+  id: string;
+  ticket_number: string;
+  ticket_count: number;
+  customer_name: string;
+  customer_email: string;
+  customer_phone: string | null;
+  guest_names: string[] | null;
+  includes_lunch: boolean;
+  lunch_selection: string | null;
+  guest_lunch_selections: Array<{ guest_name: string; selection: string }> | null;
+  price_per_person: number;
+  total_amount: number;
+  payment_status: string;
+  status: string;
+  check_in_at: string | null;
+  dietary_restrictions: string | null;
+  special_requests: string | null;
+  created_at: string;
+  hotel_partner_id: string | null;
+  booked_by_hotel: boolean;
+}
+
+interface LunchSummary {
+  selection: string;
+  count: number;
+}
+
+interface VehicleInfo {
+  id: number;
+  name: string;
+  capacity: number;
+  status?: string;
+  available?: boolean;
+}
+
+interface TripProposalOption {
+  id: number;
+  proposal_number: string;
+  title: string;
+  status: string;
+}
+
+interface LinkedProposal {
+  id: number;
+  proposal_number: string;
+  title: string;
+  status: string;
+}
+
+interface DiscountPreview {
+  original_base_price: number;
+  new_base_price: number;
+  original_lunch_price: number;
+  new_lunch_price: number;
+  tickets_affected: Array<{
+    ticket_id: string;
+    ticket_number: string;
+    customer_name: string;
+    customer_email: string;
+    ticket_count: number;
+    original_paid: number;
+    new_price: number;
+    refund_amount: number;
+  }>;
+  total_refund: number;
+  can_apply: boolean;
+  warnings: string[];
+}
+
+interface Props {
+  tourId: string;
+  initialTour: Tour;
+  initialTickets: Ticket[];
+  initialVehicleInfo: VehicleInfo | null;
+  initialAvailableVehicles: VehicleInfo[];
+  initialTicketsSold: number;
+  initialTripProposalId: number | null;
+  initialLinkedProposal: LinkedProposal | null;
+  initialTicketsOnProposal: string[];
+  initialTripProposals: TripProposalOption[];
+}
+
+export default function SharedTourDetailClient({
+  tourId: tour_id,
+  initialTour,
+  initialTickets,
+  initialVehicleInfo,
+  initialAvailableVehicles,
+  initialTicketsSold,
+  initialTripProposalId,
+  initialLinkedProposal,
+  initialTicketsOnProposal,
+  initialTripProposals,
+}: Props) {
+  const router = useRouter();
+
+  const [tour, setTour] = useState<Tour>(initialTour);
+  const [tickets, setTickets] = useState<Ticket[]>(initialTickets);
+  const [loading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'tickets' | 'manifest' | 'details'>('tickets');
+  const [vehicleInfo, setVehicleInfo] = useState<VehicleInfo | null>(initialVehicleInfo);
+  const [availableVehicles, setAvailableVehicles] = useState<VehicleInfo[]>(initialAvailableVehicles);
+  const [ticketsSold, setTicketsSold] = useState(initialTicketsSold);
+  const [reassigning, setReassigning] = useState(false);
+  const [showReassignModal, setShowReassignModal] = useState(false);
+  const [selectedNewVehicle, setSelectedNewVehicle] = useState<number | null>(null);
+
+  // Trip proposal integration state
+  const [tripProposalId, setTripProposalId] = useState<number | null>(initialTripProposalId);
+  const [linkedProposal, setLinkedProposal] = useState<LinkedProposal | null>(initialLinkedProposal);
+  const [ticketsOnProposal, setTicketsOnProposal] = useState<string[]>(initialTicketsOnProposal);
+  const [tripProposals, setTripProposals] = useState<TripProposalOption[]>(initialTripProposals);
+  const [selectedProposalId, setSelectedProposalId] = useState<string>('');
+  const [linkingProposal, setLinkingProposal] = useState(false);
+  const [importingGuests, setImportingGuests] = useState(false);
+  const [importResult, setImportResult] = useState<{ imported: number; skipped: number; total_tickets: number } | null>(null);
+  const [proposalSuccess, setProposalSuccess] = useState<string | null>(null);
+
+  // Discount modal state
+  const [showDiscountModal, setShowDiscountModal] = useState(false);
+  const [discountType, setDiscountType] = useState<'flat' | 'percentage'>('flat');
+  const [discountAmount, setDiscountAmount] = useState<string>('');
+  const [discountReason, setDiscountReason] = useState('');
+  const [discountPreview, setDiscountPreview] = useState<DiscountPreview | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [applyingDiscount, setApplyingDiscount] = useState(false);
+
+  // Sync state when props change (for router.refresh() to work)
+  useEffect(() => setTour(initialTour), [initialTour]);
+  useEffect(() => setTickets(initialTickets), [initialTickets]);
+  useEffect(() => setVehicleInfo(initialVehicleInfo), [initialVehicleInfo]);
+  useEffect(() => setAvailableVehicles(initialAvailableVehicles), [initialAvailableVehicles]);
+  useEffect(() => setTicketsSold(initialTicketsSold), [initialTicketsSold]);
+  useEffect(() => setTripProposalId(initialTripProposalId), [initialTripProposalId]);
+  useEffect(() => setLinkedProposal(initialLinkedProposal), [initialLinkedProposal]);
+  useEffect(() => setTicketsOnProposal(initialTicketsOnProposal), [initialTicketsOnProposal]);
+  useEffect(() => setTripProposals(initialTripProposals), [initialTripProposals]);
+
+  const handleLinkProposal = async (unlinkMode = false) => {
+    const proposalId = unlinkMode ? null : (selectedProposalId ? parseInt(selectedProposalId) : null);
+    setLinkingProposal(true);
+    setError(null);
+    setProposalSuccess(null);
+    setImportResult(null);
+    try {
+      const result = await actions.linkProposalAction(tour_id, proposalId);
+      if (result.success) {
+        router.refresh();
+        setSelectedProposalId('');
+        setProposalSuccess(proposalId ? 'Trip proposal linked successfully' : 'Trip proposal unlinked');
+      } else {
+        setError(result.error || 'Failed to update trip proposal link');
+      }
+    } catch (_err) {
+      setError('Failed to update trip proposal link');
+    } finally {
+      setLinkingProposal(false);
+    }
+  };
+
+  const handleImportGuests = async () => {
+    setImportingGuests(true);
+    setError(null);
+    setProposalSuccess(null);
+    setImportResult(null);
+    try {
+      const result = await actions.importGuestsAction(tour_id);
+      if (result.success && result.data) {
+        setImportResult(result.data);
+        setProposalSuccess(
+          `Imported ${result.data.imported} guest${result.data.imported !== 1 ? 's' : ''}` +
+          (result.data.skipped > 0 ? ` (${result.data.skipped} skipped — already on proposal or missing email)` : '')
+        );
+      } else {
+        setError(result.error || 'Failed to import guests');
+      }
+    } catch (_err) {
+      setError('Failed to import guests');
+    } finally {
+      setImportingGuests(false);
+    }
+  };
+
+  const handleCheckIn = async (ticketId: string) => {
+    try {
+      const result = await actions.checkInTicketAction(ticketId);
+      if (result.success) {
+        router.refresh();
+      } else {
+        const errorMessage = typeof result.error === 'object' && result.error !== null && 'message' in result.error
+          ? (result.error as { message: string }).message
+          : (result.error || 'Failed to check in');
+        setError(errorMessage);
+      }
+    } catch (_err) {
+      setError('Failed to check in ticket');
+    }
+  };
+
+  const handleReassignVehicle = async () => {
+    setReassigning(true);
+    setError(null);
+    try {
+      const result = await actions.reassignVehicleAction(tour_id, selectedNewVehicle || undefined);
+      if (result.success) {
+        router.refresh();
+        setShowReassignModal(false);
+        setSelectedNewVehicle(null);
+      } else {
+        setError(result.error || 'Failed to reassign vehicle');
+      }
+    } catch (_err) {
+      setError('Failed to reassign vehicle');
+    } finally {
+      setReassigning(false);
+    }
+  };
+
+  const handlePreviewDiscount = async () => {
+    const amount = parseFloat(discountAmount);
+    if (isNaN(amount) || amount <= 0) {
+      setError('Please enter a valid discount amount');
+      return;
+    }
+
+    setPreviewLoading(true);
+    setError(null);
+    try {
+      const result = await actions.previewDiscountAction(tour_id, discountType, amount, discountReason);
+      if (result.success) {
+        setDiscountPreview(result.preview as DiscountPreview);
+      } else {
+        setError(result.error || 'Failed to preview discount');
+      }
+    } catch (_err) {
+      setError('Failed to preview discount');
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  const handleApplyDiscount = async () => {
+    const amount = parseFloat(discountAmount);
+    if (isNaN(amount) || amount <= 0) {
+      setError('Please enter a valid discount amount');
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to apply this discount? This will issue $${discountPreview?.total_refund.toFixed(2)} in refunds.`)) {
+      return;
+    }
+
+    setApplyingDiscount(true);
+    setError(null);
+    try {
+      const result = await actions.applyDiscountAction(tour_id, discountType, amount, discountReason);
+      if (result.success) {
+        router.refresh();
+        setShowDiscountModal(false);
+        resetDiscountModal();
+        alert(result.message);
+      } else {
+        setError(result.error || 'Failed to apply discount');
+      }
+    } catch (_err) {
+      setError('Failed to apply discount');
+    } finally {
+      setApplyingDiscount(false);
+    }
+  };
+
+  const resetDiscountModal = () => {
+    setDiscountType('flat');
+    setDiscountAmount('');
+    setDiscountReason('');
+    setDiscountPreview(null);
+  };
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr + 'T00:00:00');
+    return date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
+
+  const formatTime = (timeStr: string) => {
+    const [hours, minutes] = timeStr.split(':');
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const hour12 = hour % 12 || 12;
+    return `${hour12}:${minutes} ${ampm}`;
+  };
+
+  const formatDateTime = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'open':
+        return 'bg-blue-100 text-blue-700';
+      case 'confirmed':
+        return 'bg-green-100 text-green-700';
+      case 'full':
+        return 'bg-amber-100 text-amber-700';
+      case 'cancelled':
+        return 'bg-red-100 text-red-700';
+      case 'completed':
+        return 'bg-slate-100 text-slate-700';
+      case 'paid':
+        return 'bg-green-100 text-green-700';
+      case 'pending':
+        return 'bg-amber-100 text-amber-700';
+      case 'attended':
+        return 'bg-green-100 text-green-700';
+      default:
+        return 'bg-slate-100 text-slate-700';
+    }
+  };
+
+  // Build manifest from tickets
+  const buildManifest = () => {
+    const manifest: { name: string; ticket: Ticket; isMain: boolean; lunchSelection: string | null }[] = [];
+
+    tickets
+      .filter(t => t.status === 'confirmed' && t.payment_status === 'paid')
+      .forEach(ticket => {
+        // Add main customer
+        manifest.push({
+          name: ticket.customer_name,
+          ticket,
+          isMain: true,
+          lunchSelection: ticket.lunch_selection,
+        });
+
+        // Add additional guests
+        if (ticket.guest_names) {
+          ticket.guest_names.forEach((name, _idx) => {
+            if (name.trim()) {
+              // Try to find lunch selection for this guest
+              const guestSelection = ticket.guest_lunch_selections?.find(
+                g => g.guest_name === name
+              )?.selection || ticket.lunch_selection;
+
+              manifest.push({
+                name,
+                ticket,
+                isMain: false,
+                lunchSelection: guestSelection,
+              });
+            }
+          });
+        }
+      });
+
+    return manifest;
+  };
+
+  // Build lunch order summary
+  const buildLunchSummary = (): LunchSummary[] => {
+    const summary: Record<string, number> = {};
+
+    tickets
+      .filter(t => t.status === 'confirmed' && t.payment_status === 'paid' && t.includes_lunch)
+      .forEach(ticket => {
+        // Main customer lunch
+        const mainSelection = ticket.lunch_selection || 'No preference';
+        summary[mainSelection] = (summary[mainSelection] || 0) + 1;
+
+        // Guest lunches
+        if (ticket.guest_lunch_selections) {
+          ticket.guest_lunch_selections.forEach(gs => {
+            const selection = gs.selection || 'No preference';
+            summary[selection] = (summary[selection] || 0) + 1;
+          });
+        } else if (ticket.guest_names) {
+          // If no per-guest selections, use main selection for all
+          const additionalGuests = ticket.guest_names.filter(n => n.trim()).length;
+          if (additionalGuests > 0) {
+            summary[mainSelection] = (summary[mainSelection] || 0) + additionalGuests;
+          }
+        }
+      });
+
+    return Object.entries(summary)
+      .map(([selection, count]) => ({ selection, count }))
+      .sort((a, b) => b.count - a.count);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-[#E07A5F] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-600">Loading tour details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && !tour) {
+    return (
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{typeof error === 'object' ? (error as { message?: string })?.message || 'An error occurred' : error}</p>
+          <Link
+            href="/admin/shared-tours"
+            className="text-[#E07A5F] hover:underline"
+          >
+            Back to Tours
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (!tour) return null;
+
+  const manifest = buildManifest();
+  const lunchCount = tickets
+    .filter(t => t.status === 'confirmed' && t.payment_status === 'paid' && t.includes_lunch)
+    .reduce((sum, t) => sum + t.ticket_count, 0);
+
+  return (
+    <div className="min-h-screen bg-slate-100">
+      {/* Header */}
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <Link href="/admin/shared-tours" className="text-sm text-slate-500 hover:text-slate-700 flex items-center gap-1 mb-2">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to Shared Tours
+          </Link>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900">{tour.title}</h1>
+              <p className="text-slate-600">{formatDate(tour.tour_date)} at {formatTime(tour.start_time)}</p>
+            </div>
+            <span className={`px-3 py-1.5 rounded-full text-sm font-medium ${getStatusColor(tour.status)}`}>
+              {tour.status}
+            </span>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 py-6">
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-red-700">
+            {typeof error === 'object' ? (error as { message?: string })?.message || 'An error occurred' : error}
+          </div>
+        )}
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+          <div className="bg-white rounded-xl p-4 border border-slate-200">
+            <div className="text-sm text-slate-500 mb-1">Tickets Sold</div>
+            <div className="text-2xl font-bold text-slate-900">
+              {tour.tickets_sold}<span className="text-base font-normal text-slate-500">/{tour.max_guests}</span>
+            </div>
+          </div>
+          <div className="bg-white rounded-xl p-4 border border-slate-200">
+            <div className="text-sm text-slate-500 mb-1">Spots Left</div>
+            <div className="text-2xl font-bold text-slate-900">{tour.spots_available}</div>
+          </div>
+          <div className="bg-white rounded-xl p-4 border border-slate-200">
+            <div className="text-sm text-slate-500 mb-1">Revenue</div>
+            <div className="text-2xl font-bold text-green-600">${tour.revenue.toFixed(0)}</div>
+          </div>
+          <div className="bg-white rounded-xl p-4 border border-slate-200">
+            <div className="text-sm text-slate-500 mb-1">With Lunch</div>
+            <div className="text-2xl font-bold text-slate-900">{lunchCount}</div>
+          </div>
+          <div className="bg-white rounded-xl p-4 border border-slate-200">
+            <div className="text-sm text-slate-500 mb-1">Minimum Met</div>
+            <div className={`text-2xl font-bold ${tour.minimum_met ? 'text-green-600' : 'text-amber-600'}`}>
+              {tour.minimum_met ? 'Yes' : 'No'}
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="border-b border-slate-200">
+            <div className="flex">
+              {(['tickets', 'manifest', 'details'] as const).map(tab => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                    activeTab === tab
+                      ? 'border-[#E07A5F] text-[#E07A5F]'
+                      : 'border-transparent text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  {tab === 'tickets' && ` (${tickets.length})`}
+                  {tab === 'manifest' && ` (${manifest.length})`}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Tickets Tab */}
+          {activeTab === 'tickets' && (
+            <div className="p-6">
+              {tickets.length === 0 ? (
+                <div className="text-center py-8 text-slate-500">
+                  No tickets purchased yet
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {tickets.map(ticket => (
+                    <div
+                      key={ticket.id}
+                      className="border border-slate-200 rounded-lg p-4"
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-bold text-slate-900">{ticket.ticket_number}</span>
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(ticket.payment_status)}`}>
+                              {ticket.payment_status}
+                            </span>
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(ticket.status)}`}>
+                              {ticket.status}
+                            </span>
+                          </div>
+                          <p className="text-lg font-medium text-slate-900">
+                            {ticket.customer_name}
+                            {ticketsOnProposal.includes(String(ticket.id)) && (
+                              <span className="ml-2 px-2 py-0.5 bg-indigo-100 text-indigo-700 text-xs rounded-full font-medium align-middle">
+                                On Proposal
+                              </span>
+                            )}
+                          </p>
+                          <p className="text-sm text-slate-600">{ticket.customer_email}</p>
+                          {ticket.customer_phone && (
+                            <p className="text-sm text-slate-600">{ticket.customer_phone}</p>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <p className="text-lg font-bold text-slate-900">
+                            {ticket.ticket_count} ticket{ticket.ticket_count > 1 ? 's' : ''}
+                          </p>
+                          <p className="text-sm text-slate-600">
+                            ${ticket.total_amount.toFixed(2)}
+                          </p>
+                          {ticket.includes_lunch && (
+                            <span className="text-xs text-green-600">Lunch included</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {ticket.guest_names && ticket.guest_names.length > 0 && (
+                        <div className="mb-3">
+                          <p className="text-sm text-slate-500 mb-1">Other guests:</p>
+                          <div className="flex flex-wrap gap-2">
+                            {ticket.guest_names.filter(n => n.trim()).map((name, idx) => (
+                              <span key={idx} className="px-2 py-1 bg-slate-100 rounded text-sm text-slate-700">
+                                {name}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {(ticket.dietary_restrictions || ticket.special_requests) && (
+                        <div className="bg-amber-50 rounded p-3 mb-3">
+                          {ticket.dietary_restrictions && (
+                            <p className="text-sm">
+                              <span className="font-medium text-amber-800">Dietary:</span>{' '}
+                              <span className="text-amber-700">{ticket.dietary_restrictions}</span>
+                            </p>
+                          )}
+                          {ticket.special_requests && (
+                            <p className="text-sm">
+                              <span className="font-medium text-amber-800">Requests:</span>{' '}
+                              <span className="text-amber-700">{ticket.special_requests}</span>
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                        <span className="text-xs text-slate-500">
+                          Booked {formatDateTime(ticket.created_at)}
+                        </span>
+                        {ticket.status === 'confirmed' && ticket.payment_status === 'paid' && !ticket.check_in_at && (
+                          <button
+                            onClick={() => handleCheckIn(ticket.id)}
+                            className="px-4 py-1.5 bg-green-100 text-green-700 rounded text-sm font-medium hover:bg-green-200 transition-colors"
+                          >
+                            Check In
+                          </button>
+                        )}
+                        {ticket.check_in_at && (
+                          <span className="text-sm text-green-600 flex items-center gap-1">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            Checked in {formatDateTime(ticket.check_in_at)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Manifest Tab */}
+          {activeTab === 'manifest' && (
+            <div className="p-6">
+              <div className="mb-4 flex items-center justify-between">
+                <p className="text-sm text-slate-500">
+                  {manifest.length} guest{manifest.length !== 1 ? 's' : ''} • {lunchCount} with lunch
+                </p>
+                <div className="flex gap-2">
+                  <Link
+                    href={`/admin/shared-tours/${tour_id}/manifest`}
+                    className="px-4 py-2 text-sm bg-slate-100 text-slate-700 rounded hover:bg-slate-200 transition-colors flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                    Print View
+                  </Link>
+                </div>
+              </div>
+
+              {/* Lunch Order Summary */}
+              {lunchCount > 0 && (
+                <div className="mb-6 bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <h3 className="font-semibold text-amber-800 mb-3 flex items-center gap-2">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0118 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                    </svg>
+                    Lunch Order Summary ({lunchCount} total)
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {buildLunchSummary().map((item, idx) => (
+                      <div key={idx} className="bg-white rounded px-3 py-2 border border-amber-200">
+                        <span className="font-medium text-slate-900">{item.count}x</span>
+                        <span className="ml-2 text-slate-600">{item.selection}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {manifest.length === 0 ? (
+                <div className="text-center py-8 text-slate-500">
+                  No confirmed guests yet
+                </div>
+              ) : (
+                <table className="w-full">
+                  <thead className="bg-slate-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">#</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Guest Name</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Ticket</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Lunch Selection</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Dietary</th>
+                      <th className="px-4 py-3 text-center text-sm font-semibold text-slate-700">Checked In</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {manifest.map((guest, idx) => (
+                      <tr key={`${guest.ticket.id}-${idx}`} className="hover:bg-slate-50">
+                        <td className="px-4 py-3 text-slate-600">{idx + 1}</td>
+                        <td className="px-4 py-3">
+                          <span className="font-medium text-slate-900">{guest.name}</span>
+                          {guest.isMain && (
+                            <span className="ml-2 text-xs text-[#E07A5F]">Primary</span>
+                          )}
+                          {guest.ticket.booked_by_hotel && guest.isMain && (
+                            <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">Hotel</span>
+                          )}
+                          {guest.isMain && ticketsOnProposal.includes(String(guest.ticket.id)) && (
+                            <span className="ml-2 text-xs bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded">On Proposal</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-slate-600">{guest.ticket.ticket_number}</td>
+                        <td className="px-4 py-3">
+                          {guest.ticket.includes_lunch ? (
+                            <span className="text-sm text-slate-700">
+                              {guest.lunchSelection || 'No preference'}
+                            </span>
+                          ) : (
+                            <span className="text-sm text-slate-400">No lunch</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-slate-600">
+                          {guest.isMain && guest.ticket.dietary_restrictions || '-'}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          {guest.ticket.check_in_at ? (
+                            <svg className="w-5 h-5 text-green-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          ) : (
+                            <span className="text-slate-400">-</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
+
+          {/* Details Tab */}
+          {activeTab === 'details' && (
+            <div className="p-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <h3 className="font-semibold text-slate-900 mb-4">Tour Information</h3>
+                  <dl className="space-y-3">
+                    <div>
+                      <dt className="text-sm text-slate-500">Date</dt>
+                      <dd className="font-medium text-slate-900">{formatDate(tour.tour_date)}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm text-slate-500">Time</dt>
+                      <dd className="font-medium text-slate-900">{formatTime(tour.start_time)}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm text-slate-500">Duration</dt>
+                      <dd className="font-medium text-slate-900">{tour.duration_hours} hours</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm text-slate-500">Capacity</dt>
+                      <dd className="font-medium text-slate-900">{tour.min_guests} - {tour.max_guests} guests</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm text-slate-500">Meeting Location</dt>
+                      <dd className="font-medium text-slate-900">{tour.meeting_location || 'Not specified'}</dd>
+                    </div>
+                  </dl>
+
+                  {/* Vehicle Assignment Section */}
+                  <div className="mt-6 pt-6 border-t border-slate-200">
+                    <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                      <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                      </svg>
+                      Vehicle Assignment
+                    </h3>
+                    {vehicleInfo ? (
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-green-800">{vehicleInfo.name}</p>
+                            <p className="text-sm text-green-700">Capacity: {vehicleInfo.capacity} guests</p>
+                          </div>
+                          {tour.status !== 'cancelled' && tour.status !== 'completed' && (
+                            <button
+                              onClick={() => setShowReassignModal(true)}
+                              className="px-3 py-1.5 text-sm bg-white text-green-700 border border-green-300 rounded hover:bg-green-100 transition-colors"
+                            >
+                              Change Vehicle
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-amber-800">No Vehicle Assigned</p>
+                            <p className="text-sm text-amber-700">This tour needs a vehicle before it can run</p>
+                          </div>
+                          {tour.status !== 'cancelled' && tour.status !== 'completed' && (
+                            <button
+                              onClick={() => setShowReassignModal(true)}
+                              className="px-3 py-1.5 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 transition-colors"
+                            >
+                              Assign Vehicle
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-slate-900 mb-4">Pricing</h3>
+                  <dl className="space-y-3">
+                    <div>
+                      <dt className="text-sm text-slate-500">Base Price</dt>
+                      <dd className="font-medium text-slate-900">${tour.base_price_per_person}/person</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm text-slate-500">With Lunch</dt>
+                      <dd className="font-medium text-slate-900">${tour.lunch_price_per_person}/person</dd>
+                    </div>
+                  </dl>
+
+                  {/* Group Discount Section */}
+                  {tour.status !== 'cancelled' && tour.status !== 'completed' && (
+                    <div className="mt-6 pt-6 border-t border-slate-200">
+                      <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                        <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Group Discount
+                      </h3>
+                      <button
+                        onClick={() => setShowDiscountModal(true)}
+                        className="px-4 py-2 bg-[#E07A5F] text-white rounded-lg font-medium hover:bg-[#d06a4f] transition-colors flex items-center gap-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                        </svg>
+                        Apply Discount
+                      </button>
+                      <p className="text-xs text-slate-500 mt-2">
+                        Apply a group discount and automatically refund guests who already paid
+                      </p>
+                    </div>
+                  )}
+
+                  {tour.wineries_preview && tour.wineries_preview.length > 0 && (
+                    <div className="mt-6">
+                      <h3 className="font-semibold text-slate-900 mb-2">Wineries</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {tour.wineries_preview.map((winery, idx) => (
+                          <span key={idx} className="px-2 py-1 bg-slate-100 rounded text-sm text-slate-700">
+                            {winery}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {tour.notes && (
+                    <div className="mt-6">
+                      <h3 className="font-semibold text-slate-900 mb-2">Admin Notes</h3>
+                      <p className="text-slate-600 bg-slate-50 rounded p-3">{tour.notes}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Trip Proposal Integration Section */}
+              <div className="mt-6 pt-6 border-t border-slate-200">
+                <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                  </svg>
+                  Trip Proposal Integration
+                </h3>
+
+                {/* Success message */}
+                {proposalSuccess && (
+                  <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-2">
+                    <svg className="w-5 h-5 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <p className="text-sm text-green-700">{proposalSuccess}</p>
+                  </div>
+                )}
+
+                {/* Currently linked proposal */}
+                {linkedProposal ? (
+                  <div className="mb-4 bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-indigo-600 font-medium">Linked to Proposal</p>
+                        <p className="font-semibold text-slate-900">
+                          {linkedProposal.proposal_number} — {linkedProposal.title}
+                        </p>
+                        <p className="text-sm text-slate-600">Status: {linkedProposal.status}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Link
+                          href={`/admin/trip-proposals/${linkedProposal.id}`}
+                          className="px-3 py-1.5 text-sm bg-white text-indigo-700 border border-indigo-300 rounded-lg hover:bg-indigo-100 transition-colors font-medium"
+                        >
+                          View Proposal
+                        </Link>
+                        <button
+                          onClick={() => handleLinkProposal(true)}
+                          disabled={linkingProposal}
+                          className="px-3 py-1.5 text-sm bg-white text-red-600 border border-red-300 rounded-lg hover:bg-red-50 transition-colors font-medium disabled:opacity-50"
+                        >
+                          {linkingProposal ? 'Unlinking...' : 'Unlink'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mb-4 bg-slate-50 border border-slate-200 rounded-lg p-4">
+                    <p className="text-sm text-slate-600 mb-3">
+                      No trip proposal linked. Link a proposal to enable guest import and portal access.
+                    </p>
+                    <div className="flex items-center gap-3">
+                      <select
+                        value={selectedProposalId}
+                        onChange={e => setSelectedProposalId(e.target.value)}
+                        className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      >
+                        <option value="">Select a trip proposal...</option>
+                        {tripProposals.map(p => (
+                          <option key={p.id} value={p.id}>
+                            {p.proposal_number} — {p.title} ({p.status})
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => handleLinkProposal(false)}
+                        disabled={!selectedProposalId || linkingProposal}
+                        className="px-4 py-2.5 bg-indigo-600 text-white rounded-lg font-medium shadow-sm hover:bg-indigo-700 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed flex items-center gap-2 text-sm"
+                      >
+                        {linkingProposal && (
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        )}
+                        Link
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Import Guests Button */}
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-slate-900">Import Ticket Holders to Proposal</p>
+                      <p className="text-sm text-slate-600">
+                        {tripProposalId
+                          ? 'Import all ticket holders as guests on the linked trip proposal.'
+                          : 'Link a trip proposal first to enable guest import.'}
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleImportGuests}
+                      disabled={!tripProposalId || importingGuests}
+                      className="px-4 py-2.5 bg-indigo-600 text-white rounded-lg font-medium shadow-sm hover:bg-indigo-700 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed flex items-center gap-2 text-sm"
+                    >
+                      {importingGuests && (
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      )}
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                      </svg>
+                      Import Guests
+                    </button>
+                  </div>
+
+                  {/* Import result */}
+                  {importResult && (
+                    <div className="mt-3 pt-3 border-t border-slate-200 text-sm text-slate-600">
+                      <span className="font-medium">{importResult.imported}</span> imported,{' '}
+                      <span className="font-medium">{importResult.skipped}</span> skipped,{' '}
+                      <span className="font-medium">{importResult.total_tickets}</span> total tickets
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </main>
+
+      {/* Vehicle Reassignment Modal */}
+      {showReassignModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-[calc(100vw-2rem)] sm:max-w-md w-full">
+            <div className="p-4 sm:p-6 border-b border-slate-200 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-slate-900">
+                {vehicleInfo ? 'Change Vehicle' : 'Assign Vehicle'}
+              </h2>
+              <button
+                onClick={() => {
+                  setShowReassignModal(false);
+                  setSelectedNewVehicle(null);
+                }}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-6">
+              {vehicleInfo && (
+                <div className="mb-4 bg-slate-50 rounded-lg p-3">
+                  <p className="text-sm text-slate-600">Currently assigned:</p>
+                  <p className="font-medium text-slate-900">{vehicleInfo.name} ({vehicleInfo.capacity} guests)</p>
+                </div>
+              )}
+
+              {ticketsSold > 0 && (
+                <div className="mb-4 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <p className="text-sm text-amber-800">
+                    <strong>{ticketsSold} tickets already sold.</strong> New vehicle must have capacity of at least {ticketsSold} guests.
+                  </p>
+                </div>
+              )}
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Select Vehicle
+                </label>
+                {availableVehicles.filter(v => v.available && v.capacity >= ticketsSold).length === 0 ? (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700">
+                    No vehicles available that can accommodate {ticketsSold} guests for this time slot.
+                  </div>
+                ) : (
+                  <select
+                    value={selectedNewVehicle || ''}
+                    onChange={e => setSelectedNewVehicle(e.target.value ? parseInt(e.target.value) : null)}
+                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E07A5F]"
+                  >
+                    <option value="">Auto-select best available</option>
+                    {availableVehicles
+                      .filter(v => v.capacity >= ticketsSold)
+                      .map(v => (
+                        <option
+                          key={v.id}
+                          value={v.id}
+                          disabled={!v.available}
+                        >
+                          {v.name} ({v.capacity} guests){!v.available ? ' - Unavailable' : ''}
+                          {vehicleInfo && v.id === vehicleInfo.id ? ' (Current)' : ''}
+                        </option>
+                      ))}
+                  </select>
+                )}
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-slate-200 flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowReassignModal(false);
+                  setSelectedNewVehicle(null);
+                }}
+                className="px-4 py-2 text-slate-700 hover:text-slate-900"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleReassignVehicle}
+                disabled={reassigning || availableVehicles.filter(v => v.available && v.capacity >= ticketsSold).length === 0}
+                className="px-6 py-2 bg-[#E07A5F] text-white rounded-lg font-semibold hover:bg-[#d06a4f] transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {reassigning && (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                )}
+                {vehicleInfo ? 'Change Vehicle' : 'Assign Vehicle'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Discount Modal */}
+      {showDiscountModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-[calc(100vw-2rem)] sm:max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-slate-200 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-slate-900">Apply Group Discount</h2>
+              <button
+                onClick={() => {
+                  setShowDiscountModal(false);
+                  resetDiscountModal();
+                }}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Discount Type */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Discount Type
+                </label>
+                <div className="flex gap-3">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="discountType"
+                      value="flat"
+                      checked={discountType === 'flat'}
+                      onChange={() => {
+                        setDiscountType('flat');
+                        setDiscountPreview(null);
+                      }}
+                      className="text-[#E07A5F] focus:ring-[#E07A5F]"
+                    />
+                    <span className="text-slate-700">Flat Amount ($/person)</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="discountType"
+                      value="percentage"
+                      checked={discountType === 'percentage'}
+                      onChange={() => {
+                        setDiscountType('percentage');
+                        setDiscountPreview(null);
+                      }}
+                      className="text-[#E07A5F] focus:ring-[#E07A5F]"
+                    />
+                    <span className="text-slate-700">Percentage (%)</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Discount Amount */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Amount
+                </label>
+                <div className="relative">
+                  {discountType === 'flat' && (
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
+                  )}
+                  <input
+                    type="number"
+                    value={discountAmount}
+                    onChange={e => {
+                      setDiscountAmount(e.target.value);
+                      setDiscountPreview(null);
+                    }}
+                    placeholder={discountType === 'flat' ? '10.00' : '10'}
+                    min="0"
+                    max={discountType === 'percentage' ? '100' : undefined}
+                    step={discountType === 'flat' ? '0.01' : '1'}
+                    className={`w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E07A5F] ${
+                      discountType === 'flat' ? 'pl-7' : ''
+                    }`}
+                  />
+                  {discountType === 'percentage' && (
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500">%</span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  {discountType === 'flat'
+                    ? 'Amount to deduct from each ticket per person'
+                    : 'Percentage off the original price'
+                  }
+                </p>
+              </div>
+
+              {/* Discount Reason */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Reason (optional)
+                </label>
+                <input
+                  type="text"
+                  value={discountReason}
+                  onChange={e => setDiscountReason(e.target.value)}
+                  placeholder="e.g., Group of 8+ guests"
+                  className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E07A5F]"
+                />
+              </div>
+
+              {/* Preview Button */}
+              <button
+                onClick={handlePreviewDiscount}
+                disabled={!discountAmount || previewLoading}
+                className="w-full px-4 py-2 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {previewLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-slate-500 border-t-transparent rounded-full animate-spin"></div>
+                    Calculating...
+                  </>
+                ) : (
+                  'Preview Discount'
+                )}
+              </button>
+
+              {/* Preview Results */}
+              {discountPreview && (
+                <div className="border border-slate-200 rounded-lg overflow-hidden">
+                  <div className="bg-slate-50 px-4 py-3 border-b border-slate-200">
+                    <h3 className="font-semibold text-slate-900">Preview</h3>
+                  </div>
+                  <div className="p-4 space-y-4">
+                    {/* Price Changes */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-xs text-slate-500 mb-1">Base Price</p>
+                        <p className="text-slate-700">
+                          <span className="line-through text-slate-400">${discountPreview.original_base_price}</span>
+                          <span className="ml-2 font-semibold text-green-600">${discountPreview.new_base_price}</span>
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-500 mb-1">With Lunch</p>
+                        <p className="text-slate-700">
+                          <span className="line-through text-slate-400">${discountPreview.original_lunch_price}</span>
+                          <span className="ml-2 font-semibold text-green-600">${discountPreview.new_lunch_price}</span>
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Refunds */}
+                    {discountPreview.tickets_affected.length > 0 && (
+                      <div>
+                        <p className="text-sm font-medium text-slate-700 mb-2">Refunds to be issued:</p>
+                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-2 max-h-40 overflow-y-auto">
+                          {discountPreview.tickets_affected.map(ticket => (
+                            <div key={ticket.ticket_id} className="flex justify-between items-center text-sm">
+                              <span className="text-slate-700">
+                                {ticket.customer_name} ({ticket.ticket_count} guest{ticket.ticket_count > 1 ? 's' : ''})
+                              </span>
+                              <span className="font-medium text-amber-700">${ticket.refund_amount.toFixed(2)}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="mt-3 pt-3 border-t border-slate-200 flex justify-between items-center">
+                          <span className="font-semibold text-slate-900">Total Refunds:</span>
+                          <span className="font-bold text-lg text-amber-600">${discountPreview.total_refund.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {discountPreview.tickets_affected.length === 0 && (
+                      <p className="text-sm text-slate-500 italic">No paid tickets to refund</p>
+                    )}
+
+                    {/* Warnings */}
+                    {discountPreview.warnings.length > 0 && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <p className="text-sm font-medium text-blue-800 mb-1">Notes:</p>
+                        <ul className="text-sm text-blue-700 list-disc list-inside">
+                          {discountPreview.warnings.map((warning, idx) => (
+                            <li key={idx}>{warning}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 border-t border-slate-200 flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowDiscountModal(false);
+                  resetDiscountModal();
+                }}
+                className="px-4 py-2 text-slate-700 hover:text-slate-900"
+                disabled={applyingDiscount}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleApplyDiscount}
+                disabled={!discountPreview || applyingDiscount}
+                className="px-6 py-2 bg-[#E07A5F] text-white rounded-lg font-semibold hover:bg-[#d06a4f] transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {applyingDiscount && (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                )}
+                Apply Discount
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
